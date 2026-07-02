@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { DashboardCard } from "@/components/dashboard/dashboard-card";
+import { CEOBriefing } from "@/components/dashboard/ceo-briefing";
 
 const companies = [
   ["SSI", "Screen Solutions International"],
@@ -38,6 +39,10 @@ export default function Home() {
           <p className="text-sm text-zinc-500">Platform Status</p>
           <p className="mt-1 text-lg font-semibold text-green-400">Online</p>
         </div>
+      </div>
+
+      <div className="mt-10">
+        <CEOBriefing />
       </div>
 
       <div className="mt-10 grid grid-cols-4 gap-5">
