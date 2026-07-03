@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { CompanyHeader } from "@/components/company/CompanyHeader";
+import { CompanyLayout } from "@/components/company/CompanyLayout";
 import { getCompanyBySlug } from "@/lib/constants/companies";
 
 type PageProps = {
@@ -17,12 +17,24 @@ export default async function CompanyDynamicPage({ params }: PageProps) {
   }
 
   return (
-    <main className="space-y-6">
-      <CompanyHeader
-        name={company.name}
-        description={company.description}
-        accentColor={company.accentColor}
-      />
-    </main>
+    <CompanyLayout
+      name={company.name}
+      description={company.description}
+      accentColor={company.accentColor}
+    >
+      <div>
+        <p className="text-sm uppercase tracking-[0.3em] text-red-500">
+          Workspace
+        </p>
+
+        <h2 className="mt-3 text-2xl font-semibold text-white">
+          {company.shortName} Operating Center
+        </h2>
+
+        <p className="mt-2 text-sm text-zinc-400">
+          This is the modular workspace area where company-specific modules will load.
+        </p>
+      </div>
+    </CompanyLayout>
   );
 }
