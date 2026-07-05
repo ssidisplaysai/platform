@@ -1,44 +1,40 @@
 import { DataTable } from "@/components/tables/DataTable";
+import {
+  getProjectsByCompanyId,
+  projects,
+} from "@/data/projects/projects";
 
-const projects = [
-  {
-    name: "Ripley’s Digital Sphere",
-    status: "Active",
-    priority: "High",
-    company: "SSI",
-    value: "$0",
-  },
-  {
-    name: "LED Warehouse Catalog",
-    status: "Planning",
-    priority: "Medium",
-    company: "LED Warehouse",
-    value: "$0",
-  },
-  {
-    name: "STONER Product Drop",
-    status: "Concept",
-    priority: "High",
-    company: "STONER",
-    value: "$0",
-  },
-];
+type ProjectTableProps = {
+  companyId?: string;
+};
 
 const columns = [
   { key: "name", label: "Project" },
   { key: "status", label: "Status" },
   { key: "priority", label: "Priority" },
-  { key: "company", label: "Company" },
+  { key: "companyId", label: "Company" },
   { key: "value", label: "Value" },
 ];
 
-export function ProjectTable() {
+export function ProjectTable({ companyId }: ProjectTableProps) {
+  const visibleProjects = companyId
+    ? getProjectsByCompanyId(companyId)
+    : projects;
+
+  const projectRows = visibleProjects.map((project) => ({
+    name: project.name,
+    status: project.status,
+    priority: project.priority,
+    companyId: project.companyId,
+    value: `$${project.value}`,
+  }));
+
   return (
     <DataTable
       title="Projects"
       description="Company projects, installs, builds, launches, and internal initiatives."
       columns={columns}
-      data={projects}
+      data={projectRows}
     />
   );
 }

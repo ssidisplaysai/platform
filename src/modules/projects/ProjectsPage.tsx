@@ -2,12 +2,16 @@ import { ProjectStats } from "./ProjectStats";
 import { ProjectFilters } from "./ProjectFilters";
 import { ProjectTable } from "./ProjectTable";
 
-export function ProjectsPage() {
+type ProjectsPageProps = {
+  companyId?: string;
+};
+
+export function ProjectsPage({ companyId }: ProjectsPageProps) {
   return (
     <div className="space-y-6">
-      <ProjectStats />
+      <ProjectStats companyId={companyId} />
       <ProjectFilters />
-      <ProjectTable />
+      <ProjectTable companyId={companyId} />
     </div>
   );
 }

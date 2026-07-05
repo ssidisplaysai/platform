@@ -23,7 +23,7 @@ export default async function CompanyDynamicPage({ params }: PageProps) {
       description={company.description}
       accentColor={company.accentColor}
     >
-      <ProjectsPage />
+      <ProjectsPage companyId={company.id} />
     </CompanyLayout>
   );
 }

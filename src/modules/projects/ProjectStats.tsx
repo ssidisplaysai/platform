@@ -1,29 +1,57 @@
 import { MetricCard } from "@/components/metrics/MetricCard";
+import {
+  getProjectsByCompanyId,
+  projects,
+} from "@/data/projects/projects";
 
-export function ProjectStats() {
+type ProjectStatsProps = {
+  companyId?: string;
+};
+
+export function ProjectStats({ companyId }: ProjectStatsProps) {
+  const visibleProjects = companyId
+    ? getProjectsByCompanyId(companyId)
+    : projects;
+
+  const activeProjects = visibleProjects.filter(
+    (project) => project.status === "active"
+  ).length;
+
+  const planningProjects = visibleProjects.filter(
+    (project) => project.status === "planning"
+  ).length;
+
+  const completedProjects = visibleProjects.filter(
+    (project) => project.status === "completed"
+  ).length;
+
+  const atRiskProjects = visibleProjects.filter(
+    (project) => project.priority === "critical"
+  ).length;
+
   return (
     <section className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
       <MetricCard
         label="Active Projects"
-        value="3"
+        value={String(activeProjects)}
         helperText="Currently in motion"
       />
 
       <MetricCard
         label="Planning"
-        value="1"
+        value={String(planningProjects)}
         helperText="Projects being scoped"
       />
 
       <MetricCard
         label="Completed"
-        value="0"
+        value={String(completedProjects)}
         helperText="Closed projects"
       />
 
       <MetricCard
         label="At Risk"
-        value="0"
+        value={String(atRiskProjects)}
         helperText="Needs attention"
       />
     </section>
