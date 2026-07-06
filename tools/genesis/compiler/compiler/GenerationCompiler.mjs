@@ -8,11 +8,13 @@
  *
  * Phase 3 supports dry-run mode only (no file writing).
  * Phase 4 adds write mode with artifact record creation.
+ * Phase 5 adds template rendering for entity artifacts.
  */
 
 import { createCompilationDiagnostic } from "./CompilationDiagnostic.mjs";
 import { createCompilationResult } from "./CompilationResult.mjs";
 import { createArtifactRecord } from "../writers/ArtifactRecord.mjs";
+import { renderEntityTemplate } from "../../templates/entity/TemplateRenderer.mjs";
 
 /**
  * Compile a generation plan.
@@ -52,12 +54,18 @@ export function compilePlan(context) {
   // Process each step in the plan
   for (const step of plan.steps) {
     try {
-      // Generate placeholder content (clearly marked as Phase 4 placeholder)
-      const placeholderContent = generatePlaceholderContent(
-        entityName,
-        step.name,
-        step.type
-      );
+      // Render template for this artifact (Phase 5)
+      let artifactContent;
+      try {
+        artifactContent = renderEntityTemplate(step.type, entityName);
+      } catch (error) {
+        // If template rendering fails, use fallback placeholder
+        artifactContent = generatePlaceholderContent(
+          entityName,
+          step.name,
+          step.type
+        );
+      }
 
       // Construct target path from step metadata or default
       const targetPath =
@@ -71,7 +79,7 @@ export function compilePlan(context) {
         type: step.type,
         name: step.name,
         targetPath: targetPath,
-        content: placeholderContent,
+        content: artifactContent,
         status: "planned",
         metadata: step.metadata ? { ...step.metadata } : {},
       });
@@ -124,7 +132,8 @@ export function compilePlan(context) {
 /**
  * Generate placeholder content for an artifact.
  *
- * Clearly marks as Phase 4 placeholder with no business logic.
+ * Fallback used when template rendering fails.
+ * Clearly marks as Phase 5 placeholder with no business logic.
  */
 function generatePlaceholderContent(entityName, artifactName, artifactType) {
   const timestamp = new Date().toISOString();
@@ -155,20 +164,25 @@ function generatePlaceholderContent(entityName, artifactName, artifactType) {
 /**
  * Get default target path for an artifact.
  *
- * Maps artifact type to a default file path.
+ * All Phase 4 placeholder artifacts are written under:
+ *   generated/genesis/<EntityName>/
+ *
+ * This keeps generated output isolated from source directories.
  */
 function getDefaultTargetPath(entityName, artifactType, artifactName) {
+  const base = `generated/genesis/${entityName}`;
+
   const typeMap = {
-    definition: `src/domain/definitions/${entityName}Definition.ts`,
-    repository: `src/core/repositories/${entityName}Repository.ts`,
-    service: `src/core/services/${entityName}Service.ts`,
-    validator: `src/core/validators/${entityName}Validator.ts`,
-    events: `src/core/events/${entityName}Events.ts`,
-    permissions: `src/core/permissions/${entityName}Permissions.ts`,
-    search: `src/core/search/${entityName}Search.ts`,
-    documentation: `docs/${entityName}Documentation.md`,
-    tests: `src/core/tests/${entityName}.test.ts`,
+    "entity-definition": `${base}/${entityName}Definition.ts`,
+    "repository":        `${base}/${entityName}Repository.ts`,
+    "service":           `${base}/${entityName}Service.ts`,
+    "validator":         `${base}/${entityName}Validator.ts`,
+    "events":            `${base}/${entityName}Events.ts`,
+    "permissions":       `${base}/${entityName}Permissions.ts`,
+    "search":            `${base}/${entityName}Search.ts`,
+    "documentation":     `${base}/${entityName}Documentation.md`,
+    "tests":             `${base}/${entityName}.test.ts`,
   };
 
-  return typeMap[artifactType] || `src/generated/${artifactName}.ts`;
+  return typeMap[artifactType] || `${base}/${artifactName.replace(/\s+/g, "")}.ts`;
 }
