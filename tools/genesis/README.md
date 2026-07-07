@@ -395,6 +395,100 @@ All generated files are marked as Phase 5 placeholders and contain:
 - Stub methods that throw "not implemented" errors
 - Proper TypeScript interfaces and types
 
+## Phase 7: Runtime Registration & Promotion Engine
+
+```bash
+node tools/genesis/genesis.mjs promote Customer
+```
+
+The `promote` command (Phase 7) promotes validated generated entity slices into the Genesis Runtime.
+
+**Promotion Pipeline:**
+
+```
+Generated Slice
+    ↓
+Validation (all 9 artifacts present?)
+    ↓
+Promotion Plan (ordered steps)
+    ↓
+Execute Steps (simulate promotion)
+    ↓
+Runtime Registration (simulated)
+    ↓
+Success or Rollback
+```
+
+**Success output:**
+
+```
+Genesis Promotion Engine v0.1
+
+Promoting
+
+Customer
+
+✓ Generated Slice Validated
+✓ Definition Promoted
+✓ Repository Promoted
+✓ Service Promoted
+✓ Validator Promoted
+✓ Events Promoted
+✓ Permissions Promoted
+✓ Search Promoted
+✓ Documentation Promoted
+✓ Definition Registered
+✓ Repository Registered
+✓ Service Registered
+✓ Validator Registered
+✓ Events Registered
+✓ Permissions Registered
+✓ Search Registered
+
+Promotion Complete
+
+Artifacts Promoted: 8
+Components Registered: 7
+Rollback: None
+```
+
+**Failure output (validation fails):**
+
+```
+Genesis Promotion Engine v0.1
+
+Promoting
+
+NonExistent
+
+✖ Error: Validation failed: Generated slice directory not found
+
+Promotion Complete
+
+Artifacts Promoted: 0
+Components Registered: 0
+Rollback: None
+```
+
+**Exit codes:**
+- `0` — Promotion succeeded
+- `1` — Promotion failed (validation or error)
+
+**Promotion guarantees (Phase 7 - Simulation):**
+- ✓ Validates generated slices before promotion
+- ✓ Builds immutable promotion plans
+- ✓ Simulates artifact promotion
+- ✓ Simulates runtime registration
+- ✓ Supports rollback on failures
+- ✗ Does NOT modify src/core (simulated only)
+- ✗ Does NOT modify runtime (simulated only)
+- ✗ Does NOT move files (simulated only)
+
+**Phase 7 Status:**
+Phase 7 is **SIMULATION ONLY**. It establishes the promotion architecture without making actual changes. Future phases will add real file copying and runtime integration.
+
+See [tools/genesis/compiler/promotion/README.md](compiler/promotion/README.md) for details.
+
 ## Example Workflow
 
 ```bash
@@ -413,16 +507,22 @@ node tools/genesis/genesis.mjs compile Customer --write
 # 5. Validate the generated slice
 node tools/genesis/genesis.mjs validate generated Customer
 
-# 6. Review generated files
+# 6. Promote to runtime (simulated in Phase 7)
+node tools/genesis/genesis.mjs promote Customer
+
+# 7. Review generated files
 ls generated/genesis/Customer/
 
-# 7. Plan and write another entity
+# 8. Plan and write another entity
 node tools/genesis/genesis.mjs compile Project --write
 
-# 8. Validate the new slice
+# 9. Validate the new slice
 node tools/genesis/genesis.mjs validate generated Project
 
-# 9. Delete generated artifacts (revert)
+# 10. Promote Project to runtime
+node tools/genesis/genesis.mjs promote Project
+
+# 11. Delete generated artifacts (revert)
 rm -r generated/genesis/Customer
 rm -r generated/genesis/Project
 ```

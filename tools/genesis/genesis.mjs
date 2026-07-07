@@ -5,6 +5,7 @@ import { runDoctorCommand } from "./commands/doctor.mjs";
 import { runPlanCommand } from "./commands/plan.mjs";
 import { runCompileCommand } from "./commands/compile.mjs";
 import { runValidateCommand } from "./commands/validate.mjs";
+import { runPromoteCommand } from "./commands/promote.mjs";
 
 const [, , command, ...args] = process.argv;
 
@@ -20,6 +21,7 @@ Commands:
   plan <Entity>                   - Create a generation plan for an entity
   compile <Entity> [--write]      - Compile generation plan (--write to persist)
   validate generated <Entity>     - Validate generated entity slice
+  promote <Entity>                - Promote entity to Genesis Runtime (simulated)
   scaffold core-object-system
 
 Examples:
@@ -28,6 +30,7 @@ Examples:
   node tools/genesis/genesis.mjs compile Customer
   node tools/genesis/genesis.mjs compile Customer --write
   node tools/genesis/genesis.mjs validate generated Customer
+  node tools/genesis/genesis.mjs promote Customer
 `);
 }
 
@@ -57,6 +60,12 @@ async function main() {
   if (command === "validate") {
     const [target, entityName] = args;
     await runValidateCommand(target, entityName);
+    return;
+  }
+
+  if (command === "promote") {
+    const [entityName] = args;
+    await runPromoteCommand(entityName);
     return;
   }
 
