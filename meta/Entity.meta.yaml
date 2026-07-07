@@ -148,7 +148,7 @@ ai:
 ```
 Genesis Meta Model
     ↓
-    ├─ Entity.meta.yaml (Universal Entity properties)
+    ├─ Entity.meta.yaml (Universal Entity Properties)
     │   ├─ Field.meta.yaml (Property definitions)
     │   ├─ Relationship.meta.yaml (Entity relationships)
     │   ├─ Capability.meta.yaml (Feature set)

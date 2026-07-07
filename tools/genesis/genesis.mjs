@@ -6,6 +6,7 @@ import { runPlanCommand } from "./commands/plan.mjs";
 import { runCompileCommand } from "./commands/compile.mjs";
 import { runValidateCommand } from "./commands/validate.mjs";
 import { runPromoteCommand } from "./commands/promote.mjs";
+import { runTests } from "./tests/TestRunner.mjs";
 
 const [, , command, ...args] = process.argv;
 
@@ -66,6 +67,11 @@ async function main() {
   if (command === "promote") {
     const [entityName] = args;
     await runPromoteCommand(entityName);
+    return;
+  }
+
+  if (command === "test") {
+    await runTests();
     return;
   }
 
