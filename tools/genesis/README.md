@@ -263,7 +263,89 @@ generated/genesis/<Entity>/
 - **Isolated output** — Never touches `src/`, `docs/`, `runtime/` directories
 - **Reversible** — Delete generated files to revert
 
-## Example Generated Code
+## Phase 6: Generated Slice Validation
+
+```bash
+node tools/genesis/genesis.mjs validate generated Customer
+```
+
+The `validate` command validates sandbox-generated entity slices (Phase 6).
+
+It checks that all 9 required artifact files exist under `generated/genesis/<Entity>/`:
+
+**Success output:**
+
+```
+Genesis Generated Slice Validator v0.1
+
+Validating Generated Slice
+
+Customer
+
+✓ Definition
+✓ Repository
+✓ Service
+✓ Validator
+✓ Events
+✓ Permissions
+✓ Search
+✓ Documentation
+✓ Tests
+
+Validation Complete
+
+9 Checks Passed
+0 Issues Found
+```
+
+**Failure output (missing files):**
+
+```
+Genesis Generated Slice Validator v0.1
+
+Validating Generated Slice
+
+Customer
+
+✓ Definition
+✓ Repository
+✖ Missing: CustomerService.ts
+
+Validation Complete
+
+9 Checks Passed
+1 Issues Found
+```
+
+**Exit codes:**
+- `0` — All checks passed (slice is healthy)
+- `1` — One or more checks failed (slice has issues)
+
+**Validation checks:**
+
+The validator verifies the existence of these files under `generated/genesis/{Entity}/`:
+
+1. `{Entity}Definition.ts` — Entity schema definition
+2. `{Entity}Repository.ts` — Data access layer
+3. `{Entity}Service.ts` — Business logic layer
+4. `{Entity}Validator.ts` — Validation logic
+5. `{Entity}Events.ts` — Domain events
+6. `{Entity}Permissions.ts` — Access control
+7. `{Entity}Search.ts` — Search and filtering
+8. `{Entity}Documentation.md` — API documentation
+9. `{Entity}Tests.ts` — Unit tests
+
+**Validator guarantees:**
+- Read-only operation (never modifies files)
+- Never moves files into `src/core`
+- No runtime integration
+- No CRM implementation
+- No production entity integration
+- Only validates files under `generated/genesis/`
+
+See [tools/genesis/validators/generated-slice/README.md](validators/generated-slice/README.md) for details.
+
+
 
 When you run `compile Customer --write`, templates render with token replacement:
 
@@ -328,13 +410,19 @@ node tools/genesis/genesis.mjs compile Customer
 # 4. Write template-rendered artifacts
 node tools/genesis/genesis.mjs compile Customer --write
 
-# 5. Review generated files
+# 5. Validate the generated slice
+node tools/genesis/genesis.mjs validate generated Customer
+
+# 6. Review generated files
 ls generated/genesis/Customer/
 
-# 6. Plan and write another entity
+# 7. Plan and write another entity
 node tools/genesis/genesis.mjs compile Project --write
 
-# 7. Delete generated artifacts (revert)
+# 8. Validate the new slice
+node tools/genesis/genesis.mjs validate generated Project
+
+# 9. Delete generated artifacts (revert)
 rm -r generated/genesis/Customer
 rm -r generated/genesis/Project
 ```
