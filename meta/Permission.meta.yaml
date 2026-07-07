@@ -1,0 +1,274 @@
+# Genesis Meta Model: Permission
+
+## Core Concept
+
+Permissions define who can do what with an entity.
+
+Every Permission inherits these canonical properties.
+
+---
+
+## Universal Permission Model
+
+### Actions
+
+Every entity supports these standard actions:
+
+- **Create** - Create new entities
+- **Read** - View entity data
+- **Update** - Modify entity data
+- **Delete** - Remove entity
+- **Approve** - Approve entity
+- **Export** - Export entity data
+- **Import** - Import entity data
+- **Manage** - Full management access
+- **Delegate** - Grant permissions to others
+
+### Roles
+
+Permissions are granted to roles:
+
+- **Owner** - Created or owns the entity
+- **Admin** - System administrator
+- **Editor** - Can edit entity
+- **Viewer** - Can view entity (read-only)
+- **Contributor** - Can contribute but cannot approve
+- **Reviewer** - Can review but cannot approve
+- **Approver** - Can approve submissions
+- **Custom** - Custom role defined per entity
+
+### Scope
+
+Permissions can be scoped:
+
+- **Global** - Applies to all entities of this type
+- **Organization** - Within single organization
+- **Team** - Within single team
+- **Individual** - Individual entity level
+- **Field** - Field-level permissions
+- **Custom** - Custom scope
+
+---
+
+## Permission Rules
+
+### Action Rules
+
+```yaml
+permissions:
+  actions:
+    create:
+      allowedRoles: [admin, editor]
+      requiresApproval: false
+    
+    read:
+      allowedRoles: [owner, viewer, editor, admin]
+      fieldLevel: true
+    
+    update:
+      allowedRoles: [owner, editor, admin]
+      requiresApproval: true
+      approvers: [admin]
+    
+    delete:
+      allowedRoles: [admin]
+      requiresApproval: true
+      approvers: [admin, owner]
+    
+    approve:
+      allowedRoles: [approver, admin]
+    
+    export:
+      allowedRoles: [owner, editor, admin]
+      auditLog: true
+```
+
+### Role Hierarchy
+
+Roles can inherit from other roles:
+
+```yaml
+roles:
+  admin:
+    inherits: null
+    permissions: [create, read, update, delete, manage]
+  
+  editor:
+    inherits: viewer
+    permissions: [create, read, update]
+  
+  viewer:
+    inherits: null
+    permissions: [read]
+```
+
+### Field-Level Permissions
+
+Restrict access at the field level:
+
+```yaml
+fieldPermissions:
+  salary:
+    visibleTo: [admin, hr]
+    editableBy: [admin]
+  
+  email:
+    visibleTo: [owner, admin]
+    editableBy: [owner, admin]
+```
+
+### Time-Based Permissions
+
+Permissions can have time restrictions:
+
+```yaml
+permissions:
+  temporaryAccess:
+    allowedRoles: [contractor]
+    validFrom: 2026-01-01
+    validUntil: 2026-12-31
+```
+
+### Condition-Based Permissions
+
+Permissions can depend on conditions:
+
+```yaml
+permissions:
+  approvalPermission:
+    allowedRoles: [reviewer]
+    condition: "entity.status == 'Pending Review'"
+```
+
+---
+
+## Delegation
+
+Users can delegate permissions to others:
+
+```yaml
+permissions:
+  delegation:
+    enabled: true
+    allowedRoles: [admin, owner]
+    delegationDepth: 1  # Can delegate once
+    auditLog: true
+```
+
+---
+
+## Multi-Tenant Permissions
+
+Permissions in multi-tenant systems:
+
+```yaml
+permissions:
+  tenantScoped: true
+  
+  rules:
+    - users_cannot_see_other_tenant_data: true
+    - admins_cannot_exceed_tenant_boundary: true
+    - cross_tenant_sharing: disabled
+```
+
+---
+
+## Permission Examples
+
+### Simple Read/Write
+```yaml
+permissions:
+  simple:
+    read: [viewer, editor, admin]
+    write: [editor, admin]
+    delete: [admin]
+```
+
+### Complex Role-Based
+```yaml
+permissions:
+  complex:
+    create:
+      allowedRoles: [admin, manager]
+      requiresApproval: false
+    
+    read:
+      allowedRoles: [owner, manager, team_member, admin]
+    
+    update:
+      allowedRoles: [owner, manager, admin]
+      requiresApproval: true
+    
+    delete:
+      allowedRoles: [admin]
+      requiresApproval: true
+      approvers: [security_officer]
+    
+    manage:
+      allowedRoles: [admin]
+```
+
+---
+
+## Security Best Practices
+
+### 1. Principle of Least Privilege
+Grant minimal necessary permissions.
+
+### 2. Role-Based Access Control
+Use roles, not individual assignments.
+
+### 3. Separation of Duties
+Separate approval from creation.
+
+### 4. Audit Everything
+Log all permission changes and usage.
+
+### 5. Regular Review
+Periodically review permissions.
+
+### 6. Deny by Default
+Deny access unless explicitly granted.
+
+---
+
+## Permission Inheritance
+
+Permissions are inherited through the entity hierarchy:
+
+```
+Entity.meta.yaml
+      ↓
+Customer.entity.yaml permissions
+  - Create (inherited)
+  - Read (overridden)
+  - Update (inherited)
+  - Delete (restricted)
+```
+
+---
+
+## Future Extensions
+
+Permission model can be extended with:
+- Attribute-based access control (ABAC)
+- Policy-based access control (PBAC)
+- Dynamic permissions
+- Risk-based access
+- Geoip-based restrictions
+- Device-based restrictions
+
+---
+
+## Summary
+
+The Permission Meta Model defines **access control** for Genesis entities.
+
+Permissions provide:
+- **Role-Based Access Control** - Manage through roles
+- **Action Restrictions** - Control what users can do
+- **Field-Level Security** - Protect sensitive data
+- **Audit Trail** - Track permission changes
+- **Enforcement** - Automatic permission checking
+
+The Permission Meta Model makes Genesis entities **secure and controlled**.

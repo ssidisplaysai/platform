@@ -4,11 +4,108 @@ The Genesis Development Kit is a metadata-driven compilation pipeline for entity
 
 **Core Principle:** Model the business once. Compile everything else from it.
 
+## Genesis Entity Definition Language (GEDL)
+
+GEDL is a technology-neutral YAML-based language for defining business entities.
+
+**Why GEDL?**
+- Separates business model from implementation
+- Technology-neutral (same definitions → multiple platforms)
+- Business-friendly (analysts can read/write definitions)
+- Version control friendly
+- Self-documenting
+
+**Example Entity Definition:**
+
+```yaml
+entity: Customer
+displayName: Customer
+pluralName: Customers
+description: Represents a customer in the business domain
+
+fields:
+  id:
+    type: identifier
+    required: true
+    generated: true
+  name:
+    type: string
+    required: true
+  email:
+    type: email
+    required: true
+    unique: true
+  status:
+    type: enum
+    values: [PROSPECT, ACTIVE, INACTIVE, CHURNED]
+
+relationships:
+  contacts:
+    type: hasMany
+    target: Contact
+  organization:
+    type: belongsTo
+    target: Organization
+
+capabilities:
+  search:
+    enabled: true
+  audit:
+    enabled: true
+  permissions:
+    enabled: true
+
+metadata:
+  namespace: crm
+  icon: person
+```
+
+**Definition Files:**
+- Location: `definitions/entity/`
+- Format: `{EntityName}.entity.yaml`
+- Example: `definitions/entity/Customer.entity.yaml`
+
+See [GEDL Documentation](../docs/architecture/0016-genesis-entity-definition-language.md) for complete reference.
+
+## Blueprint Engine
+
+The Blueprint Engine transforms GEDL definitions into immutable Blueprint objects consumed by the Planner and Compiler.
+
+**Pipeline:**
+```
+GEDL YAML
+    ↓
+BlueprintLoader (parse YAML)
+    ↓
+BlueprintValidator (validate schema)
+    ↓
+BlueprintBuilder (create Blueprint)
+    ↓
+Blueprint object
+```
+
+**Blueprint Object:**
+```javascript
+blueprint.entity              // "Customer"
+blueprint.displayName         // "Customer"
+blueprint.fields              // Field definitions
+blueprint.relationships       // Relationship definitions
+blueprint.capabilities        // Enabled capabilities
+blueprint.getFieldCount()     // 6
+blueprint.getEnabledCapabilities() // ["search", "audit", "permissions"]
+```
+
+See [Blueprint Engine Documentation](compiler/blueprints/README.md) for details.
+
 ## Architecture Overview
 
-The GDK pipeline has four phases:
+The GDK pipeline has seven phases:
 
 ```
+GEDL Definition
+  ↓
+Blueprint Engine
+  ↓
 Phase 1: Definition Registry
   ↓
 Phase 2: Generation Planner
@@ -16,6 +113,12 @@ Phase 2: Generation Planner
 Phase 3: Generation Compiler (Dry-Run)
   ↓
 Phase 4: Artifact Writer (Isolated Output)
+  ↓
+Phase 5: Entity Templates (Template Rendering)
+  ↓
+Phase 6: Generated Slice Validation
+  ↓
+Phase 7: Runtime Registration & Promotion
 ```
 
 ## How The Registry Works
@@ -489,6 +592,191 @@ Phase 7 is **SIMULATION ONLY**. It establishes the promotion architecture withou
 
 See [tools/genesis/compiler/promotion/README.md](compiler/promotion/README.md) for details.
 
+## Phase 9: Compiler Pass Architecture
+
+The Compiler Pipeline (Phase 9) transforms the compiler from manual orchestration into a modular pass-based system.
+
+**Pipeline Architecture:**
+
+```
+CompilerContext
+    ↓
+DefinitionRegistryPass (10) ──→ Load definition from registry
+    ↓
+BlueprintPass (20) ──────────→ Build blueprint from GEDL
+    ↓
+PlanningPass (30) ────────────→ Create compilation plan
+    ↓
+RenderingPass (40) ───────────→ Render templates
+    ↓
+WritingPass (50) ──────────────→ Write artifacts to disk
+    ↓
+ValidationPass (60) ────────────→ Validate artifacts
+    ↓
+PromotionPass (70) ────────────→ Promote to runtime
+    ↓
+RuntimeRegistrationPass (80) ──→ Register in runtime
+    ↓
+Final CompilerContext
+```
+
+### Compiler Pass System
+
+Each stage becomes an independent **Compiler Pass**:
+
+1. **DefinitionRegistryPass** — Load entity definition from registry
+2. **BlueprintPass** — Build blueprint from GEDL definition
+3. **PlanningPass** — Create compilation plan
+4. **RenderingPass** — Render artifact templates
+5. **WritingPass** — Write artifacts to disk
+6. **ValidationPass** — Validate generated artifacts
+7. **PromotionPass** — Promote to runtime (simulated)
+8. **RuntimeRegistrationPass** — Register in runtime (simulated)
+
+### Why Passes?
+
+The pass-based architecture provides:
+
+- **Testability** — Each pass is independently testable
+- **Extensibility** — Customers can register custom passes
+- **Debuggability** — Collect diagnostics per pass
+- **Performance Analysis** — Measure each stage
+- **Modularity** — Clear separation of concerns
+- **Reordering** — Change execution order as needed
+- **Composition** — Inject dependencies into passes
+
+### Pass Registry
+
+The `CompilerPassRegistry` manages all available passes:
+
+```javascript
+import { globalPassRegistry } from './compiler/pipeline/CompilerPassRegistry.mjs';
+
+// List all registered passes
+globalPassRegistry.list(); // Returns sorted array of passes
+
+// Check if pass is registered
+globalPassRegistry.has('Planning'); // Returns boolean
+
+// Get specific pass
+const pass = globalPassRegistry.get('Rendering');
+```
+
+### Pipeline Execution
+
+The `CompilerPipeline` orchestrates pass execution:
+
+```javascript
+import { CompilerPipeline } from './compiler/pipeline/CompilerPipeline.mjs';
+import { CompilerContext } from './compiler/pipeline/CompilerContext.mjs';
+
+// Create context
+const context = new CompilerContext({
+  entityName: 'Customer',
+});
+
+// Execute pipeline
+const pipeline = new CompilerPipeline();
+const result = await pipeline.execute(context);
+
+// Check results
+if (result.success) {
+  console.log(`✓ ${result.passCount} passes executed`);
+  console.log(`✓ ${result.context.artifacts.length} artifacts generated`);
+  console.log(`✓ Completed in ${result.duration}ms`);
+} else {
+  console.log(`✗ ${result.failedCount} passes failed`);
+}
+```
+
+### CompilationContext
+
+The `CompilerContext` flows through each pass:
+
+```javascript
+context = {
+  entityName: 'Customer',
+  definition: {...},        // Populated by DefinitionRegistryPass
+  blueprint: {...},         // Populated by BlueprintPass
+  plan: {...},              // Populated by PlanningPass
+  artifacts: [...],         // Populated by RenderingPass
+  diagnostics: [...],       // Collected by all passes
+  metadata: {...},          // Metadata from all passes
+  options: {...},           // Compiler options
+}
+```
+
+### Creating Custom Passes
+
+Enterprise customers can register custom passes:
+
+```javascript
+import { CompilerPass } from './compiler/pipeline/CompilerPass.mjs';
+import { globalPassRegistry } from './compiler/pipeline/CompilerPassRegistry.mjs';
+
+class CustomValidationPass extends CompilerPass {
+  constructor() {
+    super({
+      name: 'EnterpriseValidation',
+      description: 'Custom enterprise validation rules',
+      order: 65, // Run between Writing (50) and Validation (60)
+    });
+  }
+
+  async execute(context) {
+    // Custom validation logic here
+    context.addDiagnostic('info', 'Enterprise validation passed');
+    return context;
+  }
+}
+
+// Register pass
+globalPassRegistry.register(new CustomValidationPass());
+```
+
+### Pass Diagnostics
+
+Each pass can add diagnostics:
+
+```javascript
+// Information
+context.addDiagnostic('info', 'Definition loaded', {
+  fields: 5,
+  relationships: 3,
+});
+
+// Warning
+context.addDiagnostic('warning', 'Deprecated field detected', {
+  field: 'oldField',
+});
+
+// Error
+context.addDiagnostic('error', 'Validation failed', {
+  errors: ['Missing required field'],
+});
+```
+
+Access diagnostics:
+
+```javascript
+const errors = context.getDiagnosticsAt('error');
+const warnings = context.getDiagnosticsAt('warning');
+const infos = context.getDiagnosticsAt('info');
+```
+
+### Pipeline Backward Compatibility
+
+The pass architecture is fully backward compatible:
+
+- Existing `compile` command works unchanged
+- No changes to Definition Registry, Planner, Compiler, etc.
+- All existing tests pass
+- No changes to generated code
+
+The pass system is an **implementation detail** transparent to users.
+
+See [tools/genesis/compiler/pipeline/README.md](compiler/pipeline/README.md) and [ADR-0018](../../docs/architecture/0018-compiler-pass-architecture.md) for complete documentation.
+
 ## Example Workflow
 
 ```bash
@@ -557,3 +845,6 @@ Additional commands for validation and explanation of generated artifacts.
 - [ADR 0012: Core Capability Model](../../docs/architecture/0012-core-capability-model.md)
 - [ADR 0013: Genesis Development Kit](../../docs/architecture/0013-genesis-development-kit.md)
 - [ADR 0014: Genesis Compilation Pipeline](../../docs/architecture/0014-genesis-compilation-pipeline.md)
+- [ADR 0016: Genesis Entity Definition Language (GEDL)](../../docs/architecture/0016-genesis-entity-definition-language.md)
+- [ADR 0017: Phase 8 Blueprint Engine](../../docs/architecture/0017-phase-8-completion-report.md)
+- [ADR 0018: Compiler Pass Architecture](../../docs/architecture/0018-compiler-pass-architecture.md)

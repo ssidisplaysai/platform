@@ -1,0 +1,388 @@
+# Genesis Meta Model: Search
+
+## Core Concept
+
+Search enables users to find entities efficiently.
+
+Every Search capability inherits these canonical properties.
+
+---
+
+## Universal Search Properties
+
+### Indexing
+
+What gets indexed:
+
+- **indexed** - Is field indexed?
+- **analyzed** - Full-text analyzed?
+- **tokenized** - Tokenized for search?
+- **stemmed** - Stemming enabled?
+- **boost** - Relevance boost factor (0.1 - 2.0)
+
+### Search Features
+
+- **searchable** - Can field be searched?
+- **searchType** - Type of search (fulltext, exact, fuzzy, prefix)
+- **wildcardSearch** - Support wildcard queries?
+- **fuzzySearch** - Support fuzzy matching?
+- **prefixSearch** - Support prefix queries?
+- **phraseSearch** - Support phrase queries?
+
+### Sorting
+
+- **sortable** - Can field be sorted?
+- **defaultSort** - Default sort order
+- **sortDirection** - Ascending or descending
+
+### Filtering
+
+- **filterable** - Can field be filtered?
+- **filterType** - Filter type (term, range, date)
+- **multiValue** - Support multi-value filters?
+
+### Faceting
+
+- **facetable** - Can field be used for faceting?
+- **facetLimit** - Max facet values to return
+- **facetMinCount** - Minimum count for facet
+
+### Autocomplete
+
+- **suggestible** - Support autocomplete suggestions?
+- **suggestionMinLength** - Min characters for suggestions
+- **suggestionMaxResults** - Max suggestions to return
+
+---
+
+## Search Configuration
+
+Entity-level search configuration:
+
+```yaml
+search:
+  enabled: true
+  
+  indexing:
+    strategy: automatic  # or manual
+    frequency: immediate  # or batch
+    batchSize: 1000
+    batchIntervalMs: 60000
+  
+  defaultFields:
+    - name
+    - email
+    - description
+  
+  facets:
+    - field: status
+      limit: 20
+    - field: industry
+      limit: 20
+  
+  sorting:
+    default:
+      field: createdAt
+      direction: descending
+  
+  filtering:
+    enabled: true
+    multiSelect: true
+  
+  pagination:
+    pageSize: 20
+    maxPageSize: 100
+```
+
+---
+
+## Search Index
+
+Index configuration:
+
+```yaml
+searchIndex:
+  type: elasticsearch  # or opensearch, solr, etc.
+  
+  mapping:
+    properties:
+      id:
+        type: keyword
+        index: true
+      
+      name:
+        type: text
+        analyzed: true
+        boost: 2.0
+      
+      email:
+        type: keyword
+        index: true
+        searchable: true
+      
+      status:
+        type: keyword
+        facet: true
+        filter: true
+      
+      createdAt:
+        type: date
+        sortable: true
+      
+      description:
+        type: text
+        analyzed: true
+        stemmed: true
+  
+  analyzer: standard
+  tokenizer: standard
+  filters:
+    - lowercase
+    - stop_words
+    - stemmer
+```
+
+---
+
+## Search Query Types
+
+### Full-Text Search
+```yaml
+search:
+  query: "Acme"
+  searchType: fulltext
+  fields: [name, description]
+```
+
+### Exact Match
+```yaml
+search:
+  query: "ACTIVE"
+  searchType: exact
+  field: status
+```
+
+### Fuzzy Search
+```yaml
+search:
+  query: "Ackne"  # Typo
+  searchType: fuzzy
+  fuzziness: AUTO
+```
+
+### Prefix Search
+```yaml
+search:
+  prefix: "Acm"
+  field: name
+```
+
+### Range Query
+```yaml
+search:
+  range:
+    field: createdAt
+    from: "2026-01-01"
+    to: "2026-12-31"
+```
+
+### Faceted Search
+```yaml
+search:
+  query: "Acme"
+  facets:
+    - field: status
+      limit: 20
+    - field: industry
+      limit: 20
+  filters:
+    status: ACTIVE
+    industry: Technology
+```
+
+---
+
+## Search Results
+
+Search result format:
+
+```json
+{
+  "total": 42,
+  "took": 125,
+  "results": [
+    {
+      "id": "cust_123",
+      "name": "Acme Corporation",
+      "email": "contact@acme.com",
+      "status": "ACTIVE",
+      "industry": "Technology",
+      "score": 9.5,
+      "highlights": {
+        "name": "Acme <em>Corporation</em>",
+        "description": "Leading provider of <em>Acme</em> solutions..."
+      }
+    }
+  ],
+  "facets": {
+    "status": [
+      { "value": "ACTIVE", "count": 35 },
+      { "value": "INACTIVE", "count": 7 }
+    ],
+    "industry": [
+      { "value": "Technology", "count": 20 },
+      { "value": "Finance", "count": 15 }
+    ]
+  },
+  "suggestions": [
+    "Acme Inc",
+    "Acme Group",
+    "Acme Solutions"
+  ]
+}
+```
+
+---
+
+## Search Performance
+
+Optimize search performance:
+
+```yaml
+searchPerformance:
+  enableCaching: true
+  cacheTTL: 3600
+  
+  indexing:
+    batchSize: 1000
+    commitInterval: 5000  # ms
+  
+  queries:
+    maxResultSize: 10000
+    timeout: 5000  # ms
+  
+  pagination:
+    maxOffset: 100000
+    preferCursorPagination: true
+```
+
+---
+
+## Advanced Search Features
+
+### Highlighting
+Show search terms in results:
+
+```yaml
+highlighting:
+  enabled: true
+  fields:
+    - name
+    - description
+  preTag: "<em>"
+  postTag: "</em>"
+```
+
+### Suggestions
+Auto-complete suggestions:
+
+```yaml
+suggestions:
+  enabled: true
+  field: name
+  minChars: 2
+  maxResults: 10
+  fuzzy: true
+```
+
+### Geospatial Search
+Search by distance:
+
+```yaml
+geospatialSearch:
+  enabled: true
+  field: location
+  
+  nearbySearch:
+    latitude: 40.7128
+    longitude: -74.0060
+    radiusKm: 10
+```
+
+### Spell Correction
+Correct misspellings:
+
+```yaml
+spellCorrection:
+  enabled: true
+  suggestAlternatives: true
+```
+
+---
+
+## Search Analytics
+
+Track search behavior:
+
+```yaml
+searchAnalytics:
+  enabled: true
+  
+  metrics:
+    - totalSearches
+    - uniqueSearchers
+    - avgResultsPerSearch
+    - searchesToNoResults
+    - popularSearchTerms
+    - avgTimeToResult
+```
+
+---
+
+## Design Principles
+
+### 1. Speed
+Search is fast and responsive.
+
+### 2. Relevance
+Results are ranked by relevance.
+
+### 3. Discoverability
+Faceting aids discoverability.
+
+### 4. Accuracy
+Results are accurate.
+
+### 5. Accessibility
+Search is accessible to all.
+
+### 6. Scalability
+Search scales to large datasets.
+
+---
+
+## Future Extensions
+
+Search model can be extended with:
+- Vector/semantic search
+- Graph search
+- Natural language queries
+- AI-powered search
+- Personalized search
+- Collaborative search
+
+---
+
+## Summary
+
+The Search Meta Model defines **entity discovery** for Genesis entities.
+
+Search provides:
+- **Full-Text Search** - Find by text
+- **Faceted Navigation** - Filter by dimensions
+- **Autocomplete** - Help users find
+- **Analytics** - Track search behavior
+- **Performance** - Fast results
+- **Scalability** - Handle large datasets
+
+The Search Meta Model makes Genesis entities **discoverable and findable**.

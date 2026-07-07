@@ -1,0 +1,330 @@
+# Genesis Meta Model: Lifecycle
+
+## Core Concept
+
+Every entity has a lifecycle - a progression through states.
+
+Every Lifecycle inherits these canonical properties.
+
+---
+
+## Universal Lifecycle States
+
+### Draft
+Entity is being composed. Incomplete or in development.
+
+**Characteristics:**
+- Can be modified
+- Not visible to most users
+- Can be deleted
+- Cannot be approved
+
+### Active
+Entity is operational. Performing its function.
+
+**Characteristics:**
+- Fully functional
+- Visible to users
+- Can be modified (subject to permissions)
+- Actively used
+
+### Inactive
+Entity is paused. Temporarily out of service.
+
+**Characteristics:**
+- Not currently active
+- Preserved for historical records
+- Can be reactivated
+- Not counted in current metrics
+
+### Archived
+Entity is historical. No longer in current use.
+
+**Characteristics:**
+- Read-only
+- Not visible in normal lists
+- Preserved for compliance
+- Cannot be modified
+
+### Deleted
+Entity is removed. Soft-deleted by default.
+
+**Characteristics:**
+- Inaccessible to users
+- Retained for audit trail
+- Can potentially be restored
+- Marked with deletion timestamp
+
+---
+
+## Lifecycle Transitions
+
+Entities progress through states via transitions:
+
+```
+Draft
+  ├─ → Active (activate)
+  ├─ → Deleted (discard)
+  └─ → Archived (archive)
+
+Active
+  ├─ → Inactive (deactivate)
+  ├─ → Archived (archive)
+  ├─ → Deleted (delete)
+  └─ → Draft (reopen, if allowed)
+
+Inactive
+  ├─ → Active (reactivate)
+  ├─ → Archived (archive)
+  └─ → Deleted (delete)
+
+Archived
+  ├─ → Deleted (permanently delete)
+  └─ → Active (restore, if allowed)
+
+Deleted
+  └─ → (permanent, unless restore enabled)
+```
+
+---
+
+## Lifecycle Rules
+
+### Required Approval
+Some transitions require approval:
+
+```yaml
+lifecycle:
+  transitions:
+    activate:
+      from: Draft
+      to: Active
+      requiresApproval: true
+      approvers: [admin, owner]
+```
+
+### Automatic Transitions
+Some transitions can be automatic:
+
+```yaml
+lifecycle:
+  transitions:
+    expire:
+      from: Active
+      to: Archived
+      automatic: true
+      trigger: expiration_date
+      condition: "now() > expiration_date"
+```
+
+### Conditional Transitions
+Some transitions depend on conditions:
+
+```yaml
+lifecycle:
+  transitions:
+    complete:
+      from: Active
+      to: Archived
+      condition: "all_tasks_completed() AND validation_passed()"
+```
+
+### Reversible Transitions
+Some transitions can be reversed:
+
+```yaml
+lifecycle:
+  transitions:
+    deactivate:
+      from: Active
+      to: Inactive
+      reversible: true
+      reverseTransition: reactivate
+```
+
+---
+
+## Soft Delete
+
+Entities are soft-deleted by default:
+
+```yaml
+lifecycle:
+  softDelete: true  # Deleted entities are preserved
+  hardDelete: false # Cannot permanently delete
+  retentionDays: 2555 # Keep for ~7 years
+```
+
+---
+
+## Lifecycle Events
+
+Transitions emit events:
+
+```yaml
+lifecycle:
+  events:
+    - transition: activate
+      event: EntityActivated
+    - transition: deactivate
+      event: EntityDeactivated
+    - transition: archive
+      event: EntityArchived
+    - transition: delete
+      event: EntityDeleted
+```
+
+---
+
+## Lifecycle Permissions
+
+Transitions can be restricted by role:
+
+```yaml
+lifecycle:
+  transitions:
+    activate:
+      from: Draft
+      to: Active
+      allowedRoles: [editor, admin]
+```
+
+---
+
+## Lifecycle Hooks
+
+Custom logic can run during transitions:
+
+```yaml
+lifecycle:
+  transitions:
+    activate:
+      from: Draft
+      to: Active
+      beforeTransition: validateForActivation
+      afterTransition: notifyStakeholders
+```
+
+---
+
+## Lifecycle Extensions
+
+Entities can extend the standard lifecycle:
+
+```yaml
+lifecycle:
+  extends: StandardLifecycle
+  customStates:
+    - Suspended
+    - OnHold
+    - PendingReview
+```
+
+---
+
+## Lifecycle Examples
+
+### Simple Lifecycle
+```yaml
+lifecycle:
+  states: [Draft, Active, Archived]
+  initialState: Draft
+  softDelete: true
+```
+
+### Complex Workflow Lifecycle
+```yaml
+lifecycle:
+  states:
+    - Draft
+    - Pending Review
+    - Active
+    - Inactive
+    - Archived
+    - Deleted
+  
+  transitions:
+    - name: Submit
+      from: Draft
+      to: Pending Review
+      requiresApproval: false
+    
+    - name: Approve
+      from: Pending Review
+      to: Active
+      requiresApproval: true
+      approvers: [admin]
+    
+    - name: Reject
+      from: Pending Review
+      to: Draft
+      requiresApproval: false
+```
+
+---
+
+## Lifecycle State Machine
+
+Lifecycle is a **Finite State Machine**:
+
+```
+Entry → Draft ←─────────────────┐
+         │                       │
+         ├─→ Active ←─────────┐  │
+         │    │               │  │
+         │    ├─→ Inactive ───┘  │
+         │    │                  │
+         │    └─→ Archived ──────┤
+         │                       │
+         └─→ Deleted ────────────┘
+```
+
+---
+
+## Design Principles
+
+### 1. Explicit States
+All states are explicitly defined.
+
+### 2. Clear Transitions
+All possible transitions are defined.
+
+### 3. Deterministic
+State machine is deterministic and predictable.
+
+### 4. Auditable
+All state changes are tracked.
+
+### 5. Reversible When Appropriate
+Some transitions can be reversed.
+
+### 6. Permission Controlled
+Sensitive transitions require approval.
+
+---
+
+## Future Extensions
+
+Lifecycle can be extended with:
+- Time-based transitions
+- Event-based transitions
+- Conditional transitions
+- Complex state machines
+- Hierarchical states
+- Concurrent states
+- Deferred transitions
+
+---
+
+## Summary
+
+The Lifecycle Meta Model defines **state progression** for Genesis entities.
+
+Lifecycle provides:
+- **Operational States** - Track what entities are doing
+- **State Transitions** - Controlled state changes
+- **Audit Trail** - Track all state changes
+- **Governance** - Enforce business rules
+- **Automation** - Trigger on state changes
+
+The Lifecycle Meta Model makes Genesis entities **predictable and governable**.

@@ -1,0 +1,430 @@
+# Genesis Meta Model: AI
+
+## Core Concept
+
+AI integration enables intelligent features on entities.
+
+Every AI capability inherits these canonical properties.
+
+---
+
+## Universal AI Properties
+
+### Vectorization
+
+Convert data to vectors for semantic search:
+
+- **embeddings** - Generate embeddings for semantic search
+- **embeddingModel** - Which model to use (OpenAI, Hugging Face, etc.)
+- **embeddingDimension** - Vector dimensionality (1536, 3072, etc.)
+- **vectorized** - Field is vectorized
+- **searchable** - Searchable via vectors
+
+### Text Generation
+
+Generate text from entity data:
+
+- **summarization** - Automatic text summarization
+- **summaryLength** - Short/medium/long
+- **keyPointExtraction** - Extract key points
+- **abstractive** - Abstractive vs extractive
+- **generative** - Generate new content
+
+### Classification
+
+Automatically classify data:
+
+- **classification** - Classify entity/field
+- **classifier** - Which classifier to use
+- **categories** - Possible classifications
+- **confidence** - Minimum confidence threshold
+- **multiLabel** - Can have multiple labels
+
+### Named Entity Recognition
+
+Extract entities from text:
+
+- **entityExtraction** - Extract named entities
+- **entityTypes** - Types to extract (person, org, location, etc.)
+- **linkedEntities** - Link to Genesis entities
+
+### Sentiment Analysis
+
+Analyze sentiment:
+
+- **sentimentAnalysis** - Detect sentiment
+- **scale** - negative/neutral/positive or -1.0 to 1.0
+- **emotionDetection** - Detect emotions (happy, sad, angry, etc.)
+
+### Tagging
+
+Auto-generate tags:
+
+- **autoTagging** - Generate tags automatically
+- **tagCount** - Target number of tags
+- **tagSource** - User-generated vs AI-generated
+- **confidenceThreshold** - Minimum confidence
+
+### Recommendations
+
+Recommend related items:
+
+- **recommendations** - Enable recommendations
+- **algorithm** - collaborative, content-based, hybrid
+- **recentItems** - Consider recent activity
+- **similarItems** - Recommend similar items
+- **popularItems** - Include popular items
+- **personalizedItems** - Personalize by user
+
+### Anomaly Detection
+
+Detect unusual patterns:
+
+- **anomalyDetection** - Detect anomalies
+- **baseline** - Compute baseline behavior
+- **threshold** - Anomaly threshold (std dev, percentile)
+- **alerting** - Alert on anomalies
+
+---
+
+## AI Features
+
+### Embeddings
+
+Generate semantic embeddings:
+
+```yaml
+embeddings:
+  enabled: true
+  fields:
+    - name
+    - description
+  model: text-embedding-3-small
+  dimension: 1536
+  updateFrequency: on_change
+  storage: vector_db
+  searchable: true
+```
+
+### Summarization
+
+Auto-generate summaries:
+
+```yaml
+summarization:
+  enabled: true
+  fields:
+    - description
+    - longDescription
+  summaryTypes:
+    - executive: "2-3 sentences"
+    - detailed: "1 paragraph"
+    - brief: "1 sentence"
+  model: gpt-4
+  updateFrequency: on_change
+```
+
+### Classification
+
+Auto-classify:
+
+```yaml
+classification:
+  enabled: true
+  field: description
+  categories:
+    - type: "industry"
+      options: [Technology, Finance, Healthcare, Retail, Other]
+    - type: "segment"
+      options: [Enterprise, Mid-Market, SMB, Startup]
+  model: custom_classifier
+  confidenceThreshold: 0.8
+```
+
+### Entity Extraction
+
+Extract entities:
+
+```yaml
+entityExtraction:
+  enabled: true
+  fields:
+    - description
+    - notes
+  entityTypes:
+    - PERSON
+    - ORGANIZATION
+    - LOCATION
+    - PRODUCT
+  linkToGenesis: true
+  generateRelationships: true
+```
+
+### Sentiment Analysis
+
+Analyze sentiment:
+
+```yaml
+sentimentAnalysis:
+  enabled: true
+  fields:
+    - feedback
+    - reviews
+    - notes
+  scale: "negative/neutral/positive"
+  emotionDetection: true
+  updateFrequency: daily
+```
+
+### Auto-Tagging
+
+Generate tags:
+
+```yaml
+autoTagging:
+  enabled: true
+  fields:
+    - name
+    - description
+  tagCount: 5
+  confidenceThreshold: 0.7
+  userCanOverride: true
+  updateFrequency: on_change
+```
+
+### Recommendations
+
+Recommend items:
+
+```yaml
+recommendations:
+  enabled: true
+  relatedEntityType: Customer
+  algorithm: hybrid  # collaborative + content-based
+  
+  factors:
+    - similarity: 0.6
+    - popularity: 0.2
+    - recency: 0.2
+  
+  resultsPerRequest: 5
+  excludeViewed: true
+```
+
+### Anomaly Detection
+
+Detect anomalies:
+
+```yaml
+anomalyDetection:
+  enabled: true
+  
+  metrics:
+    - field: revenue
+      baseline: rolling_7day_average
+      threshold: "2 std dev"
+    - field: response_time
+      baseline: hourly_average
+      threshold: "> 500ms"
+  
+  alerting: true
+  alertChannel: email
+```
+
+---
+
+## Knowledge Integration
+
+Integrate external knowledge:
+
+```yaml
+knowledgeIntegration:
+  enabled: true
+  
+  sources:
+    - type: wikipedia
+      fields: [name, description]
+    - type: crunchbase
+      fields: [company_info]
+    - type: custom_api
+      fields: [industry_data]
+  
+  updateFrequency: weekly
+  mergingStrategy: enrich_preserve_original
+```
+
+### Knowledge Graph
+
+Build knowledge graphs:
+
+```yaml
+knowledgeGraph:
+  enabled: true
+  
+  relationships:
+    - type: SIMILAR_TO
+      algorithm: embedding_distance
+    - type: OWNED_BY
+      source: entity_field
+    - type: REFERENCED_BY
+      source: external_knowledge
+  
+  visualization: true
+```
+
+---
+
+## AI Context
+
+Provide context to AI models:
+
+```yaml
+aiContext:
+  enabled: true
+  
+  systemPrompt: |
+    You are an expert analyst for customer data.
+    Provide insights in business terms, not technical terms.
+    Focus on actionable recommendations.
+  
+  examples:
+    - input: "Customer A, revenue 1M, status Active"
+      output: "High-value customer, focus on retention"
+  
+  constraints:
+    - respectPII: true
+    - respectConfidential: true
+    - respectCompliance: true
+```
+
+---
+
+## AI Model Management
+
+```yaml
+aiModels:
+  openai:
+    enabled: true
+    apiKey: secret://openai-api-key
+    models:
+      - gpt-4
+      - gpt-3.5-turbo
+      - text-embedding-3-small
+  
+  huggingface:
+    enabled: true
+    models:
+      - bert-base-multilingual
+      - distilbert-base
+  
+  custom:
+    enabled: false
+    endpoint: https://internal-ai-api/
+```
+
+---
+
+## AI Governance
+
+Govern AI usage:
+
+```yaml
+aiGovernance:
+  enabled: true
+  
+  approval:
+    requiresApproval: true
+    approvers: [ai_ethics_board]
+  
+  transparency:
+    explainability: true
+    showConfidence: true
+    showModel: true
+  
+  fairness:
+    monitorBias: true
+    balancedDatasets: true
+  
+  privacy:
+    respectPII: true
+    dataRetention: 30_days
+    userConsent: required
+```
+
+---
+
+## AI Costs
+
+Track AI usage costs:
+
+```yaml
+aiCosts:
+  enabled: true
+  
+  tracking:
+    perFeature: true
+    perModel: true
+    perUser: true
+  
+  budgets:
+    - feature: embeddings
+      monthlyBudget: 1000
+    - feature: summarization
+      monthlyBudget: 500
+  
+  alerts:
+    - budgetUsed > 80%
+    - costPerRequest > threshold
+```
+
+---
+
+## Design Principles
+
+### 1. Transparency
+AI decisions are explainable.
+
+### 2. Governance
+AI usage is governed.
+
+### 3. Fairness
+AI is fair and unbiased.
+
+### 4. Privacy
+Respect user privacy.
+
+### 5. Efficiency
+Use AI cost-effectively.
+
+### 6. Safety
+Prevent harmful outcomes.
+
+---
+
+## Future Extensions
+
+AI model can be extended with:
+- Advanced NLP techniques
+- Computer vision capabilities
+- Reinforcement learning
+- Graph neural networks
+- Federated learning
+- Model fine-tuning
+
+---
+
+## Summary
+
+The AI Meta Model defines **intelligent capabilities** for Genesis entities.
+
+AI provides:
+- **Embeddings** - Semantic search
+- **Summarization** - Auto-generated summaries
+- **Classification** - Auto-classify data
+- **Entity Extraction** - Extract knowledge
+- **Recommendations** - Suggest related items
+- **Anomaly Detection** - Detect unusual patterns
+- **Knowledge Integration** - Integrate external knowledge
+- **Governance** - Responsible AI
+
+The AI Meta Model makes Genesis entities **intelligent and insightful**.

@@ -1,0 +1,329 @@
+# Genesis Meta Model: Relationship
+
+## Core Concept
+
+A Relationship defines how entities connect to each other.
+
+Every Relationship inherits these canonical properties.
+
+---
+
+## Universal Relationship Properties
+
+### Identity
+
+- **name** - Unique relationship name
+- **displayName** - Human display name
+- **description** - What does this relationship mean?
+
+### Relationship Type
+
+- **type** - Relationship cardinality (OneToOne, OneToMany, ManyToOne, ManyToMany)
+- **relationshipKind** - Association type (Composition, Aggregation, Inheritance, Dependency)
+
+### Entity References
+
+- **target** - Target entity name
+- **sourceEntity** - Source entity (implicit: current entity)
+- **targetEntity** - Target entity
+
+### Multiplicity
+
+- **sourceCardinality** - Source cardinality (1, 0..1, *, 1..*)
+- **targetCardinality** - Target cardinality (1, 0..1, *, 1..*)
+- **required** - Is relationship required?
+- **nullable** - Can relationship be null?
+
+### Directionality
+
+- **bidirectional** - Two-way relationship?
+- **inverse** - Inverse relationship name
+- **direction** - Forward or backward direction
+
+### Data Properties
+
+- **immutable** - Can relationship be changed?
+- **cascadeDelete** - Delete targets if source deleted?
+- **cascadeUpdate** - Update targets if source updated?
+- **cascadeArchive** - Archive targets if source archived?
+- **soft** - Soft reference (doesn't enforce referential integrity)?
+
+### Access Control
+
+- **viewableBy** - Who can view this relationship?
+- **manageable** - Can relationship be managed?
+- **manageableBy** - Who can manage?
+
+### Governance
+
+- **auditable** - Track relationship changes?
+- **versionable** - Version relationship changes?
+
+### Search & Filtering
+
+- **searchable** - Can be searched through?
+- **filterable** - Can be filtered by?
+- **facetable** - Can be used for faceted search?
+
+### AI Features
+
+- **aiVisible** - Visible to AI systems?
+- **aiSearchable** - Used in AI search?
+- **semanticSignificant** - Semantically important?
+
+---
+
+## Relationship Types
+
+### OneToOne
+```yaml
+relationships:
+  profile:
+    type: OneToOne
+    target: UserProfile
+    description: Each user has exactly one profile
+```
+
+### OneToMany
+```yaml
+relationships:
+  contacts:
+    type: OneToMany
+    target: Contact
+    description: Customer can have many contacts
+```
+
+### ManyToOne
+```yaml
+relationships:
+  organization:
+    type: ManyToOne
+    target: Organization
+    description: Many customers belong to one organization
+```
+
+### ManyToMany
+```yaml
+relationships:
+  teams:
+    type: ManyToMany
+    target: Team
+    description: Customers can be on multiple teams
+    junction: CustomerTeamMembership
+```
+
+---
+
+## Relationship Kinds
+
+### Composition
+Part of the whole. If parent deleted, child is deleted.
+```yaml
+relationships:
+  lines:
+    type: OneToMany
+    target: OrderLine
+    kind: Composition
+```
+
+### Aggregation
+Has-a relationship. Child can exist independently.
+```yaml
+relationships:
+  items:
+    type: OneToMany
+    target: Item
+    kind: Aggregation
+```
+
+### Inheritance
+Is-a relationship. Specialization hierarchy.
+```yaml
+relationships:
+  parent:
+    type: OneToOne
+    target: BaseEntity
+    kind: Inheritance
+```
+
+### Dependency
+Uses/depends on the target.
+```yaml
+relationships:
+  dependencies:
+    type: ManyToMany
+    target: Module
+    kind: Dependency
+```
+
+---
+
+## Cascading Behavior
+
+### Cascade Delete
+Target entities deleted when source deleted:
+```yaml
+cascadeDelete: true
+```
+
+### Cascade Update
+Target entities updated when source updated:
+```yaml
+cascadeUpdate: true
+```
+
+### Cascade Archive
+Target entities archived when source archived:
+```yaml
+cascadeArchive: true
+```
+
+### Cascade Nothing
+Target entities independent:
+```yaml
+cascadeDelete: false
+cascadeUpdate: false
+cascadeArchive: false
+```
+
+---
+
+## Bidirectional Relationships
+
+### Explicit Bidirectional
+```yaml
+relationships:
+  organization:
+    type: ManyToOne
+    target: Organization
+    bidirectional: true
+    inverse: employees
+    description: Employee belongs to Organization
+```
+
+Inverse (in Organization entity):
+```yaml
+relationships:
+  employees:
+    type: OneToMany
+    target: Employee
+    bidirectional: true
+    inverse: organization
+    description: Organization has many employees
+```
+
+---
+
+## Relationship Examples
+
+### Simple Reference
+```yaml
+relationships:
+  company:
+    type: ManyToOne
+    target: Company
+    required: true
+    immutable: true
+    auditable: true
+    displayName: "Company"
+```
+
+### Many-to-Many with Junction
+```yaml
+relationships:
+  projects:
+    type: ManyToMany
+    target: Project
+    junction: CustomerProjectAssignment
+    displayName: "Projects"
+```
+
+### Composition (Parent-Child)
+```yaml
+relationships:
+  items:
+    type: OneToMany
+    target: OrderItem
+    kind: Composition
+    cascadeDelete: true
+    auditable: true
+    displayName: "Line Items"
+```
+
+### Bidirectional Navigation
+```yaml
+relationships:
+  manager:
+    type: ManyToOne
+    target: Employee
+    bidirectional: true
+    inverse: subordinates
+    nullable: true
+    displayName: "Manager"
+```
+
+---
+
+## Relationship Graph
+
+Entities connected via relationships form a **Knowledge Graph**:
+
+```
+Customer
+  ├─ organization (ManyToOne) → Organization
+  │   └─ employees (OneToMany) → Employee
+  ├─ projects (ManyToMany) → Project
+  │   └─ tasks (OneToMany) → Task
+  ├─ contacts (OneToMany) → Contact
+  │   └─ addresses (OneToMany) → Address
+  └─ account (OneToOne) → Account
+```
+
+---
+
+## Design Principles
+
+### 1. Explicit Direction
+Relationships must have clear direction.
+
+### 2. Cardinality Clarity
+Multiplicity must be explicit.
+
+### 3. Cascading Intentional
+Cascading behavior must be deliberate.
+
+### 4. Bidirectionality Opt-In
+Inverse relationships are optional.
+
+### 5. Semantic Clarity
+Relationship names convey meaning.
+
+### 6. Governance Required
+Important relationships must be audited.
+
+---
+
+## Future Extensions
+
+The Relationship Meta Model can be extended with:
+- Temporal relationships (valid from/to)
+- Conditional relationships (if X then Y)
+- Weighted relationships (importance scoring)
+- Probabilistic relationships (confidence scores)
+- Dynamic relationships (computed on demand)
+- Recursive relationships (self-referential)
+
+---
+
+## Summary
+
+The Relationship Meta Model defines **universal properties** that every Genesis Relationship must support.
+
+Relationships enable:
+- **Entity Graphs** - Connected entities
+- **Navigation** - Traverse related data
+- **Composition** - Build complex objects
+- **Referential Integrity** - Maintain consistency
+- **Semantic Linking** - Meaning through connection
+
+The Relationship Meta Model makes Genesis entities **navigable and composable**.
