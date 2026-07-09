@@ -1,0 +1,434 @@
+[
+  {
+    "id": "pat-bf7ab338",
+    "name": "Pattern_operations_0",
+    "domain": "operations",
+    "patternType": "cyclical",
+    "description": "Recurring pattern identified in operations",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.7950973493067601,
+    "duration": "4h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 46,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-d43a4cd9",
+    "name": "Pattern_operations_1",
+    "domain": "operations",
+    "patternType": "sequential",
+    "description": "Recurring pattern identified in operations",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.7612259087623807,
+    "duration": "2h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 93,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-9e6c6453",
+    "name": "Pattern_manufacturing_0",
+    "domain": "manufacturing",
+    "patternType": "seasonal",
+    "description": "Recurring pattern identified in manufacturing",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.8885675158417072,
+    "duration": "5h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 1,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-36b87688",
+    "name": "Pattern_manufacturing_1",
+    "domain": "manufacturing",
+    "patternType": "cyclical",
+    "description": "Recurring pattern identified in manufacturing",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.7798302864425851,
+    "duration": "18h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 55,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-daced721",
+    "name": "Pattern_inventory_0",
+    "domain": "inventory",
+    "patternType": "seasonal",
+    "description": "Recurring pattern identified in inventory",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.9572843170013213,
+    "duration": "7h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 70,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-c8ee14e1",
+    "name": "Pattern_inventory_1",
+    "domain": "inventory",
+    "patternType": "recurring",
+    "description": "Recurring pattern identified in inventory",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.8035454126852807,
+    "duration": "20h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 65,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-e74ce208",
+    "name": "Pattern_purchasing_0",
+    "domain": "purchasing",
+    "patternType": "recurring",
+    "description": "Recurring pattern identified in purchasing",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.8678961813240845,
+    "duration": "2h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 57,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-bc453014",
+    "name": "Pattern_purchasing_1",
+    "domain": "purchasing",
+    "patternType": "cyclical",
+    "description": "Recurring pattern identified in purchasing",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.8141574304472602,
+    "duration": "9h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 11,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-fa48abb6",
+    "name": "Pattern_sales_0",
+    "domain": "sales",
+    "patternType": "cyclical",
+    "description": "Recurring pattern identified in sales",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.9085177359250174,
+    "duration": "13h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 0,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-291f17dd",
+    "name": "Pattern_sales_1",
+    "domain": "sales",
+    "patternType": "seasonal",
+    "description": "Recurring pattern identified in sales",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.7786413267453759,
+    "duration": "23h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 46,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-0c6db6e3",
+    "name": "Pattern_finance_0",
+    "domain": "finance",
+    "patternType": "sequential",
+    "description": "Recurring pattern identified in finance",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.884955865024391,
+    "duration": "9h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 37,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-4c97fda3",
+    "name": "Pattern_finance_1",
+    "domain": "finance",
+    "patternType": "recurring",
+    "description": "Recurring pattern identified in finance",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.9207300495127966,
+    "duration": "3h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 22,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-2c46ce95",
+    "name": "Pattern_customer_service_0",
+    "domain": "customer_service",
+    "patternType": "seasonal",
+    "description": "Recurring pattern identified in customer_service",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.8507789556495569,
+    "duration": "6h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 61,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-951e2a04",
+    "name": "Pattern_customer_service_1",
+    "domain": "customer_service",
+    "patternType": "cyclical",
+    "description": "Recurring pattern identified in customer_service",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.9013871537242426,
+    "duration": "9h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 68,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-6a85f9b8",
+    "name": "Pattern_ai_performance_0",
+    "domain": "ai_performance",
+    "patternType": "cyclical",
+    "description": "Recurring pattern identified in ai_performance",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.9944108365329758,
+    "duration": "17h",
+    "conditions": [
+      "condition_0_1",
+      "condition_0_2"
+    ],
+    "consequences": [
+      "consequence_0_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 67,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "pat-6196618f",
+    "name": "Pattern_ai_performance_1",
+    "domain": "ai_performance",
+    "patternType": "recurring",
+    "description": "Recurring pattern identified in ai_performance",
+    "observations": [
+      "obs-cf8af195",
+      "obs-a8275b98",
+      "obs-51c545b5"
+    ],
+    "frequency": 0.7520450026395982,
+    "duration": "0h",
+    "conditions": [
+      "condition_1_1",
+      "condition_1_2"
+    ],
+    "consequences": [
+      "consequence_1_1"
+    ],
+    "confidence": 0.75,
+    "occurrences": 13,
+    "firstSeen": "2026-07-08T23:36:57.823Z",
+    "lastSeen": "2026-07-08T23:36:57.823Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  }
+]

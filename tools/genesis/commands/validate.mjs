@@ -1,31 +1,41 @@
 /**
  * validate command
  *
- * Validates sandbox-generated entity slices.
+ * Validates generated entity slices or module manifests.
  *
  * Usage:
  *   node tools/genesis/genesis.mjs validate generated Customer
+ *   node tools/genesis/genesis.mjs validate modules
  *
  * Purpose:
- *   - Checks for all 9 required artifact files
- *   - Ensures generated slice structure is complete
- *   - Validates file existence only (no content validation)
- *   - Never modifies files or integrates into runtime
+ *   - Entity slices: Checks for required artifact files and completeness
+ *   - Module manifests: Validates manifest structure, schema, and consistency
  *
  * Output:
- *   - Validation report with per-file status
+ *   - Validation report with per-item status
  *   - Summary of checks passed/issues found
  *   - Exit code 0 (healthy) or 1 (issues)
  */
 
 import { validateGeneratedSlice } from "../validators/generated-slice/GeneratedSliceValidator.mjs";
+import { runValidateModulesCommand } from "./validateModules.mjs";
 
 export async function runValidateCommand(target, entityName) {
-  // Validate arguments
+  // Route to appropriate validator
+  if (target === 'modules') {
+    await runValidateModulesCommand();
+    return;
+  }
+
+  // Validate arguments for entity validation
   if (target !== "generated" && target !== "generated-slice") {
     console.error("Invalid validation target.");
-    console.error("Usage: node tools/genesis/genesis.mjs validate generated <EntityName>");
-    console.error("Example: node tools/genesis/genesis.mjs validate generated Customer");
+    console.error("Usage:");
+    console.error("  node tools/genesis/genesis.mjs validate generated <EntityName>");
+    console.error("  node tools/genesis/genesis.mjs validate modules");
+    console.error("Examples:");
+    console.error("  node tools/genesis/genesis.mjs validate generated Customer");
+    console.error("  node tools/genesis/genesis.mjs validate modules");
     process.exit(1);
   }
 

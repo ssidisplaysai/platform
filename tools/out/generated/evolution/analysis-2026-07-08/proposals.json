@@ -1,0 +1,1202 @@
+[
+  {
+    "id": "prop-bbd913108a5a",
+    "candidate": "cand-2a1f01ccff11",
+    "title": "Proposal: Improvement: workflow_redesign",
+    "description": "Address structural issues in workflow_redesign with expected improvements across efficiency, agility, and maintainability",
+    "impacts": [
+      {
+        "id": "imp-85f8d5193b45",
+        "category": "efficiency",
+        "description": "Efficiency improvement from candidate",
+        "value": 1.2387362105632571,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8363589225266015,
+        "metrics": [
+          "metric_gns4eojik"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-c79a9aafaf02",
+        "category": "agility",
+        "description": "Agility improvement from candidate",
+        "value": 1.25240812111138,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.9065444903380069,
+        "metrics": [
+          "metric_29ot2av9w"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-7724b9fdbaa2",
+        "category": "cost",
+        "description": "Cost improvement from candidate",
+        "value": 1.3329478746514785,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6199729173608852,
+        "metrics": [
+          "metric_245cp4dty"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-5ecd42bbe077",
+        "category": "quality",
+        "description": "Quality improvement from candidate",
+        "value": 1.016228176843903,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.747469055867869,
+        "metrics": [
+          "metric_vdzroy9gl"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-4d992eeedca5",
+        "category": "scalability",
+        "description": "Scalability improvement from candidate",
+        "value": 1.3469842660227018,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.7772167016158711,
+        "metrics": [
+          "metric_kotrx6wlu"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-104cc924831e",
+        "category": "maintainability",
+        "description": "Maintainability improvement from candidate",
+        "value": 1.310156879265684,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.639366865072628,
+        "metrics": [
+          "metric_76z6pqko9"
+        ],
+        "status": "validated"
+      }
+    ],
+    "confidence": {
+      "id": "conf-d45baa9b4962",
+      "score": 0.8990716800896044,
+      "reasoning": "Based on 6 data sources and 2 observations",
+      "evidenceQuality": "medium",
+      "historicalSuccess": 0.72,
+      "riskFactors": [
+        "User resistance to new process",
+        "Temporary productivity drop",
+        "Integration challenges"
+      ],
+      "successFactors": [
+        "Clear stakeholder alignment",
+        "Phased implementation approach",
+        "Strong change management"
+      ],
+      "assumptions": [
+        "Adequate resources available",
+        "Minimal business disruption tolerance",
+        "Executive sponsorship confirmed"
+      ],
+      "createdAt": "2026-07-08T17:21:36.934Z"
+    },
+    "priority": "medium",
+    "implementationPhases": [
+      {
+        "phase": 1,
+        "name": "Planning & Design",
+        "duration": "4 weeks",
+        "activities": [
+          "Detailed design",
+          "Stakeholder alignment",
+          "Resource planning"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Pilot Implementation",
+        "duration": "6 weeks",
+        "activities": [
+          "Build prototype",
+          "Pilot testing",
+          "Feedback collection"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Full Rollout",
+        "duration": "8 weeks",
+        "activities": [
+          "Production implementation",
+          "User training",
+          "Support setup"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Optimization",
+        "duration": "4 weeks",
+        "activities": [
+          "Performance tuning",
+          "Issue resolution",
+          "Knowledge transfer"
+        ]
+      }
+    ],
+    "requiredResources": [
+      {
+        "resource": "Business Analysts",
+        "count": 2,
+        "weeks": 16
+      },
+      {
+        "resource": "Architects",
+        "count": 1,
+        "weeks": 12
+      },
+      {
+        "resource": "Developers",
+        "count": 4,
+        "weeks": 20
+      },
+      {
+        "resource": "QA Engineers",
+        "count": 3,
+        "weeks": 18
+      },
+      {
+        "resource": "Project Manager",
+        "count": 1,
+        "weeks": 22
+      },
+      {
+        "resource": "Change Management",
+        "count": 1,
+        "weeks": 20
+      }
+    ],
+    "successCriteria": [
+      "All objectives met within 10% variance",
+      "Zero critical incidents during implementation",
+      "User adoption rate > 80%",
+      "ROI realized within 12 months"
+    ],
+    "rollbackPlan": "Maintain parallel systems for 30 days; automated fallback triggers on KPI deviations",
+    "stakeholders": [
+      "CTO",
+      "Process Owner",
+      "Finance Lead"
+    ],
+    "estimatedROI": 14.974615284584043,
+    "status": "proposed",
+    "approvalChain": [],
+    "createdAt": "2026-07-08T17:21:36.934Z"
+  },
+  {
+    "id": "prop-4ef150e29522",
+    "candidate": "cand-feb33ebeea16",
+    "title": "Proposal: Improvement: application_composition",
+    "description": "Address structural issues in application_composition with expected improvements across efficiency, agility, and maintainability",
+    "impacts": [
+      {
+        "id": "imp-5bee4813cdbf",
+        "category": "efficiency",
+        "description": "Efficiency improvement from candidate",
+        "value": 1.311528825117321,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.7338574670072632,
+        "metrics": [
+          "metric_pyywimfcs"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-e2457fffec32",
+        "category": "agility",
+        "description": "Agility improvement from candidate",
+        "value": 1.324474557780874,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8786185939642661,
+        "metrics": [
+          "metric_vce9ei1hj"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-d7a364d54161",
+        "category": "cost",
+        "description": "Cost improvement from candidate",
+        "value": 1.1063224162539007,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8115083888887056,
+        "metrics": [
+          "metric_e5gtfy9i4"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-7a16baf1c9fb",
+        "category": "quality",
+        "description": "Quality improvement from candidate",
+        "value": 1.2287703540367458,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6804342914359195,
+        "metrics": [
+          "metric_kxkgx48ws"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-e8d968d2033d",
+        "category": "scalability",
+        "description": "Scalability improvement from candidate",
+        "value": 1.1954481119019724,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.936697664645985,
+        "metrics": [
+          "metric_22de04u5m"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-049eaa6364e0",
+        "category": "maintainability",
+        "description": "Maintainability improvement from candidate",
+        "value": 1.155570130065293,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.7148788880671049,
+        "metrics": [
+          "metric_c1v8onh5i"
+        ],
+        "status": "validated"
+      }
+    ],
+    "confidence": {
+      "id": "conf-d58a6819429a",
+      "score": 0.8333138588971117,
+      "reasoning": "Based on 6 data sources and 2 observations",
+      "evidenceQuality": "medium",
+      "historicalSuccess": 0.72,
+      "riskFactors": [
+        "Component mismatch risk",
+        "Performance degradation",
+        "Maintenance complexity"
+      ],
+      "successFactors": [
+        "Clear stakeholder alignment",
+        "Phased implementation approach",
+        "Strong change management"
+      ],
+      "assumptions": [
+        "Adequate resources available",
+        "Minimal business disruption tolerance",
+        "Executive sponsorship confirmed"
+      ],
+      "createdAt": "2026-07-08T17:21:36.934Z"
+    },
+    "priority": "medium",
+    "implementationPhases": [
+      {
+        "phase": 1,
+        "name": "Planning & Design",
+        "duration": "4 weeks",
+        "activities": [
+          "Detailed design",
+          "Stakeholder alignment",
+          "Resource planning"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Pilot Implementation",
+        "duration": "6 weeks",
+        "activities": [
+          "Build prototype",
+          "Pilot testing",
+          "Feedback collection"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Full Rollout",
+        "duration": "8 weeks",
+        "activities": [
+          "Production implementation",
+          "User training",
+          "Support setup"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Optimization",
+        "duration": "4 weeks",
+        "activities": [
+          "Performance tuning",
+          "Issue resolution",
+          "Knowledge transfer"
+        ]
+      }
+    ],
+    "requiredResources": [
+      {
+        "resource": "Business Analysts",
+        "count": 2,
+        "weeks": 16
+      },
+      {
+        "resource": "Architects",
+        "count": 1,
+        "weeks": 12
+      },
+      {
+        "resource": "Developers",
+        "count": 4,
+        "weeks": 20
+      },
+      {
+        "resource": "QA Engineers",
+        "count": 3,
+        "weeks": 18
+      },
+      {
+        "resource": "Project Manager",
+        "count": 1,
+        "weeks": 22
+      },
+      {
+        "resource": "Change Management",
+        "count": 1,
+        "weeks": 20
+      }
+    ],
+    "successCriteria": [
+      "All objectives met within 10% variance",
+      "Zero critical incidents during implementation",
+      "User adoption rate > 80%",
+      "ROI realized within 12 months"
+    ],
+    "rollbackPlan": "Maintain parallel systems for 30 days; automated fallback triggers on KPI deviations",
+    "stakeholders": [
+      "CTO",
+      "Process Owner",
+      "Finance Lead"
+    ],
+    "estimatedROI": 13.22114395156107,
+    "status": "proposed",
+    "approvalChain": [],
+    "createdAt": "2026-07-08T17:21:36.934Z"
+  },
+  {
+    "id": "prop-c6f9e4187cd3",
+    "candidate": "cand-d953b79d22dc",
+    "title": "Proposal: Improvement: automation_opportunities",
+    "description": "Address structural issues in automation_opportunities with expected improvements across efficiency, agility, and maintainability",
+    "impacts": [
+      {
+        "id": "imp-2c74d96e9572",
+        "category": "efficiency",
+        "description": "Efficiency improvement from candidate",
+        "value": 1.156632941746286,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.9357140553106227,
+        "metrics": [
+          "metric_167eekwcb"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-9c26a5647d18",
+        "category": "agility",
+        "description": "Agility improvement from candidate",
+        "value": 1.0310214426356878,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6455721064916582,
+        "metrics": [
+          "metric_ka51cblz1"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-4de5d6ef75c6",
+        "category": "cost",
+        "description": "Cost improvement from candidate",
+        "value": 1.0233294180126133,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.945461490347713,
+        "metrics": [
+          "metric_8h4odpxot"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-42461f9b343b",
+        "category": "quality",
+        "description": "Quality improvement from candidate",
+        "value": 1.315276497907646,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8500698683202353,
+        "metrics": [
+          "metric_pegr2u0d7"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-8d22d39a590a",
+        "category": "scalability",
+        "description": "Scalability improvement from candidate",
+        "value": 1.300544047057569,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6439137767081191,
+        "metrics": [
+          "metric_88wnqyg9y"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-3765aa8009fa",
+        "category": "maintainability",
+        "description": "Maintainability improvement from candidate",
+        "value": 1.1118348065827823,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6114226324113442,
+        "metrics": [
+          "metric_3llxwjh2o"
+        ],
+        "status": "validated"
+      }
+    ],
+    "confidence": {
+      "id": "conf-a6f700c9a5b5",
+      "score": 0.8738361709444858,
+      "reasoning": "Based on 6 data sources and 2 observations",
+      "evidenceQuality": "medium",
+      "historicalSuccess": 0.72,
+      "riskFactors": [
+        "RPA rule brittleness",
+        "Edge case failures",
+        "Maintenance burden"
+      ],
+      "successFactors": [
+        "Clear stakeholder alignment",
+        "Phased implementation approach",
+        "Strong change management"
+      ],
+      "assumptions": [
+        "Adequate resources available",
+        "Minimal business disruption tolerance",
+        "Executive sponsorship confirmed"
+      ],
+      "createdAt": "2026-07-08T17:21:36.934Z"
+    },
+    "priority": "medium",
+    "implementationPhases": [
+      {
+        "phase": 1,
+        "name": "Planning & Design",
+        "duration": "4 weeks",
+        "activities": [
+          "Detailed design",
+          "Stakeholder alignment",
+          "Resource planning"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Pilot Implementation",
+        "duration": "6 weeks",
+        "activities": [
+          "Build prototype",
+          "Pilot testing",
+          "Feedback collection"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Full Rollout",
+        "duration": "8 weeks",
+        "activities": [
+          "Production implementation",
+          "User training",
+          "Support setup"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Optimization",
+        "duration": "4 weeks",
+        "activities": [
+          "Performance tuning",
+          "Issue resolution",
+          "Knowledge transfer"
+        ]
+      }
+    ],
+    "requiredResources": [
+      {
+        "resource": "Business Analysts",
+        "count": 2,
+        "weeks": 16
+      },
+      {
+        "resource": "Architects",
+        "count": 1,
+        "weeks": 12
+      },
+      {
+        "resource": "Developers",
+        "count": 4,
+        "weeks": 20
+      },
+      {
+        "resource": "QA Engineers",
+        "count": 3,
+        "weeks": 18
+      },
+      {
+        "resource": "Project Manager",
+        "count": 1,
+        "weeks": 22
+      },
+      {
+        "resource": "Change Management",
+        "count": 1,
+        "weeks": 20
+      }
+    ],
+    "successCriteria": [
+      "All objectives met within 10% variance",
+      "Zero critical incidents during implementation",
+      "User adoption rate > 80%",
+      "ROI realized within 12 months"
+    ],
+    "rollbackPlan": "Maintain parallel systems for 30 days; automated fallback triggers on KPI deviations",
+    "stakeholders": [
+      "CTO",
+      "Process Owner",
+      "Finance Lead"
+    ],
+    "estimatedROI": 9.386391539425844,
+    "status": "proposed",
+    "approvalChain": [],
+    "createdAt": "2026-07-08T17:21:36.934Z"
+  },
+  {
+    "id": "prop-2748725d871c",
+    "candidate": "cand-0c4933daeba0",
+    "title": "Proposal: Improvement: process_simplification",
+    "description": "Address structural issues in process_simplification with expected improvements across efficiency, agility, and maintainability",
+    "impacts": [
+      {
+        "id": "imp-f39cdf65b214",
+        "category": "efficiency",
+        "description": "Efficiency improvement from candidate",
+        "value": 1.2809573186187204,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.780844670811502,
+        "metrics": [
+          "metric_fe4nexvhx"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-18fd9323f361",
+        "category": "agility",
+        "description": "Agility improvement from candidate",
+        "value": 1.0728549660966336,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8093844549666956,
+        "metrics": [
+          "metric_yxr3k3yyi"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-99e68b3809b3",
+        "category": "cost",
+        "description": "Cost improvement from candidate",
+        "value": 1.2182742295926565,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.9083101908764237,
+        "metrics": [
+          "metric_40lwnljuh"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-b301260d62be",
+        "category": "quality",
+        "description": "Quality improvement from candidate",
+        "value": 1.0339572982968015,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8021776744524111,
+        "metrics": [
+          "metric_gw83uliju"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-d64879870d1a",
+        "category": "scalability",
+        "description": "Scalability improvement from candidate",
+        "value": 1.0827082031898314,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6300320758422563,
+        "metrics": [
+          "metric_d56hjvuf0"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-d28ead6e4cf3",
+        "category": "maintainability",
+        "description": "Maintainability improvement from candidate",
+        "value": 1.2384602684622588,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.7609571020722338,
+        "metrics": [
+          "metric_n9fizv0lp"
+        ],
+        "status": "validated"
+      }
+    ],
+    "confidence": {
+      "id": "conf-87dd3bd54d11",
+      "score": 0.7728251404892689,
+      "reasoning": "Based on 6 data sources and 2 observations",
+      "evidenceQuality": "medium",
+      "historicalSuccess": 0.72,
+      "riskFactors": [
+        "Loss of flexibility",
+        "Unintended consequences",
+        "Rollback complexity"
+      ],
+      "successFactors": [
+        "Clear stakeholder alignment",
+        "Phased implementation approach",
+        "Strong change management"
+      ],
+      "assumptions": [
+        "Adequate resources available",
+        "Minimal business disruption tolerance",
+        "Executive sponsorship confirmed"
+      ],
+      "createdAt": "2026-07-08T17:21:36.935Z"
+    },
+    "priority": "medium",
+    "implementationPhases": [
+      {
+        "phase": 1,
+        "name": "Planning & Design",
+        "duration": "4 weeks",
+        "activities": [
+          "Detailed design",
+          "Stakeholder alignment",
+          "Resource planning"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Pilot Implementation",
+        "duration": "6 weeks",
+        "activities": [
+          "Build prototype",
+          "Pilot testing",
+          "Feedback collection"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Full Rollout",
+        "duration": "8 weeks",
+        "activities": [
+          "Production implementation",
+          "User training",
+          "Support setup"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Optimization",
+        "duration": "4 weeks",
+        "activities": [
+          "Performance tuning",
+          "Issue resolution",
+          "Knowledge transfer"
+        ]
+      }
+    ],
+    "requiredResources": [
+      {
+        "resource": "Business Analysts",
+        "count": 2,
+        "weeks": 16
+      },
+      {
+        "resource": "Architects",
+        "count": 1,
+        "weeks": 12
+      },
+      {
+        "resource": "Developers",
+        "count": 4,
+        "weeks": 20
+      },
+      {
+        "resource": "QA Engineers",
+        "count": 3,
+        "weeks": 18
+      },
+      {
+        "resource": "Project Manager",
+        "count": 1,
+        "weeks": 22
+      },
+      {
+        "resource": "Change Management",
+        "count": 1,
+        "weeks": 20
+      }
+    ],
+    "successCriteria": [
+      "All objectives met within 10% variance",
+      "Zero critical incidents during implementation",
+      "User adoption rate > 80%",
+      "ROI realized within 12 months"
+    ],
+    "rollbackPlan": "Maintain parallel systems for 30 days; automated fallback triggers on KPI deviations",
+    "stakeholders": [
+      "CTO",
+      "Process Owner",
+      "Finance Lead"
+    ],
+    "estimatedROI": 9.272122842569022,
+    "status": "proposed",
+    "approvalChain": [],
+    "createdAt": "2026-07-08T17:21:36.935Z"
+  },
+  {
+    "id": "prop-aada8961f67c",
+    "candidate": "cand-6666c105a06f",
+    "title": "Proposal: Improvement: approval_chains",
+    "description": "Address structural issues in approval_chains with expected improvements across efficiency, agility, and maintainability",
+    "impacts": [
+      {
+        "id": "imp-ffc13affa538",
+        "category": "efficiency",
+        "description": "Efficiency improvement from candidate",
+        "value": 1.0404477231261815,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.7116126102040718,
+        "metrics": [
+          "metric_uh3m6fuiy"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-6ae3ca6a9732",
+        "category": "agility",
+        "description": "Agility improvement from candidate",
+        "value": 1.290932241480592,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6714262100366537,
+        "metrics": [
+          "metric_km3a83tgf"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-8ef36abc6804",
+        "category": "cost",
+        "description": "Cost improvement from candidate",
+        "value": 1.2625664818702127,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8722118204134834,
+        "metrics": [
+          "metric_vqydgwyc6"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-0b538814dc1b",
+        "category": "quality",
+        "description": "Quality improvement from candidate",
+        "value": 1.0066866990086842,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8305020339795364,
+        "metrics": [
+          "metric_tneqd09pi"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-5a9e454e1b93",
+        "category": "scalability",
+        "description": "Scalability improvement from candidate",
+        "value": 1.0084996724331408,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.6619508494676823,
+        "metrics": [
+          "metric_etl60fvyi"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-38c01ee11569",
+        "category": "maintainability",
+        "description": "Maintainability improvement from candidate",
+        "value": 1.0608501664600758,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.7826739386508962,
+        "metrics": [
+          "metric_99c411u47"
+        ],
+        "status": "validated"
+      }
+    ],
+    "confidence": {
+      "id": "conf-c802ac22717b",
+      "score": 0.9026654008434076,
+      "reasoning": "Based on 6 data sources and 2 observations",
+      "evidenceQuality": "medium",
+      "historicalSuccess": 0.72,
+      "riskFactors": [
+        "Approval delays during transition",
+        "Escalation path confusion",
+        "System downtime risk"
+      ],
+      "successFactors": [
+        "Clear stakeholder alignment",
+        "Phased implementation approach",
+        "Strong change management"
+      ],
+      "assumptions": [
+        "Adequate resources available",
+        "Minimal business disruption tolerance",
+        "Executive sponsorship confirmed"
+      ],
+      "createdAt": "2026-07-08T17:21:36.934Z"
+    },
+    "priority": "medium",
+    "implementationPhases": [
+      {
+        "phase": 1,
+        "name": "Planning & Design",
+        "duration": "4 weeks",
+        "activities": [
+          "Detailed design",
+          "Stakeholder alignment",
+          "Resource planning"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Pilot Implementation",
+        "duration": "6 weeks",
+        "activities": [
+          "Build prototype",
+          "Pilot testing",
+          "Feedback collection"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Full Rollout",
+        "duration": "8 weeks",
+        "activities": [
+          "Production implementation",
+          "User training",
+          "Support setup"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Optimization",
+        "duration": "4 weeks",
+        "activities": [
+          "Performance tuning",
+          "Issue resolution",
+          "Knowledge transfer"
+        ]
+      }
+    ],
+    "requiredResources": [
+      {
+        "resource": "Business Analysts",
+        "count": 2,
+        "weeks": 16
+      },
+      {
+        "resource": "Architects",
+        "count": 1,
+        "weeks": 12
+      },
+      {
+        "resource": "Developers",
+        "count": 4,
+        "weeks": 20
+      },
+      {
+        "resource": "QA Engineers",
+        "count": 3,
+        "weeks": 18
+      },
+      {
+        "resource": "Project Manager",
+        "count": 1,
+        "weeks": 22
+      },
+      {
+        "resource": "Change Management",
+        "count": 1,
+        "weeks": 20
+      }
+    ],
+    "successCriteria": [
+      "All objectives met within 10% variance",
+      "Zero critical incidents during implementation",
+      "User adoption rate > 80%",
+      "ROI realized within 12 months"
+    ],
+    "rollbackPlan": "Maintain parallel systems for 30 days; automated fallback triggers on KPI deviations",
+    "stakeholders": [
+      "CTO",
+      "Process Owner",
+      "Finance Lead"
+    ],
+    "estimatedROI": 6.699829843788868,
+    "status": "proposed",
+    "approvalChain": [],
+    "createdAt": "2026-07-08T17:21:36.934Z"
+  },
+  {
+    "id": "prop-d084a884fc93",
+    "candidate": "cand-f8463998bc1e",
+    "title": "Proposal: Improvement: ai_delegation",
+    "description": "Address structural issues in ai_delegation with expected improvements across efficiency, agility, and maintainability",
+    "impacts": [
+      {
+        "id": "imp-18d3e3d0634b",
+        "category": "efficiency",
+        "description": "Efficiency improvement from candidate",
+        "value": 1.315656192036449,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.645711930374064,
+        "metrics": [
+          "metric_tj3zsowxn"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-b79ffca07f93",
+        "category": "agility",
+        "description": "Agility improvement from candidate",
+        "value": 1.1231158713409661,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.8199070762420068,
+        "metrics": [
+          "metric_xgqu114z2"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-3d756d0ee13c",
+        "category": "cost",
+        "description": "Cost improvement from candidate",
+        "value": 1.044372987685116,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.874310643325551,
+        "metrics": [
+          "metric_fy49iwtlr"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-af5198667e57",
+        "category": "quality",
+        "description": "Quality improvement from candidate",
+        "value": 1.0187323506750021,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.7338227021618828,
+        "metrics": [
+          "metric_bjppb58pg"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-c1da38b00fd5",
+        "category": "scalability",
+        "description": "Scalability improvement from candidate",
+        "value": 1.132847137839759,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.684283723822386,
+        "metrics": [
+          "metric_b94w0arjm"
+        ],
+        "status": "validated"
+      },
+      {
+        "id": "imp-be5006eba97d",
+        "category": "maintainability",
+        "description": "Maintainability improvement from candidate",
+        "value": 1.0212376098891376,
+        "unit": "%",
+        "timeframe": "6months",
+        "confidence": 0.9403360043565898,
+        "metrics": [
+          "metric_gmdukrqh0"
+        ],
+        "status": "validated"
+      }
+    ],
+    "confidence": {
+      "id": "conf-98fc2bd40357",
+      "score": 0.824495514385043,
+      "reasoning": "Based on 6 data sources and 2 observations",
+      "evidenceQuality": "medium",
+      "historicalSuccess": 0.72,
+      "riskFactors": [
+        "Model accuracy variance",
+        "Explainability challenges",
+        "Adoption resistance"
+      ],
+      "successFactors": [
+        "Clear stakeholder alignment",
+        "Phased implementation approach",
+        "Strong change management"
+      ],
+      "assumptions": [
+        "Adequate resources available",
+        "Minimal business disruption tolerance",
+        "Executive sponsorship confirmed"
+      ],
+      "createdAt": "2026-07-08T17:21:36.934Z"
+    },
+    "priority": "medium",
+    "implementationPhases": [
+      {
+        "phase": 1,
+        "name": "Planning & Design",
+        "duration": "4 weeks",
+        "activities": [
+          "Detailed design",
+          "Stakeholder alignment",
+          "Resource planning"
+        ]
+      },
+      {
+        "phase": 2,
+        "name": "Pilot Implementation",
+        "duration": "6 weeks",
+        "activities": [
+          "Build prototype",
+          "Pilot testing",
+          "Feedback collection"
+        ]
+      },
+      {
+        "phase": 3,
+        "name": "Full Rollout",
+        "duration": "8 weeks",
+        "activities": [
+          "Production implementation",
+          "User training",
+          "Support setup"
+        ]
+      },
+      {
+        "phase": 4,
+        "name": "Optimization",
+        "duration": "4 weeks",
+        "activities": [
+          "Performance tuning",
+          "Issue resolution",
+          "Knowledge transfer"
+        ]
+      }
+    ],
+    "requiredResources": [
+      {
+        "resource": "Business Analysts",
+        "count": 2,
+        "weeks": 16
+      },
+      {
+        "resource": "Architects",
+        "count": 1,
+        "weeks": 12
+      },
+      {
+        "resource": "Developers",
+        "count": 4,
+        "weeks": 20
+      },
+      {
+        "resource": "QA Engineers",
+        "count": 3,
+        "weeks": 18
+      },
+      {
+        "resource": "Project Manager",
+        "count": 1,
+        "weeks": 22
+      },
+      {
+        "resource": "Change Management",
+        "count": 1,
+        "weeks": 20
+      }
+    ],
+    "successCriteria": [
+      "All objectives met within 10% variance",
+      "Zero critical incidents during implementation",
+      "User adoption rate > 80%",
+      "ROI realized within 12 months"
+    ],
+    "rollbackPlan": "Maintain parallel systems for 30 days; automated fallback triggers on KPI deviations",
+    "stakeholders": [
+      "CTO",
+      "Process Owner",
+      "Finance Lead"
+    ],
+    "estimatedROI": 6.559621494664299,
+    "status": "proposed",
+    "approvalChain": [],
+    "createdAt": "2026-07-08T17:21:36.934Z"
+  }
+]

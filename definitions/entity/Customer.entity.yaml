@@ -44,20 +44,17 @@ fields:
     autoUpdate: true
 
 relationships:
-  contacts:
-    type: hasMany
-    target: Contact
-    description: Customer contact records
-  
   projects:
-    type: hasMany
+    type: OneToMany
     target: Project
     description: Projects associated with this customer
-  
+    lazyLoad: true
+
   organization:
-    type: belongsTo
+    type: ManyToOne
     target: Organization
     description: Organization this customer belongs to
+    lazyLoad: true
 
 capabilities:
   search:

@@ -1,0 +1,14 @@
+{
+  "id": "result-551cc266",
+  "status": "success",
+  "timestamp": "2026-07-08T23:36:57.824Z",
+  "metrics": {
+    "observationsCaptured": 64,
+    "signalsDetected": 24,
+    "metricsCollected": 48,
+    "patternsIdentified": 16,
+    "hypothesesGenerated": 16,
+    "insightsCreated": 16,
+    "recommendationsGenerated": 5
+  }
+}

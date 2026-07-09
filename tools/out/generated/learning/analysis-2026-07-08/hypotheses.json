@@ -1,0 +1,482 @@
+[
+  {
+    "id": "hyp-5c4444af",
+    "statement": "In operations, when X occurs, Y typically follows because Z",
+    "domain": "operations",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8906791179797875,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-b4edbb4a",
+    "statement": "In operations, when X occurs, Y typically follows because Z",
+    "domain": "operations",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.7057439522043766,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-de0a5d9b",
+    "statement": "In manufacturing, when X occurs, Y typically follows because Z",
+    "domain": "manufacturing",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.7094439982776581,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-0814a372",
+    "statement": "In manufacturing, when X occurs, Y typically follows because Z",
+    "domain": "manufacturing",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.867941805509179,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-e69230c0",
+    "statement": "In inventory, when X occurs, Y typically follows because Z",
+    "domain": "inventory",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8880266705809068,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-b61684ec",
+    "statement": "In inventory, when X occurs, Y typically follows because Z",
+    "domain": "inventory",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.7667139160677778,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-1c76528f",
+    "statement": "In purchasing, when X occurs, Y typically follows because Z",
+    "domain": "purchasing",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.7707463502208153,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-3b061e6a",
+    "statement": "In purchasing, when X occurs, Y typically follows because Z",
+    "domain": "purchasing",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.7710480530848035,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-dbe8343b",
+    "statement": "In sales, when X occurs, Y typically follows because Z",
+    "domain": "sales",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8125353709287884,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-607b577c",
+    "statement": "In sales, when X occurs, Y typically follows because Z",
+    "domain": "sales",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8279989578922226,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-9ba0a917",
+    "statement": "In finance, when X occurs, Y typically follows because Z",
+    "domain": "finance",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8387667777257394,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-6251c494",
+    "statement": "In finance, when X occurs, Y typically follows because Z",
+    "domain": "finance",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8442667643426709,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-b91facd8",
+    "statement": "In customer_service, when X occurs, Y typically follows because Z",
+    "domain": "customer_service",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8959138143761279,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-6aa71394",
+    "statement": "In customer_service, when X occurs, Y typically follows because Z",
+    "domain": "customer_service",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.7127785282410416,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-7c8de946",
+    "statement": "In ai_performance, when X occurs, Y typically follows because Z",
+    "domain": "ai_performance",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.8456319169107056,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "hyp-e52dad42",
+    "statement": "In ai_performance, when X occurs, Y typically follows because Z",
+    "domain": "ai_performance",
+    "causation": [
+      {
+        "cause": "condition_1",
+        "effect": "outcome_1",
+        "strength": 0.8
+      },
+      {
+        "cause": "condition_2",
+        "effect": "outcome_2",
+        "strength": 0.7
+      }
+    ],
+    "correlations": [
+      "throughput",
+      "latency"
+    ],
+    "confidence": 0.7203347370221114,
+    "evidenceFor": [
+      "obs-cf8af195",
+      "obs-a8275b98"
+    ],
+    "evidenceAgainst": [],
+    "testable": true,
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  }
+]

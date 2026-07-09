@@ -1,114 +1,112 @@
 /**
  * compile command
  *
- * Compiles a generation plan for an entity definition.
+ * Compiles and generates entity code, module manifests, applications, or solutions.
+ * Routes to CodeGenerationEngine for entities, ModuleCompiler for modules,
+ * ApplicationCompiler for applications, or SolutionCompiler for solutions.
  *
  * Usage:
  *   node tools/genesis/genesis.mjs compile Customer
  *   node tools/genesis/genesis.mjs compile Customer --write
+ *   node tools/genesis/genesis.mjs compile modules
+ *   node tools/genesis/genesis.mjs compile application CRM
+ *   node tools/genesis/genesis.mjs compile solution SSI
  *
  * Modes:
- *   - dry-run (default): Plans artifacts without writing
- *   - write (--write): Writes placeholder artifacts to file system
+ *   - entity: Generates entity artifacts to out/ directory (CodeGenerationEngine)
+ *   - modules: Generates module manifests to out/generated/modules/ (ModuleCompiler)
+ *   - application: Compiles modules into deployable application (ApplicationCompiler)
+ *   - solution: Compiles applications into enterprise solution (SolutionCompiler)
  *
  * Output:
- *   - Plan summary
- *   - Compilation mode
- *   - Artifacts planned or written
- *   - Result summary
+ *   - Entity: Generated entity artifacts with validators from blueprint
+ *   - Modules: Generated module manifests and registry summary
+ *   - Application: Application manifest, blueprint, navigation, dashboards, API surface
+ *   - Solution: Solution manifest, navigation, API/AI catalogs, branding
  */
 
-import { resolveDefinitionName } from "../compiler/registry/DefinitionResolver.mjs";
-import { createGenerationContext } from "../compiler/planner/GenerationContext.mjs";
-import { planEntity } from "../compiler/planner/GenerationPlanner.mjs";
-import { createCompilationContext } from "../compiler/compiler/CompilationContext.mjs";
-import { compilePlan } from "../compiler/compiler/GenerationCompiler.mjs";
-import { writeArtifacts } from "../compiler/writers/ArtifactWriter.mjs";
+import { generate } from "../compiler/CodeGenerationEngine.mjs";
+import { runCompileModulesCommand } from "./compileModules.mjs";
+import { ApplicationCompiler } from "../compiler/ApplicationCompiler.mjs";
+import { SolutionCompiler } from "../compiler/SolutionCompiler.mjs";
 
 export async function runCompileCommand(target, options = []) {
   if (!target) {
-    console.error("Missing entity name.");
-    console.error("Usage: node tools/genesis/genesis.mjs compile <EntityName> [--write]");
-    console.error("Example: node tools/genesis/genesis.mjs compile Customer");
-    console.error("Example: node tools/genesis/genesis.mjs compile Customer --write");
+    console.error("Missing target.");
+    console.error("Usage: node tools/genesis/genesis.mjs compile <EntityName|modules|application|solution>");
+    console.error("Examples:");
+    console.error("  node tools/genesis/genesis.mjs compile Customer");
+    console.error("  node tools/genesis/genesis.mjs compile modules");
+    console.error("  node tools/genesis/genesis.mjs compile application CRM");
+    console.error("  node tools/genesis/genesis.mjs compile solution SSI");
     process.exit(1);
   }
 
   try {
-    // Parse options
-    const writeMode = options.includes("--write");
-    const compilationMode = writeMode ? "write" : "dry-run";
-
-    // Resolve the definition name to canonical form
-    const entityName = resolveDefinitionName(target);
-
-    // Create a lightweight definition for planning
-    const definition = {
-      name: entityName,
-      type: "entity",
-    };
-
-    // Create generation context (planning phase)
-    const generationContext = createGenerationContext({
-      rootDir: process.cwd(),
-      definition: definition,
-    });
-
-    // Create the generation plan (Phase 2)
-    const plan = planEntity(generationContext);
-
-    // Create compilation context (execution phase)
-    const compilationContext = createCompilationContext({
-      rootDir: process.cwd(),
-      plan: plan,
-      mode: compilationMode,
-    });
-
-    // Compile the plan (Phase 3/4)
-    const compilationResult = compilePlan(compilationContext);
-
-    // If write mode, write artifacts
-    let writeResult = null;
-    if (writeMode) {
-      writeResult = writeArtifacts({
-        rootDir: process.cwd(),
-        artifacts: compilationResult.artifacts,
-        mode: "write",
-        force: false,
-      });
-    }
-
-    // Print compilation results
-    console.log("Genesis Compiler v0.1\n");
-    console.log("Compiling Entity\n");
-    console.log(plan.subject + "\n");
-
-    console.log("Mode");
-    console.log(compilationMode + "\n");
-
-    // Print artifacts
-    for (const artifact of compilationResult.artifacts) {
-      const status = writeResult
-        ? (writeResult.artifacts.find(a => a.id === artifact.id)?.status || artifact.status)
-        : artifact.status;
-      console.log(`✓ ${artifact.name} ${status}`);
-    }
-
-    console.log("\nCompilation Complete\n");
-
-    if (writeResult) {
-      console.log(`${writeResult.written} Artifacts Written`);
-      if (writeResult.skipped > 0) {
-        console.log(`${writeResult.skipped} Artifacts Skipped`);
+    if (target === 'modules') {
+      // Compile all modules
+      await runCompileModulesCommand(options);
+    } else if (target === 'application') {
+      // Compile application from modules
+      const [applicationName] = options;
+      if (!applicationName) {
+        console.error("Missing application name.");
+        console.error("Usage: node tools/genesis/genesis.mjs compile application <AppName>");
+        console.error("Example: node tools/genesis/genesis.mjs compile application CRM");
+        process.exit(1);
+      }
+      
+      const compiler = new ApplicationCompiler(applicationName);
+      const success = await compiler.compile();
+      
+      if (!success) {
+        console.error("\n✗ Application compilation failed");
+        if (compiler.errors.length > 0) {
+          console.error("\nErrors:");
+          compiler.errors.forEach(err => console.error(`  • ${err}`));
+        }
+        process.exit(1);
+      }
+      
+      if (compiler.warnings.length > 0) {
+        console.warn("\nWarnings:");
+        compiler.warnings.forEach(warn => console.warn(`  ⚠️  ${warn}`));
+      }
+    } else if (target === 'solution') {
+      // Compile solution from applications
+      const [solutionName] = options;
+      if (!solutionName) {
+        console.error("Missing solution name.");
+        console.error("Usage: node tools/genesis/genesis.mjs compile solution <SolutionName>");
+        console.error("Example: node tools/genesis/genesis.mjs compile solution SSI");
+        process.exit(1);
+      }
+      
+      const compiler = new SolutionCompiler(solutionName);
+      const success = await compiler.compile();
+      
+      if (!success) {
+        console.error("\n✗ Solution compilation failed");
+        if (compiler.errors.length > 0) {
+          console.error("\nErrors:");
+          compiler.errors.forEach(err => console.error(`  • ${err}`));
+        }
+        process.exit(1);
+      }
+      
+      if (compiler.warnings.length > 0) {
+        console.warn("\nWarnings:");
+        compiler.warnings.forEach(warn => console.warn(`  ⚠️  ${warn}`));
       }
     } else {
-      console.log(`${compilationResult.artifacts.length} Artifacts Planned\n`);
-      console.log("No files written.");
+      // Compile single entity
+      await generate({ entity: target });
     }
-
   } catch (error) {
-    console.error("Compile command failed.");
-    console.error(error.message);
+    console.error(`Compilation failed: ${error.message}`);
+    if (error.stack) {
+      console.error(error.stack);
+    }
     process.exit(1);
   }
 }

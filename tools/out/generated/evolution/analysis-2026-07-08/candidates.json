@@ -1,0 +1,199 @@
+[
+  {
+    "id": "cand-2a1f01ccff11",
+    "type": "workflow_redesign",
+    "name": "Improvement: workflow_redesign",
+    "description": "Address structural issues in workflow_redesign",
+    "observations": [
+      "obs-09d73e431672",
+      "obs-5e7ab1f152ea"
+    ],
+    "affectedEntities": [
+      "WorkflowDefinition",
+      "WorkflowStep",
+      "WorkflowTransition"
+    ],
+    "estimatedComplexity": "medium",
+    "timelineWeeks": 10,
+    "prerequisites": [
+      "Process analysis complete",
+      "Stakeholder agreement",
+      "New workflow defined"
+    ],
+    "risks": [
+      "User resistance to new process",
+      "Temporary productivity drop",
+      "Integration challenges"
+    ],
+    "dependencies": [
+      "module_boundaries",
+      "approval_chains"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.933Z"
+  },
+  {
+    "id": "cand-feb33ebeea16",
+    "type": "application_composition",
+    "name": "Improvement: application_composition",
+    "description": "Address structural issues in application_composition",
+    "observations": [
+      "obs-e155be674419",
+      "obs-86ba05f91ec5"
+    ],
+    "affectedEntities": [
+      "Application",
+      "ApplicationComponent",
+      "ApplicationService"
+    ],
+    "estimatedComplexity": "medium",
+    "timelineWeeks": 12,
+    "prerequisites": [
+      "Component inventory complete",
+      "API contracts defined",
+      "Testing framework ready"
+    ],
+    "risks": [
+      "Component mismatch risk",
+      "Performance degradation",
+      "Maintenance complexity"
+    ],
+    "dependencies": [
+      "ai_delegation",
+      "reporting_structure"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.933Z"
+  },
+  {
+    "id": "cand-6666c105a06f",
+    "type": "approval_chains",
+    "name": "Improvement: approval_chains",
+    "description": "Address structural issues in approval_chains",
+    "observations": [
+      "obs-bff51266f6fa",
+      "obs-20f3c961fdfb"
+    ],
+    "affectedEntities": [
+      "ApprovalChain",
+      "ApprovalStep",
+      "ApprovalRule"
+    ],
+    "estimatedComplexity": "medium",
+    "timelineWeeks": 11,
+    "prerequisites": [
+      "Process redesign complete",
+      "System configuration tested",
+      "Staff trained"
+    ],
+    "risks": [
+      "Approval delays during transition",
+      "Escalation path confusion",
+      "System downtime risk"
+    ],
+    "dependencies": [
+      "workflow_redesign"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.933Z"
+  },
+  {
+    "id": "cand-d953b79d22dc",
+    "type": "automation_opportunities",
+    "name": "Improvement: automation_opportunities",
+    "description": "Address structural issues in automation_opportunities",
+    "observations": [
+      "obs-714e33f36fc4",
+      "obs-ef6776ef0723"
+    ],
+    "affectedEntities": [
+      "AutomationRule",
+      "AutomationTrigger",
+      "AutomationAction"
+    ],
+    "estimatedComplexity": "medium",
+    "timelineWeeks": 9,
+    "prerequisites": [
+      "Manual processes documented",
+      "RPA platform available",
+      "Business rules defined"
+    ],
+    "risks": [
+      "RPA rule brittleness",
+      "Edge case failures",
+      "Maintenance burden"
+    ],
+    "dependencies": [
+      "workflow_redesign",
+      "process_simplification"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.933Z"
+  },
+  {
+    "id": "cand-f8463998bc1e",
+    "type": "ai_delegation",
+    "name": "Improvement: ai_delegation",
+    "description": "Address structural issues in ai_delegation",
+    "observations": [
+      "obs-1afe3cc8f373",
+      "obs-8b8a84d2063c"
+    ],
+    "affectedEntities": [
+      "AIModel",
+      "AITask",
+      "AIDelegation"
+    ],
+    "estimatedComplexity": "medium",
+    "timelineWeeks": 12,
+    "prerequisites": [
+      "Model training data available",
+      "Accuracy targets set",
+      "Integration plan defined"
+    ],
+    "risks": [
+      "Model accuracy variance",
+      "Explainability challenges",
+      "Adoption resistance"
+    ],
+    "dependencies": [
+      "workflow_redesign",
+      "automation_opportunities"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.933Z"
+  },
+  {
+    "id": "cand-0c4933daeba0",
+    "type": "process_simplification",
+    "name": "Improvement: process_simplification",
+    "description": "Address structural issues in process_simplification",
+    "observations": [
+      "obs-3247e47aa532",
+      "obs-43f4f835dc1c"
+    ],
+    "affectedEntities": [
+      "Process",
+      "ProcessStep",
+      "ProcessMetric"
+    ],
+    "estimatedComplexity": "medium",
+    "timelineWeeks": 12,
+    "prerequisites": [
+      "Current process mapped",
+      "Improvement opportunities identified",
+      "Pilot plan ready"
+    ],
+    "risks": [
+      "Loss of flexibility",
+      "Unintended consequences",
+      "Rollback complexity"
+    ],
+    "dependencies": [
+      "workflow_redesign",
+      "automation_opportunities"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.933Z"
+  }
+]

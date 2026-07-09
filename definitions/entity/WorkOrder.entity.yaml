@@ -1,0 +1,316 @@
+entity: WorkOrder
+type: Aggregate
+description: Represents a work order for maintenance, repair, or service tasks
+
+metadata:
+  domain: ServiceManagement
+  tier: Operational
+  plural: WorkOrders
+  icon: workorder
+  color: "#FF6B6B"
+
+fields:
+  # Core Identity
+  id:
+    type: identifier
+    required: true
+    generated: true
+    description: Unique work order identifier
+
+  # Work Order Information
+  title:
+    type: string
+    required: true
+    maxLength: 255
+    searchable: true
+    description: Work order title or summary
+
+  description:
+    type: string
+    required: true
+    maxLength: 2000
+    searchable: true
+    description: Detailed description of work to be performed
+
+  workOrderNumber:
+    type: string
+    required: true
+    unique: true
+    maxLength: 50
+    searchable: true
+    description: Unique work order number/reference
+
+  # Priority & Status
+  priority:
+    type: enum
+    required: true
+    values: ['LOW', 'MEDIUM', 'HIGH', 'URGENT', 'EMERGENCY']
+    default: MEDIUM
+    description: Work order priority level
+
+  status:
+    type: enum
+    required: true
+    values: ['DRAFT', 'SUBMITTED', 'SCHEDULED', 'IN_PROGRESS', 'ON_HOLD', 'COMPLETED', 'CANCELLED']
+    default: DRAFT
+    description: Current work order status
+
+  workType:
+    type: enum
+    required: true
+    values: ['MAINTENANCE', 'REPAIR', 'INSPECTION', 'INSTALLATION', 'UPGRADE', 'OTHER']
+    description: Type of work to be performed
+
+  # Assignment & Resources
+  assignedTo:
+    type: string
+    maxLength: 100
+    searchable: true
+    description: Technician or person assigned to work
+
+  requestedBy:
+    type: string
+    required: true
+    maxLength: 100
+    searchable: true
+    description: Person who requested the work
+
+  approvedBy:
+    type: string
+    maxLength: 100
+    description: Person who approved the work
+
+  # Time Tracking
+  requestDate:
+    type: timestamp
+    required: true
+    description: Date work order was requested
+
+  scheduledDate:
+    type: timestamp
+    description: Scheduled start date for work
+
+  startDate:
+    type: timestamp
+    description: Actual start date of work
+
+  estimatedDuration:
+    type: number
+    description: Estimated duration in hours
+
+  actualDuration:
+    type: number
+    description: Actual duration in hours
+
+  completionDate:
+    type: timestamp
+    description: Date work was completed
+
+  # Cost & Budget
+  estimatedCost:
+    type: number
+    description: Estimated cost of work
+
+  actualCost:
+    type: number
+    description: Actual cost of work
+
+  laborHours:
+    type: number
+    description: Total labor hours charged
+
+  laborRate:
+    type: number
+    description: Labor rate per hour
+
+  # Details
+  instructions:
+    type: string
+    maxLength: 2000
+    description: Special instructions for technician
+
+  safetyRequirements:
+    type: string
+    maxLength: 1000
+    description: Safety requirements and precautions
+
+  completionNotes:
+    type: string
+    maxLength: 2000
+    description: Notes on work completion
+
+  # Metadata
+  createdBy:
+    type: string
+    required: true
+    generated: true
+    description: User who created the work order
+
+  createdAt:
+    type: timestamp
+    required: true
+    generated: true
+    description: When work order was created
+
+  updatedAt:
+    type: timestamp
+    generated: true
+    description: Last update timestamp
+
+  deletedAt:
+    type: timestamp
+    description: Soft delete timestamp
+
+relationships:
+  machine:
+    type: ManyToOne
+    target: Machine
+    required: true
+    description: Machine this work order is for
+    lazyLoad: false
+
+  project:
+    type: ManyToOne
+    target: Project
+    description: Project this work order supports
+    lazyLoad: true
+
+  asset:
+    type: ManyToOne
+    target: Asset
+    description: Asset involved in this work order
+    lazyLoad: true
+
+  requester:
+    type: ManyToOne
+    target: User
+    description: User who requested the work
+    lazyLoad: true
+
+  assignee:
+    type: ManyToOne
+    target: User
+    description: Technician assigned to work
+    lazyLoad: true
+
+  approver:
+    type: ManyToOne
+    target: User
+    description: Manager who approved the work
+    lazyLoad: true
+
+  parts:
+    type: OneToMany
+    target: WorkOrderPart
+    description: Parts required for this work
+    lazyLoad: true
+
+  documents:
+    type: OneToMany
+    target: Document
+    description: Work order documentation
+    lazyLoad: true
+
+  history:
+    type: OneToMany
+    target: WorkOrderHistory
+    description: Work order status history
+    lazyLoad: true
+
+lifecycle:
+  initial: DRAFT
+  states:
+    DRAFT:
+      description: Work order is being created
+      transitions:
+        - SUBMITTED
+        - CANCELLED
+    SUBMITTED:
+      description: Work order has been submitted for review
+      transitions:
+        - SCHEDULED
+        - ON_HOLD
+        - CANCELLED
+    SCHEDULED:
+      description: Work order is scheduled
+      transitions:
+        - IN_PROGRESS
+        - ON_HOLD
+        - CANCELLED
+    IN_PROGRESS:
+      description: Work is being performed
+      transitions:
+        - ON_HOLD
+        - COMPLETED
+    ON_HOLD:
+      description: Work is on hold
+      transitions:
+        - IN_PROGRESS
+        - SUBMITTED
+        - CANCELLED
+    COMPLETED:
+      description: Work has been completed
+      transitions: []
+    CANCELLED:
+      description: Work order has been cancelled
+      transitions: []
+
+capabilities:
+  audit:
+    enabled: true
+    trackChanges: true
+    trackDeletion: true
+  
+  search:
+    enabled: true
+    indexed: true
+    fullText: true
+  
+  permissions:
+    enabled: true
+    roles: [admin, manager, technician, requester, viewer]
+  
+  versioning:
+    enabled: false
+
+validation:
+  rules:
+    - field: estimatedCost
+      type: number
+      min: 0
+      description: Estimated cost must be non-negative
+
+    - field: actualCost
+      type: number
+      min: 0
+      description: Actual cost must be non-negative
+
+    - field: estimatedDuration
+      type: number
+      min: 0
+      description: Estimated duration must be non-negative
+
+    - field: laborRate
+      type: number
+      min: 0
+      description: Labor rate must be non-negative
+
+    - field: completionDate
+      type: timestamp
+      comparison: greaterThanOrEqual
+      compareWith: startDate
+      description: Completion date must be after or equal to start date
+
+searchMetadata:
+  primaryFields: [title, workOrderNumber, assignedTo]
+  filterableFields: [status, priority, workType, machine]
+  sortableFields: [title, requestDate, completionDate, estimatedCost, actualCost, priority]
+
+documentationMetadata:
+  category: ServiceManagement
+  sections:
+    - Overview
+    - Priority & Scheduling
+    - Cost Tracking
+    - Resource Allocation
+    - Completion & Verification

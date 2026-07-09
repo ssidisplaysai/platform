@@ -1,0 +1,267 @@
+entity: Machine
+type: Aggregate
+description: Represents industrial or operational machinery with maintenance tracking
+
+metadata:
+  domain: Operations
+  tier: Operational
+  plural: Machines
+  icon: machine
+  color: "#BD10E0"
+
+fields:
+  # Core Identity
+  id:
+    type: identifier
+    required: true
+    generated: true
+    description: Unique machine identifier
+
+  # Machine Information
+  name:
+    type: string
+    required: true
+    maxLength: 255
+    searchable: true
+    description: Machine name or identifier
+
+  description:
+    type: string
+    maxLength: 2000
+    searchable: true
+    description: Detailed machine description
+
+  machineType:
+    type: enum
+    required: true
+    values: ['CNC', 'HYDRAULIC', 'PNEUMATIC', 'CONVEYOR', 'PUMP', 'COMPRESSOR', 'GENERATOR', 'OTHER']
+    description: Type of machine
+
+  model:
+    type: string
+    required: true
+    maxLength: 100
+    searchable: true
+    description: Machine model number
+
+  serialNumber:
+    type: string
+    unique: true
+    maxLength: 100
+    description: Manufacturer serial number
+
+  # Manufacturer Information
+  manufacturer:
+    type: string
+    required: true
+    maxLength: 100
+    searchable: true
+    description: Machine manufacturer
+
+  manufacturingYear:
+    type: integer
+    description: Year machine was manufactured
+
+  # Installation & Location
+  installationDate:
+    type: timestamp
+    required: true
+    description: Date machine was installed
+
+  location:
+    type: string
+    required: true
+    maxLength: 200
+    searchable: true
+    description: Physical location in facility
+
+  facility:
+    type: string
+    maxLength: 100
+    searchable: true
+    description: Facility or plant location
+
+  # Operational Status
+  status:
+    type: enum
+    required: true
+    values: ['OPERATIONAL', 'MAINTENANCE', 'OFFLINE', 'IDLE', 'RETIRED']
+    default: OPERATIONAL
+    description: Current operational status
+
+  utilization:
+    type: number
+    description: Current utilization percentage (0-100)
+
+  # Performance Metrics
+  hoursOfOperation:
+    type: number
+    description: Total hours of operation
+
+  maintenanceIntervalHours:
+    type: number
+    description: Hours between maintenance cycles
+
+  lastMaintenanceDate:
+    type: timestamp
+    description: Date of last maintenance
+
+  nextMaintenanceDue:
+    type: timestamp
+    description: Date next maintenance is due
+
+  # Specifications
+  power:
+    type: number
+    description: Power consumption (kW)
+
+  speed:
+    type: number
+    description: Operating speed
+
+  capacity:
+    type: number
+    description: Machine capacity
+
+  # Risk & Safety
+  riskLevel:
+    type: enum
+    values: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+    default: MEDIUM
+    description: Risk level for operation
+
+  lastInspectionDate:
+    type: timestamp
+    description: Date of last safety inspection
+
+  # Metadata
+  createdBy:
+    type: string
+    required: true
+    generated: true
+    description: User who created the record
+
+  createdAt:
+    type: timestamp
+    required: true
+    generated: true
+    description: When machine record was created
+
+  updatedAt:
+    type: timestamp
+    generated: true
+    description: Last update timestamp
+
+  deletedAt:
+    type: timestamp
+    description: Soft delete timestamp
+
+relationships:
+  facility:
+    type: ManyToOne
+    target: Facility
+    description: Facility where machine is located
+    lazyLoad: true
+
+  assets:
+    type: OneToMany
+    target: Asset
+    description: Assets that make up this machine
+    lazyLoad: true
+
+  workOrders:
+    type: OneToMany
+    target: WorkOrder
+    description: Work orders for this machine
+    lazyLoad: true
+
+  maintenanceRecords:
+    type: OneToMany
+    target: MaintenanceRecord
+    description: Maintenance history
+    lazyLoad: true
+
+  operator:
+    type: ManyToOne
+    target: User
+    description: Primary operator
+    lazyLoad: true
+
+lifecycle:
+  initial: OPERATIONAL
+  states:
+    OPERATIONAL:
+      description: Machine is operating normally
+      transitions:
+        - MAINTENANCE
+        - IDLE
+        - OFFLINE
+    MAINTENANCE:
+      description: Machine is under maintenance
+      transitions:
+        - OPERATIONAL
+        - OFFLINE
+    OFFLINE:
+      description: Machine is offline and non-operational
+      transitions:
+        - OPERATIONAL
+        - MAINTENANCE
+        - RETIRED
+    IDLE:
+      description: Machine is idle but available
+      transitions:
+        - OPERATIONAL
+        - OFFLINE
+    RETIRED:
+      description: Machine has been retired from service
+      transitions: []
+
+capabilities:
+  audit:
+    enabled: true
+    trackChanges: true
+    trackDeletion: true
+  
+  search:
+    enabled: true
+    indexed: true
+    fullText: true
+  
+  permissions:
+    enabled: true
+    roles: [admin, supervisor, operator, viewer]
+  
+  versioning:
+    enabled: false
+
+validation:
+  rules:
+    - field: utilization
+      type: number
+      min: 0
+      max: 100
+      description: Utilization must be between 0 and 100
+
+    - field: hoursOfOperation
+      type: number
+      min: 0
+      description: Hours of operation must be non-negative
+
+    - field: power
+      type: number
+      min: 0
+      description: Power consumption must be non-negative
+
+searchMetadata:
+  primaryFields: [name, model, manufacturer]
+  filterableFields: [machineType, status, location, riskLevel]
+  sortableFields: [name, installationDate, status, hoursOfOperation, lastMaintenanceDate]
+
+documentationMetadata:
+  category: Operations
+  sections:
+    - Overview
+    - Specifications
+    - Maintenance Schedule
+    - Safety Requirements
+    - Performance Metrics

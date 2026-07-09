@@ -1,0 +1,1464 @@
+﻿
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351129-ksmgdu1l6)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 24ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351153-udavybqhy)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 19ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351172-mchkwxa7n)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 19ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351191-dct1tsww0)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 16ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351208-yn4h76l9e)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 24ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351232-b8qcl771w)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 23ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351255-k4vkeyqh7)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 19ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351274-k9d4zvm4t)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 19ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351294-0494fx7k9)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 17ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351312-2q0rzey6o)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 20ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351332-z5vjckthm)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 23ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351355-xg4yixjzh)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 20ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351375-fng1p5qyr)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 22ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351398-bu542kvoe)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 20ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+≡ƒÜÇ Genesis Runtime Boot v1 - Starting boot sequence (boot-1783484351418-qw4n1m6zh)...
+
+
+Γ£ô Stage 1: Manifest Discovery
+  Discover all generated manifests from compilation output
+
+Γ£ô Stage 2: Manifest Validation
+  Validate all discovered manifests against schemas
+
+Γ£ô Stage 3: Module Registration
+  Register discovered modules into runtime registry
+
+Γ£ô Stage 4: Object Registration
+  Register discovered objects into runtime registry
+
+Γ£ô Stage 5: Repository Registration
+  Register object repositories into runtime registry
+
+Γ£ô Stage 6: Service Registration
+  Register object services into runtime registry
+
+Γ£ô Stage 7: API Registration
+  Register module APIs into runtime registry
+
+Γ£ô Stage 8: Workflow Registration
+  Register module workflows into runtime registry
+
+Γ£ô Stage 9: Automation Registration
+  Register module automations into runtime registry
+
+Γ£ô Stage 10: AI Agent Registration
+  Register AI agents into runtime registry
+
+Γ£ô Stage 11: Dependency Resolution
+  Resolve all module and object dependencies
+
+Γ£ô Stage 12: Runtime Ready
+  Verify runtime is ready for operation
+
+Γ£à Boot Completed
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+                    GENESIS RUNTIME BOOT SUMMARY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+  Runtime Status: Γ£à READY
+  Boot Phase: ready
+  Duration: 23ms
+
+  DISCOVERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 44
+
+  REGISTERED:
+    ΓÇó Modules: 7
+    ΓÇó Objects: 0
+    ΓÇó APIs: 7
+    ΓÇó Workflows: 7
+    ΓÇó Automations: 7
+    ΓÇó AI Agents: 1
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Total: 29
+
+  DEPENDENCIES:
+    ΓÇó Resolved: 0
+    ΓÇó Failed: 11
+
+  ERRORS & WARNINGS:
+    ΓÇó Errors: 0
+    ΓÇó Warnings: 0
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ        GENESIS AUTOMATED TEST FRAMEWORK            Γòæ
+Γòæ           Verification & Quality Assurance         Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+[32mΓ£ô Command Bus[0m
+  Genesis Command Bus v1
+  [32mΓ£ô[0m Bus initializes successfully (`0ms)
+  [32mΓ£ô[0m Create command executes (`59ms)
+  [32mΓ£ô[0m Update command executes (`30ms)
+  [32mΓ£ô[0m Delete command executes (`109ms)
+  [32mΓ£ô[0m Restore command executes (`16ms)
+  [32mΓ£ô[0m Archive command executes (`63ms)
+  [32mΓ£ô[0m Lifecycle transition command executes (`79ms)
+  [32mΓ£ô[0m Workflow start command executes (`16ms)
+  [32mΓ£ô[0m Dry-run marks status as dryRun (`0ms)
+  [32mΓ£ô[0m Invalid commandType fails validation (`0ms)
+  [32mΓ£ô[0m Non-object payload fails validation (`0ms)
+  [32mΓ£ô[0m Bus tracks command history (`158ms)
+  [32mΓ£ô[0m Get command by ID returns command (`61ms)
+  [32mΓ£ô[0m Statistics track command counts (`95ms)
+  [32mΓ£ô[0m Soft delete command executes (`95ms)
+  [32mΓ£ô[0m Automation trigger command executes (`63ms)
+  [32mΓ£ô[0m AI agent invoke command executes (`16ms)
+  [32mΓ£ô[0m Command result marks state changes (`0ms)
+  18/18 passed
+
+[32mΓ£ô Compiler[0m
+  Verify compiler modules
+  [32mΓ£ô[0m compilePlan function exists (`0ms)
+  [32mΓ£ô[0m createCompilationContext function exists (`0ms)
+  [32mΓ£ô[0m Compiler modules directory exists (`0ms)
+  [32mΓ£ô[0m GenerationCompiler.mjs exists (`0ms)
+  [32mΓ£ô[0m CompilationContext.mjs exists (`0ms)
+  5/5 passed
+
+[32mΓ£ô Doctor[0m
+  Verify system health and dependencies
+  [32mΓ£ô[0m Doctor command is callable (`0ms)
+  [32mΓ£ô[0m Genesis tools directory exists (`0ms)
+  [32mΓ£ô[0m Compiler directory exists (`0ms)
+  [32mΓ£ô[0m Definitions directory exists (`0ms)
+  [32mΓ£ô[0m Meta model directory exists (`0ms)
+  5/5 passed
+
+[32mΓ£ô Event Bus Tests[0m
+  [32mΓ£ô[0m Event Bus initializes successfully (`1ms)
+  [32mΓ£ô[0m Publish commandExecuted event (`0ms)
+  [32mΓ£ô[0m Publish lifecycleStateChanged event (`0ms)
+  [32mΓ£ô[0m Publish workflowStarted event (`0ms)
+  [32mΓ£ô[0m Subscribe to event type (`0ms)
+  [32mΓ£ô[0m Subscribe to event type with aggregate filter (`1ms)
+  [32mΓ£ô[0m Unsubscribe from event (`0ms)
+  [32mΓ£ô[0m Validate event format (`0ms)
+  [32mΓ£ô[0m Reject invalid event type (`0ms)
+  [32mΓ£ô[0m Reject event with missing required fields (`0ms)
+  [32mΓ£ô[0m Publish event with dry-run mode (`1ms)
+  [32mΓ£ô[0m Handler receives notification on publish (`0ms)
+  [32mΓ£ô[0m List all active subscriptions (`1ms)
+  [32mΓ£ô[0m List all event definitions (`0ms)
+  [32mΓ£ô[0m Get event history (`0ms)
+  [32mΓ£ô[0m Filter event history by event type (`0ms)
+  [32mΓ£ô[0m Get event bus statistics (`0ms)
+  [32mΓ£ô[0m Event correlation and causation chain (`1ms)
+  [32mΓ£ô[0m Multiple subscribers to same event type (`0ms)
+  [32mΓ£ô[0m Reject event with non-object payload (`0ms)
+  20/20 passed
+
+[32mΓ£ô Execution Engine[0m
+  Runtime Execution Engine v1
+  [32mΓ£ô[0m Execution engine initializes (`0ms)
+  [32mΓ£ô[0m Execution request validates format (`0ms)
+  [32mΓ£ô[0m Execution request rejects invalid type (`0ms)
+  [32mΓ£ô[0m Execution request requires target (`0ms)
+  [32mΓ£ô[0m Execution response tracks status (`0ms)
+  [32mΓ£ô[0m Validator loads runtime manifest (`0ms)
+  [32mΓ£ô[0m Validator validates command execution (`0ms)
+  [32mΓ£ô[0m Validator validates workflow execution (`1ms)
+  [32mΓ£ô[0m Validator validates automation execution (`0ms)
+  [32mΓ£ô[0m Validator validates event emission (`0ms)
+  [32mΓ£ô[0m Validator validates lifecycle transition (`0ms)
+  [32mΓ£ô[0m Validator rejects invalid lifecycle transition (`0ms)
+  [32mΓ£ô[0m Engine executes command with dry-run (`0ms)
+  [32mΓ£ô[0m Engine executes query (`0ms)
+  [32mΓ£ô[0m Engine tracks execution history (`1ms)
+  [32mΓ£ô[0m Engine retrieves execution by ID (`0ms)
+  [32mΓ£ô[0m Engine returns execution statistics (`0ms)
+  [32mΓ£ô[0m Engine handles validation errors (`0ms)
+  [32mΓ£ô[0m Engine supports all execution types (`0ms)
+  [32mΓ£ô[0m Execution response marks timing correctly (`0ms)
+  20/20 passed
+
+[32mΓ£ô Meta Model[0m
+  Verify meta model definitions
+  [32mΓ£ô[0m Meta model directory exists (`0ms)
+  [32mΓ£ô[0m Entity.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Field.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Relationship.meta.yaml exists (`1ms)
+  [32mΓ£ô[0m Capability.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Lifecycle.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Permission.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Event.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Audit.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Automation.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Search.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Analytics.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m AI.meta.yaml exists (`0ms)
+  [32mΓ£ô[0m Meta model README exists (`0ms)
+  [32mΓ£ô[0m Entity.meta.yaml has content (`0ms)
+  [32mΓ£ô[0m Field.meta.yaml has content (`0ms)
+  [32mΓ£ô[0m All meta files have content (`1ms)
+  [32mΓ£ô[0m ADR-0011 exists (`0ms)
+  18/18 passed
+
+[32mΓ£ô Pass Pipeline[0m
+  Verify compiler pass architecture
+  [32mΓ£ô[0m CompilerContext initializes (`0ms)
+  [32mΓ£ô[0m PassRegistry initializes (`0ms)
+  [32mΓ£ô[0m All 8 passes register (`0ms)
+  [32mΓ£ô[0m Passes register in order (`0ms)
+  [32mΓ£ô[0m Pipeline executes passes (`0ms)
+  [32mΓ£ô[0m Pass lookup is O(1) (`0ms)
+  [32mΓ£ô[0m Duplicate pass detection works (`0ms)
+  7/7 passed
+
+[32mΓ£ô Planner[0m
+  Verify planner modules
+  [32mΓ£ô[0m planEntity function exists (`0ms)
+  [32mΓ£ô[0m createGenerationPlan function exists (`0ms)
+  [32mΓ£ô[0m Planner directory exists (`0ms)
+  [32mΓ£ô[0m GenerationPlanner.mjs exists (`0ms)
+  [32mΓ£ô[0m GenerationPlan.mjs exists (`0ms)
+  5/5 passed
+
+[32mΓ£ô Promotion[0m
+  Verify promotion modules
+  [32mΓ£ô[0m promoteEntity function exists (`0ms)
+  [32mΓ£ô[0m createPromotionContext function exists (`1ms)
+  [32mΓ£ô[0m Promotion directory exists (`0ms)
+  [32mΓ£ô[0m PromotionEngine.mjs exists (`0ms)
+  4/4 passed
+
+[32mΓ£ô Query Bus[0m
+  Genesis Query Bus v1
+  [32mΓ£ô[0m Bus initializes successfully (`0ms)
+  [32mΓ£ô[0m Get by ID query validates (`0ms)
+  [32mΓ£ô[0m Get by ID query executes (`37ms)
+  [32mΓ£ô[0m List query executes (`78ms)
+  [32mΓ£ô[0m Search query executes (`16ms)
+  [32mΓ£ô[0m Relationships query executes (`48ms)
+  [32mΓ£ô[0m Status query executes (`31ms)
+  [32mΓ£ô[0m Module lookup query executes (`47ms)
+  [32mΓ£ô[0m Metadata lookup query executes (`15ms)
+  [32mΓ£ô[0m Query result is always read-only (`15ms)
+  [32mΓ£ô[0m Missing queryType fails validation (`0ms)
+  [32mΓ£ô[0m Invalid queryType fails validation (`0ms)
+  [32mΓ£ô[0m GetById without aggregateId fails (`0ms)
+  [32mΓ£ô[0m Bus tracks query history (`190ms)
+  [32mΓ£ô[0m Get query by ID returns query (`31ms)
+  [32mΓ£ô[0m Statistics track query counts (`78ms)
+  [32mΓ£ô[0m Query result tracks items returned (`109ms)
+  [32mΓ£ô[0m Query with criteria executes (`31ms)
+  [32mΓ£ô[0m Invalid criteria fails validation (`1ms)
+  [32mΓ£ô[0m Query result tracks execution time (`0ms)
+  20/20 passed
+
+[32mΓ£ô Registry[0m
+  Verify registry modules
+  [32mΓ£ô[0m DefinitionRegistry class exists (`0ms)
+  [32mΓ£ô[0m loadDefinitionsFromRoots function exists (`0ms)
+  [32mΓ£ô[0m Registry directory exists (`0ms)
+  [32mΓ£ô[0m DefinitionRegistry.mjs exists (`0ms)
+  [32mΓ£ô[0m Definitions directory exists (`1ms)
+  [32mΓ£ô[0m Customer definition file exists (`0ms)
+  [32mΓ£ô[0m DefinitionLoader.mjs exists (`0ms)
+  7/7 passed
+
+[32mΓ£ô Runtime Boot[0m
+  Genesis Runtime Boot v1 Pipeline
+  [32mΓ£ô[0m Boot manifest exists (`0ms)
+  [32mΓ£ô[0m Boot pipeline initializes (`0ms)
+  [32mΓ£ô[0m Boot pipeline discovers modules (`24ms)
+  [32mΓ£ô[0m Boot pipeline discovers APIs (`19ms)
+  [32mΓ£ô[0m Boot pipeline discovers workflows (`19ms)
+  [32mΓ£ô[0m Boot pipeline discovers automations (`17ms)
+  [32mΓ£ô[0m Boot pipeline discovers AI agents (`24ms)
+  [32mΓ£ô[0m Boot pipeline registers modules (`23ms)
+  [32mΓ£ô[0m Boot pipeline registers APIs (`19ms)
+  [32mΓ£ô[0m Boot pipeline registers workflows (`20ms)
+  [32mΓ£ô[0m Boot pipeline registers automations (`18ms)
+  [32mΓ£ô[0m Boot pipeline registers AI agents (`20ms)
+  [32mΓ£ô[0m Boot pipeline completes all 12 stages (`23ms)
+  [32mΓ£ô[0m Boot pipeline reaches READY state (`20ms)
+  [32mΓ£ô[0m Boot discovers total expected items (`22ms)
+  [32mΓ£ô[0m Boot resolves dependencies (`20ms)
+  [32mΓ£ô[0m Boot completes without critical errors (`23ms)
+  17/17 passed
+
+[32mΓ£ô Runtime Diagnostics[0m
+  Runtime component inspection and diagnostics
+  [32mΓ£ô[0m Runtime manifest exists (`0ms)
+  [32mΓ£ô[0m Runtime status is readable (`0ms)
+  [32mΓ£ô[0m Runtime reports READY state (`0ms)
+  [32mΓ£ô[0m Runtime reports registered modules (`0ms)
+  [32mΓ£ô[0m Runtime reports registered APIs (`0ms)
+  [32mΓ£ô[0m Runtime reports registered workflows (`0ms)
+  [32mΓ£ô[0m Runtime reports registered automations (`0ms)
+  [32mΓ£ô[0m Runtime reports registered AI agents (`1ms)
+  [32mΓ£ô[0m Runtime reports dependency health (`0ms)
+  [32mΓ£ô[0m Runtime reports manifest validation status (`0ms)
+  [32mΓ£ô[0m Runtime reports boot timing (`0ms)
+  [32mΓ£ô[0m Runtime reports discovered items total (`0ms)
+  [32mΓ£ô[0m Runtime reports registered items total (`0ms)
+  [32mΓ£ô[0m Runtime diagnostics command is callable (`0ms)
+  14/14 passed
+
+[32mΓ£ô Templates[0m
+  Verify template modules
+  [32mΓ£ô[0m renderEntityTemplate function exists (`0ms)
+  [32mΓ£ô[0m Template directory exists (`0ms)
+  [32mΓ£ô[0m TemplateRenderer.mjs exists (`0ms)
+  [32mΓ£ô[0m Template files exist (`0ms)
+  [32mΓ£ô[0m Template renderer has token replacement (`0ms)
+  5/5 passed
+
+[32mΓ£ô Validation[0m
+  Verify validator modules
+  [32mΓ£ô[0m validateGeneratedSlice function exists (`0ms)
+  [32mΓ£ô[0m createGeneratedSliceReport function exists (`0ms)
+  [32mΓ£ô[0m Validator directory exists (`0ms)
+  [32mΓ£ô[0m GeneratedSliceValidator.mjs exists (`0ms)
+  [32mΓ£ô[0m GeneratedSliceReport.mjs exists (`1ms)
+  5/5 passed
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
+≡ƒôè TEST SUMMARY
+
+  Test Suites: 15
+  Total Tests: 170
+  [32mPassed: 170[0m
+  [32mFailed: 0[0m
+  Duration: 1912ms
+
+[32mΓ£ô ALL TESTS PASSED[0m
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+
