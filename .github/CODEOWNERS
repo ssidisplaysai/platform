@@ -1,0 +1,13 @@
+# Genesis ownership baseline
+# Update team aliases to your GitHub org teams before enabling branch protection.
+
+* @genesis-architecture-review-board @genesis-engineering-lead
+
+docs/architecture/ @genesis-architecture-review-board
+/docs/governance/ @genesis-architecture-review-board @genesis-engineering-lead
+/tools/genesis/compiler/ @genesis-compiler-platform
+/tools/genesis/runtime/ @genesis-runtime
+/src/modules/ @genesis-modules
+/src/sdk/ @genesis-sdk
+/test/ @genesis-testing
+/.github/ @genesis-engineering-lead @genesis-governance
