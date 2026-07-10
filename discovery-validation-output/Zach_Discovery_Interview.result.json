@@ -1,0 +1,989 @@
+{
+  "success": true,
+  "timestamp": "2026-07-09T21:42:26.168Z",
+  "source": {
+    "sourceId": "src_zach_discovery_interview",
+    "sourceType": "pdf",
+    "fileName": "Zach Discovery Interview.pdf",
+    "filePath": "",
+    "fileSize": 4828,
+    "mimeType": "application/pdf",
+    "importedAt": "2026-07-09T21:42:26.168Z"
+  },
+  "validation": {
+    "valid": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "errors": [],
+    "warnings": [],
+    "infos": [
+      {
+        "code": "DISC_032",
+        "severity": "info",
+        "message": "Section order values are non-sequential — may indicate parsing gaps.",
+        "timestamp": "2026-07-09T21:42:26.165Z"
+      }
+    ]
+  },
+  "document": {
+    "sourceId": "src_zach_discovery_interview",
+    "sourceType": "pdf",
+    "fileName": "Zach Discovery Interview.pdf",
+    "pageCount": 1,
+    "metadata": {
+      "title": "Zach Discovery Interview",
+      "author": "Robert Stoner",
+      "subject": null,
+      "keywords": null,
+      "creator": null,
+      "producer": null,
+      "createdAt": "2026-07-09",
+      "modifiedAt": null,
+      "pageCount": 1,
+      "raw": {
+        "Title": "Zach Discovery Interview",
+        "Author": "Robert Stoner",
+        "CreationDate": "2026-07-09"
+      }
+    },
+    "pages": [
+      {
+        "pageNumber": 1,
+        "isEmpty": false,
+        "text": "\nGenesis Discovery Interview\n\nParticipant: Zach Anderson\nRole: Graphics Lead\nDepartment: Creative\nDate: July 5, 2026\nInterviewer: Robert Stoner\nInterview Duration: 45 minutes\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 1: DAILY WORKFLOW\n\nQ1. Walk me through a typical day. What is the first thing you do when you come in?\n\nI usually start by checking my project queue in Asana. There are typically 3-5 active jobs\nat any time. I prioritize based on delivery date, urgency flag, and complexity.\n\nMost mornings I have a quick sync with Robert or Madison to confirm any new orders came in\novernight or if anything shifted priority-wise. After that I dive into the current job.\n\nQ2. What software do you use every single day?\n\nAdobe Illustrator is my main tool — I'd say 70% of my day. I also use Photoshop, probably 20%\nof the time, and Figma for mockups or when I'm collaborating with clients on concepts. Asana for\nproject tracking, obviously. And I'm constantly in Outlook and Teams for comms.\n\nQ3. How long does a typical project take from start to finish?\n\nIt really depends on the project type. Standard label design? 1-2 hours. Custom artwork or\ncomplex branding? Could be a full day or spread across 2-3 days. We had one project last month\nthat took a week because the client kept requesting revisions.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 2: BOTTLENECKS & PAIN POINTS\n\nQ4. What slows you down the most in your day-to-day work?\n\nHonestly, waiting for client feedback. A lot of jobs sit in my queue waiting on approval or\nfor the client to get back to Robert. Sometimes it's days before we get a response. That puts\nthe whole timeline at risk.\n\nQ5. Do you ever get unclear or incomplete briefs?\n\nYes, all the time. I'd say 40% of projects come in with specs that are missing something. Maybe\nthe client didn't think through all the details, or Robert is still clarifying with them. I usually\nhave to ask questions or make assumptions. It slows down the design process.\n\nQ6. What happens when a client requests major revisions after you're done?\n\nThat's where it gets painful. If the feedback is major, I'm essentially starting over on that component.\nThere's no buffer built into our timelines, so revision requests can cascade into the next projects.\nWe've had situations where a revision on one job pushed another job's deadline back.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 3: TOOLS & SYSTEMS\n\nQ7. Are there any tools or systems you wish we had but don't currently use?\n\nA design asset library would be huge. We're recreating the same elements over and over. If we had\na centralized place to store logo variations, color palettes, font files, and common design patterns,\nI could work a lot faster.\n\nAlso, a real project management system that's integrated with our quoting process. Right now specs\ncome to me in email, Asana, or verbally from Robert. There's no single source of truth.\n\nQ8. How do you currently manage revisions or version control of designs?\n\nI save files locally and name them by version: filename_v1.ai, filename_v2.ai, etc. I sometimes upload\nfinal files to a shared folder, but not consistently. It's messy. I've lost work before because I wasn't\nsure which version was the current one.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 4: CAPABILITY ASSESSMENT\n\nQ9. How confident are you in your current skill level with Illustrator?\n\nI'm very confident. I can do almost anything asked of me in Illustrator — typography, complex vector work,\n3D effects, you name it. The limitation is usually time or unclear requirements, not my capability.\n\nQ10. Could you train someone else to do the work you do?\n\nFor basic label design, yes, probably in a week or two of hands-on training. For the more complex custom work,\nthat would take longer — months probably. A lot of it is design taste and judgment, which takes experience.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 5: OPPORTUNITIES & SCALING\n\nQ11. If we could remove one bottleneck tomorrow, what would it be?\n\nClient feedback speed. If clients responded in 24 hours instead of 3-5 days, our throughput would double.\nWe wouldn't have jobs sitting idle waiting for approval.\n\nQ12. What would need to happen for you to take on 2x the current workload?\n\nMore time. I'd need either another designer on the team, or I'd need processes to be way faster.\nRight now I'm working at pretty much full capacity — I don't have much slack to absorb more work.\n\nThe faster feedback and a design asset library would help a lot. So would templates for common project types.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+        "blocks": [
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 0,
+            "lineStart": 0,
+            "lineEnd": 0
+          },
+          {
+            "type": "paragraph",
+            "text": "Genesis Discovery Interview",
+            "raw": "Genesis Discovery Interview",
+            "pageNumber": 1,
+            "blockIndex": 1,
+            "lineStart": 1,
+            "lineEnd": 1
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 2,
+            "lineStart": 2,
+            "lineEnd": 2
+          },
+          {
+            "type": "metadata",
+            "text": "Participant: Zach Anderson\nRole: Graphics Lead\nDepartment: Creative\nDate: July 5, 2026\nInterviewer: Robert Stoner\nInterview Duration: 45 minutes",
+            "raw": "Participant: Zach Anderson\nRole: Graphics Lead\nDepartment: Creative\nDate: July 5, 2026\nInterviewer: Robert Stoner\nInterview Duration: 45 minutes",
+            "pageNumber": 1,
+            "blockIndex": 3,
+            "lineStart": 3,
+            "lineEnd": 8
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 4,
+            "lineStart": 9,
+            "lineEnd": 9
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 5,
+            "lineStart": 10,
+            "lineEnd": 10
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 6,
+            "lineStart": 11,
+            "lineEnd": 11
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 1: DAILY WORKFLOW",
+            "raw": "SECTION 1: DAILY WORKFLOW",
+            "pageNumber": 1,
+            "blockIndex": 7,
+            "lineStart": 12,
+            "lineEnd": 12
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 8,
+            "lineStart": 13,
+            "lineEnd": 13
+          },
+          {
+            "type": "question",
+            "text": "Q1. Walk me through a typical day. What is the first thing you do when you come in?",
+            "raw": "Q1. Walk me through a typical day. What is the first thing you do when you come in?",
+            "pageNumber": 1,
+            "blockIndex": 9,
+            "lineStart": 14,
+            "lineEnd": 14
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 10,
+            "lineStart": 15,
+            "lineEnd": 15
+          },
+          {
+            "type": "paragraph",
+            "text": "I usually start by checking my project queue in Asana. There are typically 3-5 active jobs\nat any time. I prioritize based on delivery date, urgency flag, and complexity.",
+            "raw": "I usually start by checking my project queue in Asana. There are typically 3-5 active jobs\nat any time. I prioritize based on delivery date, urgency flag, and complexity.",
+            "pageNumber": 1,
+            "blockIndex": 11,
+            "lineStart": 16,
+            "lineEnd": 17
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 12,
+            "lineStart": 18,
+            "lineEnd": 18
+          },
+          {
+            "type": "paragraph",
+            "text": "Most mornings I have a quick sync with Robert or Madison to confirm any new orders came in\novernight or if anything shifted priority-wise. After that I dive into the current job.",
+            "raw": "Most mornings I have a quick sync with Robert or Madison to confirm any new orders came in\novernight or if anything shifted priority-wise. After that I dive into the current job.",
+            "pageNumber": 1,
+            "blockIndex": 13,
+            "lineStart": 19,
+            "lineEnd": 20
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 14,
+            "lineStart": 21,
+            "lineEnd": 21
+          },
+          {
+            "type": "question",
+            "text": "Q2. What software do you use every single day?",
+            "raw": "Q2. What software do you use every single day?",
+            "pageNumber": 1,
+            "blockIndex": 15,
+            "lineStart": 22,
+            "lineEnd": 22
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 16,
+            "lineStart": 23,
+            "lineEnd": 23
+          },
+          {
+            "type": "paragraph",
+            "text": "Adobe Illustrator is my main tool — I'd say 70% of my day. I also use Photoshop, probably 20%\nof the time, and Figma for mockups or when I'm collaborating with clients on concepts. Asana for\nproject tracking, obviously. And I'm constantly in Outlook and Teams for comms.",
+            "raw": "Adobe Illustrator is my main tool — I'd say 70% of my day. I also use Photoshop, probably 20%\nof the time, and Figma for mockups or when I'm collaborating with clients on concepts. Asana for\nproject tracking, obviously. And I'm constantly in Outlook and Teams for comms.",
+            "pageNumber": 1,
+            "blockIndex": 17,
+            "lineStart": 24,
+            "lineEnd": 26
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 18,
+            "lineStart": 27,
+            "lineEnd": 27
+          },
+          {
+            "type": "question",
+            "text": "Q3. How long does a typical project take from start to finish?",
+            "raw": "Q3. How long does a typical project take from start to finish?",
+            "pageNumber": 1,
+            "blockIndex": 19,
+            "lineStart": 28,
+            "lineEnd": 28
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 20,
+            "lineStart": 29,
+            "lineEnd": 29
+          },
+          {
+            "type": "paragraph",
+            "text": "It really depends on the project type. Standard label design? 1-2 hours. Custom artwork or\ncomplex branding? Could be a full day or spread across 2-3 days. We had one project last month\nthat took a week because the client kept requesting revisions.",
+            "raw": "It really depends on the project type. Standard label design? 1-2 hours. Custom artwork or\ncomplex branding? Could be a full day or spread across 2-3 days. We had one project last month\nthat took a week because the client kept requesting revisions.",
+            "pageNumber": 1,
+            "blockIndex": 21,
+            "lineStart": 30,
+            "lineEnd": 32
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 22,
+            "lineStart": 33,
+            "lineEnd": 33
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 23,
+            "lineStart": 34,
+            "lineEnd": 34
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 24,
+            "lineStart": 35,
+            "lineEnd": 35
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 2: BOTTLENECKS & PAIN POINTS",
+            "raw": "SECTION 2: BOTTLENECKS & PAIN POINTS",
+            "pageNumber": 1,
+            "blockIndex": 25,
+            "lineStart": 36,
+            "lineEnd": 36
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 26,
+            "lineStart": 37,
+            "lineEnd": 37
+          },
+          {
+            "type": "question",
+            "text": "Q4. What slows you down the most in your day-to-day work?",
+            "raw": "Q4. What slows you down the most in your day-to-day work?",
+            "pageNumber": 1,
+            "blockIndex": 27,
+            "lineStart": 38,
+            "lineEnd": 38
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 28,
+            "lineStart": 39,
+            "lineEnd": 39
+          },
+          {
+            "type": "paragraph",
+            "text": "Honestly, waiting for client feedback. A lot of jobs sit in my queue waiting on approval or\nfor the client to get back to Robert. Sometimes it's days before we get a response. That puts\nthe whole timeline at risk.",
+            "raw": "Honestly, waiting for client feedback. A lot of jobs sit in my queue waiting on approval or\nfor the client to get back to Robert. Sometimes it's days before we get a response. That puts\nthe whole timeline at risk.",
+            "pageNumber": 1,
+            "blockIndex": 29,
+            "lineStart": 40,
+            "lineEnd": 42
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 30,
+            "lineStart": 43,
+            "lineEnd": 43
+          },
+          {
+            "type": "question",
+            "text": "Q5. Do you ever get unclear or incomplete briefs?",
+            "raw": "Q5. Do you ever get unclear or incomplete briefs?",
+            "pageNumber": 1,
+            "blockIndex": 31,
+            "lineStart": 44,
+            "lineEnd": 44
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 32,
+            "lineStart": 45,
+            "lineEnd": 45
+          },
+          {
+            "type": "paragraph",
+            "text": "Yes, all the time. I'd say 40% of projects come in with specs that are missing something. Maybe\nthe client didn't think through all the details, or Robert is still clarifying with them. I usually\nhave to ask questions or make assumptions. It slows down the design process.",
+            "raw": "Yes, all the time. I'd say 40% of projects come in with specs that are missing something. Maybe\nthe client didn't think through all the details, or Robert is still clarifying with them. I usually\nhave to ask questions or make assumptions. It slows down the design process.",
+            "pageNumber": 1,
+            "blockIndex": 33,
+            "lineStart": 46,
+            "lineEnd": 48
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 34,
+            "lineStart": 49,
+            "lineEnd": 49
+          },
+          {
+            "type": "question",
+            "text": "Q6. What happens when a client requests major revisions after you're done?",
+            "raw": "Q6. What happens when a client requests major revisions after you're done?",
+            "pageNumber": 1,
+            "blockIndex": 35,
+            "lineStart": 50,
+            "lineEnd": 50
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 36,
+            "lineStart": 51,
+            "lineEnd": 51
+          },
+          {
+            "type": "paragraph",
+            "text": "That's where it gets painful. If the feedback is major, I'm essentially starting over on that component.\nThere's no buffer built into our timelines, so revision requests can cascade into the next projects.\nWe've had situations where a revision on one job pushed another job's deadline back.",
+            "raw": "That's where it gets painful. If the feedback is major, I'm essentially starting over on that component.\nThere's no buffer built into our timelines, so revision requests can cascade into the next projects.\nWe've had situations where a revision on one job pushed another job's deadline back.",
+            "pageNumber": 1,
+            "blockIndex": 37,
+            "lineStart": 52,
+            "lineEnd": 54
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 38,
+            "lineStart": 55,
+            "lineEnd": 55
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 39,
+            "lineStart": 56,
+            "lineEnd": 56
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 40,
+            "lineStart": 57,
+            "lineEnd": 57
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 3: TOOLS & SYSTEMS",
+            "raw": "SECTION 3: TOOLS & SYSTEMS",
+            "pageNumber": 1,
+            "blockIndex": 41,
+            "lineStart": 58,
+            "lineEnd": 58
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 42,
+            "lineStart": 59,
+            "lineEnd": 59
+          },
+          {
+            "type": "question",
+            "text": "Q7. Are there any tools or systems you wish we had but don't currently use?",
+            "raw": "Q7. Are there any tools or systems you wish we had but don't currently use?",
+            "pageNumber": 1,
+            "blockIndex": 43,
+            "lineStart": 60,
+            "lineEnd": 60
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 44,
+            "lineStart": 61,
+            "lineEnd": 61
+          },
+          {
+            "type": "paragraph",
+            "text": "A design asset library would be huge. We're recreating the same elements over and over. If we had\na centralized place to store logo variations, color palettes, font files, and common design patterns,\nI could work a lot faster.",
+            "raw": "A design asset library would be huge. We're recreating the same elements over and over. If we had\na centralized place to store logo variations, color palettes, font files, and common design patterns,\nI could work a lot faster.",
+            "pageNumber": 1,
+            "blockIndex": 45,
+            "lineStart": 62,
+            "lineEnd": 64
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 46,
+            "lineStart": 65,
+            "lineEnd": 65
+          },
+          {
+            "type": "paragraph",
+            "text": "Also, a real project management system that's integrated with our quoting process. Right now specs\ncome to me in email, Asana, or verbally from Robert. There's no single source of truth.",
+            "raw": "Also, a real project management system that's integrated with our quoting process. Right now specs\ncome to me in email, Asana, or verbally from Robert. There's no single source of truth.",
+            "pageNumber": 1,
+            "blockIndex": 47,
+            "lineStart": 66,
+            "lineEnd": 67
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 48,
+            "lineStart": 68,
+            "lineEnd": 68
+          },
+          {
+            "type": "question",
+            "text": "Q8. How do you currently manage revisions or version control of designs?",
+            "raw": "Q8. How do you currently manage revisions or version control of designs?",
+            "pageNumber": 1,
+            "blockIndex": 49,
+            "lineStart": 69,
+            "lineEnd": 69
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 50,
+            "lineStart": 70,
+            "lineEnd": 70
+          },
+          {
+            "type": "paragraph",
+            "text": "I save files locally and name them by version: filename_v1.ai, filename_v2.ai, etc. I sometimes upload\nfinal files to a shared folder, but not consistently. It's messy. I've lost work before because I wasn't\nsure which version was the current one.",
+            "raw": "I save files locally and name them by version: filename_v1.ai, filename_v2.ai, etc. I sometimes upload\nfinal files to a shared folder, but not consistently. It's messy. I've lost work before because I wasn't\nsure which version was the current one.",
+            "pageNumber": 1,
+            "blockIndex": 51,
+            "lineStart": 71,
+            "lineEnd": 73
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 52,
+            "lineStart": 74,
+            "lineEnd": 74
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 53,
+            "lineStart": 75,
+            "lineEnd": 75
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 54,
+            "lineStart": 76,
+            "lineEnd": 76
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 4: CAPABILITY ASSESSMENT",
+            "raw": "SECTION 4: CAPABILITY ASSESSMENT",
+            "pageNumber": 1,
+            "blockIndex": 55,
+            "lineStart": 77,
+            "lineEnd": 77
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 56,
+            "lineStart": 78,
+            "lineEnd": 78
+          },
+          {
+            "type": "question",
+            "text": "Q9. How confident are you in your current skill level with Illustrator?",
+            "raw": "Q9. How confident are you in your current skill level with Illustrator?",
+            "pageNumber": 1,
+            "blockIndex": 57,
+            "lineStart": 79,
+            "lineEnd": 79
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 58,
+            "lineStart": 80,
+            "lineEnd": 80
+          },
+          {
+            "type": "paragraph",
+            "text": "I'm very confident. I can do almost anything asked of me in Illustrator — typography, complex vector work,\n3D effects, you name it. The limitation is usually time or unclear requirements, not my capability.",
+            "raw": "I'm very confident. I can do almost anything asked of me in Illustrator — typography, complex vector work,\n3D effects, you name it. The limitation is usually time or unclear requirements, not my capability.",
+            "pageNumber": 1,
+            "blockIndex": 59,
+            "lineStart": 81,
+            "lineEnd": 82
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 60,
+            "lineStart": 83,
+            "lineEnd": 83
+          },
+          {
+            "type": "question",
+            "text": "Q10. Could you train someone else to do the work you do?",
+            "raw": "Q10. Could you train someone else to do the work you do?",
+            "pageNumber": 1,
+            "blockIndex": 61,
+            "lineStart": 84,
+            "lineEnd": 84
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 62,
+            "lineStart": 85,
+            "lineEnd": 85
+          },
+          {
+            "type": "paragraph",
+            "text": "For basic label design, yes, probably in a week or two of hands-on training. For the more complex custom work,\nthat would take longer — months probably. A lot of it is design taste and judgment, which takes experience.",
+            "raw": "For basic label design, yes, probably in a week or two of hands-on training. For the more complex custom work,\nthat would take longer — months probably. A lot of it is design taste and judgment, which takes experience.",
+            "pageNumber": 1,
+            "blockIndex": 63,
+            "lineStart": 86,
+            "lineEnd": 87
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 64,
+            "lineStart": 88,
+            "lineEnd": 88
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 65,
+            "lineStart": 89,
+            "lineEnd": 89
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 66,
+            "lineStart": 90,
+            "lineEnd": 90
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 5: OPPORTUNITIES & SCALING",
+            "raw": "SECTION 5: OPPORTUNITIES & SCALING",
+            "pageNumber": 1,
+            "blockIndex": 67,
+            "lineStart": 91,
+            "lineEnd": 91
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 68,
+            "lineStart": 92,
+            "lineEnd": 92
+          },
+          {
+            "type": "question",
+            "text": "Q11. If we could remove one bottleneck tomorrow, what would it be?",
+            "raw": "Q11. If we could remove one bottleneck tomorrow, what would it be?",
+            "pageNumber": 1,
+            "blockIndex": 69,
+            "lineStart": 93,
+            "lineEnd": 93
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 70,
+            "lineStart": 94,
+            "lineEnd": 94
+          },
+          {
+            "type": "paragraph",
+            "text": "Client feedback speed. If clients responded in 24 hours instead of 3-5 days, our throughput would double.\nWe wouldn't have jobs sitting idle waiting for approval.",
+            "raw": "Client feedback speed. If clients responded in 24 hours instead of 3-5 days, our throughput would double.\nWe wouldn't have jobs sitting idle waiting for approval.",
+            "pageNumber": 1,
+            "blockIndex": 71,
+            "lineStart": 95,
+            "lineEnd": 96
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 72,
+            "lineStart": 97,
+            "lineEnd": 97
+          },
+          {
+            "type": "question",
+            "text": "Q12. What would need to happen for you to take on 2x the current workload?",
+            "raw": "Q12. What would need to happen for you to take on 2x the current workload?",
+            "pageNumber": 1,
+            "blockIndex": 73,
+            "lineStart": 98,
+            "lineEnd": 98
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 74,
+            "lineStart": 99,
+            "lineEnd": 99
+          },
+          {
+            "type": "paragraph",
+            "text": "More time. I'd need either another designer on the team, or I'd need processes to be way faster.\nRight now I'm working at pretty much full capacity — I don't have much slack to absorb more work.",
+            "raw": "More time. I'd need either another designer on the team, or I'd need processes to be way faster.\nRight now I'm working at pretty much full capacity — I don't have much slack to absorb more work.",
+            "pageNumber": 1,
+            "blockIndex": 75,
+            "lineStart": 100,
+            "lineEnd": 101
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 76,
+            "lineStart": 102,
+            "lineEnd": 102
+          },
+          {
+            "type": "paragraph",
+            "text": "The faster feedback and a design asset library would help a lot. So would templates for common project types.",
+            "raw": "The faster feedback and a design asset library would help a lot. So would templates for common project types.",
+            "pageNumber": 1,
+            "blockIndex": 77,
+            "lineStart": 103,
+            "lineEnd": 103
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 78,
+            "lineStart": 104,
+            "lineEnd": 104
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 79,
+            "lineStart": 105,
+            "lineEnd": 105
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 80,
+            "lineStart": 106,
+            "lineEnd": 106
+          }
+        ]
+      }
+    ],
+    "diagnostics": []
+  },
+  "interview": {
+    "interviewId": "interview_4d253d2b",
+    "participant": "Zach Anderson",
+    "role": "Graphics Lead",
+    "department": "Creative",
+    "interviewDate": "July 5, 2026",
+    "interviewer": "Robert Stoner",
+    "sourceId": "src_zach_discovery_interview",
+    "rawMetadata": {
+      "participant": "Zach Anderson",
+      "role": "Graphics Lead",
+      "department": "Creative",
+      "interviewDate": "July 5, 2026",
+      "interviewer": "Robert Stoner"
+    },
+    "sections": [
+      {
+        "title": "SECTION 1: DAILY WORKFLOW",
+        "order": 2,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_ad708086",
+            "question": "Walk me through a typical day. What is the first thing you do when you come in?",
+            "answer": "I usually start by checking my project queue in Asana. There are typically 3-5 active jobs\nat any time. I prioritize based on delivery date, urgency flag, and complexity.\n\nMost mornings I have a quick sync with Robert or Madison to confirm any new orders came in\novernight or if anything shifted priority-wise. After that I dive into the current job.",
+            "rawQuestion": "Walk me through a typical day. What is the first thing you do when you come in?",
+            "rawAnswer": "\nI usually start by checking my project queue in Asana. There are typically 3-5 active jobs\nat any time. I prioritize based on delivery date, urgency flag, and complexity.\n\nMost mornings I have a quick sync with Robert or Madison to confirm any new orders came in\novernight or if anything shifted priority-wise. After that I dive into the current job.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_c768344e",
+            "question": "What software do you use every single day?",
+            "answer": "Adobe Illustrator is my main tool — I'd say 70% of my day. I also use Photoshop, probably 20%\nof the time, and Figma for mockups or when I'm collaborating with clients on concepts. Asana for\nproject tracking, obviously. And I'm constantly in Outlook and Teams for comms.",
+            "rawQuestion": "What software do you use every single day?",
+            "rawAnswer": "\nAdobe Illustrator is my main tool — I'd say 70% of my day. I also use Photoshop, probably 20%\nof the time, and Figma for mockups or when I'm collaborating with clients on concepts. Asana for\nproject tracking, obviously. And I'm constantly in Outlook and Teams for comms.\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_459253d6",
+            "question": "How long does a typical project take from start to finish?",
+            "answer": "It really depends on the project type. Standard label design? 1-2 hours. Custom artwork or\ncomplex branding? Could be a full day or spread across 2-3 days. We had one project last month\nthat took a week because the client kept requesting revisions.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "How long does a typical project take from start to finish?",
+            "rawAnswer": "\nIt really depends on the project type. Standard label design? 1-2 hours. Custom artwork or\ncomplex branding? Could be a full day or spread across 2-3 days. We had one project last month\nthat took a week because the client kept requesting revisions.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 3,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 2: BOTTLENECKS & PAIN POINTS",
+        "order": 3,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_0dffc9c3",
+            "question": "What slows you down the most in your day-to-day work?",
+            "answer": "Honestly, waiting for client feedback. A lot of jobs sit in my queue waiting on approval or\nfor the client to get back to Robert. Sometimes it's days before we get a response. That puts\nthe whole timeline at risk.",
+            "rawQuestion": "What slows you down the most in your day-to-day work?",
+            "rawAnswer": "\nHonestly, waiting for client feedback. A lot of jobs sit in my queue waiting on approval or\nfor the client to get back to Robert. Sometimes it's days before we get a response. That puts\nthe whole timeline at risk.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_20badcab",
+            "question": "Do you ever get unclear or incomplete briefs?",
+            "answer": "Yes, all the time. I'd say 40% of projects come in with specs that are missing something. Maybe\nthe client didn't think through all the details, or Robert is still clarifying with them. I usually\nhave to ask questions or make assumptions. It slows down the design process.",
+            "rawQuestion": "Do you ever get unclear or incomplete briefs?",
+            "rawAnswer": "\nYes, all the time. I'd say 40% of projects come in with specs that are missing something. Maybe\nthe client didn't think through all the details, or Robert is still clarifying with them. I usually\nhave to ask questions or make assumptions. It slows down the design process.\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_3badaba1",
+            "question": "What happens when a client requests major revisions after you're done?",
+            "answer": "That's where it gets painful. If the feedback is major, I'm essentially starting over on that component.\nThere's no buffer built into our timelines, so revision requests can cascade into the next projects.\nWe've had situations where a revision on one job pushed another job's deadline back.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "What happens when a client requests major revisions after you're done?",
+            "rawAnswer": "\nThat's where it gets painful. If the feedback is major, I'm essentially starting over on that component.\nThere's no buffer built into our timelines, so revision requests can cascade into the next projects.\nWe've had situations where a revision on one job pushed another job's deadline back.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 3,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 3: TOOLS & SYSTEMS",
+        "order": 4,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_f2849298",
+            "question": "Are there any tools or systems you wish we had but don't currently use?",
+            "answer": "A design asset library would be huge. We're recreating the same elements over and over. If we had\na centralized place to store logo variations, color palettes, font files, and common design patterns,\nI could work a lot faster.\n\nAlso, a real project management system that's integrated with our quoting process. Right now specs\ncome to me in email, Asana, or verbally from Robert. There's no single source of truth.",
+            "rawQuestion": "Are there any tools or systems you wish we had but don't currently use?",
+            "rawAnswer": "\nA design asset library would be huge. We're recreating the same elements over and over. If we had\na centralized place to store logo variations, color palettes, font files, and common design patterns,\nI could work a lot faster.\n\nAlso, a real project management system that's integrated with our quoting process. Right now specs\ncome to me in email, Asana, or verbally from Robert. There's no single source of truth.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_a0dabc3f",
+            "question": "How do you currently manage revisions or version control of designs?",
+            "answer": "I save files locally and name them by version: filename_v1.ai, filename_v2.ai, etc. I sometimes upload\nfinal files to a shared folder, but not consistently. It's messy. I've lost work before because I wasn't\nsure which version was the current one.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "How do you currently manage revisions or version control of designs?",
+            "rawAnswer": "\nI save files locally and name them by version: filename_v1.ai, filename_v2.ai, etc. I sometimes upload\nfinal files to a shared folder, but not consistently. It's messy. I've lost work before because I wasn't\nsure which version was the current one.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 4: CAPABILITY ASSESSMENT",
+        "order": 5,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_0d3a99dd",
+            "question": "How confident are you in your current skill level with Illustrator?",
+            "answer": "I'm very confident. I can do almost anything asked of me in Illustrator — typography, complex vector work,\n3D effects, you name it. The limitation is usually time or unclear requirements, not my capability.",
+            "rawQuestion": "How confident are you in your current skill level with Illustrator?",
+            "rawAnswer": "\nI'm very confident. I can do almost anything asked of me in Illustrator — typography, complex vector work,\n3D effects, you name it. The limitation is usually time or unclear requirements, not my capability.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_8dadb657",
+            "question": "Could you train someone else to do the work you do?",
+            "answer": "For basic label design, yes, probably in a week or two of hands-on training. For the more complex custom work,\nthat would take longer — months probably. A lot of it is design taste and judgment, which takes experience.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "Could you train someone else to do the work you do?",
+            "rawAnswer": "\nFor basic label design, yes, probably in a week or two of hands-on training. For the more complex custom work,\nthat would take longer — months probably. A lot of it is design taste and judgment, which takes experience.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 5: OPPORTUNITIES & SCALING",
+        "order": 6,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_269225c9",
+            "question": "If we could remove one bottleneck tomorrow, what would it be?",
+            "answer": "Client feedback speed. If clients responded in 24 hours instead of 3-5 days, our throughput would double.\nWe wouldn't have jobs sitting idle waiting for approval.",
+            "rawQuestion": "If we could remove one bottleneck tomorrow, what would it be?",
+            "rawAnswer": "\nClient feedback speed. If clients responded in 24 hours instead of 3-5 days, our throughput would double.\nWe wouldn't have jobs sitting idle waiting for approval.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_665f5277",
+            "question": "What would need to happen for you to take on 2x the current workload?",
+            "answer": "More time. I'd need either another designer on the team, or I'd need processes to be way faster.\nRight now I'm working at pretty much full capacity — I don't have much slack to absorb more work.\n\nThe faster feedback and a design asset library would help a lot. So would templates for common project types.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "What would need to happen for you to take on 2x the current workload?",
+            "rawAnswer": "\nMore time. I'd need either another designer on the team, or I'd need processes to be way faster.\nRight now I'm working at pretty much full capacity — I don't have much slack to absorb more work.\n\nThe faster feedback and a design asset library would help a lot. So would templates for common project types.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      }
+    ],
+    "diagnostics": []
+  },
+  "diagnostics": []
+}

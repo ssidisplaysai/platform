@@ -1,0 +1,810 @@
+{
+  "items": [
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.416Z",
+        "identity": "evidence_item_18eb8abe9f831dc246f29507afcdd1e2baf931728fd4826f1b80c90be8e1ae55_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Turn on computer, check emails/check missed calls/voicemails/teams messages from Robert from the night before or early morning, respond to anything urgent first, check remaining items on to-do list from yesterday for anything urgent today. Check calendar for meetings/bills due/reminders. Respond to non-urgent emails. Anything I can't respond to, I flag or make a note of for Robert to assist or respond. Prep for any orders that need to be cut/assembled/packed or shipped that day. Reach out/respond to customers with timelines and updates. Check SSI woocommerce for any online orders. Approve blogs on all websites. Check Zoho for any deposits made, confirm and print packing slips for open projects. Continue to check and respond to emails throughout the day, answer phones. Remind Robert of any meetings and prep needed for any meetings.\n\nLead generation:\n-Customer Emails (ssisales@ssidisplays.com and office@ssidisplays.com)\n-Contact Form Submission (email generated from ssidisplays.com website)\n-Phone calls from Quo, voicemails included\n\nLeads Step by Step\n\n-Emails from ssisales@ssidisplays.com- new customer emails in, asking for quote/information. Confirm customer is not previous customer, with name and company. Confirm all details are in original customer email to be able to provide lead. If not, ask additional questions of customers. Cc Robert and office@ssidisplays.com\n\n-Emails from office@ssidisplays.com, current/previous customer quote requests or requests for spec sheets/information. Check all previous work with this customer to ensure accurate information. Answer any questions you can, cc Robert to answer any technical questions.\n\n-Contact Form Submissions, come to ssisales@ssidisplays.com and are usually new customers. Follow same instructions as emails from ssisales@ssidisplays.com.\n\n-phone calls from Quo, voicemails rather. Customer leaves a voicemail after regular business hours. Direct voicemail to Madison office@ssidisplays.com",
+      "rawContent": "Turn on computer, check emails/check missed calls/voicemails/teams messages from Robert from the night before or early morning, respond to anything urgent first, check remaining items on to-do list from yesterday for anything urgent today. Check calendar for meetings/bills due/reminders. Respond to non-urgent emails. Anything I can't respond to, I flag or make a note of for Robert to assist or respond. Prep for any orders that need to be cut/assembled/packed or shipped that day. Reach out/respond to customers with timelines and updates. Check SSI woocommerce for any online orders. Approve blogs on all websites. Check Zoho for any deposits made, confirm and print packing slips for open projects. Continue to check and respond to emails throughout the day, answer phones. Remind Robert of any meetings and prep needed for any meetings.\r\n\nLead generation:\r\n-Customer Emails (ssisales@ssidisplays.com and office@ssidisplays.com)\r\n-Contact Form Submission (email generated from ssidisplays.com website)\r\n-Phone calls from Quo, voicemails included\r\n\nLeads Step by Step\r\n\n-Emails from ssisales@ssidisplays.com- new customer emails in, asking for quote/information. Confirm customer is not previous customer, with name and company. Confirm all details are in original customer email to be able to provide lead. If not, ask additional questions of customers. Cc Robert and office@ssidisplays.com\r\n\n-Emails from office@ssidisplays.com, current/previous customer quote requests or requests for spec sheets/information. Check all previous work with this customer to ensure accurate information. Answer any questions you can, cc Robert to answer any technical questions.\r\n\n-Contact Form Submissions, come to ssisales@ssidisplays.com and are usually new customers. Follow same instructions as emails from ssisales@ssidisplays.com.\r\n\n-phone calls from Quo, voicemails rather. Customer leaves a voicemail after regular business hours. Direct voicemail to Madison office@ssidisplays.com",
+      "provenance": {
+        "discoveryQuestionId": "q_c9f797bb",
+        "discoveryAnswerId": "q_c9f797bb",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 1978,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.415Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.416Z",
+        "identity": "evidence_item_7596f1af34c215c765f98f8b8cef10fe25da6a7bc9f36c0351e96fd4501131fd_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Emails, phone calls.",
+      "rawContent": "Emails, phone calls.",
+      "provenance": {
+        "discoveryQuestionId": "q_7b5e4c97",
+        "discoveryAnswerId": "q_7b5e4c97",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 20,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.416Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_81256514e007586bb845ab38505155f8ae68920f88f458f34a4775a15bbe3687_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Emails, phone calls, asking Robert questions that I don't have the answer to or need confirmation/approval from him. Remembering tasks that still need to be done from previous day/s.",
+      "rawContent": "Emails, phone calls, asking Robert questions that I don't have the answer to or need confirmation/approval from him. Remembering tasks that still need to be done from previous day/s.",
+      "provenance": {
+        "discoveryQuestionId": "q_af3e026d",
+        "discoveryAnswerId": "q_af3e026d",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 182,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_e48822aaaca118b66166a5ad2a2f8c516dab1c24160184ea61a4d8ca5aee2691_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Check/respond to emails, answer phones, approve blogs on our woocommerce pages that gpt created. Ask Robert questions about pricing, technical questions.",
+      "rawContent": "Check/respond to emails, answer phones, approve blogs on our woocommerce pages that gpt created. Ask Robert questions about pricing, technical questions.",
+      "provenance": {
+        "discoveryQuestionId": "q_646fa41b",
+        "discoveryAnswerId": "q_646fa41b",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 153,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_40b294f29d6024a512b794e639ba38a6a77ac2a64b8b9bb0b2d34f9d867e28d8_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Weekly: check mail, quote shipping, pay bills, file paperwork, light cleaning/dusting around office\n\nMonthly: Pay Bills, shred paperwork,\n\nQuarterly: CDTFA filing\n\nDecisions & Authority",
+      "rawContent": "Weekly: check mail, quote shipping, pay bills, file paperwork, light cleaning/dusting around office\r\n\nMonthly: Pay Bills, shred paperwork,\r\n\nQuarterly: CDTFA filing\r\n\nDecisions & Authority",
+      "provenance": {
+        "discoveryQuestionId": "q_1ea2fc9a",
+        "discoveryAnswerId": "q_1ea2fc9a",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 188,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_b6d1cd89a498f2949cc7c2d7bf619b80becaab78095507868d3c640a1d1b0f61_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Respond to A/R vendors when we are delayed on payment (and even then I need to ask Robert for an update sometimes), invoice creation for some customers, estimate creation for some customers, CDTFA filing, shipping scheduling with logistics (for the most part, occasionally need direction from Robert).",
+      "rawContent": "Respond to A/R vendors when we are delayed on payment (and even then I need to ask Robert for an update sometimes), invoice creation for some customers, estimate creation for some customers, CDTFA filing, shipping scheduling with logistics (for the most part, occasionally need direction from Robert).",
+      "provenance": {
+        "discoveryQuestionId": "q_3f64e133",
+        "discoveryAnswerId": "q_3f64e133",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 301,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_83899d12ac06fde9da384041fdc15c9a37ff6559ae0df4270ceb8bf18f1bfdd5_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Pricing for quoting, information is in a lot of places and changes sometimes. Dealer pricing is what we are going with now moving forward, so that should help too.",
+      "rawContent": "Pricing for quoting, information is in a lot of places and changes sometimes. Dealer pricing is what we are going with now moving forward, so that should help too.",
+      "provenance": {
+        "discoveryQuestionId": "q_3248d040",
+        "discoveryAnswerId": "q_3248d040",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 163,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_6b40238ec9023a725a00063b528fafd6810752dc389b0f1d463b9c56ddabb653_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "I answer questions confidently about certain processes and procedures we use, like shipping, and our policies on warranty and payment terms, etc. But so many customers have different questions, and I am not always sure the route Robert is going to want to take. There are also occasions where customers have a history that I'm unaware of because it was before my time, that change the way we handle that project. Some customers get discounts, some get charged extra. They also ask technical questions that I cant answer. They ask if something is possible with LED and I have to ask Robert about that. They ask if they can get a discount, I have to ask Robert.",
+      "rawContent": "I answer questions confidently about certain processes and procedures we use, like shipping, and our policies on warranty and payment terms, etc. But so many customers have different questions, and I am not always sure the route Robert is going to want to take. There are also occasions where customers have a history that I'm unaware of because it was before my time, that change the way we handle that project. Some customers get discounts, some get charged extra. They also ask technical questions that I cant answer. They ask if something is possible with LED and I have to ask Robert about that. They ask if they can get a discount, I have to ask Robert.",
+      "provenance": {
+        "discoveryQuestionId": "q_c39b871d",
+        "discoveryAnswerId": "q_c39b871d",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 659,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_deddd3ca756ec938ceea91f1b9499b87739fd0ca34d8c133d582518ecf3fbc0b_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Does it go to Robert or do you handle it?\n\nWhen a vendor or factory? If it is a vendor for something like metal, I can handle most of it but it's at the direction of Robert or Johnny for RJ Metal. I do not communicate with our vendors or factories for anything LED.\n\nWhat You Create & Send\n\nWhat documents do you personally create? (Invoices, estimates, POs, emails, reports?)\n\nInvoices, estimates, emails, reports for CDTFA, shipping docs,",
+      "rawContent": "Does it go to Robert or do you handle it?\n\nWhen a vendor or factory? If it is a vendor for something like metal, I can handle most of it but it's at the direction of Robert or Johnny for RJ Metal. I do not communicate with our vendors or factories for anything LED.\r\n\nWhat You Create & Send\r\n\nWhat documents do you personally create? (Invoices, estimates, POs, emails, reports?)\r\n\nInvoices, estimates, emails, reports for CDTFA, shipping docs,",
+      "provenance": {
+        "discoveryQuestionId": "q_4dddc17c",
+        "discoveryAnswerId": "q_4dddc17c",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 443,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_0862c1c0195491a91b6a2f3d29cfc289ae71627ae9ce54a84334185c47738bdf_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "BOLs for shipping, emails.",
+      "rawContent": "BOLs for shipping, emails.",
+      "provenance": {
+        "discoveryQuestionId": "q_bdc988c7",
+        "discoveryAnswerId": "q_bdc988c7",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 26,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_ff3e03aed0fc0c8b690009991bc9c9b841d2c40f979110386379aacf4cefa10d_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Sign off on anything?\n\nI approve shipping quotes, sign off on packages, sign off on metal quotes (after Roberts approval)",
+      "rawContent": "Sign off on anything?\n\nI approve shipping quotes, sign off on packages, sign off on metal quotes (after Roberts approval)",
+      "provenance": {
+        "discoveryQuestionId": "q_cc30cd7a",
+        "discoveryAnswerId": "q_cc30cd7a",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 121,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_01786ab6ef11b339fe344304187835ffa1fbd6f4f19b625f70fc7d03b3da7a6f_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "With vendors?\n\nYes, with customers. I would say I'm the first line of communication with most of our customers. I do not communicate with vendors for LED, only Robert does.\n\nPain Points — Be Honest",
+      "rawContent": "With vendors?\n\nYes, with customers. I would say I'm the first line of communication with most of our customers. I do not communicate with vendors for LED, only Robert does.\r\n\nPain Points — Be Honest",
+      "provenance": {
+        "discoveryQuestionId": "q_264bef34",
+        "discoveryAnswerId": "q_264bef34",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 198,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_7b43d07add0928e4a817bb15f36b1217d05d77d98334577ebf4cb26f96dda059_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Feeding through junk emails. Approving the blogs on the websites, this is if I had to choose something. Waiting on responses from Robert instead of handling them on my own.",
+      "rawContent": "Feeding through junk emails. Approving the blogs on the websites, this is if I had to choose something. Waiting on responses from Robert instead of handling them on my own.",
+      "provenance": {
+        "discoveryQuestionId": "q_1cc1f612",
+        "discoveryAnswerId": "q_1cc1f612",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 172,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_463b16ec7c43fac022d45e35289cae18bc5c62cd2b1d4533bea5a02304f3e736_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Information for customers from vendors overseas from the night before. Sometimes we get questions from customers first thing in the morning, and we don't have the answer (or the follow up questions) for them until the next morning (or afternoon). Conversations that could be minutes long end up being a couple days. Pricing on certain things that are not in our catalog. Options for customers who come to us with an idea or a vision, Robert is able to come up with ideas and options.",
+      "rawContent": "Information for customers from vendors overseas from the night before. Sometimes we get questions from customers first thing in the morning, and we don't have the answer (or the follow up questions) for them until the next morning (or afternoon). Conversations that could be minutes long end up being a couple days. Pricing on certain things that are not in our catalog. Options for customers who come to us with an idea or a vision, Robert is able to come up with ideas and options.",
+      "provenance": {
+        "discoveryQuestionId": "q_d984156a",
+        "discoveryAnswerId": "q_d984156a",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 483,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_d546fde0af0f17309efd771369ef788bfc1d4a15391ca4b901750290489b3a57_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Robert's brain LOL.",
+      "rawContent": "Robert's brain LOL.",
+      "provenance": {
+        "discoveryQuestionId": "q_eddb568b",
+        "discoveryAnswerId": "q_eddb568b",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 19,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_c156f66e22ada08dcb0f36ec6aed4542ddb1fb50c7acefa2d7af8ecc5bb36263_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Knowing everything about LED and digital displays and having access to accurate up to date information in a user friendly software or location.\n\nSoftware You Use Every Day\n\nList every piece of software or tool you open on a typical day\n\nOutlook, QUO, Teams, ZOHO, woocommerce websites, word, chrome and Microsoft edge, ssi pricing master sheet in google docs, chat gpt.",
+      "rawContent": "Knowing everything about LED and digital displays and having access to accurate up to date information in a user friendly software or location.\r\n\nSoftware You Use Every Day\r\n\nList every piece of software or tool you open on a typical day\r\n\nOutlook, QUO, Teams, ZOHO, woocommerce websites, word, chrome and Microsoft edge, ssi pricing master sheet in google docs, chat gpt.",
+      "provenance": {
+        "discoveryQuestionId": "q_2583e18a",
+        "discoveryAnswerId": "q_2583e18a",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 372,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_b7bc595d2e5572bce20c19ede7ed4b11dc940977d2ed3f1825b6e16670b8d40f_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Create invoices, estimates, customer information stored. Tax Summary for CDTFA filing quarterly. Product/item search.",
+      "rawContent": "Create invoices, estimates, customer information stored. Tax Summary for CDTFA filing quarterly. Product/item search.",
+      "provenance": {
+        "discoveryQuestionId": "q_8c70092e",
+        "discoveryAnswerId": "q_8c70092e",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 117,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_92918c2d34291a78283609bc7ef58f8d85bd5be2234491f90e78bab48b6d4c89_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "All price quoting, but there are so many products we don't have pricing for that we have to request or wait on. Or confirm the pricing is up to date.\n\nThe Big Question",
+      "rawContent": "All price quoting, but there are so many products we don't have pricing for that we have to request or wait on. Or confirm the pricing is up to date.\r\n\nThe Big Question",
+      "provenance": {
+        "discoveryQuestionId": "q_6ce8b448",
+        "discoveryAnswerId": "q_6ce8b448",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 168,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_5183abf4d09676f1c024bb8b7a1ac1c2a209c6274c694e116b8af66f70615eac_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "I think I could handle all customer communications about quoting. Technical stuff is still not something I am confident answering.",
+      "rawContent": "I think I could handle all customer communications about quoting. Technical stuff is still not something I am confident answering.",
+      "provenance": {
+        "discoveryQuestionId": "q_3ef2ec90",
+        "discoveryAnswerId": "q_3ef2ec90",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 130,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    },
+    {
+      "metadata": {
+        "created": "2026-07-10T00:12:36.417Z",
+        "identity": "evidence_item_2c54d41d2dced9d16ae6cd247b165e44aab138d6a29aad338cb93a9fdbfeb9a0_v1",
+        "scope": null,
+        "version": 1
+      },
+      "formType": "statement",
+      "content": "Price quoting, not including technical question answering.",
+      "rawContent": "Price quoting, not including technical question answering.",
+      "provenance": {
+        "discoveryQuestionId": "q_e4ef53dd",
+        "discoveryAnswerId": "q_e4ef53dd",
+        "discoverySectionId": "unknown",
+        "discoveryInterviewId": "interview_45da4e58",
+        "discoverySourceMetadata": {
+          "participant": "Unknown",
+          "role": "",
+          "department": "",
+          "interviewDate": "",
+          "interviewer": ""
+        },
+        "sourcePage": 1,
+        "sourceOffset": 0,
+        "sourceLength": 58,
+        "discoveryVersion": "1.0",
+        "evidenceIRCompilerVersion": "2.0.0",
+        "evidenceIRSchemaVersion": "1.0",
+        "compiledAt": "2026-07-10T00:12:36.417Z"
+      },
+      "relationships": {
+        "relatedItemIds": [],
+        "structuralRelationships": []
+      },
+      "validationResults": {
+        "isValid": true,
+        "violations": []
+      }
+    }
+  ],
+  "metadata": {
+    "created": "2026-07-10T00:12:36.417Z",
+    "identity": "evidence_collection_2560b533014a1b56ef427c613ec0d5a29afb27fe2a8db1a59f42b95c982024a2_v1",
+    "scope": null,
+    "version": "1"
+  },
+  "sourceInterviewId": "interview_45da4e58",
+  "sourceParticipant": {
+    "department": "",
+    "name": "Unknown",
+    "role": ""
+  },
+  "statistics": {
+    "itemsByFormType": {
+      "statement": "20"
+    },
+    "itemsWithViolations": "0",
+    "totalItems": "20",
+    "validItems": "20"
+  },
+  "validationResults": {
+    "errorCount": "0",
+    "isValid": true,
+    "violations": [],
+    "warningCount": "0"
+  }
+}

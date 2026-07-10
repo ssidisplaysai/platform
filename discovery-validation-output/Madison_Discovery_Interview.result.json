@@ -1,0 +1,1110 @@
+{
+  "success": true,
+  "timestamp": "2026-07-09T21:42:26.174Z",
+  "source": {
+    "sourceId": "src_madison_discovery_interview",
+    "sourceType": "pdf",
+    "fileName": "Madison Discovery Interview.pdf",
+    "filePath": "",
+    "fileSize": 5517,
+    "mimeType": "application/pdf",
+    "importedAt": "2026-07-09T21:42:26.174Z"
+  },
+  "validation": {
+    "valid": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "errors": [],
+    "warnings": [],
+    "infos": [
+      {
+        "code": "DISC_032",
+        "severity": "info",
+        "message": "Section order values are non-sequential — may indicate parsing gaps.",
+        "timestamp": "2026-07-09T21:42:26.172Z"
+      }
+    ]
+  },
+  "document": {
+    "sourceId": "src_madison_discovery_interview",
+    "sourceType": "pdf",
+    "fileName": "Madison Discovery Interview.pdf",
+    "pageCount": 1,
+    "metadata": {
+      "title": "Madison Discovery Interview",
+      "author": "Robert Stoner",
+      "subject": null,
+      "keywords": null,
+      "creator": null,
+      "producer": null,
+      "createdAt": "2026-07-09",
+      "modifiedAt": null,
+      "pageCount": 1,
+      "raw": {
+        "Title": "Madison Discovery Interview",
+        "Author": "Robert Stoner",
+        "CreationDate": "2026-07-09"
+      }
+    },
+    "pages": [
+      {
+        "pageNumber": 1,
+        "isEmpty": false,
+        "text": "\nGenesis Discovery Interview\n\nParticipant: Madison (Operations Lead)\nRole: Operations Manager\nDepartment: Operations\nDate: July 5, 2026\nInterviewer: Robert Stoner\nInterview Duration: 50 minutes\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 1: DAILY RESPONSIBILITIES\n\nQ1. Walk me through what a typical day looks like for you.\n\nI start by checking overnight factory updates. We have three main factories in China, and they're\nin a different timezone, so I usually have 5-10 messages from them by morning. I triage those and\nupdate Robert if anything is urgent.\n\nThen I spend time on two things: (1) order tracking and fulfillment, and (2) vendor management. I look at\nactive orders, check factory status, update customers on timeline, and handle any issues that come up.\n\nQ2. What systems do you use daily?\n\nZoho is my main system — invoicing, estimates, order tracking. I'm also in Asana for project tracking,\nOutlook for email, and Teams. A lot of communication with factories is via WhatsApp or email directly.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 2: OPERATIONS WORKFLOW\n\nQ3. Walk me through the order fulfillment process from your perspective.\n\nOnce an order is confirmed by Robert, it comes to me. I log it in Zoho and break it down by components\nand vendors. Then I communicate to the factories: what we need, quantity, delivery date, specs. I track\nprogress — they send me photos, updates, sometimes issues.\n\nWhen everything is ready to ship, I coordinate logistics. We work with a freight forwarder who handles\ncustoms and delivery. I track the shipment, update the customer, and coordinate delivery. After delivery,\nwe handle any issues or warranty claims.\n\nQ4. How much of your time is spent on exception handling vs. routine work?\n\nProbably 60% routine and 40% exceptions. Exceptions are things like: factory delays, quality issues,\nwrong specifications shipped, customs issues, customer change requests mid-order. These eat a lot of time\nbecause they require rework or urgent communication.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 3: FACTORY RELATIONSHIPS & LOGISTICS\n\nQ5. How do you communicate with the factories?\n\nDirectly via WhatsApp, email, and sometimes phone calls if it's urgent. They speak English, but it's not\nnative, so sometimes clarity issues arise. I've learned to be very explicit with specs and to ask for\nphotos as proof of work.\n\nQ6. What causes the most friction with factory communication?\n\nTimezone delays and language nuances. Also, they sometimes interpret specs differently than we intended.\nI have to follow up constantly. The relationship works, but it's not frictionless. If one of the key\ncontacts at a factory changes, we have to rebuild that relationship.\n\nQ7. How is freight currently handled?\n\nWe use the same freight forwarder for most shipments. They handle the logistics from China to the US.\nWe pay by shipment, and costs vary. Sometimes we combine multiple orders into one shipment to save cost,\nsometimes we ship separately if the customer is urgent.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 4: BOTTLENECKS & PAIN POINTS\n\nQ8. What's your biggest operational bottleneck?\n\nVisibility. I often don't know the exact status of orders until I ask. There's no real-time feed from factories.\nI'm constantly chasing them for updates. Also, Zoho isn't integrated with our quoting system, so there's\nmanual rekeying of information.\n\nQ9. Where do things typically go wrong?\n\nSpecification mismatches — we quote one thing, then the factory makes it wrong. Customer change requests\nafter an order is placed. Freight delays or customs issues. Quality issues that don't show up until the\nproduct reaches the US.\n\nQ10. How much time do you spend on admin tasks vs. strategic work?\n\nI'd say 80% admin — answering emails, updating spreadsheets, following up on status, handling exceptions.\nMaybe 20% on things like optimizing the process or planning. I'd like it to be flipped.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 5: AUTHORITY & DECISION MAKING\n\nQ11. What decisions do you currently make on your own vs. what requires Robert's approval?\n\nI can make day-to-day operational decisions — reorder, adjust timelines, handle customer service issues.\nBut anything with a price implication, a customer relationship issue, or something unusual goes to Robert.\nHe's the final decision maker on most things.\n\nQ12. Do you feel like you have enough information to make the decisions you're responsible for?\n\nMostly yes, but not always. When something goes wrong mid-order, I sometimes don't have enough context\nto decide independently. I end up escalating to Robert anyway.\n\n═══════════════════════════════════════════════════════════════════════════\n\nSECTION 6: SCALING & GROWTH\n\nQ13. If workload doubled, what would break first?\n\nMy time. I'm already at capacity. I'd need to delegate more or hire someone to help. Also, the manual\nprocesses would become unmanageable. We'd need better systems.\n\nQ14. What's preventing us from scaling to 2x volume right now?\n\nBandwidth. Robert is the bottleneck for decisions. I'm the bottleneck for execution. And our systems\nare manual. Without better automation or another person, we can't absorb more volume without sacrificing\nquality or burning out.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+        "blocks": [
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 0,
+            "lineStart": 0,
+            "lineEnd": 0
+          },
+          {
+            "type": "paragraph",
+            "text": "Genesis Discovery Interview",
+            "raw": "Genesis Discovery Interview",
+            "pageNumber": 1,
+            "blockIndex": 1,
+            "lineStart": 1,
+            "lineEnd": 1
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 2,
+            "lineStart": 2,
+            "lineEnd": 2
+          },
+          {
+            "type": "metadata",
+            "text": "Participant: Madison (Operations Lead)\nRole: Operations Manager\nDepartment: Operations\nDate: July 5, 2026\nInterviewer: Robert Stoner\nInterview Duration: 50 minutes",
+            "raw": "Participant: Madison (Operations Lead)\nRole: Operations Manager\nDepartment: Operations\nDate: July 5, 2026\nInterviewer: Robert Stoner\nInterview Duration: 50 minutes",
+            "pageNumber": 1,
+            "blockIndex": 3,
+            "lineStart": 3,
+            "lineEnd": 8
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 4,
+            "lineStart": 9,
+            "lineEnd": 9
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 5,
+            "lineStart": 10,
+            "lineEnd": 10
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 6,
+            "lineStart": 11,
+            "lineEnd": 11
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 1: DAILY RESPONSIBILITIES",
+            "raw": "SECTION 1: DAILY RESPONSIBILITIES",
+            "pageNumber": 1,
+            "blockIndex": 7,
+            "lineStart": 12,
+            "lineEnd": 12
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 8,
+            "lineStart": 13,
+            "lineEnd": 13
+          },
+          {
+            "type": "question",
+            "text": "Q1. Walk me through what a typical day looks like for you.",
+            "raw": "Q1. Walk me through what a typical day looks like for you.",
+            "pageNumber": 1,
+            "blockIndex": 9,
+            "lineStart": 14,
+            "lineEnd": 14
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 10,
+            "lineStart": 15,
+            "lineEnd": 15
+          },
+          {
+            "type": "paragraph",
+            "text": "I start by checking overnight factory updates. We have three main factories in China, and they're\nin a different timezone, so I usually have 5-10 messages from them by morning. I triage those and\nupdate Robert if anything is urgent.",
+            "raw": "I start by checking overnight factory updates. We have three main factories in China, and they're\nin a different timezone, so I usually have 5-10 messages from them by morning. I triage those and\nupdate Robert if anything is urgent.",
+            "pageNumber": 1,
+            "blockIndex": 11,
+            "lineStart": 16,
+            "lineEnd": 18
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 12,
+            "lineStart": 19,
+            "lineEnd": 19
+          },
+          {
+            "type": "paragraph",
+            "text": "Then I spend time on two things: (1) order tracking and fulfillment, and (2) vendor management. I look at\nactive orders, check factory status, update customers on timeline, and handle any issues that come up.",
+            "raw": "Then I spend time on two things: (1) order tracking and fulfillment, and (2) vendor management. I look at\nactive orders, check factory status, update customers on timeline, and handle any issues that come up.",
+            "pageNumber": 1,
+            "blockIndex": 13,
+            "lineStart": 20,
+            "lineEnd": 21
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 14,
+            "lineStart": 22,
+            "lineEnd": 22
+          },
+          {
+            "type": "question",
+            "text": "Q2. What systems do you use daily?",
+            "raw": "Q2. What systems do you use daily?",
+            "pageNumber": 1,
+            "blockIndex": 15,
+            "lineStart": 23,
+            "lineEnd": 23
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 16,
+            "lineStart": 24,
+            "lineEnd": 24
+          },
+          {
+            "type": "paragraph",
+            "text": "Zoho is my main system — invoicing, estimates, order tracking. I'm also in Asana for project tracking,\nOutlook for email, and Teams. A lot of communication with factories is via WhatsApp or email directly.",
+            "raw": "Zoho is my main system — invoicing, estimates, order tracking. I'm also in Asana for project tracking,\nOutlook for email, and Teams. A lot of communication with factories is via WhatsApp or email directly.",
+            "pageNumber": 1,
+            "blockIndex": 17,
+            "lineStart": 25,
+            "lineEnd": 26
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 18,
+            "lineStart": 27,
+            "lineEnd": 27
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 19,
+            "lineStart": 28,
+            "lineEnd": 28
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 20,
+            "lineStart": 29,
+            "lineEnd": 29
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 2: OPERATIONS WORKFLOW",
+            "raw": "SECTION 2: OPERATIONS WORKFLOW",
+            "pageNumber": 1,
+            "blockIndex": 21,
+            "lineStart": 30,
+            "lineEnd": 30
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 22,
+            "lineStart": 31,
+            "lineEnd": 31
+          },
+          {
+            "type": "question",
+            "text": "Q3. Walk me through the order fulfillment process from your perspective.",
+            "raw": "Q3. Walk me through the order fulfillment process from your perspective.",
+            "pageNumber": 1,
+            "blockIndex": 23,
+            "lineStart": 32,
+            "lineEnd": 32
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 24,
+            "lineStart": 33,
+            "lineEnd": 33
+          },
+          {
+            "type": "paragraph",
+            "text": "Once an order is confirmed by Robert, it comes to me. I log it in Zoho and break it down by components\nand vendors. Then I communicate to the factories: what we need, quantity, delivery date, specs. I track\nprogress — they send me photos, updates, sometimes issues.",
+            "raw": "Once an order is confirmed by Robert, it comes to me. I log it in Zoho and break it down by components\nand vendors. Then I communicate to the factories: what we need, quantity, delivery date, specs. I track\nprogress — they send me photos, updates, sometimes issues.",
+            "pageNumber": 1,
+            "blockIndex": 25,
+            "lineStart": 34,
+            "lineEnd": 36
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 26,
+            "lineStart": 37,
+            "lineEnd": 37
+          },
+          {
+            "type": "paragraph",
+            "text": "When everything is ready to ship, I coordinate logistics. We work with a freight forwarder who handles\ncustoms and delivery. I track the shipment, update the customer, and coordinate delivery. After delivery,\nwe handle any issues or warranty claims.",
+            "raw": "When everything is ready to ship, I coordinate logistics. We work with a freight forwarder who handles\ncustoms and delivery. I track the shipment, update the customer, and coordinate delivery. After delivery,\nwe handle any issues or warranty claims.",
+            "pageNumber": 1,
+            "blockIndex": 27,
+            "lineStart": 38,
+            "lineEnd": 40
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 28,
+            "lineStart": 41,
+            "lineEnd": 41
+          },
+          {
+            "type": "question",
+            "text": "Q4. How much of your time is spent on exception handling vs. routine work?",
+            "raw": "Q4. How much of your time is spent on exception handling vs. routine work?",
+            "pageNumber": 1,
+            "blockIndex": 29,
+            "lineStart": 42,
+            "lineEnd": 42
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 30,
+            "lineStart": 43,
+            "lineEnd": 43
+          },
+          {
+            "type": "paragraph",
+            "text": "Probably 60% routine and 40% exceptions. Exceptions are things like: factory delays, quality issues,\nwrong specifications shipped, customs issues, customer change requests mid-order. These eat a lot of time\nbecause they require rework or urgent communication.",
+            "raw": "Probably 60% routine and 40% exceptions. Exceptions are things like: factory delays, quality issues,\nwrong specifications shipped, customs issues, customer change requests mid-order. These eat a lot of time\nbecause they require rework or urgent communication.",
+            "pageNumber": 1,
+            "blockIndex": 31,
+            "lineStart": 44,
+            "lineEnd": 46
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 32,
+            "lineStart": 47,
+            "lineEnd": 47
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 33,
+            "lineStart": 48,
+            "lineEnd": 48
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 34,
+            "lineStart": 49,
+            "lineEnd": 49
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 3: FACTORY RELATIONSHIPS & LOGISTICS",
+            "raw": "SECTION 3: FACTORY RELATIONSHIPS & LOGISTICS",
+            "pageNumber": 1,
+            "blockIndex": 35,
+            "lineStart": 50,
+            "lineEnd": 50
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 36,
+            "lineStart": 51,
+            "lineEnd": 51
+          },
+          {
+            "type": "question",
+            "text": "Q5. How do you communicate with the factories?",
+            "raw": "Q5. How do you communicate with the factories?",
+            "pageNumber": 1,
+            "blockIndex": 37,
+            "lineStart": 52,
+            "lineEnd": 52
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 38,
+            "lineStart": 53,
+            "lineEnd": 53
+          },
+          {
+            "type": "paragraph",
+            "text": "Directly via WhatsApp, email, and sometimes phone calls if it's urgent. They speak English, but it's not\nnative, so sometimes clarity issues arise. I've learned to be very explicit with specs and to ask for\nphotos as proof of work.",
+            "raw": "Directly via WhatsApp, email, and sometimes phone calls if it's urgent. They speak English, but it's not\nnative, so sometimes clarity issues arise. I've learned to be very explicit with specs and to ask for\nphotos as proof of work.",
+            "pageNumber": 1,
+            "blockIndex": 39,
+            "lineStart": 54,
+            "lineEnd": 56
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 40,
+            "lineStart": 57,
+            "lineEnd": 57
+          },
+          {
+            "type": "question",
+            "text": "Q6. What causes the most friction with factory communication?",
+            "raw": "Q6. What causes the most friction with factory communication?",
+            "pageNumber": 1,
+            "blockIndex": 41,
+            "lineStart": 58,
+            "lineEnd": 58
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 42,
+            "lineStart": 59,
+            "lineEnd": 59
+          },
+          {
+            "type": "paragraph",
+            "text": "Timezone delays and language nuances. Also, they sometimes interpret specs differently than we intended.\nI have to follow up constantly. The relationship works, but it's not frictionless. If one of the key\ncontacts at a factory changes, we have to rebuild that relationship.",
+            "raw": "Timezone delays and language nuances. Also, they sometimes interpret specs differently than we intended.\nI have to follow up constantly. The relationship works, but it's not frictionless. If one of the key\ncontacts at a factory changes, we have to rebuild that relationship.",
+            "pageNumber": 1,
+            "blockIndex": 43,
+            "lineStart": 60,
+            "lineEnd": 62
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 44,
+            "lineStart": 63,
+            "lineEnd": 63
+          },
+          {
+            "type": "question",
+            "text": "Q7. How is freight currently handled?",
+            "raw": "Q7. How is freight currently handled?",
+            "pageNumber": 1,
+            "blockIndex": 45,
+            "lineStart": 64,
+            "lineEnd": 64
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 46,
+            "lineStart": 65,
+            "lineEnd": 65
+          },
+          {
+            "type": "paragraph",
+            "text": "We use the same freight forwarder for most shipments. They handle the logistics from China to the US.\nWe pay by shipment, and costs vary. Sometimes we combine multiple orders into one shipment to save cost,\nsometimes we ship separately if the customer is urgent.",
+            "raw": "We use the same freight forwarder for most shipments. They handle the logistics from China to the US.\nWe pay by shipment, and costs vary. Sometimes we combine multiple orders into one shipment to save cost,\nsometimes we ship separately if the customer is urgent.",
+            "pageNumber": 1,
+            "blockIndex": 47,
+            "lineStart": 66,
+            "lineEnd": 68
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 48,
+            "lineStart": 69,
+            "lineEnd": 69
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 49,
+            "lineStart": 70,
+            "lineEnd": 70
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 50,
+            "lineStart": 71,
+            "lineEnd": 71
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 4: BOTTLENECKS & PAIN POINTS",
+            "raw": "SECTION 4: BOTTLENECKS & PAIN POINTS",
+            "pageNumber": 1,
+            "blockIndex": 51,
+            "lineStart": 72,
+            "lineEnd": 72
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 52,
+            "lineStart": 73,
+            "lineEnd": 73
+          },
+          {
+            "type": "question",
+            "text": "Q8. What's your biggest operational bottleneck?",
+            "raw": "Q8. What's your biggest operational bottleneck?",
+            "pageNumber": 1,
+            "blockIndex": 53,
+            "lineStart": 74,
+            "lineEnd": 74
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 54,
+            "lineStart": 75,
+            "lineEnd": 75
+          },
+          {
+            "type": "paragraph",
+            "text": "Visibility. I often don't know the exact status of orders until I ask. There's no real-time feed from factories.\nI'm constantly chasing them for updates. Also, Zoho isn't integrated with our quoting system, so there's\nmanual rekeying of information.",
+            "raw": "Visibility. I often don't know the exact status of orders until I ask. There's no real-time feed from factories.\nI'm constantly chasing them for updates. Also, Zoho isn't integrated with our quoting system, so there's\nmanual rekeying of information.",
+            "pageNumber": 1,
+            "blockIndex": 55,
+            "lineStart": 76,
+            "lineEnd": 78
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 56,
+            "lineStart": 79,
+            "lineEnd": 79
+          },
+          {
+            "type": "question",
+            "text": "Q9. Where do things typically go wrong?",
+            "raw": "Q9. Where do things typically go wrong?",
+            "pageNumber": 1,
+            "blockIndex": 57,
+            "lineStart": 80,
+            "lineEnd": 80
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 58,
+            "lineStart": 81,
+            "lineEnd": 81
+          },
+          {
+            "type": "paragraph",
+            "text": "Specification mismatches — we quote one thing, then the factory makes it wrong. Customer change requests\nafter an order is placed. Freight delays or customs issues. Quality issues that don't show up until the\nproduct reaches the US.",
+            "raw": "Specification mismatches — we quote one thing, then the factory makes it wrong. Customer change requests\nafter an order is placed. Freight delays or customs issues. Quality issues that don't show up until the\nproduct reaches the US.",
+            "pageNumber": 1,
+            "blockIndex": 59,
+            "lineStart": 82,
+            "lineEnd": 84
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 60,
+            "lineStart": 85,
+            "lineEnd": 85
+          },
+          {
+            "type": "question",
+            "text": "Q10. How much time do you spend on admin tasks vs. strategic work?",
+            "raw": "Q10. How much time do you spend on admin tasks vs. strategic work?",
+            "pageNumber": 1,
+            "blockIndex": 61,
+            "lineStart": 86,
+            "lineEnd": 86
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 62,
+            "lineStart": 87,
+            "lineEnd": 87
+          },
+          {
+            "type": "paragraph",
+            "text": "I'd say 80% admin — answering emails, updating spreadsheets, following up on status, handling exceptions.\nMaybe 20% on things like optimizing the process or planning. I'd like it to be flipped.",
+            "raw": "I'd say 80% admin — answering emails, updating spreadsheets, following up on status, handling exceptions.\nMaybe 20% on things like optimizing the process or planning. I'd like it to be flipped.",
+            "pageNumber": 1,
+            "blockIndex": 63,
+            "lineStart": 88,
+            "lineEnd": 89
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 64,
+            "lineStart": 90,
+            "lineEnd": 90
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 65,
+            "lineStart": 91,
+            "lineEnd": 91
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 66,
+            "lineStart": 92,
+            "lineEnd": 92
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 5: AUTHORITY & DECISION MAKING",
+            "raw": "SECTION 5: AUTHORITY & DECISION MAKING",
+            "pageNumber": 1,
+            "blockIndex": 67,
+            "lineStart": 93,
+            "lineEnd": 93
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 68,
+            "lineStart": 94,
+            "lineEnd": 94
+          },
+          {
+            "type": "question",
+            "text": "Q11. What decisions do you currently make on your own vs. what requires Robert's approval?",
+            "raw": "Q11. What decisions do you currently make on your own vs. what requires Robert's approval?",
+            "pageNumber": 1,
+            "blockIndex": 69,
+            "lineStart": 95,
+            "lineEnd": 95
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 70,
+            "lineStart": 96,
+            "lineEnd": 96
+          },
+          {
+            "type": "paragraph",
+            "text": "I can make day-to-day operational decisions — reorder, adjust timelines, handle customer service issues.\nBut anything with a price implication, a customer relationship issue, or something unusual goes to Robert.\nHe's the final decision maker on most things.",
+            "raw": "I can make day-to-day operational decisions — reorder, adjust timelines, handle customer service issues.\nBut anything with a price implication, a customer relationship issue, or something unusual goes to Robert.\nHe's the final decision maker on most things.",
+            "pageNumber": 1,
+            "blockIndex": 71,
+            "lineStart": 97,
+            "lineEnd": 99
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 72,
+            "lineStart": 100,
+            "lineEnd": 100
+          },
+          {
+            "type": "question",
+            "text": "Q12. Do you feel like you have enough information to make the decisions you're responsible for?",
+            "raw": "Q12. Do you feel like you have enough information to make the decisions you're responsible for?",
+            "pageNumber": 1,
+            "blockIndex": 73,
+            "lineStart": 101,
+            "lineEnd": 101
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 74,
+            "lineStart": 102,
+            "lineEnd": 102
+          },
+          {
+            "type": "paragraph",
+            "text": "Mostly yes, but not always. When something goes wrong mid-order, I sometimes don't have enough context\nto decide independently. I end up escalating to Robert anyway.",
+            "raw": "Mostly yes, but not always. When something goes wrong mid-order, I sometimes don't have enough context\nto decide independently. I end up escalating to Robert anyway.",
+            "pageNumber": 1,
+            "blockIndex": 75,
+            "lineStart": 103,
+            "lineEnd": 104
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 76,
+            "lineStart": 105,
+            "lineEnd": 105
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 77,
+            "lineStart": 106,
+            "lineEnd": 106
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 78,
+            "lineStart": 107,
+            "lineEnd": 107
+          },
+          {
+            "type": "section_header",
+            "text": "SECTION 6: SCALING & GROWTH",
+            "raw": "SECTION 6: SCALING & GROWTH",
+            "pageNumber": 1,
+            "blockIndex": 79,
+            "lineStart": 108,
+            "lineEnd": 108
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 80,
+            "lineStart": 109,
+            "lineEnd": 109
+          },
+          {
+            "type": "question",
+            "text": "Q13. If workload doubled, what would break first?",
+            "raw": "Q13. If workload doubled, what would break first?",
+            "pageNumber": 1,
+            "blockIndex": 81,
+            "lineStart": 110,
+            "lineEnd": 110
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 82,
+            "lineStart": 111,
+            "lineEnd": 111
+          },
+          {
+            "type": "paragraph",
+            "text": "My time. I'm already at capacity. I'd need to delegate more or hire someone to help. Also, the manual\nprocesses would become unmanageable. We'd need better systems.",
+            "raw": "My time. I'm already at capacity. I'd need to delegate more or hire someone to help. Also, the manual\nprocesses would become unmanageable. We'd need better systems.",
+            "pageNumber": 1,
+            "blockIndex": 83,
+            "lineStart": 112,
+            "lineEnd": 113
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 84,
+            "lineStart": 114,
+            "lineEnd": 114
+          },
+          {
+            "type": "question",
+            "text": "Q14. What's preventing us from scaling to 2x volume right now?",
+            "raw": "Q14. What's preventing us from scaling to 2x volume right now?",
+            "pageNumber": 1,
+            "blockIndex": 85,
+            "lineStart": 115,
+            "lineEnd": 115
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 86,
+            "lineStart": 116,
+            "lineEnd": 116
+          },
+          {
+            "type": "paragraph",
+            "text": "Bandwidth. Robert is the bottleneck for decisions. I'm the bottleneck for execution. And our systems\nare manual. Without better automation or another person, we can't absorb more volume without sacrificing\nquality or burning out.",
+            "raw": "Bandwidth. Robert is the bottleneck for decisions. I'm the bottleneck for execution. And our systems\nare manual. Without better automation or another person, we can't absorb more volume without sacrificing\nquality or burning out.",
+            "pageNumber": 1,
+            "blockIndex": 87,
+            "lineStart": 117,
+            "lineEnd": 119
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 88,
+            "lineStart": 120,
+            "lineEnd": 120
+          },
+          {
+            "type": "paragraph",
+            "text": "═══════════════════════════════════════════════════════════════════════════",
+            "raw": "═══════════════════════════════════════════════════════════════════════════",
+            "pageNumber": 1,
+            "blockIndex": 89,
+            "lineStart": 121,
+            "lineEnd": 121
+          },
+          {
+            "type": "blank",
+            "text": "",
+            "raw": "",
+            "pageNumber": 1,
+            "blockIndex": 90,
+            "lineStart": 122,
+            "lineEnd": 122
+          }
+        ]
+      }
+    ],
+    "diagnostics": []
+  },
+  "interview": {
+    "interviewId": "interview_b42c08cc",
+    "participant": "Madison (Operations Lead)",
+    "role": "Operations Manager",
+    "department": "Operations",
+    "interviewDate": "July 5, 2026",
+    "interviewer": "Robert Stoner",
+    "sourceId": "src_madison_discovery_interview",
+    "rawMetadata": {
+      "participant": "Madison (Operations Lead)",
+      "role": "Operations Manager",
+      "department": "Operations",
+      "interviewDate": "July 5, 2026",
+      "interviewer": "Robert Stoner"
+    },
+    "sections": [
+      {
+        "title": "SECTION 1: DAILY RESPONSIBILITIES",
+        "order": 2,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_00fb18d3",
+            "question": "Walk me through what a typical day looks like for you.",
+            "answer": "I start by checking overnight factory updates. We have three main factories in China, and they're\nin a different timezone, so I usually have 5-10 messages from them by morning. I triage those and\nupdate Robert if anything is urgent.\n\nThen I spend time on two things: (1) order tracking and fulfillment, and (2) vendor management. I look at\nactive orders, check factory status, update customers on timeline, and handle any issues that come up.",
+            "rawQuestion": "Walk me through what a typical day looks like for you.",
+            "rawAnswer": "\nI start by checking overnight factory updates. We have three main factories in China, and they're\nin a different timezone, so I usually have 5-10 messages from them by morning. I triage those and\nupdate Robert if anything is urgent.\n\nThen I spend time on two things: (1) order tracking and fulfillment, and (2) vendor management. I look at\nactive orders, check factory status, update customers on timeline, and handle any issues that come up.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_0da26fb1",
+            "question": "What systems do you use daily?",
+            "answer": "Zoho is my main system — invoicing, estimates, order tracking. I'm also in Asana for project tracking,\nOutlook for email, and Teams. A lot of communication with factories is via WhatsApp or email directly.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "What systems do you use daily?",
+            "rawAnswer": "\nZoho is my main system — invoicing, estimates, order tracking. I'm also in Asana for project tracking,\nOutlook for email, and Teams. A lot of communication with factories is via WhatsApp or email directly.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 2: OPERATIONS WORKFLOW",
+        "order": 3,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_c37b4893",
+            "question": "Walk me through the order fulfillment process from your perspective.",
+            "answer": "Once an order is confirmed by Robert, it comes to me. I log it in Zoho and break it down by components\nand vendors. Then I communicate to the factories: what we need, quantity, delivery date, specs. I track\nprogress — they send me photos, updates, sometimes issues.\n\nWhen everything is ready to ship, I coordinate logistics. We work with a freight forwarder who handles\ncustoms and delivery. I track the shipment, update the customer, and coordinate delivery. After delivery,\nwe handle any issues or warranty claims.",
+            "rawQuestion": "Walk me through the order fulfillment process from your perspective.",
+            "rawAnswer": "\nOnce an order is confirmed by Robert, it comes to me. I log it in Zoho and break it down by components\nand vendors. Then I communicate to the factories: what we need, quantity, delivery date, specs. I track\nprogress — they send me photos, updates, sometimes issues.\n\nWhen everything is ready to ship, I coordinate logistics. We work with a freight forwarder who handles\ncustoms and delivery. I track the shipment, update the customer, and coordinate delivery. After delivery,\nwe handle any issues or warranty claims.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_65955929",
+            "question": "How much of your time is spent on exception handling vs. routine work?",
+            "answer": "Probably 60% routine and 40% exceptions. Exceptions are things like: factory delays, quality issues,\nwrong specifications shipped, customs issues, customer change requests mid-order. These eat a lot of time\nbecause they require rework or urgent communication.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "How much of your time is spent on exception handling vs. routine work?",
+            "rawAnswer": "\nProbably 60% routine and 40% exceptions. Exceptions are things like: factory delays, quality issues,\nwrong specifications shipped, customs issues, customer change requests mid-order. These eat a lot of time\nbecause they require rework or urgent communication.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 3: FACTORY RELATIONSHIPS & LOGISTICS",
+        "order": 4,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_04f9b70d",
+            "question": "How do you communicate with the factories?",
+            "answer": "Directly via WhatsApp, email, and sometimes phone calls if it's urgent. They speak English, but it's not\nnative, so sometimes clarity issues arise. I've learned to be very explicit with specs and to ask for\nphotos as proof of work.",
+            "rawQuestion": "How do you communicate with the factories?",
+            "rawAnswer": "\nDirectly via WhatsApp, email, and sometimes phone calls if it's urgent. They speak English, but it's not\nnative, so sometimes clarity issues arise. I've learned to be very explicit with specs and to ask for\nphotos as proof of work.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_b0355b46",
+            "question": "What causes the most friction with factory communication?",
+            "answer": "Timezone delays and language nuances. Also, they sometimes interpret specs differently than we intended.\nI have to follow up constantly. The relationship works, but it's not frictionless. If one of the key\ncontacts at a factory changes, we have to rebuild that relationship.",
+            "rawQuestion": "What causes the most friction with factory communication?",
+            "rawAnswer": "\nTimezone delays and language nuances. Also, they sometimes interpret specs differently than we intended.\nI have to follow up constantly. The relationship works, but it's not frictionless. If one of the key\ncontacts at a factory changes, we have to rebuild that relationship.\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_264141be",
+            "question": "How is freight currently handled?",
+            "answer": "We use the same freight forwarder for most shipments. They handle the logistics from China to the US.\nWe pay by shipment, and costs vary. Sometimes we combine multiple orders into one shipment to save cost,\nsometimes we ship separately if the customer is urgent.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "How is freight currently handled?",
+            "rawAnswer": "\nWe use the same freight forwarder for most shipments. They handle the logistics from China to the US.\nWe pay by shipment, and costs vary. Sometimes we combine multiple orders into one shipment to save cost,\nsometimes we ship separately if the customer is urgent.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 3,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 4: BOTTLENECKS & PAIN POINTS",
+        "order": 5,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_b3c33390",
+            "question": "What's your biggest operational bottleneck?",
+            "answer": "Visibility. I often don't know the exact status of orders until I ask. There's no real-time feed from factories.\nI'm constantly chasing them for updates. Also, Zoho isn't integrated with our quoting system, so there's\nmanual rekeying of information.",
+            "rawQuestion": "What's your biggest operational bottleneck?",
+            "rawAnswer": "\nVisibility. I often don't know the exact status of orders until I ask. There's no real-time feed from factories.\nI'm constantly chasing them for updates. Also, Zoho isn't integrated with our quoting system, so there's\nmanual rekeying of information.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_2f997429",
+            "question": "Where do things typically go wrong?",
+            "answer": "Specification mismatches — we quote one thing, then the factory makes it wrong. Customer change requests\nafter an order is placed. Freight delays or customs issues. Quality issues that don't show up until the\nproduct reaches the US.",
+            "rawQuestion": "Where do things typically go wrong?",
+            "rawAnswer": "\nSpecification mismatches — we quote one thing, then the factory makes it wrong. Customer change requests\nafter an order is placed. Freight delays or customs issues. Quality issues that don't show up until the\nproduct reaches the US.\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_55d58f03",
+            "question": "How much time do you spend on admin tasks vs. strategic work?",
+            "answer": "I'd say 80% admin — answering emails, updating spreadsheets, following up on status, handling exceptions.\nMaybe 20% on things like optimizing the process or planning. I'd like it to be flipped.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "How much time do you spend on admin tasks vs. strategic work?",
+            "rawAnswer": "\nI'd say 80% admin — answering emails, updating spreadsheets, following up on status, handling exceptions.\nMaybe 20% on things like optimizing the process or planning. I'd like it to be flipped.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 3,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 5: AUTHORITY & DECISION MAKING",
+        "order": 6,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_783ae6b4",
+            "question": "What decisions do you currently make on your own vs. what requires Robert's approval?",
+            "answer": "I can make day-to-day operational decisions — reorder, adjust timelines, handle customer service issues.\nBut anything with a price implication, a customer relationship issue, or something unusual goes to Robert.\nHe's the final decision maker on most things.",
+            "rawQuestion": "What decisions do you currently make on your own vs. what requires Robert's approval?",
+            "rawAnswer": "\nI can make day-to-day operational decisions — reorder, adjust timelines, handle customer service issues.\nBut anything with a price implication, a customer relationship issue, or something unusual goes to Robert.\nHe's the final decision maker on most things.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_08f73bb7",
+            "question": "Do you feel like you have enough information to make the decisions you're responsible for?",
+            "answer": "Mostly yes, but not always. When something goes wrong mid-order, I sometimes don't have enough context\nto decide independently. I end up escalating to Robert anyway.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "Do you feel like you have enough information to make the decisions you're responsible for?",
+            "rawAnswer": "\nMostly yes, but not always. When something goes wrong mid-order, I sometimes don't have enough context\nto decide independently. I end up escalating to Robert anyway.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "title": "SECTION 6: SCALING & GROWTH",
+        "order": 7,
+        "startPage": 1,
+        "questions": [
+          {
+            "id": "q_d683ad5d",
+            "question": "If workload doubled, what would break first?",
+            "answer": "My time. I'm already at capacity. I'd need to delegate more or hire someone to help. Also, the manual\nprocesses would become unmanageable. We'd need better systems.",
+            "rawQuestion": "If workload doubled, what would break first?",
+            "rawAnswer": "\nMy time. I'm already at capacity. I'd need to delegate more or hire someone to help. Also, the manual\nprocesses would become unmanageable. We'd need better systems.\n",
+            "page": 1,
+            "order": 1,
+            "answerPages": [
+              1
+            ]
+          },
+          {
+            "id": "q_c01b66a3",
+            "question": "What's preventing us from scaling to 2x volume right now?",
+            "answer": "Bandwidth. Robert is the bottleneck for decisions. I'm the bottleneck for execution. And our systems\nare manual. Without better automation or another person, we can't absorb more volume without sacrificing\nquality or burning out.\n\n═══════════════════════════════════════════════════════════════════════════",
+            "rawQuestion": "What's preventing us from scaling to 2x volume right now?",
+            "rawAnswer": "\nBandwidth. Robert is the bottleneck for decisions. I'm the bottleneck for execution. And our systems\nare manual. Without better automation or another person, we can't absorb more volume without sacrificing\nquality or burning out.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+            "page": 1,
+            "order": 2,
+            "answerPages": [
+              1
+            ]
+          }
+        ]
+      }
+    ],
+    "diagnostics": []
+  },
+  "diagnostics": []
+}
