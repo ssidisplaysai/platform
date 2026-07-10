@@ -55,6 +55,16 @@ export { CompilerValidationEngine } from "./core/CompilerValidationEngine";
 export { CompilerVersionManager } from "./core/CompilerVersionManager";
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
+export {
+	BUSINESS_GENOME_SEMANTIC_CLASSES,
+	BUSINESS_GENOME_RELATIONSHIP_CLASSES,
+	RELATIONSHIP_CLASS_GOVERNANCE_NOTE,
+	isBusinessGenomeSemanticClass,
+	isBusinessGenomeRelationshipClass,
+	toDeterministicSemanticGraph,
+	deterministicSemanticGraphSerialization,
+	checksumBusinessGenomeArtifact,
+} from "./genome";
 
 export type {
 	CompilerDiagnostic,
@@ -66,3 +76,20 @@ export type {
 	CompilerArtifact,
 	CompilerSessionState,
 } from "./core/types";
+
+export type {
+	BusinessGenomeSemanticClass,
+	BusinessGenomeRelationshipClass,
+	SemanticCertaintyState,
+	SemanticCertainty,
+	SemanticConflictContext,
+	SemanticValidationStatus,
+	SemanticVersionContext,
+	SemanticProvenance,
+	SemanticObject,
+	SemanticRelationship,
+	SemanticGraph,
+	BusinessGenomeArtifact,
+	BusinessGenomeCompilerInput,
+	BusinessGenomeCompilerOutput,
+} from "./genome";
