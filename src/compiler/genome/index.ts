@@ -9,6 +9,19 @@ export {
   checksumBusinessGenomeArtifact,
 } from "./types";
 
+export { BusinessGenomeCompiler } from "./BusinessGenomeCompiler";
+export { BusinessGenomePassRegistry } from "./BusinessGenomePassRegistry";
+export { InputValidationPass, CanonicalVerificationPass, EvidenceGroupingPass } from "./passes";
+
+export { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "./diagnostics";
+
+export {
+  BGC_ARCHITECTURAL_PASS_ORDER,
+  deterministicIdentity,
+  createInitialPipelineState,
+  updatePassHistory,
+} from "./pipeline-types";
+
 export type {
   BusinessGenomeSemanticClass,
   BusinessGenomeRelationshipClass,
@@ -23,5 +36,18 @@ export type {
   SemanticGraph,
   BusinessGenomeArtifact,
   BusinessGenomeCompilerInput,
+  BusinessGenomeCompilationStatus,
+  BusinessGenomeIntermediateCompilation,
   BusinessGenomeCompilerOutput,
 } from "./types";
+
+export type {
+  BusinessGenomePassId,
+  BusinessGenomePipelineState,
+  ValidatedEvidenceReference,
+  ValidatedEvidenceIRView,
+  CanonicalEvidenceAttestation,
+  GroupedEvidenceSet,
+  GroupedEvidenceCollection,
+  BusinessGenomePassResult,
+} from "./pipeline-types";

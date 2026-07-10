@@ -6,6 +6,13 @@ import { resolve } from "node:path";
 const genomeFiles = [
   resolve(process.cwd(), "src", "compiler", "genome", "types.ts"),
   resolve(process.cwd(), "src", "compiler", "genome", "index.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "pipeline-types.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "diagnostics.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "BusinessGenomeCompiler.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "BusinessGenomePassRegistry.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "passes", "InputValidationPass.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "passes", "CanonicalVerificationPass.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "passes", "EvidenceGroupingPass.ts"),
 ];
 
 const forbiddenImportPatterns = [

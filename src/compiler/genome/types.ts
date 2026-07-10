@@ -2,6 +2,11 @@ import type { EvidenceIR } from "../evidence/EvidenceIR";
 import { SourceHash } from "../provenance/SourceHash";
 import { stableStringify } from "../core/stableStringify";
 import type { CompilerDiagnostic, CompilerPassContext } from "../core/types";
+import type {
+  CanonicalEvidenceAttestation,
+  GroupedEvidenceCollection,
+  ValidatedEvidenceIRView,
+} from "./pipeline-types";
 
 export const BUSINESS_GENOME_SEMANTIC_CLASSES = [
   "actor",
@@ -123,15 +128,47 @@ export interface BusinessGenomeArtifact {
 
 export interface BusinessGenomeCompilerInput {
   readonly evidenceIR: EvidenceIR;
+  readonly evidenceIrIdentity: string;
   readonly compilerContext: CompilerPassContext;
   readonly compilerVersion: string;
   readonly specificationVersion: string;
+  readonly upstreamValidation: {
+    readonly status: "valid" | "invalid";
+    readonly validator: string;
+    readonly details?: Readonly<Record<string, unknown>>;
+  };
+  readonly canonicalMetadata: {
+    readonly gps0001Version?: string;
+    readonly gps0002Version?: string;
+    readonly canonicalizationVersion?: string;
+    readonly identityStandardVersion?: string;
+    readonly canonicalValidationStatus?: "verified" | "unverified" | "failed";
+    readonly checksumReferences?: readonly string[];
+  };
+}
+
+export type BusinessGenomeCompilationStatus = "intermediate" | "failed";
+
+export interface BusinessGenomeIntermediateCompilation {
+  readonly validatedEvidence: ValidatedEvidenceIRView | null;
+  readonly canonicalAttestation: CanonicalEvidenceAttestation | null;
+  readonly groupedEvidence: GroupedEvidenceCollection | null;
 }
 
 export interface BusinessGenomeCompilerOutput {
-  readonly artifact: BusinessGenomeArtifact;
+  readonly status: BusinessGenomeCompilationStatus;
+  readonly intermediate: BusinessGenomeIntermediateCompilation;
   readonly diagnostics: readonly CompilerDiagnostic[];
   readonly success: boolean;
+  readonly execution: {
+    readonly sessionId: string;
+    readonly startedAt: string;
+    readonly completedAt: string;
+    readonly passOrder: readonly string[];
+    readonly completedPasses: readonly string[];
+    readonly pendingPasses: readonly string[];
+    readonly haltedByPassId?: string;
+  };
 }
 
 export function isBusinessGenomeSemanticClass(value: string): value is BusinessGenomeSemanticClass {

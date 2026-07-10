@@ -175,12 +175,25 @@ test("semantic relationships require valid endpoint identities", () => {
 test("BusinessGenome compiler input accepts Evidence IR", () => {
   const input: BusinessGenomeCompilerInput = {
     evidenceIR: buildEvidenceIR(),
+    evidenceIrIdentity: "source_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_v1",
     compilerContext: {
       sessionId: "session-1",
       pipelineVersion: "1.0.0",
     },
     compilerVersion: "1.0.0",
     specificationVersion: "1.0.0",
+    upstreamValidation: {
+      status: "valid",
+      validator: "evidence-validator",
+    },
+    canonicalMetadata: {
+      gps0001Version: "1.0",
+      gps0002Version: "1.0",
+      canonicalizationVersion: "1.0",
+      identityStandardVersion: "1.0",
+      canonicalValidationStatus: "verified",
+      checksumReferences: ["abc"],
+    },
   };
 
   assert.equal(input.evidenceIR.schemaVersion, "1.0.0");
