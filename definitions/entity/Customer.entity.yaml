@@ -1,0 +1,95 @@
+entity: Customer
+displayName: Customer
+pluralName: Customers
+description: Represents a customer in the business domain
+
+fields:
+  id:
+    type: identifier
+    description: Unique customer identifier
+    required: true
+    generated: true
+  
+  name:
+    type: string
+    description: Full name of the customer
+    required: true
+    maxLength: 255
+  
+  email:
+    type: email
+    description: Primary email address
+    required: true
+    unique: true
+  
+  status:
+    type: enum
+    description: Customer lifecycle status
+    values:
+      - PROSPECT
+      - ACTIVE
+      - INACTIVE
+      - CHURNED
+    default: PROSPECT
+  
+  createdAt:
+    type: timestamp
+    description: When the customer was created
+    generated: true
+  
+  updatedAt:
+    type: timestamp
+    description: When the customer was last updated
+    generated: true
+    autoUpdate: true
+
+relationships:
+  projects:
+    type: OneToMany
+    target: Project
+    description: Projects associated with this customer
+    lazyLoad: true
+
+  organization:
+    type: ManyToOne
+    target: Organization
+    description: Organization this customer belongs to
+    lazyLoad: true
+
+capabilities:
+  search:
+    enabled: true
+    fields:
+      - name
+      - email
+  
+  audit:
+    enabled: true
+    trackChanges: true
+  
+  validation:
+    enabled: true
+  
+  permissions:
+    enabled: true
+    roles:
+      - admin
+      - editor
+      - viewer
+
+lifecycle:
+  draft: false
+  archived: true
+  softDelete: true
+  versioning: true
+
+metadata:
+  namespace: crm
+  icon: person
+  color: blue
+  searchable: true
+  orderable: true
+  tags:
+    - entity
+    - core
+    - crm

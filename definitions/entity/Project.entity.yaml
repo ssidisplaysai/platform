@@ -1,0 +1,240 @@
+entity: Project
+type: Aggregate
+description: Represents a project with tasks, resources, and timeline management
+
+metadata:
+  domain: ProjectManagement
+  tier: Business
+  plural: Projects
+  icon: project
+  color: "#4A90E2"
+
+fields:
+  # Core Identity
+  id:
+    type: identifier
+    required: true
+    generated: true
+    description: Unique project identifier
+
+  # Project Information
+  name:
+    type: string
+    required: true
+    maxLength: 255
+    searchable: true
+    description: Project name
+
+  description:
+    type: string
+    maxLength: 2000
+    searchable: true
+    description: Detailed project description
+
+  code:
+    type: string
+    required: true
+    unique: true
+    maxLength: 50
+    searchable: true
+    description: Unique project code
+
+  status:
+    type: enum
+    required: true
+    values: ['PROPOSED', 'ACTIVE', 'PAUSED', 'COMPLETED', 'ARCHIVED']
+    default: PROPOSED
+    description: Current project status
+
+  # Planning
+  startDate:
+    type: timestamp
+    required: true
+    description: Planned project start date
+
+  endDate:
+    type: timestamp
+    required: true
+    description: Planned project end date
+
+  completionDate:
+    type: timestamp
+    description: Actual completion date
+
+  # Resource Management
+  budget:
+    type: number
+    description: Total project budget
+
+  actualCost:
+    type: number
+    description: Actual project cost to date
+
+  manager:
+    type: string
+    required: true
+    maxLength: 100
+    searchable: true
+    description: Project manager name or ID
+
+  priority:
+    type: enum
+    required: true
+    values: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+    default: MEDIUM
+    description: Project priority level
+
+  # Metadata
+  createdBy:
+    type: string
+    required: true
+    generated: true
+    description: User who created the project
+
+  createdAt:
+    type: timestamp
+    required: true
+    generated: true
+    description: When project was created
+
+  updatedAt:
+    type: timestamp
+    generated: true
+    description: Last update timestamp
+
+  deletedAt:
+    type: timestamp
+    description: Soft delete timestamp
+
+relationships:
+  company:
+    type: ManyToOne
+    target: Company
+    required: true
+    description: Company that owns the project
+    lazyLoad: false
+
+  customer:
+    type: ManyToOne
+    target: Customer
+    description: Customer for whom project is being executed
+    lazyLoad: true
+
+  owner:
+    type: ManyToOne
+    target: User
+    description: Project owner/sponsor
+    lazyLoad: true
+
+  team:
+    type: OneToMany
+    target: TeamMember
+    description: Team members assigned to project
+    lazyLoad: true
+    cascade: true
+
+  tasks:
+    type: OneToMany
+    target: Task
+    description: Tasks within this project
+    lazyLoad: true
+    cascade: true
+
+  documents:
+    type: OneToMany
+    target: Document
+    description: Project documents and artifacts
+    lazyLoad: true
+
+  workOrders:
+    type: OneToMany
+    target: WorkOrder
+    description: Work orders associated with this project
+    lazyLoad: true
+
+  assets:
+    type: OneToMany
+    target: Asset
+    description: Assets assigned to this project
+    lazyLoad: true
+
+lifecycle:
+  initial: PROPOSED
+  states:
+    PROPOSED:
+      description: Project is in proposal stage
+      transitions:
+        - ACTIVE
+    ACTIVE:
+      description: Project is actively executing
+      transitions:
+        - PAUSED
+        - COMPLETED
+    PAUSED:
+      description: Project is temporarily paused
+      transitions:
+        - ACTIVE
+        - CANCELLED
+    COMPLETED:
+      description: Project has completed
+      transitions:
+        - ARCHIVED
+    ARCHIVED:
+      description: Project is archived
+      transitions: []
+
+capabilities:
+  audit:
+    enabled: true
+    trackChanges: true
+    trackDeletion: true
+  
+  search:
+    enabled: true
+    indexed: true
+    fullText: true
+  
+  permissions:
+    enabled: true
+    roles: [admin, manager, member, viewer]
+  
+  versioning:
+    enabled: false
+
+validation:
+  rules:
+    - field: budget
+      type: number
+      min: 0
+      description: Budget must be non-negative
+
+    - field: endDate
+      type: date
+      comparison: greaterThan
+      compareWith: startDate
+      description: End date must be after start date
+
+    - field: code
+      type: string
+      pattern: '^[A-Z0-9\-]{3,20}$'
+      description: Code must be uppercase alphanumeric with hyphens
+
+searchMetadata:
+  primaryFields: [name, code, manager]
+  filterableFields: [status, priority, startDate, endDate]
+  sortableFields: [name, startDate, endDate, budget, createdAt]
+
+documentationMetadata:
+  category: ProjectManagement
+  sections:
+    - Overview
+    - Fields
+    - Relationships
+    - Lifecycle
+    - Capabilities
+    - Examples
+  examples:
+    - name: Standard Project
+      description: Example of creating a standard business project
+    - name: IT Infrastructure Project
+      description: Example of IT infrastructure project

@@ -1,0 +1,84 @@
+{
+  "plannedVsActual": [
+    {
+      "metric": "throughput",
+      "domain": "operations",
+      "planned": 75,
+      "actual": 93.19891711710416,
+      "variance": 18.19891711710416,
+      "variancePercent": 24.265222822805548
+    },
+    {
+      "metric": "latency",
+      "domain": "operations",
+      "planned": 75,
+      "actual": 78.85239146007947,
+      "variance": 3.852391460079474,
+      "variancePercent": 5.136521946772632
+    },
+    {
+      "metric": "accuracy",
+      "domain": "operations",
+      "planned": 75,
+      "actual": 49.08780911997949,
+      "variance": 25.91219088002051,
+      "variancePercent": 34.54958784002734
+    }
+  ],
+  "simulatedVsActual": [
+    {
+      "metric": "efficiency",
+      "domain": "operations",
+      "simulated": 95,
+      "actual": 65.45444424665907,
+      "variance": 29.545555753340935,
+      "accuracy": 68.89941499648323
+    },
+    {
+      "metric": "cost",
+      "domain": "operations",
+      "simulated": 95,
+      "actual": 39.89314703165543,
+      "variance": 55.10685296834457,
+      "accuracy": 41.99278634911098
+    },
+    {
+      "metric": "quality",
+      "domain": "operations",
+      "simulated": 95,
+      "actual": 26.586831349678906,
+      "variance": 68.4131686503211,
+      "accuracy": 27.986138262819892
+    }
+  ],
+  "predictedVsActual": [
+    {
+      "signal": "correlation",
+      "domain": "operations",
+      "predicted": 48.90000596983012,
+      "actual": 54.33333996647791,
+      "deviation": 5.433333996647791
+    },
+    {
+      "signal": "pattern",
+      "domain": "operations",
+      "predicted": 3.6606502757301493,
+      "actual": 4.067389195255721,
+      "deviation": 0.4067389195255722
+    }
+  ],
+  "decisionVsOutcome": [
+    {
+      "decision": "decision_0",
+      "expectedOutcome": 43.83258516027348,
+      "actualOutcome": 44.42583418945072,
+      "successRate": 96.70179328712105
+    },
+    {
+      "decision": "decision_1",
+      "expectedOutcome": 45.162497868865415,
+      "actualOutcome": 79.91632623238448,
+      "successRate": 90.98329769935397
+    }
+  ]
+}

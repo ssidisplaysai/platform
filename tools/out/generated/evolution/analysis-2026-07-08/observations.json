@@ -1,0 +1,272 @@
+[
+  {
+    "id": "obs-09d73e431672",
+    "domain": "workflow_redesign",
+    "aspect": "workflow_redesign issue 1",
+    "description": "Observation about workflow_redesign from planning_engine",
+    "severity": 0.5946772053969982,
+    "source": "planning_engine",
+    "evidence": [
+      "evidence-3oykjvnwx"
+    ],
+    "confidence": 0.8588760604504675,
+    "timestamp": "2026-07-08T17:21:36.931Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-5e7ab1f152ea",
+    "domain": "workflow_redesign",
+    "aspect": "workflow_redesign issue 2",
+    "description": "Observation about workflow_redesign from planning_engine",
+    "severity": 0.4355717519258573,
+    "source": "planning_engine",
+    "evidence": [
+      "evidence-u9qlgdasw"
+    ],
+    "confidence": 0.8768802205434365,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-835b0e6ea682",
+    "domain": "module_boundaries",
+    "aspect": "module_boundaries issue 1",
+    "description": "Observation about module_boundaries from runtime_metrics",
+    "severity": 0.30622447312928086,
+    "source": "runtime_metrics",
+    "evidence": [
+      "evidence-m985g5azl"
+    ],
+    "confidence": 0.7505918142079204,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-8c248fae29e8",
+    "domain": "module_boundaries",
+    "aspect": "module_boundaries issue 2",
+    "description": "Observation about module_boundaries from runtime_metrics",
+    "severity": 0.24544158580159847,
+    "source": "runtime_metrics",
+    "evidence": [
+      "evidence-ito6vad2t"
+    ],
+    "confidence": 0.7763970453831592,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-e155be674419",
+    "domain": "application_composition",
+    "aspect": "application_composition issue 1",
+    "description": "Observation about application_composition from runtime_metrics",
+    "severity": 0.69710504823479,
+    "source": "runtime_metrics",
+    "evidence": [
+      "evidence-pawgojcly"
+    ],
+    "confidence": 0.9243870426103,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-86ba05f91ec5",
+    "domain": "application_composition",
+    "aspect": "application_composition issue 2",
+    "description": "Observation about application_composition from planning_engine",
+    "severity": 0.6418705827548883,
+    "source": "planning_engine",
+    "evidence": [
+      "evidence-k78aib0jx"
+    ],
+    "confidence": 0.832486739475496,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-ce9a624ec5aa",
+    "domain": "organizational_structure",
+    "aspect": "organizational_structure issue 1",
+    "description": "Observation about organizational_structure from digital_twin",
+    "severity": 0.23053454755401548,
+    "source": "digital_twin",
+    "evidence": [
+      "evidence-q62rv8lvl"
+    ],
+    "confidence": 0.8864303275531373,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-b89228c70751",
+    "domain": "organizational_structure",
+    "aspect": "organizational_structure issue 2",
+    "description": "Observation about organizational_structure from digital_twin",
+    "severity": 0.38771115863769084,
+    "source": "digital_twin",
+    "evidence": [
+      "evidence-vmzr4duft"
+    ],
+    "confidence": 0.818953740033937,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-bff51266f6fa",
+    "domain": "approval_chains",
+    "aspect": "approval_chains issue 1",
+    "description": "Observation about approval_chains from decision_engine",
+    "severity": 0.6053493712226153,
+    "source": "decision_engine",
+    "evidence": [
+      "evidence-qqgn2ced5"
+    ],
+    "confidence": 0.8017284582480626,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-20f3c961fdfb",
+    "domain": "approval_chains",
+    "aspect": "approval_chains issue 2",
+    "description": "Observation about approval_chains from simulation_engine",
+    "severity": 0.5212039570828592,
+    "source": "simulation_engine",
+    "evidence": [
+      "evidence-wwlelboek"
+    ],
+    "confidence": 0.9054602756295148,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-714e33f36fc4",
+    "domain": "automation_opportunities",
+    "aspect": "automation_opportunities issue 1",
+    "description": "Observation about automation_opportunities from decision_engine",
+    "severity": 0.2768246857771522,
+    "source": "decision_engine",
+    "evidence": [
+      "evidence-h3f1u75hw"
+    ],
+    "confidence": 0.8530892082971147,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-ef6776ef0723",
+    "domain": "automation_opportunities",
+    "aspect": "automation_opportunities issue 2",
+    "description": "Observation about automation_opportunities from digital_twin",
+    "severity": 0.6165077683225653,
+    "source": "digital_twin",
+    "evidence": [
+      "evidence-400wl6wf2"
+    ],
+    "confidence": 0.937662318892125,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-8a202a642cba",
+    "domain": "reporting_structure",
+    "aspect": "reporting_structure issue 1",
+    "description": "Observation about reporting_structure from learning_engine",
+    "severity": 0.3214018622871173,
+    "source": "learning_engine",
+    "evidence": [
+      "evidence-pjq4pppy3"
+    ],
+    "confidence": 0.8418095779167967,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-e95566de0d83",
+    "domain": "reporting_structure",
+    "aspect": "reporting_structure issue 2",
+    "description": "Observation about reporting_structure from planning_engine",
+    "severity": 0.36404580635491623,
+    "source": "planning_engine",
+    "evidence": [
+      "evidence-npoce7nza"
+    ],
+    "confidence": 0.7723932007567942,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-1afe3cc8f373",
+    "domain": "ai_delegation",
+    "aspect": "ai_delegation issue 1",
+    "description": "Observation about ai_delegation from digital_twin",
+    "severity": 0.37255272986157784,
+    "source": "digital_twin",
+    "evidence": [
+      "evidence-97v6n0sv3"
+    ],
+    "confidence": 0.8364057284842698,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-8b8a84d2063c",
+    "domain": "ai_delegation",
+    "aspect": "ai_delegation issue 2",
+    "description": "Observation about ai_delegation from learning_engine",
+    "severity": 0.9235479148537178,
+    "source": "learning_engine",
+    "evidence": [
+      "evidence-ip1ub0isw"
+    ],
+    "confidence": 0.8840357121597151,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-3247e47aa532",
+    "domain": "process_simplification",
+    "aspect": "process_simplification issue 1",
+    "description": "Observation about process_simplification from learning_engine",
+    "severity": 0.33970504714732674,
+    "source": "learning_engine",
+    "evidence": [
+      "evidence-eztpya4bw"
+    ],
+    "confidence": 0.8090368801417698,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  },
+  {
+    "id": "obs-43f4f835dc1c",
+    "domain": "process_simplification",
+    "aspect": "process_simplification issue 2",
+    "description": "Observation about process_simplification from simulation_engine",
+    "severity": 0.9645934900669313,
+    "source": "simulation_engine",
+    "evidence": [
+      "evidence-mzqtb8h32"
+    ],
+    "confidence": 0.7757371674233823,
+    "timestamp": "2026-07-08T17:21:36.932Z",
+    "status": "defined",
+    "createdAt": "2026-07-08T17:21:36.932Z"
+  }
+]

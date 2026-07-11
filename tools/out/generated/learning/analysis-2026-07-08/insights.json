@@ -1,0 +1,386 @@
+[
+  {
+    "id": "ins-3427cf6b",
+    "title": "Insight: operations optimization opportunity 0",
+    "domain": "operations",
+    "description": "Validated insight about operations performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "high",
+    "confidence": 0.9406836897420381,
+    "applicability": [
+      "operations"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-b0b4e0a0",
+    "title": "Insight: operations optimization opportunity 1",
+    "domain": "operations",
+    "description": "Validated insight about operations performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "critical",
+    "confidence": 0.8546035166188013,
+    "applicability": [
+      "operations"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-4d1e7981",
+    "title": "Insight: manufacturing optimization opportunity 0",
+    "domain": "manufacturing",
+    "description": "Validated insight about manufacturing performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "high",
+    "confidence": 0.9048788634493427,
+    "applicability": [
+      "manufacturing"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-60458337",
+    "title": "Insight: manufacturing optimization opportunity 1",
+    "domain": "manufacturing",
+    "description": "Validated insight about manufacturing performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "low",
+    "confidence": 0.9994989897513761,
+    "applicability": [
+      "manufacturing"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-6bff20d9",
+    "title": "Insight: inventory optimization opportunity 0",
+    "domain": "inventory",
+    "description": "Validated insight about inventory performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "low",
+    "confidence": 0.9136651068905223,
+    "applicability": [
+      "inventory"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-54f7ab09",
+    "title": "Insight: inventory optimization opportunity 1",
+    "domain": "inventory",
+    "description": "Validated insight about inventory performance",
+    "type": "efficiency",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "medium",
+    "confidence": 0.9598990537153133,
+    "applicability": [
+      "inventory"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-f48e9316",
+    "title": "Insight: purchasing optimization opportunity 0",
+    "domain": "purchasing",
+    "description": "Validated insight about purchasing performance",
+    "type": "performance",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "low",
+    "confidence": 0.859379240845104,
+    "applicability": [
+      "purchasing"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-eab1ff16",
+    "title": "Insight: purchasing optimization opportunity 1",
+    "domain": "purchasing",
+    "description": "Validated insight about purchasing performance",
+    "type": "performance",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "high",
+    "confidence": 0.9021051789523802,
+    "applicability": [
+      "purchasing"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-ea95665f",
+    "title": "Insight: sales optimization opportunity 0",
+    "domain": "sales",
+    "description": "Validated insight about sales performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "low",
+    "confidence": 0.9185535768269849,
+    "applicability": [
+      "sales"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-69e18dd1",
+    "title": "Insight: sales optimization opportunity 1",
+    "domain": "sales",
+    "description": "Validated insight about sales performance",
+    "type": "efficiency",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "low",
+    "confidence": 0.8972003717548145,
+    "applicability": [
+      "sales"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-eea2508f",
+    "title": "Insight: finance optimization opportunity 0",
+    "domain": "finance",
+    "description": "Validated insight about finance performance",
+    "type": "opportunity",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "low",
+    "confidence": 0.8758502356072011,
+    "applicability": [
+      "finance"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-e19ff929",
+    "title": "Insight: finance optimization opportunity 1",
+    "domain": "finance",
+    "description": "Validated insight about finance performance",
+    "type": "opportunity",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "medium",
+    "confidence": 0.868056158983734,
+    "applicability": [
+      "finance"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-33ec1d43",
+    "title": "Insight: customer_service optimization opportunity 0",
+    "domain": "customer_service",
+    "description": "Validated insight about customer_service performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "critical",
+    "confidence": 0.9750109071765771,
+    "applicability": [
+      "customer_service"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-24df0678",
+    "title": "Insight: customer_service optimization opportunity 1",
+    "domain": "customer_service",
+    "description": "Validated insight about customer_service performance",
+    "type": "performance",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "low",
+    "confidence": 0.9589538798024206,
+    "applicability": [
+      "customer_service"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-426d7917",
+    "title": "Insight: ai_performance optimization opportunity 0",
+    "domain": "ai_performance",
+    "description": "Validated insight about ai_performance performance",
+    "type": "risk",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "high",
+    "confidence": 0.9220730171057065,
+    "applicability": [
+      "ai_performance"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "ins-d42d868d",
+    "title": "Insight: ai_performance optimization opportunity 1",
+    "domain": "ai_performance",
+    "description": "Validated insight about ai_performance performance",
+    "type": "efficiency",
+    "source": [
+      "pat-bf7ab338",
+      "hyp-5c4444af"
+    ],
+    "impact": "high",
+    "confidence": 0.9084239586935312,
+    "applicability": [
+      "ai_performance"
+    ],
+    "conditions": [
+      "condition_1",
+      "condition_2"
+    ],
+    "relatedInsights": [],
+    "reusable": true,
+    "status": "validated",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  }
+]

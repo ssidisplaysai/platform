@@ -1,0 +1,247 @@
+entity: Asset
+type: Aggregate
+description: Represents a physical or digital asset with lifecycle tracking
+
+metadata:
+  domain: AssetManagement
+  tier: Operational
+  plural: Assets
+  icon: asset
+  color: "#7ED321"
+
+fields:
+  # Core Identity
+  id:
+    type: identifier
+    required: true
+    generated: true
+    description: Unique asset identifier
+
+  # Asset Information
+  name:
+    type: string
+    required: true
+    maxLength: 255
+    searchable: true
+    description: Asset name or title
+
+  description:
+    type: string
+    maxLength: 2000
+    searchable: true
+    description: Detailed asset description
+
+  assetType:
+    type: enum
+    required: true
+    values: ['EQUIPMENT', 'VEHICLE', 'BUILDING', 'HARDWARE', 'SOFTWARE', 'FURNITURE', 'OTHER']
+    default: EQUIPMENT
+    description: Type of asset
+
+  assetTag:
+    type: string
+    required: true
+    unique: true
+    maxLength: 50
+    searchable: true
+    description: Unique asset tag or barcode
+
+  serialNumber:
+    type: string
+    unique: true
+    maxLength: 100
+    description: Manufacturer serial number
+
+  # Asset Details
+  manufacturer:
+    type: string
+    maxLength: 100
+    searchable: true
+    description: Asset manufacturer
+
+  model:
+    type: string
+    maxLength: 100
+    searchable: true
+    description: Asset model number
+
+  purchaseDate:
+    type: timestamp
+    description: Date asset was purchased
+
+  warrantyExpiration:
+    type: timestamp
+    description: Warranty expiration date
+
+  # Condition & Location
+  condition:
+    type: enum
+    values: ['NEW', 'GOOD', 'FAIR', 'POOR', 'NEEDS_REPAIR']
+    default: GOOD
+    description: Current asset condition
+
+  status:
+    type: enum
+    required: true
+    values: ['AVAILABLE', 'IN_USE', 'MAINTENANCE', 'RETIRED']
+    default: AVAILABLE
+    description: Current asset status
+
+  location:
+    type: string
+    required: true
+    maxLength: 200
+    searchable: true
+    description: Physical location of asset
+
+  # Financial
+  purchasePrice:
+    type: number
+    description: Purchase price
+
+  currentValue:
+    type: number
+    description: Current estimated value
+
+  depreciationRate:
+    type: number
+    description: Annual depreciation rate (percentage)
+
+  # Metadata
+  createdBy:
+    type: string
+    required: true
+    generated: true
+    description: User who created the asset record
+
+  createdAt:
+    type: timestamp
+    required: true
+    generated: true
+    description: When asset record was created
+
+  updatedAt:
+    type: timestamp
+    generated: true
+    description: Last update timestamp
+
+  deletedAt:
+    type: timestamp
+    description: Soft delete timestamp
+
+relationships:
+  company:
+    type: ManyToOne
+    target: Company
+    required: true
+    description: Company that owns the asset
+    lazyLoad: false
+
+  project:
+    type: ManyToOne
+    target: Project
+    description: Project this asset is assigned to
+    lazyLoad: true
+
+  machine:
+    type: ManyToOne
+    target: Machine
+    description: Machine this asset is part of
+    lazyLoad: true
+
+  owner:
+    type: ManyToOne
+    target: User
+    description: Current owner or responsible party
+    lazyLoad: true
+
+  location:
+    type: ManyToOne
+    target: Location
+    description: Physical location of asset
+    lazyLoad: true
+
+  maintenanceRecords:
+    type: OneToMany
+    target: MaintenanceRecord
+    description: Maintenance history
+    lazyLoad: true
+
+  workOrders:
+    type: OneToMany
+    target: WorkOrder
+    description: Work orders related to this asset
+    lazyLoad: true
+
+lifecycle:
+  initial: AVAILABLE
+  states:
+    AVAILABLE:
+      description: Asset is available for use
+      transitions:
+        - IN_USE
+        - MAINTENANCE
+    IN_USE:
+      description: Asset is currently in use
+      transitions:
+        - AVAILABLE
+        - MAINTENANCE
+    MAINTENANCE:
+      description: Asset is under maintenance
+      transitions:
+        - AVAILABLE
+        - IN_USE
+        - RETIRED
+    RETIRED:
+      description: Asset has been retired
+      transitions: []
+
+capabilities:
+  audit:
+    enabled: true
+    trackChanges: true
+    trackDeletion: true
+  
+  search:
+    enabled: true
+    indexed: true
+    fullText: true
+  
+  permissions:
+    enabled: true
+    roles: [admin, manager, viewer]
+  
+  versioning:
+    enabled: false
+
+validation:
+  rules:
+    - field: purchasePrice
+      type: number
+      min: 0
+      description: Purchase price must be non-negative
+
+    - field: currentValue
+      type: number
+      min: 0
+      description: Current value must be non-negative
+
+    - field: depreciationRate
+      type: number
+      min: 0
+      max: 100
+      description: Depreciation rate must be between 0 and 100
+
+searchMetadata:
+  primaryFields: [name, assetTag, assetType]
+  filterableFields: [assetType, condition, status, location]
+  sortableFields: [name, purchaseDate, currentValue, createdAt]
+
+documentationMetadata:
+  category: AssetManagement
+  sections:
+    - Overview
+    - Fields
+    - Asset Types
+    - Lifecycle
+    - Valuation

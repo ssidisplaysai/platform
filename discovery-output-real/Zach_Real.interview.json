@@ -1,0 +1,304 @@
+{
+  "interviewId": "interview_c2191ea1",
+  "participant": "Unknown",
+  "role": "",
+  "department": "",
+  "interviewDate": "",
+  "interviewer": "",
+  "sourceId": "src_zach_real_discovery_interview",
+  "rawMetadata": {},
+  "sections": [
+    {
+      "title": "General",
+      "order": 1,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_76dd9e3f",
+          "question": "What does your day look like from start to finish?",
+          "answer": "Answer:\r\n\nI start each day by checking Microsoft Teams messages from Robert and Madison, then Outlook for emails from clients or other employees.\r\n\nAfter that I move into active project work. My workload varies depending on priorities, but typically includes:\r\n● Website development and maintenance\r\n● Product spec sheets\r\n● Product sign-off drawings\r\n● Brochures\r\n● Price sheets\r\n● Working with Sagar on SphereController updates\r\n● Other marketing or product-related projects as needed",
+          "rawQuestion": "What does your day look like from start to finish?",
+          "rawAnswer": "\nAnswer:\r\n\nI start each day by checking Microsoft Teams messages from Robert and Madison, then Outlook for emails from clients or other employees.\r\n\nAfter that I move into active project work. My workload varies depending on priorities, but typically includes:\r\n● Website development and maintenance\r\n● Product spec sheets\r\n● Product sign-off drawings\r\n● Brochures\r\n● Price sheets\r\n● Working with Sagar on SphereController updates\r\n● Other marketing or product-related projects as needed\r\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_fec82d7b",
+          "question": "What are you working on most of the time?",
+          "answer": "Answer:\r\n\nMy priorities change frequently based on business needs.\r\n\nCurrently, the majority of my time is spent designing, building, and launching new websites.\r\n\nOther major ongoing projects include SphereController development and product documentation.\r\n\nWalk me through what happens when a new project lands on your desk.\r\n\nAnswer:\r\n\nMost new projects begin as a verbal conversation with Robert, although they may also come through Microsoft Teams or occasionally from Madison.\r\n\nOnce I understand the project requirements, I create the requested deliverable, which could include:\r\n● Product spec sheets\r\n● Product sign-off drawings\r\n● Websites\r\n● SphereController interface updates\r\n● Brochures\r\n● Price sheets\r\n● Other design or marketing materials",
+          "rawQuestion": "What are you working on most of the time?",
+          "rawAnswer": "\nAnswer:\r\n\nMy priorities change frequently based on business needs.\r\n\nCurrently, the majority of my time is spent designing, building, and launching new websites.\r\n\nOther major ongoing projects include SphereController development and product documentation.\r\n\nWalk me through what happens when a new project lands on your desk.\r\n\nAnswer:\r\n\nMost new projects begin as a verbal conversation with Robert, although they may also come through Microsoft Teams or occasionally from Madison.\r\n\nOnce I understand the project requirements, I create the requested deliverable, which could include:\r\n● Product spec sheets\r\n● Product sign-off drawings\r\n● Websites\r\n● SphereController interface updates\r\n● Brochures\r\n● Price sheets\r\n● Other design or marketing materials\r\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_b18a89bc",
+          "question": "What types of things do you make?",
+          "answer": "Answer:\r\n\nI create a wide variety of materials for SSI, including:\r\n● Product specification sheets\r\n● Product sign-off sheets\r\n● Technical drawings\r\n● Websites\r\n● SphereController interface graphics and updates\r\n● Brochures\r\n● Price sheets\r\n● Excel pricing spreadsheets\r\n● Flyers\r\n● Posters\r\n● Instagram graphics\r\n● Shipping labels\r\n● QR code labels\r\n● Product display graphics\r\n● Product mockups\r\n● Laser-cut DXF designs\r\n● Business Letters\r\n● Intake forms\r\n\nInputs — What Comes To You",
+          "rawQuestion": "What types of things do you make?",
+          "rawAnswer": "\nAnswer:\r\n\nI create a wide variety of materials for SSI, including:\r\n● Product specification sheets\r\n● Product sign-off sheets\r\n● Technical drawings\r\n● Websites\r\n● SphereController interface graphics and updates\r\n● Brochures\r\n● Price sheets\r\n● Excel pricing spreadsheets\r\n● Flyers\r\n● Posters\r\n● Instagram graphics\r\n● Shipping labels\r\n● QR code labels\r\n● Product display graphics\r\n● Product mockups\r\n● Laser-cut DXF designs\r\n● Business Letters\r\n● Intake forms\r\n\nInputs — What Comes To You\r\n",
+          "page": 1,
+          "order": 3,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_b8d557d8",
+          "question": "Who gives you work?",
+          "answer": "Answer:\r\n\nMost work comes directly from Robert or Madison.\r\n\nOccasionally customers request SphereController updates, but customer requests are relatively rare.",
+          "rawQuestion": "Who gives you work?",
+          "rawAnswer": "\nAnswer:\r\n\nMost work comes directly from Robert or Madison.\r\n\nOccasionally customers request SphereController updates, but customer requests are relatively rare.\r\n",
+          "page": 1,
+          "order": 4,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_b3a9cf17",
+          "question": "How do you receive briefs or instructions?",
+          "answer": "Answer:\r\n\nMost instructions are delivered through:\r\n● Microsoft Teams\r\n● Verbal conversations\r\n\nOccasionally projects may begin from emails or discussions.",
+          "rawQuestion": "How do you receive briefs or instructions?",
+          "rawAnswer": "\nAnswer:\r\n\nMost instructions are delivered through:\r\n● Microsoft Teams\r\n● Verbal conversations\r\n\nOccasionally projects may begin from emails or discussions.\r\n",
+          "page": 1,
+          "order": 5,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_d0a7fb4f",
+          "question": "How clear are the briefs you receive?",
+          "answer": "Answer:\r\n\nThe project requirements are usually clear.\r\n\nFor marketing materials such as websites, brochures, catalogs, and spec sheets, I frequently use ChatGPT to help write or expand body copy.\r\n\nOccasionally I need additional information, such as:\r\n● Product names\r\n● Technical specifications\r\n● Product measurements",
+          "rawQuestion": "How clear are the briefs you receive?",
+          "rawAnswer": "\nAnswer:\r\n\nThe project requirements are usually clear.\r\n\nFor marketing materials such as websites, brochures, catalogs, and spec sheets, I frequently use ChatGPT to help write or expand body copy.\r\n\nOccasionally I need additional information, such as:\r\n● Product names\r\n● Technical specifications\r\n● Product measurements\r\n",
+          "page": 1,
+          "order": 6,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_cf1ee46b",
+          "question": "How much back-and-forth happens before you start vs. after you deliver?",
+          "answer": "Answer:\r\n\nTypically there is very little back-and-forth.\r\n\nIf the project is straightforward, I complete it, send it to Robert or Madison, and it is approved without additional revisions.\r\n\nRevisions usually only happen if project requirements change.\r\n\nYour Outputs — What You Deliver\r\n\nList everything you create for SSI.\r\n\nAnswer:\r\n\nDeliverables include:\r\n● Product specification sheets\r\n● Product sign-off sheets\r\n● Technical drawings\r\n● Websites\r\n● SphereController updates\r\n● Brochures\r\n● Price sheets\r\n● Excel pricing spreadsheets\r\n● Flyers\r\n● Posters\r\n● Instagram graphics\r\n● Shipping labels\r\n● QR code labels\r\n● Product display graphics\r\n● Product mockups\r\n● Laser-cut DXF files\r\n● Formal Letters\r\n● Intake forms",
+          "rawQuestion": "How much back-and-forth happens before you start vs. after you deliver?",
+          "rawAnswer": "\nAnswer:\r\n\nTypically there is very little back-and-forth.\r\n\nIf the project is straightforward, I complete it, send it to Robert or Madison, and it is approved without additional revisions.\r\n\nRevisions usually only happen if project requirements change.\r\n\nYour Outputs — What You Deliver\r\n\nList everything you create for SSI.\r\n\nAnswer:\r\n\nDeliverables include:\r\n● Product specification sheets\r\n● Product sign-off sheets\r\n● Technical drawings\r\n● Websites\r\n● SphereController updates\r\n● Brochures\r\n● Price sheets\r\n● Excel pricing spreadsheets\r\n● Flyers\r\n● Posters\r\n● Instagram graphics\r\n● Shipping labels\r\n● QR code labels\r\n● Product display graphics\r\n● Product mockups\r\n● Laser-cut DXF files\r\n● Formal Letters\r\n● Intake forms\r\n",
+          "page": 1,
+          "order": 7,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_938e3c36",
+          "question": "Who receives your work?",
+          "answer": "Answer:\r\n\nAlmost all completed work is delivered to Robert and Madison for review and approval.",
+          "rawQuestion": "Who receives your work?",
+          "rawAnswer": "\nAnswer:\r\n\nAlmost all completed work is delivered to Robert and Madison for review and approval.\r\n",
+          "page": 1,
+          "order": 8,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_c992e355",
+          "question": "How do you know when something is approved?",
+          "answer": "Answer:\r\n\nApproval is usually communicated directly by Robert.\r\n\nIn many cases I deliver the work to Robert and Madison, and if no additional feedback is given, I consider the project complete.",
+          "rawQuestion": "How do you know when something is approved?",
+          "rawAnswer": "\nAnswer:\r\n\nApproval is usually communicated directly by Robert.\r\n\nIn many cases I deliver the work to Robert and Madison, and if no additional feedback is given, I consider the project complete.\r\n",
+          "page": 1,
+          "order": 9,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_17e02d3f",
+          "question": "What formats do you work in?",
+          "answer": "Answer:\r\n\nMost projects are created using Adobe software.\r\n\nCommon deliverable formats include:\r\n● PDF (most documentation)\r\n● PNG\r\n● JPG\r\n● SVG (logos and vector graphics)\r\n● PDF (vector artwork)\r\n● DXF (laser cutting files)\r\n\nVolume & Workload",
+          "rawQuestion": "What formats do you work in?",
+          "rawAnswer": "\nAnswer:\r\n\nMost projects are created using Adobe software.\r\n\nCommon deliverable formats include:\r\n● PDF (most documentation)\r\n● PNG\r\n● JPG\r\n● SVG (logos and vector graphics)\r\n● PDF (vector artwork)\r\n● DXF (laser cutting files)\r\n\nVolume & Workload\r\n",
+          "page": 1,
+          "order": 10,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_08bd868a",
+          "question": "On a typical week, how many different projects are you juggling?",
+          "answer": "Answer:\r\n\nTypically three to four projects simultaneously.\r\n\nUsually this includes:\r\n● One large website project\r\n● SphereController updates\r\n● Several smaller projects such as spec sheets or sign-off drawings that are completed the same day.",
+          "rawQuestion": "On a typical week, how many different projects are you juggling?",
+          "rawAnswer": "\nAnswer:\r\n\nTypically three to four projects simultaneously.\r\n\nUsually this includes:\r\n● One large website project\r\n● SphereController updates\r\n● Several smaller projects such as spec sheets or sign-off drawings that are completed the same day.\r\n",
+          "page": 1,
+          "order": 11,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_5366e9b4",
+          "question": "What's your biggest time consumer?",
+          "answer": "Answer:\r\n\nWebsite development is by far the largest time commitment, especially websites with many pages.",
+          "rawQuestion": "What's your biggest time consumer?",
+          "rawAnswer": "\nAnswer:\r\n\nWebsite development is by far the largest time commitment, especially websites with many pages.\r\n",
+          "page": 1,
+          "order": 12,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_8eea0a08",
+          "question": "Are there things you're asked to do repeatedly that could be templated?",
+          "answer": "Answer:\r\n\nMost repetitive work has already been templated.\r\n\nExamples include:\r\n● Product specification sheets\r\n● Product sign-off sheets",
+          "rawQuestion": "Are there things you're asked to do repeatedly that could be templated?",
+          "rawAnswer": "\nAnswer:\r\n\nMost repetitive work has already been templated.\r\n\nExamples include:\r\n● Product specification sheets\r\n● Product sign-off sheets\r\n",
+          "page": 1,
+          "order": 13,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_dd452f03",
+          "question": "Is there anything you're the only person who knows how to do that worries you?",
+          "answer": "Answer:\r\n\nWebsite design and maintenance could become a bottleneck if many websites need to be launched at once.\r\n\nConverting artwork into production-ready DXF files is also specialized work that can be difficult and time-consuming.\r\n\nQuick knowledge of file and document locations on this computer.\r\n\nPain Points",
+          "rawQuestion": "Is there anything you're the only person who knows how to do that worries you?",
+          "rawAnswer": "\nAnswer:\r\n\nWebsite design and maintenance could become a bottleneck if many websites need to be launched at once.\r\n\nConverting artwork into production-ready DXF files is also specialized work that can be difficult and time-consuming.\r\n\nQuick knowledge of file and document locations on this computer.\r\n\nPain Points\r\n",
+          "page": 1,
+          "order": 14,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_4e2e9dc9",
+          "question": "What's the most frustrating part of your workflow?",
+          "answer": "Answer:\r\n\nConverting millimeter measurements into inches for product sign-off drawings.",
+          "rawQuestion": "What's the most frustrating part of your workflow?",
+          "rawAnswer": "\nAnswer:\r\n\nConverting millimeter measurements into inches for product sign-off drawings.\r\n",
+          "page": 1,
+          "order": 15,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_58f372c8",
+          "question": "What do you get asked for most that takes the longest to produce?",
+          "answer": "Answer:\r\n\nLarge website projects and extensive pricing spreadsheets.",
+          "rawQuestion": "What do you get asked for most that takes the longest to produce?",
+          "rawAnswer": "\nAnswer:\r\n\nLarge website projects and extensive pricing spreadsheets.\r\n",
+          "page": 1,
+          "order": 16,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_f267a5d6",
+          "question": "What information do you wish you had earlier in the process?",
+          "answer": "Answer:\r\n\nMost of the time I already have everything I need to begin.",
+          "rawQuestion": "What information do you wish you had earlier in the process?",
+          "rawAnswer": "\nAnswer:\r\n\nMost of the time I already have everything I need to begin.\r\n",
+          "page": 1,
+          "order": 17,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_69f305bd",
+          "question": "What tools or resources would make your work faster or better?",
+          "answer": "Answer:\r\n\nAt the moment I feel like I have the tools and resources I need.\r\n\nSoftware You Use Every Day\r\n\nList every tool, app, or software you use regularly.\r\n\nAnswer:\r\n\n● Adobe Illustrator\r\n● Adobe InDesign\r\n● Adobe Photoshop\r\n● Adobe Premiere Pro\r\n● Adobe Acrobat\r\n● Figma\r\n● Microsoft Teams\r\n● Slack\r\n● Microsoft Outlook\r\n● Microsoft Excel\r\n● Microsoft Word\r\n● WordPress\r\n● Elementor",
+          "rawQuestion": "What tools or resources would make your work faster or better?",
+          "rawAnswer": "\nAnswer:\r\n\nAt the moment I feel like I have the tools and resources I need.\r\n\nSoftware You Use Every Day\r\n\nList every tool, app, or software you use regularly.\r\n\nAnswer:\r\n\n● Adobe Illustrator\r\n● Adobe InDesign\r\n● Adobe Photoshop\r\n● Adobe Premiere Pro\r\n● Adobe Acrobat\r\n● Figma\r\n● Microsoft Teams\r\n● Slack\r\n● Microsoft Outlook\r\n● Microsoft Excel\r\n● Microsoft Word\r\n● WordPress\r\n● Elementor\r\n",
+          "page": 1,
+          "order": 18,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_2e9010ef",
+          "question": "What are you most skilled in?",
+          "answer": "Answer:\r\n\nMy strongest skills are:\r\n● Graphic Design\r\n● Layout Design\r\n● Website Design",
+          "rawQuestion": "What are you most skilled in?",
+          "rawAnswer": "\nAnswer:\r\n\nMy strongest skills are:\r\n● Graphic Design\r\n● Layout Design\r\n● Website Design\r\n",
+          "page": 1,
+          "order": 19,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_937d1006",
+          "question": "Is there anything you want to learn or use that you haven't been able to?",
+          "answer": "Answer:\r\n\nNo specific answer provided at this time.\r\n\nThe Big Question",
+          "rawQuestion": "Is there anything you want to learn or use that you haven't been able to?",
+          "rawAnswer": "\nAnswer:\r\n\nNo specific answer provided at this time.\r\n\nThe Big Question\r\n",
+          "page": 1,
+          "order": 20,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_321a7638",
+          "question": "Is there anything about your role that SSI depends on that would break if you weren't here?",
+          "answer": "Answer:\r\n\nAreas where I provide specialized knowledge include:\r\n● Knowing where company files and design assets are stored\r\n● Quickly creating product specification sheets\r\n● Producing product sign-off drawings\r\n● Website maintenance\r\n● SphereController graphics and interface updates",
+          "rawQuestion": "Is there anything about your role that SSI depends on that would break if you weren't here?",
+          "rawAnswer": "\nAnswer:\r\n\nAreas where I provide specialized knowledge include:\r\n● Knowing where company files and design assets are stored\r\n● Quickly creating product specification sheets\r\n● Producing product sign-off drawings\r\n● Website maintenance\r\n● SphereController graphics and interface updates\r\n",
+          "page": 1,
+          "order": 21,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_679c1c2a",
+          "question": "What would you build or create for SSI if you had unlimited time?",
+          "answer": "Answer:\r\n\nI would completely redesign and modernize the main SSI website, improving both its appearance and overall organization.",
+          "rawQuestion": "What would you build or create for SSI if you had unlimited time?",
+          "rawAnswer": "\nAnswer:\r\n\nI would completely redesign and modernize the main SSI website, improving both its appearance and overall organization.\r\n",
+          "page": 1,
+          "order": 22,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": [
+    {
+      "code": "DISC_051",
+      "severity": "warning",
+      "message": "Could not detect participant name in document header. Set to \"Unknown\".",
+      "timestamp": "2026-07-09T21:53:36.787Z",
+      "context": "Check that the document has a \"Participant:\" or \"Name:\" header field."
+    },
+    {
+      "code": "DISC_052",
+      "severity": "warning",
+      "message": "Could not detect interview date in document header.",
+      "timestamp": "2026-07-09T21:53:36.788Z"
+    },
+    {
+      "code": "DISC_053",
+      "severity": "warning",
+      "message": "Could not detect interviewer name in document header.",
+      "timestamp": "2026-07-09T21:53:36.788Z"
+    }
+  ]
+}

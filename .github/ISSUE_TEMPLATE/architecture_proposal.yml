@@ -1,0 +1,43 @@
+name: Architecture proposal
+description: Propose an architecture change requiring RAR/ARD/ADR governance.
+title: "[Architecture Proposal]: "
+labels:
+  - architecture
+  - governance
+  - triage
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this change needed now?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What subsystems and contracts are affected?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks
+      description: Long-term architectural and engineering risks.
+    validations:
+      required: true
+  - type: textarea
+    id: process
+    attributes:
+      label: Governance Path
+      description: Reference planned RAR, ARD, and ADR artifacts.
+      placeholder: "RAR-xxxx, ARD-xxxx, ADR-xxxx"
+    validations:
+      required: true

@@ -1,0 +1,306 @@
+# Genesis Meta Model: Field
+
+## Core Concept
+
+A Field is any value property on an Entity.
+
+Every Field inherits these canonical properties.
+
+---
+
+## Universal Field Properties
+
+### Identity
+
+- **name** - Unique field name within entity
+- **displayName** - Human display name
+- **description** - What does this field mean?
+
+### Data Properties
+
+- **dataType** - Type of data (string, integer, decimal, boolean, date, timestamp, email, enum, json, reference)
+- **required** - Must field have a value?
+- **nullable** - Can field be null?
+- **default** - Default value if not provided
+- **mutable** - Can field be changed after creation?
+- **immutable** - Field cannot be changed
+
+### Validation
+
+- **validation** - Validation rules (regex, min/max, format, custom)
+- **constraints** - Business constraints
+- **values** - Allowed values (for enum types)
+- **format** - Expected format specification
+
+### Metadata
+
+- **deprecated** - Is field deprecated?
+- **version** - Field version (for backward compatibility)
+- **examples** - Example values
+
+### Search & Indexing
+
+- **searchable** - Can field be searched?
+- **sortable** - Can field be sorted?
+- **filterable** - Can field be filtered?
+- **facetable** - Can field be used for faceted search?
+- **analyzed** - Full-text analyzed?
+- **indexed** - Should field be indexed?
+- **boost** - Search relevance boost factor
+
+### Governance
+
+- **auditable** - Track changes to this field?
+- **encrypted** - Encrypt at rest?
+- **pii** - Is this Personally Identifiable Information?
+- **sensitive** - Is this sensitive data?
+- **classification** - Data classification level
+- **retentionDays** - How long to retain?
+
+### Visibility & Access
+
+- **visible** - Visible to users?
+- **viewableBy** - Who can view? (role-based)
+- **editableBy** - Who can edit? (role-based)
+- **exportable** - Can be exported?
+- **importable** - Can be imported?
+
+### AI Features
+
+- **aiVisible** - Visible to AI systems?
+- **aiSearchable** - Used in AI search?
+- **embedding** - Should field be embedded?
+- **vectorizable** - Can field be vectorized?
+- **semanticMeaning** - Semantic significance
+- **aiDescription** - Description for AI systems
+
+### Automation Features
+
+- **automationVisible** - Visible to automation?
+- **automationMutable** - Can automation change this field?
+- **automationTrigger** - Triggers automation when changed?
+
+### Relationships
+
+- **reference** - Is this a reference to another entity?
+- **referencedEntity** - Which entity is referenced?
+- **cascadeDelete** - Delete if reference deleted?
+- **cascadeUpdate** - Update if reference updated?
+
+---
+
+## Field Data Types
+
+### Primitives
+- **string** - Text data
+- **integer** - Whole numbers
+- **decimal** - Decimal numbers
+- **boolean** - True/false
+- **date** - Date (YYYY-MM-DD)
+- **time** - Time (HH:mm:ss)
+- **timestamp** - Date and time (ISO 8601)
+- **duration** - Time duration
+
+### Formatted Strings
+- **email** - Email address
+- **phone** - Phone number
+- **url** - Web URL
+- **uuid** - UUID identifier
+- **identifier** - System identifier
+- **code** - Code string (SKU, etc.)
+
+### Collections
+- **enum** - One of defined values
+- **array** - Array of values
+- **set** - Unordered collection
+- **map** - Key-value pairs
+
+### Complex
+- **json** - JSON structure
+- **geo** - Geographic coordinates
+- **monetary** - Currency amount with type
+- **percentage** - Percentage value
+- **rich_text** - Rich text (HTML/Markdown)
+
+### References
+- **reference** - Foreign key to another entity
+- **embedded** - Embedded entity
+- **versioned** - Versioned document
+
+---
+
+## Field Validation
+
+### Built-in Validators
+- **required** - Must have value
+- **unique** - Must be unique within entity
+- **email** - Valid email format
+- **url** - Valid URL format
+- **phone** - Valid phone format
+- **iso_date** - Valid ISO date
+- **iso_timestamp** - Valid ISO timestamp
+- **regex** - Matches regex pattern
+- **min_length** - Minimum string length
+- **max_length** - Maximum string length
+- **min_value** - Minimum numeric value
+- **max_value** - Maximum numeric value
+- **in_set** - Value in allowed set
+- **enum** - Value is in enum
+
+### Custom Validators
+- **custom_name** - Custom validation rule reference
+- **message** - Error message for validation
+
+---
+
+## Field Examples
+
+### Simple String Field
+```yaml
+fields:
+  name:
+    dataType: string
+    required: true
+    maxLength: 255
+    searchable: true
+    sortable: true
+    displayName: "Name"
+```
+
+### Email Field
+```yaml
+fields:
+  email:
+    dataType: email
+    required: true
+    unique: true
+    auditable: true
+    searchable: true
+    displayName: "Email Address"
+```
+
+### Enum Field
+```yaml
+fields:
+  status:
+    dataType: enum
+    required: true
+    values: [PROSPECT, ACTIVE, INACTIVE, CHURNED]
+    default: PROSPECT
+    sortable: true
+    displayName: "Status"
+```
+
+### Reference Field
+```yaml
+fields:
+  organizationId:
+    dataType: reference
+    referencedEntity: Organization
+    required: true
+    immutable: true
+    auditable: true
+    displayName: "Organization"
+```
+
+### Metadata Field
+```yaml
+fields:
+  createdAt:
+    dataType: timestamp
+    immutable: true
+    generated: true
+    auditable: true
+    displayName: "Created"
+```
+
+### AI Field
+```yaml
+fields:
+  description:
+    dataType: rich_text
+    searchable: true
+    embedding: true
+    aiVisible: true
+    aiSearchable: true
+    displayName: "Description"
+```
+
+---
+
+## Design Principles
+
+### 1. Explicit Over Implicit
+Every field property is declared, no hidden behaviors.
+
+### 2. Type Safety
+Strong typing prevents data corruption.
+
+### 3. Validation Clarity
+Validation rules are explicit and documented.
+
+### 4. Governance Required
+PII, sensitive data, retention all required.
+
+### 5. Searchability by Default
+Most fields should be searchable.
+
+### 6. Audit Trail Required
+Changes to important fields must be audited.
+
+### 7. Extensibility
+Add new field properties anytime.
+
+---
+
+## Field Inheritance
+
+All fields inherit from Field.meta.yaml:
+
+```
+Field.meta.yaml
+      ↓
+Customer.entity.yaml fields
+  - name (inherits from Field.meta.yaml)
+  - email (inherits from Field.meta.yaml)
+  - status (inherits from Field.meta.yaml)
+  - createdAt (inherits from Field.meta.yaml)
+```
+
+Custom entity fields automatically provide:
+- Consistent properties
+- Standard validation
+- Compatible interfaces
+- Enterprise quality
+
+---
+
+## Future Extensions
+
+The Field Meta Model can be extended with:
+- Machine learning features
+- Advanced validation
+- Custom rendering hints
+- Performance optimization
+- Caching strategies
+- Distribution rules
+- Replication policies
+- Compression options
+
+---
+
+## Summary
+
+The Field Meta Model defines **universal properties** that every Genesis Field must support.
+
+Fields are the atomic units of entity data.
+
+By standardizing field properties, Genesis ensures:
+- **Data Quality** - Consistent validation
+- **Searchability** - Consistent indexing
+- **Governance** - Consistent auditing
+- **AI Integration** - Consistent vectorization
+- **Automation** - Consistent triggers
+- **Interoperability** - Consistent formats
+
+The Field Meta Model makes Genesis entities **semantically interoperable**.

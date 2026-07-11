@@ -1,0 +1,297 @@
+# Genesis Meta Model: Audit
+
+## Core Concept
+
+Audit tracks who did what, when, and why.
+
+Every Audit trail inherits these canonical properties.
+
+---
+
+## Universal Audit Properties
+
+### Creation Tracking
+
+- **createdBy** - Who created the entity
+- **createdAt** - When entity was created
+- **createdByUserId** - User ID who created
+- **creationSource** - How was it created (UI, API, import)
+
+### Modification Tracking
+
+- **modifiedBy** - Who last modified
+- **modifiedAt** - When last modified
+- **modifiedByUserId** - User ID who modified
+- **modificationCount** - Total modifications
+
+### Deletion Tracking
+
+- **deletedBy** - Who deleted (if soft-deleted)
+- **deletedAt** - When deleted
+- **deletedByUserId** - User ID who deleted
+- **deletionReason** - Why was it deleted
+
+### Field-Level Audit
+
+For important fields:
+
+- **fieldName** - Which field changed
+- **oldValue** - Previous value
+- **newValue** - New value
+- **changedBy** - Who changed it
+- **changedAt** - When changed
+
+### Approval Tracking
+
+- **approvedBy** - Who approved
+- **approvedAt** - When approved
+- **approvalComments** - Approval notes
+- **rejectedBy** - Who rejected (if rejected)
+- **rejectionReason** - Why rejected
+
+---
+
+## Audit Log Structure
+
+Complete audit log for an entity:
+
+```json
+{
+  "entityId": "cust_123",
+  "entityType": "Customer",
+  
+  "creationAudit": {
+    "createdBy": "user_456",
+    "createdAt": "2026-01-01T10:00:00Z",
+    "createdByUserId": "user_456",
+    "creationSource": "UI"
+  },
+  
+  "modificationHistory": [
+    {
+      "modifiedBy": "user_789",
+      "modifiedAt": "2026-02-15T14:30:00Z",
+      "fields": [
+        {
+          "fieldName": "status",
+          "oldValue": "PROSPECT",
+          "newValue": "ACTIVE"
+        }
+      ]
+    },
+    {
+      "modifiedBy": "user_456",
+      "modifiedAt": "2026-03-20T09:15:00Z",
+      "fields": [
+        {
+          "fieldName": "name",
+          "oldValue": "Acme Corp",
+          "newValue": "Acme Corporation"
+        }
+      ]
+    }
+  ],
+  
+  "approvalHistory": [
+    {
+      "approvedBy": "admin_001",
+      "approvedAt": "2026-02-16T10:00:00Z",
+      "approvalComments": "Looks good"
+    }
+  ],
+  
+  "lastModified": {
+    "modifiedBy": "user_456",
+    "modifiedAt": "2026-03-20T09:15:00Z"
+  },
+  
+  "accessLog": [
+    {
+      "userId": "user_123",
+      "accessedAt": "2026-07-01T12:00:00Z",
+      "action": "view"
+    }
+  ]
+}
+```
+
+---
+
+## Audit Configuration
+
+Entities specify what to audit:
+
+```yaml
+audit:
+  enabled: true
+  
+  trackCreation: true
+  trackModification: true
+  trackDeletion: true
+  
+  fieldLevelAudit:
+    - name
+    - email
+    - status
+    - organizationId
+  
+  trackFieldChanges: true
+  retentionDays: 2555
+  
+  approvalAudit: true
+  accessAudit: true
+  exportAudit: true
+```
+
+---
+
+## Compliance Audit
+
+Audit for compliance and regulatory requirements:
+
+```yaml
+complianceAudit:
+  enabled: true
+  
+  regulations:
+    - GDPR
+    - HIPAA
+    - SOC2
+  
+  mandatoryFields:
+    - createdBy
+    - modifiedBy
+    - deletedBy
+    - approvedBy
+  
+  immutableHistory: true
+  encryptionRequired: true
+```
+
+---
+
+## Access Audit
+
+Track who accessed what data:
+
+```yaml
+accessAudit:
+  enabled: true
+  
+  trackReads: false  # Too verbose for most cases
+  trackExports: true  # Always track exports
+  trackSensitiveFieldAccess: true
+  
+  sensitiveFields:
+    - salary
+    - ssn
+    - password
+```
+
+---
+
+## Audit Query
+
+Query audit trail:
+
+```yaml
+auditQueries:
+  - name: "Who modified this entity?"
+    query: "SELECT DISTINCT modifiedBy FROM audit WHERE entityId = ?"
+  
+  - name: "What changed on a specific date?"
+    query: "SELECT * FROM audit WHERE entityId = ? AND modifiedAt >= ? AND modifiedAt < ?"
+  
+  - name: "Who has accessed sensitive fields?"
+    query: "SELECT userId, accessedAt FROM accessAudit WHERE entityId = ? AND fieldName IN ('salary', 'ssn')"
+```
+
+---
+
+## Retention Policies
+
+Different retention periods for different audit types:
+
+```yaml
+retentionPolicies:
+  creationAudit:
+    retentionDays: 7300  # 20 years
+    archiveAfterDays: 365
+  
+  modificationAudit:
+    retentionDays: 2555  # 7 years
+    archiveAfterDays: 365
+  
+  deletionAudit:
+    retentionDays: 2555  # 7 years (compliance)
+    archiveAfterDays: 365
+  
+  accessAudit:
+    retentionDays: 365   # 1 year
+    archiveAfterDays: 90
+```
+
+---
+
+## Immutable Audit
+
+Audit trails are immutable:
+
+```yaml
+immutableAudit:
+  enabled: true
+  
+  preventModification: true
+  preventDeletion: true
+  encryptWithHMAC: true
+  verifyIntegrity: true
+```
+
+---
+
+## Design Principles
+
+### 1. Completeness
+Record all significant events.
+
+### 2. Accuracy
+Record accurate information.
+
+### 3. Immutability
+Cannot modify audit records.
+
+### 4. Compliance
+Meet regulatory requirements.
+
+### 5. Performance
+Audit doesn't slow main operations.
+
+### 6. Retention
+Keep for legal/compliance period.
+
+---
+
+## Future Extensions
+
+Audit model can be extended with:
+- Blockchain-based audit trails
+- Distributed audit logs
+- Real-time audit streaming
+- Predictive anomaly detection
+- Automated compliance checking
+- Advanced forensics
+
+---
+
+## Summary
+
+The Audit Meta Model defines **change tracking** for Genesis entities.
+
+Audit provides:
+- **Change History** - What changed
+- **Accountability** - Who did it
+- **Compliance** - Meet regulations
+- **Forensics** - Investigate issues
+- **Analytics** - Analyze patterns
+
+The Audit Meta Model makes Genesis entities **accountable and compliant**.

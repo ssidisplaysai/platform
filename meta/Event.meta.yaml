@@ -1,0 +1,338 @@
+# Genesis Meta Model: Event
+
+## Core Concept
+
+Events are signals that something significant happened.
+
+Every Event inherits these canonical properties.
+
+---
+
+## Universal Event Properties
+
+### Identity
+
+- **name** - Event name
+- **displayName** - Human display name
+- **description** - What happened
+- **eventType** - Category of event
+
+### Semantics
+
+- **aggregate** - Which entity type emits this?
+- **aggregateId** - Which entity instance?
+- **version** - Event schema version
+- **severity** - Event importance (info, warning, critical)
+
+### Timing
+
+- **occurredAt** - When event happened
+- **publishedAt** - When event was published
+- **recordedAt** - When event was recorded
+- **correlationId** - Trace event across systems
+
+### Payload
+
+- **data** - Event data
+- **previousData** - Data before change (if mutation)
+- **delta** - What changed
+- **context** - Additional context
+
+### Causality
+
+- **causedBy** - What triggered this event
+- **parentEvent** - Parent event (if nested)
+- **childEvents** - Events this caused
+
+### Source
+
+- **source** - What emitted this event
+- **userId** - Which user triggered it
+- **systemId** - Which system triggered it
+
+---
+
+## Standard Events
+
+### Entity Lifecycle Events
+
+```yaml
+events:
+  Created:
+    aggregate: Entity
+    description: Entity was created
+    data:
+      - id
+      - createdBy
+      - createdAt
+  
+  Updated:
+    aggregate: Entity
+    description: Entity was updated
+    data:
+      - id
+      - changes
+      - modifiedBy
+      - modifiedAt
+  
+  Deleted:
+    aggregate: Entity
+    description: Entity was deleted
+    data:
+      - id
+      - deletedBy
+      - deletedAt
+  
+  Archived:
+    aggregate: Entity
+    description: Entity was archived
+    data:
+      - id
+      - archivedBy
+      - archivedAt
+  
+  Activated:
+    aggregate: Entity
+    description: Entity was activated
+    data:
+      - id
+      - activatedBy
+      - activatedAt
+  
+  Deactivated:
+    aggregate: Entity
+    description: Entity was deactivated
+    data:
+      - id
+      - deactivatedBy
+      - deactivatedAt
+```
+
+### Data Mutation Events
+
+```yaml
+events:
+  FieldUpdated:
+    aggregate: Entity
+    description: A field was updated
+    data:
+      - id
+      - fieldName
+      - oldValue
+      - newValue
+      - updatedBy
+      - updatedAt
+```
+
+### Business Process Events
+
+```yaml
+events:
+  Approved:
+    aggregate: Entity
+    description: Entity was approved
+    data:
+      - id
+      - approvedBy
+      - approvedAt
+      - comments
+  
+  Rejected:
+    aggregate: Entity
+    description: Entity was rejected
+    data:
+      - id
+      - rejectedBy
+      - rejectedAt
+      - reason
+  
+  Submitted:
+    aggregate: Entity
+    description: Entity was submitted
+    data:
+      - id
+      - submittedBy
+      - submittedAt
+```
+
+### Integration Events
+
+```yaml
+events:
+  Imported:
+    aggregate: Entity
+    description: Entity was imported
+    data:
+      - id
+      - sourceSystem
+      - importedBy
+      - importedAt
+  
+  Exported:
+    aggregate: Entity
+    description: Entity was exported
+    data:
+      - id
+      - destinationSystem
+      - exportedBy
+      - exportedAt
+```
+
+---
+
+## Event Sourcing
+
+Entities can support Event Sourcing:
+
+```yaml
+event_sourcing:
+  enabled: true
+  store_all_events: true
+  allow_replay: true
+  consistency_model: eventual_consistency
+```
+
+---
+
+## Event Handlers
+
+Events can trigger automated actions:
+
+```yaml
+eventHandlers:
+  - event: Created
+    action: SendWelcomeEmail
+    async: true
+  
+  - event: Updated
+    action: UpdateSearchIndex
+    async: true
+  
+  - event: Deleted
+    action: CleanupReferences
+    async: true
+```
+
+---
+
+## Event Subscribers
+
+External systems can subscribe to events:
+
+```yaml
+subscribers:
+  - event: "*"
+    handler: audit_service
+  
+  - event: "Created, Updated, Deleted"
+    handler: analytics_service
+  
+  - event: "Approved"
+    handler: notification_service
+```
+
+---
+
+## Event Schema
+
+Events follow a standard schema:
+
+```json
+{
+  "eventId": "uuid",
+  "eventType": "CustomerCreated",
+  "aggregate": "Customer",
+  "aggregateId": "cust_123",
+  "version": 1,
+  "occurredAt": "2026-07-07T10:30:00Z",
+  "publishedAt": "2026-07-07T10:30:01Z",
+  "source": "customer_service",
+  "userId": "user_456",
+  "correlationId": "correlation_123",
+  "data": {
+    "id": "cust_123",
+    "name": "Acme Corp",
+    "status": "ACTIVE"
+  },
+  "metadata": {
+    "ipAddress": "192.168.1.1",
+    "userAgent": "Mozilla/5.0..."
+  }
+}
+```
+
+---
+
+## Event Ordering
+
+Events maintain causality:
+
+```yaml
+event_ordering:
+  perAggregate: true  # Events ordered per entity
+  globalOrdering: optional  # Global order optional
+  consistencyGuarantee: causal
+```
+
+---
+
+## Event Retention
+
+Events are retained for compliance:
+
+```yaml
+event_retention:
+  retentionDays: 2555  # ~7 years
+  archiveAfterDays: 365
+  purgeAfterDays: 7300  # ~20 years
+```
+
+---
+
+## Design Principles
+
+### 1. Immutability
+Events cannot be changed after creation.
+
+### 2. Causality
+Events maintain causal relationships.
+
+### 3. Traceability
+All events are traceable.
+
+### 4. Completeness
+All important events are recorded.
+
+### 5. Semantics
+Events have clear business meaning.
+
+### 6. Extensibility
+New event types can be added.
+
+---
+
+## Future Extensions
+
+Event model can be extended with:
+- Event versioning and migration
+- Event compression
+- Event encryption
+- Distributed event tracing
+- Cross-system event coordination
+- Event-driven state management
+
+---
+
+## Summary
+
+The Event Meta Model defines **significant occurrences** in Genesis entities.
+
+Events provide:
+- **Change Tracking** - Record what happened
+- **Audit Trail** - Complete history
+- **Event Sourcing** - Source of truth
+- **Automation** - Trigger on events
+- **Analytics** - Analyze event patterns
+- **Integration** - Notify other systems
+
+The Event Meta Model makes Genesis entities **observable and automatable**.

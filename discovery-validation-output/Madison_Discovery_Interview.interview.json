@@ -1,0 +1,229 @@
+{
+  "interviewId": "interview_b42c08cc",
+  "participant": "Madison (Operations Lead)",
+  "role": "Operations Manager",
+  "department": "Operations",
+  "interviewDate": "July 5, 2026",
+  "interviewer": "Robert Stoner",
+  "sourceId": "src_madison_discovery_interview",
+  "rawMetadata": {
+    "participant": "Madison (Operations Lead)",
+    "role": "Operations Manager",
+    "department": "Operations",
+    "interviewDate": "July 5, 2026",
+    "interviewer": "Robert Stoner"
+  },
+  "sections": [
+    {
+      "title": "SECTION 1: DAILY RESPONSIBILITIES",
+      "order": 2,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_00fb18d3",
+          "question": "Walk me through what a typical day looks like for you.",
+          "answer": "I start by checking overnight factory updates. We have three main factories in China, and they're\nin a different timezone, so I usually have 5-10 messages from them by morning. I triage those and\nupdate Robert if anything is urgent.\n\nThen I spend time on two things: (1) order tracking and fulfillment, and (2) vendor management. I look at\nactive orders, check factory status, update customers on timeline, and handle any issues that come up.",
+          "rawQuestion": "Walk me through what a typical day looks like for you.",
+          "rawAnswer": "\nI start by checking overnight factory updates. We have three main factories in China, and they're\nin a different timezone, so I usually have 5-10 messages from them by morning. I triage those and\nupdate Robert if anything is urgent.\n\nThen I spend time on two things: (1) order tracking and fulfillment, and (2) vendor management. I look at\nactive orders, check factory status, update customers on timeline, and handle any issues that come up.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_0da26fb1",
+          "question": "What systems do you use daily?",
+          "answer": "Zoho is my main system — invoicing, estimates, order tracking. I'm also in Asana for project tracking,\nOutlook for email, and Teams. A lot of communication with factories is via WhatsApp or email directly.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "What systems do you use daily?",
+          "rawAnswer": "\nZoho is my main system — invoicing, estimates, order tracking. I'm also in Asana for project tracking,\nOutlook for email, and Teams. A lot of communication with factories is via WhatsApp or email directly.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 2: OPERATIONS WORKFLOW",
+      "order": 3,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_c37b4893",
+          "question": "Walk me through the order fulfillment process from your perspective.",
+          "answer": "Once an order is confirmed by Robert, it comes to me. I log it in Zoho and break it down by components\nand vendors. Then I communicate to the factories: what we need, quantity, delivery date, specs. I track\nprogress — they send me photos, updates, sometimes issues.\n\nWhen everything is ready to ship, I coordinate logistics. We work with a freight forwarder who handles\ncustoms and delivery. I track the shipment, update the customer, and coordinate delivery. After delivery,\nwe handle any issues or warranty claims.",
+          "rawQuestion": "Walk me through the order fulfillment process from your perspective.",
+          "rawAnswer": "\nOnce an order is confirmed by Robert, it comes to me. I log it in Zoho and break it down by components\nand vendors. Then I communicate to the factories: what we need, quantity, delivery date, specs. I track\nprogress — they send me photos, updates, sometimes issues.\n\nWhen everything is ready to ship, I coordinate logistics. We work with a freight forwarder who handles\ncustoms and delivery. I track the shipment, update the customer, and coordinate delivery. After delivery,\nwe handle any issues or warranty claims.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_65955929",
+          "question": "How much of your time is spent on exception handling vs. routine work?",
+          "answer": "Probably 60% routine and 40% exceptions. Exceptions are things like: factory delays, quality issues,\nwrong specifications shipped, customs issues, customer change requests mid-order. These eat a lot of time\nbecause they require rework or urgent communication.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "How much of your time is spent on exception handling vs. routine work?",
+          "rawAnswer": "\nProbably 60% routine and 40% exceptions. Exceptions are things like: factory delays, quality issues,\nwrong specifications shipped, customs issues, customer change requests mid-order. These eat a lot of time\nbecause they require rework or urgent communication.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 3: FACTORY RELATIONSHIPS & LOGISTICS",
+      "order": 4,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_04f9b70d",
+          "question": "How do you communicate with the factories?",
+          "answer": "Directly via WhatsApp, email, and sometimes phone calls if it's urgent. They speak English, but it's not\nnative, so sometimes clarity issues arise. I've learned to be very explicit with specs and to ask for\nphotos as proof of work.",
+          "rawQuestion": "How do you communicate with the factories?",
+          "rawAnswer": "\nDirectly via WhatsApp, email, and sometimes phone calls if it's urgent. They speak English, but it's not\nnative, so sometimes clarity issues arise. I've learned to be very explicit with specs and to ask for\nphotos as proof of work.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_b0355b46",
+          "question": "What causes the most friction with factory communication?",
+          "answer": "Timezone delays and language nuances. Also, they sometimes interpret specs differently than we intended.\nI have to follow up constantly. The relationship works, but it's not frictionless. If one of the key\ncontacts at a factory changes, we have to rebuild that relationship.",
+          "rawQuestion": "What causes the most friction with factory communication?",
+          "rawAnswer": "\nTimezone delays and language nuances. Also, they sometimes interpret specs differently than we intended.\nI have to follow up constantly. The relationship works, but it's not frictionless. If one of the key\ncontacts at a factory changes, we have to rebuild that relationship.\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_264141be",
+          "question": "How is freight currently handled?",
+          "answer": "We use the same freight forwarder for most shipments. They handle the logistics from China to the US.\nWe pay by shipment, and costs vary. Sometimes we combine multiple orders into one shipment to save cost,\nsometimes we ship separately if the customer is urgent.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "How is freight currently handled?",
+          "rawAnswer": "\nWe use the same freight forwarder for most shipments. They handle the logistics from China to the US.\nWe pay by shipment, and costs vary. Sometimes we combine multiple orders into one shipment to save cost,\nsometimes we ship separately if the customer is urgent.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 3,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 4: BOTTLENECKS & PAIN POINTS",
+      "order": 5,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_b3c33390",
+          "question": "What's your biggest operational bottleneck?",
+          "answer": "Visibility. I often don't know the exact status of orders until I ask. There's no real-time feed from factories.\nI'm constantly chasing them for updates. Also, Zoho isn't integrated with our quoting system, so there's\nmanual rekeying of information.",
+          "rawQuestion": "What's your biggest operational bottleneck?",
+          "rawAnswer": "\nVisibility. I often don't know the exact status of orders until I ask. There's no real-time feed from factories.\nI'm constantly chasing them for updates. Also, Zoho isn't integrated with our quoting system, so there's\nmanual rekeying of information.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_2f997429",
+          "question": "Where do things typically go wrong?",
+          "answer": "Specification mismatches — we quote one thing, then the factory makes it wrong. Customer change requests\nafter an order is placed. Freight delays or customs issues. Quality issues that don't show up until the\nproduct reaches the US.",
+          "rawQuestion": "Where do things typically go wrong?",
+          "rawAnswer": "\nSpecification mismatches — we quote one thing, then the factory makes it wrong. Customer change requests\nafter an order is placed. Freight delays or customs issues. Quality issues that don't show up until the\nproduct reaches the US.\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_55d58f03",
+          "question": "How much time do you spend on admin tasks vs. strategic work?",
+          "answer": "I'd say 80% admin — answering emails, updating spreadsheets, following up on status, handling exceptions.\nMaybe 20% on things like optimizing the process or planning. I'd like it to be flipped.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "How much time do you spend on admin tasks vs. strategic work?",
+          "rawAnswer": "\nI'd say 80% admin — answering emails, updating spreadsheets, following up on status, handling exceptions.\nMaybe 20% on things like optimizing the process or planning. I'd like it to be flipped.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 3,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 5: AUTHORITY & DECISION MAKING",
+      "order": 6,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_783ae6b4",
+          "question": "What decisions do you currently make on your own vs. what requires Robert's approval?",
+          "answer": "I can make day-to-day operational decisions — reorder, adjust timelines, handle customer service issues.\nBut anything with a price implication, a customer relationship issue, or something unusual goes to Robert.\nHe's the final decision maker on most things.",
+          "rawQuestion": "What decisions do you currently make on your own vs. what requires Robert's approval?",
+          "rawAnswer": "\nI can make day-to-day operational decisions — reorder, adjust timelines, handle customer service issues.\nBut anything with a price implication, a customer relationship issue, or something unusual goes to Robert.\nHe's the final decision maker on most things.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_08f73bb7",
+          "question": "Do you feel like you have enough information to make the decisions you're responsible for?",
+          "answer": "Mostly yes, but not always. When something goes wrong mid-order, I sometimes don't have enough context\nto decide independently. I end up escalating to Robert anyway.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "Do you feel like you have enough information to make the decisions you're responsible for?",
+          "rawAnswer": "\nMostly yes, but not always. When something goes wrong mid-order, I sometimes don't have enough context\nto decide independently. I end up escalating to Robert anyway.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 6: SCALING & GROWTH",
+      "order": 7,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_d683ad5d",
+          "question": "If workload doubled, what would break first?",
+          "answer": "My time. I'm already at capacity. I'd need to delegate more or hire someone to help. Also, the manual\nprocesses would become unmanageable. We'd need better systems.",
+          "rawQuestion": "If workload doubled, what would break first?",
+          "rawAnswer": "\nMy time. I'm already at capacity. I'd need to delegate more or hire someone to help. Also, the manual\nprocesses would become unmanageable. We'd need better systems.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_c01b66a3",
+          "question": "What's preventing us from scaling to 2x volume right now?",
+          "answer": "Bandwidth. Robert is the bottleneck for decisions. I'm the bottleneck for execution. And our systems\nare manual. Without better automation or another person, we can't absorb more volume without sacrificing\nquality or burning out.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "What's preventing us from scaling to 2x volume right now?",
+          "rawAnswer": "\nBandwidth. Robert is the bottleneck for decisions. I'm the bottleneck for execution. And our systems\nare manual. Without better automation or another person, we can't absorb more volume without sacrificing\nquality or burning out.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

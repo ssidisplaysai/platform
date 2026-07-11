@@ -1,0 +1,198 @@
+{
+  "interviewId": "interview_4d253d2b",
+  "participant": "Zach Anderson",
+  "role": "Graphics Lead",
+  "department": "Creative",
+  "interviewDate": "July 5, 2026",
+  "interviewer": "Robert Stoner",
+  "sourceId": "src_zach_discovery_interview",
+  "rawMetadata": {
+    "participant": "Zach Anderson",
+    "role": "Graphics Lead",
+    "department": "Creative",
+    "interviewDate": "July 5, 2026",
+    "interviewer": "Robert Stoner"
+  },
+  "sections": [
+    {
+      "title": "SECTION 1: DAILY WORKFLOW",
+      "order": 2,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_ad708086",
+          "question": "Walk me through a typical day. What is the first thing you do when you come in?",
+          "answer": "I usually start by checking my project queue in Asana. There are typically 3-5 active jobs\nat any time. I prioritize based on delivery date, urgency flag, and complexity.\n\nMost mornings I have a quick sync with Robert or Madison to confirm any new orders came in\novernight or if anything shifted priority-wise. After that I dive into the current job.",
+          "rawQuestion": "Walk me through a typical day. What is the first thing you do when you come in?",
+          "rawAnswer": "\nI usually start by checking my project queue in Asana. There are typically 3-5 active jobs\nat any time. I prioritize based on delivery date, urgency flag, and complexity.\n\nMost mornings I have a quick sync with Robert or Madison to confirm any new orders came in\novernight or if anything shifted priority-wise. After that I dive into the current job.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_c768344e",
+          "question": "What software do you use every single day?",
+          "answer": "Adobe Illustrator is my main tool — I'd say 70% of my day. I also use Photoshop, probably 20%\nof the time, and Figma for mockups or when I'm collaborating with clients on concepts. Asana for\nproject tracking, obviously. And I'm constantly in Outlook and Teams for comms.",
+          "rawQuestion": "What software do you use every single day?",
+          "rawAnswer": "\nAdobe Illustrator is my main tool — I'd say 70% of my day. I also use Photoshop, probably 20%\nof the time, and Figma for mockups or when I'm collaborating with clients on concepts. Asana for\nproject tracking, obviously. And I'm constantly in Outlook and Teams for comms.\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_459253d6",
+          "question": "How long does a typical project take from start to finish?",
+          "answer": "It really depends on the project type. Standard label design? 1-2 hours. Custom artwork or\ncomplex branding? Could be a full day or spread across 2-3 days. We had one project last month\nthat took a week because the client kept requesting revisions.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "How long does a typical project take from start to finish?",
+          "rawAnswer": "\nIt really depends on the project type. Standard label design? 1-2 hours. Custom artwork or\ncomplex branding? Could be a full day or spread across 2-3 days. We had one project last month\nthat took a week because the client kept requesting revisions.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 3,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 2: BOTTLENECKS & PAIN POINTS",
+      "order": 3,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_0dffc9c3",
+          "question": "What slows you down the most in your day-to-day work?",
+          "answer": "Honestly, waiting for client feedback. A lot of jobs sit in my queue waiting on approval or\nfor the client to get back to Robert. Sometimes it's days before we get a response. That puts\nthe whole timeline at risk.",
+          "rawQuestion": "What slows you down the most in your day-to-day work?",
+          "rawAnswer": "\nHonestly, waiting for client feedback. A lot of jobs sit in my queue waiting on approval or\nfor the client to get back to Robert. Sometimes it's days before we get a response. That puts\nthe whole timeline at risk.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_20badcab",
+          "question": "Do you ever get unclear or incomplete briefs?",
+          "answer": "Yes, all the time. I'd say 40% of projects come in with specs that are missing something. Maybe\nthe client didn't think through all the details, or Robert is still clarifying with them. I usually\nhave to ask questions or make assumptions. It slows down the design process.",
+          "rawQuestion": "Do you ever get unclear or incomplete briefs?",
+          "rawAnswer": "\nYes, all the time. I'd say 40% of projects come in with specs that are missing something. Maybe\nthe client didn't think through all the details, or Robert is still clarifying with them. I usually\nhave to ask questions or make assumptions. It slows down the design process.\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_3badaba1",
+          "question": "What happens when a client requests major revisions after you're done?",
+          "answer": "That's where it gets painful. If the feedback is major, I'm essentially starting over on that component.\nThere's no buffer built into our timelines, so revision requests can cascade into the next projects.\nWe've had situations where a revision on one job pushed another job's deadline back.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "What happens when a client requests major revisions after you're done?",
+          "rawAnswer": "\nThat's where it gets painful. If the feedback is major, I'm essentially starting over on that component.\nThere's no buffer built into our timelines, so revision requests can cascade into the next projects.\nWe've had situations where a revision on one job pushed another job's deadline back.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 3,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 3: TOOLS & SYSTEMS",
+      "order": 4,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_f2849298",
+          "question": "Are there any tools or systems you wish we had but don't currently use?",
+          "answer": "A design asset library would be huge. We're recreating the same elements over and over. If we had\na centralized place to store logo variations, color palettes, font files, and common design patterns,\nI could work a lot faster.\n\nAlso, a real project management system that's integrated with our quoting process. Right now specs\ncome to me in email, Asana, or verbally from Robert. There's no single source of truth.",
+          "rawQuestion": "Are there any tools or systems you wish we had but don't currently use?",
+          "rawAnswer": "\nA design asset library would be huge. We're recreating the same elements over and over. If we had\na centralized place to store logo variations, color palettes, font files, and common design patterns,\nI could work a lot faster.\n\nAlso, a real project management system that's integrated with our quoting process. Right now specs\ncome to me in email, Asana, or verbally from Robert. There's no single source of truth.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_a0dabc3f",
+          "question": "How do you currently manage revisions or version control of designs?",
+          "answer": "I save files locally and name them by version: filename_v1.ai, filename_v2.ai, etc. I sometimes upload\nfinal files to a shared folder, but not consistently. It's messy. I've lost work before because I wasn't\nsure which version was the current one.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "How do you currently manage revisions or version control of designs?",
+          "rawAnswer": "\nI save files locally and name them by version: filename_v1.ai, filename_v2.ai, etc. I sometimes upload\nfinal files to a shared folder, but not consistently. It's messy. I've lost work before because I wasn't\nsure which version was the current one.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 4: CAPABILITY ASSESSMENT",
+      "order": 5,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_0d3a99dd",
+          "question": "How confident are you in your current skill level with Illustrator?",
+          "answer": "I'm very confident. I can do almost anything asked of me in Illustrator — typography, complex vector work,\n3D effects, you name it. The limitation is usually time or unclear requirements, not my capability.",
+          "rawQuestion": "How confident are you in your current skill level with Illustrator?",
+          "rawAnswer": "\nI'm very confident. I can do almost anything asked of me in Illustrator — typography, complex vector work,\n3D effects, you name it. The limitation is usually time or unclear requirements, not my capability.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_8dadb657",
+          "question": "Could you train someone else to do the work you do?",
+          "answer": "For basic label design, yes, probably in a week or two of hands-on training. For the more complex custom work,\nthat would take longer — months probably. A lot of it is design taste and judgment, which takes experience.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "Could you train someone else to do the work you do?",
+          "rawAnswer": "\nFor basic label design, yes, probably in a week or two of hands-on training. For the more complex custom work,\nthat would take longer — months probably. A lot of it is design taste and judgment, which takes experience.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SECTION 5: OPPORTUNITIES & SCALING",
+      "order": 6,
+      "startPage": 1,
+      "questions": [
+        {
+          "id": "q_269225c9",
+          "question": "If we could remove one bottleneck tomorrow, what would it be?",
+          "answer": "Client feedback speed. If clients responded in 24 hours instead of 3-5 days, our throughput would double.\nWe wouldn't have jobs sitting idle waiting for approval.",
+          "rawQuestion": "If we could remove one bottleneck tomorrow, what would it be?",
+          "rawAnswer": "\nClient feedback speed. If clients responded in 24 hours instead of 3-5 days, our throughput would double.\nWe wouldn't have jobs sitting idle waiting for approval.\n",
+          "page": 1,
+          "order": 1,
+          "answerPages": [
+            1
+          ]
+        },
+        {
+          "id": "q_665f5277",
+          "question": "What would need to happen for you to take on 2x the current workload?",
+          "answer": "More time. I'd need either another designer on the team, or I'd need processes to be way faster.\nRight now I'm working at pretty much full capacity — I don't have much slack to absorb more work.\n\nThe faster feedback and a design asset library would help a lot. So would templates for common project types.\n\n═══════════════════════════════════════════════════════════════════════════",
+          "rawQuestion": "What would need to happen for you to take on 2x the current workload?",
+          "rawAnswer": "\nMore time. I'd need either another designer on the team, or I'd need processes to be way faster.\nRight now I'm working at pretty much full capacity — I don't have much slack to absorb more work.\n\nThe faster feedback and a design asset library would help a lot. So would templates for common project types.\n\n═══════════════════════════════════════════════════════════════════════════\n",
+          "page": 1,
+          "order": 2,
+          "answerPages": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": []
+}

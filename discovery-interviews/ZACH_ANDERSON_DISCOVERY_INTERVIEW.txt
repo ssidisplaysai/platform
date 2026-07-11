@@ -1,0 +1,283 @@
+ZACH — Discovery Interview
+
+Your Daily Work
+
+What does your day look like from start to finish?
+
+Answer:
+
+I start each day by checking Microsoft Teams messages from Robert and Madison, then Outlook for emails from clients or other employees.
+
+After that I move into active project work. My workload varies depending on priorities, but typically includes:
+● Website development and maintenance
+● Product spec sheets
+● Product sign-off drawings
+● Brochures
+● Price sheets
+● Working with Sagar on SphereController updates
+● Other marketing or product-related projects as needed
+
+What are you working on most of the time?
+
+Answer:
+
+My priorities change frequently based on business needs.
+
+Currently, the majority of my time is spent designing, building, and launching new websites.
+
+Other major ongoing projects include SphereController development and product documentation.
+
+Walk me through what happens when a new project lands on your desk.
+
+Answer:
+
+Most new projects begin as a verbal conversation with Robert, although they may also come through Microsoft Teams or occasionally from Madison.
+
+Once I understand the project requirements, I create the requested deliverable, which could include:
+● Product spec sheets
+● Product sign-off drawings
+● Websites
+● SphereController interface updates
+● Brochures
+● Price sheets
+● Other design or marketing materials
+
+What types of things do you make?
+
+Answer:
+
+I create a wide variety of materials for SSI, including:
+● Product specification sheets
+● Product sign-off sheets
+● Technical drawings
+● Websites
+● SphereController interface graphics and updates
+● Brochures
+● Price sheets
+● Excel pricing spreadsheets
+● Flyers
+● Posters
+● Instagram graphics
+● Shipping labels
+● QR code labels
+● Product display graphics
+● Product mockups
+● Laser-cut DXF designs
+● Business Letters
+● Intake forms
+
+Inputs — What Comes To You
+
+Who gives you work?
+
+Answer:
+
+Most work comes directly from Robert or Madison.
+
+Occasionally customers request SphereController updates, but customer requests are relatively rare.
+
+How do you receive briefs or instructions?
+
+Answer:
+
+Most instructions are delivered through:
+● Microsoft Teams
+● Verbal conversations
+
+Occasionally projects may begin from emails or discussions.
+
+How clear are the briefs you receive?
+
+Answer:
+
+The project requirements are usually clear.
+
+For marketing materials such as websites, brochures, catalogs, and spec sheets, I frequently use ChatGPT to help write or expand body copy.
+
+Occasionally I need additional information, such as:
+● Product names
+● Technical specifications
+● Product measurements
+
+How much back-and-forth happens before you start vs. after you deliver?
+
+Answer:
+
+Typically there is very little back-and-forth.
+
+If the project is straightforward, I complete it, send it to Robert or Madison, and it is approved without additional revisions.
+
+Revisions usually only happen if project requirements change.
+
+Your Outputs — What You Deliver
+
+List everything you create for SSI.
+
+Answer:
+
+Deliverables include:
+● Product specification sheets
+● Product sign-off sheets
+● Technical drawings
+● Websites
+● SphereController updates
+● Brochures
+● Price sheets
+● Excel pricing spreadsheets
+● Flyers
+● Posters
+● Instagram graphics
+● Shipping labels
+● QR code labels
+● Product display graphics
+● Product mockups
+● Laser-cut DXF files
+● Formal Letters
+● Intake forms
+
+Who receives your work?
+
+Answer:
+
+Almost all completed work is delivered to Robert and Madison for review and approval.
+
+How do you know when something is approved?
+
+Answer:
+
+Approval is usually communicated directly by Robert.
+
+In many cases I deliver the work to Robert and Madison, and if no additional feedback is given, I consider the project complete.
+
+What formats do you work in?
+
+Answer:
+
+Most projects are created using Adobe software.
+
+Common deliverable formats include:
+● PDF (most documentation)
+● PNG
+● JPG
+● SVG (logos and vector graphics)
+● PDF (vector artwork)
+● DXF (laser cutting files)
+
+Volume & Workload
+
+On a typical week, how many different projects are you juggling?
+
+Answer:
+
+Typically three to four projects simultaneously.
+
+Usually this includes:
+● One large website project
+● SphereController updates
+● Several smaller projects such as spec sheets or sign-off drawings that are completed the same day.
+
+What's your biggest time consumer?
+
+Answer:
+
+Website development is by far the largest time commitment, especially websites with many pages.
+
+Are there things you're asked to do repeatedly that could be templated?
+
+Answer:
+
+Most repetitive work has already been templated.
+
+Examples include:
+● Product specification sheets
+● Product sign-off sheets
+
+Is there anything you're the only person who knows how to do that worries you?
+
+Answer:
+
+Website design and maintenance could become a bottleneck if many websites need to be launched at once.
+
+Converting artwork into production-ready DXF files is also specialized work that can be difficult and time-consuming.
+
+Quick knowledge of file and document locations on this computer.
+
+Pain Points
+
+What's the most frustrating part of your workflow?
+
+Answer:
+
+Converting millimeter measurements into inches for product sign-off drawings.
+
+What do you get asked for most that takes the longest to produce?
+
+Answer:
+
+Large website projects and extensive pricing spreadsheets.
+
+What information do you wish you had earlier in the process?
+
+Answer:
+
+Most of the time I already have everything I need to begin.
+
+What tools or resources would make your work faster or better?
+
+Answer:
+
+At the moment I feel like I have the tools and resources I need.
+
+Software You Use Every Day
+
+List every tool, app, or software you use regularly.
+
+Answer:
+
+● Adobe Illustrator
+● Adobe InDesign
+● Adobe Photoshop
+● Adobe Premiere Pro
+● Adobe Acrobat
+● Figma
+● Microsoft Teams
+● Slack
+● Microsoft Outlook
+● Microsoft Excel
+● Microsoft Word
+● WordPress
+● Elementor
+
+What are you most skilled in?
+
+Answer:
+
+My strongest skills are:
+● Graphic Design
+● Layout Design
+● Website Design
+
+Is there anything you want to learn or use that you haven't been able to?
+
+Answer:
+
+No specific answer provided at this time.
+
+The Big Question
+
+Is there anything about your role that SSI depends on that would break if you weren't here?
+
+Answer:
+
+Areas where I provide specialized knowledge include:
+● Knowing where company files and design assets are stored
+● Quickly creating product specification sheets
+● Producing product sign-off drawings
+● Website maintenance
+● SphereController graphics and interface updates
+
+What would you build or create for SSI if you had unlimited time?
+
+Answer:
+
+I would completely redesign and modernize the main SSI website, improving both its appearance and overall organization.

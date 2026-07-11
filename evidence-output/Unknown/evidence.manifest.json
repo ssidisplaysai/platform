@@ -1,0 +1,42 @@
+{
+  "canonicalizationSummary": {
+    "canonicalizationErrors": "0",
+    "itemsCanonicalizedSuccessfully": "20",
+    "totalItems": "20"
+  },
+  "compiledAt": "2026-07-10T00:12:36.419Z",
+  "compilerVersion": "2.0.0",
+  "determinismVerification": {
+    "executionCount": "1",
+    "outputConsistent": true,
+    "outputHash": "9841ab9370c5dc74b799020e86a285eee25ed329ae196d1f2122ce13e6748e6d"
+  },
+  "identitySummary": {
+    "hashAlgorithm": "sha256",
+    "hashLength": "64",
+    "identityCollisions": "0",
+    "totalIdentitiesGenerated": "20"
+  },
+  "inputSources": [
+    {
+      "name": "Unknown",
+      "interviewId": "interview_45da4e58",
+      "itemCount": 20
+    }
+  ],
+  "outputArtifacts": {
+    "totalCollections": "1",
+    "totalDuplicatesRemoved": "0",
+    "totalItems": "20",
+    "totalPackages": "1",
+    "totalRelationshipsFound": "0"
+  },
+  "schemaVersion": "1.0",
+  "validationSummary": {
+    "errorsIssued": "0",
+    "failedValidations": "0",
+    "passedValidations": "20",
+    "totalValidations": "20",
+    "warningsIssued": "0"
+  }
+}

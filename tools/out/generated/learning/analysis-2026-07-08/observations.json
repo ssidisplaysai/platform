@@ -1,0 +1,1090 @@
+[
+  {
+    "id": "obs-cf8af195",
+    "source": "runtime",
+    "domain": "operations",
+    "type": "event",
+    "value": 66.80045592118223,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.971399625757321,
+    "tags": [
+      "operations",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-a8275b98",
+    "source": "event",
+    "domain": "operations",
+    "type": "event",
+    "value": 54.33333996647791,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9817070916781852,
+    "tags": [
+      "operations",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-51c545b5",
+    "source": "workflow",
+    "domain": "operations",
+    "type": "event",
+    "value": 56.37969721150866,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9341239581881683,
+    "tags": [
+      "operations",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-81414327",
+    "source": "automation",
+    "domain": "operations",
+    "type": "event",
+    "value": 5.846891271397481,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9317386273725315,
+    "tags": [
+      "operations",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-973449fe",
+    "source": "planning",
+    "domain": "operations",
+    "type": "event",
+    "value": 4.067389195255721,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9181462700183799,
+    "tags": [
+      "operations",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-4e66c418",
+    "source": "decision",
+    "domain": "operations",
+    "type": "event",
+    "value": 46.27952959347033,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9304146896031231,
+    "tags": [
+      "operations",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-8b009901",
+    "source": "simulation",
+    "domain": "operations",
+    "type": "event",
+    "value": 14.856292199231868,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9948913287952371,
+    "tags": [
+      "operations",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-6a13222f",
+    "source": "ai",
+    "domain": "operations",
+    "type": "event",
+    "value": 58.97801230175741,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9120938835152212,
+    "tags": [
+      "operations",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-f332ff99",
+    "source": "runtime",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 26.763293731687487,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9607900352175831,
+    "tags": [
+      "manufacturing",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-ea401acb",
+    "source": "event",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 90.36103749233587,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9106169987414571,
+    "tags": [
+      "manufacturing",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-f90662d0",
+    "source": "workflow",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 47.37036848567694,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9844824877653207,
+    "tags": [
+      "manufacturing",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-ca889e81",
+    "source": "automation",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 96.13650250803431,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9645958011518615,
+    "tags": [
+      "manufacturing",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-63ec1171",
+    "source": "planning",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 69.23897126723656,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9315356644173892,
+    "tags": [
+      "manufacturing",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-4964f343",
+    "source": "decision",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 0.9699569783367501,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9148259814459258,
+    "tags": [
+      "manufacturing",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-e20a74c5",
+    "source": "simulation",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 34.19018313452541,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9835632044635477,
+    "tags": [
+      "manufacturing",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-5079b0d9",
+    "source": "ai",
+    "domain": "manufacturing",
+    "type": "event",
+    "value": 79.29947718165397,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9446289470729016,
+    "tags": [
+      "manufacturing",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-0afcdf18",
+    "source": "runtime",
+    "domain": "inventory",
+    "type": "event",
+    "value": 42.52393048329094,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.982979056748688,
+    "tags": [
+      "inventory",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-980ecd21",
+    "source": "event",
+    "domain": "inventory",
+    "type": "event",
+    "value": 96.5750731313966,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9346609769354788,
+    "tags": [
+      "inventory",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-7e15d03d",
+    "source": "workflow",
+    "domain": "inventory",
+    "type": "event",
+    "value": 33.01212764392736,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9635777793351582,
+    "tags": [
+      "inventory",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-b5079ef7",
+    "source": "automation",
+    "domain": "inventory",
+    "type": "event",
+    "value": 10.593294229800044,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.98204350973618,
+    "tags": [
+      "inventory",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-590fe748",
+    "source": "planning",
+    "domain": "inventory",
+    "type": "event",
+    "value": 68.51858377891736,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9644698243782054,
+    "tags": [
+      "inventory",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-15835f56",
+    "source": "decision",
+    "domain": "inventory",
+    "type": "event",
+    "value": 51.2495343253757,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9298536946220205,
+    "tags": [
+      "inventory",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-1b446c23",
+    "source": "simulation",
+    "domain": "inventory",
+    "type": "event",
+    "value": 2.1625613253788756,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9560116741119147,
+    "tags": [
+      "inventory",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-e20080ca",
+    "source": "ai",
+    "domain": "inventory",
+    "type": "event",
+    "value": 99.54572265205829,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9938039124752169,
+    "tags": [
+      "inventory",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-75ba6b5f",
+    "source": "runtime",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 12.767328990259541,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9445528940534362,
+    "tags": [
+      "purchasing",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-819ac236",
+    "source": "event",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 42.17822818770297,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9850864380667079,
+    "tags": [
+      "purchasing",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-78e4471d",
+    "source": "workflow",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 19.927698427701877,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9038268314256869,
+    "tags": [
+      "purchasing",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-8752d1a2",
+    "source": "automation",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 43.399588289756984,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9517850623582957,
+    "tags": [
+      "purchasing",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-5447b56f",
+    "source": "planning",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 1.8231026423090158,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9566520102897159,
+    "tags": [
+      "purchasing",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-de9d2e15",
+    "source": "decision",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 9.43489733812447,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.973556330307761,
+    "tags": [
+      "purchasing",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-632e1c0a",
+    "source": "simulation",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 54.51117977036205,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9466463595940933,
+    "tags": [
+      "purchasing",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-2f626f41",
+    "source": "ai",
+    "domain": "purchasing",
+    "type": "event",
+    "value": 2.953994060551157,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9650435070694732,
+    "tags": [
+      "purchasing",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-0307833b",
+    "source": "runtime",
+    "domain": "sales",
+    "type": "event",
+    "value": 8.127077937295446,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9794819649872502,
+    "tags": [
+      "sales",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-50163b32",
+    "source": "event",
+    "domain": "sales",
+    "type": "event",
+    "value": 62.35532984234641,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9045198127014966,
+    "tags": [
+      "sales",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-9588b088",
+    "source": "workflow",
+    "domain": "sales",
+    "type": "event",
+    "value": 47.54767331973476,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9667306047395683,
+    "tags": [
+      "sales",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-313be98f",
+    "source": "automation",
+    "domain": "sales",
+    "type": "event",
+    "value": 60.40546045687548,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9244287855454766,
+    "tags": [
+      "sales",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-e4f3fad3",
+    "source": "planning",
+    "domain": "sales",
+    "type": "event",
+    "value": 24.363274614019037,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9207862402256817,
+    "tags": [
+      "sales",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-ef250d65",
+    "source": "decision",
+    "domain": "sales",
+    "type": "event",
+    "value": 49.144392770459454,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9297293546090195,
+    "tags": [
+      "sales",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-8fd42587",
+    "source": "simulation",
+    "domain": "sales",
+    "type": "event",
+    "value": 12.1019385375023,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9571322411593944,
+    "tags": [
+      "sales",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-a6724ee9",
+    "source": "ai",
+    "domain": "sales",
+    "type": "event",
+    "value": 20.183560208936658,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9534768123673646,
+    "tags": [
+      "sales",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-58e154ae",
+    "source": "runtime",
+    "domain": "finance",
+    "type": "event",
+    "value": 71.67041358559251,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9358409570704406,
+    "tags": [
+      "finance",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-17636d53",
+    "source": "event",
+    "domain": "finance",
+    "type": "event",
+    "value": 70.13944830827522,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9738044420603067,
+    "tags": [
+      "finance",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-233ef632",
+    "source": "workflow",
+    "domain": "finance",
+    "type": "event",
+    "value": 95.81195089153485,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9639142264688164,
+    "tags": [
+      "finance",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-dd66ab31",
+    "source": "automation",
+    "domain": "finance",
+    "type": "event",
+    "value": 33.492350736222946,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9090013132038146,
+    "tags": [
+      "finance",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-e86331eb",
+    "source": "planning",
+    "domain": "finance",
+    "type": "event",
+    "value": 90.99450904261474,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9654346388056083,
+    "tags": [
+      "finance",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-6d518cc1",
+    "source": "decision",
+    "domain": "finance",
+    "type": "event",
+    "value": 16.123812190169474,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9266607378853212,
+    "tags": [
+      "finance",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-994b2728",
+    "source": "simulation",
+    "domain": "finance",
+    "type": "event",
+    "value": 90.78354264517455,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9378809547456464,
+    "tags": [
+      "finance",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-5f270888",
+    "source": "ai",
+    "domain": "finance",
+    "type": "event",
+    "value": 4.969221546829628,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9110245995442102,
+    "tags": [
+      "finance",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-148476e7",
+    "source": "runtime",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 67.12373175387884,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9883953849620801,
+    "tags": [
+      "customer_service",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-09496c73",
+    "source": "event",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 41.162397013418264,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9306423040738117,
+    "tags": [
+      "customer_service",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-e6e084d2",
+    "source": "workflow",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 8.921554022397649,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9291988262020792,
+    "tags": [
+      "customer_service",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-7ac017d2",
+    "source": "automation",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 42.53326880495791,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9896390767369517,
+    "tags": [
+      "customer_service",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-4f063186",
+    "source": "planning",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 82.50928347157159,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9962193459306503,
+    "tags": [
+      "customer_service",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-551d87b6",
+    "source": "decision",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 67.40680383021291,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.937549140816179,
+    "tags": [
+      "customer_service",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-7adb586d",
+    "source": "simulation",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 62.60321647501992,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9279335562084225,
+    "tags": [
+      "customer_service",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-d42a89da",
+    "source": "ai",
+    "domain": "customer_service",
+    "type": "event",
+    "value": 66.85095191390839,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9063565133554691,
+    "tags": [
+      "customer_service",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-a05c0a8b",
+    "source": "runtime",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 71.62590083792168,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9949382105878463,
+    "tags": [
+      "ai_performance",
+      "runtime"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-0746a702",
+    "source": "event",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 72.54812707823629,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9205658017697167,
+    "tags": [
+      "ai_performance",
+      "event"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-9c7c4050",
+    "source": "workflow",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 18.633671229445348,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9189169665552317,
+    "tags": [
+      "ai_performance",
+      "workflow"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-8f77be16",
+    "source": "automation",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 91.39856054177152,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9985882657560489,
+    "tags": [
+      "ai_performance",
+      "automation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-b554f6d0",
+    "source": "planning",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 75.41706359650318,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9137781753303282,
+    "tags": [
+      "ai_performance",
+      "planning"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-a4fc4297",
+    "source": "decision",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 19.634792957972337,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9497203639851746,
+    "tags": [
+      "ai_performance",
+      "decision"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-ad15f0b7",
+    "source": "simulation",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 78.03874662135466,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9559576298954183,
+    "tags": [
+      "ai_performance",
+      "simulation"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  },
+  {
+    "id": "obs-0930dcb2",
+    "source": "ai",
+    "domain": "ai_performance",
+    "type": "event",
+    "value": 35.85199207315045,
+    "timestamp": "2026-07-08T23:36:57.822Z",
+    "context": {},
+    "metadata": {},
+    "confidence": 0.9299349974909625,
+    "tags": [
+      "ai_performance",
+      "ai"
+    ],
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.822Z"
+  }
+]

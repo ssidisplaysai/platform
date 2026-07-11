@@ -1,0 +1,122 @@
+[
+  {
+    "id": "rec-07b7e49c",
+    "title": "Action: Insight: operations optimization opportunity 0",
+    "insight": "ins-3427cf6b",
+    "domain": "operations",
+    "description": "Based on insight, recommend implementing optimization",
+    "action": "Implement process optimization",
+    "priority": "critical",
+    "expectedBenefit": "12% improvement",
+    "effort": "low",
+    "riskLevel": "high",
+    "implementationSteps": [
+      "Step 1",
+      "Step 2",
+      "Step 3"
+    ],
+    "metrics": [
+      "success_metric_1",
+      "success_metric_2"
+    ],
+    "targetDate": "2026-08-07",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "rec-7f66b729",
+    "title": "Action: Insight: operations optimization opportunity 1",
+    "insight": "ins-b0b4e0a0",
+    "domain": "operations",
+    "description": "Based on insight, recommend implementing optimization",
+    "action": "Implement process optimization",
+    "priority": "medium",
+    "expectedBenefit": "26% improvement",
+    "effort": "low",
+    "riskLevel": "low",
+    "implementationSteps": [
+      "Step 1",
+      "Step 2",
+      "Step 3"
+    ],
+    "metrics": [
+      "success_metric_1",
+      "success_metric_2"
+    ],
+    "targetDate": "2026-08-07",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "rec-6f5b096d",
+    "title": "Action: Insight: manufacturing optimization opportunity 0",
+    "insight": "ins-4d1e7981",
+    "domain": "manufacturing",
+    "description": "Based on insight, recommend implementing optimization",
+    "action": "Implement process optimization",
+    "priority": "medium",
+    "expectedBenefit": "14% improvement",
+    "effort": "medium",
+    "riskLevel": "high",
+    "implementationSteps": [
+      "Step 1",
+      "Step 2",
+      "Step 3"
+    ],
+    "metrics": [
+      "success_metric_1",
+      "success_metric_2"
+    ],
+    "targetDate": "2026-08-07",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "rec-ab43fa5c",
+    "title": "Action: Insight: manufacturing optimization opportunity 1",
+    "insight": "ins-60458337",
+    "domain": "manufacturing",
+    "description": "Based on insight, recommend implementing optimization",
+    "action": "Implement process optimization",
+    "priority": "medium",
+    "expectedBenefit": "13% improvement",
+    "effort": "low",
+    "riskLevel": "high",
+    "implementationSteps": [
+      "Step 1",
+      "Step 2",
+      "Step 3"
+    ],
+    "metrics": [
+      "success_metric_1",
+      "success_metric_2"
+    ],
+    "targetDate": "2026-08-07",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  },
+  {
+    "id": "rec-92332bea",
+    "title": "Action: Insight: inventory optimization opportunity 0",
+    "insight": "ins-6bff20d9",
+    "domain": "inventory",
+    "description": "Based on insight, recommend implementing optimization",
+    "action": "Implement process optimization",
+    "priority": "high",
+    "expectedBenefit": "46% improvement",
+    "effort": "high",
+    "riskLevel": "low",
+    "implementationSteps": [
+      "Step 1",
+      "Step 2",
+      "Step 3"
+    ],
+    "metrics": [
+      "success_metric_1",
+      "success_metric_2"
+    ],
+    "targetDate": "2026-08-07",
+    "status": "defined",
+    "createdAt": "2026-07-08T23:36:57.823Z"
+  }
+]

@@ -1,0 +1,269 @@
+entity: InventoryItem
+type: Aggregate
+description: Represents a product or item in inventory with stock levels and reorder logic
+
+metadata:
+  domain: InventoryManagement
+  tier: Operational
+  plural: InventoryItems
+  icon: inventory
+  color: "#F5A623"
+
+fields:
+  # Core Identity
+  id:
+    type: identifier
+    required: true
+    generated: true
+    description: Unique inventory item identifier
+
+  # Item Information
+  name:
+    type: string
+    required: true
+    maxLength: 255
+    searchable: true
+    description: Item name or product name
+
+  description:
+    type: string
+    maxLength: 2000
+    searchable: true
+    description: Detailed item description
+
+  sku:
+    type: string
+    required: true
+    unique: true
+    maxLength: 100
+    searchable: true
+    description: Stock Keeping Unit
+
+  barcode:
+    type: string
+    unique: true
+    maxLength: 128
+    description: Product barcode
+
+  # Classification
+  category:
+    type: string
+    required: true
+    maxLength: 100
+    searchable: true
+    description: Item category
+
+  subcategory:
+    type: string
+    maxLength: 100
+    searchable: true
+    description: Item subcategory
+
+  # Stock Information
+  quantity:
+    type: integer
+    required: true
+    default: 0
+    description: Current quantity in stock
+
+  reorderPoint:
+    type: integer
+    required: true
+    default: 10
+    description: Minimum quantity before reorder
+
+  reorderQuantity:
+    type: integer
+    required: true
+    default: 50
+    description: Quantity to order when restocking
+
+  # Unit & Measurement
+  unit:
+    type: string
+    required: true
+    maxLength: 20
+    description: Unit of measurement (ea, box, pallet, etc)
+
+  unitWeight:
+    type: number
+    description: Weight per unit
+
+  unitVolume:
+    type: number
+    description: Volume per unit
+
+  # Pricing
+  unitCost:
+    type: number
+    required: true
+    description: Cost per unit
+
+  unitPrice:
+    type: number
+    description: Selling price per unit
+
+  discountThreshold:
+    type: integer
+    description: Quantity threshold for bulk discount
+
+  discountPercent:
+    type: number
+    description: Bulk discount percentage
+
+  # Status
+  status:
+    type: enum
+    required: true
+    values: ['AVAILABLE', 'LOW_STOCK', 'OUT_OF_STOCK', 'DISCONTINUED', 'INACTIVE']
+    default: AVAILABLE
+    description: Current inventory status
+
+  isActive:
+    type: boolean
+    required: true
+    default: true
+    description: Whether item is active in inventory
+
+  # Tracking
+  lastStockCheckDate:
+    type: timestamp
+    description: Date of last physical stock count
+
+  expirationDate:
+    type: timestamp
+    description: Item expiration date (for perishables)
+
+  # Metadata
+  createdBy:
+    type: string
+    required: true
+    generated: true
+    description: User who created the item
+
+  createdAt:
+    type: timestamp
+    required: true
+    generated: true
+    description: When item record was created
+
+  updatedAt:
+    type: timestamp
+    generated: true
+    description: Last update timestamp
+
+  deletedAt:
+    type: timestamp
+    description: Soft delete timestamp
+
+relationships:
+  warehouse:
+    type: ManyToOne
+    target: Warehouse
+    description: Primary warehouse location
+    lazyLoad: true
+
+  supplier:
+    type: ManyToOne
+    target: Vendor
+    description: Primary supplier/vendor
+    lazyLoad: true
+
+  category:
+    type: ManyToOne
+    target: InventoryCategory
+    description: Inventory category
+    lazyLoad: true
+
+  stockMovements:
+    type: OneToMany
+    target: StockMovement
+    description: History of stock movements
+    lazyLoad: true
+
+lifecycle:
+  initial: AVAILABLE
+  states:
+    AVAILABLE:
+      description: Item is available in stock
+      transitions:
+        - LOW_STOCK
+        - OUT_OF_STOCK
+        - DISCONTINUED
+    LOW_STOCK:
+      description: Item is below reorder point
+      transitions:
+        - AVAILABLE
+        - OUT_OF_STOCK
+    OUT_OF_STOCK:
+      description: Item is out of stock
+      transitions:
+        - AVAILABLE
+        - DISCONTINUED
+    DISCONTINUED:
+      description: Item has been discontinued
+      transitions: []
+    INACTIVE:
+      description: Item is inactive
+      transitions:
+        - AVAILABLE
+
+capabilities:
+  audit:
+    enabled: true
+    trackChanges: true
+    trackDeletion: true
+  
+  search:
+    enabled: true
+    indexed: true
+    fullText: true
+  
+  permissions:
+    enabled: true
+    roles: [admin, manager, warehouse, viewer]
+  
+  versioning:
+    enabled: false
+
+validation:
+  rules:
+    - field: quantity
+      type: integer
+      min: 0
+      description: Quantity must be non-negative
+
+    - field: reorderPoint
+      type: integer
+      min: 0
+      description: Reorder point must be non-negative
+
+    - field: unitCost
+      type: number
+      min: 0
+      description: Unit cost must be non-negative
+
+    - field: unitPrice
+      type: number
+      min: 0
+      description: Unit price must be non-negative
+
+    - field: discountPercent
+      type: number
+      min: 0
+      max: 100
+      description: Discount percentage must be between 0 and 100
+
+searchMetadata:
+  primaryFields: [name, sku, category]
+  filterableFields: [category, status, isActive]
+  sortableFields: [name, sku, quantity, unitCost, createdAt]
+
+documentationMetadata:
+  category: InventoryManagement
+  sections:
+    - Overview
+    - Stock Management
+    - Pricing
+    - Suppliers
+    - Stock Movement Tracking
