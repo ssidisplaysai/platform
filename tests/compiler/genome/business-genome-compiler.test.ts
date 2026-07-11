@@ -11,11 +11,13 @@ test("pipeline executes passes in correct order", () => {
     "bgc.input-validation",
     "bgc.canonical-verification",
     "bgc.evidence-grouping",
+    "bgc.evidence-correlation",
   ]);
   assert.equal(result.execution.passOrder[0], "bgc.input-validation");
   assert.equal(result.execution.passOrder[1], "bgc.canonical-verification");
   assert.equal(result.execution.passOrder[2], "bgc.evidence-grouping");
-});
+  assert.equal(result.execution.passOrder[3], "bgc.evidence-correlation");
+});;
 
 test("fatal Pass 1 failure prevents Pass 2 and Pass 3", () => {
   const compiler = new BusinessGenomeCompiler();

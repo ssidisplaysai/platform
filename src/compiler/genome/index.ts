@@ -11,7 +11,12 @@ export {
 
 export { BusinessGenomeCompiler } from "./BusinessGenomeCompiler";
 export { BusinessGenomePassRegistry } from "./BusinessGenomePassRegistry";
-export { InputValidationPass, CanonicalVerificationPass, EvidenceGroupingPass } from "./passes";
+export {
+  InputValidationPass,
+  CanonicalVerificationPass,
+  EvidenceGroupingPass,
+  EvidenceCorrelationPass,
+} from "./passes";
 
 export { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "./diagnostics";
 
@@ -49,5 +54,8 @@ export type {
   CanonicalEvidenceAttestation,
   GroupedEvidenceSet,
   GroupedEvidenceCollection,
+  CorrelationBasis,
+  EvidenceCluster,
+  CorrelatedEvidenceCollection,
   BusinessGenomePassResult,
 } from "./pipeline-types";
