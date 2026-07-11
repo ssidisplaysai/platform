@@ -1,6 +1,7 @@
 import { CompilerPassRegistry } from "../core/CompilerPassRegistry";
 import type { CompilerPass } from "../core/types";
 import { CanonicalVerificationPass } from "./passes/CanonicalVerificationPass";
+import { EvidenceCorrelationPass } from "./passes/EvidenceCorrelationPass";
 import { EvidenceGroupingPass } from "./passes/EvidenceGroupingPass";
 import { InputValidationPass } from "./passes/InputValidationPass";
 import { BGC_ARCHITECTURAL_PASS_ORDER } from "./pipeline-types";
@@ -94,6 +95,7 @@ export class BusinessGenomePassRegistry {
     this.register(new InputValidationPass());
     this.register(new CanonicalVerificationPass());
     this.register(new EvidenceGroupingPass());
+    this.register(new EvidenceCorrelationPass());
   }
 
   private validateStructure(): void {
@@ -109,7 +111,12 @@ export class BusinessGenomePassRegistry {
     }
 
     const ordered = this.executablePassOrder().map((entry) => entry.metadata.id);
-    const expected = ["bgc.input-validation", "bgc.canonical-verification", "bgc.evidence-grouping"];
+    const expected = [
+      "bgc.input-validation",
+      "bgc.canonical-verification",
+      "bgc.evidence-grouping",
+      "bgc.evidence-correlation",
+    ];
 
     if (stableList(ordered) !== stableList(expected)) {
       throw new Error(`Business Genome pass order is invalid. Expected ${expected.join(" -> ")}, got ${ordered.join(" -> ")}`);

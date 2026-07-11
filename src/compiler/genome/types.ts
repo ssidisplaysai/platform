@@ -4,6 +4,7 @@ import { stableStringify } from "../core/stableStringify";
 import type { CompilerDiagnostic, CompilerPassContext } from "../core/types";
 import type {
   CanonicalEvidenceAttestation,
+  CorrelatedEvidenceCollection,
   GroupedEvidenceCollection,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
@@ -153,6 +154,7 @@ export interface BusinessGenomeIntermediateCompilation {
   readonly validatedEvidence: ValidatedEvidenceIRView | null;
   readonly canonicalAttestation: CanonicalEvidenceAttestation | null;
   readonly groupedEvidence: GroupedEvidenceCollection | null;
+  readonly correlatedEvidence: CorrelatedEvidenceCollection | null;
 }
 
 export interface BusinessGenomeCompilerOutput {

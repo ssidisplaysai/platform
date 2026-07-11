@@ -7,6 +7,7 @@ import { BGC_ARCHITECTURAL_PASS_ORDER } from "./pipeline-types";
 import type {
   BusinessGenomePassResult,
   CanonicalEvidenceAttestation,
+  CorrelatedEvidenceCollection,
   GroupedEvidenceCollection,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
@@ -107,12 +108,15 @@ export class BusinessGenomeCompiler {
       canonicalAttestation:
         (passOutputs.get("bgc.canonical-verification") as CanonicalEvidenceAttestation | undefined) ?? null,
       groupedEvidence: (passOutputs.get("bgc.evidence-grouping") as GroupedEvidenceCollection | undefined) ?? null,
+      correlatedEvidence:
+        (passOutputs.get("bgc.evidence-correlation") as CorrelatedEvidenceCollection | undefined) ?? null,
     };
 
     const expectedOutputs = [
       "bgc.input-validation",
       "bgc.canonical-verification",
       "bgc.evidence-grouping",
+      "bgc.evidence-correlation",
     ] as const;
 
     for (const passId of expectedOutputs) {

@@ -122,6 +122,43 @@ export interface GroupedEvidenceCollection {
   readonly canonicalAttestation: CanonicalEvidenceAttestation;
 }
 
+export interface CorrelationBasis {
+  readonly ruleId: string;
+  readonly participatingGroupIds: readonly string[];
+  readonly details: Readonly<Record<string, unknown>>;
+}
+
+export interface EvidenceCluster {
+  readonly id: string;
+  readonly correlationRuleIds: readonly string[];
+  readonly correlationRuleVersion: string;
+  readonly deterministicClusterKey: string;
+  readonly memberGroupIds: readonly string[];
+  readonly evidenceItemIds: readonly string[];
+  readonly provenanceReferences: readonly string[];
+  readonly sourceEvidenceIrIdentity: string;
+  readonly correlationBases: readonly CorrelationBasis[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly explicitConflictIndicators: readonly string[];
+}
+
+export interface CorrelatedEvidenceCollection {
+  readonly id: string;
+  readonly sourceEvidenceIrIdentity: string;
+  readonly clusters: readonly EvidenceCluster[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly correlationRuleVersion: string;
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+  readonly groupedEvidence: GroupedEvidenceCollection;
+}
+
 export interface BusinessGenomePassResult<TOutput> {
   readonly passId: string;
   readonly passVersion: string;
