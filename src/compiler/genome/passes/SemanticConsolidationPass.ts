@@ -1,4 +1,4 @@
-import type { CompilerPass, CompilerPassContext } from "../../core/types";
+import type { CompilerPass, CompilerPassContext, CompilerPassMetadata } from "../../core/types";
 import { stableStringify } from "../../core/stableStringify";
 import { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "../diagnostics";
 import {
@@ -211,12 +211,16 @@ function buildConsolidatedSemantic(
 // ─── SemanticConsolidationPass Implementation ──────────────────────────────
 
 export class SemanticConsolidationPass implements CompilerPass<SemanticCandidateCollection, ConsolidatedSemanticCollection> {
-  readonly metadata = {
+  readonly metadata: CompilerPassMetadata = {
     id: "bgc.semantic-consolidation",
     version: "1.0.0",
     dependencies: ["bgc.semantic-resolution"],
     description:
       "Deterministically identifies and consolidates semantic candidates that represent the same enterprise concept. All evidence, provenance, and conflicts are preserved.",
+    inputType: "semantic-candidate-collection",
+    outputType: "consolidated-semantic-collection",
+    capabilities: ["consolidation", "determinism", "non-modifying", "provenance-preservation"],
+    lifecycle: "active" as const,
   };
 
   execute(
@@ -457,5 +461,4 @@ export class SemanticConsolidationPass implements CompilerPass<SemanticCandidate
   }
 }
 
-export { SEMANTIC_CONSOLIDATION_RULES };
 export const CONSOLIDATION_RULES_BY_CRITERIA = new Map(SEMANTIC_CONSOLIDATION_RULES.map((r) => [r.matchCriteria, r]));

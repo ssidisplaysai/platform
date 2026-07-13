@@ -61,6 +61,7 @@ export class BusinessGenomeCompiler {
           identityAssignment: null,
           graph: null,
           validation: null,
+          publication: null,
         },
         startedAt,
         completedPasses,
