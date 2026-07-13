@@ -12,6 +12,7 @@ import type {
   BusinessGenomeIdentityCollection,
   BusinessGenomeGraph,
   BusinessGenomeValidationResult,
+  BusinessGenomePublicationResult,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 
@@ -167,6 +168,7 @@ export interface BusinessGenomeIntermediateCompilation {
   readonly identityAssignment: BusinessGenomeIdentityCollection | null;
   readonly graph: BusinessGenomeGraph | null;
   readonly validation: BusinessGenomeValidationResult | null;
+  readonly publication: BusinessGenomePublicationResult | null;
 }
 
 export interface BusinessGenomeCompilerOutput {

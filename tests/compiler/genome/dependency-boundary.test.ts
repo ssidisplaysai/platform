@@ -20,6 +20,7 @@ const genomeFiles = [
   resolve(process.cwd(), "src", "compiler", "genome", "passes", "SemanticIdentityAssignmentPass.ts"),
   resolve(process.cwd(), "src", "compiler", "genome", "passes", "GraphConstructionPass.ts"),
   resolve(process.cwd(), "src", "compiler", "genome", "passes", "ConsistencyValidationPass.ts"),
+  resolve(process.cwd(), "src", "compiler", "genome", "passes", "BusinessGenomePublicationPass.ts"),
 ];
 
 const forbiddenImportPatterns = [
