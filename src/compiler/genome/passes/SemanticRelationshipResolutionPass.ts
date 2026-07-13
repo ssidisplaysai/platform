@@ -1,4 +1,4 @@
-import type { CompilerDiagnostic, CompilerPassContext } from "../../core/types";
+import type { CompilerDiagnostic, CompilerPassContext, CompilerPass, CompilerPassMetadata } from "../../core/types";
 import { deterministicIdentity } from "../pipeline-types";
 import type {
   ConsolidatedSemanticCollection,
@@ -11,7 +11,6 @@ import type {
   SemanticConflictReference,
 } from "../pipeline-types";
 import { createDiagnostic, BGC_DIAGNOSTIC_CODES, sortDiagnostics } from "../diagnostics";
-import type { CompilerPass } from "../../core/types";
 
 /**
  * Deterministic relationship rules for explicit semantic relationships.
@@ -86,13 +85,17 @@ for (const rule of SEMANTIC_RELATIONSHIP_RULES) {
  * Key invariant: Only relationships backed by explicit evidence are created.
  * No inference, no AI, no fuzzy matching.
  */
-export class SemanticRelationshipResolutionPass implements CompilerPass<ConsolidatedSemanticCollection> {
-  readonly metadata = {
+export class SemanticRelationshipResolutionPass implements CompilerPass<ConsolidatedSemanticCollection, BusinessGenomePassResult<ResolvedRelationshipCollection>> {
+  readonly metadata: CompilerPassMetadata = {
     id: "bgc.relationship-resolution",
     version: "1.0.0",
     dependencies: ["bgc.semantic-consolidation"],
     description:
       "Deterministically identifies and resolves explicit semantic relationships between consolidated semantic concepts",
+    inputType: "consolidated-semantic-collection",
+    outputType: "resolved-relationship-collection",
+    capabilities: ["relationship-resolution", "determinism", "non-modifying"],
+    lifecycle: "active" as const,
   };
 
   execute(
