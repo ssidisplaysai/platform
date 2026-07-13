@@ -18,6 +18,7 @@ export {
   EvidenceCorrelationPass,
   SemanticResolutionPass,
   SemanticConsolidationPass,
+  SemanticRelationshipResolutionPass,
 } from "./passes";
 
 export { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "./diagnostics";
@@ -72,5 +73,10 @@ export type {
   SemanticMergeRule,
   SemanticMergeResult,
   SemanticMergeContext,
+  RelationshipRule,
+  RelationshipResolutionContext,
+  RelationshipResolutionResult,
+  ResolvedRelationship,
+  ResolvedRelationshipCollection,
   BusinessGenomePassResult,
 } from "./pipeline-types";
