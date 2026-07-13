@@ -10,6 +10,7 @@ import type {
   ConsolidatedSemanticCollection,
   ResolvedRelationshipCollection,
   BusinessGenomeIdentityCollection,
+  BusinessGenomeGraph,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 
@@ -163,6 +164,7 @@ export interface BusinessGenomeIntermediateCompilation {
   readonly consolidatedSemantics: ConsolidatedSemanticCollection | null;
   readonly resolvedRelationships: ResolvedRelationshipCollection | null;
   readonly identityAssignment: BusinessGenomeIdentityCollection | null;
+  readonly graph: BusinessGenomeGraph | null;
 }
 
 export interface BusinessGenomeCompilerOutput {

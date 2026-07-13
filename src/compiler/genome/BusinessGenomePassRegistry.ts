@@ -8,6 +8,7 @@ import { SemanticResolutionPass } from "./passes/SemanticResolutionPass";
 import { SemanticConsolidationPass } from "./passes/SemanticConsolidationPass";
 import { SemanticRelationshipResolutionPass } from "./passes/SemanticRelationshipResolutionPass";
 import { SemanticIdentityAssignmentPass } from "./passes/SemanticIdentityAssignmentPass";
+import { GraphConstructionPass } from "./passes/GraphConstructionPass";
 import { BGC_ARCHITECTURAL_PASS_ORDER } from "./pipeline-types";
 
 function deterministicTopologicalSort(passes: CompilerPass<unknown, unknown>[]): CompilerPass<unknown, unknown>[] {
@@ -104,6 +105,7 @@ export class BusinessGenomePassRegistry {
     this.register(new SemanticConsolidationPass());
     this.register(new SemanticRelationshipResolutionPass());
     this.register(new SemanticIdentityAssignmentPass());
+    this.register(new GraphConstructionPass());
   }
 
   private validateStructure(): void {
@@ -128,6 +130,7 @@ export class BusinessGenomePassRegistry {
       "bgc.semantic-consolidation",
       "bgc.relationship-resolution",
       "bgc.identity-assignment",
+      "bgc.graph-construction",
     ];
 
     if (stableList(ordered) !== stableList(expected)) {
