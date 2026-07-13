@@ -10,6 +10,7 @@ import type {
   CorrelatedEvidenceCollection,
   GroupedEvidenceCollection,
   SemanticCandidateCollection,
+  ConsolidatedSemanticCollection,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 import type {
@@ -115,6 +116,8 @@ export class BusinessGenomeCompiler {
         (passOutputs.get("bgc.evidence-correlation") as CorrelatedEvidenceCollection | undefined) ?? null,
       semanticCandidates:
         (passOutputs.get("bgc.semantic-resolution") as SemanticCandidateCollection | undefined) ?? null,
+      consolidatedSemantics:
+        (passOutputs.get("bgc.semantic-consolidation") as ConsolidatedSemanticCollection | undefined) ?? null,
     };
 
     const expectedOutputs = [
@@ -123,6 +126,7 @@ export class BusinessGenomeCompiler {
       "bgc.evidence-grouping",
       "bgc.evidence-correlation",
       "bgc.semantic-resolution",
+      "bgc.semantic-consolidation",
     ] as const;
 
     for (const passId of expectedOutputs) {

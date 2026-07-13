@@ -5,6 +5,7 @@ import { EvidenceCorrelationPass } from "./passes/EvidenceCorrelationPass";
 import { EvidenceGroupingPass } from "./passes/EvidenceGroupingPass";
 import { InputValidationPass } from "./passes/InputValidationPass";
 import { SemanticResolutionPass } from "./passes/SemanticResolutionPass";
+import { SemanticConsolidationPass } from "./passes/SemanticConsolidationPass";
 import { BGC_ARCHITECTURAL_PASS_ORDER } from "./pipeline-types";
 
 function deterministicTopologicalSort(passes: CompilerPass<unknown, unknown>[]): CompilerPass<unknown, unknown>[] {
@@ -98,6 +99,7 @@ export class BusinessGenomePassRegistry {
     this.register(new EvidenceGroupingPass());
     this.register(new EvidenceCorrelationPass());
     this.register(new SemanticResolutionPass());
+    this.register(new SemanticConsolidationPass());
   }
 
   private validateStructure(): void {
@@ -119,6 +121,7 @@ export class BusinessGenomePassRegistry {
       "bgc.evidence-grouping",
       "bgc.evidence-correlation",
       "bgc.semantic-resolution",
+      "bgc.semantic-consolidation",
     ];
 
     if (stableList(ordered) !== stableList(expected)) {

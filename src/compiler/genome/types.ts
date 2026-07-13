@@ -157,6 +157,7 @@ export interface BusinessGenomeIntermediateCompilation {
   readonly groupedEvidence: GroupedEvidenceCollection | null;
   readonly correlatedEvidence: CorrelatedEvidenceCollection | null;
   readonly semanticCandidates: SemanticCandidateCollection | null;
+  readonly consolidatedSemantics: ConsolidatedSemanticCollection | null;
 }
 
 export interface BusinessGenomeCompilerOutput {
