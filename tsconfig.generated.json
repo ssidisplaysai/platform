@@ -15,7 +15,9 @@
   },
   "include": [
     "out/generated/**/*Validator.ts",
-    "out/generated/**/*.test.ts"
+    "out/generated/**/*.test.ts",
+    "out/generated/**/*Repository.ts",
+    "out/generated/**/*Service.ts"
   ],
   "exclude": [
     "node_modules"
