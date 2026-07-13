@@ -14,6 +14,7 @@ test("pipeline executes passes in correct order", () => {
     "bgc.evidence-correlation",
     "bgc.semantic-resolution",
     "bgc.semantic-consolidation",
+    "bgc.relationship-resolution",
   ]);
   assert.equal(result.execution.passOrder[0], "bgc.input-validation");
   assert.equal(result.execution.passOrder[1], "bgc.canonical-verification");
@@ -21,6 +22,7 @@ test("pipeline executes passes in correct order", () => {
   assert.equal(result.execution.passOrder[3], "bgc.evidence-correlation");
   assert.equal(result.execution.passOrder[4], "bgc.semantic-resolution");
   assert.equal(result.execution.passOrder[5], "bgc.semantic-consolidation");
+  assert.equal(result.execution.passOrder[6], "bgc.relationship-resolution");
 });;
 
 test("fatal Pass 1 failure prevents Pass 2 and Pass 3", () => {

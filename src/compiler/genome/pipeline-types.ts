@@ -413,6 +413,109 @@ export interface ConsolidatedSemanticCollection {
   readonly semanticCandidates: SemanticCandidateCollection;
 }
 
+// ─── Relationship Resolution (BGC-PASS-007) ───────────────────────────────
+
+/**
+ * A single relationship rule: versioned, deterministic, auditable.
+ * Rules are evidence-backed and independently testable.
+ */
+export interface RelationshipRule {
+  readonly id: string;
+  readonly version: string;
+  readonly relationshipType: string;
+  readonly sourceSemanticClass: string;
+  readonly targetSemanticClass: string;
+  readonly description: string;
+  readonly requiredEvidenceSignal: string;
+  readonly rationaleCode: string;
+}
+
+/**
+ * Context tracking which rule and compiler version produced this relationship.
+ */
+export interface RelationshipResolutionContext {
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly compilerVersion: string;
+  readonly specificationVersion: string;
+  readonly ruleId: string;
+  readonly ruleVersion: string;
+  readonly rationaleCode: string;
+}
+
+/**
+ * Per-relationship merge result tracking which consolidation operation occurred.
+ */
+export interface RelationshipResolutionResult {
+  readonly relationshipId: string;
+  readonly sourceConsolidatedSemanticId: string;
+  readonly targetConsolidatedSemanticId: string;
+  readonly relationshipType: string;
+  readonly ruleId: string;
+  readonly ruleVersion: string;
+  readonly applied: boolean;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * An explicit, evidence-backed semantic relationship between consolidated concepts.
+ *
+ * Identity is stage-appropriate (bgc-rel prefix) and deterministic.
+ * Not a final canonical Business Genome identity.
+ */
+export interface ResolvedRelationship {
+  readonly id: string;
+  readonly relationshipType: string;
+  readonly sourceConsolidatedSemanticId: string;
+  readonly targetConsolidatedSemanticId: string;
+  readonly sourceSemanticClass: string;
+  readonly targetSemanticClass: string;
+  readonly resolutionRuleId: string;
+  readonly resolutionRuleVersion: string;
+  readonly evidenceClusterIds: readonly string[];
+  readonly evidenceGroupIds: readonly string[];
+  readonly evidenceItemIds: readonly string[];
+  readonly provenanceReferences: readonly string[];
+  readonly sourceEvidenceIrIdentity: string;
+  readonly certainty: {
+    readonly state: "certain" | "uncertain";
+    readonly confidence: number;
+  };
+  readonly conflictReferences: readonly SemanticConflictReference[];
+  readonly validationStatus: {
+    readonly valid: boolean;
+    readonly violations: readonly string[];
+  };
+  readonly resolutionContext: RelationshipResolutionContext;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * The complete output of BGC-PASS-007 (Relationship Resolution).
+ *
+ * Contains all explicit, evidence-backed relationships between consolidated
+ * semantic concepts. Business Genome graph NOT constructed here.
+ */
+export interface ResolvedRelationshipCollection {
+  readonly id: string;
+  readonly sourceEvidenceIrIdentity: string;
+  readonly relationships: readonly ResolvedRelationship[];
+  readonly resolutionResults: readonly RelationshipResolutionResult[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly specificationVersion: string;
+  readonly compilerVersion: string;
+  readonly relationshipRuleVersion: string;
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+  readonly consolidatedSemantics: ConsolidatedSemanticCollection;
+}
+
 export function deterministicIdentity(prefix: string, value: unknown): string {
   const checksum = SourceHash.sha256(stableStringify(value));
   return `${prefix}_${checksum}_v1`;

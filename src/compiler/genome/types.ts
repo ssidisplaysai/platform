@@ -7,6 +7,8 @@ import type {
   CorrelatedEvidenceCollection,
   GroupedEvidenceCollection,
   SemanticCandidateCollection,
+  ConsolidatedSemanticCollection,
+  ResolvedRelationshipCollection,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 
@@ -158,6 +160,7 @@ export interface BusinessGenomeIntermediateCompilation {
   readonly correlatedEvidence: CorrelatedEvidenceCollection | null;
   readonly semanticCandidates: SemanticCandidateCollection | null;
   readonly consolidatedSemantics: ConsolidatedSemanticCollection | null;
+  readonly resolvedRelationships: ResolvedRelationshipCollection | null;
 }
 
 export interface BusinessGenomeCompilerOutput {
