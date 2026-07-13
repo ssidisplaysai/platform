@@ -38,7 +38,27 @@ export function expandField(fieldName, fieldDef) {
   }
 
   if (fieldDef.type === 'enum') {
-    expanded.values = fieldDef.values || [];
+    // Normalize enum values: handle string (inline array syntax), array, or undefined
+    let values = fieldDef.values;
+    if (typeof values === 'string') {
+      // Parse inline array syntax: "['ENUM1', 'ENUM2']" or "[ENUM1, ENUM2]"
+      if (values.startsWith('[') && values.endsWith(']')) {
+        values = values
+          .slice(1, -1) // Remove brackets
+          .split(',')
+          .map(v => v.trim().replace(/^['"]|['"]$/g, '')) // Remove quotes and trim
+          .filter(v => v); // Remove empty strings
+      } else {
+        values = [values];
+      }
+    } else if (!Array.isArray(values)) {
+      values = [];
+    }
+    
+    // Deduplicate and sort for determinism
+    expanded.values = Object.freeze(
+      Array.from(new Set(values.map(v => String(v)))).sort()
+    );
     expanded.default = fieldDef.default;
   }
 

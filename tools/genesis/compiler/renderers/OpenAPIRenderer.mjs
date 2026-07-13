@@ -2,11 +2,111 @@
  * OpenAPIRenderer
  *
  * Generates OpenAPI 3.1 contract documentation from EnterpriseObjectBlueprint.
- * Consumes: EnterpriseObjectBlueprint.api.openAPI
+ * Consumes: EnterpriseObjectBlueprint
  * Produces: OpenAPI YAML specification
+ *
+ * Contract:
+ * - All enum values normalized at FieldExpander level
+ * - Defensive normalization at renderer level
+ * - Deterministic field ordering (alphabetical)
+ * - Deterministic property enumeration (sorted)
+ * - No timestamps in generated content
+ * - Safe handling of all metadata edge cases
  *
  * @module tools/genesis/compiler/renderers/OpenAPIRenderer.mjs
  */
+
+// ---------------------------------------------------------------------------
+// Normalization Utilities
+// ---------------------------------------------------------------------------
+
+/**
+ * Normalize enum values to always be a sorted, deduplicated array
+ * @param {*} input - Enum input (string, array, undefined, etc.)
+ * @returns {string[]} Normalized, sorted enum values
+ */
+function normalizeEnumValues(input) {
+  if (!input) return [];
+  
+  if (typeof input === 'string') {
+    // Handle inline array syntax: "['VALUE1', 'VALUE2']"
+    if (input.startsWith('[') && input.endsWith(']')) {
+      const parsed = input
+        .slice(1, -1)
+        .split(',')
+        .map(v => v.trim().replace(/^['"]|['"]$/g, ''))
+        .filter(v => v);
+      return Array.from(new Set(parsed)).sort();
+    }
+    // Single string value
+    return [input];
+  }
+  
+  if (Array.isArray(input)) {
+    const values = input.map(v => String(v)).filter(v => v);
+    return Array.from(new Set(values)).sort();
+  }
+  
+  return [];
+}
+
+/**
+ * Safely render a field as OpenAPI property
+ * @param {Object} field - Field definition
+ * @returns {string[]} Lines of YAML property definition
+ */
+function renderFieldProperty(field) {
+  const lines = [];
+  const prop = fieldToOpenAPIProperty(field);
+  
+  if (!prop) return lines;
+  
+  // Type
+  if (prop.type) {
+    lines.push(`          type: ${prop.type}`);
+  }
+  
+  // Format
+  if (prop.format) {
+    lines.push(`          format: ${prop.format}`);
+  }
+  
+  // String constraints
+  if (prop.maxLength) {
+    lines.push(`          maxLength: ${prop.maxLength}`);
+  }
+  if (prop.minLength !== undefined && prop.minLength > 0) {
+    lines.push(`          minLength: ${prop.minLength}`);
+  }
+  if (prop.pattern) {
+    lines.push(`          pattern: "${prop.pattern}"`);
+  }
+  
+  // Numeric constraints
+  if (prop.minimum !== undefined) {
+    lines.push(`          minimum: ${prop.minimum}`);
+  }
+  if (prop.maximum !== undefined) {
+    lines.push(`          maximum: ${prop.maximum}`);
+  }
+  
+  // Enum values (always normalized and sorted)
+  if (Array.isArray(prop.enum) && prop.enum.length > 0) {
+    const enumStr = prop.enum.map(v => `"${v}"`).join(', ');
+    lines.push(`          enum: [${enumStr}]`);
+  }
+  
+  // Description
+  if (field.description) {
+    lines.push(`          description: ${field.description}`);
+  }
+  
+  return lines;
+}
+
+// ---------------------------------------------------------------------------
+// Main OpenAPI Generator
+// ---------------------------------------------------------------------------
 
 /**
  * Generate OpenAPI contract from blueprint
@@ -18,13 +118,10 @@ export function generateOpenAPI(blueprint) {
   const api = blueprint.api;
   const fields = blueprint.fields.all;
   const relationships = blueprint.relationships.all;
-  const validation = blueprint.validation;
-  const permissions = blueprint.permissions;
-  const lifecycle = blueprint.lifecycle;
 
   const lines = [];
 
-  // Header
+  // Header (no timestamps for determinism)
   lines.push('openapi: 3.1.0');
   lines.push('info:');
   lines.push(`  title: ${entityName} API`);
@@ -187,51 +284,47 @@ export function generateOpenAPI(blueprint) {
   lines.push('components:');
   lines.push('  schemas:');
 
-  // Main schema
+  // Main schema - properties in alphabetical order
   lines.push(`    ${entityName}:`);
   lines.push('      type: object');
   lines.push('      properties:');
-  for (const field of fields) {
+  
+  // Sort fields alphabetically for determinism
+  const sortedFields = Array.from(fields).sort((a, b) =>
+    (a.name || '').localeCompare(b.name || '')
+  );
+  
+  for (const field of sortedFields) {
     lines.push(`        ${field.name}:`);
-    const prop = fieldToOpenAPIProperty(field, validation);
-    lines.push(`          type: ${prop.type}`);
-    if (prop.format) lines.push(`          format: ${prop.format}`);
-    if (prop.maxLength) lines.push(`          maxLength: ${prop.maxLength}`);
-    if (prop.enum) lines.push(`          enum: [${prop.enum.map(v => `"${v}"`).join(', ')}]`);
-    if (field.description) lines.push(`          description: ${field.description}`);
+    const propLines = renderFieldProperty(field);
+    lines.push(...propLines);
   }
   lines.push('');
 
-  // Input schema
+  // Input schema - same fields, sorted
   lines.push(`    ${entityName}Input:`);
   lines.push('      type: object');
   lines.push('      properties:');
-  for (const field of fields) {
-    if (field.generated || field.readOnly) continue;
+  
+  for (const field of sortedFields) {
+    if (field.generated || field.readonly) continue;
     lines.push(`        ${field.name}:`);
-    const prop = fieldToOpenAPIProperty(field, validation);
-    lines.push(`          type: ${prop.type}`);
-    if (prop.format) lines.push(`          format: ${prop.format}`);
-    if (prop.maxLength) lines.push(`          maxLength: ${prop.maxLength}`);
-    if (prop.enum) lines.push(`          enum: [${prop.enum.map(v => `"${v}"`).join(', ')}]`);
-    if (field.description) lines.push(`          description: ${field.description}`);
+    const propLines = renderFieldProperty(field);
+    lines.push(...propLines);
   }
   lines.push('');
 
-  // Response schema
+  // Response schema - same fields, sorted
   lines.push(`    ${entityName}Response:`);
   lines.push('      type: object');
   lines.push('      properties:');
-  for (const field of fields) {
+  
+  for (const field of sortedFields) {
     lines.push(`        ${field.name}:`);
-    const prop = fieldToOpenAPIProperty(field, validation);
-    lines.push(`          type: ${prop.type}`);
-    if (prop.format) lines.push(`          format: ${prop.format}`);
-    if (prop.maxLength) lines.push(`          maxLength: ${prop.maxLength}`);
-    if (prop.enum) lines.push(`          enum: [${prop.enum.map(v => `"${v}"`).join(', ')}]`);
-    if (field.description) lines.push(`          description: ${field.description}`);
+    const propLines = renderFieldProperty(field);
+    lines.push(...propLines);
   }
-
+  lines.push('');
   // Error schema
   lines.push('');
   lines.push('    Error:');
@@ -250,44 +343,89 @@ export function generateOpenAPI(blueprint) {
 /**
  * Convert field to OpenAPI property schema
  * @param {Object} field - Field definition
- * @param {Object} validation - Validation config
- * @returns {Object} OpenAPI property schema
+ * @returns {Object} OpenAPI property schema with safe, normalized values
  */
-function fieldToOpenAPIProperty(field, validation) {
+function fieldToOpenAPIProperty(field) {
+  if (!field) return {};
+  
   const property = {};
 
+  // Type mapping
   switch (field.type) {
     case 'string':
       property.type = 'string';
-      if (field.maxLength) property.maxLength = field.maxLength;
+      if (field.maxLength !== undefined) {
+        property.maxLength = field.maxLength;
+      }
+      if (field.minLength !== undefined && field.minLength > 0) {
+        property.minLength = field.minLength;
+      }
+      if (field.pattern) {
+        property.pattern = field.pattern;
+      }
       break;
+      
     case 'email':
       property.type = 'string';
       property.format = 'email';
+      if (field.maxLength !== undefined) {
+        property.maxLength = field.maxLength;
+      }
       break;
+      
     case 'number':
-    case 'integer':
-      property.type = field.type === 'integer' ? 'integer' : 'number';
+      property.type = 'number';
+      if (field.min !== undefined) property.minimum = field.min;
+      if (field.max !== undefined) property.maximum = field.max;
       break;
+      
+    case 'integer':
+      property.type = 'integer';
+      if (field.min !== undefined) property.minimum = field.min;
+      if (field.max !== undefined) property.maximum = field.max;
+      break;
+      
     case 'boolean':
       property.type = 'boolean';
       break;
+      
     case 'date':
       property.type = 'string';
       property.format = 'date';
       break;
+      
     case 'timestamp':
       property.type = 'string';
       property.format = 'date-time';
       break;
+      
     case 'enum':
       property.type = 'string';
-      property.enum = field.values || [];
+      // Normalize enum values safely
+      property.enum = normalizeEnumValues(field.values);
       break;
+      
     case 'identifier':
       property.type = 'string';
       property.format = 'uuid';
       break;
+      
+    case 'array':
+      property.type = 'array';
+      if (field.itemType) {
+        property.items = { type: field.itemType };
+      } else {
+        property.items = { type: 'string' };
+      }
+      break;
+      
+    case 'object':
+      property.type = 'object';
+      if (field.properties) {
+        property.additionalProperties = true;
+      }
+      break;
+      
     default:
       property.type = 'string';
   }
