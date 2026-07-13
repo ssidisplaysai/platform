@@ -167,6 +167,142 @@ export interface BusinessGenomePassResult<TOutput> {
   readonly fatal: boolean;
 }
 
+// ─── Semantic Resolution (BGC-PASS-005) ────────────────────────────────────
+
+/**
+ * A single explicit evidence signal that supports a semantic class assignment.
+ * Recorded in every SemanticCandidate for full auditability.
+ */
+export interface SemanticEvidenceSignal {
+  readonly evidenceItemId: string;
+  readonly signalField: string;
+  readonly signalValue: string;
+  readonly semanticClass: string;
+  readonly ruleId: string;
+  /** Stable rationale code: BGC-RATIONALE-001 / BGC-RATIONALE-002 / BGC-RATIONALE-003 */
+  readonly rationaleCode: string;
+}
+
+/**
+ * A single evidence-backed assertion about a SemanticCandidate.
+ */
+export interface SemanticAssertion {
+  readonly assertionId: string;
+  readonly attribute: string;
+  readonly value: unknown;
+  readonly evidenceItemIds: readonly string[];
+  readonly ruleId: string;
+  readonly ruleVersion: string;
+  readonly rationaleCode: string;
+}
+
+/**
+ * Records an irreconcilable conflict detected during Semantic Resolution.
+ * Preserved for downstream governed resolution stages.
+ */
+export interface SemanticConflictReference {
+  readonly conflictId: string;
+  readonly conflictingSemanticClasses: readonly string[];
+  readonly conflictingRuleIds: readonly string[];
+  readonly evidenceClusterIds: readonly string[];
+  readonly notes: readonly string[];
+}
+
+/**
+ * Describes a semantic resolution rule: a stable, versioned, deterministic
+ * rule that maps explicit evidence signals to a candidate semantic class.
+ */
+export interface SemanticResolutionRule {
+  readonly id: string;
+  readonly version: string;
+  readonly targetSemanticClass: string;
+  readonly description: string;
+  readonly requiredSignalField: string;
+  readonly requiredSignalValue: string;
+  readonly rationaleCode: string;
+}
+
+/**
+ * Context tracking which rule and compiler version produced this candidate.
+ */
+export interface SemanticResolutionContext {
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly compilerVersion: string;
+  readonly specificationVersion: string;
+  readonly ruleId: string;
+  readonly ruleVersion: string;
+  readonly rationaleCode: string;
+}
+
+/**
+ * A provisional, evidence-backed semantic meaning candidate.
+ *
+ * Identity is stage-appropriate (bgc-sc prefix) and deterministic.
+ * Not a final canonical Business Genome identity.
+ */
+export interface SemanticCandidate {
+  readonly id: string;
+  readonly semanticClass: string;
+  readonly designation: string;
+  readonly assertions: readonly SemanticAssertion[];
+  readonly evidenceClusterIds: readonly string[];
+  readonly evidenceGroupIds: readonly string[];
+  readonly evidenceItemIds: readonly string[];
+  readonly provenanceReferences: readonly string[];
+  readonly sourceEvidenceIrIdentity: string;
+  readonly resolutionRuleId: string;
+  readonly resolutionRuleVersion: string;
+  readonly certainty: {
+    readonly state: "certain" | "uncertain";
+    readonly confidence: number;
+  };
+  readonly conflictReferences: readonly SemanticConflictReference[];
+  readonly validationStatus: {
+    readonly valid: boolean;
+    readonly violations: readonly string[];
+  };
+  readonly resolutionContext: SemanticResolutionContext;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * Per-cluster semantic resolution result.
+ * May contain zero or one candidates (no candidate on unsupported or conflict).
+ */
+export interface SemanticResolutionResult {
+  readonly clusterId: string;
+  readonly candidates: readonly SemanticCandidate[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly unsupported: boolean;
+  readonly unsupportedReason?: string;
+}
+
+/**
+ * The complete output of BGC-PASS-005 (Semantic Resolution).
+ *
+ * Contains all provisional semantic candidates and per-cluster resolution
+ * results. Business Genome is NOT published here.
+ */
+export interface SemanticCandidateCollection {
+  readonly id: string;
+  readonly sourceEvidenceIrIdentity: string;
+  readonly candidates: readonly SemanticCandidate[];
+  readonly resolutionResults: readonly SemanticResolutionResult[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly specificationVersion: string;
+  readonly compilerVersion: string;
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+  readonly correlatedEvidence: CorrelatedEvidenceCollection;
+}
+
 export function deterministicIdentity(prefix: string, value: unknown): string {
   const checksum = SourceHash.sha256(stableStringify(value));
   return `${prefix}_${checksum}_v1`;

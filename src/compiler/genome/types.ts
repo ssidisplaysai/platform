@@ -6,6 +6,7 @@ import type {
   CanonicalEvidenceAttestation,
   CorrelatedEvidenceCollection,
   GroupedEvidenceCollection,
+  SemanticCandidateCollection,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 
@@ -155,6 +156,7 @@ export interface BusinessGenomeIntermediateCompilation {
   readonly canonicalAttestation: CanonicalEvidenceAttestation | null;
   readonly groupedEvidence: GroupedEvidenceCollection | null;
   readonly correlatedEvidence: CorrelatedEvidenceCollection | null;
+  readonly semanticCandidates: SemanticCandidateCollection | null;
 }
 
 export interface BusinessGenomeCompilerOutput {

@@ -9,6 +9,7 @@ import type {
   CanonicalEvidenceAttestation,
   CorrelatedEvidenceCollection,
   GroupedEvidenceCollection,
+  SemanticCandidateCollection,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 import type {
@@ -47,6 +48,8 @@ export class BusinessGenomeCompiler {
           validatedEvidence: null,
           canonicalAttestation: null,
           groupedEvidence: null,
+          correlatedEvidence: null,
+          semanticCandidates: null,
         },
         startedAt,
         completedPasses,
@@ -110,6 +113,8 @@ export class BusinessGenomeCompiler {
       groupedEvidence: (passOutputs.get("bgc.evidence-grouping") as GroupedEvidenceCollection | undefined) ?? null,
       correlatedEvidence:
         (passOutputs.get("bgc.evidence-correlation") as CorrelatedEvidenceCollection | undefined) ?? null,
+      semanticCandidates:
+        (passOutputs.get("bgc.semantic-resolution") as SemanticCandidateCollection | undefined) ?? null,
     };
 
     const expectedOutputs = [
@@ -117,6 +122,7 @@ export class BusinessGenomeCompiler {
       "bgc.canonical-verification",
       "bgc.evidence-grouping",
       "bgc.evidence-correlation",
+      "bgc.semantic-resolution",
     ] as const;
 
     for (const passId of expectedOutputs) {

@@ -16,6 +16,7 @@ export {
   CanonicalVerificationPass,
   EvidenceGroupingPass,
   EvidenceCorrelationPass,
+  SemanticResolutionPass,
 } from "./passes";
 
 export { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "./diagnostics";
@@ -57,5 +58,13 @@ export type {
   CorrelationBasis,
   EvidenceCluster,
   CorrelatedEvidenceCollection,
+  SemanticEvidenceSignal,
+  SemanticAssertion,
+  SemanticConflictReference,
+  SemanticResolutionRule,
+  SemanticResolutionContext,
+  SemanticCandidate,
+  SemanticResolutionResult,
+  SemanticCandidateCollection,
   BusinessGenomePassResult,
 } from "./pipeline-types";
