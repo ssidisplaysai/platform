@@ -19,6 +19,7 @@ export {
   SemanticResolutionPass,
   SemanticConsolidationPass,
   SemanticRelationshipResolutionPass,
+  SemanticIdentityAssignmentPass,
 } from "./passes";
 
 export { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "./diagnostics";
@@ -78,5 +79,10 @@ export type {
   RelationshipResolutionResult,
   ResolvedRelationship,
   ResolvedRelationshipCollection,
+  BusinessGenomeIdentity,
+  IdentityAssignmentRule,
+  IdentityAssignmentContext,
+  IdentityAssignmentResult,
+  BusinessGenomeIdentityCollection,
   BusinessGenomePassResult,
 } from "./pipeline-types";
