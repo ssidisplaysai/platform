@@ -196,14 +196,27 @@ export abstract class GenesisCompiler<TInput, TArtifact> {
    * - Result includes metrics and metadata
    */
   public async compile(input: TInput): Promise<CompilerResult<TArtifact>> {
-    if (!this.initialized) {
-      throw new Error(
-        "Compiler not initialized. Call initialize() before compile()"
-      );
-    }
-
     const timer = new ExecutionTimer();
     timer.start();
+
+    if (!this.initialized) {
+      const diagnostic: Diagnostic = {
+        code: "COMPILER_NOT_INITIALIZED",
+        message:
+          "Compiler not initialized. Call initialize() before compile()",
+        severity: "error",
+        sourceElement: "framework",
+        timestamp: new Date().toISOString(),
+      };
+      this.diagnosticAccumulator.clear();
+      this.diagnosticAccumulator.add([diagnostic]);
+      timer.stop();
+      return this.createFailureResult(
+        input,
+        "Compiler not initialized",
+        timer.getElapsedMs()
+      );
+    }
 
     try {
       // Step 1: Input validation

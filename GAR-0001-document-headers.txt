@@ -1,0 +1,2481 @@
+﻿===== docs/architecture/0001-genesis-architecture.md =====
+# Genesis Architecture Baseline Index
+
+Status: Canonical baseline index  
+Owner: Architecture Review Board
+
+This record anchors the authoritative architecture baseline for Genesis v1.0.
+
+## Authoritative References
+
+1. 0014-genesis-compilation-pipeline.md
+2. 0018-compiler-pass-architecture.md
+3. 0027-ard-0001-business-genome-ir-final-package.md
+4. 0028-afr-0001-genesis-architecture-freeze-record.md
+5. 0029-err-0001-engineering-readiness-review.md
+
+## Notes
+
+This file is intentionally concise and acts as the canonical baseline index.
+
+
+===== docs/architecture/0002-folder-structure.md =====
+# Genesis Architecture Folder Structure
+
+Status: Active reference  
+Owner: Engineering Leadership
+
+## Canonical Top-Level Structure
+
+1. docs/architecture: architecture records and review artifacts.
+2. docs/governance: process and repository governance controls.
+3. docs/reports: program and sprint reports.
+4. tools/genesis: compiler and runtime platform tooling.
+5. src: application and platform code organization.
+6. definitions/entity: business definition inputs.
+7. genesis: standards, language, roadmap, and templates.
+
+## Source Of Truth Rule
+
+Repository root is authoritative unless explicitly superseded by a board-approved record.
+
+
+===== docs/architecture/0003-runtime.md =====
+# Genesis Runtime Architecture Reference
+
+Status: Active reference  
+Owner: Runtime Architecture Owner
+
+## Runtime Boundary
+
+1. Runtime executes promoted artifacts and orchestrates platform behavior.
+2. Runtime does not own canonical business semantics.
+3. Runtime must preserve governance, audit, and trust boundaries.
+
+## Canonical References
+
+1. 0015-runtime-registration-promotion.md
+2. 0015-identity-and-tenant-architecture.md
+3. 0027-ard-0001-business-genome-ir-final-package.md
+
+
+===== docs/architecture/0004-domain-model.md =====
+# Genesis Domain Model Reference
+
+Status: Active reference  
+Owner: Canonical Model Owner
+
+## Domain Boundary
+
+1. Domain meaning is defined through canonical business language and model contracts.
+2. Domain concerns remain separate from runtime and infrastructure concerns.
+
+## Canonical References
+
+1. 0011-meta-model.md
+2. 0012-core-capability-model.md
+3. 0027-ard-0001-business-genome-ir-final-package.md
+
+
+===== docs/architecture/0005-metadata-engine.md =====
+# Metadata Engine Reference
+
+Status: Active reference  
+Owner: Compiler Platform Owner
+
+## Scope
+
+Metadata processing and expansion support compiler planning and generation while preserving deterministic behavior.
+
+## Canonical References
+
+1. 0014-genesis-compilation-pipeline.md
+2. 0018-compiler-pass-architecture.md
+3. tools/genesis/compiler/metadata-engine
+
+
+===== docs/architecture/0006-plugin-architecture.md =====
+# Plugin Architecture Reference
+
+Status: Active reference  
+Owner: Security And Trust Owner
+
+## Plugin Principles
+
+1. Plugin contracts must be explicit.
+2. Plugin lifecycle integration must preserve runtime and governance boundaries.
+3. Plugin trust and security controls are mandatory.
+
+## Canonical References
+
+1. genesis/operating-system/plugins.md
+2. genesis/operating-system/security.md
+3. docs/governance/CI_CD_BASELINE_RECOMMENDATIONS.md
+
+
+===== docs/architecture/0007-event-engine.md =====
+# Event Engine Reference
+
+Status: Active reference  
+Owner: Runtime Platform Owner
+
+## Scope
+
+Event infrastructure supports runtime orchestration and auditable system behavior.
+
+## Canonical References
+
+1. tools/genesis/runtime/EventBus.mjs
+2. docs/architecture/0015-identity-and-tenant-architecture.md
+3. docs/architecture/0027-ard-0001-business-genome-ir-final-package.md
+
+
+===== docs/architecture/0008-ai-runtime.md =====
+# AI Runtime Reference
+
+Status: Active reference  
+Owner: AI Platform Owner
+
+## Scope
+
+AI runtime capabilities must comply with platform governance, determinism boundaries, and audit requirements.
+
+## Canonical References
+
+1. 0020-ai-orchestrator-kernel.md
+2. docs/governance/REPOSITORY_GOVERNANCE_GUIDE.md
+3. GENESIS_ENGINEERING_HANDBOOK.md
+
+
+===== docs/architecture/0009-workflow-engine.md =====
+# Workflow Engine Reference
+
+Status: Active reference  
+Owner: Workflow Platform Owner
+
+## Scope
+
+Workflow orchestration must remain consistent with canonical model boundaries and runtime execution controls.
+
+## Canonical References
+
+1. 0010-automation-engine.md
+2. 0017-enterprise-simulation-engine.md
+3. 0019-enterprise-decision-engine.md
+
+
+===== docs/architecture/0010-automation-engine.md =====
+# Genesis Automation Runtime Engine v1
+
+## Overview
+
+The Genesis Automation Runtime Engine v1 provides metadata-driven automation execution through the runtime. Automations are triggered by events, lifecycle transitions, workflow states, schedules, manual invocation, or exceptions. Automation actions execute through integrated runtime buses and engines, maintaining consistency with the metadata-driven architecture.
+
+## Architecture
+
+### Design Principles
+
+- **Metadata-Driven**: All automation definitions come from generated automation contracts, no hardcoded logic
+- **Generic Runtime**: Single engine handles all automation types across all modules
+- **Event-Driven Triggers**: Automations integrate with Event Bus for event-triggered automations
+- **Lifecycle Integration**: Automations can be triggered by lifecycle state transitions
+- **Workflow Integration**: Automations can be triggered by workflow state changes
+- **Bus Integration**: Automation actions execute through Command Bus, Query Bus, Event Bus, and other runtime engines
+- **Dry-Run Support**: All automations can be executed in dry-run mode for safe testing
+- **Traceability**: Complete execution history with correlation IDs and causation chains
+- **No Bypass**: All automations flow through Runtime Container, no direct database access
+
+### Core Concepts
+
+#### RuntimeAutomation
+Complete automation definition with:
+- `automationId`: Unique identifier
+
+===== docs/architecture/0011-api-gateway.md =====
+# Genesis Runtime API Gateway v1
+
+## Overview
+
+The Genesis Runtime API Gateway is a metadata-driven API routing layer that sits between external HTTP requests and the internal Runtime Execution Engine. It provides:
+
+- **Metadata-driven routing** - API routes defined in generated module contracts
+- **Request validation** - Routes, methods, permissions, payloads, and targets
+- **Middleware pipeline** - Authentication, authorization, validation, audit, rate-limit, error normalization
+- **Multiple route types** - Standard REST, Command Bus, Query Bus, Event Bus, Automation Engine, Workflow Engine, Diagnostics
+- **Dry-run support** - Simulate API requests without state changes
+- **Request/response history** - Audit trail of all API activity
+- **Statistics and monitoring** - Performance metrics, request patterns, error tracking
+
+## Architecture
+
+### Core Components
+
+#### RuntimeApiGateway (Gateway Orchestrator)
+- Loads API routes from generated module API contracts
+- Routes HTTP requests to appropriate handlers
+- Applies middleware pipeline
+- Manages request/response history
+- Tracks statistics and metrics
+
+
+===== docs/architecture/0011-meta-model.md =====
+# Genesis OS Meta Model
+
+**Architecture Decision Record (ADR):** 0011  
+**Title:** Genesis Meta Model  
+**Status:** Active  
+**Version:** 1.0.0  
+**Author:** Project Genesis  
+**Created:** July 6, 2026  
+**Last Updated:** July 6, 2026  
+**Supersedes:** None
+
+---
+
+# Mission Statement
+
+Genesis OS requires a universal conceptual model for every business object that exists within the platform.
+
+This model is the Genesis Meta Model.
+
+It is the shared architectural foundation for entities, workflows, intelligence, automation, search, analytics, permissions, and future applications.
+
+The Meta Model exists to ensure that every business object in Genesis OS is represented consistently, semantically, and extensibly.
+
+---
+
+
+===== docs/architecture/0012-application-compiler.md =====
+# Genesis Application Compiler v1
+
+## Overview
+
+The Genesis Application Compiler is a metadata-driven compiler that assembles multiple compiled modules into complete, deployable enterprise applications. It composes navigation structures, dashboards, API surfaces, workflows, automations, and AI agents from pre-compiled module metadata.
+
+## Architecture
+
+### Core Design Principles
+
+1. **Metadata-Driven** - All composition logic driven by module metadata, no application-specific logic
+2. **Modular Composition** - Applications = aggregation of compiled modules
+3. **Hierarchical** - Applications contain modules, modules contain objects, objects contain fields
+4. **Declarative** - Application structure defined through metadata, not imperative code
+
+### Compilation Pipeline
+
+```
+Module Discovery
+    â†“
+Load Module Metadata
+    â†“
+Validate Dependencies
+    â†“
+Resolve Conflicts
+
+===== docs/architecture/0012-core-capability-model.md =====
+# Core Capability Model
+
+**Architecture Decision Record (ADR):** 0012  
+**Title:** Core Capability Model  
+**Status:** Active  
+**Version:** 1.0.0  
+**Author:** Project Genesis  
+**Created:** July 6, 2026  
+**Last Updated:** July 6, 2026  
+**Supersedes:** None
+
+---
+
+# Mission Statement
+
+Genesis Core defines the canonical set of capabilities that every Genesis system must provide.
+
+These capabilities are the foundation upon which all domain models, applications, and extensions are built.
+
+---
+
+# Purpose
+
+The Core Capability Model establishes:
+
+
+===== docs/architecture/0013-genesis-development-kit.md =====
+# Genesis Development Kit
+
+**Architecture Decision Record (ADR):** 0013  
+**Title:** Genesis Development Kit  
+**Status:** Active  
+**Version:** 1.0.0  
+**Author:** Project Genesis  
+**Created:** July 6, 2026  
+**Last Updated:** July 6, 2026  
+**Supersedes:** None
+
+---
+
+# Mission Statement
+
+The Genesis Development Kit (GDK) is the central development and compilation tool for Genesis OS.
+
+It is the single interface through which platform architects, developers, and automation systems interact with Genesis.
+
+---
+
+# Purpose
+
+The GDK exists to:
+
+
+===== docs/architecture/0013-solution-compiler.md =====
+# Genesis Solution Compiler v1
+
+## Overview
+
+The Genesis Solution Compiler is a metadata-driven compiler that assembles multiple compiled applications into complete, deployable enterprise solutions. It composes shared navigation, API catalogs, AI agent registries, branding, integrations, and global permissions from pre-compiled applications.
+
+## Architecture
+
+### Core Design Principles
+
+1. **Metadata-Driven** - All composition logic driven by application metadata, no solution-specific logic
+2. **Application Composition** - Solutions = aggregation of compiled applications
+3. **Hierarchical** - Solutions contain applications, applications contain modules, modules contain objects
+4. **Declarative** - Solution structure defined through metadata, not imperative code
+5. **Shared Components** - Applications share navigation, APIs, agents, and permissions
+
+### Compilation Hierarchy
+
+```
+Enterprise Objects (compiled entities with metadata)
+    â†“
+Modules (7 modules, each with ~7 objects)
+    â†“
+Applications (e.g., CRM: composed of 7 modules)
+    â†“
+
+===== docs/architecture/0014-genesis-compilation-pipeline.md =====
+# Genesis Compilation Pipeline
+
+**Architecture Decision Record (ADR):** 0014  
+**Title:** Genesis Compilation Pipeline  
+**Status:** Active  
+**Version:** 1.0.0  
+**Author:** Project Genesis  
+**Created:** July 6, 2026  
+**Last Updated:** July 6, 2026  
+**Supersedes:** None
+
+---
+
+# Mission Statement
+
+Genesis OS is not a website platform.
+
+Genesis OS is not a CRM framework.
+
+Genesis OS is a **business compiler**.
+
+It transforms business definitions into enterprise artifacts through a metadata-driven compilation pipeline.
+
+---
+
+
+===== docs/architecture/0014-package-system.md =====
+# Genesis Package System (GPS) v1
+
+## Overview
+
+The Genesis Package System is a metadata-driven package management system that enables versioning, distribution, installation, and upgrades of compiled Genesis artifacts (objects, modules, applications, and solutions). Packages are self-contained, distributable units with metadata, dependencies, and runtime requirements.
+
+## Architecture
+
+### Core Design Principles
+
+1. **Metadata-Driven** - All packaging logic driven by artifact metadata, no package-specific logic
+2. **Self-Contained** - Packages include everything needed for deployment
+3. **Version Management** - Semantic versioning with dependency resolution
+4. **Deterministic** - Reproducible package creation with checksums
+5. **Registry-Based** - Central package registry for discovery and management
+
+### Packaging Hierarchy
+
+```
+Compiled Objects/Entities
+    â†“
+Compiled Modules
+    â†“
+Compiled Applications
+    â†“
+
+===== docs/architecture/0015-identity-and-tenant-architecture.md =====
+# Genesis Identity & Tenant Platform (GITP) v1
+
+## Overview
+
+The Genesis Identity & Tenant Platform v1 introduces multi-tenant architecture to the Genesis runtime. It enables a single Genesis instance to host multiple independent enterprises (tenants) with complete organizational, user, role, and permission scoping. All runtime operations execute within a specific tenant context using a tenant-aware execution context.
+
+## Architecture
+
+### Design Principles
+
+1. **Multi-Tenancy** - True tenant isolation with complete data and context separation
+2. **Metadata-Driven** - All identity configuration comes from blueprints, not code
+3. **Hierarchical** - Tenant â†’ Organization â†’ Team â†’ User scoping
+4. **Secure by Default** - All operations must have valid execution context
+5. **Audit Trail** - All operations are traceable to user and tenant
+
+### Core Hierarchy
+
+```
+Identity Platform (Global)
+â”œâ”€â”€ Tenant 1 (Enterprise)
+â”‚   â”œâ”€â”€ Organization 1
+â”‚   â”‚   â”œâ”€â”€ Teams
+â”‚   â”‚   â”œâ”€â”€ Users
+â”‚   â”‚   â”œâ”€â”€ Roles
+
+===== docs/architecture/0015-runtime-registration-promotion.md =====
+# ADR-0015: Runtime Registration & Promotion Engine
+
+## Status
+
+ACCEPTED
+
+## Date
+
+2026-07-06
+
+## Context
+
+The Genesis Business Compiler has successfully implemented:
+- Definition Registry (Phase 1)
+- Generation Planner (Phase 2)
+- Generation Compiler (Phase 3)
+- Artifact Writer (Phase 4)
+- Entity Templates (Phase 5)
+- Generated Slice Validation (Phase 6)
+
+The next logical step is to establish a controlled promotion mechanism that moves validated generated artifacts from the sandbox (`generated/genesis/`) into the Genesis Runtime.
+
+The promotion pipeline must:
+1. Accept only validated slices
+2. Build immutable promotion plans
+
+===== docs/architecture/0016-enterprise-digital-twin.md =====
+# ADR-0016: Enterprise Digital Twin Architecture
+
+**Status:** Implemented
+**Date:** 2024
+**Scope:** Phase 12 - Enterprise Digital Twin v1
+
+## Overview
+
+The Enterprise Digital Twin is a real-time, metadata-driven graph model that represents the running state of an enterprise within the Genesis platform. It continuously reflects the configuration, relationships, and health of all runtime components, providing a single source of truth for system introspection and monitoring.
+
+### Purpose
+
+- **Runtime Introspection:** Understand the complete structure and state of the running system
+- **Dependency Mapping:** Model relationships between organizations, applications, modules, objects, and processes
+- **Health Monitoring:** Track component health scores and identify degradation
+- **State Reflection:** Automatically synchronize with runtime changes
+- **Analytics & Insights:** Enable queries and analysis of system structure
+
+## Core Architecture
+
+### Graph Model
+
+The Enterprise Digital Twin is built as a directed graph with typed nodes and relationships:
+
+```
+
+===== docs/architecture/0016-genesis-entity-definition-language.md =====
+# ADR-0016: Genesis Entity Definition Language (GEDL)
+
+## Status
+
+ACCEPTED
+
+## Date
+
+2026-07-06
+
+## Context
+
+The Genesis Business Compiler has successfully implemented code-first entity generation through Phase 7. However, the current approach requires entities to be defined in TypeScript/JavaScript first, which is:
+
+1. Technology-specific
+2. Requires coding knowledge
+3. Couples business logic to implementation
+4. Makes it difficult to consume from business tools
+5. Doesn't provide a clean audit trail of business decisions
+
+The vision of Genesis OS is "Model the business once. Compile everything else from it."
+
+To achieve this vision, we need a technology-neutral, business-friendly language for defining entities.
+
+## Decision
+
+===== docs/architecture/0017-enterprise-simulation-engine.md =====
+# ADR-0017: Enterprise Simulation Engine Architecture
+
+**Status:** Implemented
+**Date:** 2024
+**Scope:** Phase 13 - Enterprise Simulation Engine v1
+
+## Overview
+
+The Enterprise Simulation Engine is a metadata-driven simulation platform that operates exclusively on cloned copies of the Enterprise Digital Twin. It executes hypothetical scenarios and impact analyses without ever modifying production runtime state, providing organizations with safe, repeatable, and deterministic simulation capabilities.
+
+### Purpose
+
+- **Safe Simulation:** Never modifies production runtime or twin state
+- **Impact Analysis:** Model cascading effects of hypothetical changes
+- **What-If Scenarios:** Test business decisions before implementation
+- **Risk Assessment:** Identify potential issues before deployment
+- **Deterministic Results:** Repeatable simulations with same inputs
+- **Decision Support:** Generate comprehensive reports for stakeholders
+
+## Core Architecture
+
+### Simulation Model
+
+```
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+
+===== docs/architecture/0017-phase-8-completion-report.md =====
+# Phase 8/v0.5 Completion Report: GEDL & Blueprint Engine
+
+**Status:** âœ… COMPLETE AND TESTED
+
+## Executive Summary
+
+Phase 8 successfully implements the Genesis Entity Definition Language (GEDL) and Blueprint Engine, transitioning the platform from a code-first architecture to a model-first approach. All systems are now operational and tested.
+
+### Key Achievements
+- âœ… GEDL YAML-based entity definition format fully designed
+- âœ… Blueprint Engine loads and parses GEDL definitions
+- âœ… Customer entity definition created as reference implementation
+- âœ… Blueprint objects immutably represent entity metadata
+- âœ… Comprehensive validation of GEDL definitions
+- âœ… All 9 methods tested and working
+- âœ… Blocks cleared - YAML parser bug resolved
+
+## Files Created
+
+### Core System Files
+
+1. **[definitions/entity/customer.entity.yaml](../../../definitions/entity/customer.entity.yaml)**
+   - Canonical example of GEDL format
+   - Contains: fields (6), relationships (3), capabilities (4)
+   - Demonstrates all GEDL features
+
+===== docs/architecture/0018-compiler-pass-architecture.md =====
+# ADR-0018: Compiler Pass Architecture
+
+**Status:** ACCEPTED  
+**Date:** 2026-07-07  
+**Author:** Genesis Compiler Team  
+**Phase:** Phase 9
+
+## Context
+
+The Genesis compiler currently orchestrates multiple stages manually:
+
+1. Definition Registry lookup
+2. Blueprint loading
+3. Plan creation
+4. Template rendering
+5. Artifact writing
+6. Validation
+7. Promotion
+8. Runtime registration
+
+This manual orchestration makes it difficult to:
+
+- Test individual compiler stages independently
+- Insert new compiler capabilities
+- Debug specific stages
+
+===== docs/architecture/0018-enterprise-planning-engine.md =====
+# ADR-0018: Genesis Enterprise Planning Engine v1
+
+**Status:** Implemented  
+**Date:** 2026-07-08  
+**Version:** 1.0
+
+## Overview
+
+The Genesis Enterprise Planning Engine v1 is a metadata-driven planning system that generates actionable enterprise plans directly from runtime state and system metadata. Unlike traditional planning systems that rely on hardcoded business rules or AI-generated recommendations, this engine operates purely on structural analysis of the enterprise digital twin.
+
+### Core Purpose
+
+Generate comprehensive, actionable enterprise plans for 8 planning domains without relying on hardcoded business logic.
+
+**Supported Planning Domains:**
+- Operations: Process optimization and operational efficiency
+- Manufacturing: Production planning and resource allocation
+- Inventory: Stock management and replenishment strategies
+- Purchasing: Procurement and vendor optimization
+- Projects: Delivery timelines and resource planning
+- Staffing: Team composition and capacity planning
+- Maintenance: Equipment lifecycle and preventive care
+- Sales: Revenue optimization and market positioning
+
+## Architecture
+
+===== docs/architecture/0019-enterprise-decision-engine.md =====
+# ADR-0019: Genesis Enterprise Decision Engine v1
+
+**Status:** Implemented  
+**Date:** 2026-07-08  
+**Version:** 1.0
+
+## Overview
+
+The Genesis Enterprise Decision Engine v1 is a metadata-driven decision evaluation system that ranks competing enterprise plans and recommends the optimal course of action. Unlike traditional decision systems that rely on hardcoded heuristics or AI black boxes, this engine operates entirely on transparent, criteria-based evaluation with full reasoning transparency.
+
+### Core Purpose
+
+Evaluate multiple enterprise plans across 9 key business criteria and provide transparent, defensible recommendations.
+
+**Supported Evaluation Criteria:**
+- Cost: Total implementation and operational cost
+- Revenue: Revenue impact and growth potential
+- Profitability: Profit margin and return on investment
+- Schedule: Time to implementation and value delivery
+- Resource: Resource utilization and efficiency
+- Customer: Customer satisfaction and impact
+- Operational: Operational risk and complexity
+- Strategic: Strategic alignment with business goals
+- Compliance: Policy and regulatory compliance
+
+
+===== docs/architecture/0020-ai-orchestrator-kernel.md =====
+# ADR-0020: Genesis AI Orchestrator Kernel v1
+
+**Status:** Implemented  
+**Date:** 2026-07-08  
+**Version:** 1.0
+
+## Overview
+
+The Genesis AI Orchestrator Kernel v1 is a transparent, orchestration layer that coordinates specialized enterprise AI agents while ensuring all reasoning flows through Genesis runtime services (Planning, Decision, Simulation, Runtime). The orchestrator selects appropriate agents, coordinates multi-agent collaboration, routes requests through runtime services, and merges responses with full transparency.
+
+### Core Mission
+
+Enable multi-agent AI coordination where:
+- Agents never access persistence directly
+- Agents never bypass Runtime services
+- All reasoning is transparent and auditable
+- Collaboration is metadata-driven
+- Planning, Decision, and Simulation are tools, not sideeffects
+
+## Architecture
+
+### Component Structure
+
+```
+AI Orchestrator Architecture
+
+===== docs/architecture/0021-business-compiler.md =====
+# 0021-business-compiler.md
+
+## Genesis Business Compiler v1 Architecture
+
+**Status:** Implemented & Tested  
+**Phase:** 17 - Business Compilation  
+**Last Updated:** 2025  
+**Test Coverage:** 51 tests, 100% passing  
+
+---
+
+## Overview
+
+The Genesis Business Compiler transforms high-level business descriptions into canonical Genesis metadata. It's the entry point for the Genesis pipeline, converting business intent into structured models that downstream compilers (Object, Module, Application, Solution) can process.
+
+### Key Features
+
+- **Natural Language Processing**: Parses business descriptions to identify domains, capabilities, and requirements
+- **Domain Intelligence**: Automatically identifies relevant business domains (Operations, Finance, Sales, HR, IT, etc.)
+- **Capability Extraction**: Recognizes required business capabilities from text
+- **Object Identification**: Extracts business entities that need to be modeled
+- **Relationship Mapping**: Identifies relationships between objects
+- **Workflow Design**: Identifies business workflows and processes
+- **Automation Detection**: Recognizes opportunities for automation
+- **AI Agent Recommendation**: Suggests specialized AI agents for the domain
+
+===== docs/architecture/0022-knowledge-graph-compiler.md =====
+# 0022-knowledge-graph-compiler.md
+
+## Genesis Enterprise Knowledge Graph Compiler v1 Architecture
+
+**Status:** Implemented & Tested  
+**Phase:** 18 - Enterprise Knowledge Graph  
+**Last Updated:** 2026-07-08  
+**Test Coverage:** 40 tests, 100% passing  
+
+---
+
+## Overview
+
+The Genesis Enterprise Knowledge Graph Compiler creates a canonical, reusable knowledge graph that captures industries, business domains, capabilities, processes, terminology, regulations, and their relationships. This metadata-driven approach enables the Business Compiler to understand enterprises without hardcoded templates.
+
+### Key Features
+
+- **Canonical Industries**: Pre-defined industry verticals (Finance, Healthcare, Retail, Manufacturing, Energy)
+- **Standard Domain Taxonomy**: Seven core business domains with standard definitions
+- **Capability Models**: Business capabilities with maturity levels and state transitions
+- **Process Templates**: Standard business processes with workflows and criticality levels
+- **Business Concepts**: Abstract concepts (entities, workflows, patterns, rules, automations)
+- **Business Terminology**: Glossary with definitions, synonyms, and domain context
+- **Regulatory Framework**: Regulations, compliance requirements, and applicability mapping
+- **Relationship Graph**: Industryâ†’Domainâ†’Capabilityâ†’Process relationships
+
+===== docs/architecture/0023-enterprise-learning-engine.md =====
+# 0023-enterprise-learning-engine.md
+
+## Genesis Enterprise Learning Engine v1 Architecture
+
+**Status:** Implemented & Tested  
+**Phase:** 19 - Enterprise Learning  
+**Last Updated:** 2026-07-08  
+**Test Coverage:** 30+ tests, 100% passing  
+
+---
+
+## Overview
+
+The Genesis Enterprise Learning Engine v1 enables the platform to continuously capture and analyze enterprise execution outcomes without embedding business-specific logic. It generates reusable organizational knowledge that improves planning, decision-making, and AI orchestration over time.
+
+### Key Features
+
+- **Metadata-Driven Learning**: Configurable domains, no hardcoded business logic
+- **Multi-Source Observation Capture**: Runtime, events, workflows, automations, planning, decisions, simulations, AI
+- **7-Stage Learning Pipeline**: Observation â†’ Signal â†’ Metric â†’ Pattern â†’ Hypothesis â†’ Insight â†’ Recommendation
+- **Comparison Analysis**: Planned vs Actual, Simulated vs Actual, Predicted vs Actual, Decision vs Outcome
+- **Confidence Tracking**: All outputs include confidence scores
+- **Reusable Insights**: Knowledge generated across enterprises
+- **Evidence Tracing**: Full attribution chain from observations to insights
+- **Extensible Design**: New learning domains and signals supported
+
+===== docs/architecture/0024-enterprise-evolution-engine.md =====
+# 0024-enterprise-evolution-engine.md
+
+## Genesis Enterprise Evolution Engine v1 Architecture
+
+**Status:** Implemented & Tested  
+**Phase:** 20 - Enterprise Evolution  
+**Last Updated:** 2026-07-08  
+**Test Coverage:** 33 tests, 100% passing  
+
+---
+
+## Overview
+
+The Genesis Enterprise Evolution Engine v1 enables the platform to continuously evaluate enterprise structure and recommend improvements to business models, workflows, modules, applications, and organizational architecture. It combines insights from the Learning Engine, Decision Engine, Planning Engine, Simulation Engine, and Digital Twin to generate strategic improvement proposals.
+
+### Key Features
+
+- **Structural Analysis**: Evaluates enterprise across 9 dimensions
+- **Multi-Source Intelligence**: Integrates data from Learning, Decision, Planning, Simulation, Digital Twin
+- **Proposal Generation**: Creates ranked recommendations with ROI estimates
+- **Impact Forecasting**: Assesses improvements across efficiency, agility, cost, quality, scalability, maintainability
+- **Risk Assessment**: Identifies risks and mitigation strategies
+- **Explainability**: All recommendations include reasoning and evidence
+- **Implementation Planning**: Provides phasing, resources, timelines, success criteria
+- **Advisory Only**: All proposals require approval before implementation
+
+===== docs/architecture/0025-genesis-meta-compiler.md =====
+# Genesis Meta Compiler v1
+
+## Overview
+
+Genesis Meta Compiler v1 introduces self-awareness to the Genesis platform, enabling Genesis to describe, compile, validate, and evolve its own architecture using the same metadata-driven compilation pipeline used for enterprise systems.
+
+Instead of having Genesis architecture hardcoded, we now express it as metadata. This enables:
+
+1. **Self-Description** - Genesis can describe its own structure as data
+2. **Self-Validation** - Genesis can validate its architecture against a blueprint
+3. **Self-Inspection** - Genesis can analyze its own structure and identify issues
+4. **Self-Improvement** - Genesis can propose improvements to its own architecture
+5. **Self-Compilation** - Genesis changes start as metadata before compilation
+
+## Key Features
+
+âœ“ **Metadata-Driven Architecture**
+- Genesis platform described in contracts and metadata
+- Same compilation pipeline used for enterprise and platform
+- Architecture as data enables inspection and evolution
+
+âœ“ **Self-Validation Pipeline**
+- Validates component definitions
+- Checks relationship integrity
+- Detects circular dependencies
+
+===== docs/architecture/0026-partner-qr-identity-engine.md =====
+# Genesis Partner & QR Identity Engine v1
+
+**Purpose:** Reusable metadata-driven partner, referral, QR identity, attribution, and commission tracking module
+
+**Version:** 1.0.0
+
+**Status:** PRODUCTION READY
+
+---
+
+## Overview
+
+The Genesis Partner & QR Identity Engine is a comprehensive, metadata-driven system for tracking partner referrals, QR code interactions, lead generation, sales attribution, and commission payouts. Designed to be company-agnostic and reusable across multiple Genesis-powered businesses.
+
+### Key Features
+
+1. **Partner Management** - Onboard, manage, and track partners across companies
+2. **QR Code Tracking** - Generate and track QR codes for referral campaigns
+3. **Referral Pipeline** - Track QR scans â†’ leads â†’ sales â†’ attribution
+4. **Attribution Engine** - Calculate which partner drove each sale
+5. **Commission Tracking** - Manage commission rules and payouts
+6. **Real-time Analytics** - Dashboard contracts for key metrics
+7. **Fully Metadata-Driven** - All business logic expressed as metadata, not code
+
+---
+
+===== docs/architecture/0027-ard-0001-business-genome-ir-final-package.md =====
+# ARD-0001: Business Genome Intermediate Representation (Business Genome IR)
+
+**Status:** APPROVED WITH AMENDMENTS  
+**Date:** 2026-07-09  
+**Authority:** Genesis Architecture Review Board  
+**Authoring Role:** Independent Senior Enterprise Systems and Compiler Architecture Advisor
+
+---
+
+## Executive Decision
+
+The Board approves ARD-0001 with amendments. Genesis adopts a layered multi-IR compiler architecture with deterministic, auditable compiler governance.
+
+This package is the Board-ready final record for ARD-0001 and supersedes draft review material for decision purposes.
+
+---
+
+## Approved With Amendments
+
+### Approved
+
+1. Genesis uses a layered multi-IR compiler architecture.
+2. Canonical IR set:
+   1. Evidence IR
+   2. Business Genome IR
+
+===== docs/architecture/0028-afr-0001-genesis-architecture-freeze-record.md =====
+# AFR-0001 â€” Genesis Architecture Freeze Record
+
+**Status:** Draft Final for Architecture Review Board  
+**Date:** 2026-07-09  
+**Review Authority:** Genesis Architecture Review Board  
+**Scope:** Genesis Architecture v1.0 Freeze Checkpoint
+
+---
+
+## 1. Purpose
+
+AFR-0001 is the official architecture freeze review record for Genesis Architecture v1.0. Its purpose is to validate architectural integrity, remove ambiguity, confirm subsystem boundaries, verify implementation sequencing, and establish the engineering baseline for implementation.
+
+This review does not redesign approved architecture. It validates readiness and identifies only material issues that affect long-term architectural integrity or immediate implementation safety.
+
+---
+
+## 2. Scope
+
+Included in scope:
+
+1. Approved architecture corpus and governance artifacts.
+2. Multi-IR compiler architecture baseline and deterministic compilation controls.
+3. Ownership boundaries across Evidence IR, Business Genome Model, Enterprise Blueprint IR, compiler platform, runtime, promotion, and audit.
+4. Implementation-readiness of architecture documentation and decision records.
+
+===== docs/architecture/0029-err-0001-engineering-readiness-review.md =====
+# ERR-0001 â€” Engineering Readiness Review
+
+Status: Final Draft for Engineering Review Board  
+Date: 2026-07-09  
+Authority: Genesis Engineering Review Board  
+Scope: Engineering transition from architecture into implementation
+
+---
+
+## 1. Executive Summary
+
+Genesis has strong architecture direction, substantial compiler foundations, and meaningful test assets. Engineering readiness is constrained by foundational documentation integrity, missing repository-level engineering controls, and incomplete implementation-operational scaffolding.
+
+Current readiness conclusion is not a technical capability failure. It is an execution-readiness and engineering-governance gap.
+
+---
+
+## 2. Scope
+
+Reviewed areas:
+
+1. Repository organization and scalability.
+2. Architecture traceability into implementation assets.
+3. Subsystem ownership clarity and implementation sequencing.
+4. Engineering standards and developer workflow controls.
+
+===== docs/architecture/0030-afr-0002-architecture-freeze-validation.md =====
+# AFR-0002 â€” Architecture Freeze Validation Record
+
+Status: Final  
+Date: 2026-07-09  
+Authority: Genesis Architecture Review Board
+
+---
+
+## Purpose
+
+Validate whether Genesis Architecture v1.0 can now be formally frozen for implementation after GSS-0001 stabilization.
+
+## Validation Basis
+
+This validation rechecked AFR-0001 blockers and architecture baseline integrity using repository evidence.
+
+Evidence highlights:
+
+1. Governance and engineering baseline artifacts now exist.
+2. Canonical placeholder markdown blockers in docs and genesis trees were resolved.
+3. ARD-0001 final package remains authoritative and unchanged in architectural direction.
+
+## Blocker Closure Verification
+
+AFR-0001 blocker class: foundational baseline completeness.
+
+===== docs/architecture/0031-err-0002-engineering-readiness-validation.md =====
+# ERR-0002 â€” Engineering Readiness Validation
+
+Status: Final  
+Date: 2026-07-09  
+Authority: Genesis Engineering Review Board
+
+---
+
+## Executive Validation Summary
+
+ERR-0002 validates engineering readiness after GSS-0001 completion. Genesis now has the minimum governance, documentation, ownership, onboarding, and readiness controls required to begin disciplined engineering implementation.
+
+## Scope
+
+Validated areas:
+
+1. Repository governance controls.
+2. Engineering handbook and onboarding baseline.
+3. Ownership model and responsibility mapping.
+4. Documentation completeness and baseline integrity.
+5. Implementation readiness artifacts for Phase A through Phase E.
+6. CI/CD baseline readiness definition.
+
+## Evidence Of Readiness
+
+
+===== docs/architecture/EBC-0001_Enterprise_Blueprint_Specification_v1.md =====
+# EBC-0001: Enterprise Blueprint Specification v1.0
+
+**Program**: Genesis OS - Enterprise Blueprint Compiler (EBC)  
+**Version**: 1.0  
+**Status**: ARCHITECTURE (No Implementation)  
+**Date**: 2026-07-12  
+**Predecessor**: Business Genome Compiler v1.0 (v1.0.0-business-genome-compiler)
+
+---
+
+## Executive Summary
+
+The Enterprise Blueprint Compiler transforms the canonical semantic understanding of an enterprise (BusinessGenomeArtifact) into its deterministic implementation architecture (EnterpriseBlueprintArtifact).
+
+**Fundamental Principle**: Blueprint answers "HOW should the business be implemented?" while BGC answers "What IS the business?"
+
+**Key Distinction**: Blueprint is NOT software, NOT runtime, NOT application code. Blueprint is the canonical *architecture of implementation* - the deterministic model governing how business capabilities, processes, and relationships manifest as organizational, operational, and technical structures.
+
+---
+
+## Part I: Enterprise Blueprint Definition
+
+### 1. What is an Enterprise Blueprint?
+
+**Definition**: An Enterprise Blueprint is a deterministic, auditable, multi-perspective architectural model derived exclusively from the canonical BusinessGenomeArtifact that represents the complete implementation architecture of an enterprise.
+
+===== docs/architecture/EBC-0002_Enterprise_Blueprint_Compiler_Architecture_v1.md =====
+# EBC-0002: Enterprise Blueprint Compiler Architecture v1.0
+
+**Program**: Genesis OS - Enterprise Blueprint Compiler (EBC)  
+**Document**: Compiler Architecture Specification  
+**Version**: 1.0  
+**Status**: ARCHITECTURE (No Implementation)  
+**Date**: 2026-07-12  
+**Predecessor Standard**: EBC-0001 (Specification)
+
+---
+
+## Executive Summary
+
+The Enterprise Blueprint Compiler (EBC) is a 13-pass deterministic compiler that transforms the canonical BusinessGenomeArtifact into the EnterpriseBlueprintArtifact.
+
+**Design Philosophy**:
+- Non-modifying: BGC artifact passes through unchanged
+- Projection-based: Architecture emerges from systematic projections
+- Deterministic: Identical input + identical rules â†’ identical output
+- Auditable: Every element traceable to source
+- Compiler-driven: Follows proven CompilerPass pattern from BGC
+
+**Guarantees**:
+- âœ… Deterministic compilation
+- âœ… Complete provenance chains
+
+===== docs/architecture/EIR-0001-evidence-ir-specification.md =====
+# Evidence Intermediate Representation Specification v1.0
+
+**Document ID:** EIR-0001  
+**Title:** Evidence Intermediate Representation Specification  
+**Version:** 1.0  
+**Status:** Architecture Review Draft  
+**Date:** July 9, 2026  
+**Classification:** Enterprise Compiler Specification  
+
+---
+
+## Table of Contents
+
+1. [Purpose](#1-purpose)
+2. [Scope](#2-scope)
+3. [Architectural Principles](#3-architectural-principles)
+4. [Evidence Model](#4-evidence-model)
+5. [Identity Model](#5-identity-model)
+6. [Provenance Model](#6-provenance-model)
+7. [Canonicalization Rules](#7-canonicalization-rules)
+8. [Validation Rules](#8-validation-rules)
+9. [Compiler Contract](#9-compiler-contract)
+10. [Relationship to Discovery](#10-relationship-to-discovery)
+11. [Relationship to Business Genome](#11-relationship-to-business-genome)
+12. [Architectural Invariants](#12-architectural-invariants)
+
+===== docs/architecture/GCF-0001_Genesis_Compiler_Framework_Specification_v1.md =====
+# GCF-0001: Genesis Compiler Framework Specification v1.0
+
+**Program**: Genesis OS - Genesis Compiler Framework (GCF)  
+**Type**: Framework Specification (Not a compiler itself)  
+**Version**: 1.0  
+**Status**: ARCHITECTURE (No Implementation)  
+**Date**: 2026-07-12
+
+---
+
+## Executive Summary
+
+The Genesis Compiler Framework (GCF) is a reusable compiler infrastructure designed to power all deterministic, compiler-driven systems in the Genesis OS architecture.
+
+**Core Mission**: Enable multiple specialized compilers (BGC, EBC, and future compilers) to inherit proven compiler patterns instead of reimplementing compiler infrastructure from scratch.
+
+**Key Principle**: *Everything a compiler needs to be deterministic, auditable, and verifiable is in the framework. Everything unique to a specific compiler is implemented in that compiler.*
+
+---
+
+## Part I: Framework Foundation
+
+### 1. What Belongs in the Framework?
+
+**In GCF** (Reusable across all compilers):
+
+===== docs/architecture/GCF-0002_Genesis_Compiler_Framework_Architecture_v1.md =====
+# GCF-0002: Genesis Compiler Framework Architecture v1.0
+
+**Program**: Genesis OS - Genesis Compiler Framework (GCF)  
+**Document**: Detailed Architecture  
+**Version**: 1.0  
+**Status**: ARCHITECTURE (No Implementation)  
+**Date**: 2026-07-12
+
+---
+
+## Executive Summary
+
+GCF-0002 specifies the detailed architecture of the Genesis Compiler Framework - the infrastructure layer that enables deterministic compiler development.
+
+**Key Focus**: Bridge between framework specification (GCF-0001) and compiler implementations (BGC, EBC, future).
+
+---
+
+## Part I: Framework Architecture Overview
+
+### 1. Component Structure
+
+```
+Genesis Compiler Framework v1.0
+â”‚
+
+===== docs/architecture/RAR-0001-evidence-ir-review.md =====
+# Request for Architecture Review â€” Evidence IR v1.0
+
+**Document ID:** RAR-0001  
+**Title:** Request for Architecture Review â€” Evidence Intermediate Representation (Evidence IR) v1.0  
+**Date:** July 9, 2026  
+**Status:** Under Review  
+**Subject:** EIR-0001 (Evidence Intermediate Representation Specification v1.0)  
+**Prepared By:** Genesis Specification Team  
+**Review Stage:** Pre-Implementation Governance Review  
+
+---
+
+## Executive Summary
+
+Evidence Intermediate Representation (Evidence IR) Specification v1.0 (EIR-0001) has been completed and is submitted for formal architectural review. This document provides a comprehensive assessment of the specification against architectural governance criteria.
+
+### Review Recommendation: APPROVE FOR ARCHITECTURE REVIEW (CONDITIONAL)
+
+Evidence IR v1.0 is architecturally sound and ready to proceed through formal Architecture Review Board process with **three conditional approvals** that must be addressed before implementation begins.
+
+**Conditions:**
+1. Resolve canonicalization formality (low implementation risk)
+2. Define scale targets and performance bounds (design decision needed)
+3. Clarify multi-language strategy (scope decision needed)
+
+
+===== docs/compiler/GCC-0001_DISCOVERY_ENGINE.md =====
+# GCC-0001 Discovery Engine
+
+## Purpose
+
+GCC-0001 implements the first compiler-facing Genesis Discovery Engine for deterministic knowledge ingestion into Evidence IR.
+
+The engine ingests supported sources, normalizes content and metadata, captures provenance, and emits deterministic Evidence IR for compiler consumption.
+
+## Architecture
+
+Pipeline:
+
+1. DiscoveryEngine receives a KnowledgeSource.
+2. DiscoveryRegistry resolves a DiscoveryPlugin by sourceType.
+3. Plugin ingests artifacts into raw discovery records.
+4. CanonicalNormalizer normalizes content and metadata deterministically.
+5. ProvenanceEngine computes checksums, ids, and version identifiers.
+6. EvidenceEmitter compiles artifacts into Evidence IR graph output.
+
+Core namespace:
+
+1. src/compiler/discovery
+2. src/compiler/plugins
+3. src/compiler/provenance
+4. src/compiler/normalization
+
+===== docs/readiness/IMPLEMENTATION_READINESS_CHECKLIST.md =====
+# Implementation Readiness Checklist
+
+## Purpose
+
+Confirm engineering readiness for Phase A to Phase E execution without changing approved architecture.
+
+## Workstream Readiness Grid
+
+### Phase A: Compiler Platform
+
+Objective: Stabilize shared compiler orchestration baseline.
+
+Dependencies:
+
+1. Pass manager governance.
+2. Diagnostics and validation gate contracts.
+3. CI quality checks for compiler paths.
+
+Milestone Boundary:
+
+1. Deterministic pipeline baseline passes and ownership is ratified.
+
+Exit Checks:
+
+1. Deterministic test baseline passing.
+
+===== docs/releases/BUSINESS_GENOME_COMPILER_V1_ARCHITECTURE_CONFORMANCE.md =====
+# Business Genome Compiler v1.0 Architecture Conformance
+
+**Release:** v1.0.0-business-genome-compiler  
+**Branch:** release/business-genome-compiler-v1  
+**Date:** 2026-07-12
+
+---
+
+## Executive Summary
+
+Business Genome Compiler v1.0 conforms to all applicable architecture standards and governance frameworks:
+
+- âœ… **GPS-0001** (Canonical Identity): Deterministic, versioned, traceable identities
+- âœ… **GPS-0002** (Canonicalization): Lexicographic sorting, stable serialization
+- âœ… **BGC-0001** (Business Genome Compiler): 11-pass pipeline, non-modification
+- âœ… **BGS-0001** (Business Genome Schema): Semantic model compliance
+- âœ… **GCC-0001** (Genesis Compiler Core): Pass execution pattern
+- âœ… **COMPILER_INVARIANTS.md**: All invariants enforced
+
+**Deviations**: 1 minor discrepancy (documented and planned for resolution)
+
+---
+
+## Standards Compliance Matrix
+
+
+===== docs/releases/BUSINESS_GENOME_COMPILER_V1_ENGINEERING_REPORT.md =====
+# Business Genome Compiler v1.0 Engineering Report
+
+**Release Branch:** `release/business-genome-compiler-v1`  
+**Status:** Release Review  
+**Date:** 2026-07-12
+
+---
+
+## 1. Executive Summary
+
+The Business Genome Compiler (BGC) v1.0 is a deterministic, eleven-pass compiler that transforms Evidence IR into a canonical, versioned Business Genome Artifact. The compiler implements complete non-modification guarantees, deterministic serialization, comprehensive provenance tracking, and publication gating on validation status.
+
+**Key Metrics:**
+- **11 compiler passes** fully implemented and tested
+- **450+ LOC** in final publication pass (M1.10)
+- **41 M1.10 tests** passing (28 specification categories)
+- **Zero TypeScript errors** in publication pass and core compiler
+- **100% determinism** verified through repeated execution tests
+- **Non-modification guarantee** enforced throughout pipeline
+
+---
+
+## 2. Purpose of the Business Genome Compiler
+
+The Business Genome Compiler serves as the authoritative transformation engine for converting structured evidence (Evidence IR) into enterprise canonical artifacts (Business Genome Artifacts). It implements:
+
+===== docs/releases/BUSINESS_GENOME_COMPILER_V1_KNOWN_LIMITATIONS.md =====
+# Business Genome Compiler v1.0 Known Limitations
+
+**Release:** v1.0.0-business-genome-compiler  
+**Branch:** release/business-genome-compiler-v1  
+**Date:** 2026-07-12
+
+---
+
+## Overview
+
+This document catalogs known limitations in Business Genome Compiler v1.0. These are intentional design decisions, pre-existing infrastructure gaps, or features deferred to future releases.
+
+**Important**: None of these limitations block v1.0.0 release, but they should inform deployment planning and Phase 2-4 roadmap.
+
+---
+
+## Category 1: Architecture & Design Limitations
+
+### 1.1 Non-Modification Guarantee (By Design)
+
+**Description**: The compiler explicitly guarantees it will NEVER modify the Business Genome Graph structure, even when repair would improve quality.
+
+**Impact**: 
+- Invalid graphs remain invalid
+- Validation failures cannot be auto-corrected
+
+===== docs/releases/BUSINESS_GENOME_COMPILER_V1_RELEASE_CHECKLIST.md =====
+# Business Genome Compiler v1.0 Release Checklist
+
+**Release Branch:** `release/business-genome-compiler-v1`  
+**Date:** 2026-07-12  
+**Prepared By:** Release Review  
+
+---
+
+## Release Readiness Verification
+
+### Pass Registration
+
+- [x] **PASS** - All eleven passes registered in BusinessGenomePassRegistry
+  - M1.1: InputValidationPass âœ“
+  - M1.2: CanonicalVerificationPass âœ“
+  - M1.3: EvidenceGroupingPass âœ“
+  - M1.4: EvidenceCorrelationPass âœ“
+  - M1.5: SemanticResolutionPass âœ“
+  - M1.6: SemanticConsolidationPass âœ“
+  - M1.7: SemanticRelationshipResolutionPass âœ“
+  - M1.8: SemanticIdentityAssignmentPass âœ“
+  - M1.9: GraphConstructionPass âœ“
+  - M1.10: ConsistencyValidationPass âœ“
+  - M1.11: BusinessGenomePublicationPass âœ“
+
+
+===== docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md =====
+# Business Genome Compiler v1.0 Test Summary
+
+**Release:** v1.0.0-business-genome-compiler  
+**Branch:** release/business-genome-compiler-v1  
+**Date:** 2026-07-12
+
+---
+
+## Executive Summary
+
+Business Genome Compiler v1.0 has comprehensive test coverage with **41 passing M1.11 tests**, covering all 28 specification categories. The test suite verifies:
+
+- âœ… **Determinism**: Identical input produces identical artifact
+- âœ… **Non-modification**: Graph returned unchanged
+- âœ… **Publication Gating**: Blocking on invalid validation
+- âœ… **Complete Provenance**: All evidence traced
+- âœ… **Complete Lineage**: All 11 passes traced
+- âœ… **Architecture Boundary**: No forbidden dependencies
+
+**Status**: All targeted compiler tests passing. Pre-existing repository baseline issues documented separately.
+
+---
+
+## Test Inventory
+
+
+===== docs/reports/GES-0002_M1.10_BUSINESS_GENOME_PUBLICATION_REPORT.md =====
+# GES-0002 M1.10 BUSINESS GENOME PUBLICATION REPORT
+
+**Status**: COMPLETE AND INTEGRATED  
+**Implementation**: Deterministic Business Genome Publication pass with canonical artifact generation  
+**Pass Position**: M1.10 (11th pass of 11-pass Business Genome Compiler pipeline)  
+**Date**: 2026-07-12  
+
+---
+
+## Executive Summary
+
+**M1.10 Business Genome Publication** (BGC-PASS-011) has been successfully implemented as the final publication pass in the Business Genome Compiler. This milestone packages a validated `BusinessGenomeGraph` into a canonical, versioned, deterministic `BusinessGenomeArtifact` for formal release.
+
+### Deliverables
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Type Definitions | 7 types | âœ… Complete |
+| Diagnostic Codes | 10 codes | âœ… Complete |
+| Pass Implementation | 450 LOC | âœ… Complete |
+| Test Categories | 28 categories | âœ… Complete |
+| Test Assertions | 45+ assertions | âœ… Complete |
+| Infrastructure Updates | 7 files modified | âœ… Complete |
+| Regression Tests | 3 files updated | âœ… Complete |
+| Technical Report | This document | âœ… Complete |
+
+===== docs/reports/GES-0002_M1.1_IMPLEMENTATION_READINESS_REPORT.md =====
+# GES-0002 / M1.1 Implementation Readiness Report
+
+## 1. Executive Summary
+
+Status: READY WITH ENGINEERING GAPS
+
+Implementation can proceed for GES-0002 without architecture changes if M1.2 remains constrained to the frozen boundaries and resolves identified engineering gaps.
+
+## 2. Authoritative Inputs
+
+Normative documents reviewed:
+- genesis/compiler/BGC-0001-Business-Genome-Compiler-Architecture-v1.0.md
+- genesis/genome/BGS-0001-Business-Genome-Specification-v1.0.md
+- genesis/compiler/GCC-0001-Genesis-Compiler-Core-Architecture-v1.0.md
+- genesis/compiler/COMPILER_INVARIANTS.md
+- docs/architecture/EIR-0001-evidence-ir-specification.md
+- docs/standards/GPS-0001-Canonical-Identity-Standard.md
+- docs/standards/GPS-0002-Canonicalization-Standard.md
+- genesis/architecture/LAYERS.md
+- genesis/architecture/RESPONSIBILITY_MATRIX.md
+- genesis/CONSTITUTION.md
+- genesis/development/coding-standards.md
+- genesis/development/testing.md
+- genesis/development/definition-of-done.md
+
+
+===== docs/reports/GES-0002_M1.3_EVIDENCE_CORRELATION_REPORT.md =====
+# GES-0002 / M1.3 Evidence Correlation Report
+
+**Report**: GES-0002_M1.3_EVIDENCE_CORRELATION_REPORT.md  
+**Milestone**: GES-0002 / M1.3 â€” Business Genome Compiler: Evidence Correlation  
+**Status**: COMPLETE â€” APPROVED FOR M1.4  
+**Branch**: `feature/ges-0002-m1-3-evidence-correlation`  
+**Commit**: `da37893`  
+**Date**: 2026-07-11
+
+---
+
+## SECTION 1: EXECUTIVE SUMMARY
+
+GES-0002 / M1.3 implements the deterministic **Evidence Correlation** stage of the Business Genome Compiler. This milestone extends the BGC pipeline with BGC-PASS-004, which transforms a `GroupedEvidenceCollection` (produced by M1.2 Evidence Grouping) into a `CorrelatedEvidenceCollection` composed of `EvidenceCluster` objects.
+
+### What Was Done
+
+Evidence Correlation determines when multiple Evidence Groups describe the same underlying enterprise reality. It does so exclusively through deterministic mechanisms already present in the Evidence IR and grouped metadata â€” without introducing inference, semantic interpretation, or Business Genome publication.
+
+### What Was Not Done (By Design)
+
+Per the milestone scope:
+
+- No semantic objects were created
+- No business meaning was assigned
+
+===== docs/standards/GPS-0001-Canonical-Identity-Standard.md =====
+# GPS-0001: Genesis Canonical Identity Standard
+
+**Document Type:** Platform Standard (Normative)  
+**Version:** 1.0  
+**Status:** Active  
+**Date:** 2026-07-09  
+**Audience:** Genesis Compiler Engineers (Current and Future)  
+**Stability:** 10-year archival grade  
+
+---
+
+## Executive Summary
+
+This standard defines how every canonical object within the Genesis Enterprise Compiler receives a stable, deterministic identity. Identity generation is the foundation of deterministic compilationâ€”the guarantee that identical input produces identical output across all compiler stages, all programming languages, all operating systems, and all time periods.
+
+This standard is **implementation independent** and **language independent**. It defines required properties of identity systems, not specific algorithms.
+
+**Critical Guarantee:** Two independent implementations following this standard must produce identical identities for identical input, across all platforms, indefinitely.
+
+---
+
+## 1. Purpose
+
+The Genesis Enterprise Compiler transforms business knowledge into deterministic software through multiple compilation stages:
+
+
+===== docs/standards/GPS-0002-Canonicalization-Standard.md =====
+# GPS-0002: Genesis Canonicalization Standard
+
+**Document Type:** Platform Standard (Normative)  
+**Version:** 1.0  
+**Status:** Active  
+**Date:** 2026-07-09  
+**Audience:** Genesis Compiler Engineers (Current and Future)  
+**Stability:** 10-year archival grade  
+
+---
+
+## Executive Summary
+
+This standard defines exactly how information becomes canonical before entering any compiler stage. Canonicalization is the process of transforming diverse representations of the same information into a single, deterministic normal form.
+
+Canonicalization is the prerequisite for deterministic identity generation (GPS-0001). Without consistent canonicalization rules, identical information represented differently would produce different identitiesâ€”breaking the determinism guarantee.
+
+This standard is **implementation independent** and **language independent**. It defines required properties of canonicalization systems, not specific implementations.
+
+**Critical Guarantee:** Two independent implementations following this standard must produce identical canonical forms for semantically identical input, across all platforms, indefinitely.
+
+---
+
+## 1. Purpose
+
+
+===== docs/standards/INDEX-Genesis-Platform-Standards.md =====
+# Genesis Platform Standards Collection
+
+**Document Series:** Genesis Platform Standards (GPS)  
+**Version:** 1.0  
+**Status:** Active  
+**Date:** 2026-07-09  
+**Authority:** Genesis Standards Committee  
+
+---
+
+## Overview
+
+The Genesis Platform Standards define the foundational deterministic rules that enable all compiler stages to achieve reproducible, auditable transformation of business knowledge into enterprise software.
+
+These standards are:
+- **Implementation Independent** (no language or platform preference)
+- **Language Independent** (not tied to TypeScript, Python, etc.)
+- **Operating System Independent** (Windows, Linux, macOS equivalent)
+- **Storage Independent** (works with any database or format)
+- **Archival Grade** (stable for 10+ years)
+
+---
+
+## Standards Directory
+
+
+===== docs/standards/RESPONSE-RAR-Blocking-Conditions.md =====
+# Genesis Platform Standards - Executive Response
+
+**To:** Genesis Architecture Review Board  
+**From:** Genesis Standards Committee  
+**Date:** 2026-07-09  
+**Subject:** Resolution of Blocking Conditions from Evidence IR Architecture Review (RAR-0001)  
+**Status:** READY FOR BOARD APPROVAL  
+
+---
+
+## Executive Summary
+
+The Evidence IR Architecture Review (RAR-0001) identified two blocking conditions that must be resolved before Evidence IR implementation can begin:
+
+1. **Condition 1 (BLOCKING):** Formalize ID Generation Algorithm
+2. **Condition 2 (BLOCKING):** Formalize Canonicalization Rules
+
+This document announces the formal resolution of both conditions through the creation of two Genesis Platform Standards (GPS):
+
+âœ“ **GPS-0001: Genesis Canonical Identity Standard** - Resolves Condition 1  
+âœ“ **GPS-0002: Genesis Canonicalization Standard** - Resolves Condition 2  
+
+**Impact:** These are not Evidence IR-specific specifications. They are **platform-wide standards** that define deterministic rules for the entire Genesis Enterprise Compiler platform, ensuring reproducible compilation across all current and future compiler stages.
+
+**Recommendation:** APPROVE GPS-0001 and GPS-0002 for formal adoption as Genesis Platform Standards. This enables Evidence IR implementation to proceed.
+
+===== genesis/CONSTITUTION.md =====
+# Genesis Constitution
+
+Status: Active constitutional baseline reference  
+Owner: Architecture Review Board
+
+## Constitutional Principles
+
+1. Architecture precedes implementation.
+2. Business metadata is the source of truth.
+3. Determinism, governance, and auditability are mandatory.
+4. Architectural changes require formal RAR -> ARD -> ADR process.
+5. Canonical model boundaries must not be violated.
+
+## Canonical References
+
+1. docs/architecture/0027-ard-0001-business-genome-ir-final-package.md
+2. docs/architecture/0028-afr-0001-genesis-architecture-freeze-record.md
+3. docs/architecture/0029-err-0001-engineering-readiness-review.md
+4. genesis/architecture/standards.md
+
+## Amendment Rule
+
+Constitutional changes require Architecture Review Board approval and an associated ADR.
+
+===== genesis/architecture/EVOLUTION_MODEL.md =====
+# Evolution Model
+
+Status: Approved
+Classification: Genesis Standard
+Type: Living System Model
+
+## Purpose
+
+Define how Genesis evolves as a living knowledge system through governed feedback between reality, research, standards, compilation, and execution.
+
+## Evolution Cycle
+
+Discovery
+
+-> Research
+
+-> Experiment
+
+-> Evidence
+
+-> Peer Review
+
+-> Specification
+
+-> Compiler
+
+===== genesis/architecture/GLOSSARY.md =====
+# Architectural Glossary
+
+Status: Approved
+Classification: Genesis Standard
+Type: Canonical Glossary
+
+## Reality
+
+The enterprise world as it exists independent of software representation.
+
+## Observation
+
+A recorded noticing of a phenomenon in reality or execution context.
+
+## Evidence
+
+A traceable artifact or record that supports or challenges a claim.
+
+## Knowledge
+
+An evidence-grounded claim with context, confidence, and lineage.
+
+## Truth
+
+The most defensible current model of reality given available verified evidence.
+
+===== genesis/architecture/GRA-1.0.md =====
+# GRA 1.0 - Genesis Reference Architecture
+
+Status: Approved
+Classification: Genesis Standard
+Type: Canonical Reference Architecture
+
+## 1. Purpose
+
+GRA 1.0 defines the canonical conceptual architecture of Genesis.
+It establishes how enterprise reality is observed, validated, structured, compiled, executed, and continuously re-observed as a living system.
+
+## 2. Scope
+
+GRA 1.0 covers:
+- conceptual architecture layers and responsibilities
+- enterprise knowledge pipeline
+- compiler pipeline positioning
+- enterprise genome positioning
+- blueprint projection and runtime context
+- feedback and learning loops
+
+GRA 1.0 does not define implementation details, runtime mechanics, or code-generation internals.
+
+## 3. Genesis Philosophy
+
+
+===== genesis/architecture/KNOWLEDGE_FLOW.md =====
+# Knowledge Flow
+
+Status: Approved
+Classification: Genesis Standard
+Type: Conceptual Flow Specification
+
+## Flow Overview
+
+Observation
+
+-> Evidence
+
+-> Knowledge
+
+-> Verification
+
+-> Semantics
+
+-> Genome
+
+-> Blueprint
+
+-> Applications
+
+-> Execution
+
+===== genesis/architecture/LAYERS.md =====
+# Architectural Layers
+
+Status: Approved
+Classification: Genesis Standard
+Type: Layer Model
+
+## Layer 1: Reality
+
+Purpose:
+- represent the enterprise world as it exists independent of software
+
+Inputs:
+- real-world operations, actors, events, constraints, and outcomes
+
+Outputs:
+- observable phenomena
+
+Responsibilities:
+- provide the source domain for all upstream modeling
+
+Dependencies:
+- none
+
+Future evolution:
+- broader observation channels and richer enterprise contexts
+
+===== genesis/architecture/README.md =====
+# Genesis Architecture Library
+
+Status: Approved
+Classification: Genesis Standard
+Type: Reference Architecture Library
+
+## Purpose
+
+The architecture library defines the canonical conceptual architecture of Genesis.
+It unifies constitutional doctrine, research programs, semantic standards, compiler stages, and runtime context into one coherent model.
+
+This library explains system structure and knowledge flow.
+It does not directly change implementation behavior.
+
+## Distinction from Other Genesis Assets
+
+Constitution:
+- defines foundational doctrine and first principles
+- answers what is true and what must constrain the platform
+
+Research:
+- explores hypotheses and collects evidence
+- answers what may become true after validation
+
+Semantics:
+
+===== genesis/architecture/RESPONSIBILITY_MATRIX.md =====
+# Responsibility Matrix
+
+Status: Approved
+Classification: Genesis Standard
+Type: Layer Responsibility Matrix
+
+| Layer | Purpose | Question Answered | Primary Outputs | Primary Consumers |
+|---|---|---|---|---|
+| Reality | Provide the source domain independent of software | What exists? | Observations | Research |
+| Research | Test hypotheses with evidence and method discipline | What might be true? | Findings, experiments, confidence notes | Standards, Architecture Governance |
+| Standards | Stabilize canonical definitions and constraints | What is approved and stable? | Specifications, canonical rules | Compiler Specifications, Genome Specifications, Blueprint and Runtime Specifications |
+| Compiler | Transform governed inputs deterministically | How is validated understanding transformed? | Auditable intermediate representations, validation results | Enterprise Genome |
+| Enterprise Genome | Maintain canonical enterprise structural state and history | What is the validated enterprise model? | Genome state, identity and lineage structures | Blueprint |
+| Blueprint | Project genome state into implementation-oriented forms | What should be built and configured? | Blueprint definitions and projection artifacts | Applications, Runtime Preparation |
+| Runtime | Execute projected systems in operational context | What is happening now in operation? | Execution traces, events, outcomes | Living Enterprise loop, Observation pipelines |
+| Living Enterprise | Close learning loop from execution back to research | What changed and what must be relearned? | New observations, improvement triggers | Research, Standards Evolution |
+
+===== genesis/architecture/SPECIFICATION_MAP.md =====
+# Specification Map
+
+Status: Approved
+Classification: Genesis Standard
+Type: Specification Dependency Model
+
+## Purpose
+
+This map shows dependencies among Genesis specifications.
+It describes specification relationships, not implementation dependencies.
+
+## Specification Families
+
+- GEN: Genesis constitutional, governance, and architectural standards
+- GBS: Genesis Business Semantics standards
+- GCS: Genesis Compiler Specifications
+- GGM: Genesis Genome Model specifications
+- GBP: Genesis Blueprint Projection specifications
+- GRT: Genesis Runtime specifications
+- Future standards: approved extensions and domain-specific specification families
+
+## Dependency Graph
+
+```mermaid
+flowchart TD
+
+===== genesis/architecture/adrs/0012-core-capability-model.md =====
+# ADR-0012 Core Capability Model
+
+Status: Referenced canonical ADR record
+
+This local ADR mirror points to the canonical architecture record:
+
+1. docs/architecture/0012-core-capability-model.md
+
+Use the canonical record for implementation and governance decisions.
+
+
+===== genesis/architecture/adrs/0013-genesis-development-kit.md =====
+# ADR-0013 Genesis Development Kit
+
+Status: Referenced canonical ADR record
+
+This local ADR mirror points to the canonical architecture record:
+
+1. docs/architecture/0013-genesis-development-kit.md
+
+Use the canonical record for implementation and governance decisions.
+
+
+===== genesis/architecture/decisions.md =====
+# Architecture Decisions
+
+This document records the architectural direction for Genesis OS and should be updated as significant design choices are made.
+
+## Decision Principles
+
+- Preserve Clean Architecture boundaries.
+- Keep domain meaning central.
+- Keep runtime orchestration explicit.
+- Favor metadata-driven extensibility over hardcoded implementations.
+
+## Current Direction
+
+- Runtime orchestrates platform behavior.
+- Services host business logic.
+- Repositories handle persistence concerns.
+- UI remains presentation-focused.
+
+===== genesis/architecture/module-template.md =====
+# Module Template
+
+Use this template when creating a new Genesis OS module.
+
+## Structure
+
+- Module folder
+- Domain definitions
+- Services
+- Repositories
+- Runtime integration points
+- UI presentation layer
+
+## Checklist
+
+- The module has a clear business purpose.
+- Its behavior is described by services, not UI code.
+- It exposes runtime hooks when needed.
+- It follows the platform architecture standards.
+
+===== genesis/architecture/runtime-lifecycle.md =====
+# Runtime Lifecycle
+
+The Genesis runtime should boot in a consistent lifecycle that allows metadata, services, events, and modules to initialize predictably.
+
+## Lifecycle Stages
+
+1. Initialize runtime core.
+2. Load metadata definitions.
+3. Validate definitions and relationships.
+4. Register entities and modules.
+5. Initialize search, events, AI, and plugins.
+6. Activate modules and expose runtime services.
+
+## Design Goal
+
+The runtime should act as the central orchestrator for the platform and remain independent from presentation concerns.
+
+===== genesis/architecture/standards.md =====
+# Architecture Standards
+
+## Layer Responsibilities
+
+- Presentation: UI and user interaction
+- Modules: business application surfaces
+- Services: business logic and orchestration
+- Repositories: persistence access
+- Runtime: platform lifecycle and orchestration
+- Domain: business entities and rules
+- Infrastructure: external integrations and adapters
+
+## Standards
+
+- Prefer composition over inheritance.
+- Keep interfaces small and explicit.
+- Avoid duplication by using shared abstractions.
+- Build for long-term evolution and maintainability.
+
+===== genesis/compiler/BGC-0001-Business-Genome-Compiler-Architecture-v1.0.md =====
+# BGC-0001: Business Genome Compiler Architecture v1.0
+
+Document ID: BGC-0001
+Status: Draft for Formal Architecture Review
+Classification: Genesis Compiler Specification
+Type: Architectural Specification
+
+## Normative References
+
+The following references are normative and authoritative.
+This specification references them and does not redefine their responsibilities.
+
+- Constitution
+- Business Language
+- Engineering Standards
+- Architecture Governance
+- EIR-0001 - Evidence IR Specification
+- GPS-0001 - Genesis Canonical Identity Standard
+- GPS-0002 - Genesis Canonicalization Standard
+- BGS-0001 - Business Genome Specification
+
+## 1. Compiler Purpose
+
+The Business Genome Compiler exists to transform canonical Evidence IR into canonical enterprise semantics.
+It is the first semantic compiler boundary in Genesis.
+
+===== genesis/compiler/COMPILER_CORE_ARCHITECTURE_CONFORMANCE_REPORT.md =====
+# Compiler Core Architecture Conformance Report
+
+Document: GCC-0001 Conformance Assessment
+Sprint: GES-0001
+Status: Completed
+
+## Purpose
+
+Assess implementation conformance of the Compiler Core against GCC-0001 and normative references.
+
+## Normative Alignment
+
+References honored (by architecture contract, not redefinition):
+- GCC-0001
+- BGC-0001
+- BGS-0001
+- EIR-0001
+- GPS-0001
+- GPS-0002
+
+## Conformance Matrix
+
+1. Compiler Core Purpose
+- Conformance: PASS
+- Evidence: CompilerCore and CompilerPipeline provide orchestration-only behavior.
+
+===== genesis/compiler/COMPILER_CORE_DOCUMENTATION.md =====
+# Compiler Core Documentation
+
+Document: GES-0001 Implementation Documentation
+Scope: Genesis Compiler Core Implementation v1.0
+Status: Completed
+
+## Overview
+
+The Compiler Core is implemented as the orchestration platform for Genesis compiler passes.
+It executes pass pipelines deterministically, enforces contract-first boundaries, and produces auditable manifests and diagnostics.
+
+The Compiler Core does not perform business semantics or runtime behavior generation.
+
+## Implemented Subsystems
+
+### 1. Compiler Session
+
+Implemented in:
+- src/compiler/core/CompilerSession.ts
+
+Capabilities:
+- lifecycle state transitions
+- session identity
+- metadata tracking
+- restart and replay session creation
+
+===== genesis/compiler/COMPILER_INVARIANTS.md =====
+# Genesis Compiler: Invariants
+
+**Document**: GCS-0001 Supporting  
+**Topic**: Compiler Invariants and Guarantees  
+**Date**: 2026-07-10  
+
+---
+
+## What is an Invariant?
+
+An **invariant** is a property that must be true:
+- **At stage entry** (precondition)
+- **During stage processing** (maintained)
+- **At stage exit** (postcondition)
+
+Invariants are **always enforced**. If an invariant is violated, processing halts with an error.
+
+---
+
+## Global Invariants (All Stages)
+
+### I0: Immutability
+
+**Definition**: No data is ever modified after creation.
+
+
+===== genesis/compiler/GCC-0001-Genesis-Compiler-Core-Architecture-v1.0.md =====
+# GCC-0001: Genesis Compiler Core Architecture v1.0
+
+Document ID: GCC-0001
+Status: Draft for Formal Architecture Review
+Classification: Genesis Compiler Specification
+Type: Architectural Specification
+
+## Normative References
+
+The following references are normative and authoritative.
+This specification references them and does not redefine their responsibilities.
+
+- Constitution
+- Business Language
+- Engineering Standards
+- Architecture Governance
+- GPS-0001
+- GPS-0002
+- EIR-0001
+- BGS-0001
+- BGC-0001
+
+## 1. Compiler Core Purpose
+
+The Compiler Core exists to orchestrate all compiler passes as one deterministic enterprise compiler.
+
+===== genesis/compiler/GCS-0001.md =====
+# GCS-0001: Genesis Compiler Pipeline Specification
+
+**Document**: GCS-0001 (Genesis Compiler Specification v1.0)  
+**Date**: 2026-07-10  
+**Status**: SPECIFICATION (No Implementation Changes)  
+**Scope**: Formal definition of 8-stage Genesis Compiler Pipeline
+
+---
+
+## Executive Summary
+
+The **Genesis Compiler Pipeline** is the canonical transformation system that converts raw enterprise reality into a unified Enterprise Genome, then projects it into operational systems.
+
+The pipeline consists of **8 stages**, each with:
+- Clear input/output contracts
+- Explicit invariants and guarantees
+- Formal validation rules
+- Well-defined trust boundaries
+- Deterministic processing
+
+No stage modifies artifacts from previous stages. Every transformation is immutable, deterministic, and traceable.
+
+---
+
+## 1. Pipeline Architecture
+
+===== genesis/compiler/PIPELINE_DIAGRAM.md =====
+# Genesis Compiler Pipeline: Visual Diagrams
+
+## The Genesis Compiler Pipeline
+
+### High-Level Pipeline Flow
+
+```
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                         GENESIS COMPILER                         â”‚
+â”‚              From Reality to Enterprise Genome                   â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+
+                              Reality
+                                â†“
+                                â†“ (capture sources)
+                                â†“
+                    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                    â”‚     STAGE 1           â”‚
+                    â”‚    DISCOVERY          â”‚
+                    â”‚  PDF, Interviews,     â”‚
+                    â”‚   Documents           â”‚
+                    â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                              â†“ Evidence IR
+                              â†“
+                    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+
+===== genesis/compiler/README.md =====
+# Genesis Compiler Pipeline Specification
+
+This directory contains the formal specification for the **Genesis Compiler Pipeline** - the canonical transformation pipeline that converts Reality into an Enterprise Genome, then projects it into generated systems.
+
+## Overview
+
+The Genesis Compiler is an 8-stage pipeline that:
+
+1. **Captures reality** through structured discovery interviews (Stage 1)
+2. **Transforms evidence** into typed knowledge objects (Stage 2)
+3. **Verifies knowledge** against organizational policies (Stage 3)
+4. **Maps semantics** to canonical business concepts (Stage 4)
+5. **Assembles** the Enterprise Genome (Stage 5)
+6. **Projects domains** into architectural blueprints (Stage 6)
+7. **Generates** operational systems (Stage 7)
+8. **Synchronizes** with runtime execution (Stage 8)
+
+## Key Principles
+
+### Determinism
+Every transformation is deterministic:
+- Identical input â†’ identical output (byte-for-byte)
+- Same execution order across platforms/languages/time
+- No randomness or non-deterministic data structures
+
+
+===== genesis/compiler/STAGE-01_DISCOVERY.md =====
+# STAGE-01: Genesis Discovery Engine
+
+**Stage**: 1 of 8  
+**Name**: Discovery  
+**Purpose**: Capture enterprise reality into immutable Evidence IR  
+**Input**: Enterprise sources (PDFs, interviews, documents)  
+**Output**: Evidence IR (JSON)  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Discovery Stage** transforms unstructured enterprise sources into structured, immutable **Evidence IR**.
+
+This is where reality enters the Genesis pipeline. Everything that follows depends on the quality and completeness of Evidence IR.
+
+### Core Responsibilities
+
+1. **Source Registration**: Identify and register all sources
+2. **Evidence Extraction**: Extract facts from sources (no inference)
+3. **Provenance Preservation**: Track complete lineage to source
+4. **Deterministic Ordering**: Ensure reproducible processing
+5. **Immutable Recording**: Create permanent Evidence IR
+
+
+===== genesis/compiler/STAGE-02_EVIDENCE_COMPILER.md =====
+# STAGE-02: Evidence Compiler
+
+**Stage**: 2 of 8  
+**Name**: Evidence Compiler  
+**Purpose**: Transform Evidence IR into typed Enterprise Knowledge Objects (EKOs)  
+**Input**: Evidence IR (from Stage 1)  
+**Output**: Enterprise Knowledge Objects (EKOs) with confidence scores  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Evidence Compiler** transforms untyped evidence facts into **strongly typed** Enterprise Knowledge Objects (EKOs).
+
+This stage answers: "What does the evidence MEAN in terms of business knowledge?"
+
+### Core Responsibilities
+
+1. **Type Extraction**: Categorize evidence into knowledge types
+2. **Confidence Scoring**: Assign initial confidence (0.0 - 1.0)
+3. **Evidence Association**: Link EKOs to source evidence
+4. **Lineage Preservation**: Maintain complete traceability
+5. **Deterministic Compilation**: Reproducible across runs
+
+
+===== genesis/compiler/STAGE-03_KNOWLEDGE_VERIFICATION.md =====
+# STAGE-03: Knowledge Verification
+
+**Stage**: 3 of 8  
+**Name**: Knowledge Verification  
+**Purpose**: Verify EKOs against organizational policies and other sources  
+**Input**: Enterprise Knowledge Objects (EKOs) from Stage 2  
+**Output**: Verified EKOs with updated confidence scores  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Knowledge Verification** stage validates EKOs against organizational rules, compares evidence from multiple sources, and updates confidence scores based on verification results.
+
+This is where conflicting information is detected and resolved.
+
+### Core Responsibilities
+
+1. **Rule Verification**: Check EKOs against policies
+2. **Conflict Detection**: Find contradictions
+3. **Cross-Reference**: Compare multiple sources
+4. **Confidence Updating**: Adjust scores based on verification
+5. **Resolution**: Apply conflict resolution rules
+
+
+===== genesis/compiler/STAGE-04_SEMANTIC_MAPPING.md =====
+# STAGE-04: Semantic Mapping
+
+**Stage**: 4 of 8  
+**Name**: Semantic Mapping  
+**Purpose**: Map verified EKOs to canonical business semantics (Genesis Business Semantics - GBS)  
+**Input**: Verified EKOs from Stage 3  
+**Output**: Canonical EKOs (GBS-aligned)  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Semantic Mapping** stage normalizes EKOs to canonical business concepts defined in Genesis Business Semantics (GBS).
+
+This ensures that different organizations using the same concepts refer to them consistently.
+
+### Core Responsibilities
+
+1. **Semantic Resolution**: Map EKOs to canonical concepts
+2. **Alias Resolution**: Standardize terminology
+3. **Relationship Validation**: Ensure semantic consistency
+4. **Semantic Normalization**: Create canonical forms
+5. **Cross-Organization Alignment**: Apply GBS standards
+
+
+===== genesis/compiler/STAGE-05_ENTERPRISE_GENOME.md =====
+# STAGE-05: Enterprise Genome Assembly
+
+**Stage**: 5 of 8  
+**Name**: Enterprise Genome Assembly  
+**Purpose**: Assemble canonical EKOs into unified Enterprise Genome  
+**Input**: Canonical EKOs (from Stage 4)  
+**Output**: Enterprise Genome (comprehensive enterprise model)  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Enterprise Genome Assembly** stage creates a unified, comprehensive model of the enterprise from canonical EKOs.
+
+The Enterprise Genome is the single source of truth for enterprise structure and capabilities.
+
+### Core Responsibilities
+
+1. **Identity Graph**: Who/what exists in the enterprise
+2. **Capability Graph**: What the enterprise can do
+3. **Relationship Graph**: How things connect
+4. **Organizational Structure**: Hierarchy and roles
+5. **Behavioral Structure**: How systems behave
+6. **Policy Graph**: Rules and constraints
+
+===== genesis/compiler/STAGE-06_BLUEPRINT.md =====
+# STAGE-06: Blueprint Projection
+
+**Stage**: 6 of 8  
+**Name**: Blueprint Projection  
+**Purpose**: Project Enterprise Genome into domain-specific architectural blueprints  
+**Input**: Enterprise Genome (from Stage 5)  
+**Output**: Enterprise Blueprint (domain projections)  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Blueprint Projection** stage creates domain-specific architectural views of the Enterprise Genome.
+
+Each blueprint is a projection optimized for a specific purpose (CRM, ERP, HR, etc.).
+
+### Core Responsibilities
+
+1. **Domain Projection**: Filter genome for specific domain
+2. **Module Definition**: Define deployment units
+3. **API Contracts**: Specify service interfaces
+4. **Data Models**: Define information structures
+5. **Workflow Definition**: Specify process flows
+6. **UI/UX Projection**: Define user interactions
+
+===== genesis/compiler/STAGE-07_SOLUTION_PROJECTION.md =====
+# STAGE-07: Solution Projection
+
+**Stage**: 7 of 8  
+**Name**: Solution Projection  
+**Purpose**: Generate operational systems from architectural blueprints  
+**Input**: Enterprise Blueprint (from Stage 6)  
+**Output**: Generated Systems (CRM, ERP, HR, APIs, UIs, etc.)  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Solution Projection** stage generates complete, production-ready operational systems from architectural blueprints.
+
+This is where the design becomes executable software.
+
+### Core Responsibilities
+
+1. **Code Generation**: Create application code
+2. **API Implementation**: Generate service endpoints
+3. **Database Schema**: Create data persistence
+4. **UI Generation**: Create user interfaces
+5. **Configuration**: Create deployment configs
+6. **Documentation**: Generate system documentation
+
+===== genesis/compiler/STAGE-08_RUNTIME.md =====
+# STAGE-08: Runtime Synchronization
+
+**Stage**: 8 of 8  
+**Name**: Runtime Synchronization  
+**Purpose**: Execute systems and capture new evidence for continuous learning  
+**Input**: Generated Systems (from Stage 7)  
+**Output**: Living Enterprise (operational systems + feedback loop)  
+**Specification**: GCS-0001  
+
+---
+
+## 1. Purpose
+
+The **Runtime Synchronization** stage executes operational systems and captures observations back into the Evidence IR pipeline.
+
+This creates the feedback loop: Reality â†’ Evidence â†’ Knowledge â†’ Systems â†’ Execution â†’ New Evidence â†’ ...
+
+### Core Responsibilities
+
+1. **System Execution**: Run operational systems
+2. **Observation Capture**: Record system behavior
+3. **Change Detection**: Identify deviations
+4. **Evidence Generation**: Create new Evidence IR
+5. **Feedback Loop**: Feed observations back to Stage 1
+6. **Continuous Learning**: Update knowledge over time
+
+===== genesis/compiler/TRUST_BOUNDARIES.md =====
+# Genesis Compiler: Trust Boundaries
+
+**Document**: GCS-0001 Supporting  
+**Topic**: Trust Boundaries and Assumptions  
+**Date**: 2026-07-10  
+
+---
+
+## What is a Trust Boundary?
+
+A **trust boundary** is where one stage of the pipeline makes explicit assumptions about the output of the previous stage.
+
+When Stage N processes output from Stage N-1, it **trusts that**:
+- The format is correct
+- The structure is valid
+- The content is accurate
+- The invariants hold
+
+If these assumptions are violated, Stage N's behavior is undefined.
+
+---
+
+## Trust Boundaries in the Genesis Pipeline
+
+### Boundary B1: Reality â†’ Stage 1 (Discovery)
+
+===== genesis/constitution/GENESIS_FIRST_PRINCIPLES.md =====
+# Genesis First Principles
+
+This document captures foundational doctrine discovered so far.
+It establishes constraints, not product messaging.
+
+## What is Reality?
+
+Reality is the state of the world independent of software representations.
+Reality includes people, organizations, events, obligations, assets, and outcomes that exist whether or not they are modeled.
+Software can observe, encode, and project reality, but software does not create reality itself.
+
+## What is a Business?
+
+A business is an organized system of purpose, actors, capabilities, obligations, and value exchange over time.
+It is not equivalent to any one application, schema, or process engine.
+A business has structure and behavior that can be discovered, represented, and verified.
+
+## What is Knowledge?
+
+Knowledge is a structured claim about reality that has sufficient evidence, context, and lineage to be trusted and reused.
+Knowledge is not raw data and not unsupported assertion.
+Knowledge must preserve traceability to its evidentiary basis.
+
+## What is Evidence?
+
+
+===== genesis/development/coding-standards.md =====
+# Coding Standards
+
+## General Rules
+
+- Use TypeScript.
+- Prefer strict typing.
+- Avoid any.
+- Keep implementations focused and explicit.
+- Favor composition over inheritance.
+- Follow SOLID principles.
+
+## Architecture Alignment
+
+- Place business logic in services.
+- Place persistence access in repositories.
+- Keep UI components presentation-focused.
+- Make runtime behavior explicit and testable.
+
+===== genesis/genome/BGS-0001-Business-Genome-Specification-v1.0.md =====
+# BGS-0001: Business Genome Specification v1.0
+
+Status: Draft for Formal Governance Review
+Program: Business Genome Program
+Program ID: BGP-0001
+Classification: Genesis Standard
+Type: Foundational Specification
+
+## 1. Purpose
+
+The Business Genome exists to provide the canonical semantic representation of an enterprise.
+It answers a different question than Evidence IR.
+
+Evidence IR asks:
+What evidence exists?
+
+Business Genome asks:
+What enterprise does this evidence describe?
+
+Business Genome solves the semantic gap between evidence capture and enterprise design projection by:
+- organizing evidence-backed meaning into stable enterprise semantics
+- preserving provenance for every semantic assertion
+- establishing deterministic, auditable semantic structure
+- producing a canonical enterprise model suitable for downstream blueprint projection
+
+
+===== genesis/language/naming-standards.md =====
+# Naming Standards
+
+## Object Naming
+
+- Use singular business nouns for entities.
+- Prefer domain names that are meaningful to operations.
+- Use consistent casing and clear vocabulary.
+
+## Relationship Naming
+
+- Name relationships in business terms.
+- Prefer verbs or descriptive phrases such as owns, belongs to, relates to, and depends on.
+- Avoid vague technical naming.
+
+## Event Naming
+
+- Name events as business occurrences.
+- Use past-tense or action-based phrasing such as CustomerCreated, QuoteApproved, TaskCompleted.
+- Keep event names precise and observable.
+
+## Lifecycle and Status Naming
+
+- Use lifecycle stages that reflect real operating states.
+- Use status names that are stable, understandable, and consistent.
+- Avoid internal implementation language in status naming.
+
+===== genesis/research/evidence/README.md =====
+# Research Evidence Policy
+
+Status: Approved
+Classification: Genesis Research Process
+
+## Purpose
+
+Define how research evidence is collected, qualified, and evaluated before findings can influence standards or implementation specifications.
+
+## Acceptable Evidence Types
+
+- source-attributed operational records
+- audited event logs with provenance
+- reproducible experiment outputs
+- versioned models with lineage metadata
+- controlled comparative studies with traceable datasets
+
+## Source Requirements
+
+All evidence must include:
+- source identity
+- collection timestamp or version marker
+- context of collection
+- integrity notes where applicable
+
+
+===== genesis/research/peer-review/README.md =====
+# Peer Review Process
+
+Status: Approved
+Classification: Genesis Research Process
+
+## Review Purpose
+
+Peer review validates that research methods, evidence, and conclusions are rigorous enough to support discovery promotion.
+It is a quality control gate, not a formality.
+
+## Reviewer Expectations
+
+Reviewers must assess:
+- hypothesis falsifiability
+- evidence quality and lineage
+- method repeatability
+- interpretation validity and alternative explanations
+- stated limitations and unresolved risks
+
+## Approval Criteria
+
+A review is approved when:
+- methodology is reproducible
+- evidence meets quality requirements
+- conclusions follow from results
+
+===== genesis/roadmap/releases.md =====
+# Genesis OS Releases
+
+## Release 0.1 - Foundation
+
+- Documentation and architecture baseline.
+- Initial runtime and metadata concepts.
+
+## Release 0.2 - Core Platform
+
+- Module skeletons and shared services.
+- Initial repository and event infrastructure.
+
+## Release 0.3 - Enterprise Capability
+
+- Broader module coverage and automation hooks.
+- AI and integration readiness.
+

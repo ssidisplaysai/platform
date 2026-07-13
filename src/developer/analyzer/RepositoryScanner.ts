@@ -4,7 +4,7 @@
  *
  * The RepositoryScanner discovers all documents in a repository,
  * extracts basic file information, and produces deterministically
- * ordered document lists.
+ * ordered document lists for repository compilation.
  */
 
 import { promises as fs } from 'fs';
