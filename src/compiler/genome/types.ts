@@ -11,6 +11,7 @@ import type {
   ResolvedRelationshipCollection,
   BusinessGenomeIdentityCollection,
   BusinessGenomeGraph,
+  BusinessGenomeValidationResult,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 
@@ -165,6 +166,7 @@ export interface BusinessGenomeIntermediateCompilation {
   readonly resolvedRelationships: ResolvedRelationshipCollection | null;
   readonly identityAssignment: BusinessGenomeIdentityCollection | null;
   readonly graph: BusinessGenomeGraph | null;
+  readonly validation: BusinessGenomeValidationResult | null;
 }
 
 export interface BusinessGenomeCompilerOutput {

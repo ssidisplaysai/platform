@@ -21,6 +21,7 @@ export {
   SemanticRelationshipResolutionPass,
   SemanticIdentityAssignmentPass,
   GraphConstructionPass,
+  ConsistencyValidationPass,
 } from "./passes";
 
 export { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "./diagnostics";
@@ -91,5 +92,9 @@ export type {
   NodeConstructionResult,
   EdgeConstructionResult,
   BusinessGenomeGraph,
+  GraphInvariantViolation,
+  ValidationSummary,
+  ValidationContext,
+  BusinessGenomeValidationResult,
   BusinessGenomePassResult,
 } from "./pipeline-types";

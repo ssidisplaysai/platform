@@ -744,6 +744,90 @@ export interface BusinessGenomeGraph {
   readonly businessGenomeIdentityCollection: BusinessGenomeIdentityCollection;
 }
 
+// ─── Consistency Validation (BGC-PASS-010) ─────────────────────────────────
+
+/**
+ * A single structural violation found during graph validation.
+ * Violations are diagnosed but NOT repaired.
+ */
+export interface GraphInvariantViolation {
+  readonly violationCode: string;
+  readonly violationSeverity: "error" | "warning" | "info";
+  readonly invariantType:
+    | "unique-node-identities"
+    | "unique-edge-identities"
+    | "source-node-exists"
+    | "target-node-exists"
+    | "node-provenance-present"
+    | "edge-provenance-present"
+    | "lineage-preserved"
+    | "deterministic-ordering"
+    | "graph-identity-reproducible"
+    | "graph-checksum-reproducible"
+    | "no-orphan-references"
+    | "compiler-metadata-present";
+  readonly description: string;
+  readonly affectedNodeIds?: readonly string[];
+  readonly affectedEdgeIds?: readonly string[];
+  readonly diagnosticDetails?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * Aggregate validation statistics across all invariants.
+ */
+export interface ValidationSummary {
+  readonly totalInvariants: number;
+  readonly invariantsPassed: number;
+  readonly invariantsFailed: number;
+  readonly violationCount: number;
+  readonly errorViolations: number;
+  readonly warningViolations: number;
+  readonly infoViolations: number;
+  readonly validationStatus: "passed" | "failed" | "warnings";
+}
+
+/**
+ * Validation rule version tracking and metadata.
+ */
+export interface ValidationContext {
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly gps0001Version: string;
+  readonly gps0002Version: string;
+  readonly compilerVersion: string;
+  readonly specificationVersion: string;
+  readonly validationTimestamp: string; // Deterministic: "2024-01-01T00:00:00Z"
+  readonly validationRuleId: string;
+  readonly validationRuleVersion: string;
+}
+
+/**
+ * Complete validation result for BusinessGenomeGraph.
+ * Graph is NOT modified. All violations are documented.
+ * Validation is deterministic and reproducible.
+ */
+export interface BusinessGenomeValidationResult {
+  readonly graphId: string; // Original graph ID (unchanged)
+  readonly sourceEvidenceIrIdentity: string;
+  readonly validationStatus: "valid" | "invalid" | "valid-with-warnings";
+  readonly violations: readonly GraphInvariantViolation[]; // Sorted deterministically
+  readonly summary: ValidationSummary;
+  readonly context: ValidationContext;
+  readonly diagnostics: readonly CompilerDiagnostic[]; // Sorted deterministically
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly specificationVersion: string;
+  readonly compilerVersion: string;
+  readonly validationHistoryChecksum: string; // Deterministic checksum of all validations
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+  readonly businessGenomeGraph: BusinessGenomeGraph; // Original graph preserved
+}
+
 export function deterministicIdentity(prefix: string, value: unknown): string {
   const checksum = SourceHash.sha256(stableStringify(value));
   return `${prefix}_${checksum}_v1`;
