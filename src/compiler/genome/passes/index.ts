@@ -6,3 +6,4 @@ export { SemanticResolutionPass } from "./SemanticResolutionPass";
 export { SemanticConsolidationPass } from "./SemanticConsolidationPass";
 export { SemanticRelationshipResolutionPass } from "./SemanticRelationshipResolutionPass";
 export { SemanticIdentityAssignmentPass } from "./SemanticIdentityAssignmentPass";
+export { GraphConstructionPass } from "./GraphConstructionPass";

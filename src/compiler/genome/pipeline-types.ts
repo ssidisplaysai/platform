@@ -610,6 +610,140 @@ export interface BusinessGenomeIdentityCollection {
   readonly resolvedRelationships: ResolvedRelationshipCollection;
 }
 
+// ─── Graph Construction (BGC-PASS-009) ────────────────────────────────────
+
+/**
+ * A Business Genome Graph node representing a canonical semantic object.
+ *
+ * Each node originates directly from a BusinessGenomeIdentity of kind
+ * "semantic-object". Nodes are immutable projections of canonical semantics.
+ *
+ * No nodes are synthesized; every node has a source in the identities.
+ */
+export interface BusinessGenomeNode {
+  readonly id: string;  // Canonical identity from BusinessGenomeIdentity
+  readonly semanticClass: string;  // From BusinessGenomeIdentity.semanticClass
+  readonly canonicalDesignation: string;  // From consolidated semantic designation
+  readonly sourceIdentityId: string;  // Which BusinessGenomeIdentity created this node
+  readonly sourceConsolidatedSemanticId: string;  // Traced to original semantic
+  readonly provenanceReferences: readonly string[];  // Full provenance trail
+  readonly evidenceLineage: readonly string[];  // All evidence items
+  readonly sourceEvidenceIrIdentity: string;  // Root evidence IR
+  readonly constructedAt: string;  // ISO timestamp of construction (deterministic)
+  readonly certainty: {
+    readonly state: "certain" | "uncertain";
+    readonly confidence: number;
+  };
+  readonly validationStatus: {
+    readonly valid: boolean;
+    readonly violations: readonly string[];
+  };
+  readonly graphConstructionContext: GraphConstructionContext;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * A Business Genome Graph edge representing a canonical semantic relationship.
+ *
+ * Each edge originates directly from a BusinessGenomeIdentity of kind
+ * "semantic-relationship". Edges link two nodes and are immutable.
+ *
+ * No edges are synthesized; every edge has a source in the identities.
+ */
+export interface BusinessGenomeEdge {
+  readonly id: string;  // Canonical identity from BusinessGenomeIdentity
+  readonly relationshipType: string;  // From BusinessGenomeIdentity.relationshipType
+  readonly sourceNodeId: string;  // Target node canonical ID
+  readonly targetNodeId: string;  // Target node canonical ID
+  readonly sourceIdentityId: string;  // Which BusinessGenomeIdentity created this edge
+  readonly sourceRelationshipId: string;  // Traced to original relationship
+  readonly provenanceReferences: readonly string[];  // Full provenance trail
+  readonly evidenceLineage: readonly string[];  // All evidence items
+  readonly sourceEvidenceIrIdentity: string;  // Root evidence IR
+  readonly constructedAt: string;  // ISO timestamp of construction (deterministic)
+  readonly certainty: {
+    readonly state: "certain" | "uncertain";
+    readonly confidence: number;
+  };
+  readonly validationStatus: {
+    readonly valid: boolean;
+    readonly violations: readonly string[];
+  };
+  readonly graphConstructionContext: GraphConstructionContext;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * Context tracking which rule and compiler version constructed this graph.
+ */
+export interface GraphConstructionContext {
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly compilerVersion: string;
+  readonly specificationVersion: string;
+  readonly ruleId: string;
+  readonly ruleVersion: string;
+  readonly rationaleCode: string;
+  readonly gps0001Version: string;
+  readonly gps0002Version: string;
+}
+
+/**
+ * Per-node construction result tracking outcome.
+ */
+export interface NodeConstructionResult {
+  readonly canonicalNodeId: string;
+  readonly sourceIdentityId: string;
+  readonly constructed: boolean;
+  readonly constructionRuleId: string;
+  readonly constructionRuleVersion: string;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * Per-edge construction result tracking outcome.
+ */
+export interface EdgeConstructionResult {
+  readonly canonicalEdgeId: string;
+  readonly sourceIdentityId: string;
+  readonly constructed: boolean;
+  readonly sourceNodeId: string;
+  readonly targetNodeId: string;
+  readonly constructionRuleId: string;
+  readonly constructionRuleVersion: string;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * The complete output of BGC-PASS-009 (Graph Construction).
+ *
+ * Contains the Business Genome Graph: a deterministic, immutable, ordered
+ * projection of all canonical semantic objects and relationships.
+ *
+ * Graph is NOT validated or published in this pass.
+ */
+export interface BusinessGenomeGraph {
+  readonly id: string;
+  readonly sourceEvidenceIrIdentity: string;
+  readonly nodes: readonly BusinessGenomeNode[];  // Sorted deterministically
+  readonly edges: readonly BusinessGenomeEdge[];  // Sorted deterministically
+  readonly nodeConstructionResults: readonly NodeConstructionResult[];
+  readonly edgeConstructionResults: readonly EdgeConstructionResult[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly specificationVersion: string;
+  readonly compilerVersion: string;
+  readonly graphConstructionVersion: string;
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+  readonly businessGenomeIdentityCollection: BusinessGenomeIdentityCollection;
+}
+
 export function deterministicIdentity(prefix: string, value: unknown): string {
   const checksum = SourceHash.sha256(stableStringify(value));
   return `${prefix}_${checksum}_v1`;
