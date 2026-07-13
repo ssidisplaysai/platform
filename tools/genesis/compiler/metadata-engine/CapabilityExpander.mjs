@@ -48,7 +48,21 @@ export function expandCapabilities(capabilitiesMetadata) {
 
       if (name === 'permissions') {
         capabilities.permissions = true;
-        capabilities.permissionRoles = config.roles || [];
+        // Normalize roles: handle string, array, undefined, empty
+        let roles = config.roles || [];
+        if (typeof roles === 'string') {
+          // Handle inline array syntax like "[admin, manager]" or single role like "admin"
+          if (roles.startsWith('[') && roles.endsWith(']')) {
+            roles = roles.slice(1, -1).split(',').map(r => r.trim()).filter(r => r.length > 0);
+          } else {
+            roles = [roles];
+          }
+        }
+        if (!Array.isArray(roles)) {
+          roles = [];
+        }
+        // Ensure all roles are strings and deduplicate
+        capabilities.permissionRoles = [...new Set(roles.map(r => String(r).toLowerCase()).filter(r => r))];
       }
 
       if (name === 'events') {

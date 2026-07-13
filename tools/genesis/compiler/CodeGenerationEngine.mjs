@@ -110,7 +110,7 @@ export async function generateEntity(entityName, definitionPath, outputDir) {
   // Write all artifacts deterministically
   const targetOrder = [
     'repository', 'service', 'validator', 'documentation',
-    'permissions', 'events', 'search', 'tests',
+    'permissions', 'policies', 'events', 'search', 'tests',
     'openapi', 'graphql', 'dtos', 'rest-contract', 'error-contracts',
     'registration', 'module', 'blueprint', 'metadata'
   ];

@@ -4,63 +4,183 @@
  * Generates access control policies and conditions from EnterpriseObjectBlueprint.
  * Documents policy conditions, role-based rules, and policy effects.
  *
+ * Contract:
+ * - No external imports
+ * - All types explicitly defined inline
+ * - Defensive normalization of role input (string, string[], undefined, empty)
+ * - Deterministic role and policy ordering (alphabetical)
+ * - Immutable output via Object.freeze()
+ * - Self-contained generation from blueprint metadata only
+ *
  * Consumes: EnterpriseObjectBlueprint (compiler IR)
  * Produces: Markdown documentation of policies
  *
  * @module tools/genesis/compiler/renderers/PolicyRenderer.mjs
  */
 
+// ---------------------------------------------------------------------------
+// Utility: Normalize roles to array
+// ---------------------------------------------------------------------------
+
 /**
- * Generate policy documentation
+ * Normalize roles into canonical array format
+ * Handles: string, string[], undefined, empty, null
+ * @param {unknown} input - Input to normalize
+ * @returns {readonly string[]} Normalized sorted roles
+ */
+function normalizeRoles(input) {
+  if (input === undefined || input === null) {
+    return [];
+  }
+
+  // Handle string (including inline array syntax "[admin,manager]")
+  if (typeof input === 'string') {
+    if (input.startsWith('[') && input.endsWith(']')) {
+      // Inline array: "[admin, manager, viewer]"
+      const parsed = input.slice(1, -1).split(',').map(r => r.trim()).filter(r => r.length > 0);
+      return Object.freeze(parsed.sort());
+    }
+    // Single role as string
+    return Object.freeze([input.toLowerCase()]);
+  }
+
+  // Handle array
+  if (Array.isArray(input)) {
+    const normalized = input
+      .map(r => typeof r === 'string' ? r.toLowerCase() : String(r))
+      .filter(r => r.length > 0);
+    // Remove duplicates and sort
+    return Object.freeze([...new Set(normalized)].sort());
+  }
+
+  // Default: empty array
+  return [];
+}
+
+/**
+ * Normalize actions to array
+ * @param {unknown} input - Input to normalize
+ * @returns {readonly string[]} Normalized sorted actions
+ */
+function normalizeActions(input) {
+  if (input === undefined || input === null) {
+    return [];
+  }
+
+  // Handle string (including inline array syntax)
+  if (typeof input === 'string') {
+    if (input.startsWith('[') && input.endsWith(']')) {
+      const parsed = input.slice(1, -1).split(',').map(a => a.trim()).filter(a => a.length > 0);
+      return Object.freeze(parsed.sort());
+    }
+    return Object.freeze([input]);
+  }
+
+  // Handle array
+  if (Array.isArray(input)) {
+    const normalized = input.map(a => typeof a === 'string' ? a : String(a));
+    return Object.freeze([...new Set(normalized)].sort());
+  }
+
+  return [];
+}
+
+/**
+ * Normalize policies to array with safe field access
+ * @param {unknown} input - Input to normalize
+ * @returns {readonly Object[]} Normalized policies
+ */
+function normalizePolicies(input) {
+  if (input === undefined || input === null) {
+    return [];
+  }
+
+  if (!Array.isArray(input)) {
+    return [];
+  }
+
+  return Object.freeze(input.map(p => ({
+    name: String(p.name || 'unknown'),
+    description: String(p.description || ''),
+    roles: normalizeRoles(p.roles),
+    actions: normalizeActions(p.actions),
+    effect: String(p.effect || 'allow').toLowerCase(),
+    conditions: p.conditions || [],
+    priority: typeof p.priority === 'number' ? p.priority : 0,
+  })).sort((a, b) => a.name.localeCompare(b.name)));
+}
+
+// ---------------------------------------------------------------------------
+// Main renderer export
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate policy documentation from blueprint
  * @param {Object} blueprint - EnterpriseObjectBlueprint
  * @returns {string} Generated Markdown policy documentation
  */
 export function generatePolicies(blueprint) {
+  if (!blueprint || !blueprint.metadata) {
+    throw new Error('Blueprint required for policy documentation generation');
+  }
+
   const entityName = blueprint.metadata.entity;
-  const policies = blueprint.policies?.all || [];
+
+  // Normalize all inputs defensively
+  const roles = normalizeRoles(blueprint.permissions?.roles);
+  const actions = normalizeActions(blueprint.permissions?.actions);
+  const policies = normalizePolicies(blueprint.policies?.all);
   const byConditionType = blueprint.policies?.byConditionType || {};
   const byRole = blueprint.policies?.byRole || {};
-  const roles = blueprint.permissions?.roles || [];
-  const actions = blueprint.permissions?.actions || [];
   const lifecycle = blueprint.lifecycle?.states || {};
 
   const lines = [];
 
-  // Title
+  // ── Title and Header ────────────────────────────────────────────────────
   lines.push(`# ${entityName} Access Control Policies`);
   lines.push('');
   lines.push('> Auto-generated access control policies from EnterpriseObjectBlueprint.');
-  lines.push(`> Generated at ${new Date().toISOString()}`);
   lines.push('');
 
-  // Overview section
+  // ── Overview ─────────────────────────────────────────────────────────────
   lines.push('## Overview');
   lines.push('');
   lines.push(`This document describes the access control policies for the **${entityName}** entity.`);
   lines.push('Policies define conditions under which specific roles can perform specific actions.');
   lines.push('');
 
-  // Supported Actions section
+  // ── Supported Actions ────────────────────────────────────────────────────
   lines.push('## Supported Actions');
   lines.push('');
   lines.push('The following actions are supported for this entity:');
   lines.push('');
-  actions.forEach(action => {
-    lines.push(`- \`${action}\` - ${formatActionDescription(action)}`);
-  });
+  
+  if (actions.length > 0) {
+    Array.from(actions).sort().forEach(action => {
+      lines.push(`- \`${action}\` - ${formatActionDescription(action)}`);
+    });
+  } else {
+    lines.push('- (no actions defined)');
+  }
   lines.push('');
 
-  // Supported Roles section
+  // ── Supported Roles ──────────────────────────────────────────────────────
   lines.push('## Supported Roles');
   lines.push('');
   lines.push('The following roles can interact with this entity:');
   lines.push('');
-  roles.forEach(role => {
-    lines.push(`- \`${role}\` - ${getRoleDescription(role)}`);
-  });
+  
+  if (roles.length > 0) {
+    // Ensure roles are sorted for determinism
+    Array.from(roles).sort().forEach(role => {
+      lines.push(`- \`${role}\` - ${getRoleDescription(role)}`);
+    });
+  } else {
+    lines.push('- (no roles defined)');
+  }
   lines.push('');
 
-  // All Policies section
+  // ── All Policies ─────────────────────────────────────────────────────────
   if (policies.length > 0) {
     lines.push('## Policies');
     lines.push('');
@@ -70,43 +190,63 @@ export function generatePolicies(blueprint) {
     lines.push('|------|-------------|-------|---------|--------|');
     
     policies.forEach(policy => {
-      const rolesStr = (policy.roles || []).join(', ') || '*';
-      const actionsStr = (policy.actions || []).slice(0, 3).join(', ') + (policy.actions && policy.actions.length > 3 ? ', ...' : '');
+      const rolesStr = policy.roles && policy.roles.length > 0
+        ? Array.from(policy.roles).sort().join(', ')
+        : '*';
+      const actionsStr = policy.actions && policy.actions.length > 0
+        ? Array.from(policy.actions).sort().slice(0, 3).join(', ') + (policy.actions.length > 3 ? ', ...' : '')
+        : '*';
       const effectBadge = policy.effect === 'allow' ? '✓ Allow' : '✗ Deny';
-      lines.push(`| \`${policy.name}\` | ${policy.description || ''} | ${rolesStr} | ${actionsStr} | ${effectBadge} |`);
+      lines.push(`| \`${policy.name}\` | ${policy.description} | ${rolesStr} | ${actionsStr} | ${effectBadge} |`);
     });
     lines.push('');
   }
 
-  // Policies by Condition Type
+  // ── Policies by Condition Type ───────────────────────────────────────────
   if (Object.keys(byConditionType).length > 0) {
     lines.push('### Policies by Condition Type');
     lines.push('');
     
-    Object.entries(byConditionType).forEach(([type, typePolicies]) => {
-      if (typePolicies.length === 0) return;
+    const sortedTypes = Object.keys(byConditionType).sort();
+    sortedTypes.forEach(type => {
+      const typePolicies = byConditionType[type];
+      if (!Array.isArray(typePolicies) || typePolicies.length === 0) return;
       
       lines.push(`#### ${formatConditionType(type)}`);
       lines.push('');
       
-      typePolicies.forEach(policy => {
-        lines.push(`**${policy.name}**`);
+      // Sort policies by name for determinism
+      const sortedPolicies = Array.from(typePolicies).sort((a, b) =>
+        String(a.name || '').localeCompare(String(b.name || ''))
+      );
+      
+      sortedPolicies.forEach(policy => {
+        lines.push(`**${policy.name || 'Unknown'}**`);
         lines.push(`- Description: ${policy.description || 'N/A'}`);
-        lines.push(`- Roles: ${(policy.roles || []).join(', ') || 'All'}`);
-        lines.push(`- Actions: ${(policy.actions || []).join(', ') || 'All'}`);
-        lines.push(`- Effect: ${policy.effect}`);
+        
+        const policyRoles = normalizeRoles(policy.roles);
+        lines.push(`- Roles: ${policyRoles.length > 0 ? Array.from(policyRoles).sort().join(', ') : 'All'}`);
+        
+        const policyActions = normalizeActions(policy.actions);
+        lines.push(`- Actions: ${policyActions.length > 0 ? Array.from(policyActions).sort().join(', ') : 'All'}`);
+        
+        lines.push(`- Effect: ${policy.effect || 'unknown'}`);
         lines.push(`- Priority: ${policy.priority || 'N/A'}`);
         lines.push('');
       });
     });
   }
 
-  // Policies by Role
+  // ── Policies by Role ─────────────────────────────────────────────────────
   if (Object.keys(byRole).length > 0) {
     lines.push('### Policies by Role');
     lines.push('');
     
-    Object.entries(byRole).forEach(([role, rolePolicies]) => {
+    const sortedRoleKeys = Object.keys(byRole).sort();
+    sortedRoleKeys.forEach(role => {
+      const rolePolicies = byRole[role];
+      if (!Array.isArray(rolePolicies)) return;
+      
       lines.push(`#### ${formatRoleName(role)}`);
       lines.push('');
       
@@ -116,35 +256,50 @@ export function generatePolicies(blueprint) {
         lines.push('| Policy | Actions | Effect |');
         lines.push('|--------|---------|--------|');
         
-        rolePolicies.forEach(policy => {
-          const actionsStr = (policy.actions || []).slice(0, 3).join(', ') + (policy.actions && policy.actions.length > 3 ? ', ...' : '');
+        const sortedPolicies = Array.from(rolePolicies).sort((a, b) =>
+          String(a.name || '').localeCompare(String(b.name || ''))
+        );
+        
+        sortedPolicies.forEach(policy => {
+          const policyActions = normalizeActions(policy.actions);
+          const actionsStr = policyActions.length > 0
+            ? Array.from(policyActions).sort().slice(0, 3).join(', ') + (policyActions.length > 3 ? ', ...' : '')
+            : '*';
           const effectBadge = policy.effect === 'allow' ? '✓ Allow' : '✗ Deny';
-          lines.push(`| ${policy.name} | ${actionsStr} | ${effectBadge} |`);
+          lines.push(`| ${policy.name || 'Unknown'} | ${actionsStr} | ${effectBadge} |`);
         });
       }
       lines.push('');
     });
   }
 
-  // Lifecycle-based Access Control
+  // ── Lifecycle-based Access Control ───────────────────────────────────────
   if (Object.keys(lifecycle).length > 0) {
     lines.push('## Lifecycle-Based Access Control');
     lines.push('');
     lines.push('Access to this entity is influenced by its lifecycle state:');
     lines.push('');
     
-    const lifecycleStates = Object.keys(lifecycle);
+    const lifecycleStates = Object.keys(lifecycle).sort();
     lifecycleStates.forEach(state => {
       lines.push(`### ${state}`);
       lines.push('');
-      const applicablePolicies = policies.filter(p => 
-        p.conditions && p.conditions.some(c => c.type === 'lifecycle-state' && c.state === state)
-      );
+      
+      const applicablePolicies = policies.filter(p => {
+        const conditions = p.conditions || [];
+        return Array.isArray(conditions) && conditions.some(c =>
+          c && c.type === 'lifecycle-state' && c.state === state
+        );
+      });
       
       if (applicablePolicies.length > 0) {
         lines.push('Applicable policies:');
         applicablePolicies.forEach(p => {
-          lines.push(`- ${p.name}: ${p.effect === 'allow' ? 'Allowed' : 'Denied'} - ${p.actions.join(', ')}`);
+          const policyActions = normalizeActions(p.actions);
+          const actionsStr = policyActions.length > 0
+            ? Array.from(policyActions).sort().join(', ')
+            : '*';
+          lines.push(`- ${p.name}: ${p.effect === 'allow' ? 'Allowed' : 'Denied'} - ${actionsStr}`);
         });
       } else {
         lines.push('No specific restrictions for this state.');
@@ -153,20 +308,21 @@ export function generatePolicies(blueprint) {
     });
   }
 
-  // Field-Level Security
+  // ── Field-Level Security ─────────────────────────────────────────────────
   lines.push('## Field-Level Security');
   lines.push('');
   lines.push('Certain fields may be restricted by role:');
   lines.push('');
   
   const sensitiveFields = ['taxId', 'ssn', 'password', 'apiKey', 'token'];
-  const hasSensitiveFields = blueprint.fields.all && blueprint.fields.all.some(f => sensitiveFields.includes(f.name));
+  const allFields = blueprint.fields?.all || [];
+  const hasSensitiveFields = allFields.some(f => sensitiveFields.includes(f.name));
   
   if (hasSensitiveFields) {
     lines.push('| Field | Admin | Owner | Manager | Other |');
     lines.push('|-------|-------|-------|---------|-------|');
     
-    blueprint.fields.all
+    allFields
       .filter(f => sensitiveFields.includes(f.name))
       .forEach(field => {
         lines.push(`| ${field.name} | Visible | Visible | Masked | Masked |`);
@@ -176,7 +332,7 @@ export function generatePolicies(blueprint) {
   }
   lines.push('');
 
-  // Policy Evaluation Order
+  // ── Policy Evaluation Order ──────────────────────────────────────────────
   lines.push('## Policy Evaluation Order');
   lines.push('');
   lines.push('Policies are evaluated in priority order (highest priority first):');
@@ -188,7 +344,7 @@ export function generatePolicies(blueprint) {
   lines.push('5. Deny policies (default behavior)');
   lines.push('');
 
-  // Implementation Notes
+  // ── Implementation Notes ─────────────────────────────────────────────────
   lines.push('## Implementation Notes');
   lines.push('');
   lines.push('- Policies are enforced at multiple levels: service layer, API layer, and database layer');
@@ -200,6 +356,11 @@ export function generatePolicies(blueprint) {
 
   return lines.join('\n');
 }
+
+
+// ---------------------------------------------------------------------------
+// Helper Functions
+// ---------------------------------------------------------------------------
 
 /**
  * Format action name for display
@@ -229,14 +390,14 @@ function formatActionDescription(action) {
  */
 function formatConditionType(type) {
   const names = {
-    'ownership': 'Ownership-Based Policies',
+    ownership: 'Ownership-Based Policies',
     'lifecycle-state': 'Lifecycle State Policies',
     'company-scope': 'Company Scope Policies',
     'department-scope': 'Department Scope Policies',
     'approval-status': 'Approval Status Policies',
     'soft-delete-status': 'Soft Delete Status Policies',
     'time-based': 'Time-Based Policies',
-    'combined': 'Combined Condition Policies',
+    combined: 'Combined Condition Policies',
   };
   return names[type] || type;
 }
@@ -266,5 +427,5 @@ function getRoleDescription(role) {
  * @returns {string} Formatted role name
  */
 function formatRoleName(role) {
-  return role.charAt(0).toUpperCase() + role.slice(1).replace(/[-_]/g, ' ');
+  return String(role).charAt(0).toUpperCase() + String(role).slice(1).replace(/[-_]/g, ' ');
 }

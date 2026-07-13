@@ -69,15 +69,27 @@ export function expandPermissions(permissionMetadata) {
 
   // Parse roles from YAML (handle both array and string formats)
   let yamlRoles = permissionMetadata.roles || [];
+  
+  // Normalize: convert string to array
   if (typeof yamlRoles === 'string') {
-    yamlRoles = [yamlRoles];
+    // Handle inline array syntax like "[admin, manager]" or single role like "admin"
+    if (yamlRoles.startsWith('[') && yamlRoles.endsWith(']')) {
+      yamlRoles = yamlRoles.slice(1, -1).split(',').map(r => r.trim()).filter(r => r.length > 0);
+    } else {
+      yamlRoles = [yamlRoles];
+    }
   }
+  
+  // Ensure array type
   if (!Array.isArray(yamlRoles)) {
     yamlRoles = [];
   }
   
+  // Normalize to lowercase strings and deduplicate
+  const uniqueRoles = [...new Set(yamlRoles.map(r => String(r).toLowerCase()).filter(r => r))];
+  
   // Validate and expand roles
-  const validRoles = yamlRoles.filter(role => 
+  const validRoles = uniqueRoles.filter(role => 
     typeof role === 'string' && SUPPORTED_ROLES.includes(role.toLowerCase())
   );
 
@@ -86,7 +98,10 @@ export function expandPermissions(permissionMetadata) {
     validRoles.push('admin');
   }
 
-  permissions.roles = validRoles;
+  // Sort roles lexicographically for determinism
+  validRoles.sort();
+  
+  permissions.roles = Object.freeze(validRoles);
 
   // Map roles to their actions
   validRoles.forEach(role => {
