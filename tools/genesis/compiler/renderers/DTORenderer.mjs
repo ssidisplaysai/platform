@@ -1,209 +1,260 @@
-/**
+﻿/**
  * DTORenderer
  *
- * Generates TypeScript Data Transfer Objects from EnterpriseObjectBlueprint.
- * Consumes: EnterpriseObjectBlueprint.fields, relationships
- * Produces: TypeScript DTO classes
+ * Generates self-contained, compilable Data Transfer Objects from
+ * EnterpriseObjectBlueprint.
+ *
+ * Contract:
+ * - No external imports (no entity classes, no referenced types)
+ * - All types defined inline
+ * - CreateDto: mutable fields, excludes generated/readonly, includes required creation fields
+ * - UpdateDto: all fields optional, excludes generated/readonly/immutable
+ * - ReadDto: complete canonical shape, includes readonly, includes system fields
+ * - QueryDto: searchable fields only from blueprint.capabilities.search
+ * - ListResultDto: deterministic envelope with typed items
+ * - Enum fields preserved as string-literal unions
+ * - Deterministic field ordering
+ * - Byte-for-byte identical output across repeated generation
  *
  * @module tools/genesis/compiler/renderers/DTORenderer.mjs
  */
 
-/**
- * Generate DTO classes from blueprint
- * @param {Object} blueprint - EnterpriseObjectBlueprint
- * @returns {string} Generated TypeScript DTO code
- */
-export function generateDTOs(blueprint) {
-  const entityName = blueprint.metadata.entity;
-  const fields = blueprint.fields.all;
-  const relationships = blueprint.relationships.all;
-  const validation = blueprint.validation;
+// ---------------------------------------------------------------------------
+// Utility helpers
+// ---------------------------------------------------------------------------
 
-  const lines = [];
+function toCamelCase(s) {
+  return s ? s.charAt(0).toLowerCase() + s.slice(1) : '';
+}
 
-  // Header
-  lines.push('/**');
-  lines.push(` * ${entityName} Data Transfer Objects (DTOs)`);
-  lines.push(' *');
-  lines.push(' * Auto-generated from entity metadata.');
-  lines.push(' * DTOs define the shape of data sent to and from the API.');
-  lines.push(' *');
-  lines.push(' * @generated true');
-  lines.push(' */');
-  lines.push('');
-
-  // Entity DTO
-  lines.push(`export interface ${entityName}DTO {`);
-  for (const field of fields) {
-    const optional = !field.required ? '?' : '';
-    lines.push(`  ${field.name}${optional}: ${fieldToTypeScriptType(field)};`);
-  }
-  for (const rel of relationships) {
-    const type = rel.type === 'hasMany' ? `${rel.target}[]` : rel.target;
-    lines.push(`  ${rel.name}?: ${type};`);
-  }
-  lines.push('}');
-  lines.push('');
-
-  // Create Request DTO
-  lines.push(`export interface Create${entityName}Request {`);
-  for (const field of fields) {
-    if (field.generated || field.readOnly) continue;
-    const optional = !field.required ? '?' : '';
-    lines.push(`  ${field.name}${optional}: ${fieldToTypeScriptType(field)};`);
-  }
-  lines.push('}');
-  lines.push('');
-
-  // Update Request DTO
-  lines.push(`export interface Update${entityName}Request {`);
-  for (const field of fields) {
-    if (field.generated || field.readOnly) continue;
-    // Updates make all fields optional
-    lines.push(`  ${field.name}?: ${fieldToTypeScriptType(field)};`);
-  }
-  lines.push('}');
-  lines.push('');
-
-  // Response DTO
-  lines.push(`export interface ${entityName}Response {`);
-  lines.push('  id: string;');
-  for (const field of fields) {
-    const optional = !field.required ? '?' : '';
-    lines.push(`  ${field.name}${optional}: ${fieldToTypeScriptType(field)};`);
-  }
-  for (const rel of relationships) {
-    const type = rel.type === 'hasMany' ? `${rel.target}[]` : rel.target;
-    lines.push(`  ${rel.name}?: ${type};`);
-  }
-  lines.push('  createdAt: Date;');
-  lines.push('  updatedAt: Date;');
-  lines.push('  createdBy?: string;');
-  lines.push('  updatedBy?: string;');
-  lines.push('}');
-  lines.push('');
-
-  // List Response DTO
-  lines.push(`export interface ${entityName}ListResponse {`);
-  lines.push(`  data: ${entityName}Response[];`);
-  lines.push('  total: number;');
-  lines.push('  limit: number;');
-  lines.push('  offset: number;');
-  lines.push('}');
-  lines.push('');
-
-  // Validation errors DTO
-  lines.push(`export interface ValidationError {`);
-  lines.push('  field: string;');
-  lines.push('  message: string;');
-  lines.push('  value?: any;');
-  lines.push('}');
-  lines.push('');
-
-  // API Error Response DTO
-  lines.push('export interface APIErrorResponse {');
-  lines.push('  code: string;');
-  lines.push('  message: string;');
-  lines.push('  errors?: ValidationError[];');
-  lines.push('  timestamp?: Date;');
-  lines.push('  path?: string;');
-  lines.push('}');
-  lines.push('');
-
-  // Class implementations
-  lines.push(`/**`);
-  lines.push(` * Create${entityName}RequestValidator`);
-  lines.push(` * Validates create requests against schema`);
-  lines.push(` */`);
-  lines.push(`export class Create${entityName}RequestValidator {`);
-  lines.push(`  validate(request: Create${entityName}Request): ValidationError[] {`);
-  lines.push('    const errors: ValidationError[] = [];');
-  lines.push('');
-
-  // Generate validation checks
-  for (const field of fields) {
-    if (field.generated || field.readOnly) continue;
-    if (field.required) {
-      lines.push(`    if (!request.${field.name}) {`);
-      lines.push(`      errors.push({ field: '${field.name}', message: '${field.name} is required' });`);
-      lines.push('    }');
-    }
-    if (field.type === 'email') {
-      lines.push(`    if (request.${field.name} && !this.isValidEmail(request.${field.name})) {`);
-      lines.push(`      errors.push({ field: '${field.name}', message: '${field.name} must be a valid email' });`);
-      lines.push('    }');
-    }
-    if (field.maxLength) {
-      lines.push(`    if (request.${field.name} && request.${field.name}.length > ${field.maxLength}) {`);
-      lines.push(`      errors.push({ field: '${field.name}', message: '${field.name} must not exceed ${field.maxLength} characters' });`);
-      lines.push('    }');
-    }
-  }
-
-  lines.push('');
-  lines.push('    return errors;');
-  lines.push('  }');
-  lines.push('');
-  lines.push('  private isValidEmail(email: string): boolean {');
-  lines.push("    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;");
-  lines.push('    return emailRegex.test(email);');
-  lines.push('  }');
-  lines.push('}');
-  lines.push('');
-
-  // Factory methods
-  lines.push(`/**`);
-  lines.push(` * DTO Factory Methods`);
-  lines.push(` */`);
-  lines.push(`export class ${entityName}DTOFactory {`);
-  lines.push(`  static toResponse(entity: any): ${entityName}Response {`);
-  lines.push('    return {');
-  lines.push('      id: entity.id,');
-  for (const field of fields) {
-    lines.push(`      ${field.name}: entity.${field.name},`);
-  }
-  lines.push('      createdAt: entity.createdAt,');
-  lines.push('      updatedAt: entity.updatedAt,');
-  lines.push('    };');
-  lines.push('  }');
-  lines.push('');
-  lines.push(`  static toListResponse(entities: any[], total: number, limit: number, offset: number): ${entityName}ListResponse {`);
-  lines.push('    return {');
-  lines.push('      data: entities.map(e => this.toResponse(e)),');
-  lines.push('      total,');
-  lines.push('      limit,');
-  lines.push('      offset,');
-  lines.push('    };');
-  lines.push('  }');
-  lines.push('}');
-
-  return lines.join('\n');
+function toTitleCase(s) {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }
 
 /**
- * Convert field type to TypeScript type
+ * Convert field type to TypeScript type string.
+ * Enums are preserved as string-literal unions.
+ *
  * @param {Object} field - Field definition
  * @returns {string} TypeScript type
  */
-function fieldToTypeScriptType(field) {
+function fieldToTypeScript(field) {
+  if (!field || !field.type) return 'unknown';
+
   switch (field.type) {
     case 'string':
+    case 'text':
     case 'email':
+    case 'phone':
+    case 'url':
       return 'string';
+
     case 'number':
-      return 'number';
     case 'integer':
+    case 'decimal':
+    case 'currency':
       return 'number';
+
     case 'boolean':
       return 'boolean';
+
     case 'date':
     case 'timestamp':
+    case 'datetime':
       return 'Date';
+
     case 'enum':
-      return `'${(field.values || []).join("' | '")}'`;
+      if (Array.isArray(field.values) && field.values.length > 0) {
+        const enumLiterals = field.values.map(v => `'${v}'`).join(' | ');
+        return enumLiterals;
+      }
+      return 'string';
+
+    case 'uuid':
     case 'identifier':
       return 'string';
+
+    case 'object':
+    case 'json':
+      return 'Record<string, unknown>';
+
     default:
-      return 'any';
+      return 'unknown';
   }
+}
+
+/**
+ * Check if field should be included in CreateDto.
+ * Excludes generated identifiers, system fields, readonly fields.
+ */
+function isCreatableField(field) {
+  if (!field) return false;
+  if (field.generated || field.readOnly || field.systemManaged) return false;
+  if (field.name === 'id' || field.name === 'createdAt' || field.name === 'updatedAt') return false;
+  if (field.name === 'createdBy' || field.name === 'updatedBy') return false;
+  return true;
+}
+
+/**
+ * Check if field should be included in UpdateDto.
+ * Excludes generated, system, readonly, immutable fields.
+ */
+function isUpdatableField(field) {
+  if (!field) return false;
+  if (field.generated || field.readOnly || field.systemManaged || field.immutable) return false;
+  if (field.name === 'id' || field.name === 'createdAt' || field.name === 'updatedAt') return false;
+  if (field.name === 'createdBy' || field.name === 'updatedBy') return false;
+  return true;
+}
+
+/**
+ * Check if field should be included in ReadDto.
+ * Includes all public fields (system fields included).
+ */
+function isReadableField(field) {
+  if (!field) return false;
+  if (field.internal || field.hidden) return false;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// Main renderer export
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate DTO definitions from blueprint.
+ *
+ * @param {Object} blueprint - EnterpriseObjectBlueprint
+ * @returns {string} Generated TypeScript source code
+ */
+export function generateDTOs(blueprint) {
+  if (!blueprint || !blueprint.metadata) {
+    throw new Error('Blueprint required for DTO generation');
+  }
+
+  const entityName = blueprint.metadata.entity;
+  const camelEntity = toCamelCase(entityName);
+
+  // Extract data with safe defaults
+  const allFields = (blueprint.fields && blueprint.fields.all) ? blueprint.fields.all : [];
+  const searchableFieldNames = (blueprint.capabilities && blueprint.capabilities.searchFields) 
+    ? blueprint.capabilities.searchFields 
+    : [];
+
+  // Sort fields deterministically by name for all DTOs
+  const sortedFields = [...allFields].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+  const L = [];
+
+  // ── File header ────────────────────────────────────────────────────────────
+  L.push('/**');
+  L.push(' * ' + entityName + ' Data Transfer Objects (DTOs)');
+  L.push(' *');
+  L.push(' * Type-safe data contracts for ' + entityName + ' API operations.');
+  L.push(' * Auto-generated from entity metadata via EnterpriseObjectBlueprint IR.');
+  L.push(' *');
+  L.push(' * @generated true');
+  L.push(' */');
+  L.push('');
+
+  // ── CreateDto ──────────────────────────────────────────────────────────────
+  L.push('/** Create payload: mutable fields required for entity creation. */');
+  L.push('export interface ' + entityName + 'CreateDto {');
+  const creatableFields = sortedFields.filter(isCreatableField);
+  if (creatableFields.length === 0) {
+    L.push('  // No creatable fields defined');
+  } else {
+    for (const field of creatableFields) {
+      const optional = !field.required ? '?' : '';
+      const type = fieldToTypeScript(field);
+      L.push('  ' + field.name + optional + ': ' + type + ';');
+    }
+  }
+  L.push('}');
+  L.push('');
+
+  // ── UpdateDto ──────────────────────────────────────────────────────────────
+  L.push('/** Update payload: all mutable fields optional. */');
+  L.push('export interface ' + entityName + 'UpdateDto {');
+  const updatableFields = sortedFields.filter(isUpdatableField);
+  if (updatableFields.length === 0) {
+    L.push('  // No updatable fields defined');
+  } else {
+    for (const field of updatableFields) {
+      const type = fieldToTypeScript(field);
+      L.push('  ' + field.name + '?: ' + type + ';');
+    }
+  }
+  L.push('}');
+  L.push('');
+
+  // ── ReadDto ────────────────────────────────────────────────────────────────
+  L.push('/** Read payload: complete canonical entity shape. */');
+  L.push('export interface ' + entityName + 'ReadDto {');
+  L.push('  id: string;');
+  const readableFields = sortedFields.filter(isReadableField);
+  for (const field of readableFields) {
+    // Skip fields that are system fields (will be added explicitly)
+    if (field.name === 'id' || field.name === 'createdAt' || field.name === 'updatedAt' ||
+        field.name === 'createdBy' || field.name === 'updatedBy') {
+      continue;
+    }
+    const optional = !field.required ? '?' : '';
+    const readonly = field.readOnly ? 'readonly ' : '';
+    const type = fieldToTypeScript(field);
+    L.push('  ' + readonly + field.name + optional + ': ' + type + ';');
+  }
+  L.push('  readonly createdAt: Date;');
+  L.push('  readonly updatedAt: Date;');
+  L.push('  readonly createdBy?: string;');
+  L.push('  readonly updatedBy?: string;');
+  L.push('}');
+  L.push('');
+
+  // ── QueryDto ───────────────────────────────────────────────────────────────
+  L.push('/** Query filter payload: searchable fields only. */');
+  L.push('export interface ' + entityName + 'QueryDto {');
+  if (searchableFieldNames.length === 0) {
+    L.push('  // No searchable fields configured');
+  } else {
+    // Find searchable fields from all fields
+    for (const fieldName of searchableFieldNames.sort()) {
+      const field = sortedFields.find(f => f.name === fieldName);
+      if (field) {
+        const type = fieldToTypeScript(field);
+        L.push('  ' + field.name + '?: ' + type + ';');
+      }
+    }
+  }
+  L.push('}');
+  L.push('');
+
+  // ── ListResultDto ──────────────────────────────────────────────────────────
+  L.push('/** Paginated list result envelope. */');
+  L.push('export interface ' + entityName + 'ListResultDto {');
+  L.push('  /** Array of ' + entityName + ' read objects. */');
+  L.push('  readonly items: ' + entityName + 'ReadDto[];');
+  L.push('  /** Total count of matching entities (ignoring pagination). */');
+  L.push('  readonly total: number;');
+  L.push('  /** Number of items per page. */');
+  L.push('  readonly pageSize: number;');
+  L.push('  /** Current page number (0-indexed). */');
+  L.push('  readonly pageNumber: number;');
+  L.push('  /** Whether more pages exist. */');
+  L.push('  readonly hasNextPage: boolean;');
+  L.push('}');
+  L.push('');
+
+  // ── Error Response (generic, not entity-specific) ──────────────────────────
+  L.push('/** Structured error response. */');
+  L.push('export interface ErrorResponseDto {');
+  L.push('  code: string;');
+  L.push('  message: string;');
+  L.push('  timestamp?: Date;');
+  L.push('  path?: string;');
+  L.push('  details?: Record<string, unknown>;');
+  L.push('}');
+  L.push('');
+
+  return L.join('\n');
 }

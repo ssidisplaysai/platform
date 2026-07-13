@@ -18,7 +18,8 @@
     "out/generated/**/*.test.ts",
     "out/generated/**/*Repository.ts",
     "out/generated/**/*Service.ts",
-    "out/generated/**/*Events.ts"
+    "out/generated/**/*Events.ts",
+    "out/generated/**/*.dtos.ts"
   ],
   "exclude": [
     "node_modules"
