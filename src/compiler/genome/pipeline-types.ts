@@ -303,6 +303,116 @@ export interface SemanticCandidateCollection {
   readonly correlatedEvidence: CorrelatedEvidenceCollection;
 }
 
+// ─── Semantic Consolidation (BGC-PASS-006) ────────────────────────────────────
+
+/**
+ * A deterministic merge rule for consolidating equivalent semantic candidates.
+ * Only supports explicit, governed, deterministic matching:
+ * - identical semantic class
+ * - identical normalized designation
+ * - identical semantic identity hash
+ * - explicit governed equivalence metadata
+ */
+export interface SemanticMergeRule {
+  readonly id: string;
+  readonly version: string;
+  readonly description: string;
+  readonly matchCriteria: "identical-class-and-designation" | "identical-semantic-identity" | "explicit-equivalence-metadata";
+  readonly rationaleCode: string;
+}
+
+/**
+ * Records which merge rule was applied to consolidate candidates.
+ */
+export interface SemanticMergeContext {
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly compilerVersion: string;
+  readonly specificationVersion: string;
+  readonly ruleId: string;
+  readonly ruleVersion: string;
+  readonly matchCriteria: string;
+  readonly mergedCandidateIds: readonly string[];
+}
+
+/**
+ * A consolidated semantic entity representing multiple equivalent candidates.
+ *
+ * All contributing candidates are preserved in contributingCandidates[].
+ * All evidence from all candidates is preserved.
+ * Conflicts (if any) remain explicit.
+ *
+ * Identity is stage-appropriate (bgc-cse prefix) and deterministic.
+ * NOT a final canonical Business Genome identity.
+ */
+export interface ConsolidatedSemantic {
+  readonly id: string;
+  readonly semanticClass: string;
+  readonly designation: string;
+  readonly canonicalDesignation?: string;
+  readonly assertions: readonly SemanticAssertion[];
+  readonly contributingCandidates: readonly SemanticCandidate[];
+  readonly mergedCandidateCount: number;
+  readonly evidenceClusterIds: readonly string[];
+  readonly evidenceGroupIds: readonly string[];
+  readonly evidenceItemIds: readonly string[];
+  readonly provenanceReferences: readonly string[];
+  readonly sourceEvidenceIrIdentity: string;
+  readonly conflictReferences: readonly SemanticConflictReference[];
+  readonly hasConflicts: boolean;
+  readonly consolidationRuleId: string;
+  readonly consolidationRuleVersion: string;
+  readonly certainty: {
+    readonly state: "certain" | "uncertain";
+    readonly confidence: number;
+  };
+  readonly validationStatus: {
+    readonly valid: boolean;
+    readonly violations: readonly string[];
+  };
+  readonly consolidationContext: SemanticMergeContext;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * Per-consolidation result showing which candidates were merged and why.
+ */
+export interface SemanticMergeResult {
+  readonly consolidatedSemanticId: string;
+  readonly mergedCandidateIds: readonly string[];
+  readonly mergeRuleId: string;
+  readonly matchCriteria: string;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * The complete output of BGC-PASS-006 (Semantic Consolidation).
+ *
+ * Contains all consolidated semantic entities (each may represent one or more
+ * equivalent candidates). All evidence, provenance, and conflicts preserved.
+ *
+ * Business Genome is NOT published here.
+ */
+export interface ConsolidatedSemanticCollection {
+  readonly id: string;
+  readonly sourceEvidenceIrIdentity: string;
+  readonly consolidatedSemantics: readonly ConsolidatedSemantic[];
+  readonly mergeResults: readonly SemanticMergeResult[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly specificationVersion: string;
+  readonly compilerVersion: string;
+  readonly consolidationRuleVersion: string;
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+  readonly semanticCandidates: SemanticCandidateCollection;
+}
+
 export function deterministicIdentity(prefix: string, value: unknown): string {
   const checksum = SourceHash.sha256(stableStringify(value));
   return `${prefix}_${checksum}_v1`;
