@@ -22,6 +22,7 @@ export {
   SemanticIdentityAssignmentPass,
   GraphConstructionPass,
   ConsistencyValidationPass,
+  BusinessGenomePublicationPass,
 } from "./passes";
 
 export { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "./diagnostics";
@@ -97,4 +98,12 @@ export type {
   ValidationContext,
   BusinessGenomeValidationResult,
   BusinessGenomePassResult,
+  BusinessGenomePublicationStatus,
+  BusinessGenomeChecksumSet,
+  BusinessGenomeProvenanceIndex,
+  BusinessGenomeLineageIndex,
+  BusinessGenomeArtifactManifest,
+  BusinessGenomePublicationContext,
+  BusinessGenomeArtifact,
+  BusinessGenomePublicationResult,
 } from "./pipeline-types";

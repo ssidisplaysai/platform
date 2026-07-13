@@ -8,3 +8,4 @@ export { SemanticRelationshipResolutionPass } from "./SemanticRelationshipResolu
 export { SemanticIdentityAssignmentPass } from "./SemanticIdentityAssignmentPass";
 export { GraphConstructionPass } from "./GraphConstructionPass";
 export { ConsistencyValidationPass } from "./ConsistencyValidationPass";
+export { BusinessGenomePublicationPass } from "./BusinessGenomePublicationPass";

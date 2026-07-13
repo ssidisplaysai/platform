@@ -875,3 +875,149 @@ export function updatePassHistory(
     };
   });
 }
+
+// ─── Business Genome Publication (BGC-PASS-011) ────────────────────────────────
+
+/**
+ * Publication status for Business Genome Artifact.
+ * Explicit states indicating whether publication proceeded or was blocked.
+ */
+export type BusinessGenomePublicationStatus = "published" | "blocked" | "failed";
+
+/**
+ * Deterministic checksums for BusinessGenomeArtifact verification.
+ */
+export interface BusinessGenomeChecksumSet {
+  readonly graphChecksum: string; // SHA256 of graph content (unchanged)
+  readonly artifactChecksum: string; // SHA256 of entire artifact
+  readonly manifestChecksum: string; // SHA256 of manifest only
+}
+
+/**
+ * Deterministic mapping from semantic elements to evidence sources.
+ * Supports traceability from Business Genome back to discovery evidence.
+ */
+export interface BusinessGenomeProvenanceIndex {
+  readonly entries: readonly {
+    readonly nodeId: string;
+    readonly evidenceReferences: readonly string[];
+    readonly sourceDocuments: readonly string[];
+    readonly discoveryReferences: readonly string[];
+  }[];
+  readonly edgeEntries: readonly {
+    readonly edgeId: string;
+    readonly evidenceReferences: readonly string[];
+    readonly sourceDocuments: readonly string[];
+  }[];
+}
+
+/**
+ * Lineage trace from reality source through compiler passes to artifact.
+ * Preserves complete traceability chain.
+ */
+export interface BusinessGenomeLineageIndex {
+  readonly entries: readonly {
+    readonly artifactId: string;
+    readonly traceChain: readonly {
+      readonly stage: string;
+      readonly stageIdentity: string;
+      readonly stageVersion: string;
+      readonly timestamp: string;
+    }[];
+  }[];
+}
+
+/**
+ * Publication manifest metadata: versions, passes, standards, configuration.
+ */
+export interface BusinessGenomeArtifactManifest {
+  readonly compilerVersion: string;
+  readonly pipelineVersion: string;
+  readonly specificationVersion: string;
+  readonly businessGenomeSpecificationVersion: string;
+  readonly gps0001Version: string;
+  readonly gps0002Version: string;
+  readonly passListAndVersions: readonly {
+    readonly passId: string;
+    readonly version: string;
+  }[];
+  readonly sourceManifestReferences: readonly string[];
+  readonly graphIdentity: string;
+  readonly artifactIdentity: string;
+  readonly graphChecksum: string;
+  readonly artifactChecksum: string;
+  readonly validationStatus: "valid" | "invalid" | "valid-with-warnings";
+  readonly diagnosticSummary: {
+    readonly totalDiagnostics: number;
+    readonly errors: number;
+    readonly warnings: number;
+    readonly infos: number;
+  };
+  readonly publicationStatus: BusinessGenomePublicationStatus;
+  readonly publicationTimestamp: string;
+}
+
+/**
+ * Metadata context for publication operation.
+ */
+export interface BusinessGenomePublicationContext {
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly compilerVersion: string;
+  readonly specificationVersion: string;
+  readonly businessGenomeSpecificationVersion: string;
+  readonly gps0001Version: string;
+  readonly gps0002Version: string;
+  readonly publicationTimestamp: string; // Deterministic: "2024-01-01T00:00:00Z"
+  readonly publicationRuleId: string;
+  readonly publicationRuleVersion: string;
+}
+
+/**
+ * Complete canonical Business Genome Artifact.
+ * Published only when validation permits publication.
+ * Preserves all graph structure, provenance, and lineage.
+ */
+export interface BusinessGenomeArtifact {
+  readonly artifactIdentity: string;
+  readonly artifactVersion: string;
+  readonly schemaVersion: string;
+  readonly businessGenomeSpecificationVersion: string;
+  readonly compilerVersion: string;
+  readonly pipelineVersion: string;
+  readonly businessGenomeGraph: BusinessGenomeGraph;
+  readonly validationResult: BusinessGenomeValidationResult;
+  readonly compilationDiagnostics: readonly CompilerDiagnostic[];
+  readonly provenanceIndex: BusinessGenomeProvenanceIndex;
+  readonly lineageIndex: BusinessGenomeLineageIndex;
+  readonly manifest: BusinessGenomeArtifactManifest;
+  readonly graphChecksum: string;
+  readonly artifactChecksum: string;
+  readonly sourceManifestReferences: readonly string[];
+  readonly gps0001Version: string;
+  readonly gps0002Version: string;
+  readonly publicationMetadata: BusinessGenomePublicationContext;
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+}
+
+/**
+ * Result of Business Genome Publication operation.
+ * Contains artifact only if publication succeeded.
+ * Always contains diagnostics and publication status.
+ */
+export interface BusinessGenomePublicationResult {
+  readonly publicationStatus: BusinessGenomePublicationStatus;
+  readonly artifact: BusinessGenomeArtifact | null;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly specificationVersion: string;
+  readonly compilerVersion: string;
+  readonly validationResult: BusinessGenomeValidationResult;
+  readonly graph: BusinessGenomeGraph; // Always preserved
+}

@@ -16,6 +16,7 @@ test("registry includes required implemented passes with deterministic dependenc
   assert.equal(listed.some((entry) => entry.id === "bgc.identity-assignment"), true);
   assert.equal(listed.some((entry) => entry.id === "bgc.graph-construction"), true);
   assert.equal(listed.some((entry) => entry.id === "bgc.consistency-validation"), true);
+  assert.equal(listed.some((entry) => entry.id === "bgc.business-genome-publication"), true);
 
   const canonical = registry.resolve("bgc.canonical-verification");
   const grouping = registry.resolve("bgc.evidence-grouping");
@@ -26,6 +27,7 @@ test("registry includes required implemented passes with deterministic dependenc
   const identity = registry.resolve("bgc.identity-assignment");
   const graph = registry.resolve("bgc.graph-construction");
   const validation = registry.resolve("bgc.consistency-validation");
+  const publication = registry.resolve("bgc.business-genome-publication");
 
   assert.deepEqual(canonical.metadata.dependencies, ["bgc.input-validation"]);
   assert.deepEqual(grouping.metadata.dependencies, ["bgc.canonical-verification"]);
@@ -36,6 +38,7 @@ test("registry includes required implemented passes with deterministic dependenc
   assert.deepEqual(identity.metadata.dependencies, ["bgc.relationship-resolution"]);
   assert.deepEqual(graph.metadata.dependencies, ["bgc.identity-assignment"]);
   assert.deepEqual(validation.metadata.dependencies, ["bgc.graph-construction"]);
+  assert.deepEqual(publication.metadata.dependencies, ["bgc.consistency-validation"]);
 
   const ordered = registry.executablePassOrder().map((entry) => entry.metadata.id);
   assert.deepEqual(ordered, [
@@ -49,5 +52,6 @@ test("registry includes required implemented passes with deterministic dependenc
     "bgc.identity-assignment",
     "bgc.graph-construction",
     "bgc.consistency-validation",
+    "bgc.business-genome-publication",
   ]);
 });

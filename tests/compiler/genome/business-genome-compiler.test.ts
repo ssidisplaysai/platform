@@ -18,6 +18,7 @@ test("pipeline executes passes in correct order", () => {
     "bgc.identity-assignment",
     "bgc.graph-construction",
     "bgc.consistency-validation",
+    "bgc.business-genome-publication",
   ]);
   assert.equal(result.execution.passOrder[0], "bgc.input-validation");
   assert.equal(result.execution.passOrder[1], "bgc.canonical-verification");
@@ -29,6 +30,7 @@ test("pipeline executes passes in correct order", () => {
   assert.equal(result.execution.passOrder[7], "bgc.identity-assignment");
   assert.equal(result.execution.passOrder[8], "bgc.graph-construction");
   assert.equal(result.execution.passOrder[9], "bgc.consistency-validation");
+  assert.equal(result.execution.passOrder[10], "bgc.business-genome-publication");
 });;
 
 test("fatal Pass 1 failure prevents Pass 2 and Pass 3", () => {

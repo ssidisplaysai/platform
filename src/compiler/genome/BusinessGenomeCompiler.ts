@@ -15,6 +15,7 @@ import type {
   BusinessGenomeIdentityCollection,
   BusinessGenomeGraph,
   BusinessGenomeValidationResult,
+  BusinessGenomePublicationResult,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 import type {
@@ -134,6 +135,8 @@ export class BusinessGenomeCompiler {
       graph: (passOutputs.get("bgc.graph-construction") as BusinessGenomeGraph | undefined) ?? null,
       validation:
         (passOutputs.get("bgc.consistency-validation") as BusinessGenomeValidationResult | undefined) ?? null,
+      publication:
+        (passOutputs.get("bgc.business-genome-publication") as BusinessGenomePublicationResult | undefined) ?? null,
     };
 
     const expectedOutputs = [
@@ -147,6 +150,7 @@ export class BusinessGenomeCompiler {
       "bgc.identity-assignment",
       "bgc.graph-construction",
       "bgc.consistency-validation",
+      "bgc.business-genome-publication",
     ] as const;
 
     for (const passId of expectedOutputs) {
