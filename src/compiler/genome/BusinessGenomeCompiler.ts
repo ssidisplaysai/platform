@@ -12,6 +12,7 @@ import type {
   SemanticCandidateCollection,
   ConsolidatedSemanticCollection,
   ResolvedRelationshipCollection,
+  BusinessGenomeIdentityCollection,
   ValidatedEvidenceIRView,
 } from "./pipeline-types";
 import type {
@@ -52,6 +53,9 @@ export class BusinessGenomeCompiler {
           groupedEvidence: null,
           correlatedEvidence: null,
           semanticCandidates: null,
+          consolidatedSemantics: null,
+          resolvedRelationships: null,
+          identityAssignment: null,
         },
         startedAt,
         completedPasses,
@@ -121,6 +125,8 @@ export class BusinessGenomeCompiler {
         (passOutputs.get("bgc.semantic-consolidation") as ConsolidatedSemanticCollection | undefined) ?? null,
       resolvedRelationships:
         (passOutputs.get("bgc.relationship-resolution") as ResolvedRelationshipCollection | undefined) ?? null,
+      identityAssignment:
+        (passOutputs.get("bgc.identity-assignment") as BusinessGenomeIdentityCollection | undefined) ?? null,
     };
 
     const expectedOutputs = [
@@ -131,6 +137,7 @@ export class BusinessGenomeCompiler {
       "bgc.semantic-resolution",
       "bgc.semantic-consolidation",
       "bgc.relationship-resolution",
+      "bgc.identity-assignment",
     ] as const;
 
     for (const passId of expectedOutputs) {

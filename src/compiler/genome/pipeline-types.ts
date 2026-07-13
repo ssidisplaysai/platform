@@ -516,6 +516,100 @@ export interface ResolvedRelationshipCollection {
   readonly consolidatedSemantics: ConsolidatedSemanticCollection;
 }
 
+// ─── Identity Assignment (BGC-PASS-008) ───────────────────────────────────
+
+/**
+ * A canonical Business Genome identity assigned to a semantic object or relationship.
+ * Follows GPS-0001 and GPS-0002 standards. Immutable and deterministic.
+ */
+export interface BusinessGenomeIdentity {
+  readonly id: string;  // Canonical identity (bg.object.class.hash or bg.relationship.type.hash)
+  readonly kind: "semantic-object" | "semantic-relationship";
+  readonly semanticClass?: string;  // For objects: customer, supplier, product, etc.
+  readonly relationshipType?: string;  // For relationships: purchased, governs, owns, etc.
+  readonly sourceConsolidatedSemanticId: string;  // Object: which consolidated semantic
+  readonly sourceRelationshipId?: string;  // Relationship: which resolved relationship
+  readonly assignedAt: string;  // ISO timestamp of assignment
+  readonly assignmentRuleId: string;  // Which rule assigned this identity
+  readonly assignmentRuleVersion: string;  // Rule version
+  readonly assignmentVersion: string;  // GPS-0001 version
+  readonly evidenceLineage: readonly string[];  // All evidence items backing this identity
+  readonly provenanceReferences: readonly string[];  // Full provenance trail
+  readonly sourceEvidenceIrIdentity: string;  // Root evidence ID
+  readonly certainty: { state: "certain" | "uncertain"; confidence: number };
+  readonly validationStatus: { valid: boolean; violations: readonly string[] };
+  readonly assignmentContext: IdentityAssignmentContext;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * An identity assignment rule: versioned, deterministic, auditable.
+ * Rules follow GPS-0001 canonical identity standards.
+ */
+export interface IdentityAssignmentRule {
+  readonly id: string;
+  readonly version: string;
+  readonly applicableTo: "semantic-object" | "semantic-relationship";
+  readonly description: string;
+  readonly gps0001Version: string;
+  readonly gps0002Version: string;
+  readonly rationaleCode: string;
+}
+
+/**
+ * Context tracking which rule and compiler version assigned this identity.
+ */
+export interface IdentityAssignmentContext {
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly compilerVersion: string;
+  readonly specificationVersion: string;
+  readonly ruleId: string;
+  readonly ruleVersion: string;
+  readonly rationaleCode: string;
+  readonly gps0001Version: string;
+  readonly gps0002Version: string;
+}
+
+/**
+ * Per-identity assignment result tracking outcome.
+ */
+export interface IdentityAssignmentResult {
+  readonly canonicalId: string;
+  readonly sourceSemanticId: string;
+  readonly assigned: boolean;
+  readonly assignmentRuleId: string;
+  readonly assignmentRuleVersion: string;
+  readonly diagnostics: readonly CompilerDiagnostic[];
+}
+
+/**
+ * The complete output of BGC-PASS-008 (Identity Assignment).
+ *
+ * Contains all assigned canonical Business Genome identities for semantic
+ * objects and relationships. Graph construction is NOT performed here.
+ */
+export interface BusinessGenomeIdentityCollection {
+  readonly id: string;
+  readonly sourceEvidenceIrIdentity: string;
+  readonly semanticObjectIdentities: readonly BusinessGenomeIdentity[];
+  readonly relationshipIdentities: readonly BusinessGenomeIdentity[];
+  readonly assignmentResults: readonly IdentityAssignmentResult[];
+  readonly diagnostics: readonly CompilerDiagnostic[];
+  readonly passId: string;
+  readonly passVersion: string;
+  readonly specificationVersion: string;
+  readonly compilerVersion: string;
+  readonly identityAssignmentVersion: string;
+  readonly passHistory: readonly {
+    readonly passId: string;
+    readonly version: string;
+    readonly status: "completed" | "failed" | "planned";
+    readonly diagnosticCount: number;
+  }[];
+  readonly resolvedRelationships: ResolvedRelationshipCollection;
+}
+
 export function deterministicIdentity(prefix: string, value: unknown): string {
   const checksum = SourceHash.sha256(stableStringify(value));
   return `${prefix}_${checksum}_v1`;

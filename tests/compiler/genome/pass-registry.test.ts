@@ -13,6 +13,7 @@ test("registry includes required implemented passes with deterministic dependenc
   assert.equal(listed.some((entry) => entry.id === "bgc.semantic-resolution"), true);
   assert.equal(listed.some((entry) => entry.id === "bgc.semantic-consolidation"), true);
   assert.equal(listed.some((entry) => entry.id === "bgc.relationship-resolution"), true);
+  assert.equal(listed.some((entry) => entry.id === "bgc.identity-assignment"), true);
 
   const canonical = registry.resolve("bgc.canonical-verification");
   const grouping = registry.resolve("bgc.evidence-grouping");
@@ -20,6 +21,7 @@ test("registry includes required implemented passes with deterministic dependenc
   const resolution = registry.resolve("bgc.semantic-resolution");
   const consolidation = registry.resolve("bgc.semantic-consolidation");
   const relationships = registry.resolve("bgc.relationship-resolution");
+  const identity = registry.resolve("bgc.identity-assignment");
 
   assert.deepEqual(canonical.metadata.dependencies, ["bgc.input-validation"]);
   assert.deepEqual(grouping.metadata.dependencies, ["bgc.canonical-verification"]);
@@ -27,6 +29,7 @@ test("registry includes required implemented passes with deterministic dependenc
   assert.deepEqual(resolution.metadata.dependencies, ["bgc.evidence-correlation"]);
   assert.deepEqual(consolidation.metadata.dependencies, ["bgc.semantic-resolution"]);
   assert.deepEqual(relationships.metadata.dependencies, ["bgc.semantic-consolidation"]);
+  assert.deepEqual(identity.metadata.dependencies, ["bgc.relationship-resolution"]);
 
   const ordered = registry.executablePassOrder().map((entry) => entry.metadata.id);
   assert.deepEqual(ordered, [
@@ -37,5 +40,6 @@ test("registry includes required implemented passes with deterministic dependenc
     "bgc.semantic-resolution",
     "bgc.semantic-consolidation",
     "bgc.relationship-resolution",
+    "bgc.identity-assignment",
   ]);
 });
