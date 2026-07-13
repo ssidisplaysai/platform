@@ -192,11 +192,11 @@ function requiredFieldLines(constraint, validFixture) {
     Object.entries(validFixture).filter(([k]) => k !== constraint.field),
   );
   return [
-    `    it('should reject missing required field: ${constraint.field}', async () => {`,
+    `    it('should reject missing required field: ${constraint.field}', () => {`,
     `      const data = ${formatFixture(missing, 6)};`,
-    `      const result: ValidationResult = await validator.validate(data);`,
+    `      const result: ValidationResult = validator.validate(data);`,
     `      expect(result.isValid).toBe(false);`,
-    `      expect(result.errors.some(e => e.includes('${escapeString(constraint.field)}'))).toBe(true);`,
+    `      expect(result.errors.some(e => e.field === '${escapeString(constraint.field)}')).toBe(true);`,
     `    });`,
   ];
 }
@@ -210,11 +210,11 @@ function requiredFieldLines(constraint, validFixture) {
 function enumRejectionLines(constraint, validFixture) {
   const invalid = { ...validFixture, [constraint.field]: 'INVALID_ENUM_VALUE' };
   return [
-    `    it('should reject invalid enum value for ${constraint.field}', async () => {`,
+    `    it('should reject invalid enum value for ${constraint.field}', () => {`,
     `      const data = ${formatFixture(invalid, 6)};`,
-    `      const result: ValidationResult = await validator.validate(data);`,
+    `      const result: ValidationResult = validator.validate(data);`,
     `      expect(result.isValid).toBe(false);`,
-    `      expect(result.errors.some(e => e.includes('${escapeString(constraint.field)}'))).toBe(true);`,
+    `      expect(result.errors.some(e => e.field === '${escapeString(constraint.field)}')).toBe(true);`,
     `    });`,
   ];
 }
@@ -228,11 +228,11 @@ function enumRejectionLines(constraint, validFixture) {
 function emailFormatLines(constraint, validFixture) {
   const invalid = { ...validFixture, [constraint.field]: 'not-an-email' };
   return [
-    `    it('should reject invalid email format for ${constraint.field}', async () => {`,
+    `    it('should reject invalid email format for ${constraint.field}', () => {`,
     `      const data = ${formatFixture(invalid, 6)};`,
-    `      const result: ValidationResult = await validator.validate(data);`,
+    `      const result: ValidationResult = validator.validate(data);`,
     `      expect(result.isValid).toBe(false);`,
-    `      expect(result.errors.some(e => e.includes('${escapeString(constraint.field)}'))).toBe(true);`,
+    `      expect(result.errors.some(e => e.field === '${escapeString(constraint.field)}')).toBe(true);`,
     `    });`,
   ];
 }
