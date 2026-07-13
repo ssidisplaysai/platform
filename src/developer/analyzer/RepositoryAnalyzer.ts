@@ -2,37 +2,36 @@
  * RepositoryAnalyzer.ts
  * Main orchestrator for repository analysis.
  *
- * The RepositoryAnalyzer coordinates all analysis stages to provide
- * comprehensive repository documentation analysis including document
- * discovery, parsing, authority classification, dependency analysis,
- * conflict detection, and health assessment.
+ * The RepositoryAnalyzer coordinates analysis stages to discover and inventory
+ * repository documentation. Current scope: inventory generation only (scanning,
+ * parsing, and classification).
  */
 
 import type { IRepositoryAnalyzer } from './interfaces/Analyzer';
 import type { RepositoryReport } from './models/RepositoryReport';
+import type { RepositoryDocument } from './models/RepositoryDocument';
 import { RepositoryScanner } from './RepositoryScanner';
 import { DocumentParser } from './DocumentParser';
 import { AuthorityClassifier } from './AuthorityClassifier';
-import { DependencyGraphBuilder } from './DependencyGraphBuilder';
-import { ConflictDetector } from './ConflictDetector';
-import { HealthCalculator } from './HealthCalculator';
+import { createRepositoryReport } from './models/RepositoryReport';
+import { deepFreeze } from './utils/deepFreeze';
 
 const ANALYZER_VERSION = '1.0.0';
 
 /**
- * Main orchestrator for repository analysis.
+ * Main orchestrator for repository inventory analysis.
  *
- * Coordinates complete end-to-end analysis:
+ * Coordinates analysis stages to produce repository inventory:
  * 1. Scans repository for documents
  * 2. Parses document content and metadata
  * 3. Classifies document authority
- * 4. Builds dependency graph
- * 5. Detects conflicts and issues
- * 6. Calculates health metrics
- * 7. Generates comprehensive report
+ * 4. Returns immutable RepositoryDocument collection
  *
  * All analysis is deterministic: identical repositories always
- * produce identical reports.
+ * produce identical inventories.
+ *
+ * Current scope: Inventory generation only. Dependency analysis,
+ * conflict detection, and health scoring not implemented.
  */
 export class RepositoryAnalyzer implements IRepositoryAnalyzer {
   /**
@@ -54,24 +53,6 @@ export class RepositoryAnalyzer implements IRepositoryAnalyzer {
   private readonly classifier: AuthorityClassifier;
 
   /**
-   * Dependency graph builder instance.
-   * @readonly
-   */
-  private readonly dependencyBuilder: DependencyGraphBuilder;
-
-  /**
-   * Conflict detector instance.
-   * @readonly
-   */
-  private readonly conflictDetector: ConflictDetector;
-
-  /**
-   * Health calculator instance.
-   * @readonly
-   */
-  private readonly healthCalculator: HealthCalculator;
-
-  /**
    * Creates a new RepositoryAnalyzer instance.
    *
    * Initializes all component analyzers and prepares for analysis.
@@ -80,79 +61,59 @@ export class RepositoryAnalyzer implements IRepositoryAnalyzer {
     this.scanner = new RepositoryScanner();
     this.parser = new DocumentParser();
     this.classifier = new AuthorityClassifier();
-    this.dependencyBuilder = new DependencyGraphBuilder();
-    this.conflictDetector = new ConflictDetector();
-    this.healthCalculator = new HealthCalculator();
   }
 
   /**
    * Analyzes the repository at the given root path.
    *
-   * Performs complete end-to-end analysis:
+   * Performs end-to-end analysis (inventory generation):
    * - Discovers all documents in repository tree
    * - Extracts content and metadata
    * - Classifies authority levels
-   * - Builds dependency graph
-   * - Detects conflicts
-   * - Calculates health metrics
+   * - Returns immutable collection
    *
    * Analysis is deterministic: identical repository structures
    * always produce identical reports.
    *
+   * Note: Current implementation generates inventory only.
+   * Dependency analysis, conflict detection, and health scoring
+   * are not performed.
+   *
    * @param repositoryRoot - Absolute path to repository root
-   * @returns Promise resolving to complete RepositoryReport
+   * @returns Promise resolving to complete RepositoryReport (fully frozen)
    * @throws Error if repository root is invalid or inaccessible
    */
   async analyze(repositoryRoot: string): Promise<RepositoryReport> {
     const startTime = Date.now();
 
-    // Step 1: Scan repository
-    const documents = await this.scanner.scan(repositoryRoot);
+    // Step 1: Scan repository (deterministic discovery + ordering)
+    const scannedDocuments = await this.scanner.scan(repositoryRoot);
 
-    // Step 2: Parse documents
-    const parsedDocuments = documents.map(doc => this.parser.parse(doc));
+    // Step 2: Parse documents (extract metadata from content)
+    const parsedDocuments = scannedDocuments.map(doc => this.parser.parse(doc));
 
-    // Step 3: Classify authority
+    // Step 3: Classify authority (deterministic classification)
     const classifiedDocuments = parsedDocuments.map(doc => ({
       ...doc,
       authority: this.classifier.classify(doc),
-    }));
-
-    // Step 4: Build dependency graph
-    const dependencies = this.dependencyBuilder.build(classifiedDocuments);
-
-    // Step 5: Detect conflicts
-    const conflicts = this.conflictDetector.detect(classifiedDocuments, dependencies);
-
-    // Step 6: Calculate health
-    const health = this.healthCalculator.calculate(classifiedDocuments, conflicts);
+    })) as readonly RepositoryDocument[];
 
     const endTime = Date.now();
 
-    // Step 7: Generate report
-    const report: RepositoryReport = {
-      id: `report_${Date.now()}_v1`,
-      title: 'Repository Analysis Report',
-      description: `Complete analysis of repository at ${repositoryRoot}`,
-      repositoryRoot,
-      documents: classifiedDocuments,
-      conflicts,
-      health,
-      dependencies,
-      discoveredTags: [],
-      externalReferenceCount: 0,
-      unversionedDocumentCount: 0,
-      untitledDocumentCount: 0,
-      undescribedDocumentCount: 0,
+    // Generate inventory report
+    const report = createRepositoryReport(repositoryRoot, classifiedDocuments);
+
+    // Create final report with frozen documents array
+    const frozenReport = {
+      ...report,
       analysisDurationMs: endTime - startTime,
       analyzedAt: new Date().toISOString(),
       analyzerVersion: ANALYZER_VERSION,
-      reportChecksum: 'sha256_placeholder',
-      isValid: true,
-      diagnostics: [],
-    };
+      documents: deepFreeze([...classifiedDocuments]),
+    } as RepositoryReport;
 
-    return report;
+    // Deep freeze the entire report
+    return deepFreeze(frozenReport);
   }
 
   /**
@@ -171,12 +132,7 @@ export class RepositoryAnalyzer implements IRepositoryAnalyzer {
    */
   isConfigured(): boolean {
     return (
-      this.scanner != null &&
-      this.parser != null &&
-      this.classifier != null &&
-      this.dependencyBuilder != null &&
-      this.conflictDetector != null &&
-      this.healthCalculator != null
+      this.scanner != null && this.parser != null && this.classifier != null
     );
   }
 }

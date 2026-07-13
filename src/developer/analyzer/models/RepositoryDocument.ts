@@ -8,6 +8,7 @@
  */
 
 import type { Authority } from './Authority';
+import { AuthorityLevel, createAuthority } from './Authority';
 
 /**
  * Represents a single document discovered in the repository.
@@ -167,13 +168,13 @@ export interface RepositoryDocument {
  *
  * @param path - Workspace-relative path
  * @param content - File content
- * @param authority - Document authority classification
+ * @param repositoryRoot - Repository root path (for absolutePath construction)
  * @returns RepositoryDocument with derived properties
  */
 export function createRepositoryDocument(
   path: string,
   content: string,
-  authority: Authority,
+  repositoryRoot: string,
 ): RepositoryDocument {
   const fileName = path.split('/').pop() || '';
   const extension = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
@@ -181,9 +182,9 @@ export function createRepositoryDocument(
   const parentDirectory = path.substring(0, path.lastIndexOf('/'));
 
   return {
-    id: `doc_${path.toLowerCase()}_v1`,
+    id: `doc_${path.toLowerCase().replace(/[^a-z0-9]/g, '_')}_v1`,
     path,
-    absolutePath: `c:\\Users\\rober\\Documents\\Stoner Platform\\platform\\${path}`,
+    absolutePath: `${repositoryRoot}/${path}`,
     extension,
     nameWithoutExtension,
     fileName,
@@ -192,8 +193,8 @@ export function createRepositoryDocument(
     sizeBytes: new Blob([content]).size,
     lineCount: content.split('\n').length,
     contentChecksum: 'sha256_placeholder',
-    authority,
-    isFrozen: authority.isFrozen,
+    authority: createAuthority(AuthorityLevel.UNCLASSIFIED),
+    isFrozen: false,
     title: null,
     description: null,
     version: null,
