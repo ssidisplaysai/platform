@@ -199,9 +199,10 @@ export const createDependencyGraph = (): DependencyGraph => {
     const cycles: (readonly CompilerPassId[])[] = [];
     const issues: string[] = [];
     const warnings: string[] = [];
+    let topologicalOrder: readonly CompilerPassId[] = [];
 
     try {
-      getTopologicalOrder();
+      topologicalOrder = getTopologicalOrder();
     } catch (error) {
       issues.push(`Cycle detected: ${error instanceof Error ? error.message : "unknown"}`);
       cycles.push([]);
@@ -213,7 +214,7 @@ export const createDependencyGraph = (): DependencyGraph => {
       cycles: Object.freeze(cycles),
       issues: Object.freeze(issues),
       warnings: Object.freeze(warnings),
-      topologicalOrder: getTopologicalOrder(),
+      topologicalOrder: Object.freeze(topologicalOrder),
     };
   };
 

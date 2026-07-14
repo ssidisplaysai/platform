@@ -87,12 +87,15 @@ export interface RegistryValidationResult {
 }
 
 /**
- * Create an empty compiler registry
+ * Create a compiler registry, optionally initialized with existing entries
  *
- * @returns New empty registry
+ * @param initialEntries - Optional existing entries to initialize with
+ * @returns New registry with entries
  */
-export const createCompilerRegistry = (): CompilerRegistry => {
-  const entries = new Map<CompilerPassId, PassRegistryEntry>();
+export const createCompilerRegistry = (
+  initialEntries?: ReadonlyMap<CompilerPassId, PassRegistryEntry>,
+): CompilerRegistry => {
+  const entries = new Map(initialEntries ?? []);
   let frozen = false;
 
   const register = (pass: CompilerPass): CompilerRegistry => {
@@ -104,21 +107,16 @@ export const createCompilerRegistry = (): CompilerRegistry => {
       throw new Error(`Pass already registered: ${pass.id}`);
     }
 
-    const newRegistry = createCompilerRegistry();
-    const newEntries = (newRegistry as any).entries as Map<CompilerPassId, PassRegistryEntry>;
-
-    entries.forEach((entry, id) => {
-      newEntries.set(id, entry);
-    });
-
     const entry: PassRegistryEntry = {
       pass: Object.freeze(pass),
       registered: Date.now(),
       immutable: true,
     };
 
+    // Create new registry with existing entries plus the new one
+    const newEntries = new Map(entries);
     newEntries.set(pass.id, Object.freeze(entry));
-    return newRegistry;
+    return createCompilerRegistry(newEntries);
   };
 
   const get = (passId: CompilerPassId): CompilerPass | undefined => {

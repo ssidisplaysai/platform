@@ -107,6 +107,19 @@ describe("Apollo Compiler Orchestrator", () => {
       expect(() => apollo.register(pass)).toThrow();
     });
 
+    test("Regression: Register pass on empty registry works (APC-0001A)", () => {
+      // This test validates the fix for CompilerRegistry.register() when entries is undefined
+      const registry = createCompilerRegistry();
+      expect(registry.size).toBe(0);
+
+      const pass = createMockPass("discovery");
+      const registry2 = registry.register(pass);
+
+      expect(registry.size).toBe(0); // original unchanged
+      expect(registry2.size).toBe(1); // new one has the pass
+      expect(registry2.get("discovery")).toBe(pass);
+    });
+
     test("Registry is immutable", () => {
       const apollo = createApolloCompiler("1.0.0");
       const pass = createMockPass("discovery");
