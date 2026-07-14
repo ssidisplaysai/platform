@@ -20,5 +20,7 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    // Strip .js extensions so Jest can resolve TypeScript source files
+    '^(\\.\\.\\/|\\.\\/)(.+)\\.js$': '$1$2',
   },
 };
