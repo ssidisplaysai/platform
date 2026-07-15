@@ -3,7 +3,7 @@
 Version: 1.0
 Status: Certified
 Governance Decision: GD-0004
-Repository Tag: foundation-v1.0 (pending commit and tag)
+Repository Tag: foundation-v1.1
 
 Purpose:
 
