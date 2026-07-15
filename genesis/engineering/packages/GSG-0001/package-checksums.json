@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GSGKG-GSG-0001-v1.0.1",
+  "checksums": {
+    "algorithm": "sha256",
+    "generatedDate": "2026-07-15T00:00:00Z",
+    "packageChecksum": "to-be-calculated-at-zip-time",
+    "artifacts": {
+      "00-package-manifest.md": "to-be-calculated",
+      "README.md": "to-be-calculated",
+      "package.json": "to-be-calculated",
+      "01-executive-summary.md": "to-be-calculated",
+      "02-implementation-report.md": "to-be-calculated",
+      "03-architecture-review-input.md": "to-be-calculated",
+      "04-validation-report.md": "to-be-calculated",
+      "05-traceability-matrix.md": "to-be-calculated",
+      "06-repository-impact.md": "to-be-calculated",
+      "07-open-issues.md": "to-be-calculated",
+      "08-metrics.md": "to-be-calculated",
+      "09-review-history.md": "to-be-calculated",
+      "10-completion-checklist.md": "to-be-calculated",
+      "11-package-health.md": "to-be-calculated",
+      "metrics.json": "to-be-calculated",
+      "validation.json": "to-be-calculated",
+      "traceability.json": "to-be-calculated",
+      "repository-impact.json": "to-be-calculated",
+      "package-checksums.json": "to-be-calculated",
+      "dependency-graph.mmd": "to-be-calculated",
+      "architecture-map.mmd": "to-be-calculated",
+      "GSG-0001-Genesis-Specification-Generator-v1.0.md": "to-be-calculated"
+    },
+    "artifactCount": 22,
+    "integrity": "to-be-verified-at-zip-time"
+  }
+}

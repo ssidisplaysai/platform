@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCSKG-GCS-0001-v1.0.0",
+  "subjectId": "GCS-0001",
+  "subjectVersion": "1.0.0",
+  "subjectStatus": "Draft",
+  "packageName": "gcs-0001-engineering-package",
+  "packageVersion": "1.0.0",
+  "checksumDate": "2026-07-14",
+  "checksumAlgorithm": "SHA-256",
+  "files": {
+    "README.md": {
+      "description": "Package overview and contents",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "package.json": {
+      "description": "Package metadata",
+      "type": "metadata",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "01-executive-summary.md": {
+      "description": "Executive summary",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "02-implementation-report.md": {
+      "description": "Implementation report reference",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "03-architecture-review-input.md": {
+      "description": "Architecture review preparation",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "04-validation-report.md": {
+      "description": "Validation results",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "05-traceability-matrix.md": {
+      "description": "Requirements traceability",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "06-repository-impact.md": {
+      "description": "Repository impact analysis",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "07-open-issues.md": {
+      "description": "Open questions and issues",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "08-metrics.md": {
+      "description": "Specification metrics",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "09-review-history.md": {
+      "description": "Review and revision history",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "10-completion-checklist.md": {
+      "description": "Completeness verification",
+      "type": "documentation",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "metrics.json": {
+      "description": "Structured metrics data",
+      "type": "data",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "validation.json": {
+      "description": "Validation results data",
+      "type": "data",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "traceability.json": {
+      "description": "Traceability matrix data",
+      "type": "data",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "repository-impact.json": {
+      "description": "Repository impact data",
+      "type": "data",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "dependency-graph.mmd": {
+      "description": "Pass dependency diagram",
+      "type": "diagram",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "architecture-map.mmd": {
+      "description": "Authority hierarchy diagram",
+      "type": "diagram",
+      "checksum": "to-be-calculated-at-zip-time"
+    },
+    "GCS-0001-Genesis-Compiler-Language-v1.0.md": {
+      "description": "Normative specification",
+      "type": "specification",
+      "checksum": "to-be-calculated-at-zip-time",
+      "source": "genesis/specifications/GCS-0001-Genesis-Compiler-Language-v1.0.md"
+    },
+    "GCS-0001-implementation-report.md": {
+      "description": "Complete implementation report",
+      "type": "report",
+      "checksum": "to-be-calculated-at-zip-time",
+      "source": "docs/engineering/reports/GCS-0001-implementation-report.md"
+    }
+  },
+  "fileCount": {
+    "documentation": 11,
+    "data": 4,
+    "diagrams": 2,
+    "specification": 1,
+    "report": 1,
+    "metadata": 2,
+    "total": 21
+  },
+  "packageChecksum": {
+    "algorithm": "SHA-256",
+    "value": "to-be-calculated-at-zip-creation",
+    "timestamp": "2026-07-14"
+  },
+  "verificationInstructions": [
+    "1. Extract archive to temporary directory",
+    "2. Verify all 21 files are present",
+    "3. Verify file checksums against this manifest",
+    "4. Verify archive integrity",
+    "5. Verify no corrupted files",
+    "6. Review README.md for package contents"
+  ],
+  "integrityStatus": "Unsealed - pending final lifecycle approval",
+  "note": "Checksums remain placeholders until final Architecture Review completion and lifecycle closure."
+}

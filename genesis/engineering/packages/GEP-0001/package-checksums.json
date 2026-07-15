@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GEP-0001-v1.0.1",
+  "checksums": {
+    "algorithm": "sha256",
+    "generatedDate": "2026-07-15T00:00:00Z",
+    "packageChecksum": "to-be-calculated-at-zip-time",
+    "artifacts": {
+      "00-package-manifest.md": "41bfaa84ef4ea70860c9296bd299f9d94a70d6b7428e9b6abb961951ebc68fe3",
+      "README.md": "b28b490686d849c81483ea6c1eba343e7c382b1fad4ed6805936d15910a4d185",
+      "package.json": "5c4e0e4da5eb745d026acbcf02152d27f280fd179443a83545e823388407a150",
+      "01-executive-summary.md": "ff51325226e4a831d6be628988f6086477222308bfc9dec942972d4709f87e04",
+      "02-implementation-report.md": "35666a04bef62524e73645000fce3e9ab78b046ac018f760e8abcd8f67614628",
+      "03-architecture-review-input.md": "90480cbcc3a5d63922e7d5fccc92acde1acde56340b7e6fe2295e58dba07afcb",
+      "04-validation-report.md": "729846716c6701b3e4c8d05ab69daba323203e0d4616974daf369ab29de8adc8",
+      "05-traceability-matrix.md": "c4e88dc89bd4525148f5df44fc011bf229d8bcebe00d843032a2bae30ba46783",
+      "06-repository-impact.md": "68b06ca4f1acfe7645677e301dc13a556ca95e9b3d455af0d684b4f620d6c13d",
+      "07-open-issues.md": "9ea5f7208223116460f4ea400b278f4ca8c1274ff224aa750802ef41977c8226",
+      "08-metrics.md": "703a947569bef4187650230a8a7420739a9986d559b077b5598b98f1510c63c3",
+      "09-review-history.md": "3dddc81ee5688db5e28588dfe836eda7dde8e38ce057f4f6fef51d8093a4719a",
+      "10-completion-checklist.md": "1f8585712a54eb480e57c29cd3ec9f29a82b188d13ee91d88429e2c875b5f48b",
+      "11-package-health.md": "91b4d5f12e173e79f7f1bc0df109000d7d65287f3e26ea508dd1c5c5af0d755c",
+      "metrics.json": "566db27dac6245106e9c4641e9a9dce2058c1cebcac7d400332795e9765a6924",
+      "validation.json": "f78b3696336f7e6ba55a81e640bd204b358e8a610b59da59a80db8c7b05073c0",
+      "traceability.json": "ae3f2f7a3b80627bb636aebbfffbb9b1813457dd68c7ef8ea4601deb57bf8079",
+      "repository-impact.json": "511a3e1930211c1668d4b0bfc9d565f6647c2889b1a125b4a30330fd6168f4e1",
+      "package-checksums.json": "5fad92cce76633fd46fb376023e7d1310bc4a508bfd42615ff491274b1b6da48",
+      "dependency-graph.mmd": "97d79cdd2c397be747b4997c3db19c5d98e6e0900cc529896299bfebd044d506",
+      "architecture-map.mmd": "1871eaf4a25d185e28f6f394b1bb1cf03b862e5da17defd351d2afcef68232f3",
+      "GEP-0001-Genesis-Engineering-Package-Specification-v1.0.md": "bdc398bc6122e371ecc09bc7b29e66af90048a02b3a811d502a4ce8d3b338b9c"
+    },
+    "artifactCount": 22,
+    "integrity": "VERIFIED"
+  }
+}

@@ -1,0 +1,22 @@
+graph TD
+    A["Genesis Constitution v1.0<br/>(Immutable, Foundational)"] -->|Foundation| B["Foundation v1.0<br/>(Frozen, Immutable)"]
+    
+    B -->|Governance| C["GSP-0001<br/>(Governance Specification)"]
+    B -->|Architecture| D["GAS-0001<br/>(Architecture Specification)"]
+    B -->|Enterprise| E["GES-0001<br/>(Enterprise Language)"]
+    
+    C -->|Governs| F["GEP-0001<br/>(Engineering Package<br/>Specification v1.0)<br/>Status: Draft"]
+    D -->|Constrains| F
+    E -->|Defines| F
+    
+    F -->|Subordinate to| B
+    
+    F -->|Requires| G["Every Genesis Artifact<br/>(Specs, Implementations,<br/>Reviews, Validations,<br/>Governance, Releases)"]
+    
+    G -->|Produces| H["Engineering Package<br/>(21+ Artifacts)"]
+    
+    H -->|Ready for| I["Architecture Review<br/>(GAR-0008)"]
+    
+    I -->|Result| J["Governance Decision<br/>(GD-XXXX)"]
+    
+    J -->|Leads to| K["Package Frozen<br/>(Immutable)"]

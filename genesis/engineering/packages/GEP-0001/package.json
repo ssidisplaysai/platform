@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "1.0.1",
+  "packageStatus": "Draft",
+  "packageId": "GEPKG-GEP-0001-v1.0.1",
+  "packageUuid": "9e8b7c4d-2f15-4a8c-b9d0-1e3f5c7a9b2d",
+  "packageCreatedDate": "2026-07-14T00:00:00Z",
+  "packageLastUpdated": "2026-07-15T00:00:00Z",
+  "subjectId": "GEP-0001",
+  "subjectTitle": "Genesis Engineering Package Specification v1.0",
+  "subjectVersion": "1.0.1",
+  "subjectType": "Specification",
+  "subjectStatus": "Draft",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "Reviewed",
+  "certificationStatus": "None",
+  "profileVersion": "1.0.0",
+  "packageProfile": "Specification",
+  "additionalProfiles": [
+    "ArchitectureReview"
+  ],
+  "foundationVersion": "1.0",
+  "governanceVersion": "1.0",
+  "applicableSpecifications": [
+    "Foundation v1.0",
+    "Constitution v1.0",
+    "GSP-0001",
+    "GAS-0001",
+    "GES-0001"
+  ],
+  "applicableStandards": [
+    "GEP-0001"
+  ],
+  "applicableADRs": [],
+  "applicableGovernanceDecisions": [],
+  "artifactInventory": {
+    "manifestFiles": [
+      "00-package-manifest.md",
+      "README.md",
+      "package.json"
+    ],
+    "documentationFiles": [
+      "01-executive-summary.md",
+      "02-implementation-report.md",
+      "03-architecture-review-input.md",
+      "04-validation-report.md",
+      "05-traceability-matrix.md",
+      "06-repository-impact.md",
+      "07-open-issues.md",
+      "08-metrics.md",
+      "09-review-history.md",
+      "10-completion-checklist.md",
+      "11-package-health.md"
+    ],
+    "dataFiles": [
+      "metrics.json",
+      "validation.json",
+      "traceability.json",
+      "repository-impact.json",
+      "package-checksums.json"
+    ],
+    "diagramFiles": [
+      "dependency-graph.mmd",
+      "architecture-map.mmd"
+    ],
+    "specificationFiles": [
+      "GEP-0001-Genesis-Engineering-Package-Specification-v1.0.md"
+    ]
+  },
+  "checksums": {
+    "algorithm": "sha256",
+    "packageChecksum": "to-be-calculated-at-zip-time",
+    "artifactChecksums": {}
+  },
+  "metrics": {
+    "specificationSections": 48,
+    "normativeRequirements": 48,
+    "definitionCount": 12,
+    "invariantCount": 12,
+    "artifactCount": 22,
+    "totalLines": 2847,
+    "openIssueCount": 0,
+    "identifierCollisionCount": 0,
+    "semanticConflictCount": 0
+  },
+  "validation": {
+    "structuralValidation": "PASS",
+    "semanticValidation": "PASS",
+    "repositoryValidation": "PASS",
+    "foundationValidation": "PASS",
+    "traceabilityValidation": "PASS",
+    "metricsValidation": "PASS",
+    "artifactValidation": "PASS",
+    "overallValidation": "PASS"
+  },
+  "foundationPreserved": true,
+  "foundationFilesModified": 0,
+  "packageHealth": "Excellent",
+  "packageHealthScore": 95,
+  "stoppedBeforeCommit": true,
+  "createdBy": "engineering-team",
+  "approvedBy": null,
+  "frozenDate": null,
+  "archivedDate": null,
+  "notes": "This Engineering Package demonstrates GEP-0001 by example. Revision R1 separates storage profiles from the logical package contract and formalizes governed package profiles. All required artifacts are present. All validation tests pass. Ready for architecture review revision handling."
+}

@@ -1,0 +1,33 @@
+```mermaid
+graph TD
+    CONST["Genesis Constitution<br/>(Immutable)"]
+    FOUND["Foundation v1.0<br/>(Frozen)"]
+    GSP["GSP-0001<br/>(Governance)"]
+    GAS["GAS-0001<br/>(Architecture)"]
+    GES["GES-0001<br/>(Enterprise Language)"]
+    GCS["GCS-0001<br/>(Compiler Language)"]
+    PIPE["GCS-0001 Pipeline<br/>(Implementation)"]
+    
+    CONST --> FOUND
+    FOUND --> GSP
+    GSP --> GAS
+    GAS --> GES
+    GES --> GCS
+    GCS --> PIPE
+    
+    style CONST fill:#ffebee
+    style FOUND fill:#ffebee
+    style GSP fill:#e3f2fd
+    style GAS fill:#e3f2fd
+    style GES fill:#e3f2fd
+    style GCS fill:#f3e5f5
+    style PIPE fill:#f1f8e9
+```
+
+**Authority Hierarchy**: 
+- Red: Immutable Foundation
+- Blue: Approved Specifications
+- Purple: This Specification (Draft)
+- Green: Implementation Layer
+
+**Subordination**: GCS-0001 derives authority from and is subordinate to all upstream specifications. No modifications to Foundation artifacts.

@@ -1,0 +1,37 @@
+```mermaid
+graph TD
+    P1["Normalization Pass"]
+    P2["Validation Pass"]
+    P3["Canonicalization Pass"]
+    P4["Identity Resolution Pass"]
+    P5["Relationship Resolution Pass"]
+    P6["Semantic Transformation Pass"]
+    P7["Dependency Resolution Pass"]
+    P8["Enrichment Pass"]
+    P9["Projection Preparation Pass"]
+    P10["Artifact Generation Pass"]
+    
+    P1 --> P2
+    P1 --> P3
+    P2 --> P4
+    P3 --> P4
+    P4 --> P5
+    P5 --> P6
+    P6 --> P7
+    P7 --> P8
+    P8 --> P9
+    P9 --> P10
+    
+    style P1 fill:#e1f5ff
+    style P2 fill:#fff9c4
+    style P3 fill:#f3e5f5
+    style P4 fill:#e8f5e9
+    style P5 fill:#fce4ec
+    style P6 fill:#f1f8e9
+    style P7 fill:#ede7f6
+    style P8 fill:#fff3e0
+    style P9 fill:#e0f2f1
+    style P10 fill:#fbe9e7
+```
+
+**Dependencies**: Acyclic directed graph with deterministic topological ordering. Pass execution order determined by topological sort with stable tie-breaking by pass_identifier.

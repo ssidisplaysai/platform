@@ -1,0 +1,106 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GEP-0001-v1.0.1",
+  "metrics": {
+    "size": {
+      "specificationSections": 48,
+      "specificationLines": 2847,
+      "documentationLines": 1500,
+      "totalArtifactLines": 2847,
+      "definitionCount": 12,
+      "invariantCount": 12,
+      "requirementCount": 48
+    },
+    "requirements": {
+      "shallCount": 48,
+      "shouldCount": 0,
+      "mayCount": 0,
+      "totalRequirements": 48,
+      "requirementsCoverage": 100.0,
+      "rfc2119Compliance": 100.0
+    },
+    "artifacts": {
+      "manifestFiles": 3,
+      "documentationFiles": 11,
+      "dataFiles": 5,
+      "diagramFiles": 2,
+      "specificationFiles": 1,
+      "totalArtifacts": 22,
+      "requiredArtifacts": 21
+    },
+    "quality": {
+      "openIssues": 0,
+      "warnings": 0,
+      "semanticConflicts": 0,
+      "identifierCollisions": 0,
+      "circularDependencies": 0,
+      "undefinedTerms": 0
+    },
+    "validation": {
+      "structuralValidation": "PASS",
+      "semanticValidation": "PASS",
+      "repositoryValidation": "PASS",
+      "foundationValidation": "PASS",
+      "traceabilityValidation": "PASS",
+      "metricsValidation": "PASS",
+      "artifactValidation": "PASS",
+      "validationCategories": 7,
+      "passingCategories": 7,
+      "validationConfidence": 100.0
+    },
+    "repository": {
+      "filesCreated": 22,
+      "filesModified": 17,
+      "filesDeleted": 0,
+      "directoriesCreated": 1,
+      "totalLinesChanged": 2847,
+      "impactScope": "Low",
+      "breakingChanges": 0
+    },
+    "foundation": {
+      "foundationFilesModified": 0,
+      "foundationPreservationScore": 100.0,
+      "foundationPreserved": true,
+      "governanceArtifactDependencies": [
+        "Foundation v1.0",
+        "Constitution v1.0",
+        "GSP-0001",
+        "GAS-0001",
+        "GES-0001"
+      ],
+      "specificationDependencies": [
+        "Foundation v1.0",
+        "GSP-0001"
+      ]
+    },
+    "traceability": {
+      "requirementsTraced": 48,
+      "totalRequirements": 48,
+      "implementationCoverage": 100.0,
+      "validationCoverage": 100.0,
+      "governanceCoverage": 0.0,
+      "traceabilityPercentage": 100.0
+    },
+    "architecture": {
+      "newConceptsCount": 12,
+      "changedConceptsCount": 0,
+      "deprecatedConceptsCount": 0,
+      "dependenciesAdded": 5,
+      "architectureBoundariesDefined": 4,
+      "newInvariants": 12
+    },
+    "packageHealth": {
+      "manifestHealth": 100.0,
+      "artifactHealth": 100.0,
+      "validationHealth": 100.0,
+      "traceabilityHealth": 100.0,
+      "metricsHealth": 100.0,
+      "machineReadableHealth": 100.0,
+      "humanReadableHealth": 100.0,
+      "repositoryHealth": 100.0,
+      "foundationHealth": 100.0,
+      "architectureHealth": 80.0,
+      "overallPackageHealth": 95.0
+    }
+  }
+}

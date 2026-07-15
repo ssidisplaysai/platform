@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GSGKG-GSG-0001-v1.0.1",
+  "traceability": {
+    "authorityChain": [
+      { "level": 1, "document": "Genesis Constitution v1.0", "status": "Foundational", "immutable": true, "modified": false },
+      { "level": 2, "document": "Foundation v1.0", "status": "Frozen", "immutable": true, "modified": false },
+      { "level": 3, "document": "GSP-0001", "status": "Approved", "immutable": false, "modified": false },
+      { "level": 4, "document": "GAS-0001", "status": "Approved", "immutable": false, "modified": false },
+      { "level": 5, "document": "GES-0001", "status": "Approved", "immutable": false, "modified": false },
+      { "level": 6, "document": "GEP-0001", "status": "Draft", "immutable": false, "modified": false },
+      { "level": 7, "document": "GSG-0001", "status": "Draft", "immutable": false, "modified": false }
+    ],
+    "requirementMapping": {
+      "totalRequirements": 40,
+      "mappedRequirements": 40,
+      "unmappedRequirements": 0,
+      "coveragePercentage": 100.0,
+      "requirements": [
+        { "id": "REQ-001", "category": "Mission", "description": "Generator automates structure", "source": "Purpose", "implementation": "package.json / README.md", "validation": "04-validation-report.md", "reviewStatus": "Pending", "governanceStatus": "Pending" }
+      ]
+    },
+    "dependencyAnalysis": {
+      "upstreamArtifacts": ["Foundation v1.0", "Constitution v1.0", "GSP-0001", "GAS-0001", "GES-0001", "GEP-0001"],
+      "downstreamArtifacts": ["Future generator-driven specifications", "GAR-0010 review evidence"]
+    },
+    "coverageSummary": {
+      "totalRequirements": 40,
+      "tracedRequirements": 40,
+      "untracedRequirements": 0,
+      "coveragePercentage": 100.0,
+      "status": "Complete"
+    },
+    "subordinationVerification": {
+      "subordinateTo": ["Foundation v1.0", "GSP-0001", "GAS-0001", "GES-0001", "GEP-0001"],
+      "conflicts": [],
+      "verified": true
+    }
+  }
+}

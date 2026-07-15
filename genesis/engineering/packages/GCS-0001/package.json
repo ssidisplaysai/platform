@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCSKG-GCS-0001-v1.0.0",
+  "packageVersion": "1.0.0",
+  "packageStatus": "Draft",
+  "subjectId": "GCS-0001",
+  "subjectVersion": "1.0.0",
+  "subjectStatus": "Draft",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationRegistry": "genesis/foundation/FOUNDATION-REGISTRY-v1.0.md",
+  "foundationBaseline": "genesis/foundation/FOUNDATION-BASELINE-v1.0.md",
+  "applicableGovernanceDecisions": [],
+  "stoppedBeforeCommit": true,
+  "name": "gcs-0001-engineering-package",
+  "title": "GCS-0001 Engineering Package",
+  "description": "Genesis Compiler Language Specification v1.0 - Engineering Package for Architecture Review",
+  "version": "1.0.0",
+  "specification": "GCS-0001",
+  "specificationTitle": "Genesis Compiler Language Specification v1.0",
+  "specificationStatus": "Draft",
+  "specificationVersion": "1.0.0",
+  "packageType": "Normative Specification Engineering Package (GEP)",
+  "packageFormat": "Genesis Engineering Package Standard v1.0",
+  "created": "2026-07-14",
+  "author": "Genesis Platform Team",
+  "governance": {
+    "specificationGovernance": "GSP-0001",
+    "architectureAuthority": "GAS-0001",
+    "enterpriseLanguageAuthority": "GES-0001",
+    "foundationAuthority": "Foundation v1.0",
+    "constitutionAuthority": "Genesis Constitution"
+  },
+  "dependencies": [
+    "Foundation v1.0",
+    "Genesis Constitution",
+    "GSP-0001",
+    "GAS-0001",
+    "GES-0001",
+    "FOUNDATION-REGISTRY-v1.0"
+  ],
+  "artifacts": {
+    "specification": [
+      "GCS-0001-Genesis-Compiler-Language-v1.0.md"
+    ],
+    "documentation": [
+      "01-executive-summary.md",
+      "02-implementation-report.md",
+      "03-architecture-review-input.md",
+      "04-validation-report.md",
+      "05-traceability-matrix.md",
+      "06-repository-impact.md",
+      "07-open-issues.md",
+      "08-metrics.md",
+      "09-review-history.md",
+      "10-completion-checklist.md"
+    ],
+    "data": [
+      "metrics.json",
+      "validation.json",
+      "traceability.json",
+      "repository-impact.json",
+      "package-checksums.json"
+    ],
+    "diagrams": [
+      "dependency-graph.mmd",
+      "architecture-map.mmd"
+    ]
+  },
+  "metrics": {
+    "specificationSections": 28,
+    "reportSections": 36,
+    "normativeDefinitions": 14,
+    "compilerInvariants": 14,
+    "irTypes": 9,
+    "passCategoriesCount": 10,
+    "validationCategories": 9,
+    "failureCategories": 7,
+    "filesModified": 0,
+    "filesDeleted": 0,
+    "codeChanges": 0,
+    "testChanges": 0,
+    "foundationPreservationPercentage": 100
+  },
+  "validation": {
+    "rfc2119Compliance": true,
+    "objectiveTestability": true,
+    "architectureAlignment": true,
+    "traceabilityComplete": true,
+    "foundationPreservation": true,
+    "semanticClarity": true
+  },
+  "architecture": {
+    "reviewProcess": "GAR-0007",
+    "reviewStatus": "Ready for Architecture Review",
+    "targetScore": 70,
+    "maxScore": 70
+  },
+  "constraints": {
+    "statusDraft": true,
+    "noFoundationModifications": true,
+    "noCodeChanges": true,
+    "noTestChanges": true,
+    "noStageCommitPush": true,
+    "allConstraintsSatisfied": true
+  },
+  "readinessChecklist": {
+    "specificationComplete": true,
+    "implementationReportComplete": true,
+    "foundationPreservationVerified": true,
+    "identifierCollisionDocumented": true,
+    "architectureReviewReadinessAssessed": true,
+    "traceabilityVerified": true,
+    "allChecklistItemsComplete": true
+  }
+}
