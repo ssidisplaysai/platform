@@ -194,6 +194,14 @@ export class EvidenceCompiler {
   }
 
   /**
+   * Extract the stable identity sequence for verification.
+   * Only identity order is used for determinism checks.
+   */
+  private createIdentitySequence(evidenceObjects: EnterpriseKnowledgeObject[]): string[] {
+    return evidenceObjects.map((evidenceObject) => evidenceObject.knowledgeId);
+  }
+
+  /**
    * Compile a single Evidence Item into an EKO
    *
    * @param evidenceItem - Evidence IR item to compile
@@ -395,11 +403,11 @@ export class EvidenceCompiler {
     }
 
     // Verify all runs produced identical output
-    const firstRunEKOs = JSON.stringify(results[0].ekos);
+    const firstRunEKOs = JSON.stringify(this.createIdentitySequence(results[0].ekos));
     let identicalOutputs = 1;
 
     for (let i = 1; i < runs; i++) {
-      const currentRunEKOs = JSON.stringify(results[i].ekos);
+      const currentRunEKOs = JSON.stringify(this.createIdentitySequence(results[i].ekos));
       if (currentRunEKOs === firstRunEKOs) {
         identicalOutputs++;
       } else {

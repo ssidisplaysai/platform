@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCCKG-GCC-1003-v1.0.0",
+  "traces": [
+    {
+      "requirement": "Canonical Evidence IR compiler",
+      "implementation": "src/evidence-ir/compiler/index.ts",
+      "verification": "tests/compiler/evidence-ir-compiler.test.ts"
+    },
+    {
+      "requirement": "Deterministic ordering",
+      "implementation": "src/evidence-ir/compiler/index.ts",
+      "verification": "tests/compiler/evidence-ir-compiler.test.ts"
+    },
+    {
+      "requirement": "Deduplication",
+      "implementation": "src/evidence-ir/compiler/index.ts",
+      "verification": "tests/compiler/evidence-ir-compiler.test.ts"
+    },
+    {
+      "requirement": "Validation",
+      "implementation": "src/evidence-ir/validation/index.ts",
+      "verification": "tests/compiler/evidence-ir-compiler.test.ts"
+    },
+    {
+      "requirement": "Kernel determinism verification",
+      "implementation": "src/compiler/stages/EvidenceCompiler.ts",
+      "verification": "tests/deterministic-eko.test.ts"
+    }
+  ]
+}

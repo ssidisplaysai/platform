@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCCKG-GCC-1003-v1.0.0",
+  "changedFiles": [
+    "src/evidence-ir/compiler/index.ts",
+    "src/compiler/stages/EvidenceCompiler.ts",
+    "tests/compiler/evidence-ir-compiler.test.ts"
+  ],
+  "newPackageFiles": [
+    "genesis/engineering/packages/GCC-1003/README.md",
+    "genesis/engineering/packages/GCC-1003/00-package-manifest.md",
+    "genesis/engineering/packages/GCC-1003/01-implementation-report.md",
+    "genesis/engineering/packages/GCC-1003/02-traceability.md",
+    "genesis/engineering/packages/GCC-1003/03-validation-report.md",
+    "genesis/engineering/packages/GCC-1003/04-repository-impact.md",
+    "genesis/engineering/packages/GCC-1003/05-metrics.md",
+    "genesis/engineering/packages/GCC-1003/06-package-health.md",
+    "genesis/engineering/packages/GCC-1003/RELEASE-READINESS.md",
+    "genesis/engineering/packages/GCC-1003/metrics.json",
+    "genesis/engineering/packages/GCC-1003/validation.json",
+    "genesis/engineering/packages/GCC-1003/traceability.json",
+    "genesis/engineering/packages/GCC-1003/repository-impact.json",
+    "genesis/engineering/packages/GCC-1003/package.json"
+  ],
+  "impactSummary": {
+    "foundationModified": false,
+    "gcc1001Modified": false,
+    "gcc1002Modified": false,
+    "repoTestsGreen": true
+  }
+}

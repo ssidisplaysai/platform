@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCCKG-GCC-1003-v1.0.0",
+  "packageVersion": "1.0.0",
+  "packageStatus": "Frozen",
+  "subjectId": "GCC-1003",
+  "subjectVersion": "1.0.0",
+  "subjectStatus": "Approved",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "Approved",
+  "certificationStatus": "Certified",
+  "integrityStatus": "Sealed",
+  "governanceDecision": "GD-0007",
+  "stoppedBeforeCommit": true,
+  "name": "gcc-1003-engineering-package",
+  "title": "GCC-1003 Engineering Package",
+  "description": "Genesis Evidence Compiler v1.0 - Engineering Package",
+  "created": "2026-07-15",
+  "author": "Genesis Platform Team",
+  "governance": {
+    "foundationAuthority": "Foundation v1.1",
+    "architectureAuthority": "GCC-1001",
+    "kernelAuthority": "GCC-1002",
+    "constitutionAuthority": "Genesis Constitution"
+  },
+  "dependencies": [
+    "Foundation v1.1",
+    "GCC-1001",
+    "GCC-1002",
+    "Genesis Constitution"
+  ],
+  "artifacts": {
+    "documentation": [
+      "00-package-manifest.md",
+      "01-implementation-report.md",
+      "02-traceability.md",
+      "03-validation-report.md",
+      "04-repository-impact.md",
+      "05-metrics.md",
+      "06-package-health.md",
+      "README.md",
+      "RELEASE-READINESS.md"
+    ],
+    "data": [
+      "metrics.json",
+      "validation.json",
+      "traceability.json",
+      "repository-impact.json",
+      "package-checksums.json"
+    ],
+    "package": [
+      "GCC-1003-engineering-package.zip"
+    ]
+  },
+  "metrics": {
+    "runtimeSourceFilesUpdated": 2,
+    "runtimeSourceFilesAdded": 0,
+    "testFilesAdded": 1,
+    "packageDocumentationFilesCreated": 9,
+    "packageDataFilesCreated": 5,
+    "packageArchivesCreated": 2,
+    "focusedValidationCommandsPassed": 5,
+    "repositoryTestStepsPassed": 3
+  }
+}

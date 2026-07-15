@@ -1,0 +1,27 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "packageId":  "GCCKG-GCC-1003-v1.0.0",
+    "checksums":  {
+                      "algorithm":  "sha256",
+                      "generatedDate":  "2026-07-15T23:38:50Z",
+                      "artifactCount":  15,
+                      "integrity":  "VERIFIED",
+                      "artifacts":  {
+                                        "00-package-manifest.md":  "6c50da34ca9f853ee497be5a6c54fb491f037ad5cca19442477c0b0c0db5b073",
+                                        "01-implementation-report.md":  "e02e3485475c50570ade20bf3a837a1a243f01258d53dbde1b922774f0a250c3",
+                                        "02-traceability.md":  "a268ddfc26bca1414a7b7417136e1138cd0775818dd14c2bf8d0f9029d07504f",
+                                        "03-validation-report.md":  "5a6373b81d7c146b0dfd2092f27637cfa2e7cd0ee1253f037823ee572067e37d",
+                                        "04-repository-impact.md":  "df6eae5193d3144c8af876f722cbf688c54e1d4a2fc1759f4d1f648a594761a6",
+                                        "05-metrics.md":  "5c3418dee7d752f971fc16d5a11c260bbc0fc50fd5a5df437339e84da228d428",
+                                        "06-package-health.md":  "8cabdbdcc01ff0a52d7d0c9bc80f7f1754cbd7b743d213eaa792d79f15f096f1",
+                                        "GCC-1003-engineering-package.zip":  "033ad5f3d7497b32bcc2f98fd1a709dd34249e5ebf11eaff7148b34f14f07fdc",
+                                        "metrics.json":  "a3de4fc6218ce562345ca1f2438216de344546e922618ea6618df3e14d603edb",
+                                        "package.json":  "5a7b874061fc9ba28d294de4061d889aca3bcd2dad1e5dd3fd9ca58d2ef3ddee",
+                                        "README.md":  "05e54dc4ac094f669ecb4f4c8fde24bb3c1ebb8e46a24d6d15463c955b14f5b6",
+                                        "RELEASE-READINESS.md":  "632779a44c5b4bec45d5f337d861420e4a9ea384dcd2878b5865d7b8b5de46cf",
+                                        "repository-impact.json":  "6ba9c5d0fb6365e279dea3ea1e7788397fbcf62b1a361c394181b83a8a4a0742",
+                                        "traceability.json":  "e07d48ce1eb0ee87dd34f9cfbb138de460f3022d5885bb2cfee4469d43977385",
+                                        "validation.json":  "bb77a8df4b0852d4ba357b44c8b5b1ef45cbaf7a4d739f1e444ed4481039444f"
+                                    }
+                  }
+}

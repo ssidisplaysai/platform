@@ -19,7 +19,6 @@ import * as crypto from 'crypto';
 import {
   DiscoveryInterview,
   DiscoveryQuestion,
-  DiscoveryAnswer,
   DiscoverySection,
 } from '../../discovery/models';
 import {
@@ -34,9 +33,13 @@ import {
   EvidenceProvenance,
   EvidenceIRMetadata,
 } from '../models';
-import { canonicalizeValue, computeCanonicalHash, canonicalizeToJSON } from '../canonicalization';
-import { generateIdentity, TypeTag, verifyIdentity } from '../identity';
-import { validateEvidenceCollection, validateEvidencePackage, validateEvidenceSet } from '../validation';
+import { canonicalizeValue } from '../canonicalization';
+import { generateIdentity, TypeTag } from '../identity';
+import { validateEvidenceCollection, validateEvidenceItem, validateEvidencePackage, validateEvidenceSet } from '../validation';
+
+type CompilerStatistics = EvidenceIRCompilerResult['statistics'];
+type CompilerDiagnostic = EvidenceIRCompilerResult['diagnostics'][number];
+type CompilerManifestStatistics = Omit<CompilerStatistics, 'executionTimeMs'>;
 
 // ============================================================================
 // Evidence Item Compiler
@@ -59,7 +62,7 @@ function compileQuestionAnswerToItem(
   const provenance: EvidenceProvenance = {
     discoveryQuestionId: question.id,
     discoveryAnswerId: question.id, // In this schema, answer is part of question
-    discoverySectionId: section.id || 'unknown',
+    discoverySectionId: `${section.order}:${section.title}`,
     discoveryInterviewId: interview.interviewId,
     discoverySourceMetadata: {
       participant: interview.participant || 'Unknown',
@@ -101,7 +104,7 @@ function compileQuestionAnswerToItem(
 
   metadata.identity = generateIdentity(TypeTag.EVIDENCE_ITEM, identityContent);
 
-  return {
+  const item: EvidenceItem = {
     metadata,
     formType,
     content: content as string,
@@ -116,6 +119,10 @@ function compileQuestionAnswerToItem(
       violations: [],
     },
   };
+
+  item.validationResults = validateEvidenceItem(item);
+
+  return item;
 }
 
 // ============================================================================
@@ -142,6 +149,8 @@ function compileInterviewToCollection(
       }
     }
   }
+
+  items.sort((left, right) => left.metadata.identity.localeCompare(right.metadata.identity));
 
   // Create metadata
   const collectionMetadata: EvidenceIRMetadata = {
@@ -207,28 +216,33 @@ function compileInterviewToCollection(
  * Per EIR-0001: Deduplicate based on canonical identity (deterministic).
  */
 function compileCollectionsToPackage(
-  collections: EvidenceCollection[],
-  compilerVersion: string
+  collections: EvidenceCollection[]
 ): EvidencePackage {
+  const sortedCollections = [...collections].sort((left, right) => left.metadata.identity.localeCompare(right.metadata.identity));
+
   // Track unique items by identity
   const uniqueItems = new Map<string, EvidenceItem>();
   const duplicateMapping: Record<string, string> = {};
+  const canonicalIdentityByContent = new Map<string, string>();
 
   let totalInputItems = 0;
 
-  for (const collection of collections) {
+  for (const collection of sortedCollections) {
     for (const item of collection.items) {
       totalInputItems++;
+      const canonicalIdentity = canonicalIdentityByContent.get(item.metadata.identity);
+
       if (!uniqueItems.has(item.metadata.identity)) {
         uniqueItems.set(item.metadata.identity, item);
+        canonicalIdentityByContent.set(item.metadata.identity, item.metadata.identity);
       } else {
-        // Item is duplicate of existing
-        duplicateMapping[item.metadata.identity] = item.metadata.identity;
+        // Item is duplicate of an existing canonical identity.
+        duplicateMapping[item.metadata.identity] = canonicalIdentity ?? item.metadata.identity;
       }
     }
   }
 
-  const items = Array.from(uniqueItems.values());
+  const items = Array.from(uniqueItems.values()).sort((left, right) => left.metadata.identity.localeCompare(right.metadata.identity));
 
   // Create metadata
   const packageMetadata: EvidenceIRMetadata = {
@@ -239,7 +253,7 @@ function compileCollectionsToPackage(
   };
 
   // Generate deterministic identity
-  const collectionIds = collections.map(c => c.metadata.identity).sort();
+  const collectionIds = sortedCollections.map(c => c.metadata.identity).sort();
   const itemIdentities = items.map(item => item.metadata.identity).sort();
   const identityContent = {
     sourceCollectionIds: collectionIds,
@@ -283,21 +297,25 @@ function compileCollectionsToPackage(
  */
 function compilePackagesToSet(
   packages: EvidencePackage[],
-  collections: EvidenceCollection[],
-  compilerVersion: string
+  collections: EvidenceCollection[]
 ): EvidenceSet {
+  const sortedCollections = [...collections].sort((left, right) => left.metadata.identity.localeCompare(right.metadata.identity));
+  const sortedPackages = [...packages].sort((left, right) => left.metadata.identity.localeCompare(right.metadata.identity));
+
   // Flatten all items for quick access
   const allItems: EvidenceItem[] = [];
-  for (const pkg of packages) {
+  for (const pkg of sortedPackages) {
     allItems.push(...pkg.items);
   }
+
+  allItems.sort((left, right) => left.metadata.identity.localeCompare(right.metadata.identity));
 
   // Compute cross-references
   const crossReferences = {
     totalItems: allItems.length,
-    totalCollections: collections.length,
-    totalPackages: packages.length,
-    duplicatesRemoved: packages.reduce((sum, pkg) => sum + (pkg.deduplicationResults?.totalInputItems || 0), 0) - allItems.length,
+    totalCollections: sortedCollections.length,
+    totalPackages: sortedPackages.length,
+    duplicatesRemoved: sortedPackages.reduce((sum, pkg) => sum + (pkg.deduplicationResults?.totalInputItems || 0), 0) - allItems.length,
     relationshipsFound: 0,
   };
 
@@ -310,8 +328,8 @@ function compilePackagesToSet(
   };
 
   // Generate deterministic identity
-  const collectionIds = collections.map(c => c.metadata.identity).sort();
-  const packageIds = packages.map(p => p.metadata.identity).sort();
+  const collectionIds = sortedCollections.map(c => c.metadata.identity).sort();
+  const packageIds = sortedPackages.map(p => p.metadata.identity).sort();
   const identityContent = {
     collectionIds,
     packageIds,
@@ -322,8 +340,8 @@ function compilePackagesToSet(
 
   const set: EvidenceSet = {
     metadata: setMetadata,
-    collections,
-    packages,
+    collections: sortedCollections,
+    packages: sortedPackages,
     allItems,
     crossReferences,
     validationResults: {
@@ -350,9 +368,8 @@ function generateManifest(
   set: EvidenceSet,
   inputInterviews: DiscoveryInterview[],
   compilerVersion: string,
-  statistics: any,
-  diagnostics: any,
-  executionTimeMs: number
+  statistics: CompilerManifestStatistics,
+  diagnostics: readonly CompilerDiagnostic[]
 ): EvidenceManifest {
 
   return {
@@ -378,8 +395,8 @@ function generateManifest(
       totalValidations: statistics.itemsProcessed,
       passedValidations: statistics.itemsSuccessful,
       failedValidations: statistics.itemsFailed,
-      warningsIssued: diagnostics.filter((d: any) => d.severity === 'warning').length,
-      errorsIssued: diagnostics.filter((d: any) => d.severity === 'error').length,
+      warningsIssued: diagnostics.filter(diagnostic => diagnostic.severity === 'warning').length,
+      errorsIssued: diagnostics.filter(diagnostic => diagnostic.severity === 'error').length,
     },
 
     canonicalizationSummary: {
@@ -416,24 +433,21 @@ export function compileEvidenceIR(
   compilerVersion: string = '2.0.0'
 ): EvidenceIRCompilerResult {
   const startTime = Date.now();
-  const diagnostics: Array<{
-    code: EvidenceDiagnosticCode;
-    severity: string;
-    message: string;
-  }> = [];
+  const sortedDiscoveryInterviews = [...discoveryInterviews].sort((left, right) => left.interviewId.localeCompare(right.interviewId));
+  const diagnostics: CompilerDiagnostic[] = [];
 
   let itemsProcessed = 0;
   let itemsSuccessful = 0;
   let itemsFailed = 0;
-  let canonicalizationErrors = 0;
-  let identityErrors = 0;
+  const canonicalizationErrors = 0;
+  const identityErrors = 0;
   let validationErrors = 0;
 
   try {
     // Stage 2a: Compile interviews to collections
     const collections: EvidenceCollection[] = [];
 
-    for (const interview of discoveryInterviews) {
+    for (const interview of sortedDiscoveryInterviews) {
       try {
         const collection = compileInterviewToCollection(interview, compilerVersion);
         collections.push(collection);
@@ -463,7 +477,7 @@ export function compileEvidenceIR(
     }
 
     // Stage 2b: Compile collections to package (with deduplication)
-    const package_ = compileCollectionsToPackage(collections, compilerVersion);
+    const package_ = compileCollectionsToPackage(collections);
 
     const deduped = package_.deduplicationResults.totalInputItems - package_.deduplicationResults.totalDeduplicatedItems;
     if (deduped > 0) {
@@ -475,18 +489,23 @@ export function compileEvidenceIR(
     }
 
     // Stage 2c: Compile package to set
-    const set = compilePackagesToSet([package_], collections, compilerVersion);
+    const set = compilePackagesToSet([package_], collections);
+
+    const hasValidationFailures =
+      collections.some(collection => !collection.validationResults.isValid) ||
+      !package_.validationResults.isValid ||
+      !set.validationResults.isValid;
 
     const executionTimeMs = Date.now() - startTime;
 
     const result: EvidenceIRCompilerResult = {
-      success: true,
+      success: !hasValidationFailures && diagnostics.every(diagnostic => diagnostic.severity !== 'error'),
       compilerVersion,
       compiledAt: new Date().toISOString(),
       inputSource: {
         type: 'discovery_interviews',
-        sourceId: discoveryInterviews.map(i => i.interviewId).join(','),
-        interviewId: discoveryInterviews[0]?.interviewId || 'unknown',
+        sourceId: sortedDiscoveryInterviews.map(i => i.interviewId).join(','),
+        interviewId: sortedDiscoveryInterviews[0]?.interviewId || 'unknown',
       },
       evidenceSet: set,
       manifest: generateManifest(set, discoveryInterviews, compilerVersion, {
@@ -496,8 +515,8 @@ export function compileEvidenceIR(
         canonicalizationErrors,
         identityErrors,
         validationErrors,
-      }, diagnostics, executionTimeMs),
-      diagnostics: diagnostics as any,
+      }, diagnostics),
+      diagnostics,
       statistics: {
         executionTimeMs,
         itemsProcessed,
@@ -519,8 +538,8 @@ export function compileEvidenceIR(
       compiledAt: new Date().toISOString(),
       inputSource: {
         type: 'discovery_interviews',
-        sourceId: discoveryInterviews.map(i => i.interviewId).join(','),
-        interviewId: discoveryInterviews[0]?.interviewId || 'unknown',
+        sourceId: sortedDiscoveryInterviews.map(i => i.interviewId).join(','),
+        interviewId: sortedDiscoveryInterviews[0]?.interviewId || 'unknown',
       },
       manifest: {
         compilerVersion,
@@ -569,7 +588,7 @@ export function compileEvidenceIR(
           severity: 'error',
           message: `Compilation failed: ${String(e)}`,
         },
-      ] as any,
+      ],
       statistics: {
         executionTimeMs,
         itemsProcessed,

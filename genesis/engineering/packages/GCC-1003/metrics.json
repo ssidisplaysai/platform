@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCCKG-GCC-1003-v1.0.0",
+  "metrics": {
+    "runtimeSourceFilesUpdated": 2,
+    "runtimeSourceFilesAdded": 0,
+    "testFilesAdded": 1,
+    "packageDocumentationFilesCreated": 9,
+    "packageDataFilesCreated": 5,
+    "packageArchivesCreated": 2,
+    "focusedValidationCommandsPassed": 5,
+    "repositoryTestStepsPassed": 3
+  }
+}
