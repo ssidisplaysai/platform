@@ -2,6 +2,9 @@ import type { CompilerDiagnostic, CompilerPassContext } from "../../core/types";
 import type { CompilerPass, CompilerPassMetadata } from "../../core/types";
 import type {
   BusinessGenomeIdentityCollection,
+  BusinessGenomeIdentity,
+  ConsolidatedSemantic,
+  ResolvedRelationship,
   BusinessGenomeNode,
   BusinessGenomeEdge,
   GraphConstructionContext,
@@ -40,6 +43,19 @@ export const GRAPH_CONSTRUCTION_RULES = [
   },
 ] as const;
 
+function deepFreeze<T>(value: T): T {
+  if (value === null || typeof value !== "object") {
+    return value;
+  }
+
+  const obj = value as Record<string, unknown>;
+  for (const key of Object.keys(obj)) {
+    deepFreeze(obj[key]);
+  }
+
+  return Object.freeze(value);
+}
+
 /**
  * BGC-PASS-009: Graph Construction
  *
@@ -72,6 +88,7 @@ export class GraphConstructionPass
     input: BusinessGenomeIdentityCollection,
     context: CompilerPassContext,
   ): BusinessGenomePassResult<BusinessGenomeGraph> {
+    void context;
     const diagnostics: CompilerDiagnostic[] = [];
 
     // Validate input
@@ -109,7 +126,7 @@ export class GraphConstructionPass
         continue;
       }
 
-      const node = this.constructNode(identity, sourceConsolidated, input, diagnostics);
+      const node = this.constructNode(identity, sourceConsolidated, input);
       nodes.push(node);
 
       const result: NodeConstructionResult = {
@@ -129,6 +146,7 @@ export class GraphConstructionPass
         ],
       };
       nodeConstructionResults.push(result);
+      diagnostics.push(...result.diagnostics);
     }
 
     // Construct edges from relationship identities
@@ -202,7 +220,6 @@ export class GraphConstructionPass
         sourceNodeId,
         targetNodeId,
         input,
-        diagnostics,
       );
       edges.push(edge);
 
@@ -225,23 +242,26 @@ export class GraphConstructionPass
         ],
       };
       edgeConstructionResults.push(result);
+      diagnostics.push(...result.diagnostics);
     }
 
     // Sort nodes and edges deterministically
     const sortedNodes = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
     const sortedEdges = [...edges].sort((a, b) => a.id.localeCompare(b.id));
+    const immutableNodes = sortedNodes.map((node) => deepFreeze(node));
+    const immutableEdges = sortedEdges.map((edge) => deepFreeze(edge));
 
     // Build graph
     const graphId = this.deriveGraphIdentity({
-      nodeIds: sortedNodes.map((n) => n.id),
-      edgeIds: sortedEdges.map((e) => e.id),
+      nodeIds: immutableNodes.map((n) => n.id),
+      edgeIds: immutableEdges.map((e) => e.id),
     });
 
     const graph: BusinessGenomeGraph = {
       id: graphId,
       sourceEvidenceIrIdentity: input.sourceEvidenceIrIdentity,
-      nodes: sortedNodes,
-      edges: sortedEdges,
+      nodes: deepFreeze(immutableNodes),
+      edges: deepFreeze(immutableEdges),
       nodeConstructionResults: [...nodeConstructionResults].sort((a, b) =>
         a.canonicalNodeId.localeCompare(b.canonicalNodeId),
       ),
@@ -268,10 +288,9 @@ export class GraphConstructionPass
   }
 
   private constructNode(
-    identity: any,
-    sourceConsolidated: any,
+    identity: BusinessGenomeIdentity,
+    sourceConsolidated: ConsolidatedSemantic,
     input: BusinessGenomeIdentityCollection,
-    diagnostics: CompilerDiagnostic[],
   ): BusinessGenomeNode {
     const context: GraphConstructionContext = {
       passId: this.metadata.id,
@@ -313,12 +332,11 @@ export class GraphConstructionPass
   }
 
   private constructEdge(
-    identity: any,
-    relationship: any,
+    identity: BusinessGenomeIdentity,
+    relationship: ResolvedRelationship,
     sourceNodeId: string,
     targetNodeId: string,
     input: BusinessGenomeIdentityCollection,
-    diagnostics: CompilerDiagnostic[],
   ): BusinessGenomeEdge {
     const context: GraphConstructionContext = {
       passId: this.metadata.id,

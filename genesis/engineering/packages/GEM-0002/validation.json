@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEMKG-GEM-0002-v1.0.0",
+  "validationDate": "2026-07-15",
+  "commands": [
+    {
+      "name": "test:jest",
+      "command": "npm run test:jest",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "16 suites passed, 372 tests passed"
+    },
+    {
+      "name": "test:node",
+      "command": "npm run test:node",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "38 suites passed, 291 tests passed, 0 skipped, 0 failed"
+    },
+    {
+      "name": "test:compiler",
+      "command": "npm run test:compiler",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "20 tests passed"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "Authoritative aggregate workflow passed"
+    },
+    {
+      "name": "test:all-smoke",
+      "command": "npm run test:all -- --smoke",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "Smoke aggregate passed"
+    },
+    {
+      "name": "lint:touched",
+      "command": "npx eslint <touched GEM-0002 files>",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "Touched implementation and touched tests lint clean"
+    },
+    {
+      "name": "typecheck:gem-0002-r1",
+      "command": "npx tsc --noEmit -p tsconfig.gem-0002-r1.json",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "Scoped touched implementation typecheck clean"
+    },
+    {
+      "name": "typecheck:global-baseline",
+      "command": "npx tsc --noEmit",
+      "result": "BASELINE",
+      "exitCode": 1,
+      "summary": "Approximately 383 pre-existing errors across 61 files (outside GEM-0002-R1 scope)"
+    }
+  ],
+  "requirements": {
+    "nodeTestZeroFail": true,
+    "nodeTestZeroSkipped": true,
+    "aggregateNpmTestGreen": true,
+    "passOrderAligned": true,
+    "graphImmutabilityAndDiagnosticsValidated": true,
+    "touchedLintClean": true,
+    "touchedTypecheckClean": true,
+    "globalTypeDebtDisclosed": true
+  }
+}

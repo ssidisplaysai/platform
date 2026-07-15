@@ -95,13 +95,26 @@ export class BusinessGenomePublicationPass
     lifecycle: "active" as const,
   };
 
-  async execute(
+  execute(
     input: BusinessGenomeValidationResult,
     context: CompilerPassContext,
-  ): Promise<BusinessGenomePassResult<BusinessGenomePublicationResult>> {
+  ): BusinessGenomePassResult<BusinessGenomePublicationResult> {
+    void context;
     const diagnostics: CompilerDiagnostic[] = [];
 
     // Validate input contract
+    if (!input) {
+      return this.buildFatalResult(undefined, [
+        createDiagnostic(
+          BGC_DIAGNOSTIC_CODES.PUB.MISSING_VALIDATION_RESULT,
+          "error",
+          "Required: BusinessGenomeValidationResult must be present for publication",
+          this.metadata.id,
+          { reason: "validation_result_missing" },
+        ),
+      ]);
+    }
+
     if (!input.businessGenomeGraph) {
       return this.buildFatalResult(input, [
         createDiagnostic(
@@ -112,21 +125,6 @@ export class BusinessGenomePublicationPass
           { reason: "graph_missing" },
         ),
       ]);
-    }
-
-    if (!input) {
-      return this.buildFatalResult(
-        { businessGenomeGraph: { nodes: [], edges: [] } as any } as BusinessGenomeValidationResult,
-        [
-          createDiagnostic(
-            BGC_DIAGNOSTIC_CODES.PUB.MISSING_VALIDATION_RESULT,
-            "error",
-            "Required: BusinessGenomeValidationResult must be present for publication",
-            this.metadata.id,
-            { reason: "validation_result_missing" },
-          ),
-        ],
-      );
     }
 
     // Check publication preconditions
@@ -527,7 +525,10 @@ export class BusinessGenomePublicationPass
     };
   }
 
-  private buildFatalResult(input: BusinessGenomeValidationResult | any, diagnostics: CompilerDiagnostic[]): BusinessGenomePassResult<BusinessGenomePublicationResult> {
+  private buildFatalResult(
+    input: BusinessGenomeValidationResult | undefined,
+    diagnostics: CompilerDiagnostic[],
+  ): BusinessGenomePassResult<BusinessGenomePublicationResult> {
     return {
       passId: this.metadata.id,
       passVersion: this.metadata.version,
@@ -539,8 +540,10 @@ export class BusinessGenomePublicationPass
         passVersion: this.metadata.version,
         specificationVersion: input?.specificationVersion ?? "1.0.0",
         compilerVersion: input?.compilerVersion ?? "1.0.0",
-        validationResult: input,
-        graph: input?.businessGenomeGraph ?? ({ nodes: [], edges: [] } as any),
+        validationResult: input ?? ({} as unknown as BusinessGenomeValidationResult),
+        graph:
+          input?.businessGenomeGraph ??
+          ({ nodes: [], edges: [] } as unknown as BusinessGenomeGraph),
       },
       diagnostics: sortDiagnostics(diagnostics),
       fatal: false,

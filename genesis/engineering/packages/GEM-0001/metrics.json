@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEMKG-GEM-0001-v1.0.0",
+  "metrics": {
+    "scriptsAddedOrChanged": 11,
+    "runnerUtilityFilesAdded": 4,
+    "compatibilityTestsAdjusted": 1,
+    "jestSuitesDiscovered": 16,
+    "nodeTestSuitesDiscoveredExcludingCompilerCore": 39,
+    "compilerCoreSuites": 20,
+    "foundationFilesModified": 0,
+    "gcc1001FilesModified": 0,
+    "gcc1002RuntimeFilesModified": 0,
+    "ciWorkflowFilesModified": 0
+  }
+}

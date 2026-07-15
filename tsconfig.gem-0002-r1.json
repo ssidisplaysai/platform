@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [
+    "src/compiler/genome/pipeline-types.ts",
+    "src/compiler/genome/passes/BusinessGenomePublicationPass.ts",
+    "src/compiler/genome/passes/SemanticConsolidationPass.ts",
+    "src/compiler/genome/passes/GraphConstructionPass.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "out/**",
+    "platform-ssi-discovery/**"
+  ]
+}

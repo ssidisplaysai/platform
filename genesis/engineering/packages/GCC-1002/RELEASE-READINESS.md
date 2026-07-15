@@ -33,11 +33,10 @@ Package Status:
 - Integrity Status: Sealed
 - Canonical package archive rebuilt
 
-Known Tooling Limitation:
-- GCC-1002 tests pass under `node:test` through `tsx`.
-- The repository Jest command does not currently discover `node:test` suites authoritatively.
-- This is a tooling integration issue, not a GCC-1002 runtime failure.
-- Unified test-runner alignment is deferred to the next engineering maintenance task.
+Tooling Alignment Status:
+- GEM-0001 (Unified Test Runner Alignment) is implemented.
+- Repository aggregate command `npm test` now delegates to `test:all`, which runs Jest suites, node:test suites, and GCC-1002 compiler-core suites.
+- GCC-1002 runtime behavior remains unchanged; only test orchestration tooling was updated.
 
 Release Recommendation:
 - Recommended for release packaging and downstream consumption as GCC-1002 v1.0.0.

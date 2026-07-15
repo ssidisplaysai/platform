@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEMKG-GEM-0001-v1.0.0",
+  "packageVersion": "1.0.0",
+  "packageStatus": "Complete",
+  "subjectId": "GEM-0001",
+  "subjectVersion": "1.0.0",
+  "subjectStatus": "Validated",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "stoppedBeforeCommit": true,
+  "name": "gem-0001-engineering-package",
+  "title": "GEM-0001 Engineering Package",
+  "description": "Unified Test Runner Alignment engineering package",
+  "created": "2026-07-15",
+  "author": "Genesis Platform Team",
+  "artifacts": {
+    "documentation": [
+      "README.md",
+      "implementation-report.md",
+      "validation-report.md",
+      "repository-impact.md"
+    ],
+    "data": [
+      "metrics.json",
+      "validation.json",
+      "package-checksums.json"
+    ],
+    "package": [
+      "GEM-0001-engineering-package.zip"
+    ]
+  },
+  "metrics": {
+    "scriptsAddedOrChanged": 11,
+    "runnerUtilityFilesAdded": 4,
+    "compatibilityTestsAdjusted": 1,
+    "foundationFilesModified": 0,
+    "gcc1001FilesModified": 0,
+    "gcc1002RuntimeFilesModified": 0,
+    "ciWorkflowFilesModified": 0
+  }
+}

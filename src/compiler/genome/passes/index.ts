@@ -3,7 +3,7 @@ export { CanonicalVerificationPass } from "./CanonicalVerificationPass";
 export { EvidenceGroupingPass } from "./EvidenceGroupingPass";
 export { EvidenceCorrelationPass } from "./EvidenceCorrelationPass";
 export { SemanticResolutionPass } from "./SemanticResolutionPass";
-export { SemanticConsolidationPass } from "./SemanticConsolidationPass";
+export { SemanticConsolidationPass, SEMANTIC_CONSOLIDATION_RULES } from "./SemanticConsolidationPass";
 export { SemanticRelationshipResolutionPass } from "./SemanticRelationshipResolutionPass";
 export { SemanticIdentityAssignmentPass } from "./SemanticIdentityAssignmentPass";
 export { GraphConstructionPass } from "./GraphConstructionPass";

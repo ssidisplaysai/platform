@@ -7,8 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "npm run test:all",
+    "test:watch": "npm run test:jest -- --watch",
+    "test:jest": "node scripts/run-jest-suites.mjs",
+    "test:jest:smoke": "npx jest --runInBand --runTestsByPath tests/knowledge-identity.test.ts",
+    "test:node": "node scripts/run-node-suites.mjs",
+    "test:node:smoke": "npx tsx --test tests/compiler/discovery/provenance.test.ts",
+    "test:compiler": "npx tsx --test tests/compiler/core/*.test.ts",
+    "test:compiler:smoke": "npx tsx --test tests/compiler/core/compiler-kernel.test.ts",
+    "test:all": "node scripts/run-all-tests.mjs",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },
@@ -31,6 +38,7 @@
     "jest": "^30.4.2",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.11",
+    "tsx": "^4.20.6",
     "typescript": "^5"
   }
 }

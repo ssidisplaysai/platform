@@ -1,5 +1,4 @@
-import type { CompilerPass, CompilerPassContext, CompilerPassMetadata } from "../../core/types";
-import { stableStringify } from "../../core/stableStringify";
+import type { CompilerDiagnostic, CompilerPass, CompilerPassContext, CompilerPassMetadata } from "../../core/types";
 import { BGC_DIAGNOSTIC_CODES, createDiagnostic, sortDiagnostics } from "../diagnostics";
 import {
   deterministicIdentity,
@@ -8,7 +7,6 @@ import {
   type ConsolidatedSemanticCollection,
   type SemanticCandidate,
   type SemanticCandidateCollection,
-  type SemanticConflictReference,
   type SemanticMergeContext,
   type SemanticMergeResult,
   type SemanticMergeRule,
@@ -111,6 +109,7 @@ function findMergeRule(candidate1: SemanticCandidate, candidate2: SemanticCandid
 function buildConsolidatedSemantic(
   candidates: readonly SemanticCandidate[],
   mergeRuleId: string,
+  sourceEvidenceIrIdentity: string,
   consolidationContext: SemanticMergeContext,
 ): ConsolidatedSemantic {
   // Merge rule must exist
@@ -196,7 +195,7 @@ function buildConsolidatedSemantic(
     evidenceGroupIds,
     evidenceItemIds,
     provenanceReferences,
-    sourceEvidenceIrIdentity: candidates[0]!.sourceEvidenceIrIdentity,
+    sourceEvidenceIrIdentity,
     conflictReferences,
     hasConflicts,
     consolidationRuleId: rule.id,
@@ -210,7 +209,9 @@ function buildConsolidatedSemantic(
 
 // ─── SemanticConsolidationPass Implementation ──────────────────────────────
 
-export class SemanticConsolidationPass implements CompilerPass<SemanticCandidateCollection, ConsolidatedSemanticCollection> {
+export class SemanticConsolidationPass
+  implements CompilerPass<SemanticCandidateCollection, BusinessGenomePassResult<ConsolidatedSemanticCollection>>
+{
   readonly metadata: CompilerPassMetadata = {
     id: "bgc.semantic-consolidation",
     version: "1.0.0",
@@ -227,6 +228,7 @@ export class SemanticConsolidationPass implements CompilerPass<SemanticCandidate
     input: SemanticCandidateCollection,
     context: CompilerPassContext,
   ): BusinessGenomePassResult<ConsolidatedSemanticCollection> {
+    void context;
     const passId = this.metadata.id;
     const passVersion = this.metadata.version;
     const diagnostics: CompilerDiagnostic[] = [];
@@ -271,7 +273,6 @@ export class SemanticConsolidationPass implements CompilerPass<SemanticCandidate
       }
 
       // Phase 2: Build consolidation groups using union-find
-      const candidateMap = new Map(input.candidates.map((c) => [c.id, c]));
       const parentMap = new Map<string, string>();
       const mergeRuleMap = new Map<string, string>();
 
@@ -352,7 +353,12 @@ export class SemanticConsolidationPass implements CompilerPass<SemanticCandidate
           mergedCandidateIds: group.map((c) => c.id).sort(),
         };
 
-        const consolidated = buildConsolidatedSemantic(group, mergeRule.id, consolidationContext);
+        const consolidated = buildConsolidatedSemantic(
+          group,
+          mergeRule.id,
+          input.sourceEvidenceIrIdentity,
+          consolidationContext,
+        );
         consolidatedSemantics.push(consolidated);
 
         // Record merge result

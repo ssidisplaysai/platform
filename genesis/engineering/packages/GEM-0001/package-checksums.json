@@ -1,0 +1,20 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "packageId":  "GEMKG-GEM-0001-v1.0.0",
+    "checksums":  {
+                      "algorithm":  "sha256",
+                      "generatedDate":  "2026-07-15T23:19:30Z",
+                      "artifactCount":  8,
+                      "integrity":  "VERIFIED",
+                      "artifacts":  {
+                                        "GEM-0001-engineering-package.zip":  "da7e507273ccd8908fbd38fbfc930c7880a32a5e0ddf866a786d32b7ea29a177",
+                                        "implementation-report.md":  "5cf4e0717ba34461cb1a74d1c869ba2d68639ae6e7fa4d415f0022744eb4ce2a",
+                                        "metrics.json":  "8f0e9691c9c3905c7b133519edef853b9e06418dd7e52fc5b6aa77cefcd73ef8",
+                                        "package.json":  "78895f87a3e4d670ae37bda7a49766b613d43763966d262e96222e60fab4d559",
+                                        "README.md":  "e70378ba644ebf8f9fcd8d780ad28a858b47f9a71333dffa05a2cb9f1a170cbc",
+                                        "repository-impact.md":  "cb17277825948527bd2eb8ae9bdb1404f65a2f63e8f147655caa16964db84646",
+                                        "validation.json":  "d29cfc31094f38d1bfdc042dc4ee09074b43ab2e24605b9a09bef50b18bd7ed1",
+                                        "validation-report.md":  "97beb1681f5f2e6d5e1e2dffc647995306e5e47b825cff631b00fd206b84fbbf"
+                                    }
+                  }
+}

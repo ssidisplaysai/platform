@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEMKG-GEM-0002-v1.0.0",
+  "packageVersion": "1.0.0",
+  "packageStatus": "Complete",
+  "subjectId": "GEM-0002",
+  "subjectVersion": "1.0.0",
+  "subjectStatus": "Validated",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "stoppedBeforeCommit": true,
+  "name": "gem-0002-engineering-package",
+  "title": "GEM-0002 Engineering Package",
+  "description": "Genome Compiler Test Recovery engineering package",
+  "created": "2026-07-15",
+  "author": "Genesis Platform Team",
+  "artifacts": {
+    "documentation": [
+      "README.md",
+      "implementation-report.md",
+      "validation-report.md",
+      "repository-impact.md",
+      "RELEASE-READINESS.md"
+    ],
+    "data": [
+      "metrics.json",
+      "validation.json",
+      "package-checksums.json"
+    ],
+    "package": [
+      "GEM-0002-engineering-package.zip"
+    ]
+  },
+  "metrics": {
+    "initialNodeTestFailures": 29,
+    "finalNodeTestFailures": 0,
+    "finalNodeTestSkipped": 0,
+    "runtimeFilesModified": 6,
+    "testFilesModified": 5,
+    "targetedFixesApplied": 11,
+    "regressionTestsAdded": 1,
+    "lintIssuesResolvedInR1": 17,
+    "touchedScopeTypeErrors": 0,
+    "globalTypeBaselineErrors": 383,
+    "globalTypeBaselineFiles": 61
+  }
+}

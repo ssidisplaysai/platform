@@ -15,10 +15,7 @@ export const BGC_ARCHITECTURAL_PASS_ORDER = [
   "bgc.identity-assignment",
   "bgc.graph-construction",
   "bgc.consistency-validation",
-  "bgc.genome-validation",
-  "bgc.artifact-generation",
-  "bgc.compiler-diagnostics",
-  "bgc.manifest-generation",
+  "bgc.business-genome-publication",
 ] as const;
 
 export type BusinessGenomePassId = (typeof BGC_ARCHITECTURAL_PASS_ORDER)[number];

@@ -1,82 +1,10 @@
 import { describe, test } from "node:test";
 import assert from "node:assert";
-import { GraphConstructionPass } from "../src/compiler/genome/passes/GraphConstructionPass";
+import { GraphConstructionPass } from "../../../src/compiler/genome/passes/GraphConstructionPass";
 import type {
   BusinessGenomeIdentityCollection,
-  BusinessGenomeNode,
-  BusinessGenomeEdge,
   BusinessGenomeGraph,
-} from "../src/compiler/genome/pipeline-types";
-
-/**
- * Test fixtures for graph construction
- */
-
-function createMockBusinessGenomeNode(
-  id: string = "bg.object_sample_v1",
-  semanticClass: string = "customer",
-  designation: string = "Acme Corp",
-): BusinessGenomeNode {
-  return {
-    id,
-    semanticClass,
-    canonicalDesignation: designation,
-    sourceIdentityId: `bgc-id_${id}_v1`,
-    sourceConsolidatedSemanticId: `bgc-cse_${semanticClass}_v1`,
-    provenanceReferences: ["prov-ref-001", "prov-ref-002"],
-    evidenceLineage: ["ev-001", "ev-002"],
-    sourceEvidenceIrIdentity: "ev-ir-001",
-    constructedAt: "2024-01-01T00:00:00Z",
-    certainty: { state: "certain" as const, confidence: 1.0 },
-    validationStatus: { valid: true, violations: [] },
-    graphConstructionContext: {
-      passId: "bgc.graph-construction",
-      passVersion: "1.0.0",
-      compilerVersion: "1.0.0",
-      specificationVersion: "1.0.0",
-      ruleId: "bgc.graph.rule.node-construction",
-      ruleVersion: "1.0.0",
-      rationaleCode: "BGC-RATIONALE-GRAPH-001",
-      gps0001Version: "1.0.0",
-      gps0002Version: "1.0.0",
-    },
-    diagnostics: [],
-  };
-}
-
-function createMockBusinessGenomeEdge(
-  id: string = "bg.relationship_purchased_v1",
-  relationshipType: string = "PURCHASED",
-  sourceNodeId: string = "bg.object_customer_v1",
-  targetNodeId: string = "bg.object_product_v1",
-): BusinessGenomeEdge {
-  return {
-    id,
-    relationshipType,
-    sourceNodeId,
-    targetNodeId,
-    sourceIdentityId: `bgc-id_${id}_v1`,
-    sourceRelationshipId: `bgc-rel_${id}_v1`,
-    provenanceReferences: ["prov-ref-003"],
-    evidenceLineage: ["ev-003"],
-    sourceEvidenceIrIdentity: "ev-ir-001",
-    constructedAt: "2024-01-01T00:00:00Z",
-    certainty: { state: "certain" as const, confidence: 1.0 },
-    validationStatus: { valid: true, violations: [] },
-    graphConstructionContext: {
-      passId: "bgc.graph-construction",
-      passVersion: "1.0.0",
-      compilerVersion: "1.0.0",
-      specificationVersion: "1.0.0",
-      ruleId: "bgc.graph.rule.edge-construction",
-      ruleVersion: "1.0.0",
-      rationaleCode: "BGC-RATIONALE-GRAPH-002",
-      gps0001Version: "1.0.0",
-      gps0002Version: "1.0.0",
-    },
-    diagnostics: [],
-  };
-}
+} from "../../../src/compiler/genome/pipeline-types";
 
 function createMockIdentityCollection(
   nodeIdentities: number = 2,
@@ -421,7 +349,8 @@ describe("GraphConstructionPass (BGC-PASS-009)", () => {
       const node = graph.nodes[0];
 
       assert.throws(() => {
-        (node as any).id = "modified";
+        const mutableNode = node as { id: string };
+        mutableNode.id = "modified";
       });
     });
 
@@ -434,7 +363,8 @@ describe("GraphConstructionPass (BGC-PASS-009)", () => {
       const edge = graph.edges[0];
 
       assert.throws(() => {
-        (edge as any).relationshipType = "modified";
+        const mutableEdge = edge as { relationshipType: string };
+        mutableEdge.relationshipType = "modified";
       });
     });
   });

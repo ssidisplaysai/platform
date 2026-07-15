@@ -619,10 +619,11 @@ test("M1.3 does not emit BusinessGenomeArtifact or SemanticGraph", () => {
 
   assert.equal(result.status, "intermediate");
   assert.equal(result.intermediate.correlatedEvidence !== null, true);
+  assert.equal(result.intermediate.publication?.publicationStatus, "published");
 
   const serialized = JSON.stringify(result);
   assert.equal(serialized.includes("semanticGraph"), false);
-  assert.equal(serialized.includes("businessGenome"), false);
+  assert.equal(serialized.includes("businessGenomeArtifact"), false);
 });
 
 test("compiler completes through bgc.evidence-correlation through bgc.relationship-resolution", () => {
@@ -633,5 +634,6 @@ test("compiler completes through bgc.evidence-correlation through bgc.relationsh
   assert.equal(result.execution.completedPasses.includes("bgc.semantic-resolution"), true);
   assert.equal(result.execution.completedPasses.includes("bgc.semantic-consolidation"), true);
   assert.equal(result.execution.completedPasses.includes("bgc.relationship-resolution"), true);
-  assert.equal(result.execution.completedPasses.includes("bgc.identity-assignment"), false);
+  assert.equal(result.execution.completedPasses.includes("bgc.identity-assignment"), true);
+  assert.equal(result.execution.completedPasses.includes("bgc.business-genome-publication"), true);
 });

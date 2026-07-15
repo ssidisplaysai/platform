@@ -18,6 +18,7 @@ export {
   EvidenceCorrelationPass,
   SemanticResolutionPass,
   SemanticConsolidationPass,
+  SEMANTIC_CONSOLIDATION_RULES,
   SemanticRelationshipResolutionPass,
   SemanticIdentityAssignmentPass,
   GraphConstructionPass,
@@ -104,6 +105,5 @@ export type {
   BusinessGenomeLineageIndex,
   BusinessGenomeArtifactManifest,
   BusinessGenomePublicationContext,
-  BusinessGenomeArtifact,
   BusinessGenomePublicationResult,
 } from "./pipeline-types";

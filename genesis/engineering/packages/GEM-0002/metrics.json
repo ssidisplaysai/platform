@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEMKG-GEM-0002-v1.0.0",
+  "metrics": {
+    "initialNodeTestFailures": 29,
+    "finalNodeTestFailures": 0,
+    "finalNodeTestSkipped": 0,
+    "runtimeFilesModified": 6,
+    "testFilesModified": 5,
+    "targetedFixesApplied": 11,
+    "regressionTestsAdded": 1,
+    "touchedScopeFilesInventoried": 11,
+    "lintIssuesResolvedInR1": 17,
+    "touchedScopeTypeErrors": 0,
+    "scopedTypeConfigFilesAdded": 1,
+    "globalTypeBaselineErrors": 383,
+    "globalTypeBaselineFiles": 61
+  }
+}

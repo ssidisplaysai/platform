@@ -581,16 +581,19 @@ test("VII.4 compiler pipeline does not publish BusinessGenomeArtifact after M1.4
 
   assert.equal(result.status, "intermediate");
   assert.equal(result.intermediate.semanticCandidates !== null, true);
-  assert.equal(JSON.stringify(result).includes("businessGenome"), false);
+  assert.equal(result.execution.completedPasses.includes("bgc.business-genome-publication"), true);
+  assert.equal(result.intermediate.publication?.publicationStatus, "published");
+  assert.equal(JSON.stringify(result).includes("semanticGraph"), false);
 });
 
-test("VII.5 pipeline stops at bgc.semantic-resolution: consolidation and relationship-resolution not run", () => {
+test("VII.5 pipeline continues deterministically after semantic-resolution into downstream passes", () => {
   const compiler = new BusinessGenomeCompiler();
   const result = compiler.compile(buildCompilerInput());
 
   assert.equal(result.execution.completedPasses.includes("bgc.semantic-resolution"), true);
-  assert.equal(result.execution.completedPasses.includes("bgc.semantic-consolidation"), false);
-  assert.equal(result.execution.completedPasses.includes("bgc.relationship-resolution"), false);
+  assert.equal(result.execution.completedPasses.includes("bgc.semantic-consolidation"), true);
+  assert.equal(result.execution.completedPasses.includes("bgc.relationship-resolution"), true);
+  assert.equal(result.execution.completedPasses.includes("bgc.identity-assignment"), true);
 });
 
 test("VII.6 each candidate references exactly one cluster (no cross-cluster bundling)", () => {

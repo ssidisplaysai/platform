@@ -1,11 +1,12 @@
 import { describe, it } from "node:test";
-import * as assert from "node:assert/strict";
+import assert from "node:assert/strict";
+import { stableStringify } from "../../../src/compiler/core/stableStringify";
+import { SourceHash } from "../../../src/compiler/provenance/SourceHash";
 import { ConsistencyValidationPass } from "../../../src/compiler/genome/passes/ConsistencyValidationPass";
 import type {
   BusinessGenomeGraph,
   BusinessGenomeNode,
   BusinessGenomeEdge,
-  BusinessGenomeValidationResult,
 } from "../../../src/compiler/genome/pipeline-types";
 
 /**
@@ -89,7 +90,12 @@ function createMockGraph(
 ): BusinessGenomeGraph {
   const sortedNodes = nodes.sort((a, b) => a.id.localeCompare(b.id));
   const sortedEdges = edges.sort((a, b) => a.id.localeCompare(b.id));
-  const graphId = `bg.graph_${sortedNodes.length}_${sortedEdges.length}_v1`;
+  const graphId = `bg.graph_${SourceHash.sha256(
+    stableStringify({
+      nodeIds: sortedNodes.map((n) => n.id),
+      edgeIds: sortedEdges.map((e) => e.id),
+    }),
+  )}_v1`;
 
   return {
     id: graphId,
@@ -172,8 +178,8 @@ function createMockGraph(
                 passHistory: [],
               },
             },
-          } as any,
-        } as any,
+          } as unknown,
+        } as unknown,
       },
       passId: "bgc.identity-assignment",
       passVersion: "1.0.0",
@@ -181,7 +187,7 @@ function createMockGraph(
       compilerVersion: "1.0.0",
       diagnostics: [],
       passHistory: [],
-    } as any,
+    } as unknown,
     ...overrides,
   };
 }

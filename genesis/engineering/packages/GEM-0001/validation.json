@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEMKG-GEM-0001-v1.0.0",
+  "validationDate": "2026-07-15",
+  "commands": [
+    {
+      "name": "test:jest",
+      "command": "npm run test:jest",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "16 suites passed, 372 tests passed"
+    },
+    {
+      "name": "test:node",
+      "command": "npm run test:node",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "38 suites passed, 291 tests passed, 0 skipped, 0 failed"
+    },
+    {
+      "name": "test:compiler",
+      "command": "npm run test:compiler",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "20 tests passed"
+    },
+    {
+      "name": "test",
+      "command": "npm test",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "Aggregate command passed with all sub-suites green"
+    },
+    {
+      "name": "test:all-smoke",
+      "command": "npm run test:all -- --smoke",
+      "result": "PASS",
+      "exitCode": 0,
+      "summary": "Aggregate smoke proves pass behavior when all sub-suites pass"
+    }
+  ],
+  "requirements": {
+    "jestSuitesExecute": true,
+    "nodeTestSuitesExecute": true,
+    "compilerCoreSuitesExecute": true,
+    "aggregateFailsOnSubsuiteFailure": true,
+    "aggregatePassesWhenAllSuitesPass": true
+  }
+}

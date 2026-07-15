@@ -92,3 +92,14 @@ test("canonical Business Genome artifact is not emitted prematurely", () => {
   assert.equal(serialized.includes("semanticGraph"), false);
   assert.equal(result.status, "intermediate");
 });
+
+test("publication pass executes without async contract failure diagnostics", () => {
+  const compiler = new BusinessGenomeCompiler();
+  const result = compiler.compile(buildCompilerInput());
+
+  assert.equal(result.execution.completedPasses.includes("bgc.business-genome-publication"), true);
+  assert.equal(
+    result.diagnostics.some((d) => d.code === "BGC-PIPELINE-002"),
+    false,
+  );
+});

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
+import test from "node:test";
 import { MetadataRuntime } from "./MetadataRuntime";
 
-async function runRuntimeBootTest(): Promise<void> {
+test("metadata runtime boot reports ready state and registered definitions", async () => {
   const runtime = new MetadataRuntime();
   const result = await runtime.boot();
 
@@ -19,13 +20,4 @@ async function runRuntimeBootTest(): Promise<void> {
     true,
     "Runtime should summarize at least one registered definition.",
   );
-}
-
-runRuntimeBootTest()
-  .then(() => {
-    console.log("MetadataRuntime boot test passed.");
-  })
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
+});
