@@ -63,6 +63,15 @@ export class CompilerSession {
     this.metadata.endedAt = terminatedAt;
   }
 
+  cancel(cancelledAt: string = new Date().toISOString()): void {
+    if (this.state !== "running") {
+      throw new Error(`Cannot cancel session from state: ${this.state}`);
+    }
+
+    this.state = "cancelled";
+    this.metadata.endedAt = cancelledAt;
+  }
+
   restart(newSessionId?: string, startedAt: string = new Date().toISOString()): CompilerSession {
     const restarted = new CompilerSession(newSessionId, startedAt);
     restarted.metadata.restartOfSessionId = this.id;

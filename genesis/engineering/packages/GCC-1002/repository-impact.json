@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "subjectId": "GCC-1002",
+  "generatedDate": "2026-07-15",
+  "architectureReview": "GAR-0014",
+  "governanceDecision": "GD-0005",
+  "areasChanged": [
+    "src/compiler/core",
+    "src/compiler/index.ts",
+    "tests/compiler/core",
+    "genesis/architecture/reviews/GAR-0014-GCC-1002-Compiler-Kernel.md",
+    "genesis/governance-decisions/GD-0005-Approve-GCC-1002.md",
+    "genesis/engineering/packages/GCC-1002",
+    "genesis/engineering/downloads/GCC-1002-v1.0.0-engineering-package.zip"
+  ],
+  "foundationFilesModified": 0,
+  "governanceFilesModified": 1,
+  "notes": [
+    "Legacy compiler-core APIs remain exported for compatibility.",
+    "No Foundation baseline files were modified.",
+    "Compiler-core validation is authoritative under node:test through tsx for this closure."
+  ]
+}

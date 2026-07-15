@@ -1,0 +1,28 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "packageId":  "GCCKG-GCC-1002-v1.0.0",
+    "checksums":  {
+                      "algorithm":  "sha256",
+                      "generatedDate":  "2026-07-15T20:38:51Z",
+                      "artifactCount":  16,
+                      "integrity":  "VERIFIED",
+                      "artifacts":  {
+                                        "00-package-manifest.md":  "35e0a0aba35afa9dda4f7ef6841b69289f11fc3e33b93004dda2e7e2ab381fd4",
+                                        "01-implementation-report.md":  "22c05f9cb2e79bd39aeb58fff41f1244fb0d714258b7b9ff0cb22d0d83319aeb",
+                                        "02-architecture-delta.md":  "d79602d4282436b7355f7707191a5bcf47f09641dd09c444e552096aeb81c492",
+                                        "03-api-documentation.md":  "d3cff86ab6dbfe0a071efb666f0994f3a8e92b6099ce18011abcead7298a2998",
+                                        "04-validation-report.md":  "b443d5a7bbc3123149fdde2bb2681bb844780d9a7783fb07e0c06a0bcffc51c3",
+                                        "05-engineering-package.md":  "6bc8ea8b73c337257867ddcb573a979eb5ca1930b02477c905d4697a0cbde2c1",
+                                        "06-repository-impact.md":  "1c18f749ef4a5699942b50036a0979db9cad46cd2c540c34ca8a129e019c2311",
+                                        "07-metrics.md":  "7d1514a4f0c0e18e890eb667f328dda32b508394778b750dbb211e609c605d5c",
+                                        "08-package-health.md":  "5421b09f630c82738f5b6b4d34e64120f113f562b818bf81b975c1c39cc8e68c",
+                                        "GCC-1002-engineering-package.zip":  "df2d09fa4f14982ed2a433fda592d632c571decac169ed8205ad2dd69ea3ba7d",
+                                        "metrics.json":  "6332342892996788659a8fe1bd7617528d541eb315a0e11fe3dc461a8816becb",
+                                        "package.json":  "13cc4320950641fc74144d6b0db009b19f76032a67223552877172e55d062caf",
+                                        "README.md":  "6bc07924038a6967365ea3a43c7eb782459e6d811c063e3d04abe05ae0959f39",
+                                        "RELEASE-READINESS.md":  "b63543ce20492155af43e2acbb5af6a6dd6a0ec184afc77922f7ad9fe1d43968",
+                                        "repository-impact.json":  "2f2b1a13934be88debed37b6547dbf473595d94f775a43cf2a65da4e0a7586af",
+                                        "validation.json":  "a151e34a0a8481860079451264d9af4b00f25849d02fc89c1ff359d21a813b5e"
+                                    }
+                  }
+}

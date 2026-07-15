@@ -6,9 +6,9 @@ interface BuildManifestInput {
   sessionId: string;
   compilerVersion: string;
   pipelineVersion: string;
-  passManifests: CompilerPassMetadata[];
-  artifactIds: string[];
-  diagnostics: CompilerDiagnostic[];
+  passManifests: readonly CompilerPassMetadata[];
+  artifactIds: readonly string[];
+  diagnostics: readonly CompilerDiagnostic[];
   startedAt: string;
   completedAt: string;
   sourceManifest: {
@@ -30,7 +30,7 @@ export class CompilerManifestManager {
       pipelineVersion: input.pipelineVersion,
       passManifests: normalizedPasses,
       artifactIds: normalizedArtifactIds,
-      diagnostics: input.diagnostics,
+      diagnostics: [...input.diagnostics],
       startedAt: input.startedAt,
       completedAt: input.completedAt,
       sourceManifest: input.sourceManifest,
@@ -39,9 +39,9 @@ export class CompilerManifestManager {
 
     const checksum = SourceHash.sha256(stableStringify(hashMaterial));
 
-    return {
+    return Object.freeze({
       ...hashMaterial,
       checksum,
-    };
+    });
   }
 }

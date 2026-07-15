@@ -44,15 +44,35 @@ export { YamlDiscoveryPlugin } from "./plugins/yaml/YamlDiscoveryPlugin";
 export { FilesystemDiscoveryPlugin } from "./plugins/filesystem/FilesystemDiscoveryPlugin";
 
 export { CompilerCore } from "./core/CompilerCore";
+export { CompilerKernel } from "./core/CompilerKernel";
 export { CompilerSession } from "./core/CompilerSession";
 export { CompilerContext } from "./core/CompilerContext";
 export { CompilerPassRegistry } from "./core/CompilerPassRegistry";
 export { CompilerPipeline } from "./core/CompilerPipeline";
+export { CompilerPipelineBuilder } from "./core/CompilerPipelineBuilder";
+export { Compilation } from "./core/Compilation";
+export { CompilationTransaction } from "./core/CompilationTransaction";
+export { CompilerExecutionPlan } from "./core/CompilerExecutionPlan";
 export { CompilerArtifactManager } from "./core/CompilerArtifactManager";
+export { ArtifactRegistry } from "./core/ArtifactRegistry";
+export { IRRegistry } from "./core/IRRegistry";
+export { ValidatorRegistry } from "./core/ValidatorRegistry";
+export { GeneratorRegistry } from "./core/GeneratorRegistry";
+export { ExtensionRegistry } from "./core/ExtensionRegistry";
 export { CompilerManifestManager } from "./core/CompilerManifestManager";
 export { CompilerDiagnosticsEngine } from "./core/CompilerDiagnosticsEngine";
+export { CompilerDiagnostics } from "./core/CompilerDiagnostics";
 export { CompilerValidationEngine } from "./core/CompilerValidationEngine";
 export { CompilerVersionManager } from "./core/CompilerVersionManager";
+export { CompilerLogger } from "./core/CompilerLogger";
+export { CompilerEventBus } from "./core/CompilerEventBus";
+export { CompilerMetrics } from "./core/CompilerMetrics";
+export { CompilerTelemetry } from "./core/CompilerTelemetry";
+export { CompilerError } from "./core/CompilerError";
+export { CompilerWarning } from "./core/CompilerWarning";
+export { CompilerException } from "./core/CompilerException";
+export { CompilerCancellation } from "./core/CompilerCancellation";
+export { createCompilerConfiguration, DEFAULT_COMPILER_CONFIGURATION } from "./core/CompilerConfiguration";
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export {
@@ -79,13 +99,27 @@ export {
 } from "./genome";
 
 export type {
+	CompilerConfiguration,
 	CompilerDiagnostic,
+	CompilerEvent,
 	CompilerCoreInput,
 	CompilerCoreOutput,
+	CompilerExecutionPlanStep,
 	CompilerManifest,
+	CompilerMetricsSnapshot,
 	CompilerPass,
+	CompilerPassContext,
+	CompilerPassKind,
 	CompilerPassMetadata,
 	CompilerArtifact,
+	CompilerResult,
+	CompilerStatus,
+	CompilerTelemetrySnapshot,
+	ValidationPass,
+	VerificationPass,
+	GenerationPass,
+	PackagingPass,
+	CertificationPass,
 	CompilerSessionState,
 } from "./core/types";
 

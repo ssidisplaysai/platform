@@ -7,25 +7,26 @@ export interface CompilerContextConfig {
 }
 
 export interface CompilerContextState {
-  sessionId: string;
-  passStatuses: Record<string, "pending" | "running" | "completed" | "failed">;
-  artifactIds: string[];
-  manifestIds: string[];
+  readonly sessionId: string;
+  readonly passStatuses: Readonly<Record<string, "pending" | "running" | "completed" | "failed" | "cancelled">>;
+  readonly artifactIds: readonly string[];
+  readonly manifestIds: readonly string[];
 }
 
 export class CompilerContext {
   readonly config: CompilerContextConfig;
   private readonly sharedReferences: Map<string, string> = new Map<string, string>();
-  private readonly state: CompilerContextState;
+  private passStatuses: Record<string, "pending" | "running" | "completed" | "failed" | "cancelled">;
+  private artifactIds: string[];
+  private manifestIds: string[];
+  private readonly sessionId: string;
 
   constructor(config: CompilerContextConfig, sessionId: string) {
     this.config = config;
-    this.state = {
-      sessionId,
-      passStatuses: {},
-      artifactIds: [],
-      manifestIds: [],
-    };
+    this.sessionId = sessionId;
+    this.passStatuses = {};
+    this.artifactIds = [];
+    this.manifestIds = [];
   }
 
   registerReference(key: string, value: string): void {
@@ -36,24 +37,27 @@ export class CompilerContext {
     return this.sharedReferences.get(key);
   }
 
-  setPassStatus(passId: string, status: "pending" | "running" | "completed" | "failed"): void {
-    this.state.passStatuses[passId] = status;
+  setPassStatus(passId: string, status: "pending" | "running" | "completed" | "failed" | "cancelled"): void {
+    this.passStatuses = {
+      ...this.passStatuses,
+      [passId]: status,
+    };
   }
 
   registerArtifactId(artifactId: string): void {
-    this.state.artifactIds.push(artifactId);
+    this.artifactIds = [...this.artifactIds, artifactId].sort();
   }
 
   registerManifestId(manifestId: string): void {
-    this.state.manifestIds.push(manifestId);
+    this.manifestIds = [...this.manifestIds, manifestId].sort();
   }
 
   snapshotState(): CompilerContextState {
     return {
-      sessionId: this.state.sessionId,
-      passStatuses: { ...this.state.passStatuses },
-      artifactIds: [...this.state.artifactIds],
-      manifestIds: [...this.state.manifestIds],
+      sessionId: this.sessionId,
+      passStatuses: { ...this.passStatuses },
+      artifactIds: [...this.artifactIds],
+      manifestIds: [...this.manifestIds],
     };
   }
 }

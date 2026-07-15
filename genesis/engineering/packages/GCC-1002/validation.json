@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "1.0",
+  "subjectId": "GCC-1002",
+  "generatedDate": "2026-07-15",
+  "status": "PASS",
+  "architectureReview": "GAR-0014",
+  "governanceDecision": "GD-0005",
+  "checks": [
+    {
+      "name": "compiler-core-typescript-scope",
+      "command": "npx tsc --noEmit --pretty false -p .gcc-1002-scope-tsconfig.json using a temporary repo-local scoped tsconfig",
+      "status": "PASS"
+    },
+    {
+      "name": "compiler-core-node-test-suite",
+      "command": "npx tsx --test tests/compiler/core/*.test.ts",
+      "status": "PASS",
+      "testsPassed": 20,
+      "testsFailed": 0,
+      "testsSkipped": 0
+    },
+    {
+      "name": "compiler-core-eslint",
+      "command": "npx eslint src/compiler/core tests/compiler/core",
+      "status": "PASS"
+    },
+    {
+      "name": "package-json-parsing",
+      "command": "PowerShell ConvertFrom-Json over GCC-1002 package JSON files",
+      "status": "PASS"
+    },
+    {
+      "name": "zip-integrity",
+      "command": ".NET ZipFile.OpenRead over GCC-1002 package archive",
+      "status": "PASS"
+    },
+    {
+      "name": "checksum-validation",
+      "command": "Get-FileHash verification against package-checksums.json",
+      "status": "PASS"
+    },
+    {
+      "name": "foundation-preservation",
+      "command": "git status --short on protected Foundation and upstream governance paths",
+      "status": "PASS"
+    },
+    {
+      "name": "compiler-core-editor-diagnostics",
+      "command": "workspace diagnostics scan",
+      "status": "PASS"
+    }
+  ],
+  "integrityChecks": {
+    "todoPlaceholders": 0,
+    "pseudoCodeMarkers": 0,
+    "unresolvedImports": 0,
+    "deadExportsIdentified": 0,
+    "foundationChanges": 0
+  },
+  "notes": [
+    "Jest does not correctly interpret node:test-authored compiler-core suites in this repository; validation used the matching node:test execution path through tsx.",
+    "This is a tooling integration issue, not a GCC-1002 runtime failure.",
+    "Unified test-runner alignment is deferred to the next engineering maintenance task."
+  ]
+}

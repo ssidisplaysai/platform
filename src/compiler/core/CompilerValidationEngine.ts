@@ -22,6 +22,7 @@ export class CompilerValidationEngine {
           code: "MISSING_PASS_VERSION",
           severity: "error",
           message: `Pass ${metadata.id} is missing version`,
+          category: "configuration",
           passId: metadata.id,
         });
       }
@@ -39,6 +40,7 @@ export class CompilerValidationEngine {
           code: "INVALID_ARTIFACT_CHECKSUM",
           severity: "error",
           message: `Invalid checksum for artifact ${artifact.id}`,
+          category: "validation",
           artifactId: artifact.id,
         });
       }
@@ -48,6 +50,7 @@ export class CompilerValidationEngine {
           code: "MISSING_ARTIFACT_SESSION",
           severity: "error",
           message: `Artifact ${artifact.id} missing session id`,
+          category: "validation",
           artifactId: artifact.id,
         });
       }
@@ -64,6 +67,7 @@ export class CompilerValidationEngine {
         code: "MISSING_MANIFEST_SESSION",
         severity: "error",
         message: "Manifest missing session id",
+        category: "validation",
       });
     }
 
@@ -72,6 +76,7 @@ export class CompilerValidationEngine {
         code: "INVALID_MANIFEST_CHECKSUM",
         severity: "error",
         message: "Manifest checksum is invalid",
+        category: "validation",
       });
     }
 
