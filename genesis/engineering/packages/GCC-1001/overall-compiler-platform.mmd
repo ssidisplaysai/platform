@@ -1,0 +1,22 @@
+﻿graph TD
+    A[Human Knowledge] --> B[Discovery]
+    B --> C[Evidence IR]
+    C --> D[Knowledge IR]
+    D --> E[Business Genome IR]
+    E --> F[Canonical Blueprint IR]
+    F --> G[Runtime IR]
+    G --> H[Generation IR]
+    H --> I[Package IR]
+    I --> J[Release IR]
+    J --> K[Deployment IR]
+
+    L[Compiler Kernel] --> B
+    L --> D
+    L --> F
+    L --> H
+    L --> J
+
+    M[Registry] --> L
+    N[Validation Framework] --> L
+    O[Verification Framework] --> L
+    P[Certification Framework] --> L

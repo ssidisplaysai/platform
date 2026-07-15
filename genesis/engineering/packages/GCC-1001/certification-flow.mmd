@@ -1,0 +1,7 @@
+﻿flowchart TD
+    A[Validation Evidence] --> C[Certification Rubric]
+    B[Verification Evidence] --> C
+    D[Package Evidence] --> C
+    C --> E{Certified?}
+    E -- Yes --> F[Release Approved]
+    E -- No --> G[Certification Failure Report]

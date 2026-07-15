@@ -1,0 +1,43 @@
+﻿{
+    "schemaVersion":  "1.0",
+    "packageId":  "GCCKG-GCC-1001-v1.0.0",
+    "checksums":  {
+                      "algorithm":  "sha256",
+                      "generatedDate":  "2026-07-15T22:07:16Z",
+                      "artifactCount":  31,
+                      "integrity":  "VERIFIED",
+                      "artifacts":  {
+                                        "00-package-manifest.md":  "d46f4ef193fae7b6267c371c315ac19fb79235e4d195409d148a2cb0a8e80db1",
+                                        "01-executive-summary.md":  "45e124007da1e6bef9822d03d67de95e9bb66c226cd9a8733e3c89f8b2b59665",
+                                        "02-architecture-specification.md":  "340768aa01c4af78e5e7b9ac0217f8a77d7577794986301824a1db9c6d861211",
+                                        "03-architecture-review-input.md":  "3d6a2e4bcbb2c753f5978d7415616df83dc319bb49b196d0b2366e701c3570e1",
+                                        "04-validation-report.md":  "014a2fcf2cd730ea1cad8b010f2c8ac4f86421a19d7eaa1dcd83cfe740a061f1",
+                                        "05-traceability-matrix.md":  "aff98ca9cd7a2fea9543349f01813b053a4e97ce93cb4c9ab9f25c59ee2136f8",
+                                        "06-repository-impact.md":  "20e836b89aecc20b0900ced237353037cd0f019e95dd82fdf6f1e58df3c5f415",
+                                        "07-open-issues.md":  "ca6f3c40d0f3ee177efe779c9a402b5f7f5e60d37530a34e5f4d7a3465101bae",
+                                        "08-metrics.md":  "7740b5a1316f18471e53d1dbf66515800a4862483df05a62e5b2fa17e5a95b1b",
+                                        "09-review-history.md":  "1462aa3636d0018ace439cef61b2d7e99c7e5f26145274cd519eda2f37254fdf",
+                                        "10-completion-checklist.md":  "e15230a6e62365f72d7ddbb958721dc0323da2d27bae3c2f20ddb9e25a8ccc36",
+                                        "11-package-health.md":  "1705a09aa4730b09e6f919dca74d0b6397890851f4f41def6bb8e2c520d4772c",
+                                        "artifact-flow.mmd":  "b4ae7e9f404618503c8e673becf942e44982639653bc8823c886c439d14d8521",
+                                        "certification-flow.mmd":  "9e3101465d350f9a1efb1fa3ad633a0e22ac608b9380a161f92498c8a82005db",
+                                        "compiler-lifecycle.mmd":  "b6d9b0ec863b647012b93bce033df31b886ffe9e14d99eb3165237639fcc543a",
+                                        "compiler-pipeline.mmd":  "f4f2c30063c8d91a8b82409d16d187178e0afbe21c4e965ee6010a707b9a8940",
+                                        "compiler-registry.mmd":  "1f6feadb0bc2f83fe1c2dcb6663400de491664e4fc513cfb9e97b77a49281e43",
+                                        "dependency-graph.mmd":  "59503f7ef556f2407e9cf41df3110119eb352ca3d9f23e4071b0dece4d6fe4f6",
+                                        "GCC-1001-engineering-package.zip":  "1c097361cd11b9136ef8a1a1eb009ef0cd449fa86f11fc80d051cc66d8e38e6d",
+                                        "GCC-1001-Genesis-Compiler-Platform-Architecture-v1.0.md":  "3e19e340bd20a6eea540621644acbad8772a9b14e7d749b294d0ee6fe756ae5a",
+                                        "ir-progression.mmd":  "7e907a16ecff6de42d7aca07066e098813703cf0a4adbb2cd6a6b526690f8bcf",
+                                        "metrics.json":  "59f3007fc325a76ffd8239c3fe0bb3c67f7115ecf806407b52e269f7ef0531d2",
+                                        "overall-compiler-platform.mmd":  "016e41a47074026d90ca38e473294d1115c8b6bdd6145607200756be234c19a3",
+                                        "package.json":  "df5e66215440efa05a51074f8fcf748d8c09625fde759255d324c737761b7967",
+                                        "pass-framework.mmd":  "fff62779d04e6e498ab946ae80ec3e609f2be873726f369ec1f90cee435e5df3",
+                                        "README.md":  "b04abfb106d2363b9ba46b5728fe80bb7e04d7104d2cb1f1f290b6d44e60bafd",
+                                        "RELEASE-READINESS.md":  "73e14e4c028d7ff50e36e3ae24fe673d18726579b1650f03708971b8f1badbd0",
+                                        "repository-impact.json":  "4ae4c3c33e6fa4e70c99ad09774264bef154e8f3c56c283c9edf11eff17df609",
+                                        "traceability.json":  "151def69eac510ce0659f3c78a6ebdcec746e5f2dc3df6157a81e308b323feb7",
+                                        "validation.json":  "33fcfd0e410a2b58d7c19ab3610eb4b91a0cf5c6b9fd01fd859a436af0784418",
+                                        "validation-flow.mmd":  "a9b243f696bd8468cccb273307bf3a676059534c46168a3f67f62d50203ab8d5"
+                                    }
+                  }
+}

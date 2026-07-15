@@ -1,0 +1,14 @@
+﻿{
+  "schemaVersion": "1.0",
+  "subject": "GCC-1001",
+  "date": "2026-07-15",
+  "impact": {
+    "createdFiles": 31,
+    "modifiedFiles": 0,
+    "deletedFiles": 0,
+    "foundationFilesModified": 0,
+    "codeFilesModified": 0,
+    "testFilesModified": 0,
+    "summary": "New engineering package artifacts only"
+  }
+}

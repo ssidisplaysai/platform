@@ -1,0 +1,9 @@
+﻿stateDiagram-v2
+    [*] --> Draft
+    Draft --> Validated
+    Validated --> Verified
+    Verified --> Certified
+    Certified --> Released
+    Released --> Deprecated
+    Deprecated --> Retired
+    Retired --> [*]

@@ -1,0 +1,8 @@
+﻿flowchart TD
+    A[Stage Output] --> B[Schema Validation]
+    B --> C[Semantic Validation]
+    C --> D[Policy Validation]
+    D --> E[Verification Replay]
+    E --> F{Pass?}
+    F -- Yes --> G[Commit]
+    F -- No --> H[Rollback + Diagnostics]
