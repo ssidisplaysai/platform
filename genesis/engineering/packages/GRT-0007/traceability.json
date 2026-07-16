@@ -1,0 +1,50 @@
+{
+  "packageId": "GRT-0007",
+  "requirementsToImplementation": {
+    "runtimeProcessAbstraction": [
+      "src/runtime/workflows/RuntimeProcess.ts",
+      "src/runtime/workflows/types.ts"
+    ],
+    "deterministicIdentities": [
+      "src/runtime/workflows/RuntimeWorkflowFactory.ts",
+      "src/runtime/workflows/RuntimeExecutionIntent.ts"
+    ],
+    "activityGraphValidation": [
+      "src/runtime/workflows/RuntimeActivityGraph.ts"
+    ],
+    "workflowLifecycle": [
+      "src/runtime/workflows/RuntimeWorkflowManager.ts"
+    ],
+    "transitionEvaluation": [
+      "src/runtime/workflows/RuntimeTransitionEngine.ts"
+    ],
+    "intentBoundary": [
+      "src/runtime/workflows/RuntimeExecutionIntent.ts",
+      "src/runtime/workflows/RuntimeWorkflowManager.ts"
+    ],
+    "waitingStatePersistenceAndResumption": [
+      "src/runtime/workflows/RuntimeWaitingStateStore.ts",
+      "src/runtime/workflows/RuntimeWorkflowManager.ts"
+    ],
+    "compensation": [
+      "src/runtime/workflows/RuntimeCompensationEngine.ts",
+      "src/runtime/workflows/RuntimeWorkflowManager.ts"
+    ],
+    "evidenceDiagnosticsTelemetrySnapshots": [
+      "src/runtime/workflows/RuntimeWorkflowEvidence.ts",
+      "src/runtime/workflows/RuntimeWorkflowDiagnostics.ts",
+      "src/runtime/workflows/RuntimeWorkflowTelemetry.ts",
+      "src/runtime/workflows/RuntimeWorkflowSnapshotStore.ts",
+      "src/runtime/workflows/RuntimeWorkflowManager.ts"
+    ]
+  },
+  "requirementsToTests": {
+    "allRequirements": [
+      "tests/runtime/workflows/runtime-workflows.test.ts"
+    ]
+  },
+  "governance": {
+    "architectureReview": "genesis/architecture/reviews/GAR-0026-GRT-0007-Runtime-Workflow-Engine.md",
+    "governanceDecision": "genesis/governance-decisions/GD-0018-Approve-GRT-0007.md"
+  }
+}
