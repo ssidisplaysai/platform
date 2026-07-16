@@ -1,0 +1,30 @@
+{
+  "packageId": "GRT-0004",
+  "reviewedSourceFiles": [
+    "src/runtime/objects/types.ts",
+    "src/runtime/objects/RuntimeObject.ts",
+    "src/runtime/objects/RuntimeObjectFactory.ts",
+    "src/runtime/objects/RuntimeObjectRegistry.ts",
+    "src/runtime/objects/RuntimeRelationshipEngine.ts",
+    "src/runtime/objects/RuntimeBehaviorRegistry.ts",
+    "src/runtime/objects/RuntimeCapabilityDispatcher.ts",
+    "src/runtime/objects/RuntimePermissionEvaluator.ts",
+    "src/runtime/objects/RuntimeObjectStateMachine.ts",
+    "src/runtime/objects/RuntimeObjectDiagnostics.ts",
+    "src/runtime/objects/RuntimeObjectTelemetry.ts",
+    "src/runtime/objects/RuntimeObjectEvidence.ts",
+    "src/runtime/objects/RuntimeObjectSnapshotStore.ts",
+    "src/runtime/objects/RuntimeObjectManager.ts",
+    "src/runtime/objects/index.ts"
+  ],
+  "reviewedTestFiles": [
+    "tests/runtime/objects/runtime-objects.test.ts"
+  ],
+  "createdGovernanceFiles": [
+    "genesis/architecture/reviews/GAR-0023-GRT-0004-Runtime-Object-System.md",
+    "genesis/governance-decisions/GD-0015-Approve-GRT-0004.md"
+  ],
+  "createdPackageRoot": "genesis/engineering/packages/GRT-0004",
+  "createdDownloadArchive": "genesis/engineering/downloads/GRT-0004-v1.0.0-engineering-package.zip",
+  "modifiedFrozenPaths": []
+}

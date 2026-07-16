@@ -1,0 +1,67 @@
+{
+  "packageId": "GRT-0004",
+  "focused": {
+    "command": "npx tsx --test tests/runtime/objects/runtime-objects.test.ts",
+    "runs": [
+      {
+        "run": 1,
+        "status": "PASS",
+        "passed": 64,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "run": 2,
+        "status": "PASS",
+        "passed": 64,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "run": 3,
+        "status": "PASS",
+        "passed": 64,
+        "failed": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "matrix": [
+    {
+      "command": "npm run test:jest",
+      "status": "PASS",
+      "summary": "16 suites passed, 372 tests passed"
+    },
+    {
+      "command": "npm run test:node",
+      "status": "PASS",
+      "summary": "804 passed, 0 failed"
+    },
+    {
+      "command": "npm run test:compiler",
+      "status": "PASS",
+      "summary": "20 passed, 0 failed"
+    },
+    {
+      "command": "npm test",
+      "status": "PASS",
+      "summary": "aggregate run passed"
+    },
+    {
+      "command": "npm run test:all -- --smoke",
+      "status": "PASS",
+      "summary": "jest smoke 19/19, node smoke 1/1, compiler smoke 1/1"
+    }
+  ],
+  "staticChecks": {
+    "typescriptSourceOnly": "PASS",
+    "eslintTouchedScope": "PASS",
+    "workspaceDiagnosticsTouchedScope": "PASS"
+  },
+  "frozenPathVerification": {
+    "grt0001": "PASS",
+    "grt0002": "PASS",
+    "grt0003": "PASS"
+  },
+  "notes": []
+}
