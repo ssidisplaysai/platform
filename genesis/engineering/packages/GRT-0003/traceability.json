@@ -1,0 +1,56 @@
+{
+  "packageId": "GRT-0003",
+  "requirementsToImplementation": {
+    "runtimeExecutionContext": [
+      "src/runtime/services/RuntimeExecutionContext.ts"
+    ],
+    "deterministicServiceIdentity": [
+      "src/runtime/services/RuntimeServiceRegistry.ts"
+    ],
+    "contextIsolation": [
+      "src/runtime/services/RuntimeServiceManager.ts",
+      "src/runtime/services/RuntimeExecutionContext.ts"
+    ],
+    "serviceRegistry": [
+      "src/runtime/services/RuntimeServiceRegistry.ts"
+    ],
+    "dependencyGraph": [
+      "src/runtime/services/RuntimeServiceDependencyGraph.ts"
+    ],
+    "activationAndShutdownOrdering": [
+      "src/runtime/services/RuntimeServiceDependencyGraph.ts",
+      "src/runtime/services/RuntimeExecutionContext.ts"
+    ],
+    "lifecycleStateMachine": [
+      "src/runtime/services/RuntimeServiceStateMachine.ts"
+    ],
+    "diagnostics": [
+      "src/runtime/services/RuntimeServiceDiagnostics.ts"
+    ],
+    "telemetry": [
+      "src/runtime/services/RuntimeServiceTelemetry.ts"
+    ],
+    "evidence": [
+      "src/runtime/services/RuntimeServiceEvidence.ts"
+    ],
+    "immutableSnapshots": [
+      "src/runtime/services/RuntimeExecutionContext.ts",
+      "src/runtime/services/RuntimeServiceSnapshotStore.ts"
+    ],
+    "runtimeServiceManager": [
+      "src/runtime/services/RuntimeServiceManager.ts"
+    ],
+    "enterpriseHostIntegration": [
+      "src/runtime/services/RuntimeServiceManager.ts"
+    ]
+  },
+  "requirementsToValidation": {
+    "focusedAndNonRegression": [
+      "tests/runtime/services/runtime-services.test.ts"
+    ]
+  },
+  "governance": {
+    "architectureReview": "genesis/architecture/reviews/GAR-0022-GRT-0003-Runtime-Services.md",
+    "governanceDecision": "genesis/governance-decisions/GD-0014-Approve-GRT-0003.md"
+  }
+}
