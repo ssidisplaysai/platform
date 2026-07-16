@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCCKG-GCC-1004-v1.0.0",
+  "subjectId": "GCC-1004",
+  "changes": [
+    "Added canonical knowledge compiler and pass integration",
+    "Expanded knowledge IR model and validation support",
+    "Added GCC-1004 focused tests",
+    "Added GAR-0015 and GD-0007 closure artifacts",
+    "Added closure evidence and release-readiness package artifacts"
+  ]
+}

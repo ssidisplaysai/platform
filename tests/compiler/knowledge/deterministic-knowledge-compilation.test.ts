@@ -68,5 +68,46 @@ test("repeated compilation produces identical KnowledgeIR", () => {
 
   assert.equal(first.deterministicHash, second.deterministicHash);
   assert.equal(JSON.stringify(first.graph.toObject()), JSON.stringify(second.graph.toObject()));
-  assert.deepEqual(first, second);
+  assert.deepEqual(
+    {
+      schemaVersion: first.schemaVersion,
+      claimCount: first.claimCount,
+      compiledFromEvidenceHash: first.compiledFromEvidenceHash,
+      generatedAt: first.generatedAt,
+      compilationContext: first.compilationContext,
+      entities: first.entities,
+      facts: first.facts,
+      relationships: first.relationships,
+      clusters: first.clusters,
+      conflicts: first.conflicts,
+      temporalValidity: first.temporalValidity,
+      diagnostics: first.diagnostics,
+      metrics: {
+        ...first.metrics,
+        executionTimeMs: 0,
+      },
+      claims: first.claims,
+      sourceNodes: first.sourceNodes,
+    },
+    {
+      schemaVersion: second.schemaVersion,
+      claimCount: second.claimCount,
+      compiledFromEvidenceHash: second.compiledFromEvidenceHash,
+      generatedAt: second.generatedAt,
+      compilationContext: second.compilationContext,
+      entities: second.entities,
+      facts: second.facts,
+      relationships: second.relationships,
+      clusters: second.clusters,
+      conflicts: second.conflicts,
+      temporalValidity: second.temporalValidity,
+      diagnostics: second.diagnostics,
+      metrics: {
+        ...second.metrics,
+        executionTimeMs: 0,
+      },
+      claims: second.claims,
+      sourceNodes: second.sourceNodes,
+    },
+  );
 });

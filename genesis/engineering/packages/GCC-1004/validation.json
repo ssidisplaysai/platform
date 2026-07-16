@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCCKG-GCC-1004-v1.0.0",
+  "subjectId": "GCC-1004",
+  "results": [
+    {
+      "name": "focused-knowledge-compiler-tests",
+      "command": "npx tsx --test tests/compiler/knowledge/knowledge-canonical-compiler.test.ts tests/compiler/knowledge/knowledge-compiler.test.ts tests/compiler/knowledge/deterministic-knowledge-compilation.test.ts",
+      "status": "PASS"
+    },
+    {
+      "name": "compiler-core-integration",
+      "command": "npx tsx --test tests/compiler/core/compiler-core-integration.test.ts",
+      "status": "PASS"
+    },
+    {
+      "name": "eslint-touched-scope",
+      "command": "npx eslint src/compiler/knowledge/KnowledgeIR.ts src/compiler/knowledge/KnowledgeGraphHasher.ts src/compiler/knowledge/KnowledgeValidator.ts src/compiler/knowledge/KnowledgeCompiler.ts src/compiler/core/passes/KnowledgeCompilerPass.ts src/compiler/core/CompilerCore.ts src/compiler/core/types.ts src/compiler/core/index.ts src/compiler/index.ts src/compiler/knowledge/index.ts tests/compiler/knowledge/knowledge-canonical-compiler.test.ts tests/compiler/knowledge/deterministic-knowledge-compilation.test.ts tests/compiler/knowledge/knowledge-compiler.test.ts tests/compiler/core/compiler-core-integration.test.ts",
+      "status": "PASS"
+    },
+    {
+      "name": "compiler-kernel-integration",
+      "command": "npx tsx --test tests/compiler/core/compiler-kernel.test.ts",
+      "status": "PASS"
+    },
+    {
+      "name": "jest-suite",
+      "command": "npm run test:jest",
+      "status": "PASS"
+    },
+    {
+      "name": "node-suite",
+      "command": "npm run test:node",
+      "status": "PASS"
+    },
+    {
+      "name": "compiler-suite",
+      "command": "npm run test:compiler",
+      "status": "PASS"
+    },
+    {
+      "name": "aggregate-suite",
+      "command": "npm test",
+      "status": "PASS"
+    },
+    {
+      "name": "smoke-aggregate-suite",
+      "command": "npm run test:all -- --smoke",
+      "status": "PASS"
+    },
+    {
+      "name": "touched-typescript",
+      "command": "npx tsc --noEmit --pretty false --target ES2017 --module esnext --moduleResolution bundler --lib dom,dom.iterable,esnext --jsx react-jsx src/compiler/knowledge/KnowledgeIR.ts src/compiler/knowledge/KnowledgeGraphHasher.ts src/compiler/knowledge/KnowledgeValidator.ts src/compiler/knowledge/KnowledgeCompiler.ts src/compiler/core/passes/KnowledgeCompilerPass.ts src/compiler/core/CompilerCore.ts src/compiler/core/types.ts src/compiler/core/index.ts src/compiler/index.ts src/compiler/knowledge/index.ts tests/compiler/knowledge/knowledge-canonical-compiler.test.ts tests/compiler/knowledge/deterministic-knowledge-compilation.test.ts tests/compiler/knowledge/knowledge-compiler.test.ts tests/compiler/knowledge/knowledge-validator.test.ts tests/compiler/core/compiler-core-integration.test.ts",
+      "status": "FAIL",
+      "notes": "Blocked by unrelated genome error in src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts"
+    },
+    {
+      "name": "workspace-diagnostics",
+      "command": "get_errors on touched GCC-1004 files",
+      "status": "PASS",
+      "notes": "No GCC-1004-file diagnostics; unrelated genome issue remains outside the slice"
+    }
+  ]
+}

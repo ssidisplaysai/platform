@@ -7,6 +7,27 @@
 
 import { createHash } from 'crypto';
 
+export interface KnowledgeIdentityComponents {
+  readonly canonicalContent: string;
+  readonly sourceEvidenceId: string;
+  readonly confidence: number;
+  readonly entityIdentity?: string;
+  readonly relationshipIdentity?: string;
+  readonly temporalScope?: {
+    readonly validFrom?: string;
+    readonly validTo?: string | null;
+    readonly observedAt?: string;
+  };
+  readonly lineage?: {
+    readonly sourceEvidenceIds?: readonly string[];
+    readonly transformationSteps?: readonly string[];
+  };
+  readonly version?: {
+    readonly semver?: string;
+    readonly revision?: number;
+  };
+}
+
 /**
  * Knowledge Identity Generator
  *
@@ -53,7 +74,12 @@ export class KnowledgeIdentity {
     type: string,
     canonicalContent: string,
     sourceEvidenceId: string,
-    confidence: number
+    confidence: number,
+    components: KnowledgeIdentityComponents = {
+      canonicalContent,
+      sourceEvidenceId,
+      confidence,
+    }
   ): string {
     // Create canonical input for hashing
     const canonicalInput = JSON.stringify(
@@ -62,6 +88,21 @@ export class KnowledgeIdentity {
         canonicalContent,
         sourceEvidenceId,
         confidence: Math.round(confidence * 100) / 100, // Normalize to 2 decimal places
+        components: {
+          canonicalContent: components.canonicalContent,
+          sourceEvidenceId: components.sourceEvidenceId,
+          confidence: Math.round(components.confidence * 100) / 100,
+          entityIdentity: components.entityIdentity ?? null,
+          relationshipIdentity: components.relationshipIdentity ?? null,
+          temporalScope: components.temporalScope ?? null,
+          lineage: components.lineage
+            ? {
+                sourceEvidenceIds: [...(components.lineage.sourceEvidenceIds ?? [])].sort(),
+                transformationSteps: [...(components.lineage.transformationSteps ?? [])].sort(),
+              }
+            : null,
+          version: components.version ?? null,
+        },
       },
       null,
       0 // No pretty-printing for determinism

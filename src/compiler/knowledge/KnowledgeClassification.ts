@@ -148,6 +148,46 @@ export interface KnowledgeConfidence {
    * Last updated timestamp
    */
   lastUpdated?: string;
+
+  /**
+   * Raw evidence confidence before compiler adjustments.
+   */
+  evidenceConfidence?: number;
+
+  /**
+   * Number of corroborating evidence sources.
+   */
+  corroborationCount?: number;
+
+  /**
+   * Number of distinct sources contributing to this confidence.
+   */
+  sourceDiversity?: number;
+
+  /**
+   * Recency score derived from the most recent evidence timestamp.
+   */
+  sourceRecency?: number;
+
+  /**
+   * Conflict state considered during scoring.
+   */
+  conflictState?: 'resolved' | 'unresolved' | 'non_blocking' | 'blocking';
+
+  /**
+   * Validation outcome considered during scoring.
+   */
+  validationResult?: 'valid' | 'invalid' | 'warning' | 'unknown';
+
+  /**
+   * Composite quality score used by the compiler.
+   */
+  qualityScore?: number;
+
+  /**
+   * Human-readable rationale for the deterministic score.
+   */
+  rationale?: string[];
 }
 
 /**
@@ -192,6 +232,16 @@ export interface KnowledgeLineage {
    * Trace path from reality to this knowledge object
    */
   tracePath?: string[];
+
+  /**
+   * Optional canonical identity this knowledge supersedes.
+   */
+  supersedes?: string;
+
+  /**
+   * Optional canonical identity that supersedes this knowledge.
+   */
+  supersededBy?: string;
 }
 
 /**
@@ -224,6 +274,16 @@ export interface KnowledgeVersion {
    * Previous version ID
    */
   previousVersionId?: string;
+
+  /**
+   * Optional canonical identity for the version superseded by this version.
+   */
+  supersedes?: string;
+
+  /**
+   * Optional canonical identity for the version superseding this version.
+   */
+  supersededBy?: string;
 }
 
 /**

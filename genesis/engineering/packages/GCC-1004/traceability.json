@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GCCKG-GCC-1004-v1.0.0",
+  "subjectId": "GCC-1004",
+  "traceability": [
+    {
+      "requirement": "Deterministic Evidence IR to Knowledge IR transformation",
+      "implementation": ["src/compiler/knowledge/KnowledgeCompiler.ts"],
+      "validation": ["tests/compiler/knowledge/knowledge-canonical-compiler.test.ts", "tests/compiler/knowledge/deterministic-knowledge-compilation.test.ts", "tests/compiler/knowledge/knowledge-compiler.test.ts"]
+    },
+    {
+      "requirement": "Governed compiler-core integration",
+      "implementation": ["src/compiler/core/passes/KnowledgeCompilerPass.ts", "src/compiler/core/CompilerCore.ts"],
+      "validation": ["tests/compiler/core/compiler-core-integration.test.ts", "tests/compiler/core/compiler-kernel.test.ts"]
+    },
+    {
+      "requirement": "Workspace-level release closure",
+      "implementation": ["genesis/architecture/reviews/GAR-0015-GCC-1004-Knowledge-Compiler.md", "genesis/governance-decisions/GD-0007-Approve-GCC-1004.md", "genesis/engineering/packages/GCC-1004/CLOSURE-EVIDENCE.md", "genesis/engineering/packages/GCC-1004/RELEASE-READINESS.md"],
+      "validation": ["npm run test:jest", "npm run test:node", "npm run test:compiler", "npm test", "npm run test:all -- --smoke"]
+    }
+  ]
+}

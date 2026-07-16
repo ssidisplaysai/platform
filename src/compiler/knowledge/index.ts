@@ -16,6 +16,7 @@ export {
 
 export {
   KnowledgeIdentity,
+  KnowledgeIdentityComponents,
 } from './KnowledgeIdentity';
 
 export {
@@ -37,3 +38,21 @@ export {
 export {
   KnowledgeObjectBuilder,
 } from './KnowledgeObjectBuilder';
+
+export type {
+  CanonicalKnowledgeObject,
+  KnowledgeEntity,
+  KnowledgeFact,
+  KnowledgeRelationship,
+  KnowledgeCluster,
+  KnowledgeConflict,
+  KnowledgeTemporalValidity,
+  KnowledgeCompilationContext,
+  KnowledgeCompilationMetrics,
+  KnowledgeCompilationResult,
+  KnowledgeDiagnostic,
+  KnowledgeDiagnosticSeverity,
+  KnowledgeIR,
+} from './KnowledgeIR';
+
+export { KnowledgeCompiler } from './KnowledgeCompiler';
