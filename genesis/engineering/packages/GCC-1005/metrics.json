@@ -1,0 +1,11 @@
+{
+  "focusedGcc1005Tests": { "passed": 7, "failed": 0, "skipped": 0 },
+  "coreIntegrationTests": { "passed": 1, "failed": 0, "skipped": 0 },
+  "gcc1004RegressionTests": { "passed": 5, "failed": 0, "skipped": 0 },
+  "testJest": { "passed": 372 },
+  "testNode": { "passed": 305, "skipped": 0 },
+  "testCompiler": { "passed": 20, "skipped": 0 },
+  "smoke": { "passed": true },
+  "architectureReview": { "id": "GAR-0016", "score": 68, "maxScore": 70, "disposition": "Approved for Governance Closure" },
+  "governanceDecision": { "id": "GD-0008", "status": "Approved" }
+}

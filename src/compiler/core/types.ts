@@ -2,6 +2,7 @@ import type { KnowledgeArtifact } from "../discovery/KnowledgeArtifact";
 import type { KnowledgeSource } from "../discovery/KnowledgeSource";
 import type { EvidenceIR } from "../evidence/EvidenceIR";
 import type { KnowledgeIR } from "../knowledge/KnowledgeIR";
+import type { BusinessGenomeIR } from "../business-genome/BusinessGenomeIR";
 
 export type CompilerStatus =
   | "created"
@@ -277,5 +278,6 @@ export interface CompilerCoreOutput {
   readonly artifacts: readonly KnowledgeArtifact[];
   readonly evidenceIR: EvidenceIR;
   readonly knowledgeIR?: KnowledgeIR;
+  readonly businessGenomeIR?: BusinessGenomeIR;
   readonly manifest: CompilerManifest;
 }

@@ -76,6 +76,7 @@ export { createCompilerConfiguration, DEFAULT_COMPILER_CONFIGURATION } from "./c
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export { KnowledgeCompilerPass } from "./core/passes/KnowledgeCompilerPass";
+export { BusinessGenomeCompilerPass } from "./core/passes/BusinessGenomeCompilerPass";
 export {
 	BUSINESS_GENOME_SEMANTIC_CLASSES,
 	BUSINESS_GENOME_RELATIONSHIP_CLASSES,

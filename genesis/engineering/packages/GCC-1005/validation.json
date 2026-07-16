@@ -1,0 +1,30 @@
+{
+  "architectureReview": "GAR-0016",
+  "governanceDecision": "GD-0008",
+  "commands": [
+    { "command": "npm run test:jest", "status": "pass" },
+    { "command": "npm run test:node", "status": "pass" },
+    { "command": "npm run test:compiler", "status": "pass" },
+    { "command": "npm test", "status": "pass" },
+    { "command": "npm run test:all -- --smoke", "status": "pass" },
+    { "command": "npx tsc --noEmit --target es2015 --module nodenext --moduleResolution nodenext --skipLibCheck <gcc-1005-touched-files>", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/business-genome/business-genome-compiler.test.ts", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/core/compiler-core-integration.test.ts", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/knowledge/knowledge-canonical-compiler.test.ts tests/compiler/knowledge/deterministic-knowledge-compilation.test.ts", "status": "pass" }
+  ],
+  "typescript": {
+    "touchedScope": "pass-via-narrow-tsc-and-workspace-diagnostics",
+    "repositoryWide": "fails-pre-existing-baseline-outside-gcc-1005-scope"
+  },
+  "eslint": {
+    "touchedScope": "pass"
+  },
+  "closureStatus": {
+    "subjectStatus": "Approved",
+    "reviewStatus": "Approved",
+    "packageStatus": "Frozen",
+    "engineeringStatus": "Complete",
+    "certificationStatus": "Certified",
+    "integrityStatus": "Sealed"
+  }
+}

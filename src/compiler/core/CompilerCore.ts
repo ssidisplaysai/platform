@@ -3,6 +3,7 @@ import { CompilerPipeline } from "./CompilerPipeline";
 import { DiscoveryCompilerPass } from "./passes/DiscoveryCompilerPass";
 import { EvidenceCompilerPass } from "./passes/EvidenceCompilerPass";
 import { KnowledgeCompilerPass } from "./passes/KnowledgeCompilerPass";
+import { BusinessGenomeCompilerPass } from "./passes/BusinessGenomeCompilerPass";
 import type { CompilerCoreInput, CompilerCoreOutput } from "./types";
 
 export class CompilerCore {
@@ -29,6 +30,10 @@ export class CompilerCore {
     if (!existing.has("knowledge-pass")) {
       this.pipeline.registry.register(new KnowledgeCompilerPass());
     }
+
+    if (!existing.has("business-genome-pass")) {
+      this.pipeline.registry.register(new BusinessGenomeCompilerPass());
+    }
   }
 
   async compile(input: CompilerCoreInput, sessionId?: string): Promise<CompilerCoreOutput> {
@@ -36,15 +41,17 @@ export class CompilerCore {
     const discoveryOutput = result.outputs["discovery-pass"] as { readonly artifacts: CompilerCoreOutput["artifacts"] } | undefined;
     const evidenceOutput = result.outputs["evidence-pass"] as { readonly evidenceIR: CompilerCoreOutput["evidenceIR"] } | undefined;
     const knowledgeOutput = result.outputs["knowledge-pass"] as { readonly knowledgeIR: CompilerCoreOutput["knowledgeIR"] } | undefined;
+    const businessGenomeOutput = result.outputs["business-genome-pass"] as { readonly businessGenomeIR: CompilerCoreOutput["businessGenomeIR"] } | undefined;
 
-    if (!discoveryOutput || !evidenceOutput || !knowledgeOutput) {
-      throw new Error("Required pass outputs missing: discovery-pass, evidence-pass, and knowledge-pass");
+    if (!discoveryOutput || !evidenceOutput || !knowledgeOutput || !businessGenomeOutput) {
+      throw new Error("Required pass outputs missing: discovery-pass, evidence-pass, knowledge-pass, and business-genome-pass");
     }
 
     return {
       artifacts: discoveryOutput.artifacts,
       evidenceIR: evidenceOutput.evidenceIR,
       knowledgeIR: knowledgeOutput.knowledgeIR,
+      businessGenomeIR: businessGenomeOutput.businessGenomeIR,
       manifest: result.manifest,
     };
   }

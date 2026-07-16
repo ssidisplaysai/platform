@@ -32,6 +32,7 @@ export { createCompilerConfiguration, DEFAULT_COMPILER_CONFIGURATION } from "./C
 export { DiscoveryCompilerPass } from "./passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./passes/EvidenceCompilerPass";
 export { KnowledgeCompilerPass } from "./passes/KnowledgeCompilerPass";
+export { BusinessGenomeCompilerPass } from "./passes/BusinessGenomeCompilerPass";
 
 export type {
   CompilerConfiguration,
