@@ -1,0 +1,100 @@
+{
+  "packageId": "GRT-0006",
+  "requirementsToImplementation": {
+    "deterministicScheduleIdentity": [
+      "src/runtime/scheduling/RuntimeScheduleFactory.ts"
+    ],
+    "deterministicRuntimePlanIdentity": [
+      "src/runtime/scheduling/RuntimePlanFactory.ts"
+    ],
+    "immutableSchedules": [
+      "src/runtime/scheduling/RuntimeSchedule.ts",
+      "src/runtime/scheduling/RuntimeScheduleFactory.ts"
+    ],
+    "immutablePlans": [
+      "src/runtime/scheduling/RuntimePlan.ts",
+      "src/runtime/scheduling/RuntimePlanFactory.ts"
+    ],
+    "triggerOrdering": [
+      "src/runtime/scheduling/RuntimeTriggerRegistry.ts"
+    ],
+    "recurrenceDeterminism": [
+      "src/runtime/scheduling/RuntimeTriggerRegistry.ts"
+    ],
+    "executionSlotEvaluation": [
+      "src/runtime/scheduling/RuntimeTriggerRegistry.ts"
+    ],
+    "executionWindowAcceptance": [
+      "src/runtime/scheduling/RuntimeExecutionWindow.ts",
+      "src/runtime/scheduling/RuntimePlanner.ts"
+    ],
+    "expirationRejection": [
+      "src/runtime/scheduling/RuntimeExecutionWindow.ts",
+      "src/runtime/scheduling/RuntimePlanner.ts"
+    ],
+    "retryDerivation": [
+      "src/runtime/scheduling/RuntimeRetryPolicy.ts",
+      "src/runtime/scheduling/RuntimeSchedulingManager.ts"
+    ],
+    "planPublication": [
+      "src/runtime/scheduling/RuntimeSchedulingManager.ts"
+    ],
+    "messagingIntegration": [
+      "src/runtime/scheduling/RuntimeSchedulingManager.ts"
+    ],
+    "evidenceSequencing": [
+      "src/runtime/scheduling/RuntimeScheduleEvidence.ts"
+    ],
+    "diagnosticsSequencing": [
+      "src/runtime/scheduling/RuntimeScheduleDiagnostics.ts"
+    ],
+    "telemetryUpdates": [
+      "src/runtime/scheduling/RuntimeScheduleTelemetry.ts",
+      "src/runtime/scheduling/RuntimeSchedulingManager.ts"
+    ],
+    "snapshotImmutability": [
+      "src/runtime/scheduling/RuntimeScheduleSnapshotStore.ts",
+      "src/runtime/scheduling/RuntimeSchedulingManager.ts"
+    ],
+    "snapshotRevisions": [
+      "src/runtime/scheduling/RuntimeScheduleSnapshotStore.ts"
+    ],
+    "multiRuntimeIsolation": [
+      "src/runtime/scheduling/RuntimeSchedulingManager.ts"
+    ],
+    "noDirectTargetExecution": [
+      "src/runtime/scheduling/RuntimeSchedulingManager.ts"
+    ],
+    "frozenMilestoneNonRegression": [
+      "tests/runtime/scheduling/runtime-scheduling.test.ts"
+    ]
+  },
+  "requirementsToFocusedTests": {
+    "allCoreRequirements": [
+      "tests/runtime/scheduling/runtime-scheduling.test.ts"
+    ]
+  },
+  "requirementsToValidation": {
+    "focusedDeterminism": [
+      "04-validation-report.md",
+      "validation.json"
+    ],
+    "matrix": [
+      "04-validation-report.md",
+      "validation.json"
+    ],
+    "staticAndDiagnostics": [
+      "04-validation-report.md",
+      "validation.json"
+    ],
+    "frozenNonRegression": [
+      "04-validation-report.md",
+      "06-repository-impact.md",
+      "validation.json"
+    ]
+  },
+  "governance": {
+    "architectureReview": "genesis/architecture/reviews/GAR-0025-GRT-0006-Runtime-Scheduler.md",
+    "governanceDecision": "genesis/governance-decisions/GD-0017-Approve-GRT-0006.md"
+  }
+}
