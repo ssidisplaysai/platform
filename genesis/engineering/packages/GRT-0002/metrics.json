@@ -1,0 +1,31 @@
+{
+  "compiler": "GRT-0002",
+  "version": "1.0.0",
+  "implementation": {
+    "productionFiles": 12,
+    "testFiles": 1,
+    "focusedTests": 35,
+    "focusedPassRate": 1.0
+  },
+  "validation": {
+    "requiredMatrixCommandsPassed": 5,
+    "requiredMatrixCommandsTotal": 5,
+    "determinismRunsPassed": 3,
+    "determinismRunsTotal": 3,
+    "touchedTypeScriptErrors": 0,
+    "touchedEslintErrors": 0,
+    "touchedDiagnosticsErrors": 0
+  },
+  "governance": {
+    "architectureReview": "GAR-0021",
+    "architectureReviewScore": 68,
+    "architectureReviewMax": 70,
+    "governanceDecision": "GD-0013",
+    "subjectStatus": "Approved",
+    "reviewStatus": "Approved",
+    "packageStatus": "Frozen",
+    "engineeringStatus": "Complete",
+    "certificationStatus": "Certified",
+    "integrityStatus": "Sealed"
+  }
+}

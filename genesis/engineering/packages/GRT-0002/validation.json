@@ -1,0 +1,32 @@
+{
+  "compiler": "GRT-0002",
+  "version": "1.0.0",
+  "requiredCommands": [
+    { "command": "npm run test:jest", "status": "pass" },
+    { "command": "npm run test:node", "status": "pass" },
+    { "command": "npm run test:compiler", "status": "pass" },
+    { "command": "npm test", "status": "pass", "exitCode": 0 },
+    { "command": "npm run test:all -- --smoke", "status": "pass" }
+  ],
+  "additionalCommands": [
+    { "command": "npx tsx --test tests/runtime/host/runtime-host.test.ts", "status": "pass" },
+    { "command": "npx tsx --test tests/runtime/host/runtime-host.test.ts (run 1)", "status": "pass" },
+    { "command": "npx tsx --test tests/runtime/host/runtime-host.test.ts (run 2)", "status": "pass" },
+    { "command": "npx tsx --test tests/runtime/host/runtime-host.test.ts (run 3)", "status": "pass" },
+    { "command": "npx tsc --noEmit --target es2015 --module nodenext --moduleResolution nodenext --skipLibCheck <grt-0002-touched-files>", "status": "pass" },
+    { "command": "npx eslint <grt-0002-touched-files>", "status": "pass" }
+  ],
+  "workspaceDiagnostics": { "touchedFilesErrors": 0 },
+  "typescript": {
+    "touchedScope": "pass"
+  },
+  "closureStatus": {
+    "subjectStatus": "Approved",
+    "reviewStatus": "Approved",
+    "packageStatus": "Frozen",
+    "engineeringStatus": "Complete",
+    "certificationStatus": "Certified",
+    "governanceDecision": "GD-0013",
+    "integrityStatus": "Sealed"
+  }
+}

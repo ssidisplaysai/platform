@@ -1,0 +1,74 @@
+﻿[
+    {
+        "file":  "00-package-manifest.md",
+        "sha256":  "04d48eed0eb3b7f2141f2ee4dff84a93bf3de7e83e4c65fb404219ed695df099"
+    },
+    {
+        "file":  "01-implementation-report.md",
+        "sha256":  "4e6cda1182df4b56afbe6b0dd8bfef9cab43a4a50617decf884251c9bf5b6120"
+    },
+    {
+        "file":  "02-architecture-delta.md",
+        "sha256":  "d8a66955cc8b004dcb83cb023ed729d9eb2a2b146550ca4af45540f5436cfe5e"
+    },
+    {
+        "file":  "03-api-documentation.md",
+        "sha256":  "110a8b9124100475402c209382cac45227add02849bb559077c2fd749f714608"
+    },
+    {
+        "file":  "04-validation-report.md",
+        "sha256":  "008fcbf8a7ea85977678286c40002391eed57d3ac01cf3dfb7b264d3eb0c683d"
+    },
+    {
+        "file":  "05-traceability-matrix.md",
+        "sha256":  "12d7c728e18db4b0ee90a1628ef4c238893dfc4be6be0ade38e86f2e82137f7c"
+    },
+    {
+        "file":  "06-repository-impact.md",
+        "sha256":  "796a61711a8a4d811988062f6c1d6460c4989e2b54880eec1fe03eccc1def6c4"
+    },
+    {
+        "file":  "07-metrics.md",
+        "sha256":  "59aedc4e32ccb889be1a2e7d8f3512451f13c29494e3238b3be5ff136bfdbc4d"
+    },
+    {
+        "file":  "08-package-health.md",
+        "sha256":  "68d49ecfad29facfefef513010303d02071fd69686abe125bb5b699722c6a98d"
+    },
+    {
+        "file":  "CLOSURE-EVIDENCE.md",
+        "sha256":  "e17d3901585963099a6d0cd2d801150bd118a668ef088b37929d34382c45e4a6"
+    },
+    {
+        "file":  "GRT-0002-engineering-package.zip",
+        "sha256":  "b6dd03d3794c585b164d2ee220ff7724de5ac6c50e00798c7707a470ac256a83"
+    },
+    {
+        "file":  "metrics.json",
+        "sha256":  "76275625177ca9ee6c02d302863d30ec58007df1b58b9e608d13a93dbf140497"
+    },
+    {
+        "file":  "package.json",
+        "sha256":  "38f8658ceaae476f545d8c6ed39ddbc3ef15d49cee1d1806ce7b932697f91853"
+    },
+    {
+        "file":  "README.md",
+        "sha256":  "d2dcbb30b9e1077b9ebd0cc7d308782b89770c97d4c9bd52ebf581ab9fb9b66d"
+    },
+    {
+        "file":  "RELEASE-READINESS.md",
+        "sha256":  "e1d8e4488182090707ce784968732ef35c7768fd071e450e5a4158b8ddf9d8d1"
+    },
+    {
+        "file":  "repository-impact.json",
+        "sha256":  "da30f70fa019c63d399d7b8333e21767b7ecdef590719326eb682c0e20e2e68f"
+    },
+    {
+        "file":  "traceability.json",
+        "sha256":  "3971db88a4f8fb49c41a14adc307a5500c8afde0c744d16538e8034eece77e8b"
+    },
+    {
+        "file":  "validation.json",
+        "sha256":  "d87c46204316b7d1cb719a3ee1f2724dcc9f6326189af51424d43f33d6c74a49"
+    }
+]
