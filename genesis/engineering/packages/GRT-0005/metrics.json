@@ -1,0 +1,26 @@
+{
+  "packageId": "GRT-0005",
+  "implementation": {
+    "sourceFiles": 20,
+    "testFiles": 1,
+    "sourceLines": 1170,
+    "testLines": 868
+  },
+  "validation": {
+    "focusedPassed": 79,
+    "focusedFailed": 0,
+    "focusedSkipped": 0,
+    "determinismRunsPassed": 3,
+    "determinismRunsTotal": 3,
+    "matrixPassed": 5,
+    "matrixTotal": 5,
+    "staticChecksPassed": 3,
+    "staticChecksTotal": 3
+  },
+  "governance": {
+    "garScore": 69,
+    "garThreshold": 65,
+    "gdStatus": "Approved"
+  },
+  "afr0004Compliance": "PASS"
+}

@@ -1,0 +1,89 @@
+{
+  "packageId": "GRT-0005",
+  "requirementsToImplementation": {
+    "deterministicEnvelopeIdentity": [
+      "src/runtime/messaging/RuntimeEnvelopeFactory.ts",
+      "src/runtime/messaging/RuntimeEnvelope.ts"
+    ],
+    "immutableEnvelopes": [
+      "src/runtime/messaging/RuntimeEnvelope.ts",
+      "src/runtime/messaging/RuntimeEnvelopeFactory.ts"
+    ],
+    "commandEventQueryReplySemantics": [
+      "src/runtime/messaging/RuntimeCommand.ts",
+      "src/runtime/messaging/RuntimeEvent.ts",
+      "src/runtime/messaging/RuntimeQuery.ts",
+      "src/runtime/messaging/RuntimeReply.ts"
+    ],
+    "channelRegistration": [
+      "src/runtime/messaging/RuntimeChannelRegistry.ts"
+    ],
+    "topicRegistration": [
+      "src/runtime/messaging/RuntimeTopicRegistry.ts"
+    ],
+    "subscriptionOrderingAndDuplicateRejection": [
+      "src/runtime/messaging/RuntimeSubscriptionRegistry.ts",
+      "src/runtime/messaging/RuntimeRouter.ts"
+    ],
+    "routingDeterminism": [
+      "src/runtime/messaging/RuntimeRouter.ts"
+    ],
+    "dispatchOrderingAndDeliveryOutcomes": [
+      "src/runtime/messaging/RuntimeDispatcher.ts"
+    ],
+    "replayDeterminismAndAppendOnlyHistory": [
+      "src/runtime/messaging/RuntimeMessageLog.ts",
+      "src/runtime/messaging/RuntimeReplayStore.ts"
+    ],
+    "deadLetterBehavior": [
+      "src/runtime/messaging/RuntimeDispatcher.ts",
+      "src/runtime/messaging/RuntimeMessageLog.ts"
+    ],
+    "correlationAndCausation": [
+      "src/runtime/messaging/RuntimeEnvelopeFactory.ts",
+      "src/runtime/messaging/RuntimeMessagingManager.ts"
+    ],
+    "evidenceDiagnosticsTelemetrySnapshot": [
+      "src/runtime/messaging/RuntimeEvidence.ts",
+      "src/runtime/messaging/RuntimeDiagnostics.ts",
+      "src/runtime/messaging/RuntimeTelemetry.ts",
+      "src/runtime/messaging/RuntimeSnapshotStore.ts"
+    ],
+    "contextIsolationAndIntegrations": [
+      "src/runtime/messaging/RuntimeMessagingManager.ts"
+    ]
+  },
+  "requirementsToFocusedTests": {
+    "allCoreRequirements": [
+      "tests/runtime/messaging/runtime-messaging.test.ts"
+    ]
+  },
+  "requirementsToValidation": {
+    "focusedDeterminism": [
+      "04-validation-report.md",
+      "validation.json"
+    ],
+    "matrix": [
+      "04-validation-report.md",
+      "validation.json"
+    ],
+    "staticAndDiagnostics": [
+      "04-validation-report.md",
+      "validation.json"
+    ],
+    "frozenNonRegression": [
+      "04-validation-report.md",
+      "06-repository-impact.md",
+      "validation.json"
+    ],
+    "afr0004Compliance": [
+      "GAR-0024-GRT-0005-Runtime-Messaging.md",
+      "04-validation-report.md",
+      "validation.json"
+    ]
+  },
+  "governance": {
+    "architectureReview": "genesis/architecture/reviews/GAR-0024-GRT-0005-Runtime-Messaging.md",
+    "governanceDecision": "genesis/governance-decisions/GD-0016-Approve-GRT-0005.md"
+  }
+}

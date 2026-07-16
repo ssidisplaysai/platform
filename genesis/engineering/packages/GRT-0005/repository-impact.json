@@ -1,0 +1,36 @@
+{
+  "packageId": "GRT-0005",
+  "reviewedSourceFiles": [
+    "src/runtime/messaging/types.ts",
+    "src/runtime/messaging/RuntimeEnvelope.ts",
+    "src/runtime/messaging/RuntimeCommand.ts",
+    "src/runtime/messaging/RuntimeEvent.ts",
+    "src/runtime/messaging/RuntimeQuery.ts",
+    "src/runtime/messaging/RuntimeReply.ts",
+    "src/runtime/messaging/RuntimeEnvelopeFactory.ts",
+    "src/runtime/messaging/RuntimeChannelRegistry.ts",
+    "src/runtime/messaging/RuntimeTopicRegistry.ts",
+    "src/runtime/messaging/RuntimeSubscriptionRegistry.ts",
+    "src/runtime/messaging/RuntimeRouter.ts",
+    "src/runtime/messaging/RuntimeDispatcher.ts",
+    "src/runtime/messaging/RuntimeMessageLog.ts",
+    "src/runtime/messaging/RuntimeReplayStore.ts",
+    "src/runtime/messaging/RuntimeEvidence.ts",
+    "src/runtime/messaging/RuntimeDiagnostics.ts",
+    "src/runtime/messaging/RuntimeTelemetry.ts",
+    "src/runtime/messaging/RuntimeSnapshotStore.ts",
+    "src/runtime/messaging/RuntimeMessagingManager.ts",
+    "src/runtime/messaging/index.ts"
+  ],
+  "reviewedTestFiles": [
+    "tests/runtime/messaging/runtime-messaging.test.ts"
+  ],
+  "createdGovernanceFiles": [
+    "genesis/architecture/reviews/GAR-0024-GRT-0005-Runtime-Messaging.md",
+    "genesis/governance-decisions/GD-0016-Approve-GRT-0005.md"
+  ],
+  "createdPackageRoot": "genesis/engineering/packages/GRT-0005",
+  "createdDownloadArchive": "genesis/engineering/downloads/GRT-0005-v1.0.0-engineering-package.zip",
+  "modifiedFrozenPaths": [],
+  "afr0004Modified": false
+}
