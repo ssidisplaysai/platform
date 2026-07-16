@@ -19,6 +19,7 @@ test("compiler core orchestrates discovery and evidence passes", async () => {
 
   assert.equal(result.artifacts.length, 1);
   assert.equal(result.evidenceIR.artifactCount, 1);
+  assert.equal(Boolean(result.knowledgeIR), true);
   assert.equal(result.manifest.sessionId, "core-session-1");
-  assert.equal(result.manifest.passManifests.length >= 2, true);
+  assert.equal(result.manifest.passManifests.length >= 3, true);
 });

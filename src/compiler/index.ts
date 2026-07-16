@@ -75,6 +75,7 @@ export { CompilerCancellation } from "./core/CompilerCancellation";
 export { createCompilerConfiguration, DEFAULT_COMPILER_CONFIGURATION } from "./core/CompilerConfiguration";
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
+export { KnowledgeCompilerPass } from "./core/passes/KnowledgeCompilerPass";
 export {
 	BUSINESS_GENOME_SEMANTIC_CLASSES,
 	BUSINESS_GENOME_RELATIONSHIP_CLASSES,
