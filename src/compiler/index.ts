@@ -79,8 +79,10 @@ export { KnowledgeCompilerPass } from "./core/passes/KnowledgeCompilerPass";
 export { BusinessGenomeCompilerPass } from "./core/passes/BusinessGenomeCompilerPass";
 export { BlueprintCompilerPass } from "./core/passes/BlueprintCompilerPass";
 export { SolutionCompilerPass } from "./core/passes/SolutionCompilerPass";
+export { RuntimeCompilerPass } from "./core/passes/RuntimeCompilerPass";
 export { BlueprintCompiler, BlueprintHasher, BlueprintValidator, BlueprintIdentityFactory } from "./blueprint";
 export { SolutionCompiler, SolutionHasher, SolutionValidator, SolutionIdentityFactory } from "./solution";
+export { RuntimeCompiler, RuntimeHasher, RuntimeValidator, RuntimeIdentityFactory } from "./runtime";
 export {
 	BUSINESS_GENOME_SEMANTIC_CLASSES,
 	BUSINESS_GENOME_RELATIONSHIP_CLASSES,
@@ -256,3 +258,59 @@ export type {
 	SolutionCompilerOptions,
 	SolutionInput,
 } from "./solution";
+
+export type {
+	EnterpriseRuntimeIR,
+	EnterpriseRuntime,
+	RuntimeCompilationContext,
+	RuntimeCompilationResult,
+	RuntimeIdentity,
+	RuntimeVersion,
+	RuntimeLineage,
+	RuntimeProvenance,
+	RuntimeConfidence,
+	RuntimeConflict,
+	RuntimeTemporalValidity,
+	RuntimeDiagnostic,
+	RuntimeValidationSummary,
+	RuntimeCompilationMetrics,
+	RuntimeModule,
+	RuntimeApplication,
+	RuntimeService,
+	RuntimeApi,
+	RuntimeDatabaseBinding,
+	RuntimeStorageBinding,
+	RuntimeMessagingBinding,
+	RuntimeSearchBinding,
+	RuntimeWorkflowBinding,
+	RuntimeIntegrationBinding,
+	RuntimeSchedulerBinding,
+	RuntimeEventBinding,
+	RuntimeNotificationBinding,
+	RuntimeAuthenticationBinding,
+	RuntimeAuthorizationBinding,
+	RuntimeConfigurationBinding,
+	RuntimeSecretReference,
+	RuntimeEnvironment,
+	RuntimeDeploymentTarget,
+	RuntimeHealthCheck,
+	RuntimeMonitoringBinding,
+	RuntimeTelemetryBinding,
+	RuntimeLoggingBinding,
+	RuntimeDependencyBinding,
+	RuntimeProviderBinding,
+	RuntimePluginBinding,
+	RuntimeAgentBinding,
+	RuntimeActivationPlan,
+	RuntimeShutdownPlan,
+	RuntimeRecoveryPlan,
+	RuntimeExecutionGraph,
+	RuntimeExecutionNode,
+	RuntimeExecutionEdge,
+	RuntimeCompilerOptions,
+	RuntimeInput,
+	RuntimeDiagnosticSeverity,
+	RuntimeDiagnosticCategory,
+	RuntimeExecutionEdgeType,
+	RuntimeDependencyScope,
+} from "./runtime";

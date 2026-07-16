@@ -1,0 +1,48 @@
+{
+  "compiler": "GCC-1008",
+  "version": "1.0.0",
+  "requiredCommands": [
+    { "command": "npm run test:jest", "status": "pass" },
+    { "command": "npm run test:node", "status": "pass" },
+    { "command": "npm run test:compiler", "status": "pass" },
+    { "command": "npm test", "status": "pass", "exitCode": 0 },
+    { "command": "npm run test:all -- --smoke", "status": "pass" }
+  ],
+  "additionalCommands": [
+    { "command": "npx tsx --test tests/compiler/runtime/runtime-compiler.test.ts (run 1)", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/runtime/runtime-compiler.test.ts (run 2)", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/runtime/runtime-compiler.test.ts (run 3)", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/solution/solution-compiler.test.ts", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/blueprint/blueprint-compiler.test.ts", "status": "pass" },
+    { "command": "npx tsc --noEmit --target es2015 --module nodenext --moduleResolution nodenext --skipLibCheck <gcc-1008-touched-files-excluding-src/compiler/index.ts>", "status": "pass" },
+    { "command": "npx tsc --noEmit --target es2015 --module nodenext --moduleResolution nodenext --skipLibCheck <gcc-1008-touched-files-including-src/compiler/index.ts>", "status": "disclosed-preexisting-baseline-outside-scope" },
+    { "command": "npx tsc --noEmit --skipLibCheck", "status": "disclosed-preexisting-baseline-outside-scope" },
+    { "command": "npx eslint <gcc-1008-touched-files>", "status": "pass" }
+  ],
+  "workspaceDiagnostics": { "touchedFilesErrors": 0 },
+  "typescript": {
+    "touchedScope": "pass-with-top-level-barrel-disclosure",
+    "repositoryWide": "pre-existing-baseline-errors-outside-gcc-1008-scope",
+    "preexistingFiles": [
+      "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts",
+      "tests/compiler/genome/semantic-resolution-pass.test.ts",
+      "tests/compiler/genome/semantic-consolidation-pass.test.ts",
+      "src/compiler/knowledge/index.ts",
+      "platform-ssi-discovery/src/core/object/GenesisObject.ts",
+      "out/generated/entities/Customer/CustomerSearch.ts"
+    ],
+    "preexistingErrors": [
+      "TS2339: Property toLowerCase does not exist on type unknown in src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts:327",
+      "TS2339: Property toLowerCase does not exist on type unknown in src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts:335"
+    ]
+  },
+  "closureStatus": {
+    "subjectStatus": "Approved",
+    "reviewStatus": "Approved",
+    "packageStatus": "Frozen",
+    "engineeringStatus": "Complete",
+    "certificationStatus": "Certified",
+    "governanceDecision": "GD-0012",
+    "integrityStatus": "Sealed"
+  }
+}

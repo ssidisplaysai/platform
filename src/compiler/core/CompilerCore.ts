@@ -6,6 +6,7 @@ import { KnowledgeCompilerPass } from "./passes/KnowledgeCompilerPass";
 import { BusinessGenomeCompilerPass } from "./passes/BusinessGenomeCompilerPass";
 import { BlueprintCompilerPass } from "./passes/BlueprintCompilerPass";
 import { SolutionCompilerPass } from "./passes/SolutionCompilerPass";
+import { RuntimeCompilerPass } from "./passes/RuntimeCompilerPass";
 import type { CompilerCoreInput, CompilerCoreOutput } from "./types";
 
 export class CompilerCore {
@@ -44,6 +45,10 @@ export class CompilerCore {
     if (!existing.has("solution-pass")) {
       this.pipeline.registry.register(new SolutionCompilerPass());
     }
+
+    if (!existing.has("runtime-pass")) {
+      this.pipeline.registry.register(new RuntimeCompilerPass());
+    }
   }
 
   async compile(input: CompilerCoreInput, sessionId?: string): Promise<CompilerCoreOutput> {
@@ -54,9 +59,10 @@ export class CompilerCore {
     const businessGenomeOutput = result.outputs["business-genome-pass"] as { readonly businessGenomeIR: CompilerCoreOutput["businessGenomeIR"] } | undefined;
     const blueprintOutput = result.outputs["blueprint-pass"] as { readonly enterpriseBlueprintIR: CompilerCoreOutput["enterpriseBlueprintIR"] } | undefined;
     const solutionOutput = result.outputs["solution-pass"] as { readonly solutionIR: CompilerCoreOutput["solutionIR"] } | undefined;
+    const runtimeOutput = result.outputs["runtime-pass"] as { readonly enterpriseRuntimeIR: CompilerCoreOutput["enterpriseRuntimeIR"] } | undefined;
 
-    if (!discoveryOutput || !evidenceOutput || !knowledgeOutput || !businessGenomeOutput || !blueprintOutput || !solutionOutput) {
-      throw new Error("Required pass outputs missing: discovery-pass, evidence-pass, knowledge-pass, business-genome-pass, blueprint-pass, and solution-pass");
+    if (!discoveryOutput || !evidenceOutput || !knowledgeOutput || !businessGenomeOutput || !blueprintOutput || !solutionOutput || !runtimeOutput) {
+      throw new Error("Required pass outputs missing: discovery-pass, evidence-pass, knowledge-pass, business-genome-pass, blueprint-pass, solution-pass, and runtime-pass");
     }
 
     return {
@@ -66,6 +72,7 @@ export class CompilerCore {
       businessGenomeIR: businessGenomeOutput.businessGenomeIR,
       enterpriseBlueprintIR: blueprintOutput.enterpriseBlueprintIR,
       solutionIR: solutionOutput.solutionIR,
+      enterpriseRuntimeIR: runtimeOutput.enterpriseRuntimeIR,
       manifest: result.manifest,
     };
   }

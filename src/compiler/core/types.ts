@@ -5,6 +5,7 @@ import type { KnowledgeIR } from "../knowledge/KnowledgeIR";
 import type { BusinessGenomeIR } from "../business-genome/BusinessGenomeIR";
 import type { EnterpriseBlueprintIR } from "../blueprint/BlueprintIR";
 import type { SolutionIR } from "../solution/SolutionIR";
+import type { EnterpriseRuntimeIR } from "../runtime/EnterpriseRuntimeIR";
 
 export type CompilerStatus =
   | "created"
@@ -283,5 +284,6 @@ export interface CompilerCoreOutput {
   readonly businessGenomeIR?: BusinessGenomeIR;
   readonly enterpriseBlueprintIR?: EnterpriseBlueprintIR;
   readonly solutionIR?: SolutionIR;
+  readonly enterpriseRuntimeIR?: EnterpriseRuntimeIR;
   readonly manifest: CompilerManifest;
 }
