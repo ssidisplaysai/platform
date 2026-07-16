@@ -1,0 +1,17 @@
+{
+  "compiler": "GRT-0001",
+  "version": "1.0.0",
+  "focusedTests": { "passed": 31, "failed": 0, "skipped": 0 },
+  "repeatDeterminismRuns": { "runs": 3, "stable": true },
+  "matrix": {
+    "jestSuitesPassed": 16,
+    "jestSuitesTotal": 16,
+    "jestTestsPassed": 372,
+    "jestTestsTotal": 372,
+    "nodeSuites": 38,
+    "nodeTestsPassed": 392,
+    "compilerTestsPassed": 20,
+    "compilerTestsTotal": 20,
+    "npmTestExit": 0
+  }
+}

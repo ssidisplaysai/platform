@@ -1,0 +1,43 @@
+{
+  "compiler": "GRT-0001",
+  "version": "1.0.0",
+  "requiredCommands": [
+    { "command": "npm run test:jest", "status": "pass" },
+    { "command": "npm run test:node", "status": "pass" },
+    { "command": "npm run test:compiler", "status": "pass" },
+    { "command": "npm test", "status": "pass", "exitCode": 0 },
+    { "command": "npm run test:all -- --smoke", "status": "pass" }
+  ],
+  "additionalCommands": [
+    { "command": "npx tsx --test tests/runtime/kernel/runtime-kernel.test.ts", "status": "pass" },
+    { "command": "npx tsx --test tests/runtime/kernel/runtime-kernel.test.ts (run 1)", "status": "pass" },
+    { "command": "npx tsx --test tests/runtime/kernel/runtime-kernel.test.ts (run 2)", "status": "pass" },
+    { "command": "npx tsx --test tests/runtime/kernel/runtime-kernel.test.ts (run 3)", "status": "pass" },
+    { "command": "npx tsc --noEmit --target es2015 --module nodenext --moduleResolution nodenext --skipLibCheck <grt-0001-touched-files>", "status": "pass" },
+    { "command": "npx eslint <grt-0001-touched-files>", "status": "pass" },
+    { "command": "npx tsc --noEmit --skipLibCheck", "status": "disclosed-preexisting-baseline-outside-grt-0001-scope" }
+  ],
+  "workspaceDiagnostics": { "touchedFilesErrors": 0 },
+  "typescript": {
+    "touchedScope": "pass",
+    "repositoryWide": "pre-existing-baseline-errors-outside-grt-0001-scope",
+    "preexistingFiles": [
+      "tests/compiler/genome/semantic-resolution-pass.test.ts",
+      "tests/compiler/genome/semantic-consolidation-pass.test.ts",
+      "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts",
+      "src/compiler/genome/passes/SemanticResolutionPass.ts",
+      "src/compiler/knowledge/index.ts",
+      "platform-ssi-discovery/src/core/object/GenesisObject.ts",
+      "out/generated/entities/Customer/CustomerSearch.ts"
+    ]
+  },
+  "closureStatus": {
+    "subjectStatus": "Approved",
+    "reviewStatus": "Approved",
+    "packageStatus": "Frozen",
+    "engineeringStatus": "Complete",
+    "certificationStatus": "Certified",
+    "governanceDecision": "GD-0011",
+    "integrityStatus": "Sealed"
+  }
+}
