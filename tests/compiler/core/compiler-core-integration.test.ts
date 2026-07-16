@@ -21,6 +21,14 @@ test("compiler core orchestrates discovery and evidence passes", async () => {
   assert.equal(result.evidenceIR.artifactCount, 1);
   assert.equal(Boolean(result.knowledgeIR), true);
   assert.equal(Boolean(result.businessGenomeIR), true);
+  assert.equal(Boolean(result.enterpriseBlueprintIR), true);
+  assert.equal(Boolean(result.solutionIR), true);
   assert.equal(result.manifest.sessionId, "core-session-1");
-  assert.equal(result.manifest.passManifests.length >= 4, true);
+  assert.equal(result.manifest.passManifests.length >= 6, true);
+
+  const passIds = result.manifest.passManifests.map((entry) => entry.id);
+  assert.equal(passIds.includes("solution-pass"), true);
+
+  const solutionPass = result.manifest.passManifests.find((entry) => entry.id === "solution-pass");
+  assert.deepEqual(solutionPass?.dependencies, ["blueprint-pass"]);
 });

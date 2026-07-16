@@ -33,6 +33,8 @@ export { DiscoveryCompilerPass } from "./passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./passes/EvidenceCompilerPass";
 export { KnowledgeCompilerPass } from "./passes/KnowledgeCompilerPass";
 export { BusinessGenomeCompilerPass } from "./passes/BusinessGenomeCompilerPass";
+export { BlueprintCompilerPass } from "./passes/BlueprintCompilerPass";
+export { SolutionCompilerPass } from "./passes/SolutionCompilerPass";
 
 export type {
   CompilerConfiguration,

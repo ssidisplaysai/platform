@@ -1,0 +1,21 @@
+{
+  "compiler": "GCC-1006",
+  "version": "1.0.0",
+  "testMetrics": {
+    "blueprintFocused": { "passed": 7, "failed": 0, "skipped": 0 },
+    "gcc1005Regression": { "passed": 7, "failed": 0, "skipped": 0 },
+    "coreIntegration": { "passed": 1, "failed": 0, "skipped": 0 }
+  },
+  "matrixMetrics": {
+    "jestSuitesPassed": 16,
+    "jestSuitesTotal": 16,
+    "jestTestsPassed": 372,
+    "jestTestsTotal": 372,
+    "compilerTestsPassed": 20,
+    "compilerTestsTotal": 20
+  },
+  "determinism": {
+    "repeatedRuns": 3,
+    "stableOutput": true
+  }
+}

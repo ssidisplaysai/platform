@@ -1,0 +1,34 @@
+{
+  "compiler": "GCC-1006",
+  "version": "1.0.0",
+  "requiredCommands": [
+    { "command": "npm run test:jest", "status": "pass", "note": "first run had transient timer flake; rerun passed" },
+    { "command": "npm run test:node", "status": "pass" },
+    { "command": "npm run test:compiler", "status": "pass" },
+    { "command": "npm test", "status": "pass" },
+    { "command": "npm run test:all -- --smoke", "status": "pass" }
+  ],
+  "additionalCommands": [
+    { "command": "npx tsx --test tests/compiler/blueprint/blueprint-compiler.test.ts", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/business-genome/business-genome-compiler.test.ts", "status": "pass" },
+    { "command": "npx tsx --test tests/compiler/blueprint/blueprint-compiler.test.ts (x3)", "status": "pass" },
+    { "command": "npx tsc --noEmit --target es2015 --module nodenext --moduleResolution nodenext --skipLibCheck <gcc-1006-gcc-1007-touched-files>", "status": "disclosed-preexisting-baseline-outside-scope" },
+    { "command": "npx eslint <gcc-1006-touched-files>", "status": "pass" }
+  ],
+  "workspaceDiagnostics": {
+    "touchedFilesErrors": 0
+  },
+  "typescript": {
+    "touchedScope": "clean-via-workspace-diagnostics",
+    "repositoryWide": "pre-existing-baseline-errors-outside-gcc-1006-gcc-1007-scope"
+  },
+  "closureStatus": {
+    "subjectStatus": "Approved",
+    "reviewStatus": "Approved",
+    "packageStatus": "Frozen",
+    "engineeringStatus": "Complete",
+    "certificationStatus": "Certified",
+    "governanceDecision": "GD-0009",
+    "integrityStatus": "Sealed"
+  }
+}

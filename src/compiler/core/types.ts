@@ -3,6 +3,8 @@ import type { KnowledgeSource } from "../discovery/KnowledgeSource";
 import type { EvidenceIR } from "../evidence/EvidenceIR";
 import type { KnowledgeIR } from "../knowledge/KnowledgeIR";
 import type { BusinessGenomeIR } from "../business-genome/BusinessGenomeIR";
+import type { EnterpriseBlueprintIR } from "../blueprint/BlueprintIR";
+import type { SolutionIR } from "../solution/SolutionIR";
 
 export type CompilerStatus =
   | "created"
@@ -279,5 +281,7 @@ export interface CompilerCoreOutput {
   readonly evidenceIR: EvidenceIR;
   readonly knowledgeIR?: KnowledgeIR;
   readonly businessGenomeIR?: BusinessGenomeIR;
+  readonly enterpriseBlueprintIR?: EnterpriseBlueprintIR;
+  readonly solutionIR?: SolutionIR;
   readonly manifest: CompilerManifest;
 }
