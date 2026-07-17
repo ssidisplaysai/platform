@@ -47,3 +47,6 @@ next-env.d.ts
 genesis/artifacts/**
 !genesis/artifacts/.gitkeep
 
+
+# Permit the sanitized deployment environment template
+!.env.example
