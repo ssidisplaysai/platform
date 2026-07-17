@@ -1,0 +1,77 @@
+{
+  "packageId": "GRT-0008",
+  "focused": {
+    "command": "npx jest --runInBand --runTestsByPath tests/runtime/policy/runtime-policy.test.ts",
+    "status": "PASS",
+    "passed": 128,
+    "failed": 0,
+    "skipped": 0
+  },
+  "determinism": [
+    {
+      "run": 1,
+      "status": "PASS",
+      "passed": 128,
+      "failed": 0
+    },
+    {
+      "run": 2,
+      "status": "PASS",
+      "passed": 128,
+      "failed": 0
+    },
+    {
+      "run": 3,
+      "status": "PASS",
+      "passed": 128,
+      "failed": 0
+    }
+  ],
+  "matrix": [
+    {
+      "command": "npm run test:jest",
+      "status": "PASS",
+      "summary": "17/17 suites, 500/500 tests"
+    },
+    {
+      "command": "npm run test:node",
+      "status": "PASS",
+      "summary": "804 passed, 0 failed"
+    },
+    {
+      "command": "npm run test:compiler",
+      "status": "PASS",
+      "summary": "20 passed, 0 failed"
+    },
+    {
+      "command": "npm test",
+      "status": "PASS",
+      "summary": "aggregate matrix pass"
+    },
+    {
+      "command": "npm run test:all -- --smoke",
+      "status": "PASS",
+      "summary": "jest smoke 19/19, node smoke 1/1, compiler smoke 1/1"
+    }
+  ],
+  "staticChecks": {
+    "typescriptSourceOnly": {
+      "command": "npx tsc --noEmit --pretty false --incremental false tests/runtime/policy/runtime-policy.test.ts src/runtime/policy/index.ts",
+      "status": "PASS"
+    },
+    "eslintTouchedScope": {
+      "command": "npx eslint src/runtime/policy/**/*.ts tests/runtime/policy/**/*.ts",
+      "status": "PASS"
+    },
+    "workspaceDiagnosticsTouchedScope": {
+      "command": "get_errors (src/runtime/policy, tests/runtime/policy)",
+      "status": "PASS"
+    }
+  },
+  "scope": {
+    "frozenRuntimeDiff": "PASS"
+  },
+  "notes": [
+    "First rerun of npm run test:jest produced a transient unrelated timer assertion failure; immediate rerun passed with full green result."
+  ]
+}

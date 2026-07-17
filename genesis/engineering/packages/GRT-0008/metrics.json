@@ -1,0 +1,37 @@
+﻿{
+    "packageId":  "GRT-0008",
+    "implementation":  {
+                           "sourceFiles":  40,
+                           "testFiles":  1,
+                           "sourceLines":  2231,
+                           "testLines":  1085,
+                           "compilerPassCount":  9,
+                           "adapterCount":  10
+                       },
+    "validation":  {
+                       "focusedPassed":  128,
+                       "focusedFailed":  0,
+                       "focusedSkipped":  0,
+                       "determinismRunsPassed":  3,
+                       "determinismRunsTotal":  3,
+                       "jestSuites":  17,
+                       "jestTests":  500,
+                       "nodeTests":  804,
+                       "compilerTests":  20,
+                       "smokeTests":  21,
+                       "typescriptResult":  "PASS",
+                       "eslintResult":  "PASS",
+                       "diagnosticsResult":  "PASS"
+                   },
+    "governance":  {
+                       "garScore":  70,
+                       "garThreshold":  65,
+                       "gdStatus":  "Approved"
+                   },
+    "integrity":  {
+                      "packageArtifactCount":  19,
+                      "checksumCount":  19,
+                    "internalArchiveBytes": 15560,
+                    "canonicalArchiveBytes": 15560
+                  }
+}

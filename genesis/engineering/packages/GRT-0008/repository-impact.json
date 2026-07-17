@@ -1,0 +1,26 @@
+{
+  "packageId": "GRT-0008",
+  "sourceScope": [
+    "src/runtime/policy"
+  ],
+  "testScope": [
+    "tests/runtime/policy/runtime-policy.test.ts"
+  ],
+  "governanceScope": [
+    "genesis/architecture/reviews/GAR-0027-GRT-0008-Runtime-Policy-Engine.md",
+    "genesis/governance-decisions/GD-0019-Approve-GRT-0008.md",
+    "genesis/engineering/packages/GRT-0008",
+    "genesis/engineering/downloads/GRT-0008-v1.0.0-engineering-package.zip"
+  ],
+  "modifiedFrozenRuntimePaths": [],
+  "preservedContracts": [
+    "GRT-0001",
+    "GRT-0002",
+    "GRT-0003",
+    "GRT-0004",
+    "GRT-0005",
+    "GRT-0006",
+    "GRT-0007",
+    "AFR-0004"
+  ]
+}

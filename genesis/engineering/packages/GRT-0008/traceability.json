@@ -1,0 +1,101 @@
+{
+  "packageId": "GRT-0008",
+  "requirementsToImplementation": {
+    "definitionValidation": [
+      "src/runtime/policy/passes/DefinitionValidationPass.ts"
+    ],
+    "compilerPassOrdering": [
+      "src/runtime/policy/RuntimePolicyCompiler.ts"
+    ],
+    "deterministicCompilation": [
+      "src/runtime/policy/RuntimePolicyCompiler.ts"
+    ],
+    "compilerFailureArtifacts": [
+      "src/runtime/policy/RuntimePolicyCompiler.ts"
+    ],
+    "runtimePolicyIrPurity": [
+      "src/runtime/policy/passes/PolicyIRGenerationPass.ts",
+      "src/runtime/policy/types.ts"
+    ],
+    "canonicalNormalization": [
+      "src/runtime/policy/passes/CanonicalOrderingPass.ts",
+      "src/runtime/policy/passes/NormalizationPass.ts"
+    ],
+    "ruleIdentity": [
+      "src/runtime/policy/passes/IdentityAssignmentPass.ts"
+    ],
+    "certificateCompleteness": [
+      "src/runtime/policy/passes/CompilationCertificationPass.ts"
+    ],
+    "factTypeValidation": [
+      "src/runtime/policy/RuntimePolicyFactCompiler.ts"
+    ],
+    "factIrProvenance": [
+      "src/runtime/policy/RuntimePolicyFactCompiler.ts",
+      "src/runtime/policy/types.ts"
+    ],
+    "resolverOrdering": [
+      "src/runtime/policy/RuntimePolicyResolver.ts"
+    ],
+    "candidatePartitionValidation": [
+      "src/runtime/policy/RuntimePolicyManager.ts"
+    ],
+    "evaluatorPurity": [
+      "src/runtime/policy/RuntimePolicyEvaluator.ts"
+    ],
+    "decisionOutcomes": [
+      "src/runtime/policy/RuntimePolicyEvaluator.ts",
+      "src/runtime/policy/RuntimePolicyConflictResolver.ts"
+    ],
+    "obligations": [
+      "src/runtime/policy/RuntimePolicyEvaluator.ts",
+      "src/runtime/policy/adapters"
+    ],
+    "decisionTraces": [
+      "src/runtime/policy/RuntimePolicyEvaluator.ts",
+      "src/runtime/policy/RuntimePolicyDecisionTrace.ts"
+    ],
+    "contextIsolation": [
+      "src/runtime/policy/RuntimePolicyManager.ts",
+      "src/runtime/policy/RuntimePolicySnapshotStore.ts"
+    ],
+    "replayValidation": [
+      "src/runtime/policy/RuntimePolicyReplay.ts",
+      "src/runtime/policy/RuntimePolicyManager.ts"
+    ],
+    "evidenceDiagnosticsTelemetry": [
+      "src/runtime/policy/RuntimePolicyEvidence.ts",
+      "src/runtime/policy/RuntimePolicyDiagnostics.ts",
+      "src/runtime/policy/RuntimePolicyTelemetry.ts"
+    ],
+    "adapters": [
+      "src/runtime/policy/adapters"
+    ],
+    "publicExports": [
+      "src/runtime/policy/index.ts"
+    ],
+    "frozenMilestoneNonRegression": [
+      "src/runtime/kernel",
+      "src/runtime/host",
+      "src/runtime/services",
+      "src/runtime/objects",
+      "src/runtime/messaging",
+      "src/runtime/scheduling",
+      "src/runtime/workflows"
+    ]
+  },
+  "requirementsToTests": {
+    "allPolicyRequirements": [
+      "tests/runtime/policy/runtime-policy.test.ts"
+    ]
+  },
+  "governance": {
+    "architectureReview": "genesis/architecture/reviews/GAR-0027-GRT-0008-Runtime-Policy-Engine.md",
+    "governanceDecision": "genesis/governance-decisions/GD-0019-Approve-GRT-0008.md"
+  },
+  "packageArtifacts": {
+    "implementationReport": "genesis/engineering/packages/GRT-0008/01-implementation-report.md",
+    "validationReport": "genesis/engineering/packages/GRT-0008/04-validation-report.md",
+    "traceabilityMatrix": "genesis/engineering/packages/GRT-0008/05-traceability-matrix.md"
+  }
+}
