@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# -----------------------------------------------------------------------------
+# Genesis Runtime Artifacts
+# -----------------------------------------------------------------------------
+
+genesis/artifacts/**
+!genesis/artifacts/.gitkeep
+
