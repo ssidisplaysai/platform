@@ -58,7 +58,7 @@ describe("compileWorkbook", () => {
     expect(result.manifest.sheets).toHaveLength(1);
     expect(result.inventory.sheetCount).toBe(1);
     expect(result.artifact.path).toContain(
-      "workbook-inventory.json",
+      "payload.json",
     );
     expect(result.artifact.sha256).toHaveLength(64);
   });

@@ -7,6 +7,12 @@ export interface CompileWorkbookRequest {
   readonly runId?: string;
 }
 
+export interface WorkbookCompilationOutput {
+  readonly runId: string;
+  readonly manifest: WorkbookManifest;
+  readonly inventory: WorkbookInventory;
+}
+
 export interface CompileWorkbookArtifact {
   readonly path: string;
   readonly sha256: string;

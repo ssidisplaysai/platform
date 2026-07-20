@@ -32,6 +32,10 @@ export interface WorkbookRuntimeConfig {
   readonly maximumRequestBytes: number;
 }
 
+type RuntimeEnvironment = Readonly<
+  Record<string, string | undefined>
+>;
+
 export function readBearerToken(
   authorizationHeader: string | null,
 ): string | null {
@@ -45,7 +49,7 @@ export function readBearerToken(
 }
 
 export function resolveWorkbookRuntimeConfig(
-  environment: NodeJS.ProcessEnv = process.env,
+  environment: RuntimeEnvironment = process.env,
 ): WorkbookRuntimeConfig {
   const apiKey = environment.GENESIS_RUNTIME_API_KEY?.trim();
   const artifactRoot = environment.GENESIS_ARTIFACT_ROOT?.trim();

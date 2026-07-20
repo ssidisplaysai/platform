@@ -50,3 +50,6 @@ genesis/artifacts/**
 
 # Permit the sanitized deployment environment template
 !.env.example
+
+# Genesis Runtime
+genesis-runtime-data/

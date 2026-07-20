@@ -5,9 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:runtime": "tsc -p tsconfig.runtime.json --noEmit",
     "start": "next start",
     "lint": "eslint",
+    "lint:runtime": "eslint \"genesis/runtime/**/*.ts\" \"src/app/api/genesis/**/*.ts\"",
     "test": "jest",
+    "test:runtime": "jest --config jest.runtime.config.js",
     "test:watch": "jest --watch",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
