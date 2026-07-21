@@ -2,7 +2,7 @@
 
 Identifier: GCSA-0001
 Title: Genesis Constitutional Services Architecture
-Status: Draft
+Status: Complete
 Authority: Foundation Authority
 Review Target: GAR-0042
 
