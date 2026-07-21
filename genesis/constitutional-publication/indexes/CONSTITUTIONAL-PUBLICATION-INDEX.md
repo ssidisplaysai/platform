@@ -24,3 +24,9 @@ This index makes the recovered constitutional corpus discoverable through the co
 
 - Recovery register -> genesis/constitutional-publication/publication/GCP-0001-Phase-5A-Constitutional-Corpus-Recovery-Register.md
 - Admission review matrix -> genesis/constitutional-publication/reviews/GCP-0001-Phase-5A-Admission-Review-Matrix.md
+- Certification record -> genesis/constitutional-publication/certification/GCCR-0001-Genesis-Constitutional-Certification-Record.md
+- Readiness matrix -> genesis/constitutional-publication/certification/GCCR-0002-Constitutional-Readiness-Matrix.md
+- Consistency report -> genesis/constitutional-publication/certification/GCCR-0003-Constitutional-Consistency-Report.md
+- Release definition -> genesis/constitutional-publication/releases/GCR-1.0-Genesis-Constitutional-Release.md
+- Freeze record -> genesis/architecture/freezes/AFR-0007-Genesis-Constitutional-Release-1.0.md
+- Git tag -> GCR-1.0

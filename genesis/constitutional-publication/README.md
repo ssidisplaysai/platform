@@ -2,8 +2,9 @@
 
 Identifier: GCP-0001
 Title: Genesis Constitutional Publication Program
-Status: Active
+Status: COMPLETE
 Authority: Foundation Authority
+Version: 1.0
 
 ## Purpose
 
@@ -42,7 +43,7 @@ This subsystem provides:
 
 ## Outcome
 
-This subsystem provides the constitutional infrastructure for governance, review, registry, publication, validation, and future artifact recovery work.
+This subsystem provides the constitutional infrastructure for governance, review, registry, publication, validation, constitutional corpus recovery, constitutional certification, and constitutional release.
 
 ## Current Recovery Standing
 
@@ -62,3 +63,19 @@ Certification and release references are maintained in:
 - genesis/constitutional-publication/certification/GCCR-0002-Constitutional-Readiness-Matrix.md
 - genesis/constitutional-publication/certification/GCCR-0003-Constitutional-Consistency-Report.md
 - genesis/constitutional-publication/releases/GCR-1.0-Genesis-Constitutional-Release.md
+
+## Program Closure
+
+GCP-0001 is complete.
+
+The Genesis Constitutional Publication Program fulfilled its governed mandate through certification, freeze, and publication of Genesis Constitutional Release 1.0.
+
+The program is closed as of Version 1.0.
+
+Authoritative closure chain:
+- GCCR-0001
+- AFR-0007
+- GCR-1.0
+- Git tag GCR-1.0
+
+Future constitutional platform service work shall proceed under GCS-0001 and shall treat GCR-1.0 and AFR-0007 as authoritative frozen dependencies.
