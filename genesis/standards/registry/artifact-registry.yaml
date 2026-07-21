@@ -1,0 +1,284 @@
+registryId: GSP-REGISTRY-0001
+registryVersion: 1.0.0
+metadataSchema: genesis/standards/registry/canonical-metadata.schema.yaml
+artifactCount: 19
+artifacts:
+  - identifier: GSP-EPIC-0001
+    title: Genesis Standards Infrastructure
+    artifactType: Charter
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/README.md
+    summary: Constitutional subsystem root for standards infrastructure.
+    dependencies: []
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Determinism, Governance, MachineReadable]
+
+  - identifier: GSP-CHARTER-0001
+    title: Genesis Standards Program Charter
+    artifactType: Charter
+    status: Placeholder
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/charter/GSP-CHARTER-0001-Genesis-Standards-Program-Charter.md
+    summary: Reserved charter artifact slot.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [ConstitutionalArtifact]
+
+  - identifier: GSP-PRINCIPLES-0000
+    title: GSP Principles Index
+    artifactType: Index
+    status: Placeholder
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/principles/GSP-PRINCIPLES-INDEX.md
+    summary: Index anchor for principles catalog.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Indexing]
+
+  - identifier: GST-INDEX-0000
+    title: GST Standards Index
+    artifactType: Index
+    status: Placeholder
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/standards/GST-INDEX.md
+    summary: Index anchor for GST artifacts.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Indexing]
+
+  - identifier: GSA-INDEX-0000
+    title: Genesis Standards Assurance Index
+    artifactType: Assurance
+    status: Placeholder
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Assurance]
+    path: genesis/standards/assurance/GSA-INDEX.md
+    summary: Index anchor for assurance and conformance artifacts.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [AssuranceBaseline]
+
+  - identifier: GSP-SCHEMA-0001
+    title: Canonical Metadata Schema
+    artifactType: Schema
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture, Standards Tooling]
+    path: genesis/standards/registry/canonical-metadata.schema.yaml
+    summary: Shared metadata schema for all constitutional artifacts.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [MachineReadable, Determinism]
+
+  - identifier: GSP-SCHEMA-0002
+    title: Artifact Registry Schema
+    artifactType: Schema
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Tooling]
+    path: genesis/standards/registry/artifact-registry.schema.yaml
+    summary: Validation schema for standards artifact registry payload.
+    dependencies: [GSP-SCHEMA-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [MachineReadable, ValidationReady]
+
+  - identifier: GSP-REGISTRY-0001
+    title: Standards Artifact Registry
+    artifactType: Registry
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Tooling]
+    path: genesis/standards/registry/artifact-registry.yaml
+    summary: Machine-readable inventory of constitutional standards artifacts.
+    dependencies: [GSP-SCHEMA-0001, GSP-SCHEMA-0002]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Registry, ValidationReady]
+
+  - identifier: GSP-TEMPLATE-0001
+    title: Principle Template
+    artifactType: Template
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/templates/principle-template.md
+    summary: Reusable template for principle artifacts.
+    dependencies: [GSP-SCHEMA-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Template, CanonicalMetadata]
+
+  - identifier: GSP-TEMPLATE-0002
+    title: Standard Template
+    artifactType: Template
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/templates/standard-template.md
+    summary: Reusable template for standards artifacts.
+    dependencies: [GSP-SCHEMA-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Template, CanonicalMetadata]
+
+  - identifier: GSP-TEMPLATE-0003
+    title: Specification Template
+    artifactType: Template
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/templates/specification-template.md
+    summary: Reusable template for architecture/runtime specifications.
+    dependencies: [GSP-SCHEMA-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Template, CanonicalMetadata]
+
+  - identifier: GSP-TEMPLATE-0004
+    title: Architecture Review Template
+    artifactType: Template
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Governance Architecture]
+    path: genesis/standards/templates/architecture-review-template.md
+    summary: Reusable template for GAR artifacts.
+    dependencies: [GSP-SCHEMA-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Template, ReviewModel]
+
+  - identifier: GSP-TEMPLATE-0005
+    title: Governance Decision Template
+    artifactType: Template
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Governance Decision Office]
+    path: genesis/standards/templates/governance-decision-template.md
+    summary: Reusable template for GD artifacts.
+    dependencies: [GSP-SCHEMA-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Template, Governance]
+
+  - identifier: GSP-TEMPLATE-0006
+    title: Engineering Package Template
+    artifactType: Template
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Engineering Governance]
+    path: genesis/standards/templates/engineering-package-template.md
+    summary: Reusable template for engineering package artifacts.
+    dependencies: [GSP-SCHEMA-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [Template, Certification]
+
+  - identifier: GSP-DOMAIN-CHARTER
+    title: Charter Domain README
+    artifactType: Index
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/charter/README.md
+    summary: Charter domain boundary declaration.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [DomainBoundary]
+
+  - identifier: GSP-DOMAIN-PRINCIPLES
+    title: Principles Domain README
+    artifactType: Index
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/principles/README.md
+    summary: Principles domain boundary declaration.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [DomainBoundary]
+
+  - identifier: GSP-DOMAIN-STANDARDS
+    title: Standards Domain README
+    artifactType: Index
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/standards/README.md
+    summary: Standards domain boundary declaration.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [DomainBoundary]
+
+  - identifier: GSP-DOMAIN-ASSURANCE
+    title: Assurance Domain README
+    artifactType: Index
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Assurance]
+    path: genesis/standards/assurance/README.md
+    summary: Assurance domain boundary declaration.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [DomainBoundary]
+
+  - identifier: GSP-DOMAIN-REGISTRY
+    title: Registry Domain README
+    artifactType: Index
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Tooling]
+    path: genesis/standards/registry/README.md
+    summary: Registry domain boundary declaration.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [DomainBoundary]
+
+  - identifier: GSP-DOMAIN-TEMPLATES
+    title: Templates Domain README
+    artifactType: Index
+    status: Active
+    version: 1.0
+    authority: Foundation Authority
+    owners: [Standards Architecture]
+    path: genesis/standards/templates/README.md
+    summary: Templates domain boundary declaration.
+    dependencies: [GSP-EPIC-0001]
+    conformance:
+      framework: Genesis Foundation v1.0
+      clauses: [DomainBoundary]
