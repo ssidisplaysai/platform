@@ -3,7 +3,7 @@
 Artifact ID: GCSA-0005  
 Title: Genesis Constitutional Identity Framework  
 Version: 1.0.0  
-Status: PROPOSED  
+Status: APPROVED  
 Classification: Constitutional Architecture  
 Authority: Genesis Constitution  
 Governing Vision: GAV-0001  
@@ -153,6 +153,8 @@ Governance defines legitimacy of identity declaration, lifecycle transitions, de
 
 Lineage defines historical and structural continuity of constitutional subjects across governed evolution. Identity participates in lineage so architectural history remains auditable and non-ambiguous.
 
+GAR-0050 Version 1.0.0 — APPROVED
+
 ## 21. Version Relationships
 
 Identity and version are distinct. Identity designates constitutional subject continuity; version designates governed state of that subject at a point in architectural evolution. Version may change; identity persists.
@@ -249,8 +251,13 @@ Every future constitutional artifact shall declare:
 
 Constitutional Determination:
 
-PROPOSED FOR INDEPENDENT ARCHITECTURAL REVIEW
+APPROVED
+
+Genesis Constitutional Identity Framework Version 1.0.0
+is approved as the constitutional definition of Identity
+within Genesis.
 
 ## 40. Conclusion
 
-GCSA-0005 is ready for independent architectural review.
+GCSA-0005 Version 1.0.0
+is approved as the Genesis Constitutional Identity Framework.
