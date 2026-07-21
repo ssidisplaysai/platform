@@ -1,0 +1,18 @@
+{
+  "name": "@genesis/ges-0001",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "GES-0001 Canonical Evidence Model",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "tsx --test tests/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.8.3"
+  }
+}
