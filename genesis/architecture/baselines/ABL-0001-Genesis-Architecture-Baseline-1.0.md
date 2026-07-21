@@ -3,7 +3,7 @@
 Artifact ID: ABL-0001  
 Title: Genesis Architecture Baseline 1.0  
 Version: 1.0.1  
-Status: PROPOSED  
+Status: APPROVED  
 Classification: Architecture Baseline  
 Authority: Genesis Constitution  
 Governing Vision: GAV-0001  
@@ -75,6 +75,8 @@ GAR-0049 Version 1.0.0 reviewed ABL-0001 Version 1.0.0 and determined REVISIONS 
 
 ABL-0001 Version 1.0.1 is the corrected baseline candidate submitted for controlled re-review.
 
+GAR-0049.1 approved ABL-0001 Version 1.0.1 through controlled independent architectural re-review.
+
 The original GAR-0049 finding remains part of the permanent governance record.
 
 ## 10. Framework Placement
@@ -141,10 +143,12 @@ This validation confirms readiness for controlled re-review only and does not as
 
 ## 19. Baseline Determination
 
-Baseline Determination: PROPOSED FOR CONTROLLED ARCHITECTURAL RE-REVIEW
+Baseline Determination: APPROVED
+
+Genesis Architecture Baseline 1.0 is approved as the canonical constitutional architecture baseline for Genesis.
 
 ## 20. Conclusion
 
 ABL-0001 Version 1.0.1 records the proposed constitutional baseline foundation, governance lineage, conformance obligations, and controlled-evolution rules for future Genesis architecture.
 
-ABL-0001 Version 1.0.1 is ready for controlled independent architectural re-review.
+ABL-0001 Version 1.0.1 is approved as Genesis Architecture Baseline 1.0.
