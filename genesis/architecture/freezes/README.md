@@ -51,3 +51,4 @@ When an AFR is approved:
 ## Current Records
 
 1. AFR-0004 - Genesis Runtime Foundation Freeze v1.0
+2. AFR-0007 - Genesis Constitutional Release 1.0
