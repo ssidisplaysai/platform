@@ -1,0 +1,45 @@
+identifier: GCP-0001
+title: Genesis Constitutional Publication Program
+status: Active
+authority: Foundation Authority
+phase: Phase 1 - Constitutional Infrastructure
+root: genesis/constitutional-publication
+namingConvention:
+  programPrefix: GCP
+  reviewPrefixes:
+    - GAR
+    - GGR
+    - GPubR
+    - GER
+    - GRV
+    - GCIR
+scope:
+  includes:
+    - repository structure
+    - directory readmes
+    - milestone infrastructure
+    - review templates
+    - index placeholders
+  excludes:
+    - constitutional artifact recovery
+    - normative authoring
+    - review execution
+    - release packaging
+artifacts:
+  - genesis/constitutional-publication/README.md
+  - genesis/constitutional-publication/theory/README.md
+  - genesis/constitutional-publication/governance/README.md
+  - genesis/constitutional-publication/publication/README.md
+  - genesis/constitutional-publication/milestones/README.md
+  - genesis/constitutional-publication/reviews/README.md
+  - genesis/constitutional-publication/indexes/README.md
+  - genesis/constitutional-publication/milestones/GCP-0001-Genesis-Constitutional-Publication-Program.md
+  - genesis/constitutional-publication/milestones/GCP-0001.manifest.yaml
+  - genesis/constitutional-publication/reviews/GAR-template.md
+  - genesis/constitutional-publication/reviews/GGR-template.md
+  - genesis/constitutional-publication/reviews/GPubR-template.md
+  - genesis/constitutional-publication/reviews/GER-template.md
+  - genesis/constitutional-publication/reviews/GRV-template.md
+  - genesis/constitutional-publication/reviews/GCIR-template.md
+  - genesis/constitutional-publication/indexes/CONSTITUTIONAL-PUBLICATION-INDEX.md
+  - genesis/constitutional-publication/indexes/REVIEW-CLASSES-INDEX.md
