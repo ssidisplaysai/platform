@@ -3,11 +3,11 @@
 Artifact ID: GCSA-0008  
 Title: Genesis Constitutional Policy Framework  
 Version: 1.0.0  
-Status: PROPOSED  
+Status: APPROVED  
 Artifact Type: Constitutional Primitive Specification  
 Classification: Genesis Constitutional Policy Primitive  
 Primitive: Policy  
-Primitive Classification: CANDIDATE FOR APPROVAL  
+Primitive Classification: APPROVED CONSTITUTIONAL PRIMITIVE  
 Architectural Layer: Constitutional Primitives Layer  
 Authority: Genesis Constitution  
 Governing Vision: GAV-0001  
@@ -20,8 +20,8 @@ Related Artifact Model: GCSA-0004
 Foundational Dependency: GCSA-0005 — Genesis Constitutional Identity Framework Version 1.0.0 — APPROVED  
 Contextual Reference: GCSA-0006 — Genesis Constitutional State Framework Version 1.0.0 — APPROVED  
 Contextual Reference: GCSA-0007 — Genesis Constitutional Relationship Framework Version 1.0.0 — APPROVED  
-Independent Review: PENDING  
-Approval Lineage: NONE
+Independent Review: GAR-0054 — APPROVED  
+Approval Lineage: GAR-0054 Version 1.0.0 — APPROVED
 Intended Review: GAR-0054 — Genesis Constitutional Policy Framework Review
 
 ### PART I - FOUNDATION
@@ -458,12 +458,12 @@ Supported open questions:
 
 Constitutional Determination:
 
-PROPOSED FOR INDEPENDENT ARCHITECTURAL REVIEW
+APPROVED AS A GENESIS CONSTITUTIONAL PRIMITIVE
 
 ### D. Review Readiness Statement
 
-GCSA-0008 Version 1.0.0 is ready for independent architectural review as the proposed Genesis Constitutional Policy Framework.
+GCSA-0008 Version 1.0.0 is approved as the Genesis Constitutional Policy Framework.
 
 ### E. Conclusion
 
-GCSA-0008 is ready for GAR-0054 independent architectural review.
+Future Genesis policy architectures, specifications, models, and implementations shall conform to GCSA-0008.
