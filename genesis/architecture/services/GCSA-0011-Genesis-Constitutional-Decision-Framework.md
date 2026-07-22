@@ -3,10 +3,10 @@
 Artifact ID: GCSA-0011
 Title: Genesis Constitutional Decision Framework
 Version: 1.0.0
-Status: PROPOSED
+Status: APPROVED
 Artifact Type: Constitutional Primitive Specification
 Primitive: Decision
-Primitive Classification: CANDIDATE FOR APPROVAL
+Primitive Classification: APPROVED CONSTITUTIONAL PRIMITIVE
 Governing Primitive Architecture: GCP-0001 Version 1.0.0 — APPROVED
 Discovery Authority: GPD-0001 Version 1.0.0
 Foundational Dependency: GCSA-0005 Version 1.0.0 — APPROVED
@@ -16,8 +16,8 @@ GCSA-0007 Version 1.0.0 — APPROVED
 GCSA-0008 Version 1.0.0 — APPROVED
 GCSA-0009 Version 1.0.0 — APPROVED
 GCSA-0010 Version 1.0.0 — APPROVED
-Independent Review: PENDING
-Approval Lineage: NONE
+Independent Review: GAR-0057 — APPROVED
+Approval Lineage: GAR-0057 Version 1.0.0 — APPROVED
 Intended Review: GAR-0057 — Genesis Constitutional Decision Framework Review
 
 ## 1. Artifact Identity
@@ -988,10 +988,10 @@ Matrix 9 — Decision Conformance Matrix
 
 Constitutional Determination:
 
-PROPOSED FOR INDEPENDENT ARCHITECTURAL REVIEW
+APPROVED AS A GENESIS CONSTITUTIONAL PRIMITIVE
 
 Review Readiness Statement:
 
-GCSA-0011 Version 1.0.0 is ready for independent architectural review as the proposed Genesis Constitutional Decision Framework.
+GCSA-0011 Version 1.0.0 is approved as the Genesis Constitutional Decision Framework.
 
-GCSA-0011 is ready for GAR-0057 independent architectural review.
+Future Genesis decision architectures, specifications, models, and implementations shall conform to GCSA-0011.
