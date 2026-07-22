@@ -3,7 +3,7 @@
 Artifact ID: GCSA-0006  
 Title: Genesis Constitutional State Framework  
 Version: 1.0.0  
-Status: PROPOSED  
+Status: APPROVED  
 Classification: Constitutional Architecture  
 Authority: Genesis Constitution  
 Governing Vision: GAV-0001  
@@ -127,6 +127,8 @@ State authority defines who may declare, validate, or approve state standing and
 
 State lineage preserves historical continuity of state standing across governed evolution, preserving permanent constitutional auditability.
 
+GAR-0051 Version 1.0.0 — APPROVED
+
 ## 21. State History
 
 State history is permanent constitutional evidence of state evolution. Historical state records remain part of governance lineage and shall not be erased by subsequent standing changes.
@@ -229,10 +231,10 @@ Every future constitutional artifact shall declare:
 
 ## 39. Constitutional Determination
 
-Constitutional Determination:
+Constitutional Determination: APPROVED
 
-PROPOSED FOR INDEPENDENT ARCHITECTURAL REVIEW
+Genesis Constitutional State Framework Version 1.0.0 is approved as the constitutional definition of State within Genesis.
 
 ## 40. Conclusion
 
-GCSA-0006 is ready for independent architectural review.
+GCSA-0006 Version 1.0.0 is approved as the Genesis Constitutional State Framework.
