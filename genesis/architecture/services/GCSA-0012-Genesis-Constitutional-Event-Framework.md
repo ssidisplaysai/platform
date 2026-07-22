@@ -3,10 +3,10 @@
 Artifact ID: GCSA-0012
 Title: Genesis Constitutional Event Framework
 Version: 1.0.0
-Status: PROPOSED
+Status: APPROVED
 Artifact Type: Constitutional Primitive Specification
 Primitive: Event
-Primitive Classification: CANDIDATE FOR APPROVAL
+Primitive Classification: APPROVED CONSTITUTIONAL PRIMITIVE
 Governing Primitive Architecture: GCP-0001 Version 1.0.0 — APPROVED
 Discovery Authority: GPD-0001 Version 1.0.0
 Foundational Dependency: GCSA-0005 Version 1.0.0 — APPROVED
@@ -17,8 +17,8 @@ GCSA-0008 Version 1.0.0 — APPROVED
 GCSA-0009 Version 1.0.0 — APPROVED
 GCSA-0010 Version 1.0.0 — APPROVED
 GCSA-0011 Version 1.0.0 — APPROVED
-Independent Review: PENDING
-Approval Lineage: NONE
+Independent Review: GAR-0058 Version 1.0.0 — APPROVED
+Approval Lineage: Approved by GAR-0058 Version 1.0.0
 Intended Review: GAR-0058 — Genesis Constitutional Event Framework Review
 
 ## 1. Artifact Identity
@@ -1293,10 +1293,16 @@ Implementation convenience shall not override constitutional semantics.
 
 Constitutional Determination
 
-PROPOSED FOR INDEPENDENT ARCHITECTURAL REVIEW
+APPROVED
 
-Review Readiness Statement
+Approval Authority
 
-GCSA-0012 Version 1.0.0 is ready for independent architectural review as the proposed Genesis Constitutional Event Framework.
+GAR-0058 Version 1.0.0
 
-GCSA-0012 is ready for GAR-0058 independent architectural review.
+Approval Gate
+
+PASS
+
+Architectural Determination
+
+GCSA-0012 Version 1.0.0 is approved as the Genesis Constitutional Event Framework.
