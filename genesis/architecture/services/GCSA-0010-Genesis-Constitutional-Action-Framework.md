@@ -3,10 +3,10 @@
 Artifact ID: GCSA-0010
 Title: Genesis Constitutional Action Framework
 Version: 1.0.0
-Status: PROPOSED
+Status: APPROVED
 Artifact Type: Constitutional Primitive Specification
 Primitive: Action
-Primitive Classification: CANDIDATE FOR APPROVAL
+Primitive Classification: APPROVED CONSTITUTIONAL PRIMITIVE
 Governing Primitive Architecture: GCP-0001 Version 1.0.0 — APPROVED
 Discovery Authority: GPD-0001 Version 1.0.0
 Foundational Dependency: GCSA-0005 Version 1.0.0 — APPROVED
@@ -15,8 +15,8 @@ GCSA-0006 Version 1.0.0 — APPROVED
 GCSA-0007 Version 1.0.0 — APPROVED
 GCSA-0008 Version 1.0.0 — APPROVED
 GCSA-0009 Version 1.0.0 — APPROVED
-Independent Review: PENDING
-Approval Lineage: NONE
+Independent Review: GAR-0056 — APPROVED
+Approval Lineage: GAR-0056 Version 1.0.0 — APPROVED
 Intended Review: GAR-0056 — Genesis Constitutional Action Framework Review
 
 ## 1. Artifact Identity
@@ -498,10 +498,10 @@ Matrix 9 — Final Conformance Matrix
 
 Constitutional Determination:
 
-PROPOSED FOR INDEPENDENT ARCHITECTURAL REVIEW
+APPROVED AS A GENESIS CONSTITUTIONAL PRIMITIVE
 
 Review Readiness Statement:
 
-GCSA-0010 Version 1.0.0 is ready for independent architectural review as the proposed Genesis Constitutional Action Framework.
+GCSA-0010 Version 1.0.0 is approved as the Genesis Constitutional Action Framework.
 
-GCSA-0010 is ready for GAR-0056 independent architectural review.
+Future Genesis action architectures, specifications, models, and implementations shall conform to GCSA-0010.
