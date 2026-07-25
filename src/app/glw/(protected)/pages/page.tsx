@@ -1,11 +1,15 @@
-import { GlwEmptyPlaceholder } from "@/components/glw/glw-empty-placeholder";
+import { GlwPageGenerationWorkspace } from "@/components/glw/glw-page-generation-workspace";
+import { createPrismaGlwJobRepository } from "@/lib/glw/job-repository";
 
-export default function GlwPagesPage() {
+export default async function GlwPagesPage() {
+  const repository = createPrismaGlwJobRepository();
+  const initialJobs = await repository.findRecentPageGenerationJobs(25);
+  const initialSelectedJob = initialJobs[0] ?? null;
+
   return (
-    <GlwEmptyPlaceholder
-      eyebrow="Pages"
-      title="Pages workspace"
-      description="Placeholder surface for page inventory, editing, and generation flows."
+    <GlwPageGenerationWorkspace
+      initialJobs={initialJobs}
+      initialSelectedJob={initialSelectedJob}
     />
   );
 }

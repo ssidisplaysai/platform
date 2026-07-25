@@ -4,11 +4,87 @@ import { MetricCard } from "./metric-card";
 import { PageContainer } from "./page-container";
 import { SectionHeader } from "./section-header";
 import { StatusBadge } from "./status-badge";
-import { dashboardMetrics, recentJobs } from "./glw-data";
+import type { GlwJobRecord } from "@/lib/glw/jobs";
+import { formatGlwJobDuration, getGlwLocationLabel } from "@/lib/glw/jobs";
 
-type RecentJob = (typeof recentJobs)[number];
+type GlwDashboardProps = {
+  metrics: {
+    total: number;
+    active: number;
+    complete: number;
+    failed: number;
+    avgDurationMs: number;
+  };
+  recentJobs: GlwJobRecord[];
+};
 
-export function GlwDashboard() {
+function toBadgeStatus(job: GlwJobRecord): "queued" | "running" | "succeeded" | "failed" {
+  if (job.status === "FAILED") {
+    return "failed";
+  }
+
+  if (job.status === "COMPLETE") {
+    return "succeeded";
+  }
+
+  if (job.status === "QUEUED") {
+    return "queued";
+  }
+
+  return "running";
+}
+
+function formatAverageDuration(durationMs: number): string {
+  if (durationMs <= 0) {
+    return "--";
+  }
+
+  const totalSeconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+}
+
+export function GlwDashboard({ metrics, recentJobs }: GlwDashboardProps) {
+  const dashboardMetrics = [
+    {
+      label: "Total Jobs",
+      value: String(metrics.total),
+      detail: "All tracked page-generation jobs.",
+    },
+    {
+      label: "Running Jobs",
+      value: String(metrics.active),
+      detail: "Queued or in-progress page workflows.",
+    },
+    {
+      label: "Completed Jobs",
+      value: String(metrics.complete),
+      detail: "Successfully published page outputs.",
+    },
+    {
+      label: "Failed Jobs",
+      value: String(metrics.failed),
+      detail: "Jobs requiring operator retry or correction.",
+    },
+    {
+      label: "Average Job Time",
+      value: formatAverageDuration(metrics.avgDurationMs),
+      detail: "Average across completed jobs.",
+    },
+  ];
+
+  const rows = recentJobs.map((job) => ({
+    id: job.id,
+    status: toBadgeStatus(job),
+    type: "Page",
+    site: job.input.site.name,
+    title: job.title,
+    started: job.startedAt ?? "--",
+    duration: formatGlwJobDuration(job),
+    location: getGlwLocationLabel(job.input.page),
+  }));
+
   return (
     <PageContainer className="space-y-6 sm:space-y-8">
       <SectionHeader
@@ -48,21 +124,21 @@ export function GlwDashboard() {
                   Recent Jobs
                 </h3>
                 <p className="mt-1 text-sm text-zinc-500">
-                  Production activity across pages, blogs, and sites.
+                  Persisted page-generation workflow activity.
                 </p>
               </div>
-              <p className="text-sm text-zinc-500">5 jobs shown</p>
+              <p className="text-sm text-zinc-500">{rows.length} jobs shown</p>
             </div>
           </div>
 
-          <DataTable<RecentJob>
-            rows={recentJobs}
+          <DataTable
+            rows={rows}
             rowKey={(job) => job.id}
             emptyState={
               <div className="p-5 sm:p-6">
                 <EmptyState
                   title="No jobs yet"
-                  description="Recent page and blog generation will appear here once content production is connected."
+                  description="Recent page generation jobs will appear after the first workflow request."
                 />
               </div>
             }
@@ -76,6 +152,11 @@ export function GlwDashboard() {
                 header: "Type",
                 className: "whitespace-nowrap text-zinc-600",
                 cell: (job) => <span className="font-medium text-zinc-700">{job.type}</span>,
+              },
+              {
+                header: "Location",
+                className: "whitespace-nowrap text-zinc-600",
+                cell: (job) => <span>{job.location}</span>,
               },
               {
                 header: "Site",
@@ -105,13 +186,10 @@ export function GlwDashboard() {
               {
                 header: "Action",
                 className: "whitespace-nowrap text-right",
-                cell: (job) => (
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
-                  >
-                    {job.actionLabel}
-                  </button>
+                cell: () => (
+                  <span className="inline-flex items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-700">
+                    Open in Pages
+                  </span>
                 ),
               },
             ]}
@@ -135,20 +213,20 @@ export function GlwDashboard() {
             <SectionHeader
               eyebrow="Queue"
               title="Execution summary"
-              description="The current slice is UI-only, so the queue view communicates state through the interface rather than live backend data."
+              description="Live summary from persisted page-generation job records."
             />
             <div className="mt-5 grid gap-3 text-sm text-zinc-600">
               <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
                 <span>Running jobs</span>
-                <span className="font-medium text-zinc-950">3</span>
+                <span className="font-medium text-zinc-950">{metrics.active}</span>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
                 <span>Failed jobs</span>
-                <span className="font-medium text-zinc-950">1</span>
+                <span className="font-medium text-zinc-950">{metrics.failed}</span>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
                 <span>Average job time</span>
-                <span className="font-medium text-zinc-950">4m 18s</span>
+                <span className="font-medium text-zinc-950">{formatAverageDuration(metrics.avgDurationMs)}</span>
               </div>
             </div>
           </article>
