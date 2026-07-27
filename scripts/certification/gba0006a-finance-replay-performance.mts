@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { performance } from "node:perf_hooks";
-import { createInMemoryFinanceRepository } from "./src/lib/gba/finance-repository";
-import { createFinanceRuntimeService } from "./src/lib/gba/finance-runtime";
+import { createInMemoryFinanceRepository } from "../../src/lib/gba/finance-repository";
+import { createFinanceRuntimeService } from "../../src/lib/gba/finance-runtime";
 
 type JsonLike = null | boolean | number | string | JsonLike[] | { [k: string]: JsonLike };
 
@@ -58,13 +58,12 @@ async function bench(label: string, fn: () => Promise<unknown>, rounds = 20) {
   };
 }
 
-(async () => {
+async function main() {
   const workspaceId = "glw-led-display-warehouse";
   const organizationId = "genesis";
   const repository = createInMemoryFinanceRepository();
   const runtime = createFinanceRuntimeService(repository);
 
-  // Warm seed
   await runtime.getDashboard(workspaceId, organizationId);
 
   const d1 = await runtime.getDashboard(workspaceId, organizationId);
@@ -97,4 +96,6 @@ async function bench(label: string, fn: () => Promise<unknown>, rounds = 20) {
   ];
 
   console.log(JSON.stringify({ replay, benchmarks }, null, 2));
-})();
+}
+
+void main();

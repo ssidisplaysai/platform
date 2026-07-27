@@ -1,13 +1,13 @@
 import { performance } from "node:perf_hooks";
-import { createInMemoryEnterpriseDomainRepository } from "./src/lib/ged/enterprise-domain-repository";
-import { createEnterpriseDomainRuntimeService } from "./src/lib/ged/enterprise-domain-runtime";
-import { enterpriseId, stableEnterpriseChecksum } from "./src/lib/ged/enterprise-domain-models";
+import { createInMemoryEnterpriseDomainRepository } from "../../src/lib/ged/enterprise-domain-repository";
+import { createEnterpriseDomainRuntimeService } from "../../src/lib/ged/enterprise-domain-runtime";
+import { enterpriseId, stableEnterpriseChecksum } from "../../src/lib/ged/enterprise-domain-models";
 
 const runtime = createEnterpriseDomainRuntimeService(createInMemoryEnterpriseDomainRepository());
 
 async function measure(label: string, fn: () => Promise<unknown>) {
   const samples: number[] = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 5; i += 1) {
     const started = performance.now();
     await fn();
     samples.push(performance.now() - started);
@@ -20,14 +20,14 @@ async function measure(label: string, fn: () => Promise<unknown>) {
   };
 }
 
-(async () => {
+async function main() {
   const entityLookup = await measure("entity_lookup", () => runtime.getEntity("project"));
   const relationshipTraversal = await measure("relationship_traversal", () => runtime.listRelationships("project"));
   const validationExecution = await measure("validation_execution", () => runtime.validateDomain());
   const healthChecks = await measure("health_checks", () => runtime.listHealth());
 
   const identitySamples: number[] = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 5; i += 1) {
     const started = performance.now();
     const id = enterpriseId("ged-identity-bench", { entity: "project", i });
     const checksum = stableEnterpriseChecksum({ entity: "project", i, id });
@@ -43,4 +43,6 @@ async function measure(label: string, fn: () => Promise<unknown>) {
   };
 
   console.log(JSON.stringify({ entityLookup, relationshipTraversal, identityGeneration, validationExecution, healthChecks }, null, 2));
-})();
+}
+
+void main();

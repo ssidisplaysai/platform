@@ -1,11 +1,11 @@
-import { createInMemoryMarketingRepository } from "./src/lib/gba/marketing-repository";
-import { createMarketingRuntimeService } from "./src/lib/gba/marketing-runtime";
-import { marketingId } from "./src/lib/gba/marketing-models";
+import { createInMemoryMarketingRepository } from "../../src/lib/gba/marketing-repository";
+import { createMarketingRuntimeService } from "../../src/lib/gba/marketing-runtime";
+import { marketingId } from "../../src/lib/gba/marketing-models";
 
 const repository = createInMemoryMarketingRepository();
 const runtime = createMarketingRuntimeService(repository);
 
-(async () => {
+async function main() {
   await repository.upsertRecommendation({
     marketingRecommendationId: marketingId("seededrec"),
     workspaceId: "glw-led-display-warehouse",
@@ -30,4 +30,6 @@ const runtime = createMarketingRuntimeService(repository);
     signatureCount: first.length,
     firstSignatures: first.map((entry) => entry.immutableLineage),
   }, null, 2));
-})();
+}
+
+void main();
