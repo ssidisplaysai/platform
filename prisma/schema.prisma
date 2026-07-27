@@ -44,3 +44,5097 @@ model GlwJob {
   @@index([status, createdAt(sort: Desc)])
   @@index([retryOfJobId])
 }
+
+model GopJobEvent {
+  eventId        String   @id
+  jobId          String
+  moduleId       String
+  jobType        String
+  eventType      String
+  stage          String?
+  status         String?
+  message        String?
+  source         String?
+  occurredAt     DateTime
+  sequence       Int
+  durationMs     Int?
+  metadata       Json?
+  actorId        String?
+  actorName      String?
+  correlationId  String?
+  causationId    String?
+  idempotencyKey String?
+  createdAt      DateTime @default(now())
+
+  @@unique([jobId, sequence])
+  @@index([jobId, sequence])
+  @@index([moduleId, occurredAt(sort: Desc)])
+  @@index([jobType, occurredAt(sort: Desc)])
+  @@index([eventType, occurredAt(sort: Desc)])
+  @@index([status, occurredAt(sort: Desc)])
+  @@index([idempotencyKey])
+}
+
+model GopExecution {
+  executionId       String   @id
+  executionType     String?
+  jobId             String?  @unique
+  moduleId          String
+  workspaceId       String
+  parentExecutionId String?
+  childExecutionIds Json
+  status            String
+  currentState      String?
+  currentNodeId     String?
+  priority          String
+  queueName         String?
+  workerAssignment  Json?
+  retryCount        Int      @default(0)
+  retryHistory      Json
+  startedAt         DateTime?
+  completedAt       DateTime?
+  scheduledAt       DateTime?
+  timeoutMs         Int?
+  correlationId     String?
+  causationId       String?
+  context           Json
+  input             Json
+  output            Json?
+  artifacts         Json
+  metadata          Json?
+  executionVersion  Int      @default(1)
+  snapshotVersion   Int      @default(1)
+  archivedAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  snapshots GopExecutionSnapshot[]
+  leases    GopExecutionLease[]
+  deadLetters GopDeadLetter[]
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([moduleId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+  @@index([parentExecutionId])
+  @@index([correlationId])
+}
+
+model GopExecutionSnapshot {
+  snapshotId       String   @id @default(cuid())
+  executionId      String
+  snapshotVersion  Int
+  snapshotSequence Int
+  status           String
+  currentState     String?
+  currentNodeId    String?
+  progressPercent  Int
+  queuePosition    Int?
+  workerAssignment Json?
+  retryCount       Int
+  retryHistory     Json
+  output           Json?
+  timing           Json
+  metrics          Json
+  artifacts        Json
+  state            Json
+  upToEventSequence Int?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  execution GopExecution @relation(fields: [executionId], references: [executionId], onDelete: Cascade)
+
+  @@unique([executionId, snapshotSequence])
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model GopWorker {
+  workerId                   String   @id
+  name                       String
+  workerType                 String
+  capabilities               Json
+  maxCapacity                Int
+  currentWorkload            Int      @default(0)
+  heartbeatAt                DateTime
+  health                     String
+  protocolVersion            String
+  supportedProtocolVersions  Json
+  instanceId                 String?
+  environment                String?
+  tokenId                    String?
+  authMode                   String
+  leaseTtlMs                 Int?
+  heartbeatIntervalMs        Int?
+  lastLeaseId                String?
+  disconnectedAt             DateTime?
+  workspaceId                String?
+  moduleId                   String?
+  metadata                   Json?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@index([workerType, updatedAt(sort: Desc)])
+  @@index([health, updatedAt(sort: Desc)])
+  @@index([workspaceId, moduleId])
+}
+
+model GopExecutionLease {
+  leaseId              String   @id
+  executionId          String
+  queueItemId          String
+  workerId             String
+  workspaceId          String
+  moduleId             String
+  leaseStartAt         DateTime
+  leaseExpiresAt       DateTime
+  heartbeatDeadlineAt  DateTime
+  renewalCount         Int      @default(0)
+  leaseState           String
+  protocolVersion      String
+  tokenId              String?
+  stolenFromWorkerId   String?
+  releasedAt           DateTime?
+  releaseReason        String?
+  metadata             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  execution GopExecution @relation(fields: [executionId], references: [executionId], onDelete: Cascade)
+
+  @@index([executionId, leaseStartAt(sort: Desc)])
+  @@index([workerId, leaseStartAt(sort: Desc)])
+  @@index([leaseState, leaseExpiresAt(sort: Desc)])
+}
+
+model GopDeadLetter {
+  deadLetterId   String   @id
+  executionId    String
+  queueItemId    String
+  workspaceId    String
+  moduleId       String
+  queueName      String?
+  reason         String
+  retryHistory   Json
+  failureHistory Json
+  operatorNotes  String?
+  archivedAt     DateTime?
+  recoveredAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  execution GopExecution @relation(fields: [executionId], references: [executionId], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([moduleId, createdAt(sort: Desc)])
+  @@index([archivedAt, createdAt(sort: Desc)])
+}
+
+model GmpProject {
+  projectId            String   @id
+  name                 String
+  slug                 String
+  description          String?
+  organization         String?
+  workspaceId          String
+  ownerActorId         String
+  members              Json
+  status               String
+  lifecycleState       String
+  businessProfileRef   String?
+  businessGenomeRef    String?
+  defaultLanguage      String
+  defaultLocale        String
+  timezone             String
+  metadata             Json?
+  version              Int      @default(1)
+  archivedAt           DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  brandProfile         GmpBrandProfile?
+  sites                GmpSite[]
+  environmentConfigs   GmpEnvironmentConfig[]
+  knowledgeWorkspace   GmpBusinessKnowledgeWorkspace?
+  knowledgeRecords     GmpKnowledgeRecord[]
+  knowledgeSources     GmpKnowledgeSource[]
+  knowledgeEvidenceLinks GmpKnowledgeEvidenceLink[]
+  knowledgeReviews     GmpKnowledgeReview[]
+  knowledgeApprovals   GmpKnowledgeApproval[]
+  knowledgeConflicts   GmpKnowledgeConflict[]
+  knowledgeConflictMembers GmpKnowledgeConflictMember[]
+  knowledgeCompletenessAssessments GmpKnowledgeCompletenessAssessment[]
+  contextAssemblies    GmpContextAssemblyRecord[]
+  pages                GmpPage[]
+  pageBriefs           GmpPageBrief[]
+  pageBriefVersions    GmpPageBriefVersion[]
+  contentPlans         GmpContentPlan[]
+  contentPlanVersions  GmpContentPlanVersion[]
+  pageSections         GmpPageSection[]
+  pageRelationships    GmpPageRelationship[]
+  internalLinkPlans    GmpInternalLinkPlan[]
+  pageReviews          GmpPageReview[]
+  pageApprovals        GmpPageApproval[]
+  pageReadinessAssessments GmpPageReadinessAssessment[]
+  pageKnowledgeReferences GmpPageKnowledgeReference[]
+  pageSourceReferences GmpPageSourceReference[]
+  contentDrafts        GmpContentDraft[]
+  generationRequests   GmpGenerationRequest[]
+  contentReviews       GmpContentReview[]
+  contentApprovals     GmpContentApproval[]
+  contentValidations   GmpContentValidation[]
+  sectionValidations   GmpSectionValidation[]
+  generationLineage    GmpGenerationLineage[]
+  contentAssemblies    GmpContentAssembly[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GmpSite {
+  siteId                  String   @id
+  projectId               String
+  displayName             String
+  primaryDomain           String
+  environment             String
+  publishingPlatform      String
+  publishingStatus        String
+  authenticationMethod    String
+  connectionStatus        String
+  publishingCapabilities  Json
+  defaultLanguage         String
+  defaultTheme            String?
+  metadata                Json?
+  version                 Int      @default(1)
+  archivedAt              DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  project                 GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  publishingConnections   GmpPublishingConnection[]
+  environmentConfigs      GmpEnvironmentConfig[]
+  pages                   GmpPage[]
+  contentDrafts           GmpContentDraft[]
+
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([environment, updatedAt(sort: Desc)])
+  @@index([connectionStatus, updatedAt(sort: Desc)])
+}
+
+model GmpBrandProfile {
+  brandProfileId      String   @id
+  projectId           String   @unique
+  companyName         String
+  tagline             String?
+  mission             String?
+  brandVoice          String?
+  writingStyle        String?
+  primaryAudience     String?
+  secondaryAudience   String?
+  primaryColor        String?
+  secondaryColor      String?
+  logoReferences      Json
+  typography          Json?
+  assetReferences     Json
+  socialLinks         Json
+  contactInformation  Json?
+  metadata            Json?
+  version             Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  project             GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+
+  @@index([updatedAt(sort: Desc)])
+}
+
+model GmpPublishingConnection {
+  connectionId           String   @id
+  siteId                 String
+  provider               String
+  environment            String
+  publishingStatus       String
+  authenticationMethod   String
+  connectionStatus       String
+  publishingCapabilities Json
+  configuration          Json?
+  metadata               Json?
+  version                Int      @default(1)
+  lastValidatedAt        DateTime?
+  archivedAt             DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  site                   GmpSite @relation(fields: [siteId], references: [siteId], onDelete: Cascade)
+
+  @@index([siteId, updatedAt(sort: Desc)])
+  @@index([provider, updatedAt(sort: Desc)])
+  @@index([connectionStatus, updatedAt(sort: Desc)])
+}
+
+model GmpEnvironmentConfig {
+  configId       String   @id
+  projectId      String?
+  siteId         String?
+  environment    String
+  variables      Json
+  metadata       Json?
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  project        GmpProject? @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  site           GmpSite? @relation(fields: [siteId], references: [siteId], onDelete: Cascade)
+
+  @@index([projectId, environment])
+  @@index([siteId, environment])
+}
+
+model GmpBusinessKnowledgeWorkspace {
+  knowledgeWorkspaceId String   @id
+  projectId            String   @unique
+  workspaceVersion     Int      @default(1)
+  status               String
+  lifecycleState       String
+  completenessScore    Int      @default(0)
+  confidenceScore      Int      @default(0)
+  lastReviewedAt       DateTime?
+  lastApprovedAt       DateTime?
+  approvedBy           String?
+  metadata             Json?
+  version              Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project                  GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  records                  GmpKnowledgeRecord[]
+  reviews                  GmpKnowledgeReview[]
+  approvals                GmpKnowledgeApproval[]
+  conflicts                GmpKnowledgeConflict[]
+  completenessAssessments  GmpKnowledgeCompletenessAssessment[]
+  contextAssemblies        GmpContextAssemblyRecord[]
+
+  @@index([lifecycleState, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GmpKnowledgeRecord {
+  knowledgeRecordId       String   @id
+  projectId               String
+  knowledgeWorkspaceId    String
+  domain                  String
+  recordType              String
+  canonicalKey            String
+  title                   String
+  summary                 String?
+  structuredValue         Json
+  normalizedValue         Json?
+  status                  String
+  confidence              Int      @default(50)
+  priority                Int      @default(50)
+  effectiveFrom           DateTime?
+  effectiveUntil          DateTime?
+  sourceCount             Int      @default(0)
+  conflictState           String   @default("NONE")
+  reviewState             String   @default("DRAFT")
+  supersededByRecordId    String?
+  parentRecordId          String?
+  version                 Int      @default(1)
+  archivedAt              DateTime?
+  metadata                Json?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  project                 GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  workspace               GmpBusinessKnowledgeWorkspace @relation(fields: [knowledgeWorkspaceId], references: [knowledgeWorkspaceId], onDelete: Cascade)
+  parentRecord            GmpKnowledgeRecord? @relation("GmpKnowledgeRecordParent", fields: [parentRecordId], references: [knowledgeRecordId], onDelete: SetNull)
+  childRecords            GmpKnowledgeRecord[] @relation("GmpKnowledgeRecordParent")
+  supersededByRecord      GmpKnowledgeRecord? @relation("GmpKnowledgeRecordSupersede", fields: [supersededByRecordId], references: [knowledgeRecordId], onDelete: SetNull)
+  supersedesRecords       GmpKnowledgeRecord[] @relation("GmpKnowledgeRecordSupersede")
+  versions                GmpKnowledgeRecordVersion[]
+  evidenceLinks           GmpKnowledgeEvidenceLink[]
+  reviews                 GmpKnowledgeReview[]
+  approvals               GmpKnowledgeApproval[]
+  conflictMembers         GmpKnowledgeConflictMember[]
+
+  @@index([projectId, domain, updatedAt(sort: Desc)])
+  @@index([knowledgeWorkspaceId, canonicalKey])
+  @@index([reviewState, updatedAt(sort: Desc)])
+  @@index([conflictState, updatedAt(sort: Desc)])
+  @@index([status, effectiveUntil])
+}
+
+model GmpKnowledgeRecordVersion {
+  knowledgeRecordVersionId String   @id
+  knowledgeRecordId        String
+  projectId                String
+  knowledgeWorkspaceId     String
+  versionNumber            Int
+  previousValue            Json?
+  newValue                 Json
+  changeReason             String?
+  changedBy                String
+  changedAt                DateTime @default(now())
+  sourceImpact             Json?
+  approvalImpact           Json?
+  metadata                 Json?
+  createdAt                DateTime @default(now())
+
+  record                   GmpKnowledgeRecord @relation(fields: [knowledgeRecordId], references: [knowledgeRecordId], onDelete: Cascade)
+
+  @@unique([knowledgeRecordId, versionNumber])
+  @@index([projectId, changedAt(sort: Desc)])
+  @@index([knowledgeWorkspaceId, changedAt(sort: Desc)])
+}
+
+model GmpKnowledgeSource {
+  sourceId             String   @id
+  projectId            String
+  sourceType           String
+  displayName          String
+  locationReference    String?
+  externalIdentifier   String?
+  checksum             String?
+  sourceVersion        String?
+  capturedAt           DateTime?
+  metadata             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  project              GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  evidenceLinks        GmpKnowledgeEvidenceLink[]
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([sourceType, createdAt(sort: Desc)])
+}
+
+model GmpKnowledgeEvidenceLink {
+  knowledgeEvidenceLinkId String   @id
+  projectId               String
+  knowledgeRecordId       String
+  sourceId                String
+  evidenceLocation        String?
+  evidenceSummary         String?
+  extractionMethod        String?
+  confidence              Int      @default(50)
+  verifiedBy              String?
+  verifiedAt              DateTime?
+  metadata                Json?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  project                 GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  record                  GmpKnowledgeRecord @relation(fields: [knowledgeRecordId], references: [knowledgeRecordId], onDelete: Cascade)
+  source                  GmpKnowledgeSource @relation(fields: [sourceId], references: [sourceId], onDelete: Cascade)
+
+  @@unique([knowledgeRecordId, sourceId, evidenceLocation])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([sourceId, createdAt(sort: Desc)])
+}
+
+model GmpKnowledgeReview {
+  knowledgeReviewId      String   @id
+  projectId              String
+  knowledgeWorkspaceId   String
+  knowledgeRecordId      String
+  assignedTo             String?
+  reviewState            String
+  operatorNotes          String?
+  reviewNotes            String?
+  requestedBy            String?
+  requestedAt            DateTime?
+  completedBy            String?
+  completedAt            DateTime?
+  metadata               Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  project                GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  workspace              GmpBusinessKnowledgeWorkspace @relation(fields: [knowledgeWorkspaceId], references: [knowledgeWorkspaceId], onDelete: Cascade)
+  record                 GmpKnowledgeRecord @relation(fields: [knowledgeRecordId], references: [knowledgeRecordId], onDelete: Cascade)
+
+  @@index([projectId, reviewState, updatedAt(sort: Desc)])
+  @@index([knowledgeRecordId, updatedAt(sort: Desc)])
+}
+
+model GmpKnowledgeApproval {
+  knowledgeApprovalId    String   @id
+  projectId              String
+  knowledgeWorkspaceId   String
+  knowledgeRecordId      String
+  decision               String
+  approvalNotes          String?
+  decidedBy              String
+  decidedAt              DateTime
+  metadata               Json?
+  createdAt              DateTime @default(now())
+
+  project                GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  workspace              GmpBusinessKnowledgeWorkspace @relation(fields: [knowledgeWorkspaceId], references: [knowledgeWorkspaceId], onDelete: Cascade)
+  record                 GmpKnowledgeRecord @relation(fields: [knowledgeRecordId], references: [knowledgeRecordId], onDelete: Cascade)
+
+  @@index([projectId, decidedAt(sort: Desc)])
+  @@index([knowledgeRecordId, decidedAt(sort: Desc)])
+}
+
+model GmpKnowledgeConflict {
+  knowledgeConflictId    String   @id
+  projectId              String
+  knowledgeWorkspaceId   String
+  conflictGroup          String
+  conflictReason         String
+  severity               String
+  resolutionStatus       String
+  selectedRecordId       String?
+  resolutionNotes        String?
+  resolvedBy             String?
+  resolvedAt             DateTime?
+  metadata               Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  project                GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  workspace              GmpBusinessKnowledgeWorkspace @relation(fields: [knowledgeWorkspaceId], references: [knowledgeWorkspaceId], onDelete: Cascade)
+  members                GmpKnowledgeConflictMember[]
+
+  @@index([projectId, resolutionStatus, updatedAt(sort: Desc)])
+  @@index([severity, updatedAt(sort: Desc)])
+}
+
+model GmpKnowledgeConflictMember {
+  knowledgeConflictMemberId String   @id
+  projectId                 String
+  knowledgeConflictId       String
+  knowledgeRecordId         String
+  role                      String?
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  project                   GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  conflict                  GmpKnowledgeConflict @relation(fields: [knowledgeConflictId], references: [knowledgeConflictId], onDelete: Cascade)
+  record                    GmpKnowledgeRecord @relation(fields: [knowledgeRecordId], references: [knowledgeRecordId], onDelete: Cascade)
+
+  @@unique([knowledgeConflictId, knowledgeRecordId])
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model GmpKnowledgeCompletenessAssessment {
+  knowledgeCompletenessAssessmentId String   @id
+  projectId                         String
+  knowledgeWorkspaceId              String
+  scoringModelVersion               String
+  overallScore                      Int
+  domainScores                      Json
+  missingCriticalFields             Json
+  missingRecommendedFields          Json
+  conflictedFields                  Json
+  unapprovedFields                  Json
+  expiredFields                     Json
+  metadata                          Json?
+  createdAt                         DateTime @default(now())
+
+  project                           GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  workspace                         GmpBusinessKnowledgeWorkspace @relation(fields: [knowledgeWorkspaceId], references: [knowledgeWorkspaceId], onDelete: Cascade)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([knowledgeWorkspaceId, createdAt(sort: Desc)])
+}
+
+model GmpContextAssemblyRecord {
+  contextAssemblyRecordId  String   @id
+  projectId                String
+  knowledgeWorkspaceId     String
+  siteId                   String?
+  operationType            String
+  previewMode              Boolean  @default(false)
+  inputMetadata            Json?
+  assembledContext         Json
+  schemaVersion            String
+  knowledgeWorkspaceVersion Int
+  recordVersions           Json
+  gopExecutionId           String?
+  createdBy                String?
+  metadata                 Json?
+  createdAt                DateTime @default(now())
+
+  project                  GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  workspace                GmpBusinessKnowledgeWorkspace @relation(fields: [knowledgeWorkspaceId], references: [knowledgeWorkspaceId], onDelete: Cascade)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([knowledgeWorkspaceId, createdAt(sort: Desc)])
+  @@index([operationType, createdAt(sort: Desc)])
+}
+
+model GmpPage {
+  pageId                     String   @id
+  projectId                  String
+  siteId                     String
+  parentPageId               String?
+  pageType                   String
+  pageTemplateType           String
+  name                       String
+  slug                       String
+  canonicalUrl               String
+  proposedUrl                String?
+  title                      String
+  workingTitle               String?
+  summary                    String?
+  purpose                    String?
+  primaryObjective           String?
+  secondaryObjectives        Json
+  lifecycleState             String
+  contentState               String
+  seoState                   String
+  publishingState            String
+  priority                   Int      @default(50)
+  locale                     String
+  language                   String
+  audienceReferences         Json
+  productReferences          Json
+  serviceReferences          Json
+  industryReferences         Json
+  applicationReferences      Json
+  knowledgeWorkspaceVersion  Int
+  brandProfileVersion        Int
+  currentBriefId             String?
+  currentContentPlanId       String?
+  currentApprovedRevisionId  String?
+  publishingConnectionId     String?
+  intent                     Json
+  createdBy                  String
+  metadata                   Json?
+  version                    Int      @default(1)
+  archivedAt                 DateTime?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  site                       GmpSite @relation(fields: [siteId], references: [siteId], onDelete: Cascade)
+  parentPage                 GmpPage? @relation("GmpPageHierarchy", fields: [parentPageId], references: [pageId], onDelete: SetNull)
+  childPages                 GmpPage[] @relation("GmpPageHierarchy")
+  briefs                     GmpPageBrief[]
+  briefVersions              GmpPageBriefVersion[]
+  contentPlans               GmpContentPlan[]
+  contentPlanVersions        GmpContentPlanVersion[]
+  sections                   GmpPageSection[]
+  relationshipsFrom          GmpPageRelationship[] @relation("GmpPageRelationshipSource")
+  relationshipsTo            GmpPageRelationship[] @relation("GmpPageRelationshipTarget")
+  internalLinksFrom          GmpInternalLinkPlan[] @relation("GmpInternalLinkSourcePage")
+  internalLinksTo            GmpInternalLinkPlan[] @relation("GmpInternalLinkTargetPage")
+  reviews                    GmpPageReview[]
+  approvals                  GmpPageApproval[]
+  readinessAssessments       GmpPageReadinessAssessment[]
+  knowledgeReferences        GmpPageKnowledgeReference[]
+  sourceReferences           GmpPageSourceReference[]
+  contentDrafts              GmpContentDraft[]
+  generationRequests         GmpGenerationRequest[]
+  contentReviews             GmpContentReview[]
+  contentApprovals           GmpContentApproval[]
+  contentValidations         GmpContentValidation[]
+  sectionValidations         GmpSectionValidation[]
+  generationLineage          GmpGenerationLineage[]
+  contentAssemblies          GmpContentAssembly[]
+
+  @@unique([siteId, slug])
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([siteId, updatedAt(sort: Desc)])
+  @@index([pageType, updatedAt(sort: Desc)])
+  @@index([lifecycleState, updatedAt(sort: Desc)])
+  @@index([contentState, updatedAt(sort: Desc)])
+  @@index([seoState, updatedAt(sort: Desc)])
+  @@index([publishingState, updatedAt(sort: Desc)])
+  @@index([priority, updatedAt(sort: Desc)])
+  @@index([parentPageId])
+  @@index([canonicalUrl])
+  @@index([currentBriefId])
+  @@index([currentContentPlanId])
+}
+
+model GmpPageBrief {
+  briefId                      String   @id
+  projectId                    String
+  pageId                       String
+  briefVersion                 Int
+  status                       String
+  purpose                      String?
+  audience                     String?
+  userNeed                     String?
+  businessGoal                 String?
+  primaryTopic                 String?
+  secondaryTopics              Json
+  primaryKeyword               String?
+  secondaryKeywords            Json
+  searchIntent                 String?
+  funnelStage                  String?
+  valueProposition             String?
+  requiredClaims               Json
+  requiredProofPoints          Json
+  requiredProductsOrServices   Json
+  requiredApplications         Json
+  requiredIndustries           Json
+  requiredTechnicalSpecifications Json
+  requiredFaqs                 Json
+  restrictedMessaging          Json
+  conversionGoal               String?
+  primaryCta                   String?
+  secondaryCta                 String?
+  competitorContext            Json
+  toneGuidance                 String?
+  evidenceRequirements         Json
+  knowledgeRecordReferences    Json
+  sourceReferences             Json
+  approvedAt                   DateTime?
+  approvedBy                   String?
+  metadata                     Json?
+  archivedAt                   DateTime?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  versions                     GmpPageBriefVersion[]
+  contentPlans                 GmpContentPlan[]
+
+  @@index([projectId, pageId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GmpPageBriefVersion {
+  briefVersionId               String   @id
+  projectId                    String
+  pageId                       String
+  briefId                      String
+  versionNumber                Int
+  previousValue                Json?
+  newValue                     Json
+  changeReason                 String?
+  changedBy                    String
+  changedAt                    DateTime @default(now())
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  brief                        GmpPageBrief @relation(fields: [briefId], references: [briefId], onDelete: Cascade)
+
+  @@unique([briefId, versionNumber])
+  @@index([projectId, changedAt(sort: Desc)])
+}
+
+model GmpContentPlan {
+  contentPlanId                String   @id
+  projectId                    String
+  pageId                       String
+  pageBriefId                  String
+  planVersion                  Int
+  status                       String
+  planningModelVersion         String
+  targetWordRange              Json
+  readingLevel                 String?
+  requiredSectionCount         Int      @default(0)
+  optionalSectionCount         Int      @default(0)
+  sectionOrder                 Json
+  internalLinkRequirements     Json
+  externalEvidenceRequirements Json
+  structuredDataRequirements   Json
+  mediaRequirements            Json
+  ctaRequirements              Json
+  seoRequirements              Json
+  accessibilityRequirements    Json
+  approvalRequirements         Json
+  readinessScore               Int      @default(0)
+  approvedAt                   DateTime?
+  approvedBy                   String?
+  metadata                     Json?
+  archivedAt                   DateTime?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  brief                        GmpPageBrief @relation(fields: [pageBriefId], references: [briefId], onDelete: Cascade)
+  versions                     GmpContentPlanVersion[]
+  sections                     GmpPageSection[]
+
+  @@index([projectId, pageId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+  @@index([readinessScore, updatedAt(sort: Desc)])
+}
+
+model GmpContentPlanVersion {
+  contentPlanVersionId         String   @id
+  projectId                    String
+  pageId                       String
+  contentPlanId                String
+  versionNumber                Int
+  previousValue                Json?
+  newValue                     Json
+  changeReason                 String?
+  changedBy                    String
+  changedAt                    DateTime @default(now())
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  contentPlan                  GmpContentPlan @relation(fields: [contentPlanId], references: [contentPlanId], onDelete: Cascade)
+
+  @@unique([contentPlanId, versionNumber])
+  @@index([projectId, changedAt(sort: Desc)])
+}
+
+model GmpPageSection {
+  sectionId                    String   @id
+  projectId                    String
+  pageId                       String
+  contentPlanId                String
+  parentSectionId              String?
+  sectionType                  String
+  sectionKey                   String
+  position                     Int
+  headingLevel                 Int
+  workingHeading               String?
+  purpose                      String?
+  audienceNeed                 String?
+  requiredKnowledgeRecords     Json
+  requiredClaims               Json
+  requiredEvidence             Json
+  requiredProducts             Json
+  requiredServices             Json
+  requiredSpecifications       Json
+  requiredFaqs                 Json
+  targetWordRange              Json
+  ctaType                      String?
+  mediaRequirement             Json
+  internalLinkRequirement      Json
+  structuredDataContribution   Json
+  optional                     Boolean  @default(false)
+  status                       String
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  contentPlan                  GmpContentPlan @relation(fields: [contentPlanId], references: [contentPlanId], onDelete: Cascade)
+  parentSection                GmpPageSection? @relation("GmpPageSectionHierarchy", fields: [parentSectionId], references: [sectionId], onDelete: SetNull)
+  childSections                GmpPageSection[] @relation("GmpPageSectionHierarchy")
+  sectionContents              GmpSectionContent[]
+  generationLineage            GmpGenerationLineage[]
+
+  @@unique([contentPlanId, sectionKey])
+  @@index([projectId, pageId, position])
+  @@index([sectionType, updatedAt(sort: Desc)])
+}
+
+model GmpPageRelationship {
+  relationshipId               String   @id
+  projectId                    String
+  sourcePageId                 String
+  targetPageId                 String
+  relationshipType             String
+  priority                     Int      @default(50)
+  reason                       String?
+  status                       String
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  sourcePage                   GmpPage @relation("GmpPageRelationshipSource", fields: [sourcePageId], references: [pageId], onDelete: Cascade)
+  targetPage                   GmpPage @relation("GmpPageRelationshipTarget", fields: [targetPageId], references: [pageId], onDelete: Cascade)
+
+  @@unique([sourcePageId, targetPageId, relationshipType])
+  @@index([projectId, relationshipType, createdAt(sort: Desc)])
+}
+
+model GmpInternalLinkPlan {
+  internalLinkPlanId           String   @id
+  projectId                    String
+  sourcePageId                 String
+  targetPageId                 String
+  sourcePageRefId              String
+  targetPageRefId              String
+  linkPurpose                  String
+  anchorTextGuidance           String?
+  requirementLevel             String
+  sectionPlacement             String?
+  priority                     Int      @default(50)
+  status                       String
+  reason                       String?
+  knowledgeRelationship        String?
+  seoRelationship              String?
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  sourcePage                   GmpPage @relation("GmpInternalLinkSourcePage", fields: [sourcePageId], references: [pageId], onDelete: Cascade)
+  targetPage                   GmpPage @relation("GmpInternalLinkTargetPage", fields: [targetPageId], references: [pageId], onDelete: Cascade)
+
+  @@index([projectId, sourcePageId, updatedAt(sort: Desc)])
+  @@index([projectId, targetPageId, updatedAt(sort: Desc)])
+}
+
+model GmpPageReview {
+  pageReviewId                 String   @id
+  projectId                    String
+  pageId                       String
+  artifactType                 String
+  artifactId                   String
+  reviewState                  String
+  assignedTo                   String?
+  requestedBy                  String?
+  requestedAt                  DateTime?
+  completedBy                  String?
+  completedAt                  DateTime?
+  notes                        String?
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+
+  @@index([projectId, pageId, reviewState, updatedAt(sort: Desc)])
+}
+
+model GmpPageApproval {
+  pageApprovalId               String   @id
+  projectId                    String
+  pageId                       String
+  artifactType                 String
+  artifactId                   String
+  decision                     String
+  decidedBy                    String
+  decidedAt                    DateTime
+  notes                        String?
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+
+  @@index([projectId, pageId, decidedAt(sort: Desc)])
+}
+
+model GmpPageReadinessAssessment {
+  pageReadinessAssessmentId    String   @id
+  projectId                    String
+  pageId                       String
+  scoringModelVersion          String
+  overallScore                 Int
+  planningReadiness            Int
+  knowledgeReadiness           Int
+  seoReadiness                 Int
+  evidenceReadiness            Int
+  linkingReadiness             Int
+  blockingIssues               Json
+  warnings                     Json
+  recommendations              Json
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+
+  @@index([projectId, pageId, createdAt(sort: Desc)])
+  @@index([overallScore, createdAt(sort: Desc)])
+}
+
+model GmpPageKnowledgeReference {
+  pageKnowledgeReferenceId     String   @id
+  projectId                    String
+  pageId                       String
+  pageBriefId                  String?
+  contentPlanId                String?
+  knowledgeWorkspaceId         String
+  knowledgeRecordId            String
+  knowledgeRecordVersion       Int
+  required                     Boolean  @default(true)
+  role                         String?
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+
+  @@index([projectId, pageId, createdAt(sort: Desc)])
+  @@index([knowledgeRecordId, createdAt(sort: Desc)])
+}
+
+model GmpPageSourceReference {
+  pageSourceReferenceId        String   @id
+  projectId                    String
+  pageId                       String
+  pageBriefId                  String?
+  contentPlanId                String?
+  sourceId                     String
+  required                     Boolean  @default(false)
+  role                         String?
+  metadata                     Json?
+  createdAt                    DateTime @default(now())
+
+  project                      GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                         GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+
+  @@index([projectId, pageId, createdAt(sort: Desc)])
+  @@index([sourceId, createdAt(sort: Desc)])
+}
+
+model GmpContentDraft {
+  contentDraftId             String   @id
+  projectId                  String
+  siteId                     String
+  pageId                     String
+  pageVersion                Int
+  pageBriefId                String
+  pageBriefVersion           Int
+  contentPlanId              String
+  contentPlanVersion         Int
+  knowledgeWorkspaceId       String
+  knowledgeWorkspaceVersion  Int
+  brandProfileVersion        Int
+  generationRequestId        String?
+  generationStatus           String
+  editorialStatus            String
+  approvalStatus             String
+  language                   String
+  locale                     String
+  provider                   String
+  modelIdentifier            String
+  generationPolicyVersion    String
+  promptAdapterVersion       String
+  createdBy                  String
+  submittedAt                DateTime?
+  approvedAt                 DateTime?
+  approvedBy                 String?
+  rejectedAt                 DateTime?
+  rejectedBy                 String?
+  supersededAt               DateTime?
+  metadata                   Json?
+  version                    Int      @default(1)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  site                       GmpSite @relation(fields: [siteId], references: [siteId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  generationRequests         GmpGenerationRequest[]
+  sections                   GmpSectionContent[]
+  sectionRevisions           GmpSectionContentRevision[]
+  reviews                    GmpContentReview[]
+  approvals                  GmpContentApproval[]
+  validations                GmpContentValidation[]
+  sectionValidations         GmpSectionValidation[]
+  lineage                    GmpGenerationLineage[]
+  assemblies                 GmpContentAssembly[]
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([pageId, createdAt(sort: Desc)])
+  @@index([generationStatus, updatedAt(sort: Desc)])
+  @@index([editorialStatus, updatedAt(sort: Desc)])
+  @@index([approvalStatus, updatedAt(sort: Desc)])
+  @@index([provider, modelIdentifier, updatedAt(sort: Desc)])
+}
+
+model GmpGenerationRequest {
+  generationRequestId        String   @id
+  projectId                  String
+  pageId                     String
+  contentDraftId             String
+  operationType              String
+  requestedSections          Json
+  generationMode             String
+  providerPreference         String?
+  modelPreference            String?
+  temperature                Float?
+  maximumOutputPolicy        Int?
+  requestedBy                String
+  requestedAt                DateTime @default(now())
+  startedAt                  DateTime?
+  completedAt                DateTime?
+  failedAt                   DateTime?
+  failureReason              String?
+  retryCount                 Int      @default(0)
+  gopExecutionId             String?
+  contextPackageReference    String?
+  inputFingerprint           String
+  status                     String
+  metadata                   Json?
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+
+  @@index([projectId, requestedAt(sort: Desc)])
+  @@index([pageId, requestedAt(sort: Desc)])
+  @@index([contentDraftId, requestedAt(sort: Desc)])
+  @@index([status, requestedAt(sort: Desc)])
+  @@index([gopExecutionId])
+  @@index([inputFingerprint])
+}
+
+model GmpSectionContent {
+  sectionContentId           String   @id
+  contentDraftId             String
+  pageSectionId              String
+  pageSectionStableKey       String
+  sectionType                String
+  position                   Int
+  heading                    String?
+  bodyContent                String?
+  structuredContent          Json
+  ctaContent                 Json
+  mediaGuidance              Json
+  internalLinkSuggestions    Json
+  externalEvidenceReferences Json
+  knowledgeRecordReferences  Json
+  claimReferences            Json
+  sourceReferences           Json
+  restrictionEvaluation      Json
+  generationStatus           String
+  editorialStatus            String
+  approvalStatus             String
+  currentRevisionId          String?
+  wordCount                  Int      @default(0)
+  readingLevel               String?
+  metadata                   Json?
+  version                    Int      @default(1)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+  pageSection                GmpPageSection @relation(fields: [pageSectionId], references: [sectionId], onDelete: Cascade)
+  revisions                  GmpSectionContentRevision[]
+  reviews                    GmpContentReview[]
+  approvals                  GmpContentApproval[]
+  validations                GmpSectionValidation[]
+  lineage                    GmpGenerationLineage[]
+
+  @@index([contentDraftId, position])
+  @@index([pageSectionId, updatedAt(sort: Desc)])
+  @@index([generationStatus, updatedAt(sort: Desc)])
+  @@index([editorialStatus, updatedAt(sort: Desc)])
+  @@index([approvalStatus, updatedAt(sort: Desc)])
+  @@index([currentRevisionId])
+}
+
+model GmpSectionContentRevision {
+  sectionContentRevisionId   String   @id
+  sectionContentId           String
+  contentDraftId             String
+  revisionType               String
+  instruction                String?
+  reason                     String?
+  previousContent            Json
+  newContent                 Json
+  changedBy                  String
+  changedAt                  DateTime
+  provider                   String?
+  modelIdentifier            String?
+  inputFingerprint           String?
+  knowledgeImpact            Json
+  evidenceImpact             Json
+  validationResult           Json
+  metadata                   Json?
+
+  sectionContent             GmpSectionContent @relation(fields: [sectionContentId], references: [sectionContentId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+
+  @@index([sectionContentId, changedAt(sort: Desc)])
+  @@index([contentDraftId, changedAt(sort: Desc)])
+  @@index([inputFingerprint])
+}
+
+model GmpContentReview {
+  contentReviewId            String   @id
+  projectId                  String
+  pageId                     String
+  contentDraftId             String
+  sectionContentId           String?
+  assignedTo                 String?
+  reviewState                String
+  requestedBy                String?
+  requestedAt                DateTime?
+  completedBy                String?
+  completedAt                DateTime?
+  reviewNotes                String?
+  sectionNotes               String?
+  approvalNotes              String?
+  metadata                   Json?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+  sectionContent             GmpSectionContent? @relation(fields: [sectionContentId], references: [sectionContentId], onDelete: Cascade)
+
+  @@index([projectId, reviewState, updatedAt(sort: Desc)])
+  @@index([contentDraftId, updatedAt(sort: Desc)])
+  @@index([sectionContentId, updatedAt(sort: Desc)])
+  @@index([assignedTo])
+}
+
+model GmpContentApproval {
+  contentApprovalId          String   @id
+  projectId                  String
+  pageId                     String
+  contentDraftId             String
+  sectionContentId           String?
+  decision                   String
+  decidedBy                  String
+  decidedAt                  DateTime
+  notes                      String?
+  metadata                   Json?
+  createdAt                  DateTime @default(now())
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+  sectionContent             GmpSectionContent? @relation(fields: [sectionContentId], references: [sectionContentId], onDelete: Cascade)
+
+  @@index([projectId, decidedAt(sort: Desc)])
+  @@index([contentDraftId, decidedAt(sort: Desc)])
+  @@index([sectionContentId, decidedAt(sort: Desc)])
+}
+
+model GmpContentValidation {
+  contentValidationId        String   @id
+  projectId                  String
+  pageId                     String
+  contentDraftId             String
+  validationModelVersion     String
+  overallScore               Int
+  blockingIssues             Json
+  warnings                   Json
+  recommendations            Json
+  sectionScores              Json
+  metadata                   Json?
+  createdAt                  DateTime @default(now())
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([contentDraftId, createdAt(sort: Desc)])
+  @@index([overallScore, createdAt(sort: Desc)])
+}
+
+model GmpSectionValidation {
+  sectionValidationId        String   @id
+  projectId                  String
+  pageId                     String
+  contentDraftId             String
+  sectionContentId           String
+  validationModelVersion     String
+  editorialScore             Int
+  blockingIssues             Json
+  warnings                   Json
+  recommendations            Json
+  claimClassifications       Json
+  metadata                   Json?
+  createdAt                  DateTime @default(now())
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+  sectionContent             GmpSectionContent @relation(fields: [sectionContentId], references: [sectionContentId], onDelete: Cascade)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([contentDraftId, createdAt(sort: Desc)])
+  @@index([sectionContentId, createdAt(sort: Desc)])
+  @@index([editorialScore, createdAt(sort: Desc)])
+}
+
+model GmpGenerationLineage {
+  generationLineageId        String   @id
+  projectId                  String
+  pageId                     String
+  contentDraftId             String
+  sectionContentId           String?
+  pageVersion                Int
+  pageBriefId                String
+  pageBriefVersion           Int
+  contentPlanId              String
+  contentPlanVersion         Int
+  pageSectionId              String?
+  pageSectionStableKey       String?
+  knowledgeWorkspaceId       String
+  knowledgeWorkspaceVersion  Int
+  knowledgeRecordVersions    Json
+  evidenceReferences         Json
+  claims                     Json
+  restrictions               Json
+  provider                   String
+  modelIdentifier            String
+  promptAdapterVersion       String
+  inputFingerprint           String
+  generationRequestId        String
+  gopExecutionId             String?
+  metadata                   Json?
+  createdAt                  DateTime @default(now())
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+  sectionContent             GmpSectionContent? @relation(fields: [sectionContentId], references: [sectionContentId], onDelete: Cascade)
+  pageSection                GmpPageSection? @relation(fields: [pageSectionId], references: [sectionId], onDelete: SetNull)
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([contentDraftId, createdAt(sort: Desc)])
+  @@index([sectionContentId, createdAt(sort: Desc)])
+  @@index([gopExecutionId])
+  @@index([inputFingerprint])
+}
+
+model GmpContentAssembly {
+  contentAssemblyId          String   @id
+  projectId                  String
+  pageId                     String
+  contentDraftId             String
+  assemblyType               String
+  assembledDocument          Json
+  validationSummary          Json
+  metadata                   Json?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  project                    GmpProject @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  page                       GmpPage @relation(fields: [pageId], references: [pageId], onDelete: Cascade)
+  draft                      GmpContentDraft @relation(fields: [contentDraftId], references: [contentDraftId], onDelete: Cascade)
+
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([contentDraftId, updatedAt(sort: Desc)])
+}
+
+model GmpPublishingDestination {
+  destinationId            String   @id
+  projectId                String
+  siteId                   String
+  destinationType          String
+  name                     String
+  baseUrl                  String
+  environment              String
+  connectionStatus         String
+  credentialReference      String?
+  capabilityProfile        Json
+  configuration            Json?
+  defaultAuthor            String?
+  defaultStatus            String?
+  defaultTaxonomyMapping   Json?
+  defaultMediaPolicy       Json?
+  defaultSeoPolicy         Json?
+  webhookConfiguration     Json?
+  metadata                 Json?
+  lastValidatedAt          DateTime?
+  lastSuccessfulPublishAt  DateTime?
+  lastFailureAt            DateTime?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([siteId, updatedAt(sort: Desc)])
+  @@index([destinationType, updatedAt(sort: Desc)])
+  @@index([connectionStatus, updatedAt(sort: Desc)])
+}
+
+model GmpDestinationCapability {
+  destinationCapabilityId  String   @id
+  destinationId            String
+  capabilityKey            String
+  supported                Boolean  @default(false)
+  metadata                 Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@unique([destinationId, capabilityKey])
+  @@index([destinationId, updatedAt(sort: Desc)])
+}
+
+model GmpApprovedRevisionSet {
+  approvedRevisionSetId    String   @id
+  projectId                String
+  siteId                   String
+  pageId                   String
+  contentDraftId           String
+  contentDraftVersion      Int
+  sourceFingerprint        String
+  sections                 Json
+  seoMetadata              Json
+  structuredDataInputs     Json
+  approvalRecords          Json
+  validationRecords        Json
+  createdAt                DateTime @default(now())
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([pageId, createdAt(sort: Desc)])
+  @@index([contentDraftId, createdAt(sort: Desc)])
+  @@index([sourceFingerprint])
+}
+
+model GmpPublishingPackage {
+  publishingPackageId      String   @id
+  projectId                String
+  siteId                   String
+  pageId                   String
+  contentDraftId           String
+  contentDraftVersion      Int
+  approvedRevisionSetId    String?
+  destinationId            String
+  destinationType          String
+  packageStatus            String
+  releaseStatus            String
+  packageVersion           Int
+  packageSchemaVersion     String
+  publishingPolicyVersion  String
+  sourceFingerprint        String
+  packageFingerprint       String
+  canonicalUrl             String
+  targetSlug               String
+  language                 String
+  locale                   String
+  createdBy                String
+  validatedAt              DateTime?
+  approvedAt               DateTime?
+  approvedBy               String?
+  rejectedAt               DateTime?
+  rejectedBy               String?
+  supersededAt             DateTime?
+  archivedAt               DateTime?
+  metadata                 Json?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([siteId, updatedAt(sort: Desc)])
+  @@index([pageId, updatedAt(sort: Desc)])
+  @@index([contentDraftId, updatedAt(sort: Desc)])
+  @@index([destinationId, updatedAt(sort: Desc)])
+  @@index([packageStatus, updatedAt(sort: Desc)])
+  @@index([releaseStatus, updatedAt(sort: Desc)])
+  @@index([sourceFingerprint])
+  @@index([packageFingerprint])
+}
+
+model GmpPublishingManifest {
+  publishingManifestId      String   @id
+  publishingPackageId       String   @unique
+  packageVersion            Int
+  projectIdentity           Json
+  siteIdentity              Json
+  pageIdentity              Json
+  sourceDraftIdentity       Json
+  approvedRevisionReferences Json
+  destinationIdentity       Json
+  destinationType           String
+  contentPayloadReference   Json
+  seoPayload                Json
+  metadataPayload           Json
+  structuredDataPayload     Json
+  mediaManifest             Json
+  internalLinkManifest      Json
+  externalLinkManifest      Json
+  redirectInstructions      Json
+  canonicalInstructions     Json
+  openGraphData             Json
+  socialMetadata            Json
+  publicationMode           String
+  schedule                  Json?
+  validationSummary         Json
+  lineageSummary            Json
+  packageFingerprint        String
+  manifestSchemaVersion     String
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([destinationType, updatedAt(sort: Desc)])
+  @@index([packageFingerprint])
+}
+
+model GmpPublishingPackageValidation {
+  packageValidationId       String   @id
+  publishingPackageId       String
+  valid                     Boolean
+  blockingIssues            Json
+  warnings                  Json
+  recommendations           Json
+  capabilityGaps            Json
+  validationModelVersion    String
+  validatedAt               DateTime
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([publishingPackageId, validatedAt(sort: Desc)])
+}
+
+model GmpMediaManifest {
+  mediaManifestId           String   @id
+  publishingPackageId       String
+  destinationId             String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([publishingPackageId, updatedAt(sort: Desc)])
+  @@index([destinationId, updatedAt(sort: Desc)])
+}
+
+model GmpMediaManifestItem {
+  mediaManifestItemId       String   @id
+  mediaManifestId           String
+  mediaReferenceId          String
+  sourceAssetId             String?
+  role                      String
+  featuredImageFlag         Boolean  @default(false)
+  insertionLocation         String?
+  altText                   String?
+  title                     String?
+  caption                   String?
+  description               String?
+  fileType                  String?
+  dimensions                Json?
+  sourceUrlOrStorageReference String?
+  destinationMediaId        String?
+  destinationUrl            String?
+  uploadStatus              String
+  checksum                  String?
+  requiredFlag              Boolean  @default(false)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([mediaManifestId, updatedAt(sort: Desc)])
+  @@index([destinationMediaId])
+}
+
+model GmpRelease {
+  releaseId                 String   @id
+  projectId                 String
+  siteId                    String
+  releaseName               String
+  releaseType               String
+  releaseStatus             String
+  requestedBy               String
+  approvedBy                String?
+  scheduledAt               DateTime?
+  startedAt                 DateTime?
+  completedAt               DateTime?
+  failedAt                  DateTime?
+  cancelledAt               DateTime?
+  rollbackReleaseId         String?
+  gopExecutionId            String?
+  policyVersion             String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([siteId, updatedAt(sort: Desc)])
+  @@index([releaseStatus, updatedAt(sort: Desc)])
+  @@index([scheduledAt])
+  @@index([gopExecutionId])
+}
+
+model GmpReleaseItem {
+  releaseItemId             String   @id
+  releaseId                 String
+  publishingPackageId       String
+  destinationId             String
+  sequence                  Int
+  dependencyReferences      Json
+  status                    String
+  publicationAttemptCount   Int      @default(0)
+  currentPublicationRecordId String?
+  failureReason             String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([releaseId, sequence])
+  @@index([publishingPackageId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GmpReleaseReview {
+  releaseReviewId           String   @id
+  releaseId                 String
+  reviewState               String
+  assignedTo                String?
+  requestedBy               String?
+  requestedAt               DateTime?
+  completedBy               String?
+  completedAt               DateTime?
+  notes                     String?
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([releaseId, updatedAt(sort: Desc)])
+}
+
+model GmpReleaseApproval {
+  releaseApprovalId         String   @id
+  releaseId                 String
+  decision                  String
+  decidedBy                 String
+  decidedAt                 DateTime
+  notes                     String?
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([releaseId, decidedAt(sort: Desc)])
+}
+
+model GmpPublicationAttempt {
+  publicationAttemptId      String   @id
+  releaseId                 String
+  releaseItemId             String
+  publishingPackageId       String
+  destinationId             String
+  operationType             String
+  attemptNumber             Int
+  status                    String
+  gopExecutionId            String?
+  requestFingerprint        String
+  startedAt                 DateTime
+  completedAt               DateTime?
+  failedAt                  DateTime?
+  failureCategory           String?
+  failureCode               String?
+  failureMessage            String?
+  retryable                 Boolean  @default(false)
+  remoteResponseReference   Json?
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([releaseId, startedAt(sort: Desc)])
+  @@index([releaseItemId, startedAt(sort: Desc)])
+  @@index([publishingPackageId, startedAt(sort: Desc)])
+  @@index([destinationId, startedAt(sort: Desc)])
+  @@index([status, startedAt(sort: Desc)])
+  @@index([requestFingerprint])
+  @@index([gopExecutionId])
+}
+
+model GmpPublicationRecord {
+  publicationRecordId       String   @id
+  projectId                 String
+  siteId                    String
+  pageId                    String
+  publishingPackageId       String
+  releaseId                 String
+  destinationId             String
+  externalObjectType        String
+  externalObjectId          String
+  externalRevisionId        String?
+  externalUrl               String
+  publishedStatus           String
+  publishedAt               DateTime?
+  updatedAt                 DateTime
+  verifiedAt                DateTime?
+  remoteContentFingerprint  String?
+  expectedContentFingerprint String
+  verificationStatus        String
+  supersedesPublicationRecordId String?
+  rolledBackFromRecordId    String?
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([pageId, createdAt(sort: Desc)])
+  @@index([publishingPackageId, createdAt(sort: Desc)])
+  @@index([destinationId, createdAt(sort: Desc)])
+  @@index([externalObjectId])
+  @@index([externalUrl])
+  @@index([verificationStatus, createdAt(sort: Desc)])
+}
+
+model GmpPublicationVerification {
+  publicationVerificationId String   @id
+  publicationRecordId       String
+  verificationStatus        String
+  expectedState             Json
+  remoteState               Json
+  differences               Json
+  blockingDifferences       Json
+  warnings                  Json
+  verificationModelVersion  String
+  verifiedAt                DateTime
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([publicationRecordId, verifiedAt(sort: Desc)])
+  @@index([verificationStatus, verifiedAt(sort: Desc)])
+}
+
+model GmpPublicationDifference {
+  publicationDifferenceId   String   @id
+  publicationVerificationId String
+  differenceKey             String
+  severity                  String
+  expectedValue             Json?
+  actualValue               Json?
+  blocking                  Boolean  @default(false)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([publicationVerificationId, createdAt(sort: Desc)])
+}
+
+model GmpPublicationReconciliation {
+  publicationReconciliationId String   @id
+  publicationRecordId       String
+  reconciliationStatus      String
+  driftDetected             Boolean  @default(false)
+  driftReasons              Json
+  expectedState             Json
+  remoteState               Json
+  detectedAt                DateTime
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([publicationRecordId, detectedAt(sort: Desc)])
+  @@index([driftDetected, detectedAt(sort: Desc)])
+}
+
+model GmpPublishingLineage {
+  publishingLineageId       String   @id
+  projectId                 String
+  siteId                    String
+  pageId                    String
+  contentDraftId            String
+  publishingPackageId       String
+  packageVersion            Int
+  sourceFingerprint         String
+  packageFingerprint        String
+  releaseId                 String?
+  releaseItemId             String?
+  publicationAttemptId      String?
+  publicationRecordId       String?
+  destinationId             String
+  operationType             String
+  gopExecutionId            String?
+  rendererVersion           String?
+  adapterVersion            String?
+  publishingPolicyVersion   String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([pageId, createdAt(sort: Desc)])
+  @@index([publishingPackageId, createdAt(sort: Desc)])
+  @@index([sourceFingerprint])
+  @@index([packageFingerprint])
+  @@index([gopExecutionId])
+}
+
+model GmpPublishingIdempotencyRecord {
+  publishingIdempotencyRecordId String   @id
+  destinationId             String
+  publishingPackageId       String
+  packageVersion            Int
+  operationType             String
+  releaseItemId             String
+  requestFingerprint        String
+  resultFingerprint         String
+  status                    String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([destinationId, publishingPackageId, packageVersion, operationType, releaseItemId, requestFingerprint])
+  @@index([destinationId, updatedAt(sort: Desc)])
+  @@index([publishingPackageId, updatedAt(sort: Desc)])
+  @@index([requestFingerprint])
+}
+
+model GmpAnalyticsSource {
+  analyticsSourceId         String   @id
+  projectId                 String
+  siteId                    String?
+  sourceType                String
+  sourceName                String
+  sourceStatus              String
+  connectionStatus          String
+  collectionMode            String
+  providerReference         String?
+  credentialsReference      String?
+  configuration             Json?
+  metadata                  Json?
+  lastHealthCheckAt         DateTime?
+  lastCollectionAt          DateTime?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([siteId, updatedAt(sort: Desc)])
+  @@index([sourceStatus, updatedAt(sort: Desc)])
+  @@index([connectionStatus, updatedAt(sort: Desc)])
+}
+
+model GmpAnalyticsSourceCapability {
+  analyticsSourceCapabilityId String   @id
+  analyticsSourceId         String
+  capabilityKey             String
+  supported                 Boolean  @default(false)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([analyticsSourceId, capabilityKey])
+  @@index([analyticsSourceId, updatedAt(sort: Desc)])
+}
+
+model GmpAnalyticsCollection {
+  analyticsCollectionId     String   @id
+  workspaceId               String
+  projectId                 String
+  analyticsSourceId         String
+  siteId                    String?
+  collectionStatus          String
+  requestedPeriodStart      DateTime?
+  requestedPeriodEnd        DateTime?
+  requestedDimensions       Json
+  requestedMetrics          Json
+  collectionMode            String
+  gopExecutionId            String?
+  attemptNumber             Int      @default(1)
+  parentCollectionId        String?
+  sourceCursor              Json?
+  nextCursor                Json?
+  idempotencyKey            String
+  inputFingerprint          String
+  adapterKey                String
+  adapterVersion            String
+  requestedBy               String
+  startedAt                 DateTime?
+  completedAt               DateTime?
+  failedAt                  DateTime?
+  collectionWindowStart     DateTime?
+  collectionWindowEnd       DateTime?
+  eligibilityVersion        String
+  errorCategory             String?
+  errorSummary              String?
+  warningCount              Int      @default(0)
+  observationCount          Int      @default(0)
+  rejectedObservationCount  Int      @default(0)
+  partialFailureCount       Int      @default(0)
+  forcedRecollection        Boolean  @default(false)
+  blockingIssues            Json
+  warnings                  Json
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([siteId, updatedAt(sort: Desc)])
+  @@index([analyticsSourceId, updatedAt(sort: Desc)])
+  @@index([collectionStatus, updatedAt(sort: Desc)])
+  @@index([gopExecutionId])
+  @@index([parentCollectionId, updatedAt(sort: Desc)])
+  @@index([idempotencyKey])
+  @@index([inputFingerprint])
+}
+
+model GmpAnalyticsObservation {
+  analyticsObservationId    String   @id
+  projectId                 String
+  analyticsSourceId         String
+  analyticsCollectionId     String
+  sourceRecordIdentity      String
+  observationType           String
+  sourceTimestamp           DateTime
+  observationPeriodStart    DateTime?
+  observationPeriodEnd      DateTime?
+  dimensions                Json
+  metrics                   Json
+  rawPayloadChecksum        String
+  rawPayload                Json?
+  rawPayloadReference       Json?
+  providerBatchId           String?
+  providerCursor            Json?
+  collectionExecutionId     String?
+  dataQualityStatus         String
+  diagnosticSummary         String?
+  ingestedAt                DateTime @default(now())
+  supersededByObservationId String?
+  correctedFromObservationId String?
+  observedAt                DateTime
+  observationKey            String
+  dimensionKey              String?
+  rawValue                  Decimal  @db.Decimal(20, 6)
+  unit                      String
+  confidenceScore           Decimal? @db.Decimal(5, 4)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([projectId, observedAt(sort: Desc)])
+  @@index([analyticsSourceId, observedAt(sort: Desc)])
+  @@index([analyticsCollectionId, observedAt(sort: Desc)])
+  @@index([observationKey, observedAt(sort: Desc)])
+  @@index([sourceRecordIdentity, observedAt(sort: Desc)])
+  @@index([rawPayloadChecksum])
+  @@unique([analyticsSourceId, sourceRecordIdentity, sourceTimestamp, rawPayloadChecksum])
+}
+
+model GmpAnalyticsCollectionEvent {
+  analyticsCollectionEventId String   @id
+  analyticsCollectionId     String
+  parentCollectionId        String?
+  retryOfCollectionId       String?
+  gopExecutionId            String?
+  eventType                 String
+  operation                 String
+  status                    String
+  actorId                   String?
+  attemptNumber             Int?
+  batchNumber               Int?
+  pageNumber                Int?
+  occurredAt                DateTime
+  observationCount          Int      @default(0)
+  rejectedObservationCount  Int      @default(0)
+  warningCount              Int      @default(0)
+  cursorSummary             Json?
+  errorCategory             String?
+  safeOutcomeSummary        String?
+  outcomeSummary            String?
+  safeDiagnostic            String?
+  evidenceReferences        Json?
+  timelineContractVersion   String?
+  eventVersion              String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([analyticsCollectionId, occurredAt(sort: Asc)])
+  @@index([gopExecutionId, occurredAt(sort: Asc)])
+  @@index([eventType, occurredAt(sort: Desc)])
+  @@index([parentCollectionId, occurredAt(sort: Asc)])
+  @@index([retryOfCollectionId, occurredAt(sort: Asc)])
+}
+
+model GmpMetricDefinition {
+  metricDefinitionId        String   @id
+  projectId                 String
+  metricKey                 String
+  displayName               String
+  description               String?
+  unit                      String
+  aggregationMethod         String
+  valueType                 String
+  precisionScale            Int      @default(2)
+  defaultMetric             Boolean  @default(false)
+  active                    Boolean  @default(true)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([projectId, metricKey])
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([active, updatedAt(sort: Desc)])
+}
+
+model GmpNormalizedMetric {
+  normalizedMetricId        String   @id
+  projectId                 String
+  analyticsSourceId         String
+  analyticsCollectionId     String
+  metricDefinitionId        String
+  analyticsObservationId    String
+  measuredAt                DateTime
+  normalizedValue           Decimal  @db.Decimal(20, 6)
+  normalizationVersion      String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([projectId, measuredAt(sort: Desc)])
+  @@index([analyticsCollectionId, measuredAt(sort: Desc)])
+  @@index([metricDefinitionId, measuredAt(sort: Desc)])
+}
+
+model GmpPerformanceSnapshot {
+  performanceSnapshotId     String   @id
+  projectId                 String
+  siteId                    String?
+  snapshotStatus            String
+  snapshotLabel             String
+  snapshotWindowStart       DateTime
+  snapshotWindowEnd         DateTime
+  totalMetrics              Int      @default(0)
+  baselineScore             Decimal? @db.Decimal(12, 4)
+  trendDelta                Decimal? @db.Decimal(12, 4)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([snapshotStatus, createdAt(sort: Desc)])
+}
+
+model GmpMeasurementLineage {
+  measurementLineageId      String   @id
+  projectId                 String
+  analyticsSourceId         String
+  analyticsCollectionId     String?
+  analyticsObservationId    String?
+  normalizedMetricId        String?
+  performanceSnapshotId     String?
+  lineageStage              String
+  evidenceCompilerVersion   String
+  lineageFingerprint        String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([analyticsSourceId, createdAt(sort: Desc)])
+  @@index([analyticsCollectionId, createdAt(sort: Desc)])
+  @@index([performanceSnapshotId, createdAt(sort: Desc)])
+  @@index([lineageFingerprint])
+}
+
+model GmpEvidenceCompilerVersion {
+  evidenceCompilerVersionId String   @id
+  projectId                 String
+  compilerName              String
+  compilerVersion           String
+  normalizationVersion      String?
+  metricCatalogVersion      String?
+  correlationVersion        String?
+  snapshotVersion           String?
+  validationVersion         String?
+  releasedAt                DateTime?
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@unique([projectId, compilerName, compilerVersion])
+  @@index([projectId, updatedAt(sort: Desc)])
+}
+
+model GmpEvidenceCompilerRun {
+  evidenceCompilerRunId     String   @id
+  workspaceId               String
+  projectId                 String
+  siteId                    String?
+  replayOfRunId             String?
+  runStatus                 String
+  triggerType               String
+  cadence                   String
+  periodStart               DateTime
+  periodEnd                 DateTime
+  compilerVersion           String
+  normalizationVersion      String
+  metricCatalogVersion      String
+  correlationVersion        String
+  snapshotVersion           String
+  validationVersion         String
+  inputFingerprint          String
+  outputChecksum            String?
+  evidenceSnapshotId        String?
+  observationCount          Int      @default(0)
+  rejectedObservationCount  Int      @default(0)
+  compiledMetricCount       Int      @default(0)
+  publicationReferenceCount Int      @default(0)
+  qualityStatus             String
+  confidenceStatus          String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([replayOfRunId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId])
+  @@index([inputFingerprint])
+}
+
+model GmpEvidenceSnapshot {
+  evidenceSnapshotId        String   @id
+  performanceSnapshotId     String
+  workspaceId               String
+  projectId                 String
+  siteId                    String?
+  cadence                   String
+  periodStart               DateTime
+  periodEnd                 DateTime
+  compilerVersion           String
+  normalizationVersion      String
+  metricCatalogVersion      String
+  correlationVersion        String
+  snapshotVersion           String
+  validationVersion         String
+  dataQualityStatus         String
+  evidenceConfidence        String
+  snapshotChecksum          String
+  sourceObservationCount    Int      @default(0)
+  rejectedObservationCount  Int      @default(0)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@unique([performanceSnapshotId])
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([snapshotChecksum])
+}
+
+model GmpEvidenceCompiledMetric {
+  evidenceCompiledMetricId  String   @id
+  evidenceSnapshotId        String
+  projectId                 String
+  siteId                    String?
+  metricDefinitionId        String?
+  canonicalMetricKey        String
+  displayName               String
+  unit                      String
+  valueType                 String
+  aggregationMethod         String
+  precisionScale            Int      @default(4)
+  compiledValue             Decimal  @db.Decimal(20, 6)
+  dataQualityStatus         String
+  evidenceConfidence        String
+  compilerVersion           String
+  sourceObservationIds      Json
+  lineageFingerprint        String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([evidenceSnapshotId, canonicalMetricKey])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([metricDefinitionId])
+  @@index([lineageFingerprint])
+}
+
+model GmpEvidencePublicationReference {
+  evidencePublicationReferenceId String   @id
+  evidenceSnapshotId             String
+  projectId                      String
+  siteId                         String?
+  publicationRecordId            String?
+  publicationIdentity            String
+  canonicalUrl                   String
+  publicationStatus              String
+  publicationTimestamp           DateTime?
+  correlationQuality             String
+  matchedObservationIds          Json
+  lineageFingerprint             String
+  metadata                       Json?
+  createdAt                      DateTime @default(now())
+
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([publicationRecordId])
+  @@index([canonicalUrl])
+  @@index([lineageFingerprint])
+}
+
+model GmpAnalyticsAttributionRegistry {
+  attributionRegistryId     String   @id
+  projectId                 String
+  registryStatus            String
+  registryVersion           String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([projectId, updatedAt(sort: Desc)])
+}
+
+model GmpAnalyticsRecommendationRegistry {
+  recommendationRegistryId  String   @id
+  projectId                 String
+  registryStatus            String
+  registryVersion           String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([projectId, updatedAt(sort: Desc)])
+}
+
+model GmpAttributionAnalysis {
+  attributionAnalysisId     String   @id
+  workspaceId               String
+  projectId                 String
+  siteId                    String?
+  evidenceSnapshotId        String
+  attributionVersion        String
+  attributionWindowDays     Int
+  windowStart               DateTime
+  windowEnd                 DateTime
+  inputFingerprint          String
+  outputChecksum            String
+  sourceMetricCount         Int      @default(0)
+  sourcePublicationCount    Int      @default(0)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([inputFingerprint])
+}
+
+model GmpAttributionResult {
+  attributionResultId       String   @id
+  attributionAnalysisId     String
+  workspaceId               String
+  projectId                 String
+  siteId                    String?
+  evidenceSnapshotId        String
+  dimensionType             String
+  dimensionValue            String
+  metricKey                 String
+  attributedValue           Decimal  @db.Decimal(20, 6)
+  confidence                String
+  lineageFingerprint        String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([attributionAnalysisId, dimensionType, dimensionValue])
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([lineageFingerprint])
+}
+
+model GmpRecommendationRuleCatalogEntry {
+  recommendationRuleCatalogEntryId String   @id
+  projectId                        String
+  ruleId                           String
+  ruleVersion                      String
+  registryVersion                  String
+  description                      String
+  inputs                           Json
+  thresholds                       Json
+  outputSchema                     Json
+  severityMapping                  Json
+  priorityMapping                  Json
+  replayCompatible                 Boolean  @default(true)
+  active                           Boolean  @default(true)
+  metadata                         Json?
+  createdAt                        DateTime @default(now())
+
+  @@unique([projectId, ruleId, ruleVersion])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([registryVersion])
+}
+
+model GmpRecommendationRun {
+  recommendationRunId       String   @id
+  workspaceId               String
+  projectId                 String
+  siteId                    String?
+  evidenceSnapshotId        String
+  attributionAnalysisId     String
+  replayOfRunId             String?
+  triggerType               String
+  runStatus                 String
+  recommendationEngineVersion String
+  ruleCatalogVersion        String
+  attributionVersion        String
+  decisionSupportVersion    String
+  inputFingerprint          String
+  outputChecksum            String?
+  recommendationCount       Int      @default(0)
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([replayOfRunId, createdAt(sort: Desc)])
+  @@index([inputFingerprint])
+}
+
+model GmpRecommendationRuleExecution {
+  recommendationRuleExecutionId String   @id
+  recommendationRunId           String
+  workspaceId                   String
+  projectId                     String
+  evidenceSnapshotId            String
+  ruleId                        String
+  ruleVersion                   String
+  matched                       Boolean
+  producedCount                 Int      @default(0)
+  executionChecksum             String
+  diagnostics                   Json?
+  createdAt                     DateTime @default(now())
+
+  @@index([recommendationRunId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([ruleId, ruleVersion])
+}
+
+model GmpRecommendationRecord {
+  recommendationId           String   @id
+  workspaceId                String
+  projectId                  String
+  siteId                     String?
+  recommendationRunId        String
+  evidenceSnapshotId         String
+  attributionAnalysisId      String
+  recommendationVersion      String
+  ruleId                     String
+  ruleVersion                String
+  evidenceCompilerVersion    String
+  snapshotVersion            String
+  attributionVersion         String
+  confidence                 String
+  severity                   String
+  priority                   String
+  category                   String
+  explanation                String
+  supportingEvidence         Json
+  recommendedAction          String
+  lineageFingerprint         String
+  immutablePayloadChecksum   String
+  createdAt                  DateTime @default(now())
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([siteId, createdAt(sort: Desc)])
+  @@index([recommendationRunId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([ruleId, ruleVersion])
+  @@index([lineageFingerprint])
+}
+
+model GmpRecommendationLifecycleEvent {
+  recommendationLifecycleEventId String   @id
+  recommendationId               String
+  workspaceId                    String
+  projectId                      String
+  lifecycleState                 String
+  actorId                        String
+  reason                         String?
+  metadata                       Json?
+  createdAt                      DateTime @default(now())
+
+  @@index([recommendationId, createdAt(sort: Desc)])
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([lifecycleState, createdAt(sort: Desc)])
+}
+
+model GmpRecommendationReplayRun {
+  recommendationReplayRunId String   @id
+  workspaceId               String
+  projectId                 String
+  siteId                    String?
+  evidenceSnapshotId        String
+  recommendationRunId       String
+  ruleCatalogVersion        String
+  attributionVersion        String
+  replayChecksum            String
+  recommendationCount       Int      @default(0)
+  deterministicMatch        Boolean?
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([recommendationRunId, createdAt(sort: Desc)])
+}
+
+model GmpDecisionSupportSummary {
+  decisionSupportSummaryId  String   @id
+  workspaceId               String
+  projectId                 String
+  siteId                    String?
+  evidenceSnapshotId        String
+  recommendationRunId       String?
+  summaryType               String
+  summaryKey                String
+  summaryValue              Json
+  summaryChecksum           String
+  metadata                  Json?
+  createdAt                 DateTime @default(now())
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([evidenceSnapshotId, createdAt(sort: Desc)])
+  @@index([summaryType, createdAt(sort: Desc)])
+  @@index([summaryChecksum])
+}
+
+model GeaAgent {
+  agentId         String   @id
+  workspaceId     String
+  organizationId  String
+  name            String
+  description     String?
+  lifecycleState  String
+  identity        Json
+  capabilities    Json
+  permissions     Json
+  currentVersion  Json
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([lifecycleState, updatedAt(sort: Desc)])
+}
+
+model GeaAgentPlan {
+  planId               String   @id
+  agentId              String
+  planVersion          String
+  objective            String
+  createdBy            String
+  createdAt            DateTime
+  immutableAfterStart  Boolean  @default(true)
+  tasks                Json
+  dependencyChecksum   String
+
+  @@index([agentId, createdAt(sort: Desc)])
+  @@index([dependencyChecksum])
+}
+
+model GeaAgentExecution {
+  executionId            String   @id
+  agentId                String
+  workspaceId            String
+  projectId              String?
+  state                  String
+  objective              String
+  planId                 String
+  planVersion            String
+  capabilityVersions     Json
+  toolVersions           Json
+  permissionEvaluations  Json
+  timeline               Json
+  retries                Int      @default(0)
+  startedAt              DateTime?
+  completedAt            DateTime?
+  resultId               String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([agentId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([state, createdAt(sort: Desc)])
+}
+
+model GeaAgentAction {
+  actionId       String   @id
+  executionId    String
+  taskId         String
+  toolKey        String
+  toolVersion    String
+  status         String
+  input          Json
+  output         Json?
+  error          String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([toolKey, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model GeaAgentResult {
+  resultId       String   @id
+  executionId    String
+  status         String
+  summary        String
+  outputs        Json
+  producedAt     DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([executionId, producedAt(sort: Desc)])
+  @@index([status, producedAt(sort: Desc)])
+}
+
+model GeaAgentAuditRecord {
+  auditRecordId  String   @id
+  executionId    String
+  eventType      String
+  actorId        String
+  details        Json
+  createdAt      DateTime
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+}
+
+model GeaAgentReplay {
+  replayId              String   @id
+  executionId           String
+  replayOfExecutionId   String
+  deterministicMatch    Boolean
+  replayChecksum        String
+  createdAt             DateTime
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([replayOfExecutionId, createdAt(sort: Desc)])
+  @@index([replayChecksum])
+}
+
+model GeaAgentMemoryReference {
+  memoryReferenceId  String   @id
+  referenceType      String
+  referenceId        String
+  referenceVersion   String
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([referenceType, createdAt(sort: Desc)])
+  @@index([referenceId, createdAt(sort: Desc)])
+}
+
+model GeaAgentApproval {
+  approvalId     String   @id
+  executionId    String
+  taskId         String
+  state          String
+  requestedBy    String
+  decidedBy      String?
+  reason         String?
+  createdAt      DateTime
+  decidedAt      DateTime?
+  updatedAt      DateTime @updatedAt
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([state, createdAt(sort: Desc)])
+}
+
+model GeaToolDefinition {
+  toolId            String   @id
+  workspaceId       String
+  organizationId    String
+  toolKey           String
+  category          String
+  lifecycleState    String
+  definition        Json
+  activeVersionTag  String
+  versions          Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([workspaceId, toolKey])
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([category, updatedAt(sort: Desc)])
+  @@index([lifecycleState, updatedAt(sort: Desc)])
+}
+
+model GeaToolExecution {
+  executionId       String   @id
+  workspaceId       String
+  projectId         String?
+  organizationId    String?
+  toolId            String
+  toolVersionId     String
+  agentId           String
+  actorId           String
+  state             String
+  mode              String
+  input             Json
+  output            Json?
+  warnings          Json
+  error             String?
+  durationMs        Int?
+  startedAt         DateTime
+  completedAt       DateTime?
+  authorization     Json
+  timeline          Json
+  immutableLineage  String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([workspaceId, startedAt(sort: Desc)])
+  @@index([projectId, startedAt(sort: Desc)])
+  @@index([toolId, startedAt(sort: Desc)])
+  @@index([agentId, startedAt(sort: Desc)])
+  @@index([state, startedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GeaToolExecutionTimeline {
+  timelineEventId   String   @id
+  executionId       String
+  sequence          Int
+  state             String
+  note              String
+  metadata          Json?
+  createdAt         DateTime
+
+  @@index([executionId, sequence])
+  @@index([executionId, createdAt(sort: Desc)])
+}
+
+model GeaToolReplay {
+  replayId               String   @id
+  executionId            String
+  toolVersionId          String
+  inputContractVersion   String
+  agentVersion           String
+  permissionEvaluation   Json
+  runtimeVersion         String
+  deterministicSupported Boolean
+  deterministicMatch     Boolean?
+  replayChecksum         String
+  createdAt              DateTime
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([toolVersionId, createdAt(sort: Desc)])
+  @@index([replayChecksum])
+}
+
+model GeaToolHealth {
+  healthId                 String   @id
+  toolId                   String
+  toolVersionId            String?
+  availability             Float
+  latencyMs                Int
+  successRate              Float
+  failureRate              Float
+  version                  String
+  lastSuccessfulExecution  String?
+  lastFailure              String?
+  healthStatus             String
+  computedAt               DateTime
+  createdAt                DateTime @default(now())
+
+  @@index([toolId, computedAt(sort: Desc)])
+  @@index([healthStatus, computedAt(sort: Desc)])
+}
+
+model GeaToolValidation {
+  validationId      String   @id
+  toolVersionId     String
+  validationStatus  String
+  issues            Json
+  validatedBy       String
+  validatedAt       DateTime
+  createdAt         DateTime @default(now())
+
+  @@index([toolVersionId, validatedAt(sort: Desc)])
+  @@index([validationStatus, validatedAt(sort: Desc)])
+}
+
+model GeaToolLifecycleEvent {
+  lifecycleEventId  String   @id
+  toolId            String
+  previousState     String?
+  nextState         String
+  actorId           String
+  reason            String?
+  createdAt         DateTime
+
+  @@index([toolId, createdAt(sort: Desc)])
+  @@index([nextState, createdAt(sort: Desc)])
+}
+
+model GeaToolPolicyHistory {
+  policyRecordId          String   @id
+  toolVersionId           String
+  previousPolicyChecksum  String?
+  nextPolicyChecksum      String
+  changedBy               String
+  changedAt               DateTime
+  createdAt               DateTime @default(now())
+
+  @@index([toolVersionId, changedAt(sort: Desc)])
+  @@index([nextPolicyChecksum])
+}
+
+model GeaMemorySource {
+  memorySourceId  String   @id
+  workspaceId     String
+  organizationId  String
+  sourceType      String
+  sourceId        String
+  sourceVersion   String
+  authoritative   Boolean
+  metadata        Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([sourceType, updatedAt(sort: Desc)])
+  @@index([sourceId, updatedAt(sort: Desc)])
+}
+
+model GeaMemoryReference {
+  memoryReferenceId  String   @id
+  workspaceId        String
+  organizationId     String
+  projectId          String?
+  registryIdentity   String
+  referenceType      String
+  referenceId        String
+  referenceVersion   String
+  source             Json
+  memoryVersion      Json
+  capabilityKey      String?
+  permissionAction   String?
+  authorityState     String
+  immutable          Boolean
+  metadata           Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([registryIdentity])
+  @@index([referenceType, updatedAt(sort: Desc)])
+  @@index([referenceId, updatedAt(sort: Desc)])
+}
+
+model GeaMemoryVersion {
+  memoryVersionId    String   @id
+  memoryReferenceId  String
+  versionTag         String
+  checksum           String
+  createdAt          DateTime
+
+  @@index([memoryReferenceId, createdAt(sort: Desc)])
+  @@index([checksum])
+}
+
+model GeaMemoryCollection {
+  memoryCollectionId  String   @id
+  workspaceId         String
+  organizationId      String
+  name                String
+  description         String?
+  lifecycleState      String
+  memoryReferenceIds  Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([lifecycleState, updatedAt(sort: Desc)])
+}
+
+model GeaMemorySnapshot {
+  memorySnapshotId    String   @id
+  workspaceId         String
+  organizationId      String
+  projectId           String?
+  memoryCollectionId  String?
+  memoryReferenceIds  Json
+  snapshotChecksum    String
+  createdAt           DateTime
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([snapshotChecksum])
+}
+
+model GeaContextPackage {
+  contextPackageId  String   @id
+  workspaceId       String
+  organizationId    String
+  projectId         String?
+  agentId           String?
+  lifecycleState    String
+  contextVersion    String
+  sections          Json
+  dependencies      Json
+  assembly          Json
+  policy            Json
+  timeline          Json
+  packageChecksum   String
+  cacheKey          String
+  deterministic     Boolean
+  createdAt         DateTime
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([agentId, createdAt(sort: Desc)])
+  @@index([cacheKey])
+  @@index([packageChecksum])
+}
+
+model GeaContextValidation {
+  contextValidationId  String   @id
+  contextPackageId     String
+  validationStatus     String
+  issues               Json
+  validatedAt          DateTime
+
+  @@index([contextPackageId, validatedAt(sort: Desc)])
+  @@index([validationStatus, validatedAt(sort: Desc)])
+}
+
+model GeaContextReplay {
+  contextReplayId        String   @id
+  contextPackageId       String
+  replayChecksum         String
+  deterministicPossible  Boolean
+  deterministicMatch     Boolean?
+  reason                 String?
+  createdAt              DateTime
+
+  @@index([contextPackageId, createdAt(sort: Desc)])
+  @@index([replayChecksum])
+}
+
+model GeaContextCache {
+  contextCacheId            String   @id
+  workspaceId               String
+  organizationId            String
+  cacheKey                  String
+  contextPackageId          String
+  sourceVersionFingerprint  String
+  cacheStatus               String
+  hitCount                  Int
+  lastHitAt                 DateTime?
+  createdAt                 DateTime
+  updatedAt                 DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([cacheKey])
+  @@index([cacheStatus, updatedAt(sort: Desc)])
+}
+
+model GeaContextHealth {
+  contextHealthId       String   @id
+  workspaceId           String
+  organizationId        String
+  assemblyLatencyMs     Int
+  cacheUtilization      Float
+  validationFailures    Int
+  authorizationFailures Int
+  missingReferences     Int
+  staleReferences       Int
+  versionDrift          Int
+  healthStatus          String
+  computedAt            DateTime
+
+  @@index([workspaceId, computedAt(sort: Desc)])
+  @@index([organizationId, computedAt(sort: Desc)])
+  @@index([healthStatus, computedAt(sort: Desc)])
+}
+
+model GeaOrchestration {
+  orchestrationId         String   @id
+  workspaceId             String
+  organizationId          String
+  projectId               String?
+  name                    String
+  description             String
+  lifecycleState          String
+  activeWorkflowId        String
+  activeWorkflowVersionId String
+  versions                Json
+  createdAt               DateTime
+  updatedAt               DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([projectId, updatedAt(sort: Desc)])
+  @@index([lifecycleState, updatedAt(sort: Desc)])
+}
+
+model GeaWorkflowDefinition {
+  workflowId      String   @id
+  orchestrationId String
+  workspaceId     String
+  organizationId  String
+  projectId       String?
+  workflowKey     String
+  name            String
+  description     String
+  lifecycleState  String
+  steps           Json
+  transitions     Json
+  dependencies    Json
+  scheduling      Json
+  createdAt       DateTime
+  updatedAt       DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([orchestrationId, updatedAt(sort: Desc)])
+  @@index([workflowKey])
+  @@index([lifecycleState, updatedAt(sort: Desc)])
+}
+
+model GeaWorkflowVersion {
+  workflowVersionId  String   @id
+  workflowId         String
+  versionTag         String
+  immutable          Boolean
+  definitionChecksum String
+  publishedBy        String
+  publishedAt        DateTime
+
+  @@index([workflowId, publishedAt(sort: Desc)])
+  @@index([definitionChecksum])
+}
+
+model GeaOrchestrationExecution {
+  executionId              String   @id
+  orchestrationId          String
+  workflowId               String
+  workflowVersionId        String
+  workspaceId              String
+  organizationId           String
+  projectId                String?
+  initiatedBy              String
+  state                    String
+  coordinationStateByStep  Json
+  contextPackageId         String?
+  toolExecutionIds         Json
+  delegations              Json
+  approvals                Json
+  compensationActions      Json
+  retryCounts              Json
+  timeline                 Json
+  immutableLineage         String
+  startedAt                DateTime
+  completedAt              DateTime?
+
+  @@index([workspaceId, startedAt(sort: Desc)])
+  @@index([organizationId, startedAt(sort: Desc)])
+  @@index([projectId, startedAt(sort: Desc)])
+  @@index([orchestrationId, startedAt(sort: Desc)])
+  @@index([workflowId, startedAt(sort: Desc)])
+  @@index([state, startedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GeaOrchestrationDelegation {
+  delegationId String   @id
+  executionId  String
+  stepId       String
+  fromAgentId  String
+  toAgentId    String
+  reason       String
+  delegatedAt  DateTime
+
+  @@index([executionId, delegatedAt(sort: Desc)])
+  @@index([toAgentId, delegatedAt(sort: Desc)])
+}
+
+model GeaOrchestrationApproval {
+  approvalCheckpointId String   @id
+  executionId          String
+  stepId               String
+  stage                String
+  state                String
+  requiredApprovers    Json
+  approvedBy           Json
+  timeoutAt            DateTime?
+  escalationPolicy     Json?
+  createdAt            DateTime
+  updatedAt            DateTime
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([state, createdAt(sort: Desc)])
+}
+
+model GeaOrchestrationCompensation {
+  compensationActionId String   @id
+  executionId          String
+  stepId               String
+  reversible           Boolean
+  actionType           String
+  status               String
+  reason               String?
+  createdAt            DateTime
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model GeaOrchestrationSnapshot {
+  snapshotId                String   @id
+  executionId               String
+  sequence                  Int
+  state                     String
+  coordinationStateByStep   Json
+  approvals                 Json
+  retries                   Json
+  pendingSteps              Json
+  completedSteps            Json
+  failedSteps               Json
+  createdAt                 DateTime
+
+  @@index([executionId, sequence])
+  @@index([executionId, createdAt(sort: Desc)])
+}
+
+model GeaOrchestrationReplay {
+  replayRecordId               String   @id
+  executionId                  String
+  replayChecksum               String
+  determinism                  String
+  nonDeterministicDependencies Json
+  createdAt                    DateTime
+
+  @@index([executionId, createdAt(sort: Desc)])
+  @@index([replayChecksum])
+}
+
+model GeaOrchestrationHealth {
+  healthId          String   @id
+  workspaceId       String
+  organizationId    String
+  status            String
+  activeExecutions  Int
+  pausedExecutions  Int
+  approvalBacklog   Int
+  failureRate       Float
+  replayDriftRate   Float
+  queueDepth        Int
+  computedAt        DateTime
+  metrics           Json
+
+  @@index([workspaceId, computedAt(sort: Desc)])
+  @@index([organizationId, computedAt(sort: Desc)])
+  @@index([status, computedAt(sort: Desc)])
+}
+
+model GbaExecutiveBriefing {
+  briefingId                  String   @id
+  workspaceId                 String
+  organizationId              String
+  period                      String
+  executiveSummary            String
+  criticalAlerts              Json
+  topOpportunities            Json
+  topRisks                    Json
+  completedGoals              Json
+  behindScheduleGoals         Json
+  operationalHighlights       Json
+  financialHighlights         Json
+  marketingHighlights         Json
+  manufacturingHighlights     Json
+  salesHighlights             Json
+  supportHighlights           Json
+  recommendedExecutiveActions Json
+  evidenceReferences          Json
+  contextPackageId            String?
+  replayChecksum              String
+  createdBy                   String
+  createdAt                   DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([period, createdAt(sort: Desc)])
+  @@index([replayChecksum])
+}
+
+model GbaExecutiveGoal {
+  goalId              String   @id
+  workspaceId         String
+  organizationId      String
+  parentGoalId        String?
+  level               String
+  title               String
+  owner               String
+  objective           String
+  keyResults          Json
+  milestones          Json
+  dependencies        Json
+  deadline            DateTime
+  progressPercent     Int
+  status              String
+  evidenceReferences  Json
+  createdAt           DateTime
+  updatedAt           DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaExecutiveGoalHistory {
+  goalHistoryId     String   @id
+  goalId            String
+  workspaceId       String
+  organizationId    String
+  progressPercent   Int
+  status            String
+  changedBy         String
+  changedAt         DateTime
+  immutableLineage  String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([goalId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaExecutiveKpi {
+  kpiId               String   @id
+  workspaceId         String
+  organizationId      String
+  name                String
+  owner               String
+  target              Float
+  thresholdGreen      Float
+  thresholdYellow     Float
+  unit                String
+  versionTag          String
+  evidenceReferences  Json
+  createdAt           DateTime
+  updatedAt           DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([name, updatedAt(sort: Desc)])
+}
+
+model GbaExecutiveKpiHistory {
+  kpiHistoryId       String   @id
+  kpiId              String
+  workspaceId        String
+  organizationId     String
+  measuredValue      Float
+  trend              Float
+  score              Float
+  status             String
+  measuredAt         DateTime
+  immutableLineage   String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([kpiId, measuredAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaExecutiveRecommendation {
+  recommendationId      String   @id
+  workspaceId           String
+  organizationId        String
+  category              String
+  title                 String
+  summary               String
+  evidenceReferences    Json
+  businessImpact        String
+  confidence            String
+  requiredApprovals     Json
+  suggestedOwner        String
+  priority              String
+  deterministicChecksum String
+  reviewed              Boolean
+  createdAt             DateTime
+  immutableLineage      String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([category, createdAt(sort: Desc)])
+  @@index([reviewed, createdAt(sort: Desc)])
+  @@index([deterministicChecksum])
+}
+
+model GbaExecutiveRecommendationReview {
+  recommendationReviewId  String   @id
+  recommendationId        String
+  workspaceId             String
+  organizationId          String
+  decision                String
+  notes                   String?
+  reviewedBy              String
+  reviewedAt              DateTime
+  immutableLineage        String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([recommendationId, reviewedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaExecutiveRisk {
+  riskId               String   @id
+  workspaceId          String
+  organizationId       String
+  category             String
+  title                String
+  probability          Int
+  impact               Int
+  owner                String
+  mitigation           String
+  status               String
+  evidenceReferences   Json
+  createdAt            DateTime
+  updatedAt            DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([category, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaExecutiveRiskHistory {
+  riskHistoryId      String   @id
+  riskId             String
+  workspaceId        String
+  organizationId     String
+  status             String
+  reviewNote         String
+  reviewedBy         String
+  reviewedAt         DateTime
+  immutableLineage   String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([riskId, reviewedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaExecutiveOpportunity {
+  opportunityId       String   @id
+  workspaceId         String
+  organizationId      String
+  category            String
+  title               String
+  projectedImpact     String
+  owner               String
+  status              String
+  evidenceReferences  Json
+  createdAt           DateTime
+  updatedAt           DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([category, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaExecutiveOpportunityHistory {
+  opportunityHistoryId  String   @id
+  opportunityId         String
+  workspaceId           String
+  organizationId        String
+  status                String
+  note                  String
+  changedBy             String
+  changedAt             DateTime
+  immutableLineage      String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([opportunityId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaExecutiveDelegation {
+  delegationId               String   @id
+  workspaceId                String
+  organizationId             String
+  targetAgent                String
+  objective                  String
+  orchestrationExecutionId   String
+  requestedBy                String
+  createdAt                  DateTime
+  immutableLineage           String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([targetAgent, createdAt(sort: Desc)])
+  @@index([orchestrationExecutionId])
+}
+
+model GbaExecutiveApproval {
+  approvalId          String   @id
+  workspaceId         String
+  organizationId      String
+  subjectType         String
+  subjectId           String
+  state               String
+  requiredApprovers   Json
+  approvedBy          Json
+  createdAt           DateTime
+  updatedAt           DateTime
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([state, createdAt(sort: Desc)])
+}
+
+model GbaExecutiveTimelineEvent {
+  timelineEventId      String   @id
+  workspaceId          String
+  organizationId       String
+  eventType            String
+  subjectId            String
+  summary              String
+  actorId              String
+  evidenceReferences   Json
+  createdAt            DateTime
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+}
+
+model GbaExecutiveHealth {
+  healthId                 String   @id
+  workspaceId              String
+  organizationId           String
+  status                   String
+  criticalRiskCount        Int
+  behindGoalCount          Int
+  openRecommendationCount  Int
+  pendingApprovalCount     Int
+  generatedAt              DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([status, generatedAt(sort: Desc)])
+}
+
+model GbaOperationsWorkOrder {
+  workOrderId          String   @id
+  workspaceId          String
+  organizationId       String
+  title                String
+  status               String
+  priority             String
+  dueDate              DateTime
+  dependencies         Json
+  assignedResources    Json
+  estimatedLaborHours  Float
+  actualLaborHours     Float
+  completionPercent    Int
+  createdBy            String
+  createdAt            DateTime
+  updatedAt            DateTime
+  immutableLineage     String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaOperationsWorkOrderHistory {
+  workOrderHistoryId  String   @id
+  workOrderId         String
+  workspaceId         String
+  organizationId      String
+  fromStatus          String
+  toStatus            String
+  note                String
+  changedBy           String
+  changedAt           DateTime
+  immutableLineage    String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([workOrderId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsProductionSchedule {
+  scheduleId          String   @id
+  workspaceId         String
+  organizationId      String
+  queueName           String
+  machineId           String
+  shiftCode           String
+  sequence            Int
+  plannedStartAt      DateTime
+  plannedEndAt        DateTime
+  plannedLaborHours   Float
+  plannedUnits        Int
+  bottleneckRisk      String
+  createdAt           DateTime
+  immutableLineage    String
+
+  @@index([workspaceId, sequence])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([bottleneckRisk, createdAt(sort: Desc)])
+}
+
+model GbaOperationsInventoryRecord {
+  inventoryRecordId      String   @id
+  workspaceId            String
+  organizationId         String
+  sku                    String
+  itemType               String
+  onHandQuantity         Int
+  allocatedQuantity      Int
+  availableQuantity      Int
+  safetyStock            Int
+  reorderPoint           Int
+  lotTrackingEnabled     Boolean
+  serialTrackingEnabled  Boolean
+  valuationAmount        Float
+  agingDays              Int
+  updatedAt              DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([sku, updatedAt(sort: Desc)])
+}
+
+model GbaOperationsInventoryHistory {
+  inventoryHistoryId  String   @id
+  inventoryRecordId   String
+  workspaceId         String
+  organizationId      String
+  movementType        String
+  quantityDelta       Int
+  resultingOnHand     Int
+  note                String
+  changedBy           String
+  changedAt           DateTime
+  immutableLineage    String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([inventoryRecordId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsWarehouseOperation {
+  warehouseOperationId  String   @id
+  workspaceId           String
+  organizationId        String
+  operationType         String
+  status                String
+  referenceId           String
+  zone                  String
+  utilizationPercent    Float
+  createdAt             DateTime
+  updatedAt             DateTime
+  immutableLineage      String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([operationType, updatedAt(sort: Desc)])
+}
+
+model GbaOperationsWarehouseHistory {
+  warehouseHistoryId    String   @id
+  warehouseOperationId  String
+  workspaceId           String
+  organizationId        String
+  status                String
+  note                  String
+  changedBy             String
+  changedAt             DateTime
+  immutableLineage      String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([warehouseOperationId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsPurchasingRecord {
+  purchasingId         String   @id
+  workspaceId          String
+  organizationId       String
+  purchaseRequestId    String
+  purchaseOrderNumber  String
+  vendorId             String
+  status               String
+  leadTimeDays         Int
+  deliveryDueDate      DateTime
+  totalCostAmount      Float
+  currency             String
+  createdAt            DateTime
+  updatedAt            DateTime
+  immutableLineage     String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([vendorId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaOperationsPurchasingHistory {
+  purchasingHistoryId  String   @id
+  purchasingId         String
+  workspaceId          String
+  organizationId       String
+  status               String
+  note                 String
+  changedBy            String
+  changedAt            DateTime
+  immutableLineage     String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([purchasingId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsShippingRecord {
+  shippingId            String    @id
+  workspaceId           String
+  organizationId        String
+  shipmentType          String
+  carrier               String
+  trackingNumber        String
+  status                String
+  freightCostAmount     Float
+  damageClaimOpen       Boolean
+  estimatedDeliveryAt   DateTime?
+  deliveredAt           DateTime?
+  createdAt             DateTime
+  updatedAt             DateTime
+  immutableLineage      String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([shipmentType, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaOperationsShippingHistory {
+  shippingHistoryId  String   @id
+  shippingId         String
+  workspaceId        String
+  organizationId     String
+  status             String
+  note               String
+  changedBy          String
+  changedAt          DateTime
+  immutableLineage   String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([shippingId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsCapacityRecord {
+  capacityId                  String   @id
+  workspaceId                 String
+  organizationId              String
+  machineUtilizationPercent   Float
+  laborUtilizationPercent     Float
+  productionCapacityUnits     Int
+  availableHours              Float
+  constrainedHours            Float
+  forecastDemandUnits         Int
+  bottleneckSummary           String
+  measuredAt                  DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+}
+
+model GbaOperationsCapacityHistory {
+  capacityHistoryId           String   @id
+  capacityId                  String
+  workspaceId                 String
+  organizationId              String
+  machineUtilizationPercent   Float
+  laborUtilizationPercent     Float
+  productionCapacityUnits     Int
+  availableHours              Float
+  constrainedHours            Float
+  forecastDemandUnits         Int
+  bottleneckSummary           String
+  measuredAt                  DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([capacityId, measuredAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsKpi {
+  operationsKpiId      String   @id
+  workspaceId          String
+  organizationId       String
+  name                 String
+  target               Float
+  unit                 String
+  versionTag           String
+  owner                String
+  evidenceReferences   Json
+  createdAt            DateTime
+  updatedAt            DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([name, updatedAt(sort: Desc)])
+}
+
+model GbaOperationsKpiHistory {
+  operationsKpiHistoryId  String   @id
+  operationsKpiId         String
+  workspaceId             String
+  organizationId          String
+  measuredValue           Float
+  trend                   Float
+  score                   Float
+  status                  String
+  measuredAt              DateTime
+  immutableLineage        String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([operationsKpiId, measuredAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsRecommendation {
+  operationsRecommendationId  String   @id
+  workspaceId                 String
+  organizationId              String
+  category                    String
+  title                       String
+  summary                     String
+  evidenceReferences          Json
+  businessImpact              String
+  priority                    String
+  confidence                  String
+  suggestedOwner              String
+  requiredApprovals           Json
+  deterministicChecksum       String
+  reviewed                    Boolean
+  createdAt                   DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([category, createdAt(sort: Desc)])
+  @@index([reviewed, createdAt(sort: Desc)])
+  @@index([deterministicChecksum])
+}
+
+model GbaOperationsRecommendationReview {
+  operationsRecommendationReviewId  String   @id
+  operationsRecommendationId        String
+  workspaceId                       String
+  organizationId                    String
+  decision                          String
+  notes                             String?
+  reviewedBy                        String
+  reviewedAt                        DateTime
+  immutableLineage                  String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([operationsRecommendationId, reviewedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsVendorMetric {
+  vendorMetricId         String   @id
+  workspaceId            String
+  organizationId         String
+  vendorId               String
+  onTimeDeliveryRate     Float
+  qualityAcceptanceRate  Float
+  averageLeadTimeDays    Float
+  costVariancePercent    Float
+  measuredAt             DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+  @@index([vendorId, measuredAt(sort: Desc)])
+}
+
+model GbaOperationsVendorMetricHistory {
+  vendorMetricHistoryId  String   @id
+  vendorMetricId         String
+  workspaceId            String
+  organizationId         String
+  onTimeDeliveryRate     Float
+  qualityAcceptanceRate  Float
+  averageLeadTimeDays    Float
+  costVariancePercent    Float
+  measuredAt             DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([vendorMetricId, measuredAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaOperationsTimelineEvent {
+  operationsTimelineEventId  String   @id
+  workspaceId                String
+  organizationId             String
+  eventType                  String
+  subjectId                  String
+  summary                    String
+  actorId                    String
+  evidenceReferences         Json
+  createdAt                  DateTime
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+}
+
+model GbaOperationsHealth {
+  operationsHealthId            String   @id
+  workspaceId                   String
+  organizationId                String
+  status                        String
+  blockedWorkOrderCount         Int
+  lowStockSkuCount              Int
+  delayedShipmentCount          Int
+  overCapacitySignalCount       Int
+  unreviewedRecommendationCount Int
+  generatedAt                   DateTime
+  immutableLineage              String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([status, generatedAt(sort: Desc)])
+}
+
+model GbaOperationsExecutiveSummary {
+  summaryId           String   @id
+  workspaceId         String
+  organizationId      String
+  period              String
+  kpiRollups          Json
+  exceptions          Json
+  risks               Json
+  opportunities       Json
+  createdAt           DateTime
+  immutableLineage    String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([period, createdAt(sort: Desc)])
+}
+
+model GbaManufacturingBom {
+  bomId                   String   @id
+  workspaceId             String
+  organizationId          String
+  sku                     String
+  revision                String
+  level                   Int
+  effectiveFrom           DateTime
+  effectiveTo             DateTime?
+  components              Json
+  approvedSubstitutions   Json
+  costRollup              Float
+  createdBy               String
+  createdAt               DateTime
+  updatedAt               DateTime
+  immutableLineage        String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([sku, updatedAt(sort: Desc)])
+}
+
+model GbaManufacturingBomHistory {
+  bomHistoryId       String   @id
+  bomId              String
+  workspaceId        String
+  organizationId     String
+  revision           String
+  note               String
+  changedBy          String
+  changedAt          DateTime
+  immutableLineage   String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([bomId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaManufacturingRouting {
+  routingId            String   @id
+  workspaceId          String
+  organizationId       String
+  sku                  String
+  revision             String
+  workCenter           String
+  machineAssignments   Json
+  processSteps         Json
+  laborRequirements    Json
+  createdAt            DateTime
+  updatedAt            DateTime
+  immutableLineage     String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([sku, updatedAt(sort: Desc)])
+}
+
+model GbaManufacturingRoutingHistory {
+  routingHistoryId   String   @id
+  routingId          String
+  workspaceId        String
+  organizationId     String
+  revision           String
+  note               String
+  changedBy          String
+  changedAt          DateTime
+  immutableLineage   String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([routingId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaManufacturingProductionOrder {
+  productionOrderId   String   @id
+  workspaceId         String
+  organizationId      String
+  operationsWorkOrderId String?
+  title               String
+  sku                 String
+  bomRevision         String
+  routingRevision     String
+  priority            String
+  status              String
+  quantityPlanned     Int
+  quantityCompleted   Int
+  scheduledStartAt    DateTime
+  scheduledEndAt      DateTime
+  materialAllocations Json
+  laborAssignments    Json
+  createdBy           String
+  createdAt           DateTime
+  updatedAt           DateTime
+  immutableLineage    String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaManufacturingProductionOrderHistory {
+  productionOrderHistoryId  String   @id
+  productionOrderId         String
+  workspaceId               String
+  organizationId            String
+  fromStatus                String
+  toStatus                  String
+  note                      String
+  changedBy                 String
+  changedAt                 DateTime
+  immutableLineage          String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([productionOrderId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaManufacturingMachine {
+  machineId                   String   @id
+  workspaceId                 String
+  organizationId              String
+  machineType                 String
+  status                      String
+  runtimeMinutes              Int
+  downtimeMinutes             Int
+  plannedMaintenanceMinutes   Int
+  unplannedFailureCount       Int
+  availabilityPercent         Float
+  performancePercent          Float
+  qualityPercent              Float
+  utilizationPercent          Float
+  updatedAt                   DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([status, updatedAt(sort: Desc)])
+}
+
+model GbaManufacturingMachineHistory {
+  machineHistoryId   String   @id
+  machineId          String
+  workspaceId        String
+  organizationId     String
+  status             String
+  note               String
+  changedBy          String
+  changedAt          DateTime
+  immutableLineage   String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([machineId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaManufacturingLabor {
+  laborRecordId            String   @id
+  workspaceId              String
+  organizationId           String
+  operatorId               String
+  certifications           Json
+  skills                   Json
+  shift                    String
+  utilizationPercent       Float
+  overtimeHours            Float
+  laborEfficiencyPercent   Float
+  updatedAt                DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([operatorId, updatedAt(sort: Desc)])
+}
+
+model GbaManufacturingLaborHistory {
+  laborHistoryId           String   @id
+  laborRecordId            String
+  workspaceId              String
+  organizationId           String
+  shift                    String
+  utilizationPercent       Float
+  overtimeHours            Float
+  laborEfficiencyPercent   Float
+  changedBy                String
+  changedAt                DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([laborRecordId, changedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaManufacturingMaterialConsumption {
+  materialConsumptionId    String   @id
+  workspaceId              String
+  organizationId           String
+  productionOrderId        String
+  rawMaterialUsed          Float
+  componentConsumed        Float
+  yieldPercent             Float
+  wasteQuantity            Float
+  scrapQuantity            Float
+  reworkMaterialQuantity   Float
+  variancePercent          Float
+  measuredAt               DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+  @@index([productionOrderId, measuredAt(sort: Desc)])
+}
+
+model GbaManufacturingQualityEvent {
+  qualityEventId         String   @id
+  workspaceId            String
+  organizationId         String
+  productionOrderId      String
+  eventType              String
+  severity               String
+  defectCategory         String
+  rootCauseReference     String?
+  firstPassYieldPercent  Float
+  note                   String
+  recordedBy             String
+  recordedAt             DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, recordedAt(sort: Desc)])
+  @@index([organizationId, recordedAt(sort: Desc)])
+  @@index([severity, recordedAt(sort: Desc)])
+}
+
+model GbaManufacturingCostRecord {
+  manufacturingCostId     String   @id
+  workspaceId             String
+  organizationId          String
+  productionOrderId       String
+  costingVersion          String
+  materialCost            Float
+  laborCost               Float
+  machineCost             Float
+  overheadCost            Float
+  burdenCost              Float
+  totalManufacturingCost  Float
+  costVariance            Float
+  measuredAt              DateTime
+  immutableLineage        String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+  @@index([productionOrderId, measuredAt(sort: Desc)])
+}
+
+model GbaManufacturingKpi {
+  manufacturingKpiId   String   @id
+  workspaceId          String
+  organizationId       String
+  name                 String
+  target               Float
+  unit                 String
+  versionTag           String
+  owner                String
+  evidenceReferences   Json
+  createdAt            DateTime
+  updatedAt            DateTime
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([name, updatedAt(sort: Desc)])
+}
+
+model GbaManufacturingKpiHistory {
+  manufacturingKpiHistoryId  String   @id
+  manufacturingKpiId         String
+  workspaceId                String
+  organizationId             String
+  measuredValue              Float
+  trend                      Float
+  score                      Float
+  status                     String
+  measuredAt                 DateTime
+  immutableLineage           String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([manufacturingKpiId, measuredAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaManufacturingRecommendation {
+  manufacturingRecommendationId  String   @id
+  workspaceId                    String
+  organizationId                 String
+  category                       String
+  title                          String
+  summary                        String
+  evidenceReferences             Json
+  confidence                     String
+  businessImpact                 String
+  estimatedSavings               Float
+  suggestedOwner                 String
+  requiredApprovals              Json
+  priority                       String
+  deterministicChecksum          String
+  reviewed                       Boolean
+  createdAt                      DateTime
+  immutableLineage               String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([category, createdAt(sort: Desc)])
+  @@index([reviewed, createdAt(sort: Desc)])
+  @@index([deterministicChecksum])
+}
+
+model GbaManufacturingRecommendationReview {
+  manufacturingRecommendationReviewId  String   @id
+  manufacturingRecommendationId        String
+  workspaceId                          String
+  organizationId                       String
+  decision                             String
+  notes                                String?
+  reviewedBy                           String
+  reviewedAt                           DateTime
+  immutableLineage                     String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([manufacturingRecommendationId, reviewedAt(sort: Desc)])
+  @@index([immutableLineage])
+}
+
+model GbaManufacturingOperationsSignal {
+  operationsSignalId            String   @id
+  workspaceId                   String
+  organizationId                String
+  productionCompletionPercent   Int
+  capacityUtilizationPercent    Int
+  materialShortageCount         Int
+  machineHealthStatus           String
+  laborAvailabilityPercent      Int
+  qualityAlertCount             Int
+  kpiSummary                    Json
+  publishedAt                   DateTime
+  immutableLineage              String
+
+  @@index([workspaceId, publishedAt(sort: Desc)])
+  @@index([organizationId, publishedAt(sort: Desc)])
+  @@index([machineHealthStatus, publishedAt(sort: Desc)])
+}
+
+model GbaManufacturingExecutiveReport {
+  manufacturingExecutiveReportId  String   @id
+  workspaceId                     String
+  organizationId                  String
+  period                          String
+  productionSummary               Json
+  capacityOutlook                 Json
+  qualitySummary                  Json
+  costSummary                     Json
+  risks                           Json
+  opportunities                   Json
+  createdAt                       DateTime
+  immutableLineage                String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([period, createdAt(sort: Desc)])
+}
+
+model GbaManufacturingTimelineEvent {
+  manufacturingTimelineEventId  String   @id
+  workspaceId                   String
+  organizationId                String
+  eventType                     String
+  subjectId                     String
+  summary                       String
+  actorId                       String
+  evidenceReferences            Json
+  createdAt                     DateTime
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+}
+
+model GbaManufacturingHealth {
+  manufacturingHealthId      String   @id
+  workspaceId                String
+  organizationId             String
+  status                     String
+  blockedProductionOrders    Int
+  criticalQualityEvents      Int
+  machineDowntimeSignals     Int
+  materialVarianceSignals    Int
+  unreviewedRecommendations  Int
+  generatedAt                DateTime
+  immutableLineage           String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([status, generatedAt(sort: Desc)])
+}
+
+model GbaMarketingCampaignPlan {
+  marketingCampaignPlanId  String   @id
+  workspaceId              String
+  organizationId           String
+  projectId                String
+  siteId                   String?
+  campaignName             String
+  objective                String
+  channelFocus             Json
+  targetAudience           String
+  status                   String
+  startAt                  DateTime?
+  endAt                    DateTime?
+  budgetCents              Float
+  expectedImpressions      Int
+  expectedConversions      Int
+  createdBy                String
+  createdAt                DateTime
+  updatedAt                DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([projectId, updatedAt(sort: Desc)])
+}
+
+model GbaMarketingCampaignPlanHistory {
+  marketingCampaignPlanHistoryId  String   @id
+  marketingCampaignPlanId         String
+  workspaceId                     String
+  organizationId                  String
+  status                          String
+  note                            String
+  changedBy                       String
+  changedAt                       DateTime
+  immutableLineage                String
+
+  @@index([workspaceId, changedAt(sort: Desc)])
+  @@index([marketingCampaignPlanId, changedAt(sort: Desc)])
+}
+
+model GbaMarketingContentStrategy {
+  marketingContentStrategyId  String   @id
+  workspaceId                 String
+  organizationId              String
+  projectId                   String
+  siteId                      String?
+  title                       String
+  summary                     String
+  status                      String
+  pillarTopics                Json
+  brandVoice                  String
+  seoTheme                    String
+  owner                       String
+  createdAt                   DateTime
+  updatedAt                   DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([projectId, updatedAt(sort: Desc)])
+}
+
+model GbaMarketingSeoIntelligence {
+  marketingSeoIntelligenceId  String   @id
+  workspaceId                String
+  organizationId             String
+  projectId                  String
+  siteId                     String?
+  primaryKeyword             String
+  secondaryKeywords          Json
+  score                      Float
+  opportunities              Json
+  blockers                   Json
+  createdAt                  DateTime
+  immutableLineage           String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model GbaMarketingBrandGovernanceReview {
+  marketingBrandGovernanceReviewId  String   @id
+  workspaceId                       String
+  organizationId                    String
+  projectId                         String
+  siteId                            String?
+  reviewState                       String
+  notes                             String
+  reviewedBy                        String
+  reviewedAt                        DateTime
+  immutableLineage                  String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([organizationId, reviewedAt(sort: Desc)])
+  @@index([projectId, reviewedAt(sort: Desc)])
+}
+
+model GbaMarketingAnalyticsSnapshot {
+  marketingAnalyticsSnapshotId  String   @id
+  workspaceId                   String
+  organizationId                String
+  projectId                     String
+  siteId                        String?
+  sourceRecommendations         Int
+  sourceCollections             Int
+  trafficScore                  Float
+  engagementScore               Float
+  conversionScore               Float
+  createdAt                     DateTime
+  immutableLineage              String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model GbaMarketingRecommendation {
+  marketingRecommendationId  String   @id
+  workspaceId                String
+  organizationId             String
+  projectId                  String
+  siteId                     String?
+  category                   String
+  title                      String
+  summary                    String
+  recommendedAction          String
+  priority                   String
+  confidence                 String
+  status                     String
+  sourceReference            String
+  createdAt                  DateTime
+  immutableLineage           String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model GbaMarketingRecommendationReview {
+  marketingRecommendationReviewId  String   @id
+  marketingRecommendationId        String
+  workspaceId                      String
+  organizationId                   String
+  decision                         String
+  notes                            String?
+  reviewedBy                       String
+  reviewedAt                       DateTime
+  immutableLineage                 String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([marketingRecommendationId, reviewedAt(sort: Desc)])
+}
+
+model GbaMarketingTimelineEvent {
+  marketingTimelineEventId  String   @id
+  workspaceId               String
+  organizationId            String
+  projectId                 String
+  siteId                    String?
+  eventType                 String
+  subjectId                 String
+  summary                   String
+  actorId                   String
+  evidenceReferences        Json
+  createdAt                 DateTime
+  immutableLineage          String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model GbaMarketingExecutiveReport {
+  marketingExecutiveReportId  String   @id
+  workspaceId                 String
+  organizationId              String
+  projectId                   String
+  siteId                      String?
+  period                      String
+  summary                     String
+  campaignHighlights          Json
+  contentHighlights           Json
+  seoHighlights               Json
+  createdAt                   DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+}
+
+model GbaMarketingHealth {
+  marketingHealthId    String   @id
+  workspaceId          String
+  organizationId       String
+  projectId            String
+  siteId               String?
+  status               String
+  blockedCampaigns     Int
+  reviewBacklog        Int
+  seoRisks             Int
+  analyticsGaps        Int
+  generatedAt          DateTime
+  immutableLineage     String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([projectId, generatedAt(sort: Desc)])
+}
+
+model GbaSalesPipelineRecord {
+  salesPipelineRecordId  String   @id
+  workspaceId            String
+  organizationId         String
+  accountId              String
+  accountName            String
+  opportunityReference   String
+  stage                  String
+  amountCents            Float
+  weightedAmountCents    Float
+  probabilityPercent     Float
+  expectedCloseAt        DateTime
+  ownerId                String
+  createdAt              DateTime
+  updatedAt              DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([accountId, updatedAt(sort: Desc)])
+}
+
+model GbaSalesForecastSnapshot {
+  salesForecastSnapshotId  String   @id
+  workspaceId              String
+  organizationId           String
+  period                   String
+  pipelineAmountCents      Float
+  weightedAmountCents      Float
+  committedAmountCents     Float
+  modeledWinRatePercent    Float
+  confidence               String
+  assumptions              Json
+  createdAt                DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([period, createdAt(sort: Desc)])
+}
+
+model GbaSalesAccountIntelligence {
+  salesAccountIntelligenceId  String   @id
+  workspaceId                 String
+  organizationId              String
+  accountId                   String
+  accountName                 String
+  relationshipHealthScore     Float
+  expansionPotentialScore     Float
+  churnRiskScore              Float
+  openOpportunities           Int
+  openRevenueCents            Float
+  signals                     Json
+  updatedAt                   DateTime
+  immutableLineage            String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([accountId, updatedAt(sort: Desc)])
+}
+
+model GbaSalesRecommendation {
+  salesRecommendationId  String   @id
+  workspaceId            String
+  organizationId         String
+  category               String
+  title                  String
+  summary                String
+  recommendedAction      String
+  priority               String
+  confidence             String
+  status                 String
+  sourceReference        String
+  createdAt              DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model GbaSalesRecommendationReview {
+  salesRecommendationReviewId  String   @id
+  salesRecommendationId        String
+  workspaceId                  String
+  organizationId               String
+  decision                     String
+  notes                        String?
+  reviewedBy                   String
+  reviewedAt                   DateTime
+  immutableLineage             String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([salesRecommendationId, reviewedAt(sort: Desc)])
+}
+
+model GbaSalesTimelineEvent {
+  salesTimelineEventId  String   @id
+  workspaceId           String
+  organizationId        String
+  eventType             String
+  subjectId             String
+  summary               String
+  actorId               String
+  evidenceReferences    Json
+  createdAt             DateTime
+  immutableLineage      String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model GbaSalesHealth {
+  salesHealthId                String   @id
+  workspaceId                  String
+  organizationId               String
+  status                       String
+  stalledOpportunityCount      Int
+  riskyAccountCount            Int
+  forecastGapCount             Int
+  fulfillmentConstraintCount   Int
+  generatedAt                  DateTime
+  immutableLineage             String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([status, generatedAt(sort: Desc)])
+}
+
+model GbaFinanceGeneralLedgerEntry {
+  financeGeneralLedgerEntryId  String   @id
+  workspaceId                  String
+  organizationId               String
+  fiscalPeriod                 String
+  journalReference             String
+  accountCode                  String
+  debitAmountCents             Float
+  creditAmountCents            Float
+  postedAt                     DateTime
+  auditReference               String
+  immutableLineage             String
+
+  @@index([workspaceId, postedAt(sort: Desc)])
+  @@index([organizationId, postedAt(sort: Desc)])
+  @@index([accountCode, postedAt(sort: Desc)])
+}
+
+model GbaFinanceChartOfAccount {
+  financeChartOfAccountId  String   @id
+  workspaceId              String
+  organizationId           String
+  accountCode              String
+  accountName              String
+  accountType              String
+  balanceCents             Float
+  updatedAt                DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, accountCode])
+  @@index([organizationId, updatedAt(sort: Desc)])
+}
+
+model GbaFinanceReceivable {
+  financeReceivableId       String   @id
+  workspaceId               String
+  organizationId            String
+  customerId                String
+  customerName              String
+  invoiceReference          String
+  outstandingAmountCents    Float
+  agingBucket               String
+  dueAt                     DateTime
+  creditExposureCents       Float
+  updatedAt                 DateTime
+  immutableLineage          String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([customerId, updatedAt(sort: Desc)])
+}
+
+model GbaFinancePayable {
+  financePayableId          String   @id
+  workspaceId               String
+  organizationId            String
+  vendorId                  String
+  vendorName                String
+  billReference             String
+  outstandingAmountCents    Float
+  dueAt                     DateTime
+  paymentPriority           String
+  updatedAt                 DateTime
+  immutableLineage          String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([vendorId, updatedAt(sort: Desc)])
+}
+
+model GbaFinanceBudget {
+  financeBudgetId      String   @id
+  workspaceId          String
+  organizationId       String
+  budgetScope          String
+  scopeReference       String
+  capexBudgetCents     Float
+  opexBudgetCents      Float
+  spentCapexCents      Float
+  spentOpexCents       Float
+  varianceCents        Float
+  period               String
+  updatedAt            DateTime
+  immutableLineage     String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([period, updatedAt(sort: Desc)])
+}
+
+model GbaFinanceProfitabilitySnapshot {
+  financeProfitabilitySnapshotId  String   @id
+  workspaceId                     String
+  organizationId                  String
+  dimension                       String
+  referenceId                     String
+  revenueCents                    Float
+  costCents                       Float
+  grossMarginPercent              Float
+  netMarginPercent                Float
+  capturedAt                      DateTime
+  immutableLineage                String
+
+  @@index([workspaceId, capturedAt(sort: Desc)])
+  @@index([organizationId, capturedAt(sort: Desc)])
+  @@index([dimension, capturedAt(sort: Desc)])
+}
+
+model GbaFinanceForecast {
+  financeForecastId         String   @id
+  workspaceId               String
+  organizationId            String
+  period                    String
+  revenueForecastCents      Float
+  expenseForecastCents      Float
+  cashFlowForecastCents     Float
+  profitForecastCents       Float
+  confidenceScore           Float
+  varianceProjectionCents   Float
+  assumptions               Json
+  generatedAt               DateTime
+  immutableLineage          String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([period, generatedAt(sort: Desc)])
+}
+
+model GbaFinanceKpi {
+  financeKpiId        String   @id
+  workspaceId         String
+  organizationId      String
+  name                String
+  value               Float
+  unit                String
+  target              Float
+  trend               Float
+  measuredAt          DateTime
+  immutableLineage    String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+  @@index([name, measuredAt(sort: Desc)])
+}
+
+model GbaFinanceRecommendation {
+  financeRecommendationId  String   @id
+  workspaceId              String
+  organizationId           String
+  category                 String
+  title                    String
+  summary                  String
+  recommendedAction        String
+  priority                 String
+  confidence               String
+  status                   String
+  sourceReference          String
+  createdAt                DateTime
+  immutableLineage         String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model GbaFinanceRecommendationReview {
+  financeRecommendationReviewId  String   @id
+  financeRecommendationId        String
+  workspaceId                    String
+  organizationId                 String
+  decision                       String
+  notes                          String?
+  reviewedBy                     String
+  reviewedAt                     DateTime
+  immutableLineage               String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([financeRecommendationId, reviewedAt(sort: Desc)])
+}
+
+model GbaFinanceExecutiveReport {
+  financeExecutiveReportId  String   @id
+  workspaceId               String
+  organizationId            String
+  period                    String
+  summary                   String
+  strategicRisks            Json
+  growthOpportunities       Json
+  createdAt                 DateTime
+  immutableLineage          String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([period, createdAt(sort: Desc)])
+}
+
+model GbaFinanceHealth {
+  financeHealthId        String   @id
+  workspaceId            String
+  organizationId         String
+  status                 String
+  overdueReceivables     Int
+  overduePayables        Int
+  budgetOverruns         Int
+  cashFlowRiskFlags      Int
+  generatedAt            DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([status, generatedAt(sort: Desc)])
+}
+
+model GbaFinanceTimelineEvent {
+  financeTimelineEventId  String   @id
+  workspaceId             String
+  organizationId          String
+  eventType               String
+  subjectId               String
+  summary                 String
+  actorId                 String
+  evidenceReferences      Json
+  createdAt               DateTime
+  immutableLineage        String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessOnboarding {
+  customerSuccessOnboardingId   String   @id
+  workspaceId                   String
+  organizationId                String
+  customerId                    String
+  customerName                  String
+  status                        String
+  implementationMilestones      Json
+  trainingProgressPercent       Float
+  documentationCompletionPercent Float
+  goLiveReadinessPercent        Float
+  adoptionCheckpointPercent     Float
+  ownerId                       String
+  updatedAt                     DateTime
+  immutableLineage              String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([customerId, updatedAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessHealth {
+  customerSuccessHealthId   String   @id
+  workspaceId               String
+  organizationId            String
+  customerId                String
+  customerName              String
+  overallHealthScore        Float
+  trendDirection            String
+  riskLevel                 String
+  productAdoptionScore      Float
+  renewalHistoryScore       Float
+  supportInteractionScore   Float
+  engagementScore           Float
+  satisfactionScore         Float
+  executiveEscalationScore  Float
+  financialStandingScore    Float
+  operationalDeliveryScore  Float
+  recommendedActions        Json
+  measuredAt                DateTime
+  immutableLineage          String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+  @@index([customerId, measuredAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessPlan {
+  customerSuccessPlanId  String   @id
+  workspaceId            String
+  organizationId         String
+  customerId             String
+  customerName           String
+  strategicObjectives    Json
+  customerGoals          Json
+  milestones             Json
+  actionItems            Json
+  reviewSchedule         String
+  successOutcomes        Json
+  updatedAt              DateTime
+  immutableLineage       String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([customerId, updatedAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessRenewal {
+  customerSuccessRenewalId   String   @id
+  workspaceId                String
+  organizationId             String
+  customerId                 String
+  customerName               String
+  contractReference          String
+  contractExpiresAt          DateTime
+  renewalProbabilityPercent  Float
+  renewalForecastCents       Float
+  churnRiskPercent           Float
+  escalationRequired         Boolean
+  recommendationSummary      String
+  updatedAt                  DateTime
+  immutableLineage           String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([contractExpiresAt, updatedAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessSatisfaction {
+  customerSuccessSatisfactionId  String   @id
+  workspaceId                    String
+  organizationId                 String
+  customerId                     String
+  customerName                   String
+  csatScore                      Float
+  npsScore                       Float
+  sentimentTrend                 String
+  surveySummary                  String
+  feedbackHighlights             Json
+  measuredAt                     DateTime
+  immutableLineage               String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+  @@index([customerId, measuredAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessSupportSignal {
+  customerSuccessSupportSignalId  String   @id
+  workspaceId                     String
+  organizationId                  String
+  customerId                      String
+  customerName                    String
+  openIssues                      Int
+  escalations                     Int
+  resolutionProgressPercent       Float
+  slaPerformancePercent           Float
+  communicationSummary            String
+  updatedAt                       DateTime
+  immutableLineage                String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([customerId, updatedAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessExpansionOpportunity {
+  customerSuccessExpansionOpportunityId  String   @id
+  workspaceId                            String
+  organizationId                         String
+  customerId                             String
+  customerName                           String
+  opportunityType                        String
+  productAdoptionGap                     String
+  growthIndicator                        String
+  projectedRevenueCents                  Float
+  confidenceScore                        Float
+  recommendationSummary                  String
+  updatedAt                              DateTime
+  immutableLineage                       String
+
+  @@index([workspaceId, updatedAt(sort: Desc)])
+  @@index([organizationId, updatedAt(sort: Desc)])
+  @@index([customerId, updatedAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessKpi {
+  customerSuccessKpiId  String   @id
+  workspaceId           String
+  organizationId        String
+  name                  String
+  value                 Float
+  unit                  String
+  target                Float
+  trend                 Float
+  measuredAt            DateTime
+  immutableLineage      String
+
+  @@index([workspaceId, measuredAt(sort: Desc)])
+  @@index([organizationId, measuredAt(sort: Desc)])
+  @@index([name, measuredAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessRecommendation {
+  customerSuccessRecommendationId  String   @id
+  workspaceId                      String
+  organizationId                   String
+  customerId                       String
+  customerName                     String
+  category                         String
+  title                            String
+  summary                          String
+  recommendedAction                String
+  priority                         String
+  confidence                       String
+  status                           String
+  sourceReference                  String
+  createdAt                        DateTime
+  immutableLineage                 String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessRecommendationReview {
+  customerSuccessRecommendationReviewId  String   @id
+  customerSuccessRecommendationId        String
+  workspaceId                            String
+  organizationId                         String
+  decision                               String
+  notes                                  String?
+  reviewedBy                             String
+  reviewedAt                             DateTime
+  immutableLineage                       String
+
+  @@index([workspaceId, reviewedAt(sort: Desc)])
+  @@index([customerSuccessRecommendationId, reviewedAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessExecutiveReport {
+  customerSuccessExecutiveReportId  String   @id
+  workspaceId                       String
+  organizationId                    String
+  period                            String
+  summary                           String
+  churnForecast                     String
+  renewalForecast                   String
+  strategicRisks                    Json
+  strategicOpportunities            Json
+  createdAt                         DateTime
+  immutableLineage                  String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+  @@index([period, createdAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessTimelineEvent {
+  customerSuccessTimelineEventId  String   @id
+  workspaceId                     String
+  organizationId                  String
+  eventType                       String
+  subjectId                       String
+  summary                         String
+  actorId                         String
+  evidenceReferences              Json
+  createdAt                       DateTime
+  immutableLineage                String
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([organizationId, createdAt(sort: Desc)])
+}
+
+model GbaCustomerSuccessAgentHealth {
+  customerSuccessAgentHealthId  String   @id
+  workspaceId                   String
+  organizationId                String
+  status                        String
+  atRiskCustomers               Int
+  renewalsAtRisk                Int
+  escalatedAccounts             Int
+  onboardingDelays              Int
+  generatedAt                   DateTime
+  immutableLineage              String
+
+  @@index([workspaceId, generatedAt(sort: Desc)])
+  @@index([organizationId, generatedAt(sort: Desc)])
+  @@index([status, generatedAt(sort: Desc)])
+}
+
+model GedEntityDefinition {
+  enterpriseEntityId String   @id
+  entityKey          String   @unique
+  entityCode         String   @unique
+  displayName        String
+  pluralName         String
+  description        String
+  stewardshipArea    String
+  lifecyclePreset    String
+  lifecycle          Json
+  authorizationBoundary String
+  consumerAgents     Json
+  relationshipKeys   Json
+  version            String
+  checksum           String
+  immutableLineage   String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  versions           GedEntityVersion[]
+
+  @@index([stewardshipArea, updatedAt(sort: Desc)])
+  @@index([authorizationBoundary, updatedAt(sort: Desc)])
+}
+
+model GedRelationshipDefinition {
+  enterpriseRelationshipId String   @id
+  relationshipKey          String   @unique
+  sourceEntityKey          String
+  targetEntityKey          String
+  relationshipType         String
+  cardinality              String
+  description              String
+  authorizationBoundary    String
+  version                  String
+  checksum                 String
+  immutableLineage         String
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([sourceEntityKey, updatedAt(sort: Desc)])
+  @@index([targetEntityKey, updatedAt(sort: Desc)])
+  @@index([authorizationBoundary, updatedAt(sort: Desc)])
+}
+
+model GedEntityVersion {
+  enterpriseEntityVersionId String   @id
+  entityKey                String
+  version                  String
+  checksum                 String
+  definitionSnapshot       Json
+  immutableLineage         String
+  createdAt                DateTime @default(now())
+
+  entity                   GedEntityDefinition @relation(fields: [entityKey], references: [entityKey], onDelete: Cascade)
+
+  @@unique([entityKey, version])
+  @@index([entityKey, createdAt(sort: Desc)])
+}
+
+model GedValidationResult {
+  enterpriseValidationId String   @id
+  scope                 String
+  status                String
+  summary               String
+  issues                Json
+  immutableLineage      String
+  createdAt             DateTime @default(now())
+
+  @@index([status, createdAt(sort: Desc)])
+}
+
+model GedHealthSnapshot {
+  enterpriseHealthId     String   @id
+  status                String
+  totalEntities         Int
+  totalRelationships    Int
+  validationIssueCount  Int
+  duplicateOwnershipCount Int
+  generatedAt           DateTime @default(now())
+  immutableLineage      String
+
+  @@index([status, generatedAt(sort: Desc)])
+}
+
+model GedAuditLineage {
+  enterpriseAuditLineageId String   @id
+  entityKey               String
+  actorId                 String
+  eventType               String
+  summary                 String
+  relatedEntityKeys       Json
+  occurredAt              DateTime
+  immutableLineage        String
+
+  @@index([entityKey, occurredAt(sort: Desc)])
+  @@index([eventType, occurredAt(sort: Desc)])
+}

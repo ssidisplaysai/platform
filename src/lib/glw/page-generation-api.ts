@@ -18,10 +18,13 @@ import {
   type GlwJobFilter,
 } from "./jobs";
 import { createGlwN8nTransport } from "./n8n";
+import { getGenesisEventStore } from "@/platform/gop/runtime/event-store";
+import type { GenesisEventStore } from "@/platform/gop/event-store";
 
 export type GlwApiDependencies = {
   repository?: ReturnType<typeof createPrismaGlwJobRepository>;
   workflow?: ReturnType<typeof createGlwN8nTransport>;
+  eventStore?: GenesisEventStore | null;
   appUrl?: string;
   webhookSecret?: string;
   sessionLoader?: typeof getGlwSession;
@@ -31,6 +34,7 @@ function getDependencies(dependencies?: GlwApiDependencies) {
   return {
     repository: dependencies?.repository ?? createPrismaGlwJobRepository(),
     workflow: dependencies?.workflow ?? createGlwN8nTransport(),
+    eventStore: dependencies?.eventStore ?? (process.env.DATABASE_URL ? getGenesisEventStore() : null),
     appUrl: dependencies?.appUrl ?? process.env.GLW_APP_URL ?? "http://localhost:3000",
     webhookSecret: dependencies?.webhookSecret ?? process.env.GLW_N8N_WEBHOOK_SECRET ?? "",
     sessionLoader: dependencies?.sessionLoader ?? getGlwSession,
@@ -98,7 +102,7 @@ export async function handleCreatePageGenerationJob(
     return unauthorizedResponse();
   }
 
-  const { repository, workflow, appUrl } = getDependencies(dependencies);
+  const { repository, workflow, eventStore, appUrl } = getDependencies(dependencies);
   const body = (await request.json().catch(() => null)) as Partial<GlwPageGenerationRequest> | null;
 
   if (!body) {
@@ -115,6 +119,7 @@ export async function handleCreatePageGenerationJob(
     const result = await submitGlwPageGenerationJob(validation.value, {
       repository,
       workflow,
+      eventStore,
       appUrl,
     });
 
@@ -155,7 +160,7 @@ export async function handleRetryJob(
     return unauthorizedResponse();
   }
 
-  const { repository, workflow, appUrl } = getDependencies(dependencies);
+  const { repository, workflow, eventStore, appUrl } = getDependencies(dependencies);
   const currentJob = await repository.findById(jobId);
 
   if (!currentJob) {
@@ -170,6 +175,7 @@ export async function handleRetryJob(
     const result = await retryGlwPageGenerationJob(jobId, {
       repository,
       workflow,
+      eventStore,
       appUrl,
     });
 
@@ -190,7 +196,7 @@ export async function handleJobCallback(
   request: Request,
   dependencies?: GlwApiDependencies,
 ): Promise<NextResponse> {
-  const { repository, webhookSecret } = getDependencies(dependencies);
+  const { repository, eventStore, webhookSecret } = getDependencies(dependencies);
 
   if (!callbackAuthValid(request, webhookSecret)) {
     return unauthorizedResponse();
@@ -220,8 +226,11 @@ export async function handleJobCallback(
     executionId,
     status: normalizedStatus,
     title: typeof body.title === "string" ? body.title : undefined,
+    wordpressPageId: body.wordpressPageId === undefined ? undefined : body.wordpressPageId,
     wordpressUrl: typeof body.wordpressUrl === "string" ? body.wordpressUrl : undefined,
     wordpressPostId: body.wordpressPostId === undefined ? undefined : body.wordpressPostId,
+    featuredImageUrl: typeof body.featuredImageUrl === "string" ? body.featuredImageUrl : undefined,
+    executionTimeMs: typeof body.executionTimeMs === "number" ? body.executionTimeMs : undefined,
     error: body.error && typeof body.error.message === "string"
       ? {
           message: body.error.message,
@@ -232,7 +241,7 @@ export async function handleJobCallback(
   };
 
   try {
-    const job = await applyGlwJobCallback(normalizedPayload, repository);
+    const job = await applyGlwJobCallback(normalizedPayload, repository, eventStore);
     return jsonResponse({ job });
   } catch (error) {
     const message = error instanceof Error ? error.message : "The callback payload could not be processed.";
@@ -242,6 +251,13 @@ export async function handleJobCallback(
 
     return conflictResponse(message);
   }
+}
+
+export async function handleRetryCallback(
+  request: Request,
+  dependencies?: GlwApiDependencies,
+): Promise<NextResponse> {
+  return handleJobCallback(request, dependencies);
 }
 
 export async function listPageGenerationJobs(
@@ -275,10 +291,10 @@ export async function listPageGenerationJobs(
       job.id,
       job.title,
       job.input.site.name,
-      job.input.page.product,
+      job.input.page.title,
+      job.input.page.targetSlug,
       job.input.page.primaryKeyword,
-      job.input.page.city ?? "",
-      job.input.page.state ?? "",
+      ...(job.input.page.secondaryKeywords ?? []),
     ].join(" ").toLowerCase();
 
     return haystack.includes(query);

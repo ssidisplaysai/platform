@@ -1,0 +1,36 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [
+    "next-env.d.ts",
+    "src/lib/gmp/recommendation-models.ts",
+    "src/lib/gmp/recommendation-repository.ts",
+    "src/lib/gmp/recommendation-services.ts",
+    "src/lib/gmp/recommendation-api.ts",
+    "src/components/gmp/gmp-analytics-workspace.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/access.ts",
+    "src/app/glw/(protected)/projects/[id]/analytics/recommendations/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/recommendations/attribution/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/recommendations/decision-support/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/recommendations/catalog/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/recommendations/[recommendationId]/page.tsx",
+    "src/app/api/gmp/recommendations/route.ts",
+    "src/app/api/gmp/recommendations/[id]/route.ts",
+    "src/app/api/gmp/recommendations/catalog/route.ts",
+    "src/app/api/gmp/recommendations/health/route.ts",
+    "src/app/api/gmp/recommendations/replay/route.ts",
+    "src/app/api/gmp/recommendations/review/route.ts",
+    "src/app/api/gmp/recommendations/dismiss/route.ts",
+    "src/app/api/gmp/attribution/route.ts",
+    "src/app/api/gmp/decision-support/route.ts",
+    "src/platform/gop/auth/policies.ts",
+    "tests/gmp/gmp-recommendation-services.test.ts",
+    "tests/gmp/gmp-recommendation-api.test.ts",
+    "tests/gmp/gmp-recommendation-ui.test.tsx",
+    "tests/gmp/gmp-analytics-ui.test.tsx"
+  ],
+  "include": [],
+  "exclude": [
+    "node_modules",
+    "tools/genesis/templates/**"
+  ]
+}

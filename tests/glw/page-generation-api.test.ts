@@ -54,6 +54,23 @@ function buildRequest(body: unknown, headers?: HeadersInit): Request {
   });
 }
 
+function buildValidPageRequest(overrides?: Record<string, unknown>) {
+  return {
+    siteId: "led-display-warehouse",
+    title: "LED Wall Rental Package",
+    targetSlug: "led-wall-rental-package",
+    primaryKeyword: "led wall rental",
+    secondaryKeywords: ["event led wall", "mobile led display"],
+    wordCount: 1500,
+    tone: "Confident",
+    audience: "Event planners",
+    callToAction: "Request a same-day quote",
+    category: "Rentals",
+    status: "draft",
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   process.env = { ...originalEnv };
   setRequiredEnv();
@@ -68,15 +85,22 @@ describe("GLW page generation validation", () => {
   it("rejects incomplete page requests", () => {
     const result = validatePageGenerationRequest({
       siteId: "led-display-warehouse",
-      product: "",
+      title: "",
+      targetSlug: "",
       category: "",
       primaryKeyword: "",
-      publishingMode: "draft",
+      secondaryKeywords: [],
+      wordCount: 10,
+      tone: "",
+      audience: "",
+      callToAction: "",
+      status: "draft",
     });
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.errors.product).toBeDefined();
+      expect(result.errors.title).toBeDefined();
+      expect(result.errors.targetSlug).toBeDefined();
       expect(result.errors.category).toBeDefined();
       expect(result.errors.primaryKeyword).toBeDefined();
     }
@@ -85,17 +109,23 @@ describe("GLW page generation validation", () => {
   it("parses form data into a validated request", () => {
     const formData = new FormData();
     formData.set("siteId", "led-display-warehouse");
-    formData.set("product", "LED Wall Rental Package");
+    formData.set("title", "LED Wall Rental Package");
+    formData.set("targetSlug", "led-wall-rental-package");
     formData.set("category", "Rentals");
     formData.set("primaryKeyword", "LED wall rental");
-    formData.set("publishingMode", "draft");
+    formData.set("secondaryKeywords", "event led wall, mobile led display");
+    formData.set("wordCount", "1500");
+    formData.set("tone", "Confident");
+    formData.set("audience", "Event planners");
+    formData.set("callToAction", "Request a same-day quote");
+    formData.set("status", "draft");
 
     const result = parsePageGenerationFormData(formData);
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.siteId).toBe("led-display-warehouse");
-      expect(result.value.publishingMode).toBe("draft");
+      expect(result.value.status).toBe("draft");
     }
   });
 });
@@ -130,16 +160,7 @@ describe("GLW API auth and creation", () => {
       })),
     };
 
-    const response = await handleCreatePageGenerationJob(buildRequest({
-      siteId: "led-display-warehouse",
-      product: "LED Wall Rental Package",
-      category: "Rentals",
-      state: "California",
-      city: "Los Angeles",
-      primaryKeyword: "LED wall rental",
-      additionalInstructions: "Write for operators.",
-      publishingMode: "draft",
-    }), {
+    const response = await handleCreatePageGenerationJob(buildRequest(buildValidPageRequest()), {
       repository,
       workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
       appUrl: "http://localhost:3000",
@@ -167,10 +188,35 @@ describe("GLW API auth and creation", () => {
       type: "page_generation",
       site: { id: "led-display-warehouse", name: "LED Display Warehouse" },
       page: {
-        product: "LED Wall Rental Package",
-        category: "Rentals",
+        title: "LED Wall Rental Package",
+        targetSlug: "led-wall-rental-package",
         primaryKeyword: "LED wall rental",
-        publishingMode: "draft",
+        secondaryKeywords: ["event led wall", "mobile led display"],
+        wordCount: 1500,
+        tone: "Confident",
+        audience: "Event planners",
+        callToAction: "Request a same-day quote",
+        category: "Rentals",
+        status: "draft",
+      },
+      promptData: {
+        tone: "Confident",
+        audience: "Event planners",
+        callToAction: "Request a same-day quote",
+      },
+      seoSettings: {
+        targetSlug: "led-wall-rental-package",
+        primaryKeyword: "LED wall rental",
+        secondaryKeywords: ["event led wall", "mobile led display"],
+        category: "Rentals",
+      },
+      publishingSettings: {
+        status: "draft",
+        wordCount: 1500,
+      },
+      imageSettings: {
+        generateFeaturedImage: true,
+        style: "editorial",
       },
     })).rejects.toThrow(/returned 500/);
 
@@ -181,13 +227,7 @@ describe("GLW API auth and creation", () => {
       }),
     };
 
-    const response = await handleCreatePageGenerationJob(buildRequest({
-      siteId: "led-display-warehouse",
-      product: "LED Wall Rental Package",
-      category: "Rentals",
-      primaryKeyword: "LED wall rental",
-      publishingMode: "draft",
-    }), {
+    const response = await handleCreatePageGenerationJob(buildRequest(buildValidPageRequest()), {
       repository,
       workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
       appUrl: "http://localhost:3000",
@@ -225,13 +265,9 @@ describe("GLW callback and retry behavior", () => {
       siteId: "led-display-warehouse",
       title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
       input: createGlwJobInput({
-        siteId: "led-display-warehouse",
-        product: "LED Wall Rental Package",
-        category: "Rentals",
-        state: "California",
-        city: "Los Angeles",
-        primaryKeyword: "LED wall rental",
-        publishingMode: "draft",
+        ...buildValidPageRequest({
+          title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        }),
       }, "http://localhost/api/glw/jobs/callback"),
       result: {
         executionId: "exec_123",
@@ -271,11 +307,9 @@ describe("GLW callback and retry behavior", () => {
       siteId: "led-display-warehouse",
       title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
       input: createGlwJobInput({
-        siteId: "led-display-warehouse",
-        product: "LED Wall Rental Package",
-        category: "Rentals",
-        primaryKeyword: "LED wall rental",
-        publishingMode: "draft",
+        ...buildValidPageRequest({
+          title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        }),
       }, "http://localhost/api/glw/jobs/callback"),
       result: {
         executionId: "exec_123",
@@ -310,11 +344,9 @@ describe("GLW callback and retry behavior", () => {
       siteId: "led-display-warehouse",
       title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
       input: createGlwJobInput({
-        siteId: "led-display-warehouse",
-        product: "LED Wall Rental Package",
-        category: "Rentals",
-        primaryKeyword: "LED wall rental",
-        publishingMode: "draft",
+        ...buildValidPageRequest({
+          title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        }),
       }, "http://localhost/api/glw/jobs/callback"),
       result: null,
       error: { message: "Workflow failed" },
@@ -354,11 +386,9 @@ describe("GLW callback and retry behavior", () => {
       siteId: "led-display-warehouse",
       title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
       input: createGlwJobInput({
-        siteId: "led-display-warehouse",
-        product: "LED Wall Rental Package",
-        category: "Rentals",
-        primaryKeyword: "LED wall rental",
-        publishingMode: "draft",
+        ...buildValidPageRequest({
+          title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        }),
       }, "http://localhost/api/glw/jobs/callback"),
       result: {
         executionId: "exec_done",
@@ -397,12 +427,16 @@ describe("GLW callback and retry behavior", () => {
 
     const result = await submitGlwPageGenerationJob({
       siteId: "led-display-warehouse",
-      product: "Projection Screen",
+      title: "Projection Screen Chicago - Rentals in Chicago, IL",
+      targetSlug: "projection-screen-chicago",
+      secondaryKeywords: ["projection screen rental", "led projection screen"],
+      wordCount: 1800,
+      tone: "Authoritative",
+      audience: "Corporate event teams",
+      callToAction: "Book your projection screen now",
       category: "Rentals",
-      state: "Illinois",
-      city: "Chicago",
       primaryKeyword: "projection screen rental",
-      publishingMode: "publish",
+      status: "publish",
     }, {
       repository,
       workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
@@ -443,11 +477,9 @@ describe("GLW callback and retry behavior", () => {
       siteId: "led-display-warehouse",
       title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
       input: createGlwJobInput({
-        siteId: "led-display-warehouse",
-        product: "LED Wall Rental Package",
-        category: "Rentals",
-        primaryKeyword: "LED wall rental",
-        publishingMode: "draft",
+        ...buildValidPageRequest({
+          title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        }),
       }, "http://localhost/api/glw/jobs/callback"),
       result: null,
       error: { message: "Workflow failed" },

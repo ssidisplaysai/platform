@@ -11,6 +11,9 @@ import {
   normalizeGlwJobError,
 } from "./jobs";
 import { GlwN8nResponse, GlwN8nTransport } from "./n8n";
+import type { GenesisEventStore } from "@/platform/gop/event-store";
+import { backfillGlwJobEvents, emitGlwJobLifecycleEvent } from "@/platform/gop/adapters/glw-events";
+import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -26,8 +29,11 @@ function buildResultFromResponse(response: GlwN8nResponse): GlwJobRecord["result
       executionId: response.executionId,
       status: "COMPLETE",
       title: response.title,
+      wordpressPageId: response.wordpressPageId ?? response.wordpressPostId,
       wordpressUrl: response.wordpressUrl,
       wordpressPostId: response.wordpressPostId,
+      featuredImageUrl: response.featuredImageUrl,
+      executionTimeMs: response.executionTimeMs,
     };
   }
 
@@ -50,6 +56,7 @@ export type GlwPageGenerationDependencies = {
   repository: GlwJobRepository;
   workflow: GlwN8nTransport;
   appUrl: string;
+  eventStore?: GenesisEventStore | null;
   now?: () => Date;
 };
 
@@ -84,9 +91,30 @@ export async function submitGlwPageGenerationJob(
   });
 
   const queuedJob = await dependencies.repository.create(createdJob);
+  await backfillGlwJobEvents(dependencies.eventStore ?? null, queuedJob);
+  const orchestration = getGenesisOrchestrationRuntime();
+  orchestration.createGlwExecutionForJob({
+    jobId: queuedJob.id,
+    jobType: queuedJob.type,
+    title: queuedJob.title,
+    siteId: queuedJob.siteId,
+    retryOfJobId,
+  });
+
   const startingJob = await dependencies.repository.update(queuedJob.id, {
     status: "STARTING",
     startedAt,
+  });
+  await emitGlwJobLifecycleEvent(dependencies.eventStore ?? null, startingJob, {
+    type: "STARTED",
+    label: "Started",
+    stage: "worker_start",
+    message: "Workflow execution started.",
+    idempotencyKey: `${startingJob.id}:STARTED:${startingJob.updatedAt}`,
+  });
+  orchestration.syncGlwExecutionState({
+    jobId: startingJob.id,
+    status: startingJob.status,
   });
 
   try {
@@ -98,7 +126,12 @@ export async function submitGlwPageGenerationJob(
         name: startingJob.input.site.name,
       },
       page: startingJob.input.page,
+      promptData: startingJob.input.promptData,
+      seoSettings: startingJob.input.seoSettings,
+      publishingSettings: startingJob.input.publishingSettings,
+      imageSettings: startingJob.input.imageSettings,
       callbackUrl,
+      authToken: process.env.GLW_N8N_WEBHOOK_SECRET,
     });
 
     if (response.kind === "failed") {
@@ -108,6 +141,19 @@ export async function submitGlwPageGenerationJob(
         result: null,
         error: response.error,
         externalExecutionId: response.executionId ?? null,
+      });
+      await emitGlwJobLifecycleEvent(dependencies.eventStore ?? null, failedJob, {
+        type: "FAILED",
+        label: "Failed",
+        stage: "workflow_error",
+        message: response.error.message,
+        idempotencyKey: `${failedJob.id}:FAILED:${failedJob.updatedAt}`,
+      });
+      orchestration.syncGlwExecutionState({
+        jobId: failedJob.id,
+        status: failedJob.status,
+        correlationId: failedJob.externalExecutionId,
+        errorMessage: failedJob.error?.message,
       });
 
       return {
@@ -125,6 +171,19 @@ export async function submitGlwPageGenerationJob(
         error: null,
         externalExecutionId: response.executionId,
       });
+      await emitGlwJobLifecycleEvent(dependencies.eventStore ?? null, completedJob, {
+        type: "SUCCEEDED",
+        label: "Succeeded",
+        stage: "completed",
+        message: "Workflow completed synchronously.",
+        idempotencyKey: `${completedJob.id}:COMPLETE:${completedJob.updatedAt}`,
+      });
+      orchestration.syncGlwExecutionState({
+        jobId: completedJob.id,
+        status: completedJob.status,
+        correlationId: completedJob.externalExecutionId,
+        result: completedJob.result as Record<string, unknown> | null,
+      });
 
       return {
         job: completedJob,
@@ -137,6 +196,19 @@ export async function submitGlwPageGenerationJob(
       result: buildResultFromResponse(response),
       error: null,
       externalExecutionId: response.executionId,
+    });
+    await emitGlwJobLifecycleEvent(dependencies.eventStore ?? null, runningJob, {
+      type: "STAGE_CHANGED",
+      label: "Stage Changed",
+      stage: "accepted",
+      message: "Workflow accepted by n8n.",
+      idempotencyKey: `${runningJob.id}:${runningJob.status}:${runningJob.updatedAt}`,
+    });
+    orchestration.syncGlwExecutionState({
+      jobId: runningJob.id,
+      status: runningJob.status,
+      correlationId: runningJob.externalExecutionId,
+      result: runningJob.result as Record<string, unknown> | null,
     });
 
     return {
@@ -158,6 +230,19 @@ export async function submitGlwPageGenerationJob(
       }
 
       throw error;
+    });
+    await emitGlwJobLifecycleEvent(dependencies.eventStore ?? null, failedJob, {
+      type: "FAILED",
+      label: "Failed",
+      stage: "workflow_exception",
+      message: workflowError.message,
+      idempotencyKey: `${failedJob.id}:FAILED:${failedJob.updatedAt}`,
+    });
+    orchestration.syncGlwExecutionState({
+      jobId: failedJob.id,
+      status: failedJob.status,
+      correlationId: failedJob.externalExecutionId,
+      errorMessage: failedJob.error?.message,
     });
 
     return {
@@ -191,13 +276,16 @@ export async function retryGlwPageGenerationJob(
   return submitGlwPageGenerationJob(
     {
       siteId: existingJob.input.site.id,
-      product: existingJob.input.page.product,
-      category: existingJob.input.page.category,
-      state: existingJob.input.page.state,
-      city: existingJob.input.page.city,
+      title: existingJob.input.page.title,
+      targetSlug: existingJob.input.page.targetSlug,
       primaryKeyword: existingJob.input.page.primaryKeyword,
-      additionalInstructions: existingJob.input.page.additionalInstructions,
-      publishingMode: existingJob.input.page.publishingMode,
+      secondaryKeywords: existingJob.input.page.secondaryKeywords,
+      wordCount: existingJob.input.page.wordCount,
+      tone: existingJob.input.page.tone,
+      audience: existingJob.input.page.audience,
+      callToAction: existingJob.input.page.callToAction,
+      category: existingJob.input.page.category,
+      status: existingJob.input.page.status,
     },
     dependencies,
     existingJob.id,
@@ -207,7 +295,9 @@ export async function retryGlwPageGenerationJob(
 export async function applyGlwJobCallback(
   payload: GlwPageGenerationCallbackPayload,
   repository: GlwJobRepository,
+  eventStore?: GenesisEventStore | null,
 ): Promise<GlwJobRecord> {
+  const orchestration = getGenesisOrchestrationRuntime();
   const existingJob = await repository.findById(payload.jobId);
 
   if (!existingJob) {
@@ -222,14 +312,21 @@ export async function applyGlwJobCallback(
     throw new Error(`Invalid GLW job status transition from ${existingJob.status} to ${payload.status}.`);
   }
 
+  const normalizedTitle = payload.title ?? existingJob.title;
+  const normalizedWordpressIdentifier = payload.wordpressPageId ?? payload.wordpressPostId;
+  const normalizedWordpressPostId = payload.wordpressPostId ?? normalizedWordpressIdentifier;
+
   const sameExecution = existingJob.externalExecutionId === payload.executionId;
   const sameStatus = existingJob.status === payload.status;
   const sameResult =
     existingJob.result?.executionId === payload.executionId &&
     existingJob.result?.status === payload.status &&
-    existingJob.result?.title === payload.title &&
+    existingJob.result?.title === normalizedTitle &&
+    existingJob.result?.wordpressPageId === normalizedWordpressIdentifier &&
     existingJob.result?.wordpressUrl === payload.wordpressUrl &&
-    existingJob.result?.wordpressPostId === payload.wordpressPostId;
+    existingJob.result?.wordpressPostId === normalizedWordpressPostId &&
+    existingJob.result?.featuredImageUrl === payload.featuredImageUrl &&
+    existingJob.result?.executionTimeMs === payload.executionTimeMs;
   const sameError =
     existingJob.error?.message === payload.error?.message &&
     existingJob.error?.step === payload.error?.step &&
@@ -239,25 +336,54 @@ export async function applyGlwJobCallback(
     return existingJob;
   }
 
+  await emitGlwJobLifecycleEvent(eventStore ?? null, existingJob, {
+    type: "CALLBACK_RECEIVED",
+    label: "Callback Received",
+    stage: "callback",
+    message: "Callback payload accepted for processing.",
+    idempotencyKey: `${existingJob.id}:CALLBACK:${payload.executionId}:${payload.status}`,
+    correlationId: payload.executionId,
+  });
+
   if (payload.status === "COMPLETE") {
-    if (!payload.wordpressUrl || payload.wordpressPostId === undefined || payload.wordpressPostId === null) {
+    const wordpressIdentifier = normalizedWordpressIdentifier;
+
+    if (!payload.wordpressUrl || wordpressIdentifier === undefined || wordpressIdentifier === null) {
       throw new Error("Completed callback payload must include a WordPress URL and post identifier.");
     }
 
-    return repository.update(existingJob.id, {
+    const updated = await repository.update(existingJob.id, {
       status: "COMPLETE",
-      title: payload.title ?? existingJob.title,
+      title: normalizedTitle,
       externalExecutionId: payload.executionId,
       completedAt: existingJob.completedAt ?? nowIso(),
       result: {
         executionId: payload.executionId,
         status: "COMPLETE",
-        title: payload.title ?? existingJob.title,
+        title: normalizedTitle,
+        wordpressPageId: wordpressIdentifier,
         wordpressUrl: payload.wordpressUrl,
-        wordpressPostId: payload.wordpressPostId,
+        wordpressPostId: normalizedWordpressPostId,
+        featuredImageUrl: payload.featuredImageUrl,
+        executionTimeMs: payload.executionTimeMs,
       },
       error: null,
     });
+    await emitGlwJobLifecycleEvent(eventStore ?? null, updated, {
+      type: "SUCCEEDED",
+      label: "Succeeded",
+      stage: "completed",
+      message: "Callback marked job as complete.",
+      idempotencyKey: `${updated.id}:COMPLETE:${updated.updatedAt}`,
+      correlationId: payload.executionId,
+    });
+    orchestration.syncGlwExecutionState({
+      jobId: updated.id,
+      status: updated.status,
+      correlationId: payload.executionId,
+      result: updated.result as Record<string, unknown> | null,
+    });
+    return updated;
   }
 
   if (payload.status === "FAILED") {
@@ -265,27 +391,56 @@ export async function applyGlwJobCallback(
       throw new Error("Failed callback payload must include an error.");
     }
 
-    return repository.update(existingJob.id, {
+    const updated = await repository.update(existingJob.id, {
       status: "FAILED",
       externalExecutionId: payload.executionId,
       completedAt: existingJob.completedAt ?? nowIso(),
       result: existingJob.result,
       error: payload.error,
     });
+    await emitGlwJobLifecycleEvent(eventStore ?? null, updated, {
+      type: "FAILED",
+      label: "Failed",
+      stage: payload.error.step ?? "callback",
+      message: payload.error.message,
+      idempotencyKey: `${updated.id}:FAILED:${updated.updatedAt}`,
+      correlationId: payload.executionId,
+    });
+    orchestration.syncGlwExecutionState({
+      jobId: updated.id,
+      status: updated.status,
+      correlationId: payload.executionId,
+      errorMessage: updated.error?.message,
+      result: updated.result as Record<string, unknown> | null,
+    });
+    return updated;
   }
 
-  return repository.update(existingJob.id, {
+  const updated = await repository.update(existingJob.id, {
     status: payload.status,
     externalExecutionId: payload.executionId,
     startedAt: existingJob.startedAt ?? nowIso(),
-    completedAt: payload.status === "COMPLETE" || payload.status === "FAILED"
-      ? (existingJob.completedAt ?? nowIso())
-      : existingJob.completedAt,
+    completedAt: existingJob.completedAt,
     result: {
       executionId: payload.executionId,
       status: payload.status,
-      title: payload.title ?? existingJob.title,
+      title: normalizedTitle,
     },
     error: null,
   });
+  await emitGlwJobLifecycleEvent(eventStore ?? null, updated, {
+    type: "STAGE_CHANGED",
+    label: "Stage Changed",
+    stage: payload.status.toLowerCase(),
+    message: `Callback advanced job to ${payload.status}.`,
+    idempotencyKey: `${updated.id}:${updated.status}:${updated.updatedAt}`,
+    correlationId: payload.executionId,
+  });
+  orchestration.syncGlwExecutionState({
+    jobId: updated.id,
+    status: updated.status,
+    correlationId: payload.executionId,
+    result: updated.result as Record<string, unknown> | null,
+  });
+  return updated;
 }

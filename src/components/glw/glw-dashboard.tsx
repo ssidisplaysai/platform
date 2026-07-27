@@ -1,3 +1,7 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { EmptyState } from "./empty-state";
 import { DataTable } from "./data-table";
 import { MetricCard } from "./metric-card";
@@ -46,35 +50,78 @@ function formatAverageDuration(durationMs: number): string {
 }
 
 export function GlwDashboard({ metrics, recentJobs }: GlwDashboardProps) {
-  const dashboardMetrics = [
+  const [liveMetrics, setLiveMetrics] = useState(metrics);
+  const [liveRecentJobs, setLiveRecentJobs] = useState(recentJobs);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const poll = async () => {
+      const response = await fetch("/api/glw/dashboard?limit=20", {
+        credentials: "include",
+        cache: "no-store",
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        return;
+      }
+
+      const payload = await response.json().catch(() => null) as {
+        metrics?: GlwDashboardProps["metrics"];
+        recentJobs?: GlwJobRecord[];
+      } | null;
+
+      if (!payload || cancelled) {
+        return;
+      }
+
+      if (payload.metrics) {
+        setLiveMetrics(payload.metrics);
+      }
+
+      if (payload.recentJobs) {
+        setLiveRecentJobs(payload.recentJobs);
+      }
+    };
+
+    poll();
+    const interval = window.setInterval(poll, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const dashboardMetrics = useMemo(() => [
     {
       label: "Total Jobs",
-      value: String(metrics.total),
+      value: String(liveMetrics.total),
       detail: "All tracked page-generation jobs.",
     },
     {
       label: "Running Jobs",
-      value: String(metrics.active),
+      value: String(liveMetrics.active),
       detail: "Queued or in-progress page workflows.",
     },
     {
       label: "Completed Jobs",
-      value: String(metrics.complete),
+      value: String(liveMetrics.complete),
       detail: "Successfully published page outputs.",
     },
     {
       label: "Failed Jobs",
-      value: String(metrics.failed),
+      value: String(liveMetrics.failed),
       detail: "Jobs requiring operator retry or correction.",
     },
     {
       label: "Average Job Time",
-      value: formatAverageDuration(metrics.avgDurationMs),
+      value: formatAverageDuration(liveMetrics.avgDurationMs),
       detail: "Average across completed jobs.",
     },
-  ];
+  ], [liveMetrics]);
 
-  const rows = recentJobs.map((job) => ({
+  const rows = liveRecentJobs.map((job) => ({
     id: job.id,
     status: toBadgeStatus(job),
     type: "Page",
@@ -93,12 +140,12 @@ export function GlwDashboard({ metrics, recentJobs }: GlwDashboardProps) {
         description="Daily operating view for content generation, queue health, and recent production activity."
         actions={
           <>
-            <button
-              type="button"
+            <Link
+              href="/glw/pages"
               className="rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
             >
               Generate Page
-            </button>
+            </Link>
             <button
               type="button"
               className="rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
@@ -218,15 +265,15 @@ export function GlwDashboard({ metrics, recentJobs }: GlwDashboardProps) {
             <div className="mt-5 grid gap-3 text-sm text-zinc-600">
               <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
                 <span>Running jobs</span>
-                <span className="font-medium text-zinc-950">{metrics.active}</span>
+                <span className="font-medium text-zinc-950">{liveMetrics.active}</span>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
                 <span>Failed jobs</span>
-                <span className="font-medium text-zinc-950">{metrics.failed}</span>
+                <span className="font-medium text-zinc-950">{liveMetrics.failed}</span>
               </div>
               <div className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3">
                 <span>Average job time</span>
-                <span className="font-medium text-zinc-950">{formatAverageDuration(metrics.avgDurationMs)}</span>
+                <span className="font-medium text-zinc-950">{formatAverageDuration(liveMetrics.avgDurationMs)}</span>
               </div>
             </div>
           </article>

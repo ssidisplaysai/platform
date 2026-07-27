@@ -1,0 +1,7 @@
+import { GbaExecutiveWorkspace } from "@/components/gba/gba-executive-workspace";
+import { resolveGbaExecutivePermissions } from "../access";
+
+export default async function ExecutiveHealthPage() {
+  const permissions = await resolveGbaExecutivePermissions("/glw/executive/health");
+  return <GbaExecutiveWorkspace mode="health" permissions={permissions} />;
+}

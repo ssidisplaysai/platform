@@ -1,0 +1,5 @@
+import { handleMarketingTimeline } from "@/lib/gba/marketing-api";
+
+export async function GET(request: Request) {
+  return handleMarketingTimeline(request);
+}

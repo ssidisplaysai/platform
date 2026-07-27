@@ -4,7 +4,7 @@ import { createPrismaGlwJobRepository } from "@/lib/glw/job-repository";
 export default async function GlwPagesPage() {
   const repository = createPrismaGlwJobRepository();
   const initialJobs = await repository.findRecentPageGenerationJobs(25);
-  const initialSelectedJob = initialJobs[0] ?? null;
+  const initialSelectedJob = null;
 
   return (
     <GlwPageGenerationWorkspace

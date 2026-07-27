@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [
+    "next-env.d.ts",
+    "src/lib/gmp/analytics-models.ts",
+    "src/lib/gmp/analytics-repository.ts",
+    "src/lib/gmp/analytics-adapters.ts",
+    "src/lib/gmp/analytics-services.ts",
+    "src/lib/gmp/analytics-api.ts",
+    "src/components/gmp/gmp-analytics-workspace.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/access.ts",
+    "src/app/glw/(protected)/projects/[id]/analytics/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/overview/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/sources/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/collections/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/analytics/performance/page.tsx",
+    "src/app/api/gmp/analytics/sources/route.ts",
+    "src/app/api/gmp/analytics/sources/[id]/route.ts",
+    "src/app/api/gmp/analytics/sources/[id]/health/route.ts",
+    "src/app/api/gmp/analytics/collections/route.ts",
+    "src/app/api/gmp/analytics/snapshots/route.ts",
+    "src/app/api/gmp/analytics/snapshots/[id]/route.ts",
+    "tests/gmp/gmp-analytics-services.test.ts",
+    "tests/gmp/gmp-analytics-api.test.ts"
+  ],
+  "include": [],
+  "exclude": [
+    "node_modules",
+    "tools/genesis/templates/**"
+  ]
+}

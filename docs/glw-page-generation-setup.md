@@ -61,15 +61,37 @@ The GLW server sends a normalized JSON payload to the configured webhook:
     "name": "LED Display Warehouse"
   },
   "page": {
-    "product": "...",
-    "category": "...",
-    "state": "...",
-    "city": "...",
+    "title": "...",
+    "targetSlug": "...",
     "primaryKeyword": "...",
-    "additionalInstructions": "...",
-    "publishingMode": "draft",
+    "secondaryKeywords": ["...", "..."],
+    "wordCount": 1500,
+    "tone": "...",
+    "audience": "...",
+    "callToAction": "...",
+    "category": "...",
+    "status": "draft"
+  },
+  "promptData": {
+    "tone": "...",
+    "audience": "...",
+    "callToAction": "..."
+  },
+  "seoSettings": {
+    "targetSlug": "...",
+    "primaryKeyword": "...",
+    "secondaryKeywords": ["...", "..."],
+    "category": "..."
+  },
+  "publishingSettings": {
+    "status": "draft",
     "wordCount": 1500
   },
+  "imageSettings": {
+    "generateFeaturedImage": true,
+    "style": "editorial"
+  },
+  "authToken": "<GLW_N8N_WEBHOOK_SECRET>",
   "callbackUrl": "http://localhost:3000/api/glw/jobs/callback"
 }
 ```
@@ -111,8 +133,11 @@ If the workflow accepts the job and finishes later, the server can receive a cal
   "executionId": "exec_123",
   "status": "COMPLETE",
   "title": "LED Wall Rental Package - Rentals in Los Angeles, CA",
+  "wordpressPageId": 123,
   "wordpressUrl": "https://example.com/led-wall-rental-package",
   "wordpressPostId": 123,
+  "featuredImageUrl": "https://example.com/wp-content/uploads/2026/cover.png",
+  "executionTimeMs": 42890,
   "error": {
     "message": "...",
     "step": "..."
@@ -128,6 +153,7 @@ Callback constraints:
 - `status=COMPLETE` requires `wordpressUrl` and `wordpressPostId`.
 - `status=FAILED` requires an `error.message`.
 - Execution id must match any previously tracked execution id for the job.
+- Callback retries can be replayed through `/api/glw/jobs/callback/retry` using the same payload and bearer auth.
 
 ## Retry Lineage
 

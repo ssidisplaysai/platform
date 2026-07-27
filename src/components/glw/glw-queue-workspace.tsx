@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { DataTable } from "./data-table";
 import { EmptyState } from "./empty-state";
 import { PageContainer } from "./page-container";
@@ -52,7 +52,7 @@ export function GlwQueueWorkspace({ initialJobs }: GlwQueueWorkspaceProps) {
     state: job.status,
     title: job.title,
     site: job.input.site.name,
-    product: job.input.page.product,
+    product: job.input.page.title,
     keyword: job.input.page.primaryKeyword,
     location: getGlwLocationLabel(job.input.page),
     created: formatGlwJobCreatedTime(job),
@@ -84,6 +84,44 @@ export function GlwQueueWorkspace({ initialJobs }: GlwQueueWorkspaceProps) {
       setJobs(payload.jobs);
     });
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const poll = async () => {
+      const params = new URLSearchParams({
+        filter,
+        q: query,
+        limit: "200",
+      });
+
+      const response = await fetch(`/api/glw/jobs?${params.toString()}`, {
+        cache: "no-store",
+        credentials: "include",
+      }).catch(() => null);
+
+      if (!response || !response.ok) {
+        return;
+      }
+
+      const payload = await response.json().catch(() => null) as QueuePayload | null;
+
+      if (!payload?.jobs || cancelled) {
+        return;
+      }
+
+      setError(null);
+      setJobs(payload.jobs);
+    };
+
+    poll();
+    const interval = window.setInterval(poll, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [filter, query]);
 
   return (
     <PageContainer className="space-y-6 sm:space-y-8">

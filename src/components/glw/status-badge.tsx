@@ -5,10 +5,10 @@ type StatusBadgeProps = {
 };
 
 const statusStyles: Record<GlwJobStatus, string> = {
-  running: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  queued: "border-zinc-200 bg-zinc-100 text-zinc-600",
-  succeeded: "border-sky-200 bg-sky-50 text-sky-700",
-  failed: "border-rose-200 bg-rose-50 text-rose-700",
+  running: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+  queued: "border-zinc-700 bg-zinc-800 text-zinc-300",
+  succeeded: "border-sky-500/30 bg-sky-500/10 text-sky-300",
+  failed: "border-rose-500/30 bg-rose-500/10 text-rose-300",
 };
 
 const statusLabels: Record<GlwJobStatus, string> = {

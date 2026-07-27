@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "next-env.d.ts",
+    "src/lib/gmp/publishing-*.ts",
+    "src/lib/gmp/publishing-*.tsx",
+    "src/components/gmp/gmp-destination-*.tsx",
+    "src/components/gmp/gmp-release-*.tsx",
+    "src/components/gmp/gmp-publication-*.tsx",
+    "src/components/gmp/gmp-verification-detail.tsx",
+    "src/components/gmp/gmp-reconciliation-differences.tsx",
+    "src/components/gmp/gmp-media-delivery-status.tsx",
+    "src/components/gmp/gmp-wordpress-transport-status.tsx",
+    "src/components/gmp/gmp-publishing-detail-workspace.tsx",
+    "src/app/glw/(protected)/projects/[id]/publishing/**/*.ts",
+    "src/app/glw/(protected)/projects/[id]/publishing/**/*.tsx",
+    "src/platform/gop/auth/**/*.ts",
+    "tests/gmp/gmp-publishing-*.ts",
+    "tests/gmp/gmp-publishing-*.tsx",
+    "tests/gmp/gmp-publishing-authorization-matrix.test.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "tools/genesis/templates/**"
+  ]
+}

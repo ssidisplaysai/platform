@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "files": [
+    "next-env.d.ts",
+    "src/components/gmp/gmp-publishing-detail-workspace.tsx",
+    "src/components/gmp/gmp-reconciliation-differences.tsx",
+    "src/app/glw/(protected)/projects/[id]/publishing/destinations/[destinationId]/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/publishing/releases/[releaseId]/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/publishing/publications/[publicationId]/page.tsx",
+    "src/app/glw/(protected)/projects/[id]/publishing/packages/[packageId]/page.tsx"
+  ],
+  "include": [],
+  "exclude": [
+    "node_modules",
+    "tools/genesis/templates/**"
+  ]
+}

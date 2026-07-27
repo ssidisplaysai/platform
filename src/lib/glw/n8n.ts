@@ -6,16 +6,38 @@ export type GlwN8nPageGenerationRequest = {
     name: string;
   };
   page: {
-    product: string;
-    category: string;
-    state?: string;
-    city?: string;
+    title: string;
+    targetSlug: string;
     primaryKeyword: string;
-    additionalInstructions?: string;
-    publishingMode: "draft" | "publish";
+    secondaryKeywords: string[];
+    wordCount: number;
+    tone: string;
+    audience: string;
+    callToAction: string;
+    category: string;
+    status: "draft" | "publish";
+  };
+  promptData: {
+    tone: string;
+    audience: string;
+    callToAction: string;
+  };
+  seoSettings: {
+    targetSlug: string;
+    primaryKeyword: string;
+    secondaryKeywords: string[];
+    category: string;
+  };
+  publishingSettings: {
+    status: "draft" | "publish";
     wordCount: number;
   };
+  imageSettings: {
+    generateFeaturedImage: boolean;
+    style: string;
+  };
   callbackUrl?: string;
+  authToken?: string;
 };
 
 export type GlwN8nAcceptedResponse = {
@@ -30,8 +52,11 @@ export type GlwN8nCompleteResponse = {
   executionId: string;
   status: "complete" | "completed" | "success" | "succeeded";
   title: string;
+  wordpressPageId?: string | number;
   wordpressUrl: string;
   wordpressPostId: string | number;
+  featuredImageUrl?: string;
+  executionTimeMs?: number;
 };
 
 export type GlwN8nFailedResponse = {
@@ -96,9 +121,17 @@ function parseJsonResponse(payload: unknown): GlwN8nResponse {
   if (status === "complete" || status === "completed" || status === "success" || status === "succeeded") {
     const wordpressUrl = typeof response.wordpressUrl === "string" ? response.wordpressUrl.trim() : "";
     const wordpressPostId = response.wordpressPostId;
+    const wordpressPageId = response.wordpressPageId;
+    const pageIdentifier = wordpressPageId ?? wordpressPostId;
     const title = typeof response.title === "string" ? response.title.trim() : "";
+    const featuredImageUrl = typeof response.featuredImageUrl === "string"
+      ? response.featuredImageUrl.trim()
+      : undefined;
+    const executionTimeMs = typeof response.executionTimeMs === "number"
+      ? response.executionTimeMs
+      : undefined;
 
-    if (!wordpressUrl || !title || wordpressPostId === undefined || wordpressPostId === null || wordpressPostId === "") {
+    if (!wordpressUrl || !title || pageIdentifier === undefined || pageIdentifier === null || pageIdentifier === "") {
       throw new GlwN8nAdapterError("GLW n8n webhook returned a completion response without the required WordPress fields.");
     }
 
@@ -107,8 +140,11 @@ function parseJsonResponse(payload: unknown): GlwN8nResponse {
       executionId,
       status: status as GlwN8nCompleteResponse["status"],
       title,
+      wordpressPageId: pageIdentifier as string | number,
       wordpressUrl,
-      wordpressPostId: wordpressPostId as string | number,
+      wordpressPostId: (wordpressPostId as string | number | undefined) ?? (pageIdentifier as string | number),
+      featuredImageUrl,
+      executionTimeMs,
     };
   }
 
