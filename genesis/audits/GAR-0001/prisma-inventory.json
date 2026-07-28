@@ -1,0 +1,1437 @@
+{
+  "entities": [
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GlwJob",
+      "modelId": "GAR1-MODEL-000001"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GopJobEvent",
+      "modelId": "GAR1-MODEL-000002"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GopExecution",
+      "modelId": "GAR1-MODEL-000003"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GopExecutionSnapshot",
+      "modelId": "GAR1-MODEL-000004"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GopWorker",
+      "modelId": "GAR1-MODEL-000005"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GopExecutionLease",
+      "modelId": "GAR1-MODEL-000006"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GopDeadLetter",
+      "modelId": "GAR1-MODEL-000007"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpProject",
+      "modelId": "GAR1-MODEL-000008"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpSite",
+      "modelId": "GAR1-MODEL-000009"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpBrandProfile",
+      "modelId": "GAR1-MODEL-000010"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublishingConnection",
+      "modelId": "GAR1-MODEL-000011"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpEnvironmentConfig",
+      "modelId": "GAR1-MODEL-000012"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpBusinessKnowledgeWorkspace",
+      "modelId": "GAR1-MODEL-000013"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeRecord",
+      "modelId": "GAR1-MODEL-000014"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeRecordVersion",
+      "modelId": "GAR1-MODEL-000015"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeSource",
+      "modelId": "GAR1-MODEL-000016"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeEvidenceLink",
+      "modelId": "GAR1-MODEL-000017"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeReview",
+      "modelId": "GAR1-MODEL-000018"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeApproval",
+      "modelId": "GAR1-MODEL-000019"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeConflict",
+      "modelId": "GAR1-MODEL-000020"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeConflictMember",
+      "modelId": "GAR1-MODEL-000021"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpKnowledgeCompletenessAssessment",
+      "modelId": "GAR1-MODEL-000022"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContextAssemblyRecord",
+      "modelId": "GAR1-MODEL-000023"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPage",
+      "modelId": "GAR1-MODEL-000024"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageBrief",
+      "modelId": "GAR1-MODEL-000025"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageBriefVersion",
+      "modelId": "GAR1-MODEL-000026"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContentPlan",
+      "modelId": "GAR1-MODEL-000027"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContentPlanVersion",
+      "modelId": "GAR1-MODEL-000028"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageSection",
+      "modelId": "GAR1-MODEL-000029"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageRelationship",
+      "modelId": "GAR1-MODEL-000030"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpInternalLinkPlan",
+      "modelId": "GAR1-MODEL-000031"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageReview",
+      "modelId": "GAR1-MODEL-000032"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageApproval",
+      "modelId": "GAR1-MODEL-000033"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageReadinessAssessment",
+      "modelId": "GAR1-MODEL-000034"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageKnowledgeReference",
+      "modelId": "GAR1-MODEL-000035"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPageSourceReference",
+      "modelId": "GAR1-MODEL-000036"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContentDraft",
+      "modelId": "GAR1-MODEL-000037"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpGenerationRequest",
+      "modelId": "GAR1-MODEL-000038"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpSectionContent",
+      "modelId": "GAR1-MODEL-000039"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpSectionContentRevision",
+      "modelId": "GAR1-MODEL-000040"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContentReview",
+      "modelId": "GAR1-MODEL-000041"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContentApproval",
+      "modelId": "GAR1-MODEL-000042"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContentValidation",
+      "modelId": "GAR1-MODEL-000043"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpSectionValidation",
+      "modelId": "GAR1-MODEL-000044"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpGenerationLineage",
+      "modelId": "GAR1-MODEL-000045"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpContentAssembly",
+      "modelId": "GAR1-MODEL-000046"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublishingDestination",
+      "modelId": "GAR1-MODEL-000047"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpDestinationCapability",
+      "modelId": "GAR1-MODEL-000048"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpApprovedRevisionSet",
+      "modelId": "GAR1-MODEL-000049"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublishingPackage",
+      "modelId": "GAR1-MODEL-000050"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublishingManifest",
+      "modelId": "GAR1-MODEL-000051"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublishingPackageValidation",
+      "modelId": "GAR1-MODEL-000052"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpMediaManifest",
+      "modelId": "GAR1-MODEL-000053"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpMediaManifestItem",
+      "modelId": "GAR1-MODEL-000054"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpRelease",
+      "modelId": "GAR1-MODEL-000055"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpReleaseItem",
+      "modelId": "GAR1-MODEL-000056"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpReleaseReview",
+      "modelId": "GAR1-MODEL-000057"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpReleaseApproval",
+      "modelId": "GAR1-MODEL-000058"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublicationAttempt",
+      "modelId": "GAR1-MODEL-000059"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublicationRecord",
+      "modelId": "GAR1-MODEL-000060"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublicationVerification",
+      "modelId": "GAR1-MODEL-000061"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublicationDifference",
+      "modelId": "GAR1-MODEL-000062"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublicationReconciliation",
+      "modelId": "GAR1-MODEL-000063"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublishingLineage",
+      "modelId": "GAR1-MODEL-000064"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPublishingIdempotencyRecord",
+      "modelId": "GAR1-MODEL-000065"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAnalyticsSource",
+      "modelId": "GAR1-MODEL-000066"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAnalyticsSourceCapability",
+      "modelId": "GAR1-MODEL-000067"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAnalyticsCollection",
+      "modelId": "GAR1-MODEL-000068"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAnalyticsObservation",
+      "modelId": "GAR1-MODEL-000069"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAnalyticsCollectionEvent",
+      "modelId": "GAR1-MODEL-000070"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpMetricDefinition",
+      "modelId": "GAR1-MODEL-000071"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpNormalizedMetric",
+      "modelId": "GAR1-MODEL-000072"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpPerformanceSnapshot",
+      "modelId": "GAR1-MODEL-000073"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpMeasurementLineage",
+      "modelId": "GAR1-MODEL-000074"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpEvidenceCompilerVersion",
+      "modelId": "GAR1-MODEL-000075"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpEvidenceCompilerRun",
+      "modelId": "GAR1-MODEL-000076"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpEvidenceSnapshot",
+      "modelId": "GAR1-MODEL-000077"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpEvidenceCompiledMetric",
+      "modelId": "GAR1-MODEL-000078"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpEvidencePublicationReference",
+      "modelId": "GAR1-MODEL-000079"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAnalyticsAttributionRegistry",
+      "modelId": "GAR1-MODEL-000080"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAnalyticsRecommendationRegistry",
+      "modelId": "GAR1-MODEL-000081"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAttributionAnalysis",
+      "modelId": "GAR1-MODEL-000082"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpAttributionResult",
+      "modelId": "GAR1-MODEL-000083"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpRecommendationRuleCatalogEntry",
+      "modelId": "GAR1-MODEL-000084"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpRecommendationRun",
+      "modelId": "GAR1-MODEL-000085"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpRecommendationRuleExecution",
+      "modelId": "GAR1-MODEL-000086"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpRecommendationRecord",
+      "modelId": "GAR1-MODEL-000087"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpRecommendationLifecycleEvent",
+      "modelId": "GAR1-MODEL-000088"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpRecommendationReplayRun",
+      "modelId": "GAR1-MODEL-000089"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GmpDecisionSupportSummary",
+      "modelId": "GAR1-MODEL-000090"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgent",
+      "modelId": "GAR1-MODEL-000091"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentPlan",
+      "modelId": "GAR1-MODEL-000092"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentExecution",
+      "modelId": "GAR1-MODEL-000093"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentAction",
+      "modelId": "GAR1-MODEL-000094"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentResult",
+      "modelId": "GAR1-MODEL-000095"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentAuditRecord",
+      "modelId": "GAR1-MODEL-000096"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentReplay",
+      "modelId": "GAR1-MODEL-000097"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentMemoryReference",
+      "modelId": "GAR1-MODEL-000098"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaAgentApproval",
+      "modelId": "GAR1-MODEL-000099"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolDefinition",
+      "modelId": "GAR1-MODEL-000100"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolExecution",
+      "modelId": "GAR1-MODEL-000101"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolExecutionTimeline",
+      "modelId": "GAR1-MODEL-000102"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolReplay",
+      "modelId": "GAR1-MODEL-000103"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolHealth",
+      "modelId": "GAR1-MODEL-000104"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolValidation",
+      "modelId": "GAR1-MODEL-000105"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolLifecycleEvent",
+      "modelId": "GAR1-MODEL-000106"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaToolPolicyHistory",
+      "modelId": "GAR1-MODEL-000107"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaMemorySource",
+      "modelId": "GAR1-MODEL-000108"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaMemoryReference",
+      "modelId": "GAR1-MODEL-000109"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaMemoryVersion",
+      "modelId": "GAR1-MODEL-000110"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaMemoryCollection",
+      "modelId": "GAR1-MODEL-000111"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaMemorySnapshot",
+      "modelId": "GAR1-MODEL-000112"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaContextPackage",
+      "modelId": "GAR1-MODEL-000113"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaContextValidation",
+      "modelId": "GAR1-MODEL-000114"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaContextReplay",
+      "modelId": "GAR1-MODEL-000115"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaContextCache",
+      "modelId": "GAR1-MODEL-000116"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaContextHealth",
+      "modelId": "GAR1-MODEL-000117"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestration",
+      "modelId": "GAR1-MODEL-000118"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaWorkflowDefinition",
+      "modelId": "GAR1-MODEL-000119"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaWorkflowVersion",
+      "modelId": "GAR1-MODEL-000120"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestrationExecution",
+      "modelId": "GAR1-MODEL-000121"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestrationDelegation",
+      "modelId": "GAR1-MODEL-000122"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestrationApproval",
+      "modelId": "GAR1-MODEL-000123"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestrationCompensation",
+      "modelId": "GAR1-MODEL-000124"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestrationSnapshot",
+      "modelId": "GAR1-MODEL-000125"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestrationReplay",
+      "modelId": "GAR1-MODEL-000126"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GeaOrchestrationHealth",
+      "modelId": "GAR1-MODEL-000127"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveBriefing",
+      "modelId": "GAR1-MODEL-000128"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveGoal",
+      "modelId": "GAR1-MODEL-000129"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveGoalHistory",
+      "modelId": "GAR1-MODEL-000130"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveKpi",
+      "modelId": "GAR1-MODEL-000131"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveKpiHistory",
+      "modelId": "GAR1-MODEL-000132"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveRecommendation",
+      "modelId": "GAR1-MODEL-000133"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveRecommendationReview",
+      "modelId": "GAR1-MODEL-000134"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveRisk",
+      "modelId": "GAR1-MODEL-000135"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveRiskHistory",
+      "modelId": "GAR1-MODEL-000136"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveOpportunity",
+      "modelId": "GAR1-MODEL-000137"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveOpportunityHistory",
+      "modelId": "GAR1-MODEL-000138"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveDelegation",
+      "modelId": "GAR1-MODEL-000139"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveApproval",
+      "modelId": "GAR1-MODEL-000140"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveTimelineEvent",
+      "modelId": "GAR1-MODEL-000141"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaExecutiveHealth",
+      "modelId": "GAR1-MODEL-000142"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsWorkOrder",
+      "modelId": "GAR1-MODEL-000143"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsWorkOrderHistory",
+      "modelId": "GAR1-MODEL-000144"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsProductionSchedule",
+      "modelId": "GAR1-MODEL-000145"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsInventoryRecord",
+      "modelId": "GAR1-MODEL-000146"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsInventoryHistory",
+      "modelId": "GAR1-MODEL-000147"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsWarehouseOperation",
+      "modelId": "GAR1-MODEL-000148"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsWarehouseHistory",
+      "modelId": "GAR1-MODEL-000149"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsPurchasingRecord",
+      "modelId": "GAR1-MODEL-000150"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsPurchasingHistory",
+      "modelId": "GAR1-MODEL-000151"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsShippingRecord",
+      "modelId": "GAR1-MODEL-000152"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsShippingHistory",
+      "modelId": "GAR1-MODEL-000153"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsCapacityRecord",
+      "modelId": "GAR1-MODEL-000154"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsCapacityHistory",
+      "modelId": "GAR1-MODEL-000155"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsKpi",
+      "modelId": "GAR1-MODEL-000156"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsKpiHistory",
+      "modelId": "GAR1-MODEL-000157"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsRecommendation",
+      "modelId": "GAR1-MODEL-000158"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsRecommendationReview",
+      "modelId": "GAR1-MODEL-000159"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsVendorMetric",
+      "modelId": "GAR1-MODEL-000160"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsVendorMetricHistory",
+      "modelId": "GAR1-MODEL-000161"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsTimelineEvent",
+      "modelId": "GAR1-MODEL-000162"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsHealth",
+      "modelId": "GAR1-MODEL-000163"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaOperationsExecutiveSummary",
+      "modelId": "GAR1-MODEL-000164"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingBom",
+      "modelId": "GAR1-MODEL-000165"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingBomHistory",
+      "modelId": "GAR1-MODEL-000166"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingRouting",
+      "modelId": "GAR1-MODEL-000167"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingRoutingHistory",
+      "modelId": "GAR1-MODEL-000168"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingProductionOrder",
+      "modelId": "GAR1-MODEL-000169"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingProductionOrderHistory",
+      "modelId": "GAR1-MODEL-000170"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingMachine",
+      "modelId": "GAR1-MODEL-000171"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingMachineHistory",
+      "modelId": "GAR1-MODEL-000172"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingLabor",
+      "modelId": "GAR1-MODEL-000173"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingLaborHistory",
+      "modelId": "GAR1-MODEL-000174"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingMaterialConsumption",
+      "modelId": "GAR1-MODEL-000175"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingQualityEvent",
+      "modelId": "GAR1-MODEL-000176"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingCostRecord",
+      "modelId": "GAR1-MODEL-000177"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingKpi",
+      "modelId": "GAR1-MODEL-000178"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingKpiHistory",
+      "modelId": "GAR1-MODEL-000179"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingRecommendation",
+      "modelId": "GAR1-MODEL-000180"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingRecommendationReview",
+      "modelId": "GAR1-MODEL-000181"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingOperationsSignal",
+      "modelId": "GAR1-MODEL-000182"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingExecutiveReport",
+      "modelId": "GAR1-MODEL-000183"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingTimelineEvent",
+      "modelId": "GAR1-MODEL-000184"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaManufacturingHealth",
+      "modelId": "GAR1-MODEL-000185"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingCampaignPlan",
+      "modelId": "GAR1-MODEL-000186"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingCampaignPlanHistory",
+      "modelId": "GAR1-MODEL-000187"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingContentStrategy",
+      "modelId": "GAR1-MODEL-000188"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingSeoIntelligence",
+      "modelId": "GAR1-MODEL-000189"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingBrandGovernanceReview",
+      "modelId": "GAR1-MODEL-000190"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingAnalyticsSnapshot",
+      "modelId": "GAR1-MODEL-000191"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingRecommendation",
+      "modelId": "GAR1-MODEL-000192"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingRecommendationReview",
+      "modelId": "GAR1-MODEL-000193"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingTimelineEvent",
+      "modelId": "GAR1-MODEL-000194"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingExecutiveReport",
+      "modelId": "GAR1-MODEL-000195"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaMarketingHealth",
+      "modelId": "GAR1-MODEL-000196"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaSalesPipelineRecord",
+      "modelId": "GAR1-MODEL-000197"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaSalesForecastSnapshot",
+      "modelId": "GAR1-MODEL-000198"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaSalesAccountIntelligence",
+      "modelId": "GAR1-MODEL-000199"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaSalesRecommendation",
+      "modelId": "GAR1-MODEL-000200"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaSalesRecommendationReview",
+      "modelId": "GAR1-MODEL-000201"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaSalesTimelineEvent",
+      "modelId": "GAR1-MODEL-000202"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaSalesHealth",
+      "modelId": "GAR1-MODEL-000203"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceGeneralLedgerEntry",
+      "modelId": "GAR1-MODEL-000204"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceChartOfAccount",
+      "modelId": "GAR1-MODEL-000205"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceReceivable",
+      "modelId": "GAR1-MODEL-000206"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinancePayable",
+      "modelId": "GAR1-MODEL-000207"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceBudget",
+      "modelId": "GAR1-MODEL-000208"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceProfitabilitySnapshot",
+      "modelId": "GAR1-MODEL-000209"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceForecast",
+      "modelId": "GAR1-MODEL-000210"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceKpi",
+      "modelId": "GAR1-MODEL-000211"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceRecommendation",
+      "modelId": "GAR1-MODEL-000212"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceRecommendationReview",
+      "modelId": "GAR1-MODEL-000213"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceExecutiveReport",
+      "modelId": "GAR1-MODEL-000214"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceHealth",
+      "modelId": "GAR1-MODEL-000215"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaFinanceTimelineEvent",
+      "modelId": "GAR1-MODEL-000216"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessOnboarding",
+      "modelId": "GAR1-MODEL-000217"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessHealth",
+      "modelId": "GAR1-MODEL-000218"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessPlan",
+      "modelId": "GAR1-MODEL-000219"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessRenewal",
+      "modelId": "GAR1-MODEL-000220"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessSatisfaction",
+      "modelId": "GAR1-MODEL-000221"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessSupportSignal",
+      "modelId": "GAR1-MODEL-000222"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessExpansionOpportunity",
+      "modelId": "GAR1-MODEL-000223"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessKpi",
+      "modelId": "GAR1-MODEL-000224"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessRecommendation",
+      "modelId": "GAR1-MODEL-000225"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessRecommendationReview",
+      "modelId": "GAR1-MODEL-000226"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessExecutiveReport",
+      "modelId": "GAR1-MODEL-000227"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessTimelineEvent",
+      "modelId": "GAR1-MODEL-000228"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GbaCustomerSuccessAgentHealth",
+      "modelId": "GAR1-MODEL-000229"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GedEntityDefinition",
+      "modelId": "GAR1-MODEL-000230"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GedRelationshipDefinition",
+      "modelId": "GAR1-MODEL-000231"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GedEntityVersion",
+      "modelId": "GAR1-MODEL-000232"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GedValidationResult",
+      "modelId": "GAR1-MODEL-000233"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GedHealthSnapshot",
+      "modelId": "GAR1-MODEL-000234"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "model",
+      "model": "GedAuditLineage",
+      "modelId": "GAR1-MODEL-000235"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "enum",
+      "model": "GlwJobType",
+      "modelId": "GAR1-MODEL-000236"
+    },
+    {
+      "file": "prisma/schema.prisma",
+      "kind": "enum",
+      "model": "GlwJobStatus",
+      "modelId": "GAR1-MODEL-000237"
+    }
+  ],
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "field-level semantics partially inferred"
+  ],
+  "prismaFiles": [
+    "prisma/schema.prisma"
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/prisma-inventory",
+  "schemaVersion": "1.0.0"
+}

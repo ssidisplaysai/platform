@@ -1,0 +1,59 @@
+{
+  "programId": "Genesis Internal Enterprise Architecture Audit",
+  "packageId": "GAR-0001",
+  "scannerVersion": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "included": [
+    "source",
+    "tests",
+    "scripts",
+    "tools",
+    "documentation",
+    "governance",
+    "prisma",
+    "migrations",
+    "configuration",
+    "github-workflows",
+    "public-assets-metadata",
+    "evidence-artifacts-metadata"
+  ],
+  "excludedContentBodies": [
+    "node_modules",
+    ".next",
+    "dist",
+    "build",
+    "coverage",
+    ".cache",
+    ".git",
+    "binary-large-bodies",
+    "zip-bodies",
+    "large-media-bodies"
+  ],
+  "ignorePatterns": [
+    "node_modules/**",
+    ".next/**",
+    "dist/**",
+    "build/**",
+    "coverage/**",
+    ".cache/**",
+    ".git/**"
+  ],
+  "largeFileBytes": 5242880,
+  "securityFilenamePatterns": [
+    "secret",
+    "token",
+    "key",
+    "credential",
+    "password",
+    "private"
+  ],
+  "hygieneMarkers": [
+    "TODO",
+    "FIXME",
+    "HACK",
+    "XXX",
+    "deprecated"
+  ]
+}

@@ -1,0 +1,466 @@
+{
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "registry item identity may require runtime confirmation"
+  ],
+  "registries": [
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "./types"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "src/compiler/core/CompilerPassRegistry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "CompilerPassRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "./DiscoveryError",
+        "./DiscoveryPlugin",
+        "./KnowledgeSource"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "src/compiler/discovery/DiscoveryRegistry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "DiscoveryRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../core/CompilerPassRegistry",
+        "../core/types",
+        "./passes/BusinessGenomePublicationPass",
+        "./passes/CanonicalVerificationPass",
+        "./passes/ConsistencyValidationPass",
+        "./passes/EvidenceCorrelationPass",
+        "./passes/EvidenceGroupingPass",
+        "./passes/GraphConstructionPass",
+        "./passes/InputValidationPass",
+        "./passes/SemanticConsolidationPass",
+        "./passes/SemanticIdentityAssignmentPass",
+        "./passes/SemanticRelationshipResolutionPass",
+        "./passes/SemanticResolutionPass",
+        "./pipeline-types"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "BusinessGenomePassRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/core/registry/EntityDefinition.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "EntityDefinition",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/core/registry/EntityFactory.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "EntityFactory",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/core/registry/EntityRegistry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "EntityRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/domain/schema/SchemaRegistry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "SchemaRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "./agent-models"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/lib/gea/capability-registry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "capability-registry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "./agent-models",
+        "./memory-models",
+        "./memory-repository"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/lib/gea/memory-registry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "not-detected",
+      "registryName": "memory-registry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "./agent-models",
+        "./tool-models",
+        "./tool-repository"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/lib/gea/tool-registry-service.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "not-detected",
+      "registryName": "tool-registry-service",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "./contracts"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/platform/gop/module-registry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "module-registry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../contracts"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/platform/gop/runtime/worker-registry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "worker-registry",
+      "staticOrRuntime": "runtime"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../contracts"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/platform/gop/workspaces/registry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "registry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../entities/EntityBuilder",
+        "./EntityGenerator"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "src/sdk/generators/BuilderRegistry.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "not-detected",
+      "registryName": "BuilderRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../tools/genesis/compiler/ir/BlueprintBuilder.mjs",
+        "../tools/genesis/compiler/metadata-engine/CapabilityExpander.mjs",
+        "../tools/genesis/compiler/metadata-engine/FieldExpander.mjs",
+        "../tools/genesis/compiler/metadata-engine/LifecycleExpander.mjs",
+        "../tools/genesis/compiler/metadata-engine/RelationshipExpander.mjs",
+        "../tools/genesis/compiler/registry/RendererRegistry.mjs",
+        "../tools/genesis/utils/SimpleYAMLParser.mjs",
+        "fs",
+        "path",
+        "url"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "test/RendererRegistryTest.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "not-detected",
+      "registryName": "RendererRegistryTest",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../../../src/compiler/core/CompilerPassRegistry",
+        "../../../src/compiler/core/passes/DiscoveryCompilerPass",
+        "../../../src/compiler/core/passes/EvidenceCompilerPass",
+        "node:assert/strict",
+        "node:test"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "tests/compiler/core/compiler-pass-registry.test.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "compiler-pass-registry.test",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../../../src/compiler/discovery/DiscoveryEngine",
+        "../../../src/compiler/discovery/DiscoveryJob",
+        "../../../src/compiler/discovery/DiscoveryPlugin",
+        "node:assert/strict",
+        "node:test"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "tests/compiler/discovery/plugin-registry.test.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "not-detected",
+      "registryName": "plugin-registry.test",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../../../src/compiler/genome",
+        "node:assert/strict",
+        "node:test"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "tests/compiler/genome/pass-registry.test.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "pass-registry.test",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "@/lib/gea/tool-registry-service",
+        "@/lib/gea/tool-repository",
+        "@jest/globals"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "tests/gea/gea-tool-registry.test.ts",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "not-detected",
+      "registryName": "gea-tool-registry.test",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "tools/genesis/compiler/pipeline/CompilerPassRegistry.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "CompilerPassRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../CompilerPass.mjs"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "tools/genesis/compiler/pipeline/passes/DefinitionRegistryPass.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "DefinitionRegistryPass",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "tools/genesis/compiler/registry/DefinitionIndex.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "DefinitionIndex",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "fs",
+        "path"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "tools/genesis/compiler/registry/DefinitionLoader.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "DefinitionLoader",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "./DefinitionIndex.mjs",
+        "./DefinitionResolver.mjs"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "tools/genesis/compiler/registry/DefinitionRegistry.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "DefinitionRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "tools/genesis/compiler/registry/DefinitionResolver.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "DefinitionResolver",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../renderers/DocumentationRenderer.mjs",
+        "../renderers/DTORenderer.mjs",
+        "../renderers/ErrorContractRenderer.mjs",
+        "../renderers/EventsRenderer.mjs",
+        "../renderers/GraphQLRenderer.mjs",
+        "../renderers/ModuleRenderer.mjs",
+        "../renderers/OpenAPIRenderer.mjs",
+        "../renderers/PermissionsRenderer.mjs",
+        "../renderers/PolicyRenderer.mjs",
+        "../renderers/RegistrationRenderer.mjs",
+        "../renderers/RepositoryRenderer.mjs",
+        "../renderers/RESTContractRenderer.mjs",
+        "../renderers/SearchRenderer.mjs",
+        "../renderers/ServiceRenderer.mjs",
+        "../renderers/TestRenderer.mjs",
+        "../renderers/ValidatorRenderer.mjs",
+        "./RendererTarget.mjs"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "inferred-from-register-calls",
+      "registrationMechanism": "function-call",
+      "registryName": "RendererRegistry",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "tools/genesis/compiler/registry/RendererTarget.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "RendererTarget",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [],
+      "duplicateIdentifiers": [],
+      "implementationType": "module",
+      "location": "tools/genesis/registry/scaffolds.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "scaffolds",
+      "staticOrRuntime": "static"
+    },
+    {
+      "apparentOrphanRegistrations": [],
+      "consumers": [
+        "../TestSuite.mjs",
+        "fs",
+        "fs",
+        "fs",
+        "fs",
+        "fs",
+        "path",
+        "url"
+      ],
+      "duplicateIdentifiers": [],
+      "implementationType": "class",
+      "location": "tools/genesis/tests/suites/RegistryTests.mjs",
+      "missingIdentifiers": [],
+      "registeredItemType": "unknown",
+      "registrationMechanism": "not-detected",
+      "registryName": "RegistryTests",
+      "staticOrRuntime": "static"
+    }
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/registry-inventory",
+  "schemaVersion": "1.0.0"
+}

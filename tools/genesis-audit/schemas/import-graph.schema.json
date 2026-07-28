@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gar-0001/import-graph.schema.json/v1",
+  "type": "object",
+  "allOf": [
+    { "$ref": "./schema-envelope.v1.json" }
+  ],
+  "required": ["nodes"],
+  "properties": {
+    "nodes": {}
+  }
+}

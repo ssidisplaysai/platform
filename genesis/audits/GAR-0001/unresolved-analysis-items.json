@@ -1,0 +1,192 @@
+{
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "contains parser and resolution limitations"
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/unresolved-analysis-items",
+  "schemaVersion": "1.0.0",
+  "unresolvedItems": [
+    {
+      "file": ".env",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-1",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-10",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/compiler/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-11",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/diagnostics/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-12",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/renderer/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-13",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/writers/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-14",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/diagnostics/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-15",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/docs/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-16",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/plans/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-17",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/validators/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-18",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": ".git",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-2",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": ".github/CODEOWNERS",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-3",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": ".gitignore",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-4",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/compiler/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-5",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/genome/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-6",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/semantics/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-7",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/standards/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-8",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/blueprints/.gitkeep",
+      "itemId": "GAR1-UNRESOLVED-FILETYPE-9",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "next-env.d.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-1",
+      "specifier": "./.next/types/routes.d.ts",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tests/compiler/genome/graph-construction-pass.test.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-10",
+      "specifier": "../src/compiler/genome/pipeline-types",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tests/gea/gea-memory-route-forwarding.test.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-11",
+      "specifier": "@/app/api/gea/context/build/route",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-12",
+      "specifier": "./ObjectAIContext",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-13",
+      "specifier": "./ObjectAutomation",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-14",
+      "specifier": "./ObjectSearch",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-15",
+      "specifier": "./ObjectAnalytics",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-2",
+      "specifier": "./ObjectAIContext",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-3",
+      "specifier": "./ObjectAutomation",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-4",
+      "specifier": "./ObjectSearch",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-5",
+      "specifier": "./ObjectAnalytics",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/data/companies/companies.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-6",
+      "specifier": "@/types/models/Company",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/data/projects/projects.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-7",
+      "specifier": "@/types/models/Project",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/types/Company.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-8",
+      "specifier": "@/types/models/Company",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tests/compiler/genome/graph-construction-pass.test.ts",
+      "itemId": "GAR1-UNRESOLVED-IMPORT-9",
+      "specifier": "../src/compiler/genome/passes/GraphConstructionPass",
+      "type": "unresolved-import"
+    }
+  ]
+}

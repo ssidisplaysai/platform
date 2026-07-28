@@ -1,0 +1,1114 @@
+{
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "secret values are redacted",
+    "no dynamic exploitability testing"
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/security-surface-inventory",
+  "schemaVersion": "1.0.0",
+  "securitySurface": {
+    "authenticationModules": [
+      "src/lib/gea/tool-authorization.ts",
+      "src/lib/glw/auth.ts",
+      "src/platform/gop/actions/authorization.ts",
+      "src/platform/gop/auth/policies.ts",
+      "src/platform/gop/auth/resolver.ts",
+      "src/platform/gop/auth/runtime.ts",
+      "tests/gba/gba-customer-success-authorization.test.ts",
+      "tests/gba/gba-executive-authorization.test.ts",
+      "tests/gba/gba-finance-authorization.test.ts",
+      "tests/gba/gba-manufacturing-authorization.test.ts",
+      "tests/gba/gba-marketing-authorization.test.ts",
+      "tests/gba/gba-operations-authorization.test.ts",
+      "tests/gba/gba-sales-authorization.test.ts",
+      "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
+      "tests/gop/authorization-resolver.test.ts"
+    ],
+    "authorizationModules": [
+      "src/app/glw/(protected)/memory/policies/page.tsx",
+      "src/app/glw/(protected)/tools/policies/page.tsx",
+      "src/core/object/ObjectPermission.ts",
+      "src/lib/gea/permission-engine.ts",
+      "src/lib/gea/tool-authorization.ts",
+      "src/platform/gop/actions/authorization.ts",
+      "src/platform/gop/auth/policies.ts",
+      "tests/gba/gba-customer-success-authorization.test.ts",
+      "tests/gba/gba-executive-authorization.test.ts",
+      "tests/gba/gba-finance-authorization.test.ts",
+      "tests/gba/gba-manufacturing-authorization.test.ts",
+      "tests/gba/gba-marketing-authorization.test.ts",
+      "tests/gba/gba-operations-authorization.test.ts",
+      "tests/gba/gba-sales-authorization.test.ts",
+      "tests/gea/gea-planning-permission.test.ts",
+      "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
+      "tests/gop/authorization-resolver.test.ts",
+      "tools/genesis/compiler/metadata-engine/PermissionExpander.mjs",
+      "tools/genesis/compiler/metadata-engine/PolicyExpander.mjs",
+      "tools/genesis/compiler/renderers/PermissionsRenderer.mjs",
+      "tools/genesis/compiler/renderers/PolicyRenderer.mjs",
+      "tools/genesis/templates/core-object-system/ObjectPermission.ts",
+      "tools/genesis/templates/entity/permissions.template.ts"
+    ],
+    "cookieHandling": [
+      "src/lib/glw/auth.ts",
+      "tests/gba/gba-customer-success-api.test.ts",
+      "tests/gba/gba-executive-api.test.ts",
+      "tests/gba/gba-finance-api.test.ts",
+      "tests/gba/gba-manufacturing-api.test.ts",
+      "tests/gba/gba-marketing-api.test.ts",
+      "tests/gba/gba-operations-api.test.ts",
+      "tests/gba/gba-sales-api.test.ts",
+      "tests/gea/gea-api.test.ts",
+      "tests/gea/gea-memory-api.test.ts",
+      "tests/gea/gea-orchestration-api.test.ts",
+      "tests/gea/gea-tool-api.test.ts",
+      "tests/ged/ged-domain-api.test.ts",
+      "tests/glw/page-generation-api.test.ts",
+      "tests/gmp/gmp-analytics-api.test.ts",
+      "tests/gmp/gmp-api.test.ts",
+      "tests/gmp/gmp-content-api.test.ts",
+      "tests/gmp/gmp-evidence-api.test.ts",
+      "tests/gmp/gmp-knowledge-api.test.ts",
+      "tests/gmp/gmp-page-api.test.ts",
+      "tests/gmp/gmp-page-governance.test.tsx",
+      "tests/gmp/gmp-publishing-api.test.ts",
+      "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
+      "tests/gmp/gmp-recommendation-api.test.ts",
+      "tests/gop/operations-api.test.ts",
+      "tools/genesis-audit/src/scanner.mjs"
+    ],
+    "cryptographyUsage": [
+      "src/evidence-ir/canonicalization/index.ts",
+      "src/evidence-ir/compiler/index.ts",
+      "src/lib/glw/auth.ts",
+      "src/lib/glw/page-generation-api.ts",
+      "src/platform/gop/runtime/worker-token.ts",
+      "tools/genesis-audit/src/scanner.mjs",
+      "tools/genesis-audit/src/utils.mjs",
+      "tools/genesis/compiler/AIOrchestratorBlueprint.mjs",
+      "tools/genesis/compiler/BusinessBlueprint.mjs",
+      "tools/genesis/compiler/DecisionBlueprint.mjs",
+      "tools/genesis/compiler/KnowledgeGraphBlueprint.mjs",
+      "tools/genesis/compiler/PackageBlueprintContract.mjs",
+      "tools/genesis/compiler/PartnerQRIdentityBlueprint.mjs",
+      "tools/genesis/compiler/PlanningBlueprint.mjs"
+    ],
+    "directDatabaseAccess": [
+      "src/lib/gba/customer-success-repository.ts",
+      "src/lib/gba/executive-repository.ts",
+      "src/lib/gba/finance-repository.ts",
+      "src/lib/gba/manufacturing-repository.ts",
+      "src/lib/gba/marketing-repository.ts",
+      "src/lib/gba/operations-repository.ts",
+      "src/lib/gba/sales-repository.ts",
+      "src/lib/gea/agent-repository.ts",
+      "src/lib/gea/memory-repository.ts",
+      "src/lib/gea/orchestration-repository.ts",
+      "src/lib/gea/tool-repository.ts",
+      "src/lib/ged/enterprise-domain-repository.ts",
+      "src/lib/glw/job-repository.ts",
+      "src/lib/glw/prisma.ts",
+      "src/lib/gmp/repository.ts",
+      "src/lib/gop/events-api.ts",
+      "src/platform/gop/event-store.ts",
+      "src/platform/gop/runtime/execution-repository.ts",
+      "tools/genesis-audit/src/scanner.mjs"
+    ],
+    "dynamicCodeExecution": [],
+    "envTemplates": [
+      ".env",
+      ".env.example"
+    ],
+    "envUsages": [
+      {
+        "confidence": "high",
+        "file": "src/lib/glw/auth.ts",
+        "line": 82,
+        "token": "process.env.NODE_ENV"
+      },
+      {
+        "confidence": "high",
+        "file": "src/lib/glw/page-generation-api.ts",
+        "line": 37,
+        "token": "process.env.DATABASE_URL"
+      },
+      {
+        "confidence": "high",
+        "file": "src/lib/glw/page-generation-api.ts",
+        "line": 38,
+        "token": "process.env.GLW_APP_URL"
+      },
+      {
+        "confidence": "high",
+        "file": "src/lib/glw/page-generation-api.ts",
+        "line": 39,
+        "token": "process.env.GLW_N8N_WEBHOOK_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "src/lib/glw/page-generation.ts",
+        "line": 134,
+        "token": "process.env.GLW_N8N_WEBHOOK_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "src/lib/glw/prisma.ts",
+        "line": 10,
+        "token": "process.env.DATABASE_URL"
+      },
+      {
+        "confidence": "high",
+        "file": "src/lib/gop/workers-api.ts",
+        "line": 34,
+        "token": "process.env.GOP_WORKER_TOKEN_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "src/platform/gop/auth/runtime.ts",
+        "line": 10,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-customer-success-api.test.ts",
+        "line": 37,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-customer-success-api.test.ts",
+        "line": 49,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-customer-success-api.test.ts",
+        "line": 65,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-executive-api.test.ts",
+        "line": 39,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-executive-api.test.ts",
+        "line": 55,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-executive-api.test.ts",
+        "line": 71,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-finance-api.test.ts",
+        "line": 37,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-finance-api.test.ts",
+        "line": 49,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-finance-api.test.ts",
+        "line": 65,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-manufacturing-api.test.ts",
+        "line": 40,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-manufacturing-api.test.ts",
+        "line": 63,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-manufacturing-api.test.ts",
+        "line": 79,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-manufacturing-api.test.ts",
+        "line": 102,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-marketing-api.test.ts",
+        "line": 31,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-marketing-api.test.ts",
+        "line": 56,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-marketing-api.test.ts",
+        "line": 72,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-marketing-api.test.ts",
+        "line": 97,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-operations-api.test.ts",
+        "line": 40,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-operations-api.test.ts",
+        "line": 56,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-operations-api.test.ts",
+        "line": 72,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-operations-api.test.ts",
+        "line": 88,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-sales-api.test.ts",
+        "line": 37,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-sales-api.test.ts",
+        "line": 61,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-sales-api.test.ts",
+        "line": 77,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gba/gba-sales-api.test.ts",
+        "line": 101,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gea/gea-api.test.ts",
+        "line": 64,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gea/gea-memory-api.test.ts",
+        "line": 45,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gea/gea-memory-api.test.ts",
+        "line": 77,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gea/gea-memory-api.test.ts",
+        "line": 151,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gea/gea-orchestration-api.test.ts",
+        "line": 45,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gea/gea-tool-api.test.ts",
+        "line": 43,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gea/gea-tool-api.test.ts",
+        "line": 87,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/ged/ged-domain-api.test.ts",
+        "line": 35,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/ged/ged-domain-api.test.ts",
+        "line": 43,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 34,
+        "token": "process.env.GLW_APP_URL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 35,
+        "token": "process.env.GLW_N8N_PAGE_WEBHOOK_URL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 36,
+        "token": "process.env.GLW_N8N_WEBHOOK_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 37,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 38,
+        "token": "process.env.GLW_ADMIN_PASSWORD"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 39,
+        "token": "process.env.GLW_AUTH_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 179,
+        "token": "process.env.GLW_N8N_PAGE_WEBHOOK_URL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 180,
+        "token": "process.env.GLW_N8N_WEBHOOK_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 64,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 85,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 105,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 106,
+        "token": "process.env.GMP_TEST_ANALYTICS_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 159,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 237,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 238,
+        "token": "process.env.GMP_RETRY_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-api.test.ts",
+        "line": 311,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-analytics-services.test.ts",
+        "line": 184,
+        "token": "process.env.GMP_FAKE_ANALYTICS_TOKEN"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-api.test.ts",
+        "line": 57,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-api.test.ts",
+        "line": 90,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-api.test.ts",
+        "line": 111,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-api.test.ts",
+        "line": 206,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-content-api.test.ts",
+        "line": 59,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-content-api.test.ts",
+        "line": 87,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-content-api.test.ts",
+        "line": 101,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-evidence-api.test.ts",
+        "line": 65,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-evidence-api.test.ts",
+        "line": 86,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-knowledge-api.test.ts",
+        "line": 43,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-knowledge-api.test.ts",
+        "line": 121,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-knowledge-api.test.ts",
+        "line": 231,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-page-api.test.ts",
+        "line": 41,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-page-api.test.ts",
+        "line": 114,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-page-api.test.ts",
+        "line": 266,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-page-governance.test.tsx",
+        "line": 74,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-api.test.ts",
+        "line": 74,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-api.test.ts",
+        "line": 128,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-api.test.ts",
+        "line": 187,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-api.test.ts",
+        "line": 250,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
+        "line": 358,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-transport.test.ts",
+        "line": 29,
+        "token": "process.env.TEST_WP_CREDENTIAL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-transport.test.ts",
+        "line": 34,
+        "token": "process.env.TEST_WP_CREDENTIAL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-transport.test.ts",
+        "line": 42,
+        "token": "process.env.TEST_WP_CREDENTIAL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-publishing-transport.test.ts",
+        "line": 49,
+        "token": "process.env.TEST_WP_CREDENTIAL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-recommendation-api.test.ts",
+        "line": 135,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gmp/gmp-recommendation-api.test.ts",
+        "line": 159,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gop/operations-api.test.ts",
+        "line": 16,
+        "token": "process.env.GLW_AUTH_SECRET"
+      },
+      {
+        "confidence": "high",
+        "file": "tests/gop/operations-api.test.ts",
+        "line": 17,
+        "token": "process.env.GLW_ADMIN_EMAIL"
+      },
+      {
+        "confidence": "high",
+        "file": "tools/genesis/runtime/RuntimeBootPipeline.mjs",
+        "line": 57,
+        "token": "process.env.NODE_ENV"
+      }
+    ],
+    "externalNetworkCalls": [
+      "next-env.d.ts",
+      "src/components/glw/glw-dashboard.tsx",
+      "src/components/glw/glw-job-panel.tsx",
+      "src/components/glw/glw-page-generation-workspace.tsx",
+      "src/components/glw/glw-queue-workspace.tsx",
+      "src/components/gmp/gmp-analytics-operator-controls.tsx",
+      "src/components/gmp/gmp-content-workspace.tsx",
+      "src/components/gmp/gmp-knowledge-workspace.tsx",
+      "src/components/gmp/gmp-pages-workspace.tsx",
+      "src/components/gmp/gmp-project-dashboard.tsx",
+      "src/components/gmp/gmp-projects-workspace.tsx",
+      "src/components/gmp/gmp-publication-retry-dialog.tsx",
+      "src/components/gmp/gmp-publication-rollback-dialog.tsx",
+      "src/components/gmp/gmp-publishing-detail-workspace.tsx",
+      "src/components/gmp/gmp-publishing-workspace.tsx",
+      "src/components/gmp/gmp-sites-workspace.tsx",
+      "src/components/gop/gop-operations-center.tsx",
+      "src/lib/glw/page-generation-api.ts",
+      "src/lib/gmp/analytics-adapters.ts",
+      "src/lib/gmp/content-contracts.ts",
+      "src/lib/gmp/knowledge-context-contract.ts",
+      "src/lib/gmp/publishing-contracts.ts",
+      "src/lib/gmp/publishing-wordpress-transport.ts",
+      "tests/gba/gba-customer-success-api.test.ts",
+      "tests/gba/gba-customer-success-route-forwarding.test.ts",
+      "tests/gba/gba-executive-api.test.ts",
+      "tests/gba/gba-executive-route-forwarding.test.ts",
+      "tests/gba/gba-finance-api.test.ts",
+      "tests/gba/gba-finance-route-forwarding.test.ts",
+      "tests/gba/gba-manufacturing-api.test.ts",
+      "tests/gba/gba-manufacturing-route-forwarding.test.ts",
+      "tests/gba/gba-marketing-api.test.ts",
+      "tests/gba/gba-marketing-route-forwarding.test.ts",
+      "tests/gba/gba-operations-api.test.ts",
+      "tests/gba/gba-operations-route-forwarding.test.ts",
+      "tests/gba/gba-sales-api.test.ts",
+      "tests/gba/gba-sales-route-forwarding.test.ts",
+      "tests/gea/gea-api.test.ts",
+      "tests/gea/gea-memory-api.test.ts",
+      "tests/gea/gea-memory-route-forwarding.test.ts",
+      "tests/gea/gea-orchestration-api.test.ts",
+      "tests/gea/gea-orchestration-route-forwarding.test.ts",
+      "tests/gea/gea-route-forwarding.test.ts",
+      "tests/gea/gea-tool-api.test.ts",
+      "tests/gea/gea-tool-route-forwarding.test.ts",
+      "tests/ged/ged-domain-api.test.ts",
+      "tests/ged/ged-domain-route-forwarding.test.ts",
+      "tests/glw/page-generation-api.test.ts",
+      "tests/gmp/gmp-analytics-api.test.ts",
+      "tests/gmp/gmp-analytics-ui.test.tsx",
+      "tests/gmp/gmp-api.test.ts",
+      "tests/gmp/gmp-content-api.test.ts",
+      "tests/gmp/gmp-evidence-api.test.ts",
+      "tests/gmp/gmp-evidence-compiler-services.test.ts",
+      "tests/gmp/gmp-knowledge-api.test.ts",
+      "tests/gmp/gmp-knowledge-routes.test.ts",
+      "tests/gmp/gmp-page-api.test.ts",
+      "tests/gmp/gmp-page-governance.test.tsx",
+      "tests/gmp/gmp-publishing-api.test.ts",
+      "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
+      "tests/gmp/gmp-publishing-services.test.ts",
+      "tests/gmp/gmp-publishing-transport.test.ts",
+      "tests/gmp/gmp-recommendation-api.test.ts",
+      "tests/gmp/gmp-recommendation-services.test.ts",
+      "tests/gop/glw-adapter.test.ts",
+      "tests/gop/glw-events-adapter.test.ts",
+      "tests/gop/inspector-mapping.test.ts",
+      "tests/gop/orchestration-runtime.test.ts",
+      "tools/genesis-audit/src/scanner.mjs",
+      "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "tools/genesis/compiler/renderers/ModuleAPIContractRenderer.mjs",
+      "tools/genesis/compiler/renderers/ModuleDashboardContractRenderer.mjs",
+      "tools/genesis/compiler/renderers/ModuleManifestRenderer.mjs",
+      "tools/genesis/compiler/renderers/ModuleNavigationContractRenderer.mjs",
+      "tools/genesis/compiler/renderers/ModuleRenderer.mjs",
+      "tools/genesis/compiler/renderers/OpenAPIRenderer.mjs",
+      "tools/genesis/compiler/renderers/RegistrationRenderer.mjs",
+      "tools/genesis/runtime/RuntimeBootPipeline.mjs",
+      "tools/genesis/tests/suites/SolutionCompilerTests.mjs"
+    ],
+    "fileSystemWrites": [
+      "add-import.mjs",
+      "add-test-handler.mjs",
+      "fix-imports-v2.mjs",
+      "fix-imports-v3.mjs",
+      "fix-test-imports.mjs",
+      "src/discovery/discovery-import.mjs",
+      "src/evidence-ir/pipeline/index.ts",
+      "tests/genesis-audit/schema-validator.test.ts",
+      "tools/genesis-audit/src/run.mjs",
+      "tools/genesis-audit/src/scanner.mjs",
+      "tools/genesis-audit/src/utils.mjs",
+      "tools/genesis/commands/install.mjs",
+      "tools/genesis/commands/scaffold.mjs",
+      "tools/genesis/commands/uninstall.mjs",
+      "tools/genesis/compiler/AIOrchestratorKernel.mjs",
+      "tools/genesis/compiler/ApplicationCompiler.mjs",
+      "tools/genesis/compiler/BusinessCompiler.mjs",
+      "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "tools/genesis/compiler/DecisionEngine.mjs",
+      "tools/genesis/compiler/EnterpriseTwinBuilder.mjs",
+      "tools/genesis/compiler/EvolutionEngine.mjs",
+      "tools/genesis/compiler/IdentityCompiler.mjs",
+      "tools/genesis/compiler/KnowledgeCompiler.mjs",
+      "tools/genesis/compiler/LearningEngine.mjs",
+      "tools/genesis/compiler/PackageCompiler.mjs",
+      "tools/genesis/compiler/PlanningEngine.mjs",
+      "tools/genesis/compiler/SimulationEngine.mjs",
+      "tools/genesis/compiler/SolutionCompiler.mjs",
+      "tools/genesis/compiler/writers/ArtifactWriter.mjs",
+      "tools/genesis/runtime/RuntimeBootRunner.mjs",
+      "tools/genesis/tests/TestReporter.mjs",
+      "tools/genesis/utils/write-file.mjs"
+    ],
+    "secretLikeFiles": [
+      "Genesis-Secret-Inspection-Report.md",
+      "src/lib/gmp/analytics-credentials.ts",
+      "src/lib/gmp/publishing-credentials.ts",
+      "src/platform/gop/runtime/worker-token.ts",
+      "tests/gop/worker-token.test.ts"
+    ],
+    "sessionHandling": [
+      "src/app/glw/(protected)/agents/access.ts",
+      "src/app/glw/(protected)/customer-success-agent/access.ts",
+      "src/app/glw/(protected)/executive/access.ts",
+      "src/app/glw/(protected)/finance-agent/access.ts",
+      "src/app/glw/(protected)/layout.tsx",
+      "src/app/glw/(protected)/manufacturing-agent/access.ts",
+      "src/app/glw/(protected)/marketing-agent/access.ts",
+      "src/app/glw/(protected)/memory/access.ts",
+      "src/app/glw/(protected)/operations-agent/access.ts",
+      "src/app/glw/(protected)/orchestrations/access.ts",
+      "src/app/glw/(protected)/projects/[id]/analytics/access.ts",
+      "src/app/glw/(protected)/projects/[id]/publishing/destinations/[destinationId]/page.tsx",
+      "src/app/glw/(protected)/projects/[id]/publishing/packages/[packageId]/page.tsx",
+      "src/app/glw/(protected)/projects/[id]/publishing/publications/[publicationId]/page.tsx",
+      "src/app/glw/(protected)/projects/[id]/publishing/releases/[releaseId]/page.tsx",
+      "src/app/glw/(protected)/sales-agent/access.ts",
+      "src/app/glw/(protected)/tools/access.ts",
+      "src/app/glw/actions.ts",
+      "src/app/glw/login/actions.ts",
+      "src/app/glw/login/page.tsx",
+      "src/compiler/core/CompilerArtifactManager.ts",
+      "src/compiler/core/CompilerContext.ts",
+      "src/compiler/core/CompilerCore.ts",
+      "src/compiler/core/CompilerManifestManager.ts",
+      "src/compiler/core/CompilerPipeline.ts",
+      "src/compiler/core/CompilerSession.ts",
+      "src/compiler/core/CompilerValidationEngine.ts",
+      "src/compiler/core/index.ts",
+      "src/compiler/core/types.ts",
+      "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "src/compiler/genome/types.ts",
+      "src/compiler/index.ts",
+      "src/components/gmp/gmp-pages-workspace.tsx",
+      "src/components/gmp/gmp-section-list.tsx",
+      "src/discovery/parser/InterviewStructureParser.ts",
+      "src/lib/gba/customer-success-api.ts",
+      "src/lib/gba/executive-api.ts",
+      "src/lib/gba/finance-api.ts",
+      "src/lib/gba/manufacturing-api.ts",
+      "src/lib/gba/marketing-api.ts",
+      "src/lib/gba/operations-api.ts",
+      "src/lib/gba/sales-api.ts",
+      "src/lib/gea/agent-api.ts",
+      "src/lib/gea/memory-api.ts",
+      "src/lib/gea/orchestration-api.ts",
+      "src/lib/gea/tool-api.ts",
+      "src/lib/ged/enterprise-domain-api.ts",
+      "src/lib/glw/auth.ts",
+      "src/lib/glw/page-generation-api.ts",
+      "src/lib/gmp/analytics-adapters.ts",
+      "src/lib/gmp/analytics-api.ts",
+      "src/lib/gmp/analytics-models.ts",
+      "src/lib/gmp/api.ts",
+      "src/lib/gmp/content-api.ts",
+      "src/lib/gmp/evidence-api.ts",
+      "src/lib/gmp/evidence-models.ts",
+      "src/lib/gmp/evidence-services.ts",
+      "src/lib/gmp/knowledge-api.ts",
+      "src/lib/gmp/page-api.ts",
+      "src/lib/gmp/publishing-api.ts",
+      "src/lib/gmp/recommendation-api.ts",
+      "src/lib/gmp/recommendation-models.ts",
+      "src/lib/gmp/recommendation-services.ts",
+      "src/lib/gop/events-api.ts",
+      "src/lib/gop/executions-api.ts",
+      "src/lib/gop/fabric-api.ts",
+      "src/lib/gop/operations-api.ts",
+      "src/lib/gop/workers-api.ts",
+      "src/platform/gop/auth/runtime.ts",
+      "src/platform/gop/contracts.ts",
+      "src/platform/gop/runtime/worker-registry.ts",
+      "tests/compiler/core/compiler-artifact-manager.test.ts",
+      "tests/compiler/core/compiler-context.test.ts",
+      "tests/compiler/core/compiler-core-integration.test.ts",
+      "tests/compiler/core/compiler-manifest-manager.test.ts",
+      "tests/compiler/core/compiler-session.test.ts",
+      "tests/compiler/core/compiler-validation-engine.test.ts",
+      "tests/compiler/genome/canonical-verification-pass.test.ts",
+      "tests/compiler/genome/consistency-validation-pass.test.ts",
+      "tests/compiler/genome/contracts.test.ts",
+      "tests/compiler/genome/evidence-correlation-pass.test.ts",
+      "tests/compiler/genome/evidence-grouping-pass.test.ts",
+      "tests/compiler/genome/graph-construction-pass.test.ts",
+      "tests/compiler/genome/helpers.ts",
+      "tests/compiler/genome/input-validation-pass.test.ts",
+      "tests/compiler/genome/semantic-consolidation-pass.test.ts",
+      "tests/compiler/genome/semantic-relationship-resolution-pass.test.ts",
+      "tests/compiler/genome/semantic-resolution-pass.test.ts",
+      "tests/gba/gba-customer-success-api.test.ts",
+      "tests/gba/gba-executive-api.test.ts",
+      "tests/gba/gba-finance-api.test.ts",
+      "tests/gba/gba-manufacturing-api.test.ts",
+      "tests/gba/gba-marketing-api.test.ts",
+      "tests/gba/gba-operations-api.test.ts",
+      "tests/gba/gba-sales-api.test.ts",
+      "tests/gea/gea-api.test.ts",
+      "tests/gea/gea-memory-api.test.ts",
+      "tests/gea/gea-orchestration-api.test.ts",
+      "tests/gea/gea-tool-api.test.ts",
+      "tests/ged/ged-domain-api.test.ts",
+      "tests/glw/page-generation-api.test.ts",
+      "tests/gmp/gmp-analytics-api.test.ts",
+      "tests/gmp/gmp-analytics-services.test.ts",
+      "tests/gmp/gmp-analytics-ui.test.tsx",
+      "tests/gmp/gmp-api.test.ts",
+      "tests/gmp/gmp-content-api.test.ts",
+      "tests/gmp/gmp-evidence-api.test.ts",
+      "tests/gmp/gmp-evidence-compiler-services.test.ts",
+      "tests/gmp/gmp-knowledge-api.test.ts",
+      "tests/gmp/gmp-page-api.test.ts",
+      "tests/gmp/gmp-page-governance.test.tsx",
+      "tests/gmp/gmp-publishing-api.test.ts",
+      "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
+      "tests/gmp/gmp-recommendation-api.test.ts",
+      "tests/gmp/gmp-recommendation-services.test.ts",
+      "tests/gop/operations-api.test.ts",
+      "tools/genesis-audit/src/scanner.mjs",
+      "tools/genesis/commands/evolve.mjs",
+      "tools/genesis/commands/learn.mjs",
+      "tools/genesis/compiler/AIOrchestratorBlueprint.mjs",
+      "tools/genesis/compiler/IdentityBlueprintContract.mjs"
+    ],
+    "shellExecution": [
+      "src/compiler/genome/passes/EvidenceCorrelationPass.ts",
+      "src/discovery/parser/InterviewStructureParser.ts",
+      "tests/genesis-audit/run-smoke.test.ts",
+      "tests/genesis-audit/schema-validator.test.ts",
+      "tests/genesis-audit/utils.test.ts",
+      "tools/genesis-audit/src/scanner.mjs"
+    ],
+    "suspectedSecrets": [
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "src/app/glw/login/actions.ts",
+        "line": 15,
+        "redacted": "password = <REDACTED>"
+      },
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "src/lib/glw/auth.ts",
+        "line": 68,
+        "redacted": "password: <REDACTED>"
+      },
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "src/lib/gmp/publishing-credentials.ts",
+        "line": 52,
+        "redacted": "Password = <REDACTED>"
+      },
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "src/lib/gmp/publishing-credentials.ts",
+        "line": 54,
+        "redacted": "Password: <REDACTED>"
+      },
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "src/lib/gmp/publishing-credentials.ts",
+        "line": 87,
+        "redacted": "Password: <REDACTED>"
+      },
+      {
+        "category": "token-like",
+        "confidence": "medium",
+        "file": "src/lib/gop/workers-api.ts",
+        "line": 33,
+        "redacted": "token = <REDACTED>"
+      },
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "tests/glw/page-generation-api.test.ts",
+        "line": 38,
+        "redacted": "PASSWORD = <REDACTED>"
+      },
+      {
+        "category": "token-like",
+        "confidence": "medium",
+        "file": "tests/gmp/gmp-analytics-services.test.ts",
+        "line": 264,
+        "redacted": "token: <REDACTED>"
+      },
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "tests/gmp/gmp-publishing-transport.test.ts",
+        "line": 42,
+        "redacted": "Password: <REDACTED>"
+      },
+      {
+        "category": "password-like",
+        "confidence": "medium",
+        "file": "tests/gmp/gmp-publishing-transport.test.ts",
+        "line": 49,
+        "redacted": "Password: <REDACTED>"
+      },
+      {
+        "category": "token-like",
+        "confidence": "medium",
+        "file": "tests/gop/worker-token.test.ts",
+        "line": 6,
+        "redacted": "token = <REDACTED>"
+      },
+      {
+        "category": "token-like",
+        "confidence": "medium",
+        "file": "tests/gop/worker-token.test.ts",
+        "line": 21,
+        "redacted": "token = <REDACTED>"
+      }
+    ],
+    "tokenHandling": [
+      "src/components/gmp/gmp-project-dashboard.tsx",
+      "src/lib/glw/auth.ts",
+      "src/lib/glw/n8n.ts",
+      "src/lib/glw/page-generation.ts",
+      "src/lib/gmp/analytics-adapters.ts",
+      "src/lib/gmp/analytics-credentials.ts",
+      "src/lib/gmp/analytics-services.ts",
+      "src/lib/gmp/api.ts",
+      "src/lib/gmp/models.ts",
+      "src/lib/gmp/publishing-wordpress-transport.ts",
+      "src/lib/gop/workers-api.ts",
+      "src/platform/gop/contracts.ts",
+      "src/platform/gop/index.ts",
+      "src/platform/gop/runtime/orchestrator.ts",
+      "src/platform/gop/runtime/queue-manager.ts",
+      "src/platform/gop/runtime/worker-registry.ts",
+      "src/platform/gop/runtime/worker-token.ts",
+      "tests/gba/gba-customer-success-api.test.ts",
+      "tests/gba/gba-executive-api.test.ts",
+      "tests/gba/gba-finance-api.test.ts",
+      "tests/gba/gba-manufacturing-api.test.ts",
+      "tests/gba/gba-marketing-api.test.ts",
+      "tests/gba/gba-operations-api.test.ts",
+      "tests/gba/gba-sales-api.test.ts",
+      "tests/gea/gea-api.test.ts",
+      "tests/gea/gea-memory-api.test.ts",
+      "tests/gea/gea-orchestration-api.test.ts",
+      "tests/gea/gea-tool-api.test.ts",
+      "tests/ged/ged-domain-api.test.ts",
+      "tests/gmp/gmp-analytics-adapters.test.ts",
+      "tests/gmp/gmp-analytics-api.test.ts",
+      "tests/gmp/gmp-analytics-services.test.ts",
+      "tests/gmp/gmp-analytics-ui.test.tsx",
+      "tests/gmp/gmp-api.test.ts",
+      "tests/gmp/gmp-content-api.test.ts",
+      "tests/gmp/gmp-content-services.test.ts",
+      "tests/gmp/gmp-evidence-api.test.ts",
+      "tests/gmp/gmp-knowledge-api.test.ts",
+      "tests/gmp/gmp-page-api.test.ts",
+      "tests/gmp/gmp-page-governance.test.tsx",
+      "tests/gmp/gmp-page-intelligence.test.ts",
+      "tests/gmp/gmp-page-services.test.ts",
+      "tests/gmp/gmp-publishing-api.test.ts",
+      "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
+      "tests/gmp/gmp-publishing-services.test.ts",
+      "tests/gmp/gmp-recommendation-api.test.ts",
+      "tests/gop/operations-api.test.ts",
+      "tests/gop/runtime-certification-failure.test.ts",
+      "tests/gop/runtime-fabric.test.ts",
+      "tests/gop/worker-token.test.ts",
+      "tools/genesis-audit/src/scanner.mjs",
+      "tools/genesis/compiler/renderers/ModuleAIAgentContractRenderer.mjs",
+      "tools/genesis/compiler/renderers/ModuleAPIContractRenderer.mjs",
+      "tools/genesis/compiler/renderers/PermissionsRenderer.mjs",
+      "tools/genesis/compiler/renderers/PolicyRenderer.mjs",
+      "tools/genesis/compiler/renderers/RESTContractRenderer.mjs",
+      "tools/genesis/runtime/RuntimeApiGateway.mjs",
+      "tools/genesis/runtime/RuntimeApiGatewayContract.mjs",
+      "tools/genesis/templates/entity/TemplateRenderer.mjs",
+      "tools/genesis/tests/suites/ApiGatewayTests.mjs",
+      "tools/genesis/tests/suites/TemplateTests.mjs"
+    ],
+    "unsafeDeserializationIndicators": [
+      "src/compiler/knowledge/KnowledgeObjectBuilder.ts",
+      "src/compiler/normalization/ContentNormalizer.ts",
+      "src/compiler/plugins/json/JsonDiscoveryPlugin.ts",
+      "src/components/glw/glw-job-panel.tsx",
+      "src/components/gmp/gmp-analytics-operator-controls.tsx",
+      "src/components/gmp/gmp-knowledge-workspace.tsx",
+      "src/components/gop/gop-operations-center.tsx",
+      "src/evidence-ir/canonicalization/index.ts",
+      "src/evidence-ir/exporters/index.ts",
+      "src/evidence-ir/pipeline/index.ts",
+      "src/lib/ged/enterprise-domain-repository.ts",
+      "src/lib/glw/auth.ts",
+      "src/lib/gmp/publishing-credentials.ts",
+      "src/platform/gop/runtime/worker-token.ts",
+      "test/BlueprintCompilationTest.mjs",
+      "tests/genesis-audit/schema-validator.test.ts",
+      "tests/genesis-audit/utils.test.ts",
+      "tools/genesis-audit/src/run.mjs",
+      "tools/genesis-audit/src/scanner.mjs",
+      "tools/genesis-audit/src/schema-validator.mjs",
+      "tools/genesis/commands/business.mjs",
+      "tools/genesis/commands/execute.mjs",
+      "tools/genesis/commands/install.mjs",
+      "tools/genesis/commands/list.mjs",
+      "tools/genesis/commands/runtime.mjs",
+      "tools/genesis/commands/simulate.mjs",
+      "tools/genesis/commands/tenant.mjs",
+      "tools/genesis/commands/twin.mjs",
+      "tools/genesis/commands/uninstall.mjs",
+      "tools/genesis/compiler/ApplicationCompiler.mjs",
+      "tools/genesis/compiler/EnterpriseTwinBuilder.mjs",
+      "tools/genesis/compiler/IdentityCompiler.mjs",
+      "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "tools/genesis/compiler/PackageCompiler.mjs",
+      "tools/genesis/compiler/SimulationEngine.mjs",
+      "tools/genesis/compiler/SolutionCompiler.mjs",
+      "tools/genesis/compiler/validators/ModuleManifestValidator.mjs",
+      "tools/genesis/runtime/AutomationEngine.mjs",
+      "tools/genesis/runtime/CommandBus.mjs",
+      "tools/genesis/runtime/EventBus.mjs",
+      "tools/genesis/runtime/ExecutionValidator.mjs",
+      "tools/genesis/runtime/QueryBus.mjs",
+      "tools/genesis/runtime/RuntimeApiGateway.mjs",
+      "tools/genesis/runtime/RuntimeBootPipeline.mjs",
+      "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+      "tools/genesis/tests/suites/PartnerQRIdentityTestSuite.mjs",
+      "tools/genesis/tests/suites/RuntimeTests.mjs"
+    ]
+  }
+}

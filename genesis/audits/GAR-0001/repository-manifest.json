@@ -1,0 +1,126 @@
+{
+  "buildConfigs": [
+    "docs/architecture/0009-workflow-engine.md",
+    "eslint.config.mjs",
+    "GEA-0004-Workflow-Engine.md",
+    "genesis/development/git-workflow.md",
+    "jest.config.js",
+    "MODULE_COMPILER_V0.3_WORKFLOW_REPORT.md",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "prisma.config.ts",
+    "src/app/api/gea/workflows/[id]/route.ts",
+    "src/app/api/gea/workflows/route.ts",
+    "src/platform/gop/runtime/workflow-orchestrator.ts",
+    "tools/genesis/compiler/contracts/ModuleWorkflowGenerator.mjs",
+    "tools/genesis/compiler/renderers/ModuleWorkflowContractRenderer.mjs"
+  ],
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "static analysis only"
+  ],
+  "lockfiles": [
+    "package-lock.json"
+  ],
+  "packageId": "GAR-0001",
+  "rootCatalog": [
+    {
+      "classification": "other",
+      "root": ".github"
+    },
+    {
+      "classification": "other",
+      "root": ".next"
+    },
+    {
+      "classification": "other",
+      "root": "definitions"
+    },
+    {
+      "classification": "other",
+      "root": "discovery-interviews"
+    },
+    {
+      "classification": "other",
+      "root": "discovery-output-real"
+    },
+    {
+      "classification": "other",
+      "root": "discovery-validation-output"
+    },
+    {
+      "classification": "documentation-root",
+      "root": "docs"
+    },
+    {
+      "classification": "other",
+      "root": "evidence-output"
+    },
+    {
+      "classification": "governance-root",
+      "root": "genesis"
+    },
+    {
+      "classification": "other",
+      "root": "meta"
+    },
+    {
+      "classification": "other",
+      "root": "node_modules"
+    },
+    {
+      "classification": "other",
+      "root": "platform-ssi-discovery"
+    },
+    {
+      "classification": "migration-root",
+      "root": "prisma"
+    },
+    {
+      "classification": "other",
+      "root": "public"
+    },
+    {
+      "classification": "other",
+      "root": "scripts"
+    },
+    {
+      "classification": "source-root",
+      "root": "src"
+    },
+    {
+      "classification": "test-root",
+      "root": "test"
+    },
+    {
+      "classification": "test-root",
+      "root": "tests"
+    },
+    {
+      "classification": "tooling-root",
+      "root": "tools"
+    }
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/repository-manifest",
+  "schemaVersion": "1.0.0",
+  "skippedDirectories": 5,
+  "skippedDirectoryPaths": [
+    ".next",
+    "genesis/audits/GAR-0001",
+    "node_modules",
+    "src/app/api/gea/context/build",
+    "src/app/api/gmp/publishing/packages/[packageId]/build"
+  ],
+  "totalDirectories": 765,
+  "totalFiles": 2061,
+  "tsConfigs": [
+    "tsconfig.gmp-0005.json",
+    "tsconfig.gmp-0005c-closure.json",
+    "tsconfig.gmp-0006a.json",
+    "tsconfig.gmp-0006c.json",
+    "tsconfig.gmp-0006d.json",
+    "tsconfig.json"
+  ]
+}

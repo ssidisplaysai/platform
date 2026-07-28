@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gar-0001/schema-envelope/v1",
+  "type": "object",
+  "required": [
+    "schemaIdentifier",
+    "schemaVersion",
+    "scannerVersion",
+    "evidenceClassification",
+    "generationMethod",
+    "limitations"
+  ],
+  "properties": {
+    "schemaIdentifier": { "type": "string" },
+    "schemaVersion": { "type": "string" },
+    "scannerVersion": { "type": "string" },
+    "evidenceClassification": { "type": "string" },
+    "generationMethod": { "type": "string" },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  }
+}

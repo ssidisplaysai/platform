@@ -1,0 +1,6132 @@
+{
+  "directories": [
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": ".github",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": ".github"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": ".github/ISSUE_TEMPLATE",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": ".github"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": ".next",
+      "skipReason": "excluded-content-body",
+      "skippedByPolicy": true,
+      "topLevelSubsystem": ".next"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "definitions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "definitions"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "definitions/entity",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "definitions"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "discovery-interviews",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "discovery-interviews"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "discovery-output-real",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "discovery-output-real"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "discovery-validation-output",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "discovery-validation-output"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "docs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/architecture",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/compiler",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/gmp",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/gop",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/governance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/onboarding",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/readiness",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/releases",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "docs/standards",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "docs"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "evidence-output",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "evidence-output"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "evidence-output/Unknown",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "evidence-output"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "genesis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/architecture",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/architecture/adrs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0001",
+      "skipReason": "excluded-content-body",
+      "skippedByPolicy": true,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/compiler",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/development",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/engineering",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/engineering/standards",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/genome",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/language",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/operating-system",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/philosophy",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/research",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/research/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/research/experiments",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/research/peer-review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/roadmap",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/semantics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/semantics/concepts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/semantics/experiments",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/semantics/relationships",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/sprints",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/standards",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/templates",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "genesis/vision",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "meta",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "meta"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "node_modules",
+      "skipReason": "excluded-content-body",
+      "skippedByPolicy": true,
+      "topLevelSubsystem": "node_modules"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "platform-ssi-discovery",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "platform-ssi-discovery"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "prisma",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260724000100_glw_jobs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260725000100_glw_job_retry_lineage",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260725045027_glw_job_retry_lineage",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260726000100_gop_job_event_store",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260726093000_gop_execution_store",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260726103000_gop_runtime_fabric",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260726114500_gmp_projects_and_sites",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260726143000_gmp_knowledge_workspace",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260726165000_gmp_page_architecture",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260726202509_gmp_content_generation_editorial_governance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727021543_gmp_publishing_delivery_release_governance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727113000_gmp_analytics_foundation_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727121500_gmp_analytics_collection_engine_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727133000_gmp_analytics_timeline_contract_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727150000_gmp_enterprise_evidence_compiler_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727170000_gmp_attribution_recommendations_decision_support_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727190000_gea_enterprise_agent_framework_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727203000_gea_enterprise_tool_framework_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727212432_gba_sales_agent_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727220000_gea_enterprise_memory_context_framework_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260727230000_gea_enterprise_multi_agent_orchestration_framework_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260728001000_gba_executive_agent_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260728002000_gba_operations_agent_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260728003000_gba_manufacturing_agent_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260728020000_gba_marketing_agent_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260728030000_ged_enterprise_domain_model_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260728040000_gba_finance_agent_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "prisma/migrations/20260728050000_gba_customer_success_agent_v1",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "prisma"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "public",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "public"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "scripts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "scripts"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "scripts/certification",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "scripts"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "scripts/operations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "scripts"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "src",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/app",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/customer-health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/executive-reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/onboarding",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/renewals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/satisfaction",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/success-plans",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/customer-success/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/briefings",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/briefings/generate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/delegate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/goals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/opportunities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/executive/risks",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/accounts-payable",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/accounts-receivable",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/budgets",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/executive-reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/forecasts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/general-ledger",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/profitability",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/finance/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/boms",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/costing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/executive-reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/labor",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/machines",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/materials",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/production-orders",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/quality",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/routings",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/manufacturing/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/analytics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/brand-governance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/campaigns",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/executive-reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/seo",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/strategy",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/marketing/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/capacity",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/inventory",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/purchasing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/shipping",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/warehouse",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/operations/work-orders",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/accounts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/forecasting",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/pipeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gba/sales/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/agents",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/agents/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/approvals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/audit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/capabilities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/build",
+      "skipReason": "excluded-content-body",
+      "skippedByPolicy": true,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/cache",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/preview",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/provenance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/validation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/context/versions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/executions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/executions/[executionId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/executions/[executionId]/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/executions/control",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/memory",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/memory/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/approvals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/cancel",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/pause",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/resume",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/start",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/orchestrations/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/planning",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/catalog",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/categories",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/execute",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/executions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/executions/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/tools/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/workflows",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gea/workflows/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged/audit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged/entities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged/entities/[entityKey]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged/relationships",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged/validation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/ged/versions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw/jobs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw/jobs/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw/jobs/[id]/retry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw/jobs/callback",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw/jobs/callback/retry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/glw/jobs/page",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/collections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/collections/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/collections/[id]/retry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/collections/[id]/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/snapshots",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/snapshots/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/sources",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/sources/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/sources/[id]/capabilities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/sources/[id]/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/analytics/sources/[id]/validate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/attribution",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/connections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/connections/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans/[planId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans/[planId]/approve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans/[planId]/reject",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans/[planId]/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans/[planId]/sections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans/[planId]/sections/reorder",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content-plans/[planId]/versions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/approve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/generate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/generation-status",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/lineage",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/preview",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/publishing-eligibility",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/reject",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/repair",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/request-changes",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/sections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/validation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/drafts/[draftId]/validation/run",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/approve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/regenerate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/reject",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/request-changes",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/revise",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/revisions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/content/sections/[sectionContentId]/validate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/decision-support",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence/catalog",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence/metrics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence/publications",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence/recompile",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence/runs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence/snapshots",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/evidence/snapshots/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/internal-links",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/internal-links/[linkId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/conflicts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/conflicts/[conflictId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/conflicts/[conflictId]/resolve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/records",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/records/[recordId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/records/[recordId]/approve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/records/[recordId]/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/records/[recordId]/reject",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/records/[recordId]/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/knowledge/records/[recordId]/versions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-briefs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-briefs/[briefId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-briefs/[briefId]/approve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-briefs/[briefId]/reject",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-briefs/[briefId]/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-briefs/[briefId]/versions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-relationships",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-relationships/[relationshipId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-sections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/page-sections/[sectionId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/briefs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/content",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/content/drafts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/content/eligibility",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/internal-links",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/internal-links/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/internal-links/scan",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/plans",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/plans/generate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/publications",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/publishing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/publishing/packages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/readiness",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/readiness/run",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/relationships",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/relationships/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/pages/[pageId]/relationships/scan",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/brand-profile",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge/completeness",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge/completeness/run",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge/conflicts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge/context",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge/context/assemble",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge/records",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/knowledge/sources",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/page-architecture",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/page-architecture/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/page-architecture/scan",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/pages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/pages/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/publishing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/publishing/destinations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/publishing/publications",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/publishing/releases",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/projects/[id]/sites",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]/capabilities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]/credentials",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]/credentials/invalidate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]/test-read",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]/test-write",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/destinations/[destinationId]/validate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages/[packageId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages/[packageId]/approve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages/[packageId]/build",
+      "skipReason": "excluded-content-body",
+      "skippedByPolicy": true,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages/[packageId]/manifest",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages/[packageId]/reject",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages/[packageId]/submit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/packages/[packageId]/validate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/publications",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/publications/[publicationId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/publications/[publicationId]/history",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/publications/[publicationId]/reconcile",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/publications/[publicationId]/retry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/publications/[publicationId]/rollback",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/publications/[publicationId]/verify",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/approve",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/dependency-plan",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/execute",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/items",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/progress",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/reject",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/retry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/submit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/publishing/releases/[releaseId]/validate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/recommendations/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/recommendations/catalog",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/recommendations/dismiss",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/recommendations/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/recommendations/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/recommendations/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/sites",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/sites/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gmp/sites/[id]/connections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/dead-letters",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/dead-letters/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/dead-letters/[id]/archive",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/dead-letters/[id]/retry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/executions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/executions/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/executions/[id]/history",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/executions/[id]/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/jobs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/jobs/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/jobs/[id]/events",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/jobs/[id]/events/stream",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/jobs/[id]/execution",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/metrics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/operations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/operations/stream",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/[id]/heartbeat",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol/[id]/heartbeat",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol/[id]/leases",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol/[id]/leases/acquire",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol/[id]/leases/release",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol/[id]/leases/renew",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/protocol/register",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/api/gop/workers/register",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/app/companies",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/companies/[slug]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/companies/ssi",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/approvals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/audit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/capabilities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/context",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/executions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/memory",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/plans",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/agents/tools",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/blogs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/customer-health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/onboarding",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/renewals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/satisfaction",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/settings",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/success-plans",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/customer-success-agent/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/approvals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/briefings",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/delegations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/goals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/opportunities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/risks",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/executive/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/accounts-payable",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/accounts-receivable",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/budgets",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/forecasting",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/general-ledger",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/profitability",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/finance-agent/settings",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/boms",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/costing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/labor",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/machines",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/materials",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/production-orders",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/quality",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/routings",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/manufacturing-agent/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/analytics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/brand-governance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/campaigns",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/executive-reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/seo",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/strategy",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/marketing-agent/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/cache",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/packages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/policies",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/provenance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/validation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/memory/versions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/capacity",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/inventory",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/kpis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/production",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/purchasing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/shipping",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/vendors",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/warehouse",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/operations-agent/work-orders",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/approvals",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/definitions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/delegation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/executions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/metrics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/recovery",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/orchestrations/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/pages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/collections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/collections/[collectionId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/evidence/catalog",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/evidence/correlation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/evidence/runs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/evidence/snapshots",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/overview",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/performance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/recommendations/[recommendationId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/recommendations/attribution",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/recommendations/catalog",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/recommendations/decision-support",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/sources",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/analytics/sources/[sourceId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/knowledge",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/knowledge/conflicts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/knowledge/records",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/knowledge/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/knowledge/sources",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/brief",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/content",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 9,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/content/[draftId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 10,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/content/[draftId]/lineage",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 10,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/content/[draftId]/review",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 9,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/content/generate",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/internal-links",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/plan",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/publishing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/readiness",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/relationships",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/[pageId]/sections",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/pages/new",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 6,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/destinations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/destinations/[destinationId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/packages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/packages/[packageId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/publications",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/publications/[publicationId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 7,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/releases",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 8,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/projects/[id]/publishing/releases/[releaseId]",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/queue",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sales-agent",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sales-agent/accounts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sales-agent/forecasting",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sales-agent/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sales-agent/pipeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sales-agent/recommendations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sales-agent/timeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/settings",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/sites",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/audit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/catalog",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/categories",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/executions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/health",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/policies",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/replay",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/validation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 5,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/(protected)/tools/versions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/app/glw/login",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/app/operations",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/core",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/core/passes",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/discovery",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/genome",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/genome/passes",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/knowledge",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/normalization",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/plugins",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/plugins/filesystem",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/plugins/json",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/plugins/markdown",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/plugins/yaml",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/provenance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/compiler/stages",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/components",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/company",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/dashboard",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/gba",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/gea",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/glw",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/gmp",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/gop",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/layout",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/metrics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/components/tables",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/core",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/core/kernel",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/core/object",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/core/registry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/core/repositories",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/core/runtime",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/core/services",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/core/value-objects",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/data",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/data/companies",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/data/customers",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/data/projects",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery/diagnostics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery/exporters",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery/importer",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery/models",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery/parser",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery/pipeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/discovery/validation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/domain",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/domain/definitions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/domain/entities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/domain/enums",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/domain/models",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/domain/schema",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir/canonicalization",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir/compiler",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir/exporters",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir/identity",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir/models",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir/pipeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/evidence-ir/validation",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/lib",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/lib/constants",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/lib/gba",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/lib/gea",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/lib/ged",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/lib/glw",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/lib/gmp",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/lib/gop",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/modules",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/modules/mission-control",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/modules/projects",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/platform",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/platform/gop",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/platform/gop/actions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/platform/gop/adapters",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/platform/gop/auth",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/platform/gop/inspector",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/platform/gop/runtime",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "src/platform/gop/workspaces",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/sdk",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/sdk/docs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/sdk/entities",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/sdk/generators",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/sdk/types",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "src/types",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "src/types/models",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "src"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "test",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "test"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "tests",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/core",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/discovery",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/discovery/fixtures",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/discovery/fixtures/filesystem",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/discovery/fixtures/large-filesystem",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/genome",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tests/compiler/knowledge",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/gba",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/gea",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/ged",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/genesis-audit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/glw",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/gmp",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tests/gop",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
+      "depth": 0,
+      "inferredOwnership": "inferred",
+      "path": "tools",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis-audit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis-audit/config",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis-audit/schemas",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis-audit/src",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/blueprints",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/commands",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/blueprints",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/compiler",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/contracts",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/diagnostics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/ir",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/metadata-engine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/pipeline",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/pipeline/passes",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/planner",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/promotion",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/registry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/renderer",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/renderers",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/validators",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/compiler/writers",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/diagnostics",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/docs",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/plans",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/registry",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/runtime",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/templates",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/templates/core-object-system",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/templates/entity",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/tests",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/tests/suites",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/utils",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/validators",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis/validators/generated-slice",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 1,
+      "inferredOwnership": "inferred",
+      "path": "tools/out",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tools/out/generated",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/out/generated/evolution",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "tools/out/generated/evolution/analysis-2026-07-08",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/out/generated/learning",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "tools/out/generated/learning/analysis-2026-07-08",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    }
+  ],
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "folder ownership may be inferred"
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/directory-inventory",
+  "schemaVersion": "1.0.0"
+}

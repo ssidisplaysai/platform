@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test": "jest",
     "test:watch": "jest --watch",
+    "gar:scan": "node tools/genesis-audit/src/run.mjs",
+    "gar:test": "jest tests/genesis-audit --runInBand",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },

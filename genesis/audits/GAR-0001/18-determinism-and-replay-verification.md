@@ -1,0 +1,4 @@
+# 18 Determinism and Replay Verification
+
+VERIFIED: Three-run hashes = c0d5e9f95044733b66841ba4b272d5a6628a9b94708c3bee10ffca908ac99dc0, c0d5e9f95044733b66841ba4b272d5a6628a9b94708c3bee10ffca908ac99dc0, c0d5e9f95044733b66841ba4b272d5a6628a9b94708c3bee10ffca908ac99dc0
+VERIFIED: Match = true

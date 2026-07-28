@@ -1,0 +1,16 @@
+{
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "SCCs are structural, not automatically defects"
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/circular-dependency-report",
+  "schemaVersion": "1.0.0",
+  "stronglyConnectedComponents": [
+    [
+      "src/compiler/genome/pipeline-types.ts",
+      "src/compiler/genome/types.ts"
+    ]
+  ]
+}

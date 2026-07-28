@@ -1,0 +1,5411 @@
+{
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "security observations are static only"
+  ],
+  "routes": [
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000001",
+      "routePath": "/api/gba/customer-success/customer-health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/customer-health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000002",
+      "routePath": "/api/gba/customer-success/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000003",
+      "routePath": "/api/gba/customer-success/executive-reports",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/executive-reports/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000004",
+      "routePath": "/api/gba/customer-success/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000005",
+      "routePath": "/api/gba/customer-success/kpis",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/kpis/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000006",
+      "routePath": "/api/gba/customer-success/onboarding",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/onboarding/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000007",
+      "routePath": "/api/gba/customer-success/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000008",
+      "routePath": "/api/gba/customer-success/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000009",
+      "routePath": "/api/gba/customer-success/renewals",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/renewals/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000010",
+      "routePath": "/api/gba/customer-success/satisfaction",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/satisfaction/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000011",
+      "routePath": "/api/gba/customer-success/success-plans",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/success-plans/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000012",
+      "routePath": "/api/gba/customer-success/timeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/customer-success/timeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000013",
+      "routePath": "/api/gba/executive/briefings/generate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/briefings/generate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000014",
+      "routePath": "/api/gba/executive/briefings",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/briefings/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000015",
+      "routePath": "/api/gba/executive/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000016",
+      "routePath": "/api/gba/executive/delegate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/delegate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000017",
+      "routePath": "/api/gba/executive/goals",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/goals/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000018",
+      "routePath": "/api/gba/executive/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000019",
+      "routePath": "/api/gba/executive/kpis",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/kpis/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000020",
+      "routePath": "/api/gba/executive/opportunities",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/opportunities/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000021",
+      "routePath": "/api/gba/executive/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000022",
+      "routePath": "/api/gba/executive/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000023",
+      "routePath": "/api/gba/executive/risks",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/executive/risks/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000024",
+      "routePath": "/api/gba/finance/accounts-payable",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/accounts-payable/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000025",
+      "routePath": "/api/gba/finance/accounts-receivable",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/accounts-receivable/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000026",
+      "routePath": "/api/gba/finance/budgets",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/budgets/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000027",
+      "routePath": "/api/gba/finance/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000028",
+      "routePath": "/api/gba/finance/executive-reports",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/executive-reports/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000029",
+      "routePath": "/api/gba/finance/forecasts",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/forecasts/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000030",
+      "routePath": "/api/gba/finance/general-ledger",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/general-ledger/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000031",
+      "routePath": "/api/gba/finance/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000032",
+      "routePath": "/api/gba/finance/kpis",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/kpis/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000033",
+      "routePath": "/api/gba/finance/profitability",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/profitability/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000034",
+      "routePath": "/api/gba/finance/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000035",
+      "routePath": "/api/gba/finance/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/finance/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000036",
+      "routePath": "/api/gba/manufacturing/boms",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/boms/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000037",
+      "routePath": "/api/gba/manufacturing/costing",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/costing/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000038",
+      "routePath": "/api/gba/manufacturing/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000039",
+      "routePath": "/api/gba/manufacturing/executive-reports",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/executive-reports/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000040",
+      "routePath": "/api/gba/manufacturing/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000041",
+      "routePath": "/api/gba/manufacturing/kpis",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/kpis/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000042",
+      "routePath": "/api/gba/manufacturing/labor",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/labor/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000043",
+      "routePath": "/api/gba/manufacturing/machines",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/machines/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000044",
+      "routePath": "/api/gba/manufacturing/materials",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/materials/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000045",
+      "routePath": "/api/gba/manufacturing/production-orders",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/production-orders/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000046",
+      "routePath": "/api/gba/manufacturing/quality",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/quality/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000047",
+      "routePath": "/api/gba/manufacturing/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000048",
+      "routePath": "/api/gba/manufacturing/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000049",
+      "routePath": "/api/gba/manufacturing/routings",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/routings/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000050",
+      "routePath": "/api/gba/manufacturing/timeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/manufacturing/timeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000051",
+      "routePath": "/api/gba/marketing/analytics",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/analytics/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000052",
+      "routePath": "/api/gba/marketing/brand-governance",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/brand-governance/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000053",
+      "routePath": "/api/gba/marketing/campaigns",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/campaigns/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000054",
+      "routePath": "/api/gba/marketing/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000055",
+      "routePath": "/api/gba/marketing/executive-reports",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/executive-reports/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000056",
+      "routePath": "/api/gba/marketing/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000057",
+      "routePath": "/api/gba/marketing/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000058",
+      "routePath": "/api/gba/marketing/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000059",
+      "routePath": "/api/gba/marketing/seo",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/seo/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000060",
+      "routePath": "/api/gba/marketing/strategy",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/strategy/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000061",
+      "routePath": "/api/gba/marketing/timeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/marketing/timeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000062",
+      "routePath": "/api/gba/operations/capacity",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/capacity/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000063",
+      "routePath": "/api/gba/operations/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000064",
+      "routePath": "/api/gba/operations/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000065",
+      "routePath": "/api/gba/operations/inventory",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/inventory/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000066",
+      "routePath": "/api/gba/operations/kpis",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/kpis/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000067",
+      "routePath": "/api/gba/operations/purchasing",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/purchasing/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000068",
+      "routePath": "/api/gba/operations/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000069",
+      "routePath": "/api/gba/operations/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000070",
+      "routePath": "/api/gba/operations/shipping",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/shipping/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000071",
+      "routePath": "/api/gba/operations/warehouse",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/warehouse/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000072",
+      "routePath": "/api/gba/operations/work-orders",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/operations/work-orders/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000073",
+      "routePath": "/api/gba/sales/accounts",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/accounts/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000074",
+      "routePath": "/api/gba/sales/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000075",
+      "routePath": "/api/gba/sales/forecasting",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/forecasting/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000076",
+      "routePath": "/api/gba/sales/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000077",
+      "routePath": "/api/gba/sales/pipeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/pipeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000078",
+      "routePath": "/api/gba/sales/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000079",
+      "routePath": "/api/gba/sales/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000080",
+      "routePath": "/api/gba/sales/timeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gba/sales/timeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000081",
+      "routePath": "/api/gea/agents/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/agents/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000082",
+      "routePath": "/api/gea/agents",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/agents/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000083",
+      "routePath": "/api/gea/approvals",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/approvals/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000084",
+      "routePath": "/api/gea/audit",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/audit/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000085",
+      "routePath": "/api/gea/capabilities",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/capabilities/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000086",
+      "routePath": "/api/gea/context/cache",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/cache/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000087",
+      "routePath": "/api/gea/context/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000088",
+      "routePath": "/api/gea/context/preview",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/preview/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000089",
+      "routePath": "/api/gea/context/provenance",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/provenance/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000090",
+      "routePath": "/api/gea/context/replay",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/replay/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000091",
+      "routePath": "/api/gea/context",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000092",
+      "routePath": "/api/gea/context/validation",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/validation/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000093",
+      "routePath": "/api/gea/context/versions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/context/versions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000094",
+      "routePath": "/api/gea/executions/[executionId]/timeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/executions/[executionId]/timeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000095",
+      "routePath": "/api/gea/executions/control",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/executions/control/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000096",
+      "routePath": "/api/gea/executions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/executions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000097",
+      "routePath": "/api/gea/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000098",
+      "routePath": "/api/gea/memory/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/memory/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000099",
+      "routePath": "/api/gea/memory",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/memory/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000100",
+      "routePath": "/api/gea/orchestrations/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000101",
+      "routePath": "/api/gea/orchestrations/approvals",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/approvals/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000102",
+      "routePath": "/api/gea/orchestrations/cancel",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/cancel/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000103",
+      "routePath": "/api/gea/orchestrations/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000104",
+      "routePath": "/api/gea/orchestrations/pause",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/pause/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000105",
+      "routePath": "/api/gea/orchestrations/replay",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/replay/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000106",
+      "routePath": "/api/gea/orchestrations/resume",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/resume/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000107",
+      "routePath": "/api/gea/orchestrations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000108",
+      "routePath": "/api/gea/orchestrations/start",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/start/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000109",
+      "routePath": "/api/gea/orchestrations/timeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/orchestrations/timeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000110",
+      "routePath": "/api/gea/planning",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/planning/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [
+        "@/lib/gea/agent-api"
+      ],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000111",
+      "routePath": "/api/gea/replay",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/replay/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000112",
+      "routePath": "/api/gea/tools/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000113",
+      "routePath": "/api/gea/tools/catalog",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/catalog/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000114",
+      "routePath": "/api/gea/tools/categories",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/categories/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000115",
+      "routePath": "/api/gea/tools/execute",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/execute/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000116",
+      "routePath": "/api/gea/tools/executions/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/executions/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000117",
+      "routePath": "/api/gea/tools/executions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/executions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000118",
+      "routePath": "/api/gea/tools/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000119",
+      "routePath": "/api/gea/tools/replay",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/replay/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000120",
+      "routePath": "/api/gea/tools",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/tools/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000121",
+      "routePath": "/api/gea/workflows/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/workflows/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000122",
+      "routePath": "/api/gea/workflows",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gea/workflows/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000123",
+      "routePath": "/api/ged/audit",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/ged/audit/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000124",
+      "routePath": "/api/ged/entities/[entityKey]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/ged/entities/[entityKey]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000125",
+      "routePath": "/api/ged/entities",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/ged/entities/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000126",
+      "routePath": "/api/ged/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/ged/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000127",
+      "routePath": "/api/ged/relationships",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/ged/relationships/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000128",
+      "routePath": "/api/ged/validation",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/ged/validation/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000129",
+      "routePath": "/api/ged/versions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/ged/versions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000130",
+      "routePath": "/api/glw/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/glw/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000131",
+      "routePath": "/api/glw/jobs/[id]/retry",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/glw/jobs/[id]/retry/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000132",
+      "routePath": "/api/glw/jobs/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/glw/jobs/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000133",
+      "routePath": "/api/glw/jobs/callback/retry",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/glw/jobs/callback/retry/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000134",
+      "routePath": "/api/glw/jobs/callback",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/glw/jobs/callback/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000135",
+      "routePath": "/api/glw/jobs/page",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/glw/jobs/page/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000136",
+      "routePath": "/api/glw/jobs",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/glw/jobs/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000137",
+      "routePath": "/api/gmp/analytics/collections/[id]/retry",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/collections/[id]/retry/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000138",
+      "routePath": "/api/gmp/analytics/collections/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/collections/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000139",
+      "routePath": "/api/gmp/analytics/collections/[id]/timeline",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/collections/[id]/timeline/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000140",
+      "routePath": "/api/gmp/analytics/collections",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/collections/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000141",
+      "routePath": "/api/gmp/analytics/snapshots/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/snapshots/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000142",
+      "routePath": "/api/gmp/analytics/snapshots",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/snapshots/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000143",
+      "routePath": "/api/gmp/analytics/sources/[id]/capabilities",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/sources/[id]/capabilities/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000144",
+      "routePath": "/api/gmp/analytics/sources/[id]/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/sources/[id]/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000145",
+      "routePath": "/api/gmp/analytics/sources/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/sources/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": true,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000146",
+      "routePath": "/api/gmp/analytics/sources/[id]/validate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/sources/[id]/validate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000147",
+      "routePath": "/api/gmp/analytics/sources",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/analytics/sources/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000148",
+      "routePath": "/api/gmp/attribution",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/attribution/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000149",
+      "routePath": "/api/gmp/connections/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/connections/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000150",
+      "routePath": "/api/gmp/content-plans/[planId]/approve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content-plans/[planId]/approve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000151",
+      "routePath": "/api/gmp/content-plans/[planId]/reject",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content-plans/[planId]/reject/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000152",
+      "routePath": "/api/gmp/content-plans/[planId]/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content-plans/[planId]/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000153",
+      "routePath": "/api/gmp/content-plans/[planId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content-plans/[planId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000154",
+      "routePath": "/api/gmp/content-plans/[planId]/sections/reorder",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content-plans/[planId]/sections/reorder/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000155",
+      "routePath": "/api/gmp/content-plans/[planId]/sections",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content-plans/[planId]/sections/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000156",
+      "routePath": "/api/gmp/content-plans/[planId]/versions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content-plans/[planId]/versions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000157",
+      "routePath": "/api/gmp/content/drafts/[draftId]/approve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/approve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000158",
+      "routePath": "/api/gmp/content/drafts/[draftId]/generate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/generate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000159",
+      "routePath": "/api/gmp/content/drafts/[draftId]/generation-status",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/generation-status/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000160",
+      "routePath": "/api/gmp/content/drafts/[draftId]/lineage",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/lineage/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000161",
+      "routePath": "/api/gmp/content/drafts/[draftId]/preview",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/preview/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000162",
+      "routePath": "/api/gmp/content/drafts/[draftId]/publishing-eligibility",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/publishing-eligibility/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000163",
+      "routePath": "/api/gmp/content/drafts/[draftId]/reject",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/reject/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000164",
+      "routePath": "/api/gmp/content/drafts/[draftId]/repair",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/repair/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000165",
+      "routePath": "/api/gmp/content/drafts/[draftId]/request-changes",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/request-changes/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000166",
+      "routePath": "/api/gmp/content/drafts/[draftId]/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000167",
+      "routePath": "/api/gmp/content/drafts/[draftId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000168",
+      "routePath": "/api/gmp/content/drafts/[draftId]/sections",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/sections/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000169",
+      "routePath": "/api/gmp/content/drafts/[draftId]/validation",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/validation/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000170",
+      "routePath": "/api/gmp/content/drafts/[draftId]/validation/run",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/drafts/[draftId]/validation/run/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000171",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/approve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/approve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000172",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/regenerate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/regenerate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000173",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/reject",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/reject/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000174",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/request-changes",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/request-changes/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000175",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000176",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/revise",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/revise/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000177",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/revisions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/revisions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000178",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": true,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000179",
+      "routePath": "/api/gmp/content/sections/[sectionContentId]/validate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/content/sections/[sectionContentId]/validate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000180",
+      "routePath": "/api/gmp/decision-support",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/decision-support/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000181",
+      "routePath": "/api/gmp/evidence/catalog",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/evidence/catalog/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000182",
+      "routePath": "/api/gmp/evidence/metrics",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/evidence/metrics/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000183",
+      "routePath": "/api/gmp/evidence/publications",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/evidence/publications/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000184",
+      "routePath": "/api/gmp/evidence/recompile",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/evidence/recompile/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000185",
+      "routePath": "/api/gmp/evidence/runs",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/evidence/runs/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000186",
+      "routePath": "/api/gmp/evidence/snapshots/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/evidence/snapshots/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000187",
+      "routePath": "/api/gmp/evidence/snapshots",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/evidence/snapshots/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000188",
+      "routePath": "/api/gmp/internal-links/[linkId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/internal-links/[linkId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000189",
+      "routePath": "/api/gmp/knowledge/conflicts/[conflictId]/resolve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/knowledge/conflicts/[conflictId]/resolve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000190",
+      "routePath": "/api/gmp/knowledge/records/[recordId]/approve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/knowledge/records/[recordId]/approve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000191",
+      "routePath": "/api/gmp/knowledge/records/[recordId]/evidence",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/knowledge/records/[recordId]/evidence/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000192",
+      "routePath": "/api/gmp/knowledge/records/[recordId]/reject",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/knowledge/records/[recordId]/reject/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000193",
+      "routePath": "/api/gmp/knowledge/records/[recordId]/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/knowledge/records/[recordId]/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000194",
+      "routePath": "/api/gmp/knowledge/records/[recordId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/knowledge/records/[recordId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000195",
+      "routePath": "/api/gmp/knowledge/records/[recordId]/versions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/knowledge/records/[recordId]/versions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000196",
+      "routePath": "/api/gmp/page-briefs/[briefId]/approve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/page-briefs/[briefId]/approve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000197",
+      "routePath": "/api/gmp/page-briefs/[briefId]/reject",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/page-briefs/[briefId]/reject/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000198",
+      "routePath": "/api/gmp/page-briefs/[briefId]/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/page-briefs/[briefId]/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000199",
+      "routePath": "/api/gmp/page-briefs/[briefId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/page-briefs/[briefId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000200",
+      "routePath": "/api/gmp/page-briefs/[briefId]/versions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/page-briefs/[briefId]/versions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000201",
+      "routePath": "/api/gmp/page-relationships/[relationshipId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/page-relationships/[relationshipId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000202",
+      "routePath": "/api/gmp/page-sections/[sectionId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/page-sections/[sectionId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000203",
+      "routePath": "/api/gmp/pages/[pageId]/briefs",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/briefs/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000204",
+      "routePath": "/api/gmp/pages/[pageId]/content/drafts",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/content/drafts/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000205",
+      "routePath": "/api/gmp/pages/[pageId]/content/eligibility",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/content/eligibility/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000206",
+      "routePath": "/api/gmp/pages/[pageId]/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000207",
+      "routePath": "/api/gmp/pages/[pageId]/internal-links/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/internal-links/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000208",
+      "routePath": "/api/gmp/pages/[pageId]/internal-links",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/internal-links/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000209",
+      "routePath": "/api/gmp/pages/[pageId]/internal-links/scan",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/internal-links/scan/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000210",
+      "routePath": "/api/gmp/pages/[pageId]/plans/generate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/plans/generate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000211",
+      "routePath": "/api/gmp/pages/[pageId]/plans",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/plans/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000212",
+      "routePath": "/api/gmp/pages/[pageId]/publications",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/publications/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000213",
+      "routePath": "/api/gmp/pages/[pageId]/publishing/packages",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/publishing/packages/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000214",
+      "routePath": "/api/gmp/pages/[pageId]/readiness",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/readiness/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000215",
+      "routePath": "/api/gmp/pages/[pageId]/readiness/run",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/readiness/run/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000216",
+      "routePath": "/api/gmp/pages/[pageId]/relationships/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/relationships/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000217",
+      "routePath": "/api/gmp/pages/[pageId]/relationships",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/relationships/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000218",
+      "routePath": "/api/gmp/pages/[pageId]/relationships/scan",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/relationships/scan/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000219",
+      "routePath": "/api/gmp/pages/[pageId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/pages/[pageId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000220",
+      "routePath": "/api/gmp/projects/[id]/brand-profile",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/brand-profile/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PUT"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000221",
+      "routePath": "/api/gmp/projects/[id]/dashboard",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/dashboard/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000222",
+      "routePath": "/api/gmp/projects/[id]/knowledge/completeness",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/knowledge/completeness/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000223",
+      "routePath": "/api/gmp/projects/[id]/knowledge/completeness/run",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/knowledge/completeness/run/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000224",
+      "routePath": "/api/gmp/projects/[id]/knowledge/conflicts",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/knowledge/conflicts/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000225",
+      "routePath": "/api/gmp/projects/[id]/knowledge/context/assemble",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/knowledge/context/assemble/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000226",
+      "routePath": "/api/gmp/projects/[id]/knowledge/records",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/knowledge/records/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000227",
+      "routePath": "/api/gmp/projects/[id]/knowledge",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/knowledge/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000228",
+      "routePath": "/api/gmp/projects/[id]/knowledge/sources",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/knowledge/sources/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000229",
+      "routePath": "/api/gmp/projects/[id]/page-architecture/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/page-architecture/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000230",
+      "routePath": "/api/gmp/projects/[id]/page-architecture/scan",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/page-architecture/scan/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000231",
+      "routePath": "/api/gmp/projects/[id]/pages/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/pages/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000232",
+      "routePath": "/api/gmp/projects/[id]/pages",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/pages/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000233",
+      "routePath": "/api/gmp/projects/[id]/publishing/destinations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/publishing/destinations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000234",
+      "routePath": "/api/gmp/projects/[id]/publishing/publications",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/publishing/publications/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000235",
+      "routePath": "/api/gmp/projects/[id]/publishing/releases",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/publishing/releases/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000236",
+      "routePath": "/api/gmp/projects/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000237",
+      "routePath": "/api/gmp/projects/[id]/sites",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/[id]/sites/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000238",
+      "routePath": "/api/gmp/projects",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/projects/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000239",
+      "routePath": "/api/gmp/publishing/destinations/[destinationId]/capabilities",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/destinations/[destinationId]/capabilities/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": true,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000240",
+      "routePath": "/api/gmp/publishing/destinations/[destinationId]/credentials/invalidate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/destinations/[destinationId]/credentials/invalidate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000241",
+      "routePath": "/api/gmp/publishing/destinations/[destinationId]/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/destinations/[destinationId]/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000242",
+      "routePath": "/api/gmp/publishing/destinations/[destinationId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/destinations/[destinationId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000243",
+      "routePath": "/api/gmp/publishing/destinations/[destinationId]/test-read",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/destinations/[destinationId]/test-read/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000244",
+      "routePath": "/api/gmp/publishing/destinations/[destinationId]/test-write",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/destinations/[destinationId]/test-write/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": true,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000245",
+      "routePath": "/api/gmp/publishing/destinations/[destinationId]/validate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/destinations/[destinationId]/validate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000246",
+      "routePath": "/api/gmp/publishing/packages/[packageId]/approve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/packages/[packageId]/approve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000247",
+      "routePath": "/api/gmp/publishing/packages/[packageId]/manifest",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/packages/[packageId]/manifest/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000248",
+      "routePath": "/api/gmp/publishing/packages/[packageId]/reject",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/packages/[packageId]/reject/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000249",
+      "routePath": "/api/gmp/publishing/packages/[packageId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/packages/[packageId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000250",
+      "routePath": "/api/gmp/publishing/packages/[packageId]/submit",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/packages/[packageId]/submit/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": true,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000251",
+      "routePath": "/api/gmp/publishing/packages/[packageId]/validate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/packages/[packageId]/validate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000252",
+      "routePath": "/api/gmp/publishing/publications/[publicationId]/history",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/publications/[publicationId]/history/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000253",
+      "routePath": "/api/gmp/publishing/publications/[publicationId]/reconcile",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/publications/[publicationId]/reconcile/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000254",
+      "routePath": "/api/gmp/publishing/publications/[publicationId]/retry",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/publications/[publicationId]/retry/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000255",
+      "routePath": "/api/gmp/publishing/publications/[publicationId]/rollback",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/publications/[publicationId]/rollback/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000256",
+      "routePath": "/api/gmp/publishing/publications/[publicationId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/publications/[publicationId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000257",
+      "routePath": "/api/gmp/publishing/publications/[publicationId]/verify",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/publications/[publicationId]/verify/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000258",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/approve",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/approve/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000259",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/dependency-plan",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/dependency-plan/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000260",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/execute",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/execute/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000261",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/items",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/items/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000262",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/progress",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/progress/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000263",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/reject",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/reject/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000264",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/retry",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/retry/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000265",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000266",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/submit",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/submit/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": true,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000267",
+      "routePath": "/api/gmp/publishing/releases/[releaseId]/validate",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/publishing/releases/[releaseId]/validate/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000268",
+      "routePath": "/api/gmp/recommendations/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/recommendations/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000269",
+      "routePath": "/api/gmp/recommendations/catalog",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/recommendations/catalog/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000270",
+      "routePath": "/api/gmp/recommendations/dismiss",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/recommendations/dismiss/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000271",
+      "routePath": "/api/gmp/recommendations/health",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/recommendations/health/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000272",
+      "routePath": "/api/gmp/recommendations/replay",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/recommendations/replay/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000273",
+      "routePath": "/api/gmp/recommendations/review",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/recommendations/review/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000274",
+      "routePath": "/api/gmp/recommendations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/recommendations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000275",
+      "routePath": "/api/gmp/sites/[id]/connections",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/sites/[id]/connections/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000276",
+      "routePath": "/api/gmp/sites/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gmp/sites/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "PATCH",
+        "DELETE"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000277",
+      "routePath": "/api/gop/dead-letters/[id]/archive",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/dead-letters/[id]/archive/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000278",
+      "routePath": "/api/gop/dead-letters/[id]/retry",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/dead-letters/[id]/retry/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000279",
+      "routePath": "/api/gop/dead-letters",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/dead-letters/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000280",
+      "routePath": "/api/gop/executions/[id]/history",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/executions/[id]/history/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000281",
+      "routePath": "/api/gop/executions/[id]/replay",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/executions/[id]/replay/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000282",
+      "routePath": "/api/gop/executions/[id]",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/executions/[id]/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000283",
+      "routePath": "/api/gop/executions",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/executions/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000284",
+      "routePath": "/api/gop/jobs/[id]/events",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/jobs/[id]/events/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000285",
+      "routePath": "/api/gop/jobs/[id]/events/stream",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/jobs/[id]/events/stream/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000286",
+      "routePath": "/api/gop/jobs/[id]/execution",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/jobs/[id]/execution/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000287",
+      "routePath": "/api/gop/metrics",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/metrics/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000288",
+      "routePath": "/api/gop/operations",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/operations/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "unknown",
+      "routeId": "GAR1-ROUTE-000289",
+      "routePath": "/api/gop/operations/stream",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/operations/stream/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "GET"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000290",
+      "routePath": "/api/gop/workers/[id]/heartbeat",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/workers/[id]/heartbeat/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000291",
+      "routePath": "/api/gop/workers/protocol/[id]/heartbeat",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/workers/protocol/[id]/heartbeat/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000292",
+      "routePath": "/api/gop/workers/protocol/[id]/leases/acquire",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/workers/protocol/[id]/leases/acquire/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000293",
+      "routePath": "/api/gop/workers/protocol/[id]/leases/release",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/workers/protocol/[id]/leases/release/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000294",
+      "routePath": "/api/gop/workers/protocol/[id]/leases/renew",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/workers/protocol/[id]/leases/renew/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000295",
+      "routePath": "/api/gop/workers/protocol/register",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/workers/protocol/register/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    },
+    {
+      "authenticationChecksStaticallyVisible": false,
+      "authorizationChecksStaticallyVisible": false,
+      "directPrismaUsage": false,
+      "importedAgents": [],
+      "importedRepositories": [],
+      "importedServices": [],
+      "requestValidationStaticallyVisible": false,
+      "responseConstruction": "explicit",
+      "routeId": "GAR1-ROUTE-000296",
+      "routePath": "/api/gop/workers/register",
+      "runtimeSelection": "default",
+      "sourceFile": "src/app/api/gop/workers/register/route.ts",
+      "staticUncertainty": null,
+      "supportedMethods": [
+        "POST"
+      ]
+    }
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/api-route-inventory",
+  "schemaVersion": "1.0.0"
+}

@@ -1,0 +1,87 @@
+{
+  "buildConfigs": [
+    "docs/architecture/0009-workflow-engine.md",
+    "eslint.config.mjs",
+    "GEA-0004-Workflow-Engine.md",
+    "genesis/development/git-workflow.md",
+    "jest.config.js",
+    "MODULE_COMPILER_V0.3_WORKFLOW_REPORT.md",
+    "next.config.ts",
+    "postcss.config.mjs",
+    "prisma.config.ts",
+    "src/app/api/gea/workflows/[id]/route.ts",
+    "src/app/api/gea/workflows/route.ts",
+    "src/platform/gop/runtime/workflow-orchestrator.ts",
+    "tools/genesis/compiler/contracts/ModuleWorkflowGenerator.mjs",
+    "tools/genesis/compiler/renderers/ModuleWorkflowContractRenderer.mjs"
+  ],
+  "conflictingBuildConfigSignals": [
+    "next.config.ts"
+  ],
+  "evidenceClassification": "VERIFIED",
+  "generationMethod": "deterministic-static-repository-scan",
+  "limitations": [
+    "workspace manager inferred from lockfiles"
+  ],
+  "lockfiles": [
+    "package-lock.json"
+  ],
+  "packages": [
+    {
+      "dependencies": {
+        "@prisma/adapter-pg": "^7.9.0",
+        "@prisma/client": "^7.9.0",
+        "@types/pdf-parse": "^1.1.5",
+        "next": "16.2.10",
+        "pdf-parse": "^2.4.5",
+        "pg": "^8.22.0",
+        "prisma": "^7.9.0",
+        "react": "19.2.4",
+        "react-dom": "19.2.4"
+      },
+      "devDependencies": {
+        "@jest/globals": "^30.4.1",
+        "@tailwindcss/postcss": "^4",
+        "@types/jest": "^30.0.0",
+        "@types/node": "^20",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "eslint": "^9",
+        "eslint-config-next": "16.2.10",
+        "jest": "^30.4.2",
+        "tailwindcss": "^4",
+        "ts-jest": "^29.4.11",
+        "typescript": "^5"
+      },
+      "file": "package.json",
+      "name": "platform",
+      "optionalDependencies": {},
+      "peerDependencies": {},
+      "scripts": {
+        "build": "next build",
+        "dev": "next dev",
+        "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts",
+        "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
+        "gar:scan": "node tools/genesis-audit/src/run.mjs",
+        "gar:test": "jest tests/genesis-audit --runInBand",
+        "lint": "eslint",
+        "start": "next start",
+        "test": "jest",
+        "test:watch": "jest --watch"
+      },
+      "version": "0.1.0",
+      "workspaces": null
+    }
+  ],
+  "scannerVersion": "1.0.0",
+  "schemaIdentifier": "gar-0001/package-inventory",
+  "schemaVersion": "1.0.0",
+  "tsConfigs": [
+    "tsconfig.gmp-0005.json",
+    "tsconfig.gmp-0005c-closure.json",
+    "tsconfig.gmp-0006a.json",
+    "tsconfig.gmp-0006c.json",
+    "tsconfig.gmp-0006d.json",
+    "tsconfig.json"
+  ]
+}
