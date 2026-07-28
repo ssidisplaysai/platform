@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gar-0002/coupling-metrics.schema.json/v1",
+  "type": "object",
+  "required": [
+    "schemaIdentifier",
+    "schemaVersion",
+    "toolVersion",
+    "gar0001BaselineHashes",
+    "evidenceClassification",
+    "generationMethod",
+    "limitations",
+    "afferentTop"
+  ],
+  "properties": {
+    "schemaIdentifier": {"type":"string"},
+    "schemaVersion": {"type":"string"},
+    "toolVersion": {"type":"string"},
+    "gar0001BaselineHashes": {"type":"array"},
+    "evidenceClassification": {"type":"string"},
+    "generationMethod": {"type":"string"},
+    "limitations": {"type":"array"},
+    "afferentTop": {}
+  }
+}

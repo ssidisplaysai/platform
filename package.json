@@ -11,6 +11,9 @@
     "test:watch": "jest --watch",
     "gar:scan": "node tools/genesis-audit/src/run.mjs",
     "gar:test": "jest tests/genesis-audit --runInBand",
+    "gar2:scan": "node tools/genesis-audit/src/gar-0002-run.mjs",
+    "gar2:validate": "node tools/genesis-audit/src/gar-0002-validate.mjs",
+    "gar2:test": "jest tests/genesis-audit/gar-0002 --runInBand",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },

@@ -1,0 +1,3467 @@
+{
+  "applicationDependencies": [],
+  "edges": [
+    {
+      "from": "src/compiler/core/CompilerArtifactManager.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerArtifactManager.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerArtifactManager.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerContext.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerCore.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerPipeline.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerCore.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/passes/DiscoveryCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerCore.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/passes/EvidenceCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerCore.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerDiagnosticsEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerManifestManager.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerManifestManager.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerManifestManager.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerArtifactManager.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerContext.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerDiagnosticsEngine.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerManifestManager.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerPassRegistry.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerSession.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerValidationEngine.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerVersionManager.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/passes/DiscoveryCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/passes/EvidenceCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerPipeline.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerSession.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerSession.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/core/CompilerValidationEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerArtifactManager.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerContext.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerCore.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerDiagnosticsEngine.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerManifestManager.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerPassRegistry.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerPipeline.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerSession.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerValidationEngine.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerVersionManager.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/passes/DiscoveryCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/passes/EvidenceCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/core/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/DiscoveryCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/DiscoveryCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryEngine.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/DiscoveryCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/DiscoveryCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/EvidenceCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/passes/DiscoveryCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/EvidenceCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/EvidenceCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceEmitter.ts"
+    },
+    {
+      "from": "src/compiler/core/passes/EvidenceCompilerPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/core/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/core/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/core/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryCoordinator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryCoordinator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryRegistry.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryCoordinator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryCoordinator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceEmitter.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryCoordinator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryCoordinator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/normalization/CanonicalNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryCoordinator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/ProvenanceEngine.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryCoordinator.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryRegistry.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/plugins/json/JsonDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/plugins/markdown/MarkdownDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryJob.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryError.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/discovery/DiscoveryRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/discovery/KnowledgeArtifact.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/discovery/KnowledgeArtifact.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeVersion.ts"
+    },
+    {
+      "from": "src/compiler/discovery/KnowledgeArtifact.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/Lineage.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceEmitter.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceEmitter.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceEmitter.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraphHasher.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceEmitter.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceEmitter.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceNode.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceEmitter.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceRelationship.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceEmitter.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceValidator.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraph.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceNode.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraph.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceRelationship.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphHasher.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphHasher.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphHasher.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphMerger.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphMerger.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceNode.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphMerger.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceRelationship.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphQuery.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphQuery.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceNode.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphQuery.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceRelationship.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphTransform.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphTransform.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceNode.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceGraphTransform.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceRelationship.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceIR.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceValidator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceValidator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceGraphHasher.ts"
+    },
+    {
+      "from": "src/compiler/evidence/EvidenceValidator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerDiagnosticsEngine.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerValidationEngine.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/BusinessGenomePassRegistry.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/CompilerPassRegistry.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/CanonicalVerificationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/ConsistencyValidationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/EvidenceCorrelationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/EvidenceGroupingPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/GraphConstructionPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/InputValidationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/SemanticConsolidationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/SemanticIdentityAssignmentPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/passes/SemanticResolutionPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/BusinessGenomePassRegistry.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/diagnostics.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/BusinessGenomeCompiler.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/BusinessGenomePassRegistry.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/index.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/CanonicalVerificationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/CanonicalVerificationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/CanonicalVerificationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/CanonicalVerificationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/CanonicalVerificationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/ConsistencyValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/ConsistencyValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/ConsistencyValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/ConsistencyValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/ConsistencyValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/ConsistencyValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceCorrelationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceCorrelationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceCorrelationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceCorrelationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceGroupingPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceGroupingPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceGroupingPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/EvidenceGroupingPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/GraphConstructionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/GraphConstructionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/GraphConstructionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/GraphConstructionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/GraphConstructionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/BusinessGenomePublicationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/CanonicalVerificationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/ConsistencyValidationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/EvidenceCorrelationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/EvidenceGroupingPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/GraphConstructionPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/InputValidationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/SemanticConsolidationPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/SemanticIdentityAssignmentPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/passes/SemanticResolutionPass.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/InputValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/InputValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/InputValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/InputValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/InputValidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticConsolidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticConsolidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticConsolidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticConsolidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticConsolidationPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticIdentityAssignmentPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticIdentityAssignmentPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticIdentityAssignmentPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticIdentityAssignmentPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticIdentityAssignmentPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/diagnostics.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/passes/SemanticResolutionPass.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/pipeline-types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/pipeline-types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/pipeline-types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/genome/pipeline-types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/pipeline-types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/genome/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/stableStringify.ts"
+    },
+    {
+      "from": "src/compiler/genome/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/genome/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/genome/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "from": "src/compiler/genome/types.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerArtifactManager.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerContext.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerCore.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerDiagnosticsEngine.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerManifestManager.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerPassRegistry.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerPipeline.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerSession.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerValidationEngine.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/CompilerVersionManager.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/passes/DiscoveryCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/passes/EvidenceCompilerPass.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/core/types.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/DiscoveryCoordinator.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/DiscoveryEngine.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/DiscoveryError.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/DiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/DiscoveryRegistry.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/discovery/KnowledgeVersion.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceEmitter.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceGraphHasher.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceGraphMerger.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceGraphQuery.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceGraphTransform.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceNode.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceRelationship.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/evidence/EvidenceValidator.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/index.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/genome/index.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeClaim.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeCompiler.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeGraph.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeGraphHasher.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeGraphQuery.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeIR.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeNode.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeRelationship.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeValidator.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/normalization/CanonicalNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/normalization/ContentNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/normalization/MetadataNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/plugins/json/JsonDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/plugins/markdown/MarkdownDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/provenance/Fingerprint.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/provenance/Lineage.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/provenance/ProvenanceEngine.ts"
+    },
+    {
+      "from": "src/compiler/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/EnterpriseKnowledgeObject.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeClassification.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/EnterpriseKnowledgeObject.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeType.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/EnterpriseKnowledgeObject.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeClassification.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeIdentity.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeObjectBuilder.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/knowledge/KnowledgeType.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceNode.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/evidence/EvidenceValidator.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeClaim.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeGraph.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeGraphHasher.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeIR.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeNode.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeRelationship.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeValidator.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraph.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeClaim.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraph.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeNode.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraph.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeRelationship.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraphHasher.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeGraph.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraphHasher.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeIR.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraphHasher.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraphQuery.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeClaim.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraphQuery.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeGraph.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraphQuery.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeNode.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeGraphQuery.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeRelationship.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeIR.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeGraph.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeObjectBuilder.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/EnterpriseKnowledgeObject.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeObjectBuilder.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeClassification.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeObjectBuilder.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeIdentity.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeObjectBuilder.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeType.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeValidator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeGraph.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeValidator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeGraphHasher.ts"
+    },
+    {
+      "from": "src/compiler/knowledge/KnowledgeValidator.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/KnowledgeIR.ts"
+    },
+    {
+      "from": "src/compiler/normalization/CanonicalNormalizer.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/normalization/CanonicalNormalizer.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/normalization/ContentNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/normalization/CanonicalNormalizer.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/normalization/MetadataNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryError.ts"
+    },
+    {
+      "from": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/plugins/filesystem/FilesystemDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/Lineage.ts"
+    },
+    {
+      "from": "src/compiler/plugins/json/JsonDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryError.ts"
+    },
+    {
+      "from": "src/compiler/plugins/json/JsonDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/plugins/json/JsonDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/plugins/json/JsonDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/plugins/json/JsonDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/Lineage.ts"
+    },
+    {
+      "from": "src/compiler/plugins/markdown/MarkdownDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryError.ts"
+    },
+    {
+      "from": "src/compiler/plugins/markdown/MarkdownDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/plugins/markdown/MarkdownDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/plugins/markdown/MarkdownDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/plugins/markdown/MarkdownDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/Lineage.ts"
+    },
+    {
+      "from": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryError.ts"
+    },
+    {
+      "from": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryJob.ts"
+    },
+    {
+      "from": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/DiscoveryPlugin.ts"
+    },
+    {
+      "from": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/normalization/ContentNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/plugins/yaml/YamlDiscoveryPlugin.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/Lineage.ts"
+    },
+    {
+      "from": "src/compiler/provenance/Fingerprint.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/provenance/Lineage.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "from": "src/compiler/provenance/ProvenanceEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeArtifact.ts"
+    },
+    {
+      "from": "src/compiler/provenance/ProvenanceEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/discovery/KnowledgeVersion.ts"
+    },
+    {
+      "from": "src/compiler/provenance/ProvenanceEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/normalization/CanonicalNormalizer.ts"
+    },
+    {
+      "from": "src/compiler/provenance/ProvenanceEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/Fingerprint.ts"
+    },
+    {
+      "from": "src/compiler/provenance/ProvenanceEngine.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/provenance/SourceHash.ts"
+    },
+    {
+      "from": "src/compiler/stages/EvidenceCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/compiler/knowledge/index.ts"
+    },
+    {
+      "from": "src/compiler/stages/EvidenceCompiler.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/models/index.ts"
+    },
+    {
+      "from": "src/compiler/stages/index.ts",
+      "kind": "verified re-export",
+      "to": "src/compiler/stages/EvidenceCompiler.ts"
+    },
+    {
+      "from": "src/evidence-ir/compiler/index.ts",
+      "kind": "verified static import",
+      "to": "src/discovery/models/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/compiler/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/canonicalization/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/compiler/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/identity/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/compiler/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/models/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/compiler/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/validation/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/exporters/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/canonicalization/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/exporters/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/models/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/identity/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/canonicalization/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/pipeline/index.ts",
+      "kind": "verified static import",
+      "to": "src/discovery/models/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/pipeline/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/compiler/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/pipeline/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/exporters/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/pipeline/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/models/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/validation/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/identity/index.ts"
+    },
+    {
+      "from": "src/evidence-ir/validation/index.ts",
+      "kind": "verified static import",
+      "to": "src/evidence-ir/models/index.ts"
+    },
+    {
+      "from": "tools/genesis/commands/ai.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/AIOrchestratorKernel.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/boot.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeBootRunner.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/business.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/BusinessCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/compile.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/compileModules.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/compile.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/ApplicationCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/compile.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/CodeGenerationEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/compile.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SolutionCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/compileModules.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/compiler/ModuleCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/decide.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/DecisionEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/evolve.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EvolutionEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/AutomationEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/CommandBus.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/EventBus.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/QueryBus.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeApiGateway.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeCommandContract.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeEventContract.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/execute.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeQueryContract.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/knowledge.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/KnowledgeCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/learn.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/LearningEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/package.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PackageCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/partner.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/partner.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityInspector.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/partner.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/plan.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/planner/GenerationContext.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/plan.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/planner/GenerationPlanner.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/plan.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PlanningEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/plan.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/registry/DefinitionResolver.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/promote.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/promotion/PromotionEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/scaffold.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/registry/scaffolds.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/scaffold.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/utils/write-file.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/self.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/GenesisPlatformBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/self.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/GenesisPlatformInspector.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/self.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/GenesisPlatformInspector.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/self.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/GenesisPlatformValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/self.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/GenesisPlatformValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/simulate.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SimulationEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/tenant.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/IdentityCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/twin.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EnterpriseTwinBuilder.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/validate.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/validateModules.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/validate.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/validators/generated-slice/GeneratedSliceValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/commands/validateModules.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/validators/ModuleManifestValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/AIOrchestratorKernel.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/AIOrchestratorBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ApplicationCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/ApplicationBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/blueprints/Blueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/blueprints/BlueprintLoader.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/blueprints/BlueprintValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/BusinessCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/BusinessBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/ir/BlueprintBuilder.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/APIExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/CapabilityExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/EventExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/FieldExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/IndexExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/LifecycleExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/ModuleExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/PermissionExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/PolicyExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/RegistrationExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/RelationshipExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/RulesExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/SearchExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/TestExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/metadata-engine/ValidationExpander.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/registry/RendererRegistry.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/registry/RendererTarget.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/CodeGenerationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/utils/SimpleYAMLParser.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/GenerationCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/compiler/CompilationDiagnostic.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/GenerationCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/compiler/CompilationResult.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/GenerationCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/writers/ArtifactRecord.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/GenerationCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/entity/TemplateRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/renderers/ModuleAIAgentContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/renderers/ModuleAPIContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/renderers/ModuleAutomationContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/renderers/ModuleDashboardContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/renderers/ModuleManifestRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/renderers/ModuleNavigationContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/renderers/ModuleWorkflowContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/DecisionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/DecisionBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/EnterpriseTwinBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EnterpriseTwinBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/EvolutionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EvolutionBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/GenesisPlatformInspector.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/GenesisPlatformBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/GenesisPlatformValidator.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/GenesisPlatformBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/IdentityCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/IdentityBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleAIAgentGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleAPIGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleAutomationGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleDashboardGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleDocumentationGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleKnowledgeContextGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleNavigationGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/contracts/ModuleWorkflowGenerator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/KnowledgeCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/KnowledgeGraphBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/LearningEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/LearningBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/PackageCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PackageBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/PartnerQRIdentityInspector.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/PartnerQRIdentityValidator.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/CompilerPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPassResult.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/CompilerPipeline.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerContext.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/CompilerPipeline.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPassRegistry.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/BlueprintPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/DefinitionRegistryPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/PlanningPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/PromotionPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/RenderingPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/RuntimeRegistrationPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/ValidationPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/pipeline/passes/WritingPass.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/pipeline/CompilerPass.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/planner/GenerationPlanner.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/planner/GenerationPlan.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/planner/GenerationPlanner.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/planner/GenerationStep.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/PlanningEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PlanningBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/promotion/PromotionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/promotion/PromotionContext.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/promotion/PromotionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/promotion/PromotionPlan.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/promotion/PromotionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/promotion/PromotionResult.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/promotion/PromotionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/promotion/PromotionValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/promotion/PromotionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/promotion/RollbackManager.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/promotion/PromotionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/promotion/RuntimeRegistrar.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/DefinitionRegistry.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/registry/DefinitionIndex.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/DefinitionRegistry.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/registry/DefinitionResolver.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/registry/RendererTarget.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/DocumentationRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/DTORenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/ErrorContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/EventsRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/GraphQLRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/ModuleRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/OpenAPIRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/PermissionsRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/PolicyRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/RegistrationRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/RepositoryRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/RESTContractRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/SearchRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/ServiceRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/TestRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/registry/RendererRegistry.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/compiler/renderers/ValidatorRenderer.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/SimulationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SimulationBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/SolutionCompiler.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SolutionBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/compiler/writers/ArtifactWriter.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/writers/WriteResult.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/ai.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/boot.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/business.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/compile.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/decide.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/doctor.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/evolve.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/execute.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/install.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/knowledge.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/learn.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/list.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/package.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/partner.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/plan.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/promote.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/runtime.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/scaffold.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/self.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/simulate.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/tenant.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/twin.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/uninstall.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/commands/validate.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/CodeGenerationEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/genesis.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestRunner.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/AutomationEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeAutomationContract.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/CommandBus.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeCommandContract.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/EventBus.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeEventContract.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/ExecutionValidator.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/ExecutionContract.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/QueryBus.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeQueryContract.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/RuntimeApiGateway.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeApiGatewayContract.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/RuntimeBootPipeline.test.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeBootPipeline.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/RuntimeBootRunner.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeBootPipeline.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/ExecutionContract.mjs"
+    },
+    {
+      "from": "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/ExecutionValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisInstance.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/GenesisObject.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectAudit.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectIdentity.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectKnowledge.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectLifecycle.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectMetadata.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectPermission.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectRelationship.ts"
+    },
+    {
+      "from": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "kind": "verified static import",
+      "to": "tools/genesis/templates/core-object-system/ObjectTimeline.ts"
+    },
+    {
+      "from": "tools/genesis/templates/entity/definition.template.ts",
+      "kind": "verified static import",
+      "to": "src/domain/schema/EntitySchema.ts"
+    },
+    {
+      "from": "tools/genesis/tests/BusinessCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/BusinessBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/BusinessCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/BusinessCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/KnowledgeGraphTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/KnowledgeCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/KnowledgeGraphTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/KnowledgeGraphBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/AIOrchestratorTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/AIOrchestratorBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/AIOrchestratorTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/AIOrchestratorKernel.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/AIOrchestratorTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ApiGatewayTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeApiGateway.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ApiGatewayTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ApplicationCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/ApplicationBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ApplicationCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/ApplicationCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ApplicationCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/AutomationEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/AutomationEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/AutomationEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeAutomationContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/AutomationEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeEventContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/AutomationEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/BootTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeBootPipeline.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/BootTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/CommandBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/CommandBus.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/CommandBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeCommandContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/CommandBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/CompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/DecisionEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/DecisionBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/DecisionEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/DecisionEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/DecisionEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/DoctorTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EnterpriseTwinTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EnterpriseTwinBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EnterpriseTwinTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EnterpriseTwinBuilder.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EnterpriseTwinTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EventBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/EventBus.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EventBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeEventContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EventBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EvolutionEngineTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EvolutionBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EvolutionEngineTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/EvolutionEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/EvolutionEngineTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ExecutionTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/ExecutionContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ExecutionTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/ExecutionValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ExecutionTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeExecutionEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ExecutionTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/GenesisPlatformTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/GenesisPlatformBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/GenesisPlatformTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/GenesisPlatformInspector.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/GenesisPlatformTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/GenesisPlatformValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/GenesisPlatformTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/IdentityCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/IdentityBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/IdentityCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/IdentityCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/IdentityCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/KnowledgeGraphTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/KnowledgeCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/KnowledgeGraphTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/KnowledgeGraphBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/KnowledgeGraphTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/LearningEngineTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/LearningBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/LearningEngineTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/LearningEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/LearningEngineTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/MetaModelTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PackageCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PackageBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PackageCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PackageCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PackageCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PartnerQRIdentityTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PartnerQRIdentityTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityInspector.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PartnerQRIdentityTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PartnerQRIdentityValidator.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PartnerQRIdentityTestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PassPipelineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PlannerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PlanningEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PlanningBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PlanningEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/PlanningEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PlanningEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/PromotionTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/QueryBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/QueryBus.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/QueryBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/runtime/RuntimeQueryContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/QueryBusTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/RegistryTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/RuntimeTests.mjs",
+      "kind": "verified dynamic import",
+      "to": "tools/genesis/commands/runtime.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/RuntimeTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/SimulationEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SimulationBlueprint.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/SimulationEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SimulationEngine.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/SimulationEngineTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/SolutionCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SolutionBlueprintContract.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/SolutionCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/compiler/SolutionCompiler.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/SolutionCompilerTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/TemplateTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/suites/ValidationTests.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/TestRunner.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestReporter.mjs"
+    },
+    {
+      "from": "tools/genesis/tests/TestSuite.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/tests/TestCase.mjs"
+    },
+    {
+      "from": "tools/genesis/validators/generated-slice/GeneratedSliceValidator.mjs",
+      "kind": "verified static import",
+      "to": "tools/genesis/validators/generated-slice/GeneratedSliceReport.mjs"
+    }
+  ],
+  "entryPoints": [
+    "tools/genesis/commands/ai.mjs",
+    "tools/genesis/commands/boot.mjs",
+    "tools/genesis/commands/business.mjs",
+    "tools/genesis/commands/compile.mjs",
+    "tools/genesis/commands/compileModules.mjs",
+    "tools/genesis/commands/decide.mjs",
+    "tools/genesis/commands/doctor.mjs",
+    "tools/genesis/commands/evolve.mjs",
+    "tools/genesis/commands/execute.mjs",
+    "tools/genesis/commands/install.mjs",
+    "tools/genesis/commands/knowledge.mjs",
+    "tools/genesis/commands/learn.mjs",
+    "tools/genesis/commands/list.mjs",
+    "tools/genesis/commands/package.mjs",
+    "tools/genesis/commands/partner.mjs",
+    "tools/genesis/commands/plan.mjs",
+    "tools/genesis/commands/promote.mjs",
+    "tools/genesis/commands/runtime.mjs",
+    "tools/genesis/commands/scaffold.mjs",
+    "tools/genesis/commands/self.mjs",
+    "tools/genesis/commands/simulate.mjs",
+    "tools/genesis/commands/tenant.mjs",
+    "tools/genesis/commands/twin.mjs",
+    "tools/genesis/commands/uninstall.mjs",
+    "tools/genesis/commands/validate.mjs",
+    "tools/genesis/commands/validateModules.mjs",
+    "tools/genesis/compiler/AIOrchestratorBlueprint.mjs",
+    "tools/genesis/compiler/AIOrchestratorKernel.mjs",
+    "tools/genesis/compiler/ApplicationBlueprintContract.mjs",
+    "tools/genesis/compiler/ApplicationCompiler.mjs",
+    "tools/genesis/compiler/BusinessBlueprint.mjs",
+    "tools/genesis/compiler/BusinessCompiler.mjs",
+    "tools/genesis/compiler/CodeGenerationEngine.mjs",
+    "tools/genesis/compiler/DecisionBlueprint.mjs",
+    "tools/genesis/compiler/DecisionEngine.mjs",
+    "tools/genesis/compiler/EnterpriseTwinBlueprint.mjs",
+    "tools/genesis/compiler/EnterpriseTwinBuilder.mjs",
+    "tools/genesis/compiler/EvolutionBlueprint.mjs",
+    "tools/genesis/compiler/EvolutionEngine.mjs",
+    "tools/genesis/compiler/GenerationPlan.mjs",
+    "tools/genesis/compiler/GenesisPlatformBlueprint.mjs",
+    "tools/genesis/compiler/GenesisPlatformInspector.mjs",
+    "tools/genesis/compiler/GenesisPlatformValidator.mjs",
+    "tools/genesis/compiler/IdentityBlueprintContract.mjs",
+    "tools/genesis/compiler/IdentityCompiler.mjs",
+    "tools/genesis/compiler/KnowledgeCompiler.mjs",
+    "tools/genesis/compiler/KnowledgeGraphBlueprint.mjs",
+    "tools/genesis/compiler/LearningBlueprint.mjs",
+    "tools/genesis/compiler/LearningEngine.mjs",
+    "tools/genesis/compiler/PackageBlueprintContract.mjs",
+    "tools/genesis/compiler/PackageCompiler.mjs",
+    "tools/genesis/compiler/PartnerQRIdentityBlueprint.mjs",
+    "tools/genesis/compiler/PartnerQRIdentityInspector.mjs",
+    "tools/genesis/compiler/PartnerQRIdentityValidator.mjs",
+    "tools/genesis/compiler/PlanningBlueprint.mjs",
+    "tools/genesis/compiler/PlanningEngine.mjs",
+    "tools/genesis/compiler/SimpleCodeGenerators.mjs",
+    "tools/genesis/compiler/SimulationBlueprint.mjs",
+    "tools/genesis/compiler/SimulationEngine.mjs",
+    "tools/genesis/compiler/SolutionBlueprintContract.mjs",
+    "tools/genesis/compiler/SolutionCompiler.mjs",
+    "tools/genesis/compiler/blueprints/Blueprint.mjs",
+    "tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
+    "tools/genesis/compiler/blueprints/BlueprintLoader.mjs",
+    "tools/genesis/compiler/blueprints/BlueprintValidator.mjs",
+    "tools/genesis/compiler/compiler/CompilationContext.mjs",
+    "tools/genesis/compiler/compiler/CompilationDiagnostic.mjs",
+    "tools/genesis/compiler/compiler/CompilationResult.mjs",
+    "tools/genesis/compiler/compiler/GenerationCompiler.mjs",
+    "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
+    "tools/genesis/compiler/contracts/ModuleAIAgentGenerator.mjs",
+    "tools/genesis/compiler/contracts/ModuleAPIGenerator.mjs",
+    "tools/genesis/compiler/contracts/ModuleAutomationGenerator.mjs",
+    "tools/genesis/compiler/contracts/ModuleDashboardGenerator.mjs",
+    "tools/genesis/compiler/contracts/ModuleDocumentationGenerator.mjs",
+    "tools/genesis/compiler/contracts/ModuleKnowledgeContextGenerator.mjs",
+    "tools/genesis/compiler/contracts/ModuleNavigationGenerator.mjs",
+    "tools/genesis/compiler/contracts/ModuleWorkflowGenerator.mjs",
+    "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
+    "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
+    "tools/genesis/compiler/ir/ModuleBlueprint.mjs",
+    "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+    "tools/genesis/compiler/metadata-engine/APIExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/CapabilityExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/EventExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/FieldExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/IndexExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/LifecycleExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/ModuleExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/PermissionExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/PolicyExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/RegistrationExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/RelationshipExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/RulesExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/SearchExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/TestExpander.mjs",
+    "tools/genesis/compiler/metadata-engine/ValidationExpander.mjs",
+    "tools/genesis/compiler/pipeline/CompilerContext.mjs",
+    "tools/genesis/compiler/pipeline/CompilerPass.mjs",
+    "tools/genesis/compiler/pipeline/CompilerPassRegistry.mjs",
+    "tools/genesis/compiler/pipeline/CompilerPassResult.mjs",
+    "tools/genesis/compiler/pipeline/CompilerPipeline.mjs",
+    "tools/genesis/compiler/pipeline/passes/BlueprintPass.mjs",
+    "tools/genesis/compiler/pipeline/passes/DefinitionRegistryPass.mjs",
+    "tools/genesis/compiler/pipeline/passes/PlanningPass.mjs",
+    "tools/genesis/compiler/pipeline/passes/PromotionPass.mjs",
+    "tools/genesis/compiler/pipeline/passes/RenderingPass.mjs",
+    "tools/genesis/compiler/pipeline/passes/RuntimeRegistrationPass.mjs",
+    "tools/genesis/compiler/pipeline/passes/ValidationPass.mjs",
+    "tools/genesis/compiler/pipeline/passes/WritingPass.mjs",
+    "tools/genesis/compiler/planner/GenerationContext.mjs",
+    "tools/genesis/compiler/planner/GenerationPlan.mjs",
+    "tools/genesis/compiler/planner/GenerationPlanner.mjs",
+    "tools/genesis/compiler/planner/GenerationStep.mjs",
+    "tools/genesis/compiler/promotion/PromotionContext.mjs",
+    "tools/genesis/compiler/promotion/PromotionEngine.mjs",
+    "tools/genesis/compiler/promotion/PromotionPlan.mjs",
+    "tools/genesis/compiler/promotion/PromotionResult.mjs",
+    "tools/genesis/compiler/promotion/PromotionValidator.mjs",
+    "tools/genesis/compiler/promotion/RollbackManager.mjs",
+    "tools/genesis/compiler/promotion/RuntimeRegistrar.mjs",
+    "tools/genesis/compiler/registry/DefinitionIndex.mjs",
+    "tools/genesis/compiler/registry/DefinitionLoader.mjs",
+    "tools/genesis/compiler/registry/DefinitionRegistry.mjs",
+    "tools/genesis/compiler/registry/DefinitionResolver.mjs",
+    "tools/genesis/compiler/registry/RendererRegistry.mjs",
+    "tools/genesis/compiler/registry/RendererTarget.mjs",
+    "tools/genesis/compiler/renderers/DTORenderer.mjs",
+    "tools/genesis/compiler/renderers/DocumentationRenderer.mjs",
+    "tools/genesis/compiler/renderers/ErrorContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/EventsRenderer.mjs",
+    "tools/genesis/compiler/renderers/GraphQLRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleAIAgentContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleAPIContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleAutomationContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleDashboardContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleManifestRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleNavigationContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleRenderer.mjs",
+    "tools/genesis/compiler/renderers/ModuleWorkflowContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/OpenAPIRenderer.mjs",
+    "tools/genesis/compiler/renderers/PermissionsRenderer.mjs",
+    "tools/genesis/compiler/renderers/PolicyRenderer.mjs",
+    "tools/genesis/compiler/renderers/RESTContractRenderer.mjs",
+    "tools/genesis/compiler/renderers/RegistrationRenderer.mjs",
+    "tools/genesis/compiler/renderers/RepositoryRenderer.mjs",
+    "tools/genesis/compiler/renderers/SearchRenderer.mjs",
+    "tools/genesis/compiler/renderers/ServiceRenderer.mjs",
+    "tools/genesis/compiler/renderers/TestRenderer.mjs",
+    "tools/genesis/compiler/renderers/ValidatorRenderer.mjs",
+    "tools/genesis/compiler/validators/ModuleManifestValidator.mjs",
+    "tools/genesis/compiler/writers/ArtifactRecord.mjs",
+    "tools/genesis/compiler/writers/ArtifactWriter.mjs",
+    "tools/genesis/compiler/writers/WriteResult.mjs",
+    "tools/genesis/genesis.mjs",
+    "tools/genesis/registry/scaffolds.mjs",
+    "tools/genesis/runtime/AutomationEngine.mjs",
+    "tools/genesis/runtime/BootManifest.mjs",
+    "tools/genesis/runtime/CommandBus.mjs",
+    "tools/genesis/runtime/EventBus.mjs",
+    "tools/genesis/runtime/ExecutionContract.mjs",
+    "tools/genesis/runtime/ExecutionValidator.mjs",
+    "tools/genesis/runtime/QueryBus.mjs",
+    "tools/genesis/runtime/RuntimeApiGateway.mjs",
+    "tools/genesis/runtime/RuntimeApiGatewayContract.mjs",
+    "tools/genesis/runtime/RuntimeAutomationContract.mjs",
+    "tools/genesis/runtime/RuntimeBootPipeline.mjs",
+    "tools/genesis/runtime/RuntimeBootPipeline.test.mjs",
+    "tools/genesis/runtime/RuntimeBootRunner.mjs",
+    "tools/genesis/runtime/RuntimeCommandContract.mjs",
+    "tools/genesis/runtime/RuntimeEventContract.mjs",
+    "tools/genesis/runtime/RuntimeExecutionContext.mjs",
+    "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+    "tools/genesis/runtime/RuntimeQueryContract.mjs",
+    "tools/genesis/scaffold-core-object-system.mjs",
+    "tools/genesis/templates/entity/TemplateRenderer.mjs",
+    "tools/genesis/tests/BusinessCompilerTests.mjs",
+    "tools/genesis/tests/KnowledgeGraphTests.mjs",
+    "tools/genesis/tests/suites/AIOrchestratorTests.mjs",
+    "tools/genesis/tests/suites/ApiGatewayTests.mjs",
+    "tools/genesis/tests/suites/ApplicationCompilerTests.mjs",
+    "tools/genesis/tests/suites/AutomationEngineTests.mjs",
+    "tools/genesis/tests/suites/BootTests.mjs",
+    "tools/genesis/tests/suites/CommandBusTests.mjs",
+    "tools/genesis/tests/suites/CompilerTests.mjs",
+    "tools/genesis/tests/suites/DecisionEngineTests.mjs",
+    "tools/genesis/tests/suites/DoctorTests.mjs",
+    "tools/genesis/tests/suites/EnterpriseTwinTests.mjs",
+    "tools/genesis/tests/suites/EventBusTests.mjs",
+    "tools/genesis/tests/suites/EvolutionEngineTestSuite.mjs",
+    "tools/genesis/tests/suites/ExecutionTests.mjs",
+    "tools/genesis/tests/suites/GenesisPlatformTestSuite.mjs",
+    "tools/genesis/tests/suites/IdentityCompilerTests.mjs",
+    "tools/genesis/tests/suites/KnowledgeGraphTestSuite.mjs",
+    "tools/genesis/tests/suites/LearningEngineTestSuite.mjs",
+    "tools/genesis/tests/suites/MetaModelTests.mjs",
+    "tools/genesis/tests/suites/PackageCompilerTests.mjs",
+    "tools/genesis/tests/suites/PartnerQRIdentityTestSuite.mjs",
+    "tools/genesis/tests/suites/PassPipelineTests.mjs",
+    "tools/genesis/tests/suites/PlannerTests.mjs"
+  ],
+  "evidenceClassification": "VERIFIED",
+  "gar0001BaselineHashes": [
+    {
+      "file": "api-route-inventory.json",
+      "hash": "bff63dead702e4d2962d36a36d477f94a32ce0263ecf15a8d7b64ca28f54c8be"
+    },
+    {
+      "file": "audit-run-manifest.json",
+      "hash": "be4c0d7b30c6260f63a3723a4e8a2b7668bf48889f5cf3a13d3ebb3d5a922dcf"
+    },
+    {
+      "file": "circular-dependency-report.json",
+      "hash": "d5a0d209411ba30f47fca228676c96d17d13dda38cffad4dbf2e9dabcd012212"
+    },
+    {
+      "file": "directory-inventory.json",
+      "hash": "cda00f6a3b961d10e3d5e550615c16a973aca646fb33351d97c624cc35255993"
+    },
+    {
+      "file": "documentation-inventory.json",
+      "hash": "fe143945f84a1554a78baf95c8a5366766749a6e724f31d270bd905756082c8e"
+    },
+    {
+      "file": "file-inventory.json",
+      "hash": "6a4bf0f83d9f1810d7a0322bccd50c47c552430bd35aeec0d3308e33e5bd4e66"
+    },
+    {
+      "file": "GAR-0001-Final-Report.md",
+      "hash": "00a862406c71701a357f67989782fd397436e2c41e454401c13d772d2affd019"
+    },
+    {
+      "file": "governance-artifact-inventory.json",
+      "hash": "c79697feaf829192f14008ca6e3bcf3b5bfdf7b98aa6f255c0eebd26f4ad3776"
+    },
+    {
+      "file": "hygiene-inventory.json",
+      "hash": "567f83ec9734b572ba507ba7f082eff42788c854fa0bc4eb52b5165eb66efaee"
+    },
+    {
+      "file": "import-graph.json",
+      "hash": "b23ea24470988279228b9e6aab541eafeb5c5935c9acd0eb299b958a1d183f8e"
+    },
+    {
+      "file": "package-inventory.json",
+      "hash": "e10e92163d72cc2ee656ed69a9dc97c1223d23a42569ba8bc08a10d651926c88"
+    },
+    {
+      "file": "persistence-access-inventory.json",
+      "hash": "f1d1556fc8a271306a2dfca85171201e6511b4f016dffef575c170a9eecc59f8"
+    },
+    {
+      "file": "prisma-inventory.json",
+      "hash": "a360fa3c3f81778aaec556c0f8f88b4f51368338ef1c2786e1fb1fab15195041"
+    },
+    {
+      "file": "registry-inventory.json",
+      "hash": "420edd9956efcea07bf36de930d9f2c3dbe0dd265f281d4514960fd37cf3f293"
+    },
+    {
+      "file": "repository-manifest.json",
+      "hash": "9e3364b058c34f266c2b1ef11e079d7aa56022c63bb12ab35e52af5707349357"
+    },
+    {
+      "file": "security-surface-inventory.json",
+      "hash": "a01f7a2215e2bec053e7cf6a3c7292d2d460e1f967847987cfb33abbe25924a9"
+    },
+    {
+      "file": "source-symbol-inventory.json",
+      "hash": "6c969d6b845f5b20e5cdc19781cbf1b9da7b53d610c6568db2cb9b10cf3d0ee3"
+    },
+    {
+      "file": "test-inventory.json",
+      "hash": "a9194559cb5abd46f66eb30b8cd092e9c6195763756713b9dffb862ea26be257"
+    },
+    {
+      "file": "unresolved-analysis-items.json",
+      "hash": "6fadd0d3b0a07f0680202452f1ff706fe79ad06545add336aeff083e7bac506b"
+    }
+  ],
+  "generatedArtifactsSeparated": true,
+  "generationMethod": "deterministic-topology-analysis-from-gar-0001-and-source-layout",
+  "inputs": [
+    "definitions/",
+    "meta/",
+    "docs/",
+    "discovery-interviews/"
+  ],
+  "intermediateRepresentations": [
+    "docs/architecture/0027-ard-0001-business-genome-ir-final-package.md",
+    "docs/architecture/EIR-0001-evidence-ir-specification.md",
+    "docs/architecture/RAR-0001-evidence-ir-review.md",
+    "evidence-output/Unknown/EVIDENCE_IR_STAGE_2_VALIDATION.md",
+    "genesis/compiler/STAGE-06_BLUEPRINT.md",
+    "genesis/constitution/GENESIS_FIRST_PRINCIPLES.md",
+    "src/app/api/gmp/content/drafts/[draftId]/repair/route.ts",
+    "src/app/api/gop/workers/protocol/[id]/leases/acquire/route.ts",
+    "src/compiler/evidence/EvidenceIR.ts",
+    "src/compiler/knowledge/KnowledgeIR.ts",
+    "src/evidence-ir/canonicalization/index.ts",
+    "src/evidence-ir/compiler/index.ts",
+    "src/evidence-ir/exporters/index.ts",
+    "src/evidence-ir/identity/index.ts",
+    "src/evidence-ir/models/index.ts",
+    "src/evidence-ir/pipeline/index.ts",
+    "src/evidence-ir/process-madison-evidence.mts",
+    "src/evidence-ir/process-zach-evidence.mts",
+    "src/evidence-ir/validation/index.ts",
+    "src/modules/mission-control/AIRecommendations.tsx",
+    "test/BlueprintCompilationTest.mjs",
+    "tests/compiler/discovery/evidence-ir.test.ts",
+    "tools/genesis-audit/schemas/circular-dependency-report.schema.json",
+    "tools/genesis-audit/schemas/directory-inventory.schema.json",
+    "tools/genesis/blueprints/.gitkeep",
+    "tools/genesis/compiler/AIOrchestratorBlueprint.mjs",
+    "tools/genesis/compiler/ApplicationBlueprintContract.mjs",
+    "tools/genesis/compiler/BusinessBlueprint.mjs",
+    "tools/genesis/compiler/DecisionBlueprint.mjs",
+    "tools/genesis/compiler/EnterpriseTwinBlueprint.mjs",
+    "tools/genesis/compiler/EvolutionBlueprint.mjs",
+    "tools/genesis/compiler/GenesisPlatformBlueprint.mjs",
+    "tools/genesis/compiler/IdentityBlueprintContract.mjs",
+    "tools/genesis/compiler/KnowledgeGraphBlueprint.mjs",
+    "tools/genesis/compiler/LearningBlueprint.mjs",
+    "tools/genesis/compiler/PackageBlueprintContract.mjs",
+    "tools/genesis/compiler/PartnerQRIdentityBlueprint.mjs",
+    "tools/genesis/compiler/PlanningBlueprint.mjs",
+    "tools/genesis/compiler/SimulationBlueprint.mjs",
+    "tools/genesis/compiler/SolutionBlueprintContract.mjs",
+    "tools/genesis/compiler/blueprints/Blueprint.mjs",
+    "tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
+    "tools/genesis/compiler/blueprints/BlueprintLoader.mjs",
+    "tools/genesis/compiler/blueprints/BlueprintValidator.mjs",
+    "tools/genesis/compiler/blueprints/README.md",
+    "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
+    "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
+    "tools/genesis/compiler/ir/ModuleBlueprint.mjs",
+    "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
+    "tools/genesis/compiler/ir/README.md",
+    "tools/genesis/compiler/pipeline/passes/BlueprintPass.mjs",
+    "tools/genesis/compiler/renderers/OpenAPIRenderer.mjs"
+  ],
+  "limitations": [],
+  "outputs": [
+    "out/generated/*",
+    "generated/genesis/*",
+    "evidence-output/*"
+  ],
+  "registries": [
+    "CompilerPassRegistry",
+    "DefinitionIndex",
+    "DefinitionLoader",
+    "DefinitionRegistry",
+    "DefinitionRegistryPass",
+    "DefinitionResolver",
+    "RegistryTests",
+    "RendererRegistry",
+    "RendererTarget",
+    "scaffolds"
+  ],
+  "runtimeDependencies": [
+    "tools/genesis/commands/runtime.mjs",
+    "tools/genesis/runtime/AutomationEngine.mjs",
+    "tools/genesis/runtime/CommandBus.mjs",
+    "tools/genesis/runtime/EventBus.mjs",
+    "tools/genesis/runtime/ExecutionContract.mjs",
+    "tools/genesis/runtime/ExecutionValidator.mjs",
+    "tools/genesis/runtime/QueryBus.mjs",
+    "tools/genesis/runtime/RuntimeApiGateway.mjs",
+    "tools/genesis/runtime/RuntimeApiGatewayContract.mjs",
+    "tools/genesis/runtime/RuntimeAutomationContract.mjs",
+    "tools/genesis/runtime/RuntimeBootPipeline.mjs",
+    "tools/genesis/runtime/RuntimeBootRunner.mjs",
+    "tools/genesis/runtime/RuntimeCommandContract.mjs",
+    "tools/genesis/runtime/RuntimeEventContract.mjs",
+    "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+    "tools/genesis/runtime/RuntimeQueryContract.mjs"
+  ],
+  "schemaIdentifier": "gar-0002/compiler-topology",
+  "schemaVersion": "1.0.0",
+  "toolVersion": "1.0.0"
+}

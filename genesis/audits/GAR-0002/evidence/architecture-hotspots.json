@@ -1,0 +1,673 @@
+{
+  "architecturalHubs": [
+    {
+      "centrality": 57,
+      "fanIn": 56,
+      "fanOut": 1,
+      "node": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "centrality": 57,
+      "fanIn": 53,
+      "fanOut": 4,
+      "node": "src/platform/gop/auth/runtime.ts"
+    },
+    {
+      "centrality": 54,
+      "fanIn": 0,
+      "fanOut": 54,
+      "node": "src/compiler/index.ts"
+    },
+    {
+      "centrality": 50,
+      "fanIn": 34,
+      "fanOut": 16,
+      "node": "src/lib/gmp/page-api.ts"
+    },
+    {
+      "centrality": 49,
+      "fanIn": 46,
+      "fanOut": 3,
+      "node": "src/lib/glw/auth.ts"
+    },
+    {
+      "centrality": 49,
+      "fanIn": 37,
+      "fanOut": 12,
+      "node": "src/lib/gmp/publishing-api.ts"
+    },
+    {
+      "centrality": 47,
+      "fanIn": 43,
+      "fanOut": 4,
+      "node": "src/lib/gmp/repository.ts"
+    },
+    {
+      "centrality": 38,
+      "fanIn": 38,
+      "fanOut": 0,
+      "node": "src/platform/gop/contracts.ts"
+    },
+    {
+      "centrality": 37,
+      "fanIn": 34,
+      "fanOut": 3,
+      "node": "src/compiler/core/types.ts"
+    },
+    {
+      "centrality": 34,
+      "fanIn": 25,
+      "fanOut": 9,
+      "node": "src/lib/gmp/content-api.ts"
+    },
+    {
+      "centrality": 32,
+      "fanIn": 27,
+      "fanOut": 5,
+      "node": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "centrality": 32,
+      "fanIn": 31,
+      "fanOut": 1,
+      "node": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "centrality": 30,
+      "fanIn": 29,
+      "fanOut": 1,
+      "node": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "centrality": 27,
+      "fanIn": 17,
+      "fanOut": 10,
+      "node": "src/components/gmp/gmp-analytics-workspace.tsx"
+    },
+    {
+      "centrality": 27,
+      "fanIn": 25,
+      "fanOut": 2,
+      "node": "src/lib/glw/prisma.ts"
+    },
+    {
+      "centrality": 26,
+      "fanIn": 14,
+      "fanOut": 12,
+      "node": "src/lib/gea/orchestration-api.ts"
+    },
+    {
+      "centrality": 26,
+      "fanIn": 4,
+      "fanOut": 22,
+      "node": "tools/genesis/compiler/CodeGenerationEngine.mjs"
+    },
+    {
+      "centrality": 26,
+      "fanIn": 0,
+      "fanOut": 26,
+      "node": "tools/genesis/genesis.mjs"
+    },
+    {
+      "centrality": 25,
+      "fanIn": 16,
+      "fanOut": 9,
+      "node": "src/lib/gea/agent-api.ts"
+    },
+    {
+      "centrality": 25,
+      "fanIn": 21,
+      "fanOut": 4,
+      "node": "src/lib/gmp/page-repository.ts"
+    },
+    {
+      "centrality": 24,
+      "fanIn": 17,
+      "fanOut": 7,
+      "node": "src/lib/gba/manufacturing-api.ts"
+    },
+    {
+      "centrality": 24,
+      "fanIn": 9,
+      "fanOut": 15,
+      "node": "src/lib/gmp/api.ts"
+    },
+    {
+      "centrality": 24,
+      "fanIn": 16,
+      "fanOut": 8,
+      "node": "src/lib/gmp/knowledge-api.ts"
+    },
+    {
+      "centrality": 23,
+      "fanIn": 12,
+      "fanOut": 11,
+      "node": "src/lib/gmp/analytics-api.ts"
+    },
+    {
+      "centrality": 23,
+      "fanIn": 22,
+      "fanOut": 1,
+      "node": "src/lib/gmp/models.ts"
+    }
+  ],
+  "bottlenecks": [
+    {
+      "fanIn": 56,
+      "fanOut": 1,
+      "node": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "fanIn": 53,
+      "fanOut": 4,
+      "node": "src/platform/gop/auth/runtime.ts"
+    },
+    {
+      "fanIn": 46,
+      "fanOut": 3,
+      "node": "src/lib/glw/auth.ts"
+    },
+    {
+      "fanIn": 43,
+      "fanOut": 4,
+      "node": "src/lib/gmp/repository.ts"
+    },
+    {
+      "fanIn": 38,
+      "fanOut": 0,
+      "node": "src/platform/gop/contracts.ts"
+    },
+    {
+      "fanIn": 37,
+      "fanOut": 12,
+      "node": "src/lib/gmp/publishing-api.ts"
+    },
+    {
+      "fanIn": 34,
+      "fanOut": 3,
+      "node": "src/compiler/core/types.ts"
+    },
+    {
+      "fanIn": 34,
+      "fanOut": 16,
+      "node": "src/lib/gmp/page-api.ts"
+    },
+    {
+      "fanIn": 31,
+      "fanOut": 1,
+      "node": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "fanIn": 29,
+      "fanOut": 1,
+      "node": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "fanIn": 27,
+      "fanOut": 5,
+      "node": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "fanIn": 25,
+      "fanOut": 2,
+      "node": "src/lib/glw/prisma.ts"
+    },
+    {
+      "fanIn": 25,
+      "fanOut": 9,
+      "node": "src/lib/gmp/content-api.ts"
+    },
+    {
+      "fanIn": 22,
+      "fanOut": 1,
+      "node": "src/lib/gmp/models.ts"
+    },
+    {
+      "fanIn": 21,
+      "fanOut": 4,
+      "node": "src/lib/gmp/page-repository.ts"
+    },
+    {
+      "fanIn": 20,
+      "fanOut": 2,
+      "node": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "fanIn": 20,
+      "fanOut": 2,
+      "node": "src/lib/glw/jobs.ts"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 4,
+      "node": "src/app/glw/(protected)/projects/[id]/analytics/access.ts"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 10,
+      "node": "src/components/gmp/gmp-analytics-workspace.tsx"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 0,
+      "node": "src/discovery/models/index.ts"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 7,
+      "node": "src/lib/gba/manufacturing-api.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 0,
+      "node": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 1,
+      "node": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 9,
+      "node": "src/lib/gea/agent-api.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 8,
+      "node": "src/lib/gmp/knowledge-api.ts"
+    }
+  ],
+  "distributedMonolithSignals": [
+    "cross-layer upward dependencies present",
+    "runtime/platform referenced by multiple application and agent modules"
+  ],
+  "evidenceClassification": "VERIFIED",
+  "gar0001BaselineHashes": [
+    {
+      "file": "api-route-inventory.json",
+      "hash": "bff63dead702e4d2962d36a36d477f94a32ce0263ecf15a8d7b64ca28f54c8be"
+    },
+    {
+      "file": "audit-run-manifest.json",
+      "hash": "be4c0d7b30c6260f63a3723a4e8a2b7668bf48889f5cf3a13d3ebb3d5a922dcf"
+    },
+    {
+      "file": "circular-dependency-report.json",
+      "hash": "d5a0d209411ba30f47fca228676c96d17d13dda38cffad4dbf2e9dabcd012212"
+    },
+    {
+      "file": "directory-inventory.json",
+      "hash": "cda00f6a3b961d10e3d5e550615c16a973aca646fb33351d97c624cc35255993"
+    },
+    {
+      "file": "documentation-inventory.json",
+      "hash": "fe143945f84a1554a78baf95c8a5366766749a6e724f31d270bd905756082c8e"
+    },
+    {
+      "file": "file-inventory.json",
+      "hash": "6a4bf0f83d9f1810d7a0322bccd50c47c552430bd35aeec0d3308e33e5bd4e66"
+    },
+    {
+      "file": "GAR-0001-Final-Report.md",
+      "hash": "00a862406c71701a357f67989782fd397436e2c41e454401c13d772d2affd019"
+    },
+    {
+      "file": "governance-artifact-inventory.json",
+      "hash": "c79697feaf829192f14008ca6e3bcf3b5bfdf7b98aa6f255c0eebd26f4ad3776"
+    },
+    {
+      "file": "hygiene-inventory.json",
+      "hash": "567f83ec9734b572ba507ba7f082eff42788c854fa0bc4eb52b5165eb66efaee"
+    },
+    {
+      "file": "import-graph.json",
+      "hash": "b23ea24470988279228b9e6aab541eafeb5c5935c9acd0eb299b958a1d183f8e"
+    },
+    {
+      "file": "package-inventory.json",
+      "hash": "e10e92163d72cc2ee656ed69a9dc97c1223d23a42569ba8bc08a10d651926c88"
+    },
+    {
+      "file": "persistence-access-inventory.json",
+      "hash": "f1d1556fc8a271306a2dfca85171201e6511b4f016dffef575c170a9eecc59f8"
+    },
+    {
+      "file": "prisma-inventory.json",
+      "hash": "a360fa3c3f81778aaec556c0f8f88b4f51368338ef1c2786e1fb1fab15195041"
+    },
+    {
+      "file": "registry-inventory.json",
+      "hash": "420edd9956efcea07bf36de930d9f2c3dbe0dd265f281d4514960fd37cf3f293"
+    },
+    {
+      "file": "repository-manifest.json",
+      "hash": "9e3364b058c34f266c2b1ef11e079d7aa56022c63bb12ab35e52af5707349357"
+    },
+    {
+      "file": "security-surface-inventory.json",
+      "hash": "a01f7a2215e2bec053e7cf6a3c7292d2d460e1f967847987cfb33abbe25924a9"
+    },
+    {
+      "file": "source-symbol-inventory.json",
+      "hash": "6c969d6b845f5b20e5cdc19781cbf1b9da7b53d610c6568db2cb9b10cf3d0ee3"
+    },
+    {
+      "file": "test-inventory.json",
+      "hash": "a9194559cb5abd46f66eb30b8cd092e9c6195763756713b9dffb862ea26be257"
+    },
+    {
+      "file": "unresolved-analysis-items.json",
+      "hash": "6fadd0d3b0a07f0680202452f1ff706fe79ad06545add336aeff083e7bac506b"
+    }
+  ],
+  "generationMethod": "deterministic-topology-analysis-from-gar-0001-and-source-layout",
+  "highFanInModules": [
+    {
+      "fanIn": 56,
+      "fanOut": 1,
+      "layer": "platform-orchestration",
+      "node": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "fanIn": 53,
+      "fanOut": 4,
+      "layer": "platform-orchestration",
+      "node": "src/platform/gop/auth/runtime.ts"
+    },
+    {
+      "fanIn": 46,
+      "fanOut": 3,
+      "layer": "runtime-services",
+      "node": "src/lib/glw/auth.ts"
+    },
+    {
+      "fanIn": 43,
+      "fanOut": 4,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/repository.ts"
+    },
+    {
+      "fanIn": 38,
+      "fanOut": 0,
+      "layer": "platform-orchestration",
+      "node": "src/platform/gop/contracts.ts"
+    },
+    {
+      "fanIn": 37,
+      "fanOut": 12,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/publishing-api.ts"
+    },
+    {
+      "fanIn": 34,
+      "fanOut": 3,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/core/types.ts"
+    },
+    {
+      "fanIn": 34,
+      "fanOut": 16,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/page-api.ts"
+    },
+    {
+      "fanIn": 31,
+      "fanOut": 1,
+      "layer": "compiler-generation",
+      "node": "tools/genesis/tests/TestSuite.mjs"
+    },
+    {
+      "fanIn": 29,
+      "fanOut": 1,
+      "layer": "enterprise-agents",
+      "node": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "fanIn": 27,
+      "fanOut": 5,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/genome/pipeline-types.ts"
+    },
+    {
+      "fanIn": 25,
+      "fanOut": 2,
+      "layer": "runtime-services",
+      "node": "src/lib/glw/prisma.ts"
+    },
+    {
+      "fanIn": 25,
+      "fanOut": 9,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/content-api.ts"
+    },
+    {
+      "fanIn": 22,
+      "fanOut": 1,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/models.ts"
+    },
+    {
+      "fanIn": 21,
+      "fanOut": 4,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/page-repository.ts"
+    },
+    {
+      "fanIn": 20,
+      "fanOut": 2,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/evidence/EvidenceGraph.ts"
+    },
+    {
+      "fanIn": 20,
+      "fanOut": 2,
+      "layer": "runtime-services",
+      "node": "src/lib/glw/jobs.ts"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 4,
+      "layer": "application-ui",
+      "node": "src/app/glw/(protected)/projects/[id]/analytics/access.ts"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 10,
+      "layer": "application-ui",
+      "node": "src/components/gmp/gmp-analytics-workspace.tsx"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 0,
+      "layer": "shared-infrastructure",
+      "node": "src/discovery/models/index.ts"
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 7,
+      "layer": "business-agents",
+      "node": "src/lib/gba/manufacturing-api.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 0,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/discovery/KnowledgeSource.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 1,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/evidence/EvidenceIR.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 9,
+      "layer": "enterprise-agents",
+      "node": "src/lib/gea/agent-api.ts"
+    },
+    {
+      "fanIn": 16,
+      "fanOut": 8,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/knowledge-api.ts"
+    }
+  ],
+  "highFanOutModules": [
+    {
+      "fanIn": 0,
+      "fanOut": 54,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/index.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 26,
+      "layer": "compiler-generation",
+      "node": "tools/genesis/genesis.mjs"
+    },
+    {
+      "fanIn": 4,
+      "fanOut": 22,
+      "layer": "compiler-generation",
+      "node": "tools/genesis/compiler/CodeGenerationEngine.mjs"
+    },
+    {
+      "fanIn": 5,
+      "fanOut": 17,
+      "layer": "platform-orchestration",
+      "node": "src/platform/gop/index.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 17,
+      "layer": "tests",
+      "node": "tests/gba/gba-manufacturing-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 2,
+      "fanOut": 17,
+      "layer": "compiler-generation",
+      "node": "tools/genesis/compiler/registry/RendererRegistry.mjs"
+    },
+    {
+      "fanIn": 34,
+      "fanOut": 16,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/page-api.ts"
+    },
+    {
+      "fanIn": 9,
+      "fanOut": 15,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/api.ts"
+    },
+    {
+      "fanIn": 2,
+      "fanOut": 14,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/genome/BusinessGenomePassRegistry.ts"
+    },
+    {
+      "fanIn": 5,
+      "fanOut": 14,
+      "layer": "application-ui",
+      "node": "src/components/gmp/gmp-publishing-detail-workspace.tsx"
+    },
+    {
+      "fanIn": 3,
+      "fanOut": 14,
+      "layer": "business-agents",
+      "node": "src/lib/gba/customer-success-runtime.ts"
+    },
+    {
+      "fanIn": 4,
+      "fanOut": 14,
+      "layer": "business-agents",
+      "node": "src/lib/gba/finance-runtime.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 14,
+      "layer": "tests",
+      "node": "test/BlueprintCompilationTest.mjs"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 14,
+      "layer": "tests",
+      "node": "tests/gba/gba-customer-success-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 14,
+      "layer": "tests",
+      "node": "tests/gba/gba-finance-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 14,
+      "layer": "tests",
+      "node": "tests/gea/gea-orchestration-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 13,
+      "layer": "shared-infrastructure",
+      "node": "src/compiler/core/index.ts"
+    },
+    {
+      "fanIn": 9,
+      "fanOut": 13,
+      "layer": "application-ui",
+      "node": "src/components/gmp/gmp-pages-workspace.tsx"
+    },
+    {
+      "fanIn": 5,
+      "fanOut": 13,
+      "layer": "domain-kernel",
+      "node": "src/lib/gmp/publishing-services.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 13,
+      "layer": "tests",
+      "node": "tests/gba/gba-executive-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 13,
+      "layer": "tests",
+      "node": "tests/gba/gba-marketing-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 13,
+      "layer": "tests",
+      "node": "tests/gba/gba-operations-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 13,
+      "layer": "tests",
+      "node": "tests/gea/gea-memory-route-forwarding.test.ts"
+    },
+    {
+      "fanIn": 0,
+      "fanOut": 13,
+      "layer": "tests",
+      "node": "tests/gmp/gmp-page-governance.test.tsx"
+    },
+    {
+      "fanIn": 1,
+      "fanOut": 12,
+      "layer": "domain-kernel",
+      "node": "src/core/object/GenesisObject.ts"
+    }
+  ],
+  "limitations": [],
+  "schemaIdentifier": "gar-0002/architecture-hotspots",
+  "schemaVersion": "1.0.0",
+  "toolVersion": "1.0.0"
+}

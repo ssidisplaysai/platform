@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gar-0002/dependency-direction-analysis.schema.json/v1",
+  "type": "object",
+  "required": [
+    "schemaIdentifier",
+    "schemaVersion",
+    "toolVersion",
+    "gar0001BaselineHashes",
+    "evidenceClassification",
+    "generationMethod",
+    "limitations",
+    "dependencies"
+  ],
+  "properties": {
+    "schemaIdentifier": {"type":"string"},
+    "schemaVersion": {"type":"string"},
+    "toolVersion": {"type":"string"},
+    "gar0001BaselineHashes": {"type":"array"},
+    "evidenceClassification": {"type":"string"},
+    "generationMethod": {"type":"string"},
+    "limitations": {"type":"array"},
+    "dependencies": {}
+  }
+}

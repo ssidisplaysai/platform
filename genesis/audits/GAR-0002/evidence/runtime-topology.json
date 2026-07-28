@@ -1,0 +1,1956 @@
+{
+  "errorRecoveryFlowCandidates": [],
+  "evidenceClassification": "VERIFIED",
+  "flowEvidenceType": "verified static flow and inferred runtime flow",
+  "flows": [
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/app/api/gea/workflows/[id]/route.ts",
+      "to": "src/lib/gea/orchestration-api.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/app/api/gea/workflows/route.ts",
+      "to": "src/lib/gea/orchestration-api.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/app/api/gop/jobs/[id]/events/route.ts",
+      "to": "src/lib/gop/events-api.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/app/api/gop/jobs/[id]/events/stream/route.ts",
+      "to": "src/lib/gop/events-api.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/app/glw/(protected)/queue/page.tsx",
+      "to": "src/components/glw/glw-queue-workspace.tsx"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/app/glw/(protected)/queue/page.tsx",
+      "to": "src/lib/glw/job-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/app/glw/(protected)/queue/page.tsx",
+      "to": "src/lib/glw/jobs.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/components/glw/glw-queue-workspace.tsx",
+      "to": "src/components/glw/data-table.tsx"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/components/glw/glw-queue-workspace.tsx",
+      "to": "src/components/glw/empty-state.tsx"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/components/glw/glw-queue-workspace.tsx",
+      "to": "src/components/glw/page-container.tsx"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/components/glw/glw-queue-workspace.tsx",
+      "to": "src/components/glw/section-header.tsx"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/components/glw/glw-queue-workspace.tsx",
+      "to": "src/components/glw/status-badge.tsx"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/components/glw/glw-queue-workspace.tsx",
+      "to": "src/lib/glw/jobs.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataDiscovery.ts",
+      "to": "src/domain/schema/EntitySchema.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataLoader.ts",
+      "to": "src/core/runtime/MetadataDiscovery.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataLoader.ts",
+      "to": "src/domain/schema/EntitySchema.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataRuntime.test.ts",
+      "to": "src/core/runtime/MetadataRuntime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataRuntime.ts",
+      "to": "src/core/runtime/MetadataLoader.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataRuntime.ts",
+      "to": "src/core/runtime/MetadataValidator.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataRuntime.ts",
+      "to": "src/domain/definitions/Customer.definition.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataRuntime.ts",
+      "to": "src/domain/schema/EntitySchema.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/core/runtime/MetadataValidator.ts",
+      "to": "src/domain/schema/EntitySchema.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/customer-success-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/customer-success-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/executive-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/finance-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/finance-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/manufacturing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/marketing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/operations-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/customer-success-runtime.ts",
+      "to": "src/lib/gba/sales-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gba/executive-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/agent-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/capability-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/context-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/memory-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/memory-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/orchestration-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/executive-runtime.ts",
+      "to": "src/lib/gea/tool-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/executive-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/finance-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/finance-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/manufacturing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/marketing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/operations-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/gba/sales-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/ged/enterprise-domain-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/finance-runtime.ts",
+      "to": "src/lib/ged/enterprise-domain-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gba/manufacturing-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/agent-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/capability-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/context-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/memory-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/memory-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/manufacturing-runtime.ts",
+      "to": "src/lib/gea/tool-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/marketing-runtime.ts",
+      "to": "src/lib/gba/marketing-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/marketing-runtime.ts",
+      "to": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/marketing-runtime.ts",
+      "to": "src/lib/gmp/analytics-services.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/marketing-runtime.ts",
+      "to": "src/lib/gmp/recommendation-services.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/marketing-runtime.ts",
+      "to": "src/lib/gmp/repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gba/operations-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/agent-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/capability-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/context-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/memory-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/memory-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/orchestration-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/operations-runtime.ts",
+      "to": "src/lib/gea/tool-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/manufacturing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/marketing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/operations-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/sales-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/ged/enterprise-domain-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/ged/enterprise-domain-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gba/sales-runtime.ts",
+      "to": "src/lib/gmp/repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/agent-runtime.ts",
+      "to": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/agent-runtime.ts",
+      "to": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/agent-runtime.ts",
+      "to": "src/lib/gea/capability-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/agent-runtime.ts",
+      "to": "src/lib/gea/context-builder.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/agent-runtime.ts",
+      "to": "src/lib/gea/permission-engine.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/agent-runtime.ts",
+      "to": "src/lib/gea/planning-engine.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/agent-runtime.ts",
+      "to": "src/lib/gea/tool-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/orchestration-runtime.ts",
+      "to": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/orchestration-runtime.ts",
+      "to": "src/lib/gea/agent-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/orchestration-runtime.ts",
+      "to": "src/lib/gea/orchestration-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gea/orchestration-runtime.ts",
+      "to": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/ged/enterprise-domain-runtime.ts",
+      "to": "src/lib/ged/enterprise-domain-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/lib/glw/auth.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/lib/glw/job-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/lib/glw/prisma.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/platform/gop/actions/authorization.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/platform/gop/adapters/glw-events.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/platform/gop/auth/runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/platform/gop/metrics-from-events.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/lib/gop/events-api.ts",
+      "to": "src/platform/gop/runtime/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/actions/authorization.ts",
+      "to": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/actions/authorization.ts",
+      "to": "src/platform/gop/auth/runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/actions/authorization.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw-events.ts",
+      "to": "src/lib/glw/jobs.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw-events.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw-events.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw-inspector.ts",
+      "to": "src/lib/glw/jobs.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw-inspector.ts",
+      "to": "src/lib/glw/jobs.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw-inspector.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw-inspector.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw.ts",
+      "to": "src/lib/glw/jobs.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/adapters/glw.ts",
+      "to": "src/platform/gop/job-engine.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/auth/policies.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/auth/resolver.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/auth/runtime.ts",
+      "to": "src/platform/gop/auth/policies.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/auth/runtime.ts",
+      "to": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/auth/runtime.ts",
+      "to": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/auth/runtime.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/event-engine.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/event-store.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/event-store.ts",
+      "to": "src/platform/gop/event-engine.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/event-engine.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/job-engine.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/metrics-from-events.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/metrics.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/module-registry.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/execution-engine.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/execution-repository.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/orchestration-runtime.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/orchestrator.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/queue-manager.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/replay-engine.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/snapshot-engine.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/worker-registry.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/worker-token.ts"
+    },
+    {
+      "classification": "verified re-export",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/index.ts",
+      "to": "src/platform/gop/runtime/workflow-orchestrator.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/inspector/extensions.ts",
+      "to": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/inspector/extensions.ts",
+      "to": "src/platform/gop/auth/runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/inspector/extensions.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/job-engine.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/job-engine.ts",
+      "to": "src/platform/gop/event-engine.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/metrics-from-events.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/metrics-from-events.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/metrics.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/module-registry.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/bootstrap-list.ts",
+      "to": "src/platform/gop/adapters/glw.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/bootstrap-list.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/event-store.ts",
+      "to": "src/lib/glw/prisma.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/event-store.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/execution-engine.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/execution-repository.ts",
+      "to": "src/lib/glw/prisma.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/execution-repository.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/execution-repository.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/execution-repository.ts",
+      "to": "src/platform/gop/runtime/replay-engine.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/loader.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/loader.ts",
+      "to": "src/platform/gop/runtime/bootstrap-list.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/loader.ts",
+      "to": "src/platform/gop/runtime/module-bootstrap.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/module-bootstrap.ts",
+      "to": "src/platform/gop/auth/resolver.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/module-bootstrap.ts",
+      "to": "src/platform/gop/auth/runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/module-bootstrap.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/module-bootstrap.ts",
+      "to": "src/platform/gop/module-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/notification-center.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestration-runtime.ts",
+      "to": "src/platform/gop/runtime/execution-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestration-runtime.ts",
+      "to": "src/platform/gop/runtime/orchestrator.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/metrics-from-events.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/runtime/execution-engine.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/runtime/execution-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/runtime/notification-center.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/runtime/queue-manager.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/runtime/snapshot-engine.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/orchestrator.ts",
+      "to": "src/platform/gop/runtime/worker-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/queue-manager.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/replay-engine.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/replay-engine.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/snapshot-engine.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/worker-registry.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/runtime/workflow-orchestrator.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/workspaces/registry.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/workspaces/runtime.ts",
+      "to": "src/lib/glw/sites.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/workspaces/runtime.ts",
+      "to": "src/platform/gop/contracts.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "src/platform/gop/workspaces/runtime.ts",
+      "to": "src/platform/gop/workspaces/registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-customer-success-runtime.test.ts",
+      "to": "src/lib/gba/customer-success-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-customer-success-runtime.test.ts",
+      "to": "src/lib/gba/customer-success-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-executive-runtime.test.ts",
+      "to": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-executive-runtime.test.ts",
+      "to": "src/lib/gba/executive-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-finance-runtime.test.ts",
+      "to": "src/lib/gba/finance-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-finance-runtime.test.ts",
+      "to": "src/lib/gba/finance-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-manufacturing-runtime.test.ts",
+      "to": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-manufacturing-runtime.test.ts",
+      "to": "src/lib/gba/manufacturing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-marketing-runtime.test.ts",
+      "to": "src/lib/gba/marketing-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-marketing-runtime.test.ts",
+      "to": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-marketing-runtime.test.ts",
+      "to": "src/lib/gba/marketing-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-operations-runtime.test.ts",
+      "to": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-operations-runtime.test.ts",
+      "to": "src/lib/gba/operations-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-sales-runtime.test.ts",
+      "to": "src/lib/gba/sales-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-sales-runtime.test.ts",
+      "to": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gba/gba-sales-runtime.test.ts",
+      "to": "src/lib/gba/sales-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/agent-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/agent-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/capability-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/orchestration-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/orchestration-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-orchestration-runtime.test.ts",
+      "to": "src/lib/gea/tool-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-runtime.test.ts",
+      "to": "src/lib/gea/agent-models.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-runtime.test.ts",
+      "to": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-runtime.test.ts",
+      "to": "src/lib/gea/agent-runtime.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-runtime.test.ts",
+      "to": "src/lib/gea/capability-registry.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gea/gea-runtime.test.ts",
+      "to": "src/lib/gea/tool-framework.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/event-store.test.ts",
+      "to": "src/platform/gop/event-store.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/glw-events-adapter.test.ts",
+      "to": "src/lib/glw/jobs.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/glw-events-adapter.test.ts",
+      "to": "src/platform/gop/adapters/glw-events.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/metrics-from-events.test.ts",
+      "to": "src/platform/gop/metrics-from-events.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/orchestration-runtime.test.ts",
+      "to": "src/platform/gop/index.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/runtime-certification-failure.test.ts",
+      "to": "src/platform/gop/index.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/runtime-certification-failure.test.ts",
+      "to": "src/platform/gop/runtime/execution-repository.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tests/gop/runtime-fabric.test.ts",
+      "to": "src/platform/gop/index.ts"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/AutomationEngine.mjs",
+      "to": "tools/genesis/runtime/RuntimeAutomationContract.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/CommandBus.mjs",
+      "to": "tools/genesis/runtime/RuntimeCommandContract.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/EventBus.mjs",
+      "to": "tools/genesis/runtime/RuntimeEventContract.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/ExecutionValidator.mjs",
+      "to": "tools/genesis/runtime/ExecutionContract.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/QueryBus.mjs",
+      "to": "tools/genesis/runtime/RuntimeQueryContract.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/RuntimeApiGateway.mjs",
+      "to": "tools/genesis/runtime/RuntimeApiGatewayContract.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/RuntimeBootPipeline.test.mjs",
+      "to": "tools/genesis/runtime/RuntimeBootPipeline.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/RuntimeBootRunner.mjs",
+      "to": "tools/genesis/runtime/RuntimeBootPipeline.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+      "to": "tools/genesis/runtime/ExecutionContract.mjs"
+    },
+    {
+      "classification": "verified static import",
+      "confidence": "verified-static-flow",
+      "from": "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+      "to": "tools/genesis/runtime/ExecutionValidator.mjs"
+    }
+  ],
+  "gar0001BaselineHashes": [
+    {
+      "file": "api-route-inventory.json",
+      "hash": "bff63dead702e4d2962d36a36d477f94a32ce0263ecf15a8d7b64ca28f54c8be"
+    },
+    {
+      "file": "audit-run-manifest.json",
+      "hash": "be4c0d7b30c6260f63a3723a4e8a2b7668bf48889f5cf3a13d3ebb3d5a922dcf"
+    },
+    {
+      "file": "circular-dependency-report.json",
+      "hash": "d5a0d209411ba30f47fca228676c96d17d13dda38cffad4dbf2e9dabcd012212"
+    },
+    {
+      "file": "directory-inventory.json",
+      "hash": "cda00f6a3b961d10e3d5e550615c16a973aca646fb33351d97c624cc35255993"
+    },
+    {
+      "file": "documentation-inventory.json",
+      "hash": "fe143945f84a1554a78baf95c8a5366766749a6e724f31d270bd905756082c8e"
+    },
+    {
+      "file": "file-inventory.json",
+      "hash": "6a4bf0f83d9f1810d7a0322bccd50c47c552430bd35aeec0d3308e33e5bd4e66"
+    },
+    {
+      "file": "GAR-0001-Final-Report.md",
+      "hash": "00a862406c71701a357f67989782fd397436e2c41e454401c13d772d2affd019"
+    },
+    {
+      "file": "governance-artifact-inventory.json",
+      "hash": "c79697feaf829192f14008ca6e3bcf3b5bfdf7b98aa6f255c0eebd26f4ad3776"
+    },
+    {
+      "file": "hygiene-inventory.json",
+      "hash": "567f83ec9734b572ba507ba7f082eff42788c854fa0bc4eb52b5165eb66efaee"
+    },
+    {
+      "file": "import-graph.json",
+      "hash": "b23ea24470988279228b9e6aab541eafeb5c5935c9acd0eb299b958a1d183f8e"
+    },
+    {
+      "file": "package-inventory.json",
+      "hash": "e10e92163d72cc2ee656ed69a9dc97c1223d23a42569ba8bc08a10d651926c88"
+    },
+    {
+      "file": "persistence-access-inventory.json",
+      "hash": "f1d1556fc8a271306a2dfca85171201e6511b4f016dffef575c170a9eecc59f8"
+    },
+    {
+      "file": "prisma-inventory.json",
+      "hash": "a360fa3c3f81778aaec556c0f8f88b4f51368338ef1c2786e1fb1fab15195041"
+    },
+    {
+      "file": "registry-inventory.json",
+      "hash": "420edd9956efcea07bf36de930d9f2c3dbe0dd265f281d4514960fd37cf3f293"
+    },
+    {
+      "file": "repository-manifest.json",
+      "hash": "9e3364b058c34f266c2b1ef11e079d7aa56022c63bb12ab35e52af5707349357"
+    },
+    {
+      "file": "security-surface-inventory.json",
+      "hash": "a01f7a2215e2bec053e7cf6a3c7292d2d460e1f967847987cfb33abbe25924a9"
+    },
+    {
+      "file": "source-symbol-inventory.json",
+      "hash": "6c969d6b845f5b20e5cdc19781cbf1b9da7b53d610c6568db2cb9b10cf3d0ee3"
+    },
+    {
+      "file": "test-inventory.json",
+      "hash": "a9194559cb5abd46f66eb30b8cd092e9c6195763756713b9dffb862ea26be257"
+    },
+    {
+      "file": "unresolved-analysis-items.json",
+      "hash": "6fadd0d3b0a07f0680202452f1ff706fe79ad06545add336aeff083e7bac506b"
+    }
+  ],
+  "generationMethod": "deterministic-topology-analysis-from-gar-0001-and-source-layout",
+  "limitations": [
+    "runtime flow conclusions are static/inferred"
+  ],
+  "persistenceFlows": [
+    {
+      "consumer": "src/app/glw/(protected)/queue/page.tsx",
+      "target": "src/lib/glw/job-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/customer-success-runtime.ts",
+      "target": "src/lib/gba/customer-success-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/customer-success-runtime.ts",
+      "target": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/customer-success-runtime.ts",
+      "target": "src/lib/gba/finance-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/customer-success-runtime.ts",
+      "target": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/customer-success-runtime.ts",
+      "target": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/customer-success-runtime.ts",
+      "target": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/customer-success-runtime.ts",
+      "target": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/executive-runtime.ts",
+      "target": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/executive-runtime.ts",
+      "target": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/executive-runtime.ts",
+      "target": "src/lib/gea/memory-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/executive-runtime.ts",
+      "target": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/finance-runtime.ts",
+      "target": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/finance-runtime.ts",
+      "target": "src/lib/gba/finance-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/finance-runtime.ts",
+      "target": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/finance-runtime.ts",
+      "target": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/finance-runtime.ts",
+      "target": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/finance-runtime.ts",
+      "target": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/finance-runtime.ts",
+      "target": "src/lib/ged/enterprise-domain-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/manufacturing-runtime.ts",
+      "target": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/manufacturing-runtime.ts",
+      "target": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/manufacturing-runtime.ts",
+      "target": "src/lib/gea/memory-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/marketing-runtime.ts",
+      "target": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/marketing-runtime.ts",
+      "target": "src/lib/gmp/repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/operations-runtime.ts",
+      "target": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/operations-runtime.ts",
+      "target": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/operations-runtime.ts",
+      "target": "src/lib/gea/memory-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/operations-runtime.ts",
+      "target": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/sales-runtime.ts",
+      "target": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/sales-runtime.ts",
+      "target": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/sales-runtime.ts",
+      "target": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/sales-runtime.ts",
+      "target": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/sales-runtime.ts",
+      "target": "src/lib/ged/enterprise-domain-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gba/sales-runtime.ts",
+      "target": "src/lib/gmp/repository.ts"
+    },
+    {
+      "consumer": "src/lib/gea/agent-runtime.ts",
+      "target": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gea/orchestration-runtime.ts",
+      "target": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gop/events-api.ts",
+      "target": "src/lib/glw/job-repository.ts"
+    },
+    {
+      "consumer": "src/lib/gop/events-api.ts",
+      "target": "src/lib/glw/prisma.ts"
+    },
+    {
+      "consumer": "src/platform/gop/index.ts",
+      "target": "src/platform/gop/runtime/execution-repository.ts"
+    },
+    {
+      "consumer": "src/platform/gop/runtime/event-store.ts",
+      "target": "src/lib/glw/prisma.ts"
+    },
+    {
+      "consumer": "src/platform/gop/runtime/execution-repository.ts",
+      "target": "src/lib/glw/prisma.ts"
+    },
+    {
+      "consumer": "src/platform/gop/runtime/orchestration-runtime.ts",
+      "target": "src/platform/gop/runtime/execution-repository.ts"
+    },
+    {
+      "consumer": "src/platform/gop/runtime/orchestrator.ts",
+      "target": "src/platform/gop/runtime/execution-repository.ts"
+    },
+    {
+      "consumer": "tests/gba/gba-customer-success-runtime.test.ts",
+      "target": "src/lib/gba/customer-success-repository.ts"
+    },
+    {
+      "consumer": "tests/gba/gba-executive-runtime.test.ts",
+      "target": "src/lib/gba/executive-repository.ts"
+    },
+    {
+      "consumer": "tests/gba/gba-finance-runtime.test.ts",
+      "target": "src/lib/gba/finance-repository.ts"
+    },
+    {
+      "consumer": "tests/gba/gba-manufacturing-runtime.test.ts",
+      "target": "src/lib/gba/manufacturing-repository.ts"
+    },
+    {
+      "consumer": "tests/gba/gba-marketing-runtime.test.ts",
+      "target": "src/lib/gba/marketing-repository.ts"
+    },
+    {
+      "consumer": "tests/gba/gba-operations-runtime.test.ts",
+      "target": "src/lib/gba/operations-repository.ts"
+    },
+    {
+      "consumer": "tests/gba/gba-sales-runtime.test.ts",
+      "target": "src/lib/gba/sales-repository.ts"
+    },
+    {
+      "consumer": "tests/gea/gea-orchestration-runtime.test.ts",
+      "target": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "consumer": "tests/gea/gea-orchestration-runtime.test.ts",
+      "target": "src/lib/gea/orchestration-repository.ts"
+    },
+    {
+      "consumer": "tests/gea/gea-runtime.test.ts",
+      "target": "src/lib/gea/agent-repository.ts"
+    },
+    {
+      "consumer": "tests/gop/runtime-certification-failure.test.ts",
+      "target": "src/platform/gop/runtime/execution-repository.ts"
+    }
+  ],
+  "replayFlowCandidates": [
+    "src/platform/gop/runtime/replay-engine.ts"
+  ],
+  "runtimeEntryPoints": [
+    "/api/gea/agents",
+    "/api/gea/agents/[id]",
+    "/api/gea/approvals",
+    "/api/gea/audit",
+    "/api/gea/capabilities",
+    "/api/gea/context/preview",
+    "/api/gea/executions",
+    "/api/gea/executions/[executionId]/timeline",
+    "/api/gea/executions/control",
+    "/api/gea/health",
+    "/api/gea/memory",
+    "/api/gea/planning",
+    "/api/gea/replay"
+  ],
+  "runtimeServices": [
+    "src/app/api/gea/workflows/[id]/route.ts",
+    "src/app/api/gea/workflows/route.ts",
+    "src/app/api/gop/jobs/[id]/events/route.ts",
+    "src/app/api/gop/jobs/[id]/events/stream/route.ts",
+    "src/app/glw/(protected)/queue/page.tsx",
+    "src/components/glw/glw-queue-workspace.tsx",
+    "src/core/runtime/MetadataDiscovery.ts",
+    "src/core/runtime/MetadataLoader.ts",
+    "src/core/runtime/MetadataRuntime.test.ts",
+    "src/core/runtime/MetadataRuntime.ts",
+    "src/core/runtime/MetadataValidator.ts",
+    "src/lib/gba/customer-success-runtime.ts",
+    "src/lib/gba/executive-runtime.ts",
+    "src/lib/gba/finance-runtime.ts",
+    "src/lib/gba/manufacturing-runtime.ts",
+    "src/lib/gba/marketing-runtime.ts",
+    "src/lib/gba/operations-runtime.ts",
+    "src/lib/gba/sales-runtime.ts",
+    "src/lib/gea/agent-runtime.ts",
+    "src/lib/gea/orchestration-runtime.ts",
+    "src/lib/ged/enterprise-domain-runtime.ts",
+    "src/lib/gop/events-api.ts",
+    "src/platform/gop/actions/authorization.ts",
+    "src/platform/gop/adapters/glw-events.ts",
+    "src/platform/gop/adapters/glw-inspector.ts",
+    "src/platform/gop/adapters/glw.ts",
+    "src/platform/gop/auth/policies.ts",
+    "src/platform/gop/auth/resolver.ts",
+    "src/platform/gop/auth/runtime.ts",
+    "src/platform/gop/contracts.ts",
+    "src/platform/gop/event-engine.ts",
+    "src/platform/gop/event-store.ts",
+    "src/platform/gop/index.ts",
+    "src/platform/gop/inspector/extensions.ts",
+    "src/platform/gop/job-engine.ts",
+    "src/platform/gop/metrics-from-events.ts",
+    "src/platform/gop/metrics.ts",
+    "src/platform/gop/module-registry.ts",
+    "src/platform/gop/runtime/bootstrap-list.ts",
+    "src/platform/gop/runtime/event-store.ts",
+    "src/platform/gop/runtime/execution-engine.ts",
+    "src/platform/gop/runtime/execution-repository.ts",
+    "src/platform/gop/runtime/loader.ts",
+    "src/platform/gop/runtime/module-bootstrap.ts",
+    "src/platform/gop/runtime/notification-center.ts",
+    "src/platform/gop/runtime/orchestration-runtime.ts",
+    "src/platform/gop/runtime/orchestrator.ts",
+    "src/platform/gop/runtime/queue-manager.ts",
+    "src/platform/gop/runtime/replay-engine.ts",
+    "src/platform/gop/runtime/snapshot-engine.ts",
+    "src/platform/gop/runtime/worker-registry.ts",
+    "src/platform/gop/runtime/worker-token.ts",
+    "src/platform/gop/runtime/workflow-orchestrator.ts",
+    "src/platform/gop/workspaces/registry.ts",
+    "src/platform/gop/workspaces/runtime.ts",
+    "tests/gba/gba-customer-success-runtime.test.ts",
+    "tests/gba/gba-executive-runtime.test.ts",
+    "tests/gba/gba-finance-runtime.test.ts",
+    "tests/gba/gba-manufacturing-runtime.test.ts",
+    "tests/gba/gba-marketing-runtime.test.ts",
+    "tests/gba/gba-operations-runtime.test.ts",
+    "tests/gba/gba-sales-runtime.test.ts",
+    "tests/gea/gea-orchestration-runtime.test.ts",
+    "tests/gea/gea-runtime.test.ts",
+    "tests/gop/event-store.test.ts",
+    "tests/gop/glw-events-adapter.test.ts",
+    "tests/gop/metrics-from-events.test.ts",
+    "tests/gop/orchestration-runtime.test.ts",
+    "tests/gop/runtime-certification-failure.test.ts",
+    "tests/gop/runtime-fabric.test.ts",
+    "tools/genesis/commands/runtime.mjs",
+    "tools/genesis/runtime/AutomationEngine.mjs",
+    "tools/genesis/runtime/BootManifest.mjs",
+    "tools/genesis/runtime/CommandBus.mjs",
+    "tools/genesis/runtime/EventBus.mjs",
+    "tools/genesis/runtime/ExecutionContract.mjs",
+    "tools/genesis/runtime/ExecutionValidator.mjs",
+    "tools/genesis/runtime/QueryBus.mjs",
+    "tools/genesis/runtime/RuntimeApiGateway.mjs",
+    "tools/genesis/runtime/RuntimeApiGatewayContract.mjs",
+    "tools/genesis/runtime/RuntimeAutomationContract.mjs",
+    "tools/genesis/runtime/RuntimeBootPipeline.mjs",
+    "tools/genesis/runtime/RuntimeBootPipeline.test.mjs",
+    "tools/genesis/runtime/RuntimeBootRunner.mjs",
+    "tools/genesis/runtime/RuntimeCommandContract.mjs",
+    "tools/genesis/runtime/RuntimeEventContract.mjs",
+    "tools/genesis/runtime/RuntimeExecutionContext.mjs",
+    "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+    "tools/genesis/runtime/RuntimeQueryContract.mjs",
+    "tools/genesis/templates/entity/events.template.ts"
+  ],
+  "schemaIdentifier": "gar-0002/runtime-topology",
+  "schemaVersion": "1.0.0",
+  "toolVersion": "1.0.0"
+}

@@ -1,0 +1,298 @@
+{
+  "evidenceClassification": "VERIFIED",
+  "gar0001BaselineHashes": [
+    {
+      "file": "api-route-inventory.json",
+      "hash": "bff63dead702e4d2962d36a36d477f94a32ce0263ecf15a8d7b64ca28f54c8be"
+    },
+    {
+      "file": "audit-run-manifest.json",
+      "hash": "be4c0d7b30c6260f63a3723a4e8a2b7668bf48889f5cf3a13d3ebb3d5a922dcf"
+    },
+    {
+      "file": "circular-dependency-report.json",
+      "hash": "d5a0d209411ba30f47fca228676c96d17d13dda38cffad4dbf2e9dabcd012212"
+    },
+    {
+      "file": "directory-inventory.json",
+      "hash": "cda00f6a3b961d10e3d5e550615c16a973aca646fb33351d97c624cc35255993"
+    },
+    {
+      "file": "documentation-inventory.json",
+      "hash": "fe143945f84a1554a78baf95c8a5366766749a6e724f31d270bd905756082c8e"
+    },
+    {
+      "file": "file-inventory.json",
+      "hash": "6a4bf0f83d9f1810d7a0322bccd50c47c552430bd35aeec0d3308e33e5bd4e66"
+    },
+    {
+      "file": "GAR-0001-Final-Report.md",
+      "hash": "00a862406c71701a357f67989782fd397436e2c41e454401c13d772d2affd019"
+    },
+    {
+      "file": "governance-artifact-inventory.json",
+      "hash": "c79697feaf829192f14008ca6e3bcf3b5bfdf7b98aa6f255c0eebd26f4ad3776"
+    },
+    {
+      "file": "hygiene-inventory.json",
+      "hash": "567f83ec9734b572ba507ba7f082eff42788c854fa0bc4eb52b5165eb66efaee"
+    },
+    {
+      "file": "import-graph.json",
+      "hash": "b23ea24470988279228b9e6aab541eafeb5c5935c9acd0eb299b958a1d183f8e"
+    },
+    {
+      "file": "package-inventory.json",
+      "hash": "e10e92163d72cc2ee656ed69a9dc97c1223d23a42569ba8bc08a10d651926c88"
+    },
+    {
+      "file": "persistence-access-inventory.json",
+      "hash": "f1d1556fc8a271306a2dfca85171201e6511b4f016dffef575c170a9eecc59f8"
+    },
+    {
+      "file": "prisma-inventory.json",
+      "hash": "a360fa3c3f81778aaec556c0f8f88b4f51368338ef1c2786e1fb1fab15195041"
+    },
+    {
+      "file": "registry-inventory.json",
+      "hash": "420edd9956efcea07bf36de930d9f2c3dbe0dd265f281d4514960fd37cf3f293"
+    },
+    {
+      "file": "repository-manifest.json",
+      "hash": "9e3364b058c34f266c2b1ef11e079d7aa56022c63bb12ab35e52af5707349357"
+    },
+    {
+      "file": "security-surface-inventory.json",
+      "hash": "a01f7a2215e2bec053e7cf6a3c7292d2d460e1f967847987cfb33abbe25924a9"
+    },
+    {
+      "file": "source-symbol-inventory.json",
+      "hash": "6c969d6b845f5b20e5cdc19781cbf1b9da7b53d610c6568db2cb9b10cf3d0ee3"
+    },
+    {
+      "file": "test-inventory.json",
+      "hash": "a9194559cb5abd46f66eb30b8cd092e9c6195763756713b9dffb862ea26be257"
+    },
+    {
+      "file": "unresolved-analysis-items.json",
+      "hash": "6fadd0d3b0a07f0680202452f1ff706fe79ad06545add336aeff083e7bac506b"
+    }
+  ],
+  "generationMethod": "deterministic-topology-analysis-from-gar-0001-and-source-layout",
+  "items": [
+    {
+      "file": ".env",
+      "id": "GAR1-UNRESOLVED-FILETYPE-1",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-10",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/compiler/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-11",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/diagnostics/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-12",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/renderer/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-13",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/compiler/writers/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-14",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/diagnostics/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-15",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/docs/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-16",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/plans/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-17",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/validators/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-18",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": ".git",
+      "id": "GAR1-UNRESOLVED-FILETYPE-2",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": ".github/CODEOWNERS",
+      "id": "GAR1-UNRESOLVED-FILETYPE-3",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": ".gitignore",
+      "id": "GAR1-UNRESOLVED-FILETYPE-4",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/compiler/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-5",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/genome/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-6",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/semantics/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-7",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "genesis/standards/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-8",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "tools/genesis/blueprints/.gitkeep",
+      "id": "GAR1-UNRESOLVED-FILETYPE-9",
+      "reason": "inherited-from-gar-0001",
+      "type": "unknown-file-type"
+    },
+    {
+      "file": "next-env.d.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-1",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tests/compiler/genome/graph-construction-pass.test.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-10",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tests/gea/gea-memory-route-forwarding.test.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-11",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-12",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-13",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-14",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tools/genesis/templates/core-object-system/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-15",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-2",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-3",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-4",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/core/object/GenesisObject.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-5",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/data/companies/companies.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-6",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/data/projects/projects.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-7",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "src/types/Company.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-8",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "tests/compiler/genome/graph-construction-pass.test.ts",
+      "id": "GAR1-UNRESOLVED-IMPORT-9",
+      "reason": "inherited-from-gar-0001",
+      "type": "unresolved-import"
+    },
+    {
+      "file": "*",
+      "id": "GAR2-UNRESOLVED-000001",
+      "reason": "folder structure is not authoritative ownership proof",
+      "type": "ownership-authority"
+    },
+    {
+      "file": "genesis/audits/GAR-0001/audit-run-manifest.json",
+      "id": "GAR2-UNRESOLVED-000002",
+      "reason": "none",
+      "type": "gar0001-manifest-hash-consistency"
+    }
+  ],
+  "limitations": [],
+  "schemaIdentifier": "gar-0002/unresolved-topology-items",
+  "schemaVersion": "1.0.0",
+  "toolVersion": "1.0.0"
+}
