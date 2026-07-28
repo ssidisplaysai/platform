@@ -1,0 +1,49 @@
+{
+  "package": "GARR-0001",
+  "date": "2026-07-27",
+  "summary": {
+    "critical": 0,
+    "major": 4,
+    "minor": 0,
+    "editorial": 1,
+    "observation": 0
+  },
+  "findings": [
+    {
+      "id": "FR-001",
+      "severity": "MAJOR",
+      "area": "Responsibility/Boundary/Interface/Traceability",
+      "title": "Constitutional Services first-class registry representation gap",
+      "blocking": true
+    },
+    {
+      "id": "FR-002",
+      "severity": "MAJOR",
+      "area": "Dependency Architecture",
+      "title": "Unresolved architectural dependency ambiguity in transitional dual-surface state",
+      "blocking": true
+    },
+    {
+      "id": "FR-003",
+      "severity": "MAJOR",
+      "area": "Lifecycle and Terminology Consistency",
+      "title": "Lifecycle/status taxonomy over-fragmentation in architecture manifest",
+      "blocking": true
+    },
+    {
+      "id": "FR-004",
+      "severity": "MAJOR",
+      "area": "Decision Traceability",
+      "title": "Core ADR approval closure gap",
+      "blocking": true
+    },
+    {
+      "id": "FR-005",
+      "severity": "EDITORIAL",
+      "area": "Documentation Quality",
+      "title": "Duplicate sampled tag claim value normalization opportunity",
+      "blocking": false
+    }
+  ],
+  "finalDisposition": "ARCHITECTURE NOT READY"
+}

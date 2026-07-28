@@ -1,0 +1,21 @@
+{
+  "package": "GARR-0001A",
+  "date": "2026-07-27",
+  "changes": [
+    { "artifact": "genesis/architecture/decisions/ADR-0001-Compiler-Architecture.md", "type": "metadata-update", "finding": "FR-004" },
+    { "artifact": "genesis/architecture/decisions/ADR-0002-Canonical-Entity-Model.md", "type": "metadata-update", "finding": "FR-004" },
+    { "artifact": "genesis/architecture/decisions/ADR-0003-Registry-Evolution.md", "type": "metadata-update", "finding": "FR-004" },
+    { "artifact": "genesis/architecture/decisions/ADR-0004-Runtime-Boundaries.md", "type": "metadata-update", "finding": "FR-004" },
+    { "artifact": "genesis/architecture/decisions/ADR-0005-Constitutional-Dependency-Direction.md", "type": "new-artifact", "finding": "FR-002" },
+    { "artifact": "genesis/architecture/decisions.md", "type": "index-update", "finding": "FR-004" },
+    { "artifact": "genesis/architecture/GENESIS_DEPENDENCY_MAP.md", "type": "content-update", "finding": "FR-002" },
+    { "artifact": "genesis/architecture/SPRINT-0.5-ARCHITECTURE-CONSOLIDATION-REPORT.md", "type": "addendum", "finding": "FR-002" },
+    { "artifact": "genesis/architecture/LIFECYCLE_STATUS_NORMALIZATION.md", "type": "new-artifact", "finding": "FR-003" },
+    { "artifact": "genesis/architecture/runtime-lifecycle.md", "type": "reference-update", "finding": "FR-003" },
+    { "artifact": "genesis/architecture/standards.md", "type": "reference-update", "finding": "FR-003" },
+    { "artifact": "genesis/architecture/ARCHITECTURE_MANIFEST.md", "type": "registration-update", "finding": "FR-001/FR-004" },
+    { "artifact": "genesis/architecture/README.md", "type": "synchronization-update", "finding": "Synchronization" },
+    { "artifact": "README.md", "type": "synchronization-update", "finding": "Synchronization" },
+    { "artifact": "STATUS.md", "type": "synchronization-update", "finding": "Synchronization" }
+  ]
+}

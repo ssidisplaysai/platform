@@ -1,0 +1,8 @@
+﻿RESULT|upstream|lint|EXIT=1
+RESULT|upstream|test|EXIT=1
+RESULT|upstream|build|EXIT=1
+RESULT|upstream|typecheck-main|EXIT=1
+RESULT|target|lint|EXIT=1
+RESULT|target|test|EXIT=1
+RESULT|target|build|EXIT=1
+RESULT|target|typecheck-main|EXIT=1

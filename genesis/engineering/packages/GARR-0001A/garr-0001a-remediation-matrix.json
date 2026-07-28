@@ -1,0 +1,52 @@
+{
+  "package": "GARR-0001A",
+  "date": "2026-07-27",
+  "sourcePackage": "GARR-0001",
+  "findings": [
+    {
+      "id": "FR-001",
+      "severity": "MAJOR",
+      "blocking": true,
+      "status": "REMEDIATED",
+      "primaryArtifacts": [
+        "genesis/architecture/ARCHITECTURE_MANIFEST.md"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "severity": "MAJOR",
+      "blocking": true,
+      "status": "REMEDIATED",
+      "primaryArtifacts": [
+        "genesis/architecture/decisions/ADR-0005-Constitutional-Dependency-Direction.md",
+        "genesis/architecture/GENESIS_DEPENDENCY_MAP.md"
+      ]
+    },
+    {
+      "id": "FR-003",
+      "severity": "MAJOR",
+      "blocking": true,
+      "status": "REMEDIATED",
+      "primaryArtifacts": [
+        "genesis/architecture/LIFECYCLE_STATUS_NORMALIZATION.md",
+        "genesis/architecture/runtime-lifecycle.md",
+        "genesis/architecture/standards.md"
+      ]
+    },
+    {
+      "id": "FR-004",
+      "severity": "MAJOR",
+      "blocking": true,
+      "status": "REMEDIATED",
+      "primaryArtifacts": [
+        "genesis/architecture/decisions/ADR-0001-Compiler-Architecture.md",
+        "genesis/architecture/decisions/ADR-0002-Canonical-Entity-Model.md",
+        "genesis/architecture/decisions/ADR-0003-Registry-Evolution.md",
+        "genesis/architecture/decisions/ADR-0004-Runtime-Boundaries.md",
+        "genesis/architecture/decisions.md",
+        "genesis/architecture/ARCHITECTURE_MANIFEST.md"
+      ]
+    }
+  ],
+  "finalDisposition": "REMEDIATION COMPLETE"
+}

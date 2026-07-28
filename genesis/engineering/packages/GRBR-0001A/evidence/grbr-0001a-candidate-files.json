@@ -1,0 +1,478 @@
+﻿[
+    {
+        "path":  "genesis/architecture/ARCHITECTURE_MANIFEST.md",
+        "owningPackage":  "ARCHITECTURE-GOVERNANCE"
+    },
+    {
+        "path":  "genesis/architecture/decisions.md",
+        "owningPackage":  "ARCHITECTURE-GOVERNANCE"
+    },
+    {
+        "path":  "genesis/architecture/decisions/ADR-0001-Compiler-Architecture.md",
+        "owningPackage":  "ADR"
+    },
+    {
+        "path":  "genesis/architecture/decisions/ADR-0002-Canonical-Entity-Model.md",
+        "owningPackage":  "ADR"
+    },
+    {
+        "path":  "genesis/architecture/decisions/ADR-0003-Registry-Evolution.md",
+        "owningPackage":  "ADR"
+    },
+    {
+        "path":  "genesis/architecture/decisions/ADR-0004-Runtime-Boundaries.md",
+        "owningPackage":  "ADR"
+    },
+    {
+        "path":  "genesis/architecture/decisions/ADR-0005-Constitutional-Dependency-Direction.md",
+        "owningPackage":  "ADR"
+    },
+    {
+        "path":  "genesis/architecture/GENESIS_DEPENDENCY_MAP.md",
+        "owningPackage":  "ARCHITECTURE-GOVERNANCE"
+    },
+    {
+        "path":  "genesis/architecture/LIFECYCLE_STATUS_NORMALIZATION.md",
+        "owningPackage":  "ARCHITECTURE-GOVERNANCE"
+    },
+    {
+        "path":  "genesis/architecture/README.md",
+        "owningPackage":  "ARCHITECTURE-GOVERNANCE"
+    },
+    {
+        "path":  "genesis/architecture/runtime-lifecycle.md",
+        "owningPackage":  "ARCHITECTURE-GOVERNANCE"
+    },
+    {
+        "path":  "genesis/architecture/standards.md",
+        "owningPackage":  "ARCHITECTURE-GOVERNANCE"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/00-package-manifest.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/01-review-charter.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/02-authoritative-input-inventory.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/03-platform-pillar-inventory.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/04-responsibility-ownership-matrix.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/05-boundary-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/06-dependency-graph-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/07-terminology-consistency-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/08-lifecycle-consistency-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/09-certification-freeze-release-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/10-interface-ownership-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/11-gbgf-gcdm-alignment-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/12-registry-manifest-integrity-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/13-historical-preservation-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/14-traceability-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/15-documentation-quality-review.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/16-finding-register.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/17-remediation-recommendations.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/18-enterprise-audit-readiness-checklist.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/19-final-readiness-report.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/garr-0001-dependency-validation-output.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/garr-0001-findings.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/garr-0001-readiness-evidence.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/garr-0001-registry-validation-output.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/garr-0001-status-vocabulary.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001/garr-0001-tag-claims.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/00-package-manifest.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/01-remediation-charter.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/02-authoritative-finding-intake.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/03-remediation-scope-and-authority.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/04-fr-001-remediation.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/05-fr-002-remediation.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/06-fr-003-remediation.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/07-fr-004-remediation.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/08-editorial-finding-disposition.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/09-constitutional-authority-record.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/10-artifact-change-register.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/11-targeted-validation-report.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/12-cross-finding-regression-report.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/13-historical-preservation-confirmation.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/14-registry-and-governance-synchronization.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/15-residual-risk-analysis.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/16-remediation-completion-report.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/17-readiness-revalidation-handoff.md",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/garr-0001a-artifact-change-register.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/garr-0001a-remediation-matrix.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/garr-0001a-residual-findings.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001A/garr-0001a-validation-evidence.json",
+        "owningPackage":  "GARR"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/00-package-manifest.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/01-independent-review-charter.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/02-fr-001-validation.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/03-fr-002-validation.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/04-fr-003-validation.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/05-fr-004-validation.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/06-readiness-validation-matrix.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/07-registry-validation.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/08-manifest-validation.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/09-historical-preservation-validation.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GARR-0001B/10-final-readiness-report.md",
+        "owningPackage":  "GARR-0001B"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/00-package-manifest.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/01-execution-charter.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/02-repository-identity-report.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/03-working-tree-inventory.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/04-secret-and-sensitive-file-review.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/05-constitutional-package-completeness-review.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/06-governance-synchronization-review.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/07-integrity-and-history-review.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/08-dependency-and-lockfile-review.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/09-validation-command-matrix.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/10-merge-marker-and-conflict-review.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/11-staging-safety-plan.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/12-staging-verification-report.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/13-commit-readiness-report.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/14-push-readiness-report.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/15-remote-verification-report.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/16-risk-register.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/17-blocker-register.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/18-final-disposition-report.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/19-operator-checklist.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/grbr-status-porcelain.txt",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/npm-ci-dry-run.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/npm-run-build.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/npm-run-lint.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/npm-test-runInBand.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/typecheck-gbg-0003d.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/typecheck-gbg-0003f.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/typecheck-gbg-0003g.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/typecheck-gbg-0003h.log",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001/evidence/working-tree-classification-table.md",
+        "owningPackage":  "GRBR-0001"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-baseline-comparison-summary.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-candidate-files.json",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-conflict-markers.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-excluded-files.json",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-sensitive-hits.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-source-status.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-target-diff-check.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-target-diff-stat.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-target-name-status.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-target-status.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-transfer-log.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-upstream-build.log",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-upstream-commits.txt",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-upstream-lint.log",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-upstream-test.log",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "genesis/engineering/packages/GRBR-0001A/evidence/grbr-0001a-upstream-typecheck-main.log",
+        "owningPackage":  "UNCLASSIFIED"
+    },
+    {
+        "path":  "README.md",
+        "owningPackage":  "ROOT-GOVERNANCE"
+    },
+    {
+        "path":  "STATUS.md",
+        "owningPackage":  "ROOT-GOVERNANCE"
+    }
+]

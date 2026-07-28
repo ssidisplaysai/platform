@@ -1,0 +1,7 @@
+﻿docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md:479:================================================================================
+docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md:481:================================================================================
+docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md:533:================================================================================
+docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md:535:================================================================================
+tools/genesis/compiler/ApplicationCompiler.mjs:429:=====================================
+tools/genesis/compiler/PackageCompiler.mjs:400:================================
+tools/genesis/compiler/SolutionCompiler.mjs:484:====================================

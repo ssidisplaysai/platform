@@ -1,0 +1,25 @@
+{
+  "package": "GARR-0001A",
+  "date": "2026-07-27",
+  "validation": {
+    "fr001FirstClassGcsRowsPresent": true,
+    "fr002DependencyDirectionApproved": true,
+    "fr003LifecycleNormalizationAuthorityPresent": true,
+    "fr004AdrApprovalClosureComplete": true,
+    "noHistoricalMutationOfGarr0001": true,
+    "noRuntimeCodeChanges": true,
+    "crossFindingRegressionDetected": false
+  },
+  "closedFindings": [
+    "FR-001",
+    "FR-002",
+    "FR-003",
+    "FR-004"
+  ],
+  "residualNonBlocking": [
+    "FR-005",
+    "RR-001",
+    "RR-002"
+  ],
+  "finalDisposition": "REMEDIATION COMPLETE"
+}

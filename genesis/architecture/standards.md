@@ -16,3 +16,4 @@
 - Keep interfaces small and explicit.
 - Avoid duplication by using shared abstractions.
 - Build for long-term evolution and maintainability.
+- Use [LIFECYCLE_STATUS_NORMALIZATION.md](LIFECYCLE_STATUS_NORMALIZATION.md) as the canonical interpretation layer for governance lifecycle vocabulary.

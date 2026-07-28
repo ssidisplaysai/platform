@@ -1,0 +1,31 @@
+{
+  "package": "GARR-0001A",
+  "date": "2026-07-27",
+  "residualFindings": [
+    {
+      "id": "FR-005",
+      "severity": "EDITORIAL",
+      "blocking": false,
+      "status": "OPEN",
+      "disposition": "Deferred outside bounded MAJOR remediation scope"
+    },
+    {
+      "id": "RR-001",
+      "severity": "EDITORIAL",
+      "blocking": false,
+      "status": "OPEN",
+      "disposition": "Tag-claim wording normalization opportunity"
+    },
+    {
+      "id": "RR-002",
+      "severity": "OBSERVATION",
+      "blocking": false,
+      "status": "OPEN",
+      "disposition": "Legacy lifecycle phrase diversity remains interpretive with normalization mapping"
+    }
+  ],
+  "blockingSummary": {
+    "criticalOpen": 0,
+    "majorOpen": 0
+  }
+}

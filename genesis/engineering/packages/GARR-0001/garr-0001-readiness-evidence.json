@@ -1,0 +1,19 @@
+{
+  "package": "GARR-0001",
+  "date": "2026-07-27",
+  "readinessRules": {
+    "noOpenCriticalFindings": true,
+    "noOpenMajorFindings": false,
+    "fivePillarsClearResponsibilities": false,
+    "noUnresolvedDependencyCycleOrAmbiguity": false,
+    "noMaterialLifecycleContradiction": false,
+    "noMaterialCertificationFreezeReleaseInconsistency": true,
+    "gbgfAndGcdmAligned": true,
+    "registryAndManifestMateriallyAccurate": false,
+    "historicalDispositionsPreserved": true,
+    "criticalInterfacesHaveAuthoritativeOwners": false
+  },
+  "blockingFindings": ["FR-001", "FR-002", "FR-003", "FR-004"],
+  "recommendedNextPackage": "GEA-0002 preparation is not authorized until blocking findings are remediated.",
+  "finalDisposition": "ARCHITECTURE NOT READY"
+}

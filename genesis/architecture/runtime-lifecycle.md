@@ -14,3 +14,9 @@ The Genesis runtime should boot in a consistent lifecycle that allows metadata, 
 ## Design Goal
 
 The runtime should act as the central orchestrator for the platform and remain independent from presentation concerns.
+
+## Governance Normalization Reference
+
+Lifecycle and status interpretation across architecture governance surfaces is standardized by:
+
+- [LIFECYCLE_STATUS_NORMALIZATION.md](LIFECYCLE_STATUS_NORMALIZATION.md)

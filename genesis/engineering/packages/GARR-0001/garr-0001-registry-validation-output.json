@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-07-27",
+  "checks": {
+    "duplicateArtifactIds": {
+      "result": "PASS",
+      "duplicateIdCount": 0,
+      "duplicates": []
+    },
+    "manifestLinkTargets": {
+      "result": "PASS",
+      "missingLinkCount": 0,
+      "missingTargets": []
+    },
+    "tagClaimConsistency": {
+      "result": "PASS",
+      "tagClaimCount": 5,
+      "missingTagClaims": 0
+    },
+    "gcsFirstClassRowsInManifest": {
+      "result": "FAIL",
+      "gcsRowCount": 0
+    },
+    "statusVocabularyNormalization": {
+      "result": "FAIL",
+      "uniqueStatusCount": 51
+    }
+  }
+}

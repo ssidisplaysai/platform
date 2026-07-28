@@ -1,0 +1,11 @@
+﻿TARGET_PRESENT|README.md
+TARGET_PRESENT|genesis/architecture/README.md
+TARGET_PRESENT|genesis/architecture/decisions.md
+TARGET_PRESENT|genesis/architecture/runtime-lifecycle.md
+TARGET_PRESENT|genesis/architecture/standards.md
+TARGET_PRESENT|STATUS.md
+TARGET_PRESENT|genesis/architecture/ARCHITECTURE_MANIFEST.md
+TARGET_PRESENT|genesis/architecture/GENESIS_DEPENDENCY_MAP.md
+TARGET_PRESENT|genesis/architecture/LIFECYCLE_STATUS_NORMALIZATION.md
+TARGET_PRESENT|genesis/architecture/decisions/
+TARGET_PRESENT|genesis/engineering/

@@ -1,0 +1,146 @@
+﻿ M README.md
+ M genesis/architecture/README.md
+ M genesis/architecture/decisions.md
+ M genesis/architecture/runtime-lifecycle.md
+ M genesis/architecture/standards.md
+ M genesis/compiler/README.md
+ M package.json
+ M src/compiler/genome/index.ts
+ M src/compiler/genome/passes/SemanticConsolidationPass.ts
+ M src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts
+ M src/compiler/genome/passes/SemanticResolutionPass.ts
+ M src/compiler/knowledge/index.ts
+ M src/compiler/stages/index.ts
+ M src/discovery/discovery-smoke-test.mts
+ M src/discovery/parser/InterviewStructureParser.ts
+ M src/discovery/parser/PdfRawParser.ts
+ M src/discovery/process-real-interview.mts
+ M src/discovery/process-real-madison-interview.mts
+ M src/discovery/process-real-zach-interview.mts
+ M src/discovery/process-real-zach.mts
+ M src/discovery/stage1-validation.mts
+ M src/discovery/verify-json-output.mts
+ M src/domain/entities/BaseEntity.ts
+ M src/domain/enums/EntityStatus.ts
+ M src/domain/enums/EntityType.ts
+ M src/domain/models/AuditInfo.ts
+ M src/domain/models/Tag.ts
+ M src/domain/schema/EntitySchema.ts
+ M src/evidence-ir/compiler/index.ts
+ M src/evidence-ir/models/index.ts
+ M src/modules/projects/ProjectTable.tsx
+ M tools/genesis/templates/core-object-system/GenesisDefinition.ts
+ M tools/genesis/templates/core-object-system/GenesisInstance.ts
+ M tools/genesis/templates/core-object-system/GenesisObject.ts
+ M tools/genesis/templates/core-object-system/ObjectAudit.ts
+ M tools/genesis/templates/core-object-system/ObjectIdentity.ts
+ M tools/genesis/templates/core-object-system/ObjectKnowledge.ts
+ M tools/genesis/templates/core-object-system/ObjectLifecycle.ts
+ M tools/genesis/templates/core-object-system/ObjectMetadata.ts
+ M tools/genesis/templates/core-object-system/ObjectPermission.ts
+ M tools/genesis/templates/core-object-system/ObjectRelationship.ts
+ M tools/genesis/templates/core-object-system/ObjectTimeline.ts
+ M tools/genesis/templates/entity/TemplateRenderer.mjs
+ M tools/genesis/templates/entity/definition.template.ts
+ M tools/genesis/templates/entity/events.template.ts
+ M tools/genesis/templates/entity/permissions.template.ts
+ M tools/genesis/templates/entity/repository.template.ts
+ M tools/genesis/templates/entity/search.template.ts
+ M tools/genesis/templates/entity/service.template.ts
+ M tools/genesis/templates/entity/tests.template.ts
+ M tools/genesis/templates/entity/validator.template.ts
+?? PAT-0001-LEDDisplayWarehouse.md
+?? STATUS.md
+?? docs/architecture/RAR-0002-GKF-PKG-0001-Architecture-Readiness-Report.md
+?? engineering/
+?? genesis/architecture/ARCHITECTURE_MANIFEST.md
+?? genesis/architecture/GENESIS_ARCHITECTURE_INVENTORY.md
+?? genesis/architecture/GENESIS_CAPABILITY_CATALOG.md
+?? genesis/architecture/GENESIS_DEPENDENCY_MAP.md
+?? genesis/architecture/GENESIS_DUPLICATE_ANALYSIS.md
+?? genesis/architecture/GENESIS_GAP_ANALYSIS.md
+?? genesis/architecture/GENESIS_IMPLEMENTATION_ROADMAP.md
+?? genesis/architecture/GENESIS_SYSTEM_MAP.md
+?? genesis/architecture/GS-0001-Dependency-Map.md
+?? genesis/architecture/GS-0001-Gap-Analysis.md
+?? genesis/architecture/GS-0001-Implementation-Readiness-Report.md
+?? genesis/architecture/GS-0001-Ownership-Matrix.md
+?? genesis/architecture/GS-0001-Reuse-Matrix.md
+?? genesis/architecture/LIFECYCLE_STATUS_NORMALIZATION.md
+?? genesis/architecture/SPRINT-0.5-ARCHITECTURE-CONSOLIDATION-REPORT.md
+?? genesis/architecture/decisions/
+?? genesis/architecture/framework/
+?? genesis/architecture/gmk-1003/
+?? genesis/architecture/grt-0010/
+?? genesis/architecture/gs-0003/
+?? genesis/architecture/reviews/
+?? genesis/compiler/artifacts/
+?? genesis/compiler/classification/
+?? genesis/compiler/contracts/
+?? genesis/compiler/diagnostics/
+?? genesis/compiler/domains/
+?? genesis/compiler/evidence/
+?? genesis/compiler/extensions/
+?? genesis/compiler/extraction/
+?? genesis/compiler/pipelines/
+?? genesis/compiler/planning/
+?? genesis/compiler/relationships/
+?? genesis/compiler/resolution/
+?? genesis/compiler/reviews/
+?? genesis/compiler/specifications/
+?? genesis/compiler/validation/
+?? genesis/constitution/GMP-0000-Genesis-Marketing-Platform-Constitution.md
+?? genesis/constitution/GMP-0001-Canonical-Marketing-Object-Model.md
+?? genesis/constitution/GMP-0002-Enterprise-State-Lifecycle-Model.md
+?? genesis/constitution/GMP-0003-Marketing-Knowledge-Graph.md
+?? genesis/constitution/GMP-0004-Growth-Brain-Decision-Reasoning-Model.md
+?? genesis/engineering/
+?? genesis/governance/standards/
+?? genesis/programs/
+?? genesis/specifications/
+?? marketing-engine/
+?? src/compiler/genome/BusinessGenomeIngestionEngine.ts
+?? src/compiler/genome/GenesisClassificationStructuralParsingEngine.ts
+?? src/compiler/genome/GenesisSourceDiscoveryIngestionRuntime.ts
+?? src/compiler/genome/gbg-0003d-public-contracts.ts
+?? src/core/object/ObjectAIContext.ts
+?? src/core/object/ObjectAnalytics.ts
+?? src/core/object/ObjectAutomation.ts
+?? src/core/object/ObjectSearch.ts
+?? src/core/registry/IRegistryQueryService.ts
+?? src/core/registry/IRegistryRepository.ts
+?? src/core/registry/IRegistryService.ts
+?? src/core/registry/IRegistryValidator.ts
+?? src/core/registry/README.md
+?? src/core/registry/RegistryAsset.ts
+?? src/core/registry/RegistryContracts.typecheck.ts
+?? src/core/registry/RegistryTypes.ts
+?? src/core/registry/audit/
+?? src/core/registry/automation/
+?? src/core/registry/contracts/
+?? src/core/registry/errors/
+?? src/core/registry/identity/
+?? src/core/registry/index.ts
+?? src/core/registry/interfaces/
+?? src/core/registry/kernel/
+?? src/core/registry/lifecycle/
+?? src/core/registry/metadata/
+?? src/core/registry/relationships/
+?? src/core/registry/repositories/
+?? src/core/registry/services/
+?? src/core/registry/tests/
+?? src/core/registry/types/
+?? src/core/registry/validation/
+?? src/core/registry/version/
+?? src/types/models/Company.ts
+?? src/types/models/Project.ts
+?? tests/compiler/genome/business-genome-ingestion-engine.test.ts
+?? tests/compiler/genome/classification-structural-parsing-engine.test.ts
+?? tests/compiler/genome/gbg-0003d-contract-typecheck.ts
+?? tests/compiler/genome/source-discovery-ingestion-runtime.test.ts
+?? tests/genesis/
+?? tools/out/generated/learning/analysis-2026-07-21/
+?? tsconfig.gbg-0003d.json
+?? tsconfig.gbg-0003f.json
+?? tsconfig.gbg-0003g.json
+?? tsconfig.gbg-0003h.json

@@ -1,0 +1,947 @@
+﻿[
+    {
+        "status":  "M",
+        "path":  "genesis/compiler/README.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "package.json",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/compiler/genome/index.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/compiler/genome/passes/SemanticConsolidationPass.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/compiler/genome/passes/SemanticRelationshipResolutionPass.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/compiler/genome/passes/SemanticResolutionPass.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/compiler/knowledge/index.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/compiler/stages/index.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/discovery-smoke-test.mts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/parser/InterviewStructureParser.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/parser/PdfRawParser.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/process-real-interview.mts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/process-real-madison-interview.mts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/process-real-zach-interview.mts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/process-real-zach.mts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/stage1-validation.mts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/discovery/verify-json-output.mts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/domain/entities/BaseEntity.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/domain/enums/EntityStatus.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/domain/enums/EntityType.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/domain/models/AuditInfo.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/domain/models/Tag.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/domain/schema/EntitySchema.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/evidence-ir/compiler/index.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/evidence-ir/models/index.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "src/modules/projects/ProjectTable.tsx",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/GenesisDefinition.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/GenesisInstance.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/GenesisObject.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectAudit.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectIdentity.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectKnowledge.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectLifecycle.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectMetadata.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectPermission.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectRelationship.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/core-object-system/ObjectTimeline.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/TemplateRenderer.mjs",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/definition.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/events.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/permissions.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/repository.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/search.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/service.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/tests.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "M",
+        "path":  "tools/genesis/templates/entity/validator.template.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "PAT-0001-LEDDisplayWarehouse.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "docs/architecture/RAR-0002-GKF-PKG-0001-Architecture-Readiness-Report.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "engineering/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GENESIS_ARCHITECTURE_INVENTORY.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GENESIS_CAPABILITY_CATALOG.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GENESIS_DUPLICATE_ANALYSIS.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GENESIS_GAP_ANALYSIS.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GENESIS_IMPLEMENTATION_ROADMAP.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GENESIS_SYSTEM_MAP.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GS-0001-Dependency-Map.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GS-0001-Gap-Analysis.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GS-0001-Implementation-Readiness-Report.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GS-0001-Ownership-Matrix.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/GS-0001-Reuse-Matrix.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/SPRINT-0.5-ARCHITECTURE-CONSOLIDATION-REPORT.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/framework/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/gmk-1003/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/grt-0010/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/gs-0003/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/architecture/reviews/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/artifacts/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/classification/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/contracts/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/diagnostics/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/domains/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/evidence/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/extensions/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/extraction/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/pipelines/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/planning/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/relationships/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/resolution/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/reviews/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/specifications/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/compiler/validation/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/constitution/GMP-0000-Genesis-Marketing-Platform-Constitution.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/constitution/GMP-0001-Canonical-Marketing-Object-Model.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/constitution/GMP-0002-Enterprise-State-Lifecycle-Model.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/constitution/GMP-0003-Marketing-Knowledge-Graph.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/constitution/GMP-0004-Growth-Brain-Decision-Reasoning-Model.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/governance/standards/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/programs/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "genesis/specifications/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "marketing-engine/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/compiler/genome/BusinessGenomeIngestionEngine.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/compiler/genome/GenesisClassificationStructuralParsingEngine.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/compiler/genome/GenesisSourceDiscoveryIngestionRuntime.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/compiler/genome/gbg-0003d-public-contracts.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/object/ObjectAIContext.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/object/ObjectAnalytics.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/object/ObjectAutomation.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/object/ObjectSearch.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/IRegistryQueryService.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/IRegistryRepository.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/IRegistryService.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/IRegistryValidator.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/README.md",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/RegistryAsset.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/RegistryContracts.typecheck.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/RegistryTypes.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/audit/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/automation/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/contracts/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/errors/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/identity/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/index.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/interfaces/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/kernel/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/lifecycle/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/metadata/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/relationships/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/repositories/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/services/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/tests/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/types/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/validation/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/core/registry/version/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/types/models/Company.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "src/types/models/Project.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tests/compiler/genome/business-genome-ingestion-engine.test.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tests/compiler/genome/classification-structural-parsing-engine.test.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tests/compiler/genome/gbg-0003d-contract-typecheck.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tests/compiler/genome/source-discovery-ingestion-runtime.test.ts",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tests/genesis/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tools/out/generated/learning/analysis-2026-07-21/",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tsconfig.gbg-0003d.json",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tsconfig.gbg-0003f.json",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tsconfig.gbg-0003g.json",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    },
+    {
+        "status":  "??",
+        "path":  "tsconfig.gbg-0003h.json",
+        "reason":  "Excluded from constitutional extraction scope",
+        "riskIfIncluded":  "Scope contamination or implementation leakage",
+        "followUpRequired":  true
+    }
+]

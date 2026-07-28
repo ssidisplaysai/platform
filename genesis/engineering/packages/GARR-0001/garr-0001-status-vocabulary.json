@@ -1,0 +1,206 @@
+[
+    {
+        "Name":  "---",
+        "Count":  29
+    },
+    {
+        "Name":  "Approved",
+        "Count":  44
+    },
+    {
+        "Name":  "Approved for Implementation Planning",
+        "Count":  7
+    },
+    {
+        "Name":  "ARCHITECTURE COMPLETE",
+        "Count":  8
+    },
+    {
+        "Name":  "ARCHITECTURE DECLARED",
+        "Count":  4
+    },
+    {
+        "Name":  "BASELINE UPDATED (REG-0001A, REG-0001B, REG-0001C, REG-0001D, REG-0001E, REG-0001F, REG-0001G)",
+        "Count":  2
+    },
+    {
+        "Name":  "CERTIFICATION EXECUTED",
+        "Count":  1
+    },
+    {
+        "Name":  "CERTIFICATION EXECUTED - NOT CERTIFIED",
+        "Count":  5
+    },
+    {
+        "Name":  "CERTIFIED",
+        "Count":  22
+    },
+    {
+        "Name":  "Certified with Conditions",
+        "Count":  1
+    },
+    {
+        "Name":  "CERTIFIED WITH NON-BLOCKING CONDITIONS",
+        "Count":  26
+    },
+    {
+        "Name":  "CLOSED",
+        "Count":  4
+    },
+    {
+        "Name":  "Complete",
+        "Count":  1
+    },
+    {
+        "Name":  "Completed",
+        "Count":  8
+    },
+    {
+        "Name":  "DECLARED (RELEASE GATE BLOCKED)",
+        "Count":  1
+    },
+    {
+        "Name":  "DENIED",
+        "Count":  2
+    },
+    {
+        "Name":  "Draft",
+        "Count":  1
+    },
+    {
+        "Name":  "EXECUTED",
+        "Count":  178
+    },
+    {
+        "Name":  "EXECUTED - NOT CERTIFIED",
+        "Count":  3
+    },
+    {
+        "Name":  "FAIL (BLOCKING)",
+        "Count":  10
+    },
+    {
+        "Name":  "FOUNDATION DECLARED WITH RELEASE GATE BLOCKED",
+        "Count":  2
+    },
+    {
+        "Name":  "Foundation statuses recorded",
+        "Count":  1
+    },
+    {
+        "Name":  "Frozen",
+        "Count":  91
+    },
+    {
+        "Name":  "GENERATED",
+        "Count":  8
+    },
+    {
+        "Name":  "IMPLEMENTED",
+        "Count":  45
+    },
+    {
+        "Name":  "IMPLEMENTED AND VALIDATED",
+        "Count":  2
+    },
+    {
+        "Name":  "IMPLEMENTED WITH NON-BLOCKING CONDITIONS",
+        "Count":  2
+    },
+    {
+        "Name":  "Not explicitly declared",
+        "Count":  10
+    },
+    {
+        "Name":  "NOT READY",
+        "Count":  1
+    },
+    {
+        "Name":  "NOT RECOMMENDED",
+        "Count":  3
+    },
+    {
+        "Name":  "PASS",
+        "Count":  28
+    },
+    {
+        "Name":  "PASS WITH CONDITIONS",
+        "Count":  1
+    },
+    {
+        "Name":  "PASS WITH NON-BLOCKING CONDITIONS",
+        "Count":  17
+    },
+    {
+        "Name":  "Proposed",
+        "Count":  5
+    },
+    {
+        "Name":  "READY FOR BOARD APPROVAL",
+        "Count":  1
+    },
+    {
+        "Name":  "READY FOR DOWNSTREAM INTEGRATION",
+        "Count":  1
+    },
+    {
+        "Name":  "READY FOR GMK-I002",
+        "Count":  1
+    },
+    {
+        "Name":  "READY FOR GMK-I003",
+        "Count":  1
+    },
+    {
+        "Name":  "Ready for Implementation",
+        "Count":  1
+    },
+    {
+        "Name":  "READY FOR INDEPENDENT CERTIFICATION",
+        "Count":  1
+    },
+    {
+        "Name":  "READY FOR PRODUCTION HARDENING",
+        "Count":  2
+    },
+    {
+        "Name":  "READY WITH NON-BLOCKING CONDITIONS",
+        "Count":  6
+    },
+    {
+        "Name":  "Recommended",
+        "Count":  6
+    },
+    {
+        "Name":  "Referenced canonical ADR record",
+        "Count":  2
+    },
+    {
+        "Name":  "RELEASE DENIED",
+        "Count":  4
+    },
+    {
+        "Name":  "REMEDIATED",
+        "Count":  3
+    },
+    {
+        "Name":  "REMEDIATED WITH NON-BLOCKING CONDITIONS",
+        "Count":  3
+    },
+    {
+        "Name":  "REVIEWED",
+        "Count":  1
+    },
+    {
+        "Name":  "TRACKED",
+        "Count":  6
+    },
+    {
+        "Name":  "Unknown (whitespace-only file)",
+        "Count":  1
+    },
+    {
+        "Name":  "UPDATED FOR REG-0001A/B/C/D/E/F/G",
+        "Count":  1
+    }
+]
