@@ -1,0 +1,71 @@
+{
+  "schemaIdentifier": "ggl-0001/artifact-inventory",
+  "schemaVersion": "1.0.0",
+  "categories": [
+    {
+      "name": "constitution",
+      "status": "VERIFIED",
+      "evidence": ["genesis/CONSTITUTION.md"]
+    },
+    {
+      "name": "constitutional-services",
+      "status": "INFERRED",
+      "evidence": ["docs/gop/runtime-constitution.md", "docs/gop/gop-v1-constitutional-certification.md"]
+    },
+    {
+      "name": "constitutional-decisions",
+      "status": "INFERRED",
+      "evidence": ["docs/architecture", "GKP-0001-Constitutional-Compliance.md"]
+    },
+    {
+      "name": "architectural-framework",
+      "status": "VERIFIED",
+      "evidence": ["genesis/architecture", "docs/architecture"]
+    },
+    {
+      "name": "artifact-framework",
+      "status": "VERIFIED",
+      "evidence": ["genesis/audits/GAR-0001/governance-artifact-inventory.json"]
+    },
+    {
+      "name": "runtime-governance",
+      "status": "VERIFIED",
+      "evidence": ["docs/gop/runtime-constitution.md"]
+    },
+    {
+      "name": "business-genome-governance",
+      "status": "VERIFIED",
+      "evidence": ["genesis/genome", "GKP-0001-Constitutional-Compliance.md"]
+    },
+    {
+      "name": "registry-governance",
+      "status": "INFERRED",
+      "evidence": ["genesis/audits/GAR-0001/registry-inventory.json", ".github/CODEOWNERS"]
+    },
+    {
+      "name": "certification-documents",
+      "status": "VERIFIED",
+      "evidence": ["GFP-0001-Platform-Certification.md", "GBA-0002A-Validation-Matrix.md", "GBA-0003A-Validation-Matrix.md"]
+    },
+    {
+      "name": "audit-artifacts",
+      "status": "VERIFIED",
+      "evidence": ["genesis/audits/GAR-0001", "genesis/audits/GAR-0002"]
+    },
+    {
+      "name": "governance-documents",
+      "status": "VERIFIED",
+      "evidence": ["CONTRIBUTING.md", "GENESIS_ENGINEERING_HANDBOOK.md", "docs/governance"]
+    },
+    {
+      "name": "superseded-governance-artifacts",
+      "status": "SUPERSEDED",
+      "evidence": ["Genesis-Pre-Audit-Baseline.md -> Genesis-Pre-Audit-Baseline-v1.1.md"]
+    },
+    {
+      "name": "library-wide-governance-registry-prior-to-ggl-0001",
+      "status": "MISSING",
+      "evidence": []
+    }
+  ]
+}

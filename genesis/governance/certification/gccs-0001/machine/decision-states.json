@@ -1,0 +1,13 @@
+{
+  "schemaIdentifier": "gccs-0001/decision-states",
+  "schemaVersion": "1.0.0",
+  "states": [
+    "Certified",
+    "Certified With Conditions",
+    "Not Certified",
+    "Certification Deferred",
+    "Certification Withdrawn",
+    "Certification Superseded",
+    "Certification Revoked"
+  ]
+}

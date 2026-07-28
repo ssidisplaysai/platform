@@ -1,0 +1,21 @@
+{
+  "schemaIdentifier": "ggl-0001/cross-reference-graph",
+  "schemaVersion": "1.0.0",
+  "documents": [
+    "genesis/CONSTITUTION.md",
+    "genesis/governance/Genesis-Governance-Library.md",
+    "genesis/governance/Genesis-Governance-Authority-Model.md",
+    "genesis/governance/Genesis-Governance-Traceability-Model.md",
+    "genesis/governance/standards/Genesis-Standards-Registry.md",
+    "genesis/governance/procedures/Genesis-Governance-Procedures.md",
+    "genesis/governance/certification/Genesis-Certification-Standards.md",
+    "genesis/governance/standards/Genesis-Audit-Standards.md"
+  ],
+  "references": [
+    { "from": "genesis/governance/Genesis-Governance-Library.md", "to": "genesis/CONSTITUTION.md", "type": "authority-source" },
+    { "from": "genesis/governance/Genesis-Governance-Authority-Model.md", "to": "genesis/CONSTITUTION.md", "type": "constitution-reference" },
+    { "from": "genesis/governance/procedures/Genesis-Governance-Procedures.md", "to": "genesis/governance/standards/Genesis-Standards-Registry.md", "type": "related-standards" },
+    { "from": "genesis/governance/audit/Genesis-Audit-Family-Overview.md", "to": "genesis/governance/standards/Genesis-Audit-Standards.md", "type": "related-standards" },
+    { "from": "genesis/governance/certification/Genesis-Certification-Standards.md", "to": "genesis/governance/machine/standards.json", "type": "registry-source" }
+  ]
+}

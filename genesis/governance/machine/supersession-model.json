@@ -1,0 +1,17 @@
+{
+  "schemaIdentifier": "ggl-0001/supersession-model",
+  "schemaVersion": "1.0.0",
+  "rules": [
+    "supersession-must-identify-successor",
+    "supersession-must-preserve-authority-chain",
+    "supersession-must-preserve-evidence-lineage",
+    "supersession-must-document-migration-impact"
+  ],
+  "exampleMappings": [
+    {
+      "artifact": "Genesis-Pre-Audit-Baseline.md",
+      "status": "SUPERSEDED",
+      "successor": "Genesis-Pre-Audit-Baseline-v1.1.md"
+    }
+  ]
+}

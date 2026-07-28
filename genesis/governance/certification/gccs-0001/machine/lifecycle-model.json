@@ -1,0 +1,30 @@
+{
+  "schemaIdentifier": "gccs-0001/lifecycle-model",
+  "schemaVersion": "1.0.0",
+  "states": [
+    "Draft",
+    "Proposed",
+    "Ratified",
+    "Active",
+    "Certified",
+    "Re-certification Pending",
+    "Superseded",
+    "Withdrawn",
+    "Revoked",
+    "Archived"
+  ],
+  "transitions": [
+    { "from": "Draft", "to": "Proposed" },
+    { "from": "Proposed", "to": "Ratified" },
+    { "from": "Ratified", "to": "Active" },
+    { "from": "Active", "to": "Certified" },
+    { "from": "Certified", "to": "Re-certification Pending" },
+    { "from": "Re-certification Pending", "to": "Certified" },
+    { "from": "Certified", "to": "Superseded" },
+    { "from": "Certified", "to": "Revoked" },
+    { "from": "Certified", "to": "Withdrawn" },
+    { "from": "Superseded", "to": "Archived" },
+    { "from": "Revoked", "to": "Archived" },
+    { "from": "Withdrawn", "to": "Archived" }
+  ]
+}

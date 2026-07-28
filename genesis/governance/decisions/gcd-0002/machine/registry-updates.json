@@ -1,0 +1,26 @@
+{
+  "schemaIdentifier": "gcd-0002/registry-updates",
+  "schemaVersion": "1.0.0",
+  "updates": [
+    {
+      "registry": "governance-registry",
+      "targetPath": "genesis/governance/machine/governance-registry.json",
+      "action": "add-artifact-reference",
+      "artifactId": "GCD-0002",
+      "artifactPath": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md"
+    },
+    {
+      "registry": "decision-registry",
+      "targetPath": "genesis/governance/certification/gccs-0001/machine/decision-registry.schema.json",
+      "action": "register-decision-instance",
+      "decisionId": "GCD-0002",
+      "state": "APPROVED"
+    },
+    {
+      "registry": "lifecycle-registry",
+      "targetPath": "genesis/governance/audit/gafs-0001/machine/lifecycle-registry.schema.json",
+      "action": "register-lifecycle-instance",
+      "entityId": "GCD-0002"
+    }
+  ]
+}

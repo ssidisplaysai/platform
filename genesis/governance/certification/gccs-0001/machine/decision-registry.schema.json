@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gccs-0001/decision-registry.schema.json",
+  "type": "object",
+  "required": ["schemaIdentifier", "schemaVersion", "decisions"],
+  "properties": {
+    "schemaIdentifier": { "const": "gccs-0001/decision-registry" },
+    "schemaVersion": { "type": "string" },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "decisionId",
+          "state",
+          "timestamp",
+          "authoritySource",
+          "clauseRefs",
+          "evidenceRefs",
+          "traceabilityId"
+        ],
+        "properties": {
+          "decisionId": { "type": "string" },
+          "state": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "authoritySource": { "type": "string" },
+          "clauseRefs": { "type": "array", "items": { "type": "string" } },
+          "evidenceRefs": { "type": "array", "items": { "type": "string" } },
+          "traceabilityId": { "type": "string" },
+          "supersedesDecisionId": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

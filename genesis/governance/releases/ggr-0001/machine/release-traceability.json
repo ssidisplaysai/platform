@@ -1,0 +1,50 @@
+{
+  "schemaIdentifier": "gfr-0001/release-traceability",
+  "schemaVersion": "1.0.0",
+  "releaseId": "GFR-0001",
+  "chain": [
+    {
+      "from": "CONSTITUTION",
+      "to": "GCD-0002",
+      "relation": "constitutional-authority"
+    },
+    {
+      "from": "GCD-0002",
+      "to": "GGL-0001",
+      "relation": "adoption-grant"
+    },
+    {
+      "from": "GGL-0001",
+      "to": "GCCS-0001",
+      "relation": "governance-standard-authority"
+    },
+    {
+      "from": "GCCS-0001",
+      "to": "GAFS-0001",
+      "relation": "certification-to-audit-governance-binding"
+    },
+    {
+      "from": "GAFS-0001",
+      "to": "GGB-0001",
+      "relation": "baseline-governance-binding"
+    },
+    {
+      "from": "GGB-0001",
+      "to": "FUTURE-GAR-PACKAGES",
+      "relation": "baseline-reference-mandate"
+    }
+  ],
+  "requiredStandards": [
+    "GCCS-0001",
+    "GAFS-0001"
+  ],
+  "requiredConstitutionalAuthority": [
+    "genesis/CONSTITUTION.md",
+    "GCD-0002"
+  ],
+  "requiredBaselineReferences": [
+    "genesis/governance/baselines/ggb-0001/machine/governance-baseline.json",
+    "genesis/governance/baselines/ggb-0001/machine/baseline-manifest.json",
+    "genesis/governance/baselines/ggb-0001/machine/baseline-traceability.json"
+  ]
+}

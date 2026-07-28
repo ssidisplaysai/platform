@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gccs-0001/clause-registry.schema.json",
+  "type": "object",
+  "required": ["schemaIdentifier", "schemaVersion", "clauses"],
+  "properties": {
+    "schemaIdentifier": { "const": "gccs-0001/clause-registry" },
+    "schemaVersion": { "type": "string" },
+    "clauses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "clauseId",
+          "title",
+          "lifecycleState",
+          "owner",
+          "version",
+          "dependencies",
+          "supersession"
+        ],
+        "properties": {
+          "clauseId": { "type": "string" },
+          "title": { "type": "string" },
+          "lifecycleState": { "type": "string" },
+          "owner": { "type": "string" },
+          "version": { "type": "string" },
+          "dependencies": { "type": "array", "items": { "type": "string" } },
+          "supersession": {
+            "type": "object",
+            "required": ["status"],
+            "properties": {
+              "status": { "type": "string" },
+              "successorClauseId": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

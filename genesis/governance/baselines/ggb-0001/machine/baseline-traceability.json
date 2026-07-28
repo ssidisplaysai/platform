@@ -1,0 +1,157 @@
+{
+  "schemaIdentifier": "ggb-0001/baseline-traceability",
+  "schemaVersion": "1.0.0",
+  "chain": [
+    {
+      "from": "CONSTITUTION",
+      "to": "GCD-0002",
+      "relation": "constitutional-authority"
+    },
+    {
+      "from": "GCD-0002",
+      "to": "GGL-0001",
+      "relation": "adoption-grant"
+    },
+    {
+      "from": "GGL-0001",
+      "to": "GCCS-0001",
+      "relation": "governance-standard-authority"
+    },
+    {
+      "from": "GCCS-0001",
+      "to": "GAFS-0001",
+      "relation": "certification-to-audit-governance-binding"
+    },
+    {
+      "from": "GAFS-0001",
+      "to": "FUTURE-GAR-PACKAGES",
+      "relation": "mandatory-framework-implementation"
+    }
+  ],
+  "dependencyMatrix": [
+    {
+      "artifactId": "CONSTITUTION",
+      "dependencies": [],
+      "crossReferences": [
+        "GCD-0002",
+        "GGL-0001",
+        "GCCS-0001",
+        "GAFS-0001"
+      ]
+    },
+    {
+      "artifactId": "GCS-V2",
+      "dependencies": [
+        "CONSTITUTION"
+      ],
+      "crossReferences": [
+        "GGL-0001"
+      ]
+    },
+    {
+      "artifactId": "GCD-0002",
+      "dependencies": [
+        "CONSTITUTION"
+      ],
+      "crossReferences": [
+        "GGL-0001",
+        "GCCS-0001",
+        "GAFS-0001",
+        "HALL-DECISIONS"
+      ]
+    },
+    {
+      "artifactId": "HALL-DECISIONS",
+      "dependencies": [
+        "GCD-0002"
+      ],
+      "crossReferences": [
+        "GCD-0002"
+      ]
+    },
+    {
+      "artifactId": "GGL-0001",
+      "dependencies": [
+        "CONSTITUTION",
+        "GCD-0002"
+      ],
+      "crossReferences": [
+        "GOV-AUTHORITY",
+        "GOV-TRACEABILITY",
+        "GOV-TAXONOMY",
+        "GOV-LIFECYCLE",
+        "GCCS-0001",
+        "GAFS-0001"
+      ]
+    },
+    {
+      "artifactId": "GCCS-0001",
+      "dependencies": [
+        "CONSTITUTION",
+        "GGL-0001",
+        "GOV-AUTHORITY",
+        "GOV-TAXONOMY",
+        "GOV-TRACEABILITY"
+      ],
+      "crossReferences": [
+        "GAFS-0001"
+      ]
+    },
+    {
+      "artifactId": "GAFS-0001",
+      "dependencies": [
+        "CONSTITUTION",
+        "GGL-0001",
+        "GCCS-0001",
+        "GOV-AUTHORITY",
+        "GOV-TRACEABILITY"
+      ],
+      "crossReferences": [
+        "FUTURE-GAR-PACKAGES"
+      ]
+    },
+    {
+      "artifactId": "GOV-AUTHORITY",
+      "dependencies": [
+        "CONSTITUTION",
+        "GGL-0001"
+      ],
+      "crossReferences": [
+        "GCCS-0001",
+        "GAFS-0001"
+      ]
+    },
+    {
+      "artifactId": "GOV-TRACEABILITY",
+      "dependencies": [
+        "GOV-AUTHORITY"
+      ],
+      "crossReferences": [
+        "GCCS-0001",
+        "GAFS-0001",
+        "FUTURE-GAR-PACKAGES"
+      ]
+    },
+    {
+      "artifactId": "GOV-TAXONOMY",
+      "dependencies": [
+        "GOV-AUTHORITY"
+      ],
+      "crossReferences": [
+        "GCCS-0001",
+        "GAFS-0001"
+      ]
+    },
+    {
+      "artifactId": "GOV-LIFECYCLE",
+      "dependencies": [
+        "GOV-AUTHORITY"
+      ],
+      "crossReferences": [
+        "GCD-0002",
+        "GCCS-0001",
+        "GAFS-0001"
+      ]
+    }
+  ]
+}

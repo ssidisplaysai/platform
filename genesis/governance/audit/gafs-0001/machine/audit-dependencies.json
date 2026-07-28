@@ -1,0 +1,33 @@
+{
+  "schemaIdentifier": "gafs-0001/audit-dependencies",
+  "schemaVersion": "1.0.0",
+  "nodes": [
+    "planning",
+    "preparation",
+    "inventory",
+    "evidence-collection",
+    "evidence-validation",
+    "analysis",
+    "finding-generation",
+    "review",
+    "certification-input",
+    "report-generation",
+    "archival",
+    "supersession",
+    "reassessment"
+  ],
+  "edges": [
+    { "from": "planning", "to": "preparation" },
+    { "from": "preparation", "to": "inventory" },
+    { "from": "inventory", "to": "evidence-collection" },
+    { "from": "evidence-collection", "to": "evidence-validation" },
+    { "from": "evidence-validation", "to": "analysis" },
+    { "from": "analysis", "to": "finding-generation" },
+    { "from": "finding-generation", "to": "review" },
+    { "from": "review", "to": "certification-input" },
+    { "from": "review", "to": "report-generation" },
+    { "from": "report-generation", "to": "archival" },
+    { "from": "archival", "to": "supersession" },
+    { "from": "archival", "to": "reassessment" }
+  ]
+}

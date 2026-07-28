@@ -1,0 +1,80 @@
+{
+  "schemaIdentifier": "ggb-0001/baseline-dependencies",
+  "schemaVersion": "1.0.0",
+  "dependencies": [
+    {
+      "artifactId": "CONSTITUTION",
+      "dependsOn": []
+    },
+    {
+      "artifactId": "GCS-V2",
+      "dependsOn": [
+        "CONSTITUTION"
+      ]
+    },
+    {
+      "artifactId": "GCD-0002",
+      "dependsOn": [
+        "CONSTITUTION"
+      ]
+    },
+    {
+      "artifactId": "HALL-DECISIONS",
+      "dependsOn": [
+        "GCD-0002"
+      ]
+    },
+    {
+      "artifactId": "GGL-0001",
+      "dependsOn": [
+        "CONSTITUTION",
+        "GCD-0002"
+      ]
+    },
+    {
+      "artifactId": "GCCS-0001",
+      "dependsOn": [
+        "CONSTITUTION",
+        "GGL-0001",
+        "GOV-AUTHORITY",
+        "GOV-TAXONOMY",
+        "GOV-TRACEABILITY"
+      ]
+    },
+    {
+      "artifactId": "GAFS-0001",
+      "dependsOn": [
+        "CONSTITUTION",
+        "GGL-0001",
+        "GCCS-0001",
+        "GOV-AUTHORITY",
+        "GOV-TRACEABILITY"
+      ]
+    },
+    {
+      "artifactId": "GOV-AUTHORITY",
+      "dependsOn": [
+        "CONSTITUTION",
+        "GGL-0001"
+      ]
+    },
+    {
+      "artifactId": "GOV-TRACEABILITY",
+      "dependsOn": [
+        "GOV-AUTHORITY"
+      ]
+    },
+    {
+      "artifactId": "GOV-TAXONOMY",
+      "dependsOn": [
+        "GOV-AUTHORITY"
+      ]
+    },
+    {
+      "artifactId": "GOV-LIFECYCLE",
+      "dependsOn": [
+        "GOV-AUTHORITY"
+      ]
+    }
+  ]
+}

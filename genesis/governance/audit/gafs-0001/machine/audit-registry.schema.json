@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gafs-0001/audit-registry.schema.json",
+  "type": "object",
+  "required": ["schemaIdentifier", "schemaVersion", "audits"],
+  "properties": {
+    "schemaIdentifier": { "const": "gafs-0001/audit-registry" },
+    "schemaVersion": { "type": "string" },
+    "audits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "auditId",
+          "auditType",
+          "scope",
+          "authorityRefs",
+          "inputRefs",
+          "outputRefs",
+          "lifecycleState"
+        ],
+        "properties": {
+          "auditId": { "type": "string" },
+          "auditType": { "type": "string" },
+          "scope": { "type": "string" },
+          "authorityRefs": { "type": "array", "items": { "type": "string" } },
+          "inputRefs": { "type": "array", "items": { "type": "string" } },
+          "outputRefs": { "type": "array", "items": { "type": "string" } },
+          "lifecycleState": { "type": "string" }
+        }
+      }
+    }
+  }
+}

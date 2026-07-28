@@ -1,0 +1,10 @@
+stateDiagram-v2
+  [*] --> draft
+  draft --> proposed
+  proposed --> ratified
+  ratified --> active
+  active --> certified
+  active --> superseded
+  certified --> superseded
+  superseded --> archived
+  archived --> [*]

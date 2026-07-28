@@ -1,0 +1,27 @@
+{
+  "schemaIdentifier": "ggl-0001/authority-graph",
+  "schemaVersion": "1.0.0",
+  "nodes": [
+    "constitution",
+    "governance-library",
+    "standards",
+    "procedures",
+    "implementations",
+    "evidence",
+    "certification",
+    "operational-decisions"
+  ],
+  "edges": [
+    { "from": "constitution", "to": "governance-library", "type": "authority" },
+    { "from": "governance-library", "to": "standards", "type": "authority" },
+    { "from": "standards", "to": "procedures", "type": "authority" },
+    { "from": "procedures", "to": "implementations", "type": "authority" },
+    { "from": "implementations", "to": "evidence", "type": "production" },
+    { "from": "evidence", "to": "certification", "type": "input" },
+    { "from": "certification", "to": "operational-decisions", "type": "authority" }
+  ],
+  "constraints": {
+    "acyclicAuthority": true,
+    "constitutionalSupremacy": true
+  }
+}

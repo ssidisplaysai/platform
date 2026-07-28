@@ -1,0 +1,21 @@
+{
+  "schemaIdentifier": "gccs-0001/evidence-model",
+  "schemaVersion": "1.0.0",
+  "classes": ["PRIMARY", "SECONDARY", "CONTEXTUAL"],
+  "confidenceLevels": ["Low", "Medium", "High", "Verified", "Deterministic"],
+  "qualityDimensions": [
+    "authenticity",
+    "integrity",
+    "completeness",
+    "timeliness",
+    "reproducibility",
+    "traceability"
+  ],
+  "precedenceOrder": [
+    "PRIMARY:Deterministic",
+    "PRIMARY:Verified",
+    "PRIMARY:High",
+    "SECONDARY:High",
+    "CONTEXTUAL:*"
+  ]
+}

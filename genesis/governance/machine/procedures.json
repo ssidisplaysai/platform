@@ -1,0 +1,17 @@
+{
+  "schemaIdentifier": "ggl-0001/procedures",
+  "schemaVersion": "1.0.0",
+  "procedures": [
+    "evidence-lifecycle",
+    "certification-lifecycle",
+    "baseline-lifecycle",
+    "governance-lifecycle",
+    "decision-lifecycle",
+    "artifact-lifecycle",
+    "release-certification-lifecycle",
+    "re-certification-lifecycle",
+    "appeals-and-reassessment",
+    "versioning",
+    "supersession"
+  ]
+}

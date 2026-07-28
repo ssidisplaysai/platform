@@ -1,0 +1,27 @@
+{
+  "schemaIdentifier": "gcd-0002/decision-metadata",
+  "schemaVersion": "1.0.0",
+  "decisionId": "GCD-0002",
+  "title": "Adoption of the Genesis Governance Library",
+  "decisionType": "Constitutional Decision",
+  "state": "APPROVED",
+  "effectiveDate": "2026-07-28",
+  "authoritySource": "genesis/CONSTITUTION.md",
+  "inputs": [
+    "genesis/CONSTITUTION.md",
+    "genesis/governance/Genesis-Governance-Library.md",
+    "genesis/governance/Genesis-Governance-Authority-Model.md",
+    "genesis/governance/Genesis-Governance-Taxonomy.md",
+    "genesis/governance/Genesis-Governance-Traceability-Model.md",
+    "genesis/governance/Genesis-Governance-Lifecycle.md",
+    "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+    "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md"
+  ],
+  "grants": [
+    "GGL-0001-recognized-as-permanent-governance-institution-below-constitution",
+    "GCCS-0001-recognized-as-governing-constitutional-certification-standard",
+    "GAFS-0001-recognized-as-governing-audit-framework-standard"
+  ],
+  "conditions": [],
+  "supersedesDecisionId": null
+}

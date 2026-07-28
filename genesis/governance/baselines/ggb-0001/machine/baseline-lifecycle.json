@@ -1,0 +1,65 @@
+{
+  "schemaIdentifier": "ggb-0001/baseline-lifecycle",
+  "schemaVersion": "1.0.0",
+  "baselineId": "GGB-0001",
+  "entries": [
+    {
+      "entityId": "GGB-0001",
+      "state": "Ratified",
+      "timestamp": "2026-07-28T00:00:00Z",
+      "previousState": "Proposed"
+    },
+    {
+      "entityId": "GGB-0001",
+      "state": "Active",
+      "timestamp": "2026-07-28T00:00:00Z",
+      "previousState": "Ratified"
+    }
+  ],
+  "artifacts": [
+    {
+      "artifactId": "CONSTITUTION",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GCS-V2",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GCD-0002",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "HALL-DECISIONS",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GGL-0001",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GCCS-0001",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GAFS-0001",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GOV-AUTHORITY",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GOV-TRACEABILITY",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GOV-TAXONOMY",
+      "lifecycleStatus": "Active"
+    },
+    {
+      "artifactId": "GOV-LIFECYCLE",
+      "lifecycleStatus": "Active"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schemaIdentifier": "gfr-0001/release-manifest",
+  "schemaVersion": "1.0.0",
+  "releaseId": "GFR-0001",
+  "title": "Genesis Governance Foundation v1.0 Release",
+  "governanceVersion": "v1.0.0",
+  "lifecycleStatus": "Released",
+  "baselineId": "GGB-0001",
+  "baselineVersion": "1.0.0",
+  "timestamp": "2026-07-28T20:43:58.745Z",
+  "repositoryRevision": "e5a1524ae0199316ca30532200e8430d2e83b97d",
+  "releaseCommit": null,
+  "releaseTag": "governance-v1.0.0",
+  "authoritySource": "genesis/CONSTITUTION.md",
+  "supportedStandards": [
+    "GCCS-0001",
+    "GAFS-0001"
+  ],
+  "supportedConstitutionalDecisions": [
+    "GCD-0002"
+  ],
+  "requiredBaselineReferences": [
+    "genesis/governance/baselines/ggb-0001/machine/governance-baseline.json",
+    "genesis/governance/baselines/ggb-0001/machine/baseline-manifest.json",
+    "genesis/governance/baselines/ggb-0001/machine/baseline-traceability.json"
+  ],
+  "includedArtifacts": [
+    "genesis/governance/Genesis-Governance-Library.md",
+    "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+    "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+    "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+    "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-v1.0.md"
+  ],
+  "preReleaseValidation": {
+    "requiredArtifactsExist": true,
+    "crossReferencesResolve": true,
+    "machineArtifactsValidate": true,
+    "authorityAcyclic": true,
+    "baselineIntegrityPasses": true,
+    "repositoryInternallyConsistent": true
+  },
+  "releaseScopeValidation": {
+    "runtimeModifications": false,
+    "businessGenomeModifications": false,
+    "businessAgentModifications": false,
+    "enterpriseAgentModifications": false,
+    "productionImplementationChanges": false,
+    "garImplementationChanges": false,
+    "governanceOnlyRelease": true
+  }
+}

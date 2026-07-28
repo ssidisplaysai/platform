@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gafs-0001/audit-manifest.schema.json",
+  "type": "object",
+  "required": [
+    "schemaIdentifier",
+    "schemaVersion",
+    "auditId",
+    "auditType",
+    "inputs",
+    "outputs",
+    "validations",
+    "traceability"
+  ],
+  "properties": {
+    "schemaIdentifier": { "const": "gafs-0001/audit-manifest" },
+    "schemaVersion": { "type": "string" },
+    "auditId": { "type": "string" },
+    "auditType": { "type": "string" },
+    "inputs": { "type": "array" },
+    "outputs": { "type": "array" },
+    "validations": { "type": "object" },
+    "traceability": { "type": "object" }
+  }
+}

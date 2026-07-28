@@ -1,0 +1,108 @@
+{
+  "schemaIdentifier": "ggb-0001/governance-baseline",
+  "schemaVersion": "1.0.0",
+  "baselineId": "GGB-0001",
+  "baselineVersion": "1.0.0",
+  "title": "Genesis Governance Baseline v1.0",
+  "purpose": "First immutable governance baseline reference for Genesis governance evolution and GAR-0003+ consumption.",
+  "status": "Active",
+  "authoritySource": "genesis/CONSTITUTION.md",
+  "lifecycleStatus": "Ratified",
+  "supersessionPolicy": {
+    "mode": "explicit-constitutional-supersession-only",
+    "requiredMechanism": "future-constitutional-decision",
+    "successorField": "supersedesBaselineId"
+  },
+  "canonicalHashMethod": "sha256-lf-normalized",
+  "createdAt": "2026-07-28T00:00:00Z",
+  "constituentArtifacts": [
+    {
+      "artifactId": "CONSTITUTION",
+      "title": "Genesis Constitution",
+      "version": "baseline-ref-1.0",
+      "path": "genesis/CONSTITUTION.md",
+      "lifecycleStatus": "Active",
+      "type": "Constitution"
+    },
+    {
+      "artifactId": "GCS-V2",
+      "title": "Genesis Constitutional Services",
+      "version": "baseline-ref-1.0",
+      "path": "genesis/governance/constitution/Volume-II-Constitutional-Services.md",
+      "lifecycleStatus": "Active",
+      "type": "Constitutional Service Reference"
+    },
+    {
+      "artifactId": "GCD-0002",
+      "title": "Adoption of the Genesis Governance Library",
+      "version": "1.0.0",
+      "path": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+      "lifecycleStatus": "Active",
+      "type": "Constitutional Decision"
+    },
+    {
+      "artifactId": "HALL-DECISIONS",
+      "title": "Hall of Decisions",
+      "version": "1.0.0",
+      "path": "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+      "lifecycleStatus": "Active",
+      "type": "Decision Register"
+    },
+    {
+      "artifactId": "GGL-0001",
+      "title": "Genesis Governance Library Foundation",
+      "version": "1.0.0",
+      "path": "genesis/governance/Genesis-Governance-Library.md",
+      "lifecycleStatus": "Active",
+      "type": "Governance Library"
+    },
+    {
+      "artifactId": "GCCS-0001",
+      "title": "Genesis Constitutional Certification Standard",
+      "version": "1.0.0",
+      "path": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+      "lifecycleStatus": "Active",
+      "type": "Certification Standard"
+    },
+    {
+      "artifactId": "GAFS-0001",
+      "title": "Genesis Audit Framework Standard",
+      "version": "1.0.0",
+      "path": "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+      "lifecycleStatus": "Active",
+      "type": "Audit Standard"
+    },
+    {
+      "artifactId": "GOV-AUTHORITY",
+      "title": "Genesis Governance Authority Model",
+      "version": "1.0.0",
+      "path": "genesis/governance/Genesis-Governance-Authority-Model.md",
+      "lifecycleStatus": "Active",
+      "type": "Governance Model"
+    },
+    {
+      "artifactId": "GOV-TRACEABILITY",
+      "title": "Genesis Governance Traceability Model",
+      "version": "1.0.0",
+      "path": "genesis/governance/Genesis-Governance-Traceability-Model.md",
+      "lifecycleStatus": "Active",
+      "type": "Governance Model"
+    },
+    {
+      "artifactId": "GOV-TAXONOMY",
+      "title": "Genesis Governance Taxonomy",
+      "version": "1.0.0",
+      "path": "genesis/governance/Genesis-Governance-Taxonomy.md",
+      "lifecycleStatus": "Active",
+      "type": "Governance Model"
+    },
+    {
+      "artifactId": "GOV-LIFECYCLE",
+      "title": "Genesis Governance Lifecycle",
+      "version": "1.0.0",
+      "path": "genesis/governance/Genesis-Governance-Lifecycle.md",
+      "lifecycleStatus": "Active",
+      "type": "Lifecycle Model"
+    }
+  ]
+}

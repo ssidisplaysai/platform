@@ -1,0 +1,16 @@
+{
+  "schemaIdentifier": "gfr-0001/release-registry",
+  "schemaVersion": "1.0.0",
+  "releases": [
+    {
+      "releaseId": "GFR-0001",
+      "governanceVersion": "v1.0.0",
+      "baselineId": "GGB-0001",
+      "lifecycleStatus": "Released",
+      "releaseTag": "governance-v1.0.0",
+      "repositoryRevision": "e5a1524ae0199316ca30532200e8430d2e83b97d",
+      "releaseCommit": null,
+      "timestamp": "2026-07-28T20:43:58.745Z"
+    }
+  ]
+}

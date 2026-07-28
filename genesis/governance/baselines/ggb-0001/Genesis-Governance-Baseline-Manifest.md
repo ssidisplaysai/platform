@@ -1,0 +1,82 @@
+# Genesis Governance Baseline Manifest
+
+## Baseline Identity
+- Baseline ID: GGB-0001
+- Baseline Version: 1.0.0
+- Purpose: First immutable governance baseline reference for Genesis governance evolution and GAR-0003+ consumption.
+- Effective Status: Active
+- Authority Source: genesis/CONSTITUTION.md
+
+## Artifact Inventory
+- CONSTITUTION
+  - Path: genesis/CONSTITUTION.md
+  - Version: baseline-ref-1.0
+  - Lifecycle: Active
+  - Dependencies: none
+  - Cross References: GCD-0002, GGL-0001, GCCS-0001, GAFS-0001
+- GCS-V2
+  - Path: genesis/governance/constitution/Volume-II-Constitutional-Services.md
+  - Version: baseline-ref-1.0
+  - Lifecycle: Active
+  - Dependencies: CONSTITUTION
+  - Cross References: GGL-0001
+- GCD-0002
+  - Path: genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: CONSTITUTION
+  - Cross References: GGL-0001, GCCS-0001, GAFS-0001, HALL-DECISIONS
+- HALL-DECISIONS
+  - Path: genesis/governance/decisions/hall/Hall-of-Decisions.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: GCD-0002
+  - Cross References: GCD-0002
+- GGL-0001
+  - Path: genesis/governance/Genesis-Governance-Library.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: CONSTITUTION, GCD-0002
+  - Cross References: GOV-AUTHORITY, GOV-TRACEABILITY, GOV-TAXONOMY, GOV-LIFECYCLE, GCCS-0001, GAFS-0001
+- GCCS-0001
+  - Path: genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: CONSTITUTION, GGL-0001, GOV-AUTHORITY, GOV-TAXONOMY, GOV-TRACEABILITY
+  - Cross References: GAFS-0001
+- GAFS-0001
+  - Path: genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: CONSTITUTION, GGL-0001, GCCS-0001, GOV-AUTHORITY, GOV-TRACEABILITY
+  - Cross References: FUTURE-GAR-PACKAGES
+- GOV-AUTHORITY
+  - Path: genesis/governance/Genesis-Governance-Authority-Model.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: CONSTITUTION, GGL-0001
+  - Cross References: GCCS-0001, GAFS-0001
+- GOV-TRACEABILITY
+  - Path: genesis/governance/Genesis-Governance-Traceability-Model.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: GOV-AUTHORITY
+  - Cross References: GCCS-0001, GAFS-0001, FUTURE-GAR-PACKAGES
+- GOV-TAXONOMY
+  - Path: genesis/governance/Genesis-Governance-Taxonomy.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: GOV-AUTHORITY
+  - Cross References: GCCS-0001, GAFS-0001
+- GOV-LIFECYCLE
+  - Path: genesis/governance/Genesis-Governance-Lifecycle.md
+  - Version: 1.0.0
+  - Lifecycle: Active
+  - Dependencies: GOV-AUTHORITY
+  - Cross References: GCD-0002, GCCS-0001, GAFS-0001
+
+## Supersession Policy
+- Mode: explicit-constitutional-supersession-only
+- Required Mechanism: future-constitutional-decision
+- Successor Field: supersedesBaselineId
+

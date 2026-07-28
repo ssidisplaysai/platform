@@ -1,0 +1,29 @@
+{
+  "schemaIdentifier": "gfr-0001/release-validation",
+  "schemaVersion": "1.0.0",
+  "releaseId": "GFR-0001",
+  "preReleaseValidation": {
+    "requiredArtifactsExist": true,
+    "crossReferencesResolve": true,
+    "machineArtifactsValidate": true,
+    "authorityAcyclic": true,
+    "baselineIntegrityPasses": true,
+    "repositoryInternallyConsistent": true
+  },
+  "releaseScopeValidation": {
+    "runtimeModifications": false,
+    "businessGenomeModifications": false,
+    "businessAgentModifications": false,
+    "enterpriseAgentModifications": false,
+    "productionImplementationChanges": false,
+    "garImplementationChanges": false,
+    "governanceOnlyRelease": true
+  },
+  "postReleaseValidation": {
+    "workingTreeClean": true,
+    "tagReferencesReleaseCommit": true,
+    "baselineManifestMatchesRepository": true,
+    "releaseArtifactsRegistered": true,
+    "releaseIntegrityUnchangedAfterCommit": true
+  }
+}

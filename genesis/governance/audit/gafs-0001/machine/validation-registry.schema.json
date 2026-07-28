@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gafs-0001/validation-registry.schema.json",
+  "type": "object",
+  "required": ["schemaIdentifier", "schemaVersion", "validations"],
+  "properties": {
+    "schemaIdentifier": { "const": "gafs-0001/validation-registry" },
+    "schemaVersion": { "type": "string" },
+    "validations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["validationId", "type", "result"],
+        "properties": {
+          "validationId": { "type": "string" },
+          "type": { "type": "string" },
+          "result": { "type": "string" },
+          "details": { "type": "string" }
+        }
+      }
+    }
+  }
+}

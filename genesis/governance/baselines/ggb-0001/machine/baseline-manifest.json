@@ -1,0 +1,294 @@
+{
+  "schemaIdentifier": "ggb-0001/baseline-manifest",
+  "schemaVersion": "1.0.0",
+  "baselineId": "GGB-0001",
+  "baselineVersion": "1.0.0",
+  "purpose": "First immutable governance baseline reference for Genesis governance evolution and GAR-0003+ consumption.",
+  "effectiveStatus": "Active",
+  "authoritySource": "genesis/CONSTITUTION.md",
+  "constituentArtifacts": [
+    {
+      "artifactId": "CONSTITUTION",
+      "title": "Genesis Constitution",
+      "version": "baseline-ref-1.0",
+      "lifecycleStatus": "Active",
+      "owner": "Architecture Review Board",
+      "type": "Constitution",
+      "path": "genesis/CONSTITUTION.md",
+      "dependencies": [],
+      "crossReferences": [
+        "GCD-0002",
+        "GGL-0001",
+        "GCCS-0001",
+        "GAFS-0001"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "CONSTITUTION@baseline-ref-1.0",
+        "normalizedSha256": "7565447712797232e37e683c1d489d198bc74f41a1d7b4d56a0103629cb25f19",
+        "bytes": 810,
+        "discoveredStatus": "Active constitutional baseline reference",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GCS-V2",
+      "title": "Genesis Constitutional Services",
+      "version": "baseline-ref-1.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Constitutional Service Reference",
+      "path": "genesis/governance/constitution/Volume-II-Constitutional-Services.md",
+      "dependencies": [
+        "CONSTITUTION"
+      ],
+      "crossReferences": [
+        "GGL-0001"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GCS-V2@baseline-ref-1.0",
+        "normalizedSha256": "3e30431c3c69ef8ebc060afbe2154e5b191b5063d11000712eaa2091916f3421",
+        "bytes": 493,
+        "discoveredStatus": "Unknown",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GCD-0002",
+      "title": "Adoption of the Genesis Governance Library",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Constitutional Decision",
+      "path": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+      "dependencies": [
+        "CONSTITUTION"
+      ],
+      "crossReferences": [
+        "GGL-0001",
+        "GCCS-0001",
+        "GAFS-0001",
+        "HALL-DECISIONS"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GCD-0002@1.0.0",
+        "normalizedSha256": "7eaeea0cd00fc5c1a7674d12299c38ac727dc7ed27a053f9a11dd39e4df35fb8",
+        "bytes": 989,
+        "discoveredStatus": "Unknown",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "HALL-DECISIONS",
+      "title": "Hall of Decisions",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Decision Register",
+      "path": "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+      "dependencies": [
+        "GCD-0002"
+      ],
+      "crossReferences": [
+        "GCD-0002"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "HALL-DECISIONS@1.0.0",
+        "normalizedSha256": "d137b0ddc80c0387b89dd8f6dd0e48995d71c78c5cd73e8810ed22103f368985",
+        "bytes": 329,
+        "discoveredStatus": "Unknown",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GGL-0001",
+      "title": "Genesis Governance Library Foundation",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Governance Library",
+      "path": "genesis/governance/Genesis-Governance-Library.md",
+      "dependencies": [
+        "CONSTITUTION",
+        "GCD-0002"
+      ],
+      "crossReferences": [
+        "GOV-AUTHORITY",
+        "GOV-TRACEABILITY",
+        "GOV-TAXONOMY",
+        "GOV-LIFECYCLE",
+        "GCCS-0001",
+        "GAFS-0001"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GGL-0001@1.0.0",
+        "normalizedSha256": "8f8c83b3b7978170608b000267c44ed88b5f821279899064e01e84963da67964",
+        "bytes": 1451,
+        "discoveredStatus": "Active",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GCCS-0001",
+      "title": "Genesis Constitutional Certification Standard",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Certification Standard",
+      "path": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+      "dependencies": [
+        "CONSTITUTION",
+        "GGL-0001",
+        "GOV-AUTHORITY",
+        "GOV-TAXONOMY",
+        "GOV-TRACEABILITY"
+      ],
+      "crossReferences": [
+        "GAFS-0001"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GCCS-0001@1.0.0",
+        "normalizedSha256": "4b2e7ef1d68000c60afbefb73c44e57499d0cb508b73605f1183ae77c8b5f37f",
+        "bytes": 3974,
+        "discoveredStatus": "Active",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GAFS-0001",
+      "title": "Genesis Audit Framework Standard",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Audit Standard",
+      "path": "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+      "dependencies": [
+        "CONSTITUTION",
+        "GGL-0001",
+        "GCCS-0001",
+        "GOV-AUTHORITY",
+        "GOV-TRACEABILITY"
+      ],
+      "crossReferences": [
+        "FUTURE-GAR-PACKAGES"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GAFS-0001@1.0.0",
+        "normalizedSha256": "dcdca660f5f8ac2b75375b23827a1f8c2c4d3cfb64bb6bc3cd80bda84bb75b01",
+        "bytes": 2652,
+        "discoveredStatus": "Active",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GOV-AUTHORITY",
+      "title": "Genesis Governance Authority Model",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Governance Model",
+      "path": "genesis/governance/Genesis-Governance-Authority-Model.md",
+      "dependencies": [
+        "CONSTITUTION",
+        "GGL-0001"
+      ],
+      "crossReferences": [
+        "GCCS-0001",
+        "GAFS-0001"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GOV-AUTHORITY@1.0.0",
+        "normalizedSha256": "96d3717ed1f5e4283a6951dd9d0685cd83276dacaec4d03ef37dfea60eb08708",
+        "bytes": 908,
+        "discoveredStatus": "Unknown",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GOV-TRACEABILITY",
+      "title": "Genesis Governance Traceability Model",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Governance Model",
+      "path": "genesis/governance/Genesis-Governance-Traceability-Model.md",
+      "dependencies": [
+        "GOV-AUTHORITY"
+      ],
+      "crossReferences": [
+        "GCCS-0001",
+        "GAFS-0001",
+        "FUTURE-GAR-PACKAGES"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GOV-TRACEABILITY@1.0.0",
+        "normalizedSha256": "7dff5054d8061546ec58431ce4b9f23d41617ad617577acc389a73f4b64960a4",
+        "bytes": 780,
+        "discoveredStatus": "Unknown",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GOV-TAXONOMY",
+      "title": "Genesis Governance Taxonomy",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Governance Model",
+      "path": "genesis/governance/Genesis-Governance-Taxonomy.md",
+      "dependencies": [
+        "GOV-AUTHORITY"
+      ],
+      "crossReferences": [
+        "GCCS-0001",
+        "GAFS-0001"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GOV-TAXONOMY@1.0.0",
+        "normalizedSha256": "8a8fe1b93e6603990ebb91fd228351553dd655132ee9ba2b4c84614965c1d255",
+        "bytes": 908,
+        "discoveredStatus": "Unknown",
+        "verification": "verified"
+      }
+    },
+    {
+      "artifactId": "GOV-LIFECYCLE",
+      "title": "Genesis Governance Lifecycle",
+      "version": "1.0.0",
+      "lifecycleStatus": "Active",
+      "owner": "Genesis Governance Configuration Authority",
+      "type": "Lifecycle Model",
+      "path": "genesis/governance/Genesis-Governance-Lifecycle.md",
+      "dependencies": [
+        "GOV-AUTHORITY"
+      ],
+      "crossReferences": [
+        "GCD-0002",
+        "GCCS-0001",
+        "GAFS-0001"
+      ],
+      "exists": true,
+      "integrity": {
+        "canonicalIdentity": "GOV-LIFECYCLE@1.0.0",
+        "normalizedSha256": "e6def2561920a681a9eb572d449b95f58d1b18861b671cd4c9a9feb7d2c04ba0",
+        "bytes": 818,
+        "discoveredStatus": "Unknown",
+        "verification": "verified"
+      }
+    }
+  ],
+  "supersessionPolicy": {
+    "mode": "explicit-constitutional-supersession-only",
+    "requiredMechanism": "future-constitutional-decision",
+    "successorField": "supersedesBaselineId"
+  }
+}

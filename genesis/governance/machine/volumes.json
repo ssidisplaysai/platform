@@ -1,0 +1,17 @@
+{
+  "schemaIdentifier": "ggl-0001/volumes",
+  "schemaVersion": "1.0.0",
+  "programId": "GGL-0001",
+  "volumes": [
+    { "id": "V1", "title": "Genesis Constitution", "path": "genesis/governance/constitution/Volume-I-Constitution-Reference.md" },
+    { "id": "V2", "title": "Constitutional Services", "path": "genesis/governance/constitution/Volume-II-Constitutional-Services.md" },
+    { "id": "V3", "title": "Architectural Framework", "path": "genesis/governance/constitution/Volume-III-Architectural-Framework.md" },
+    { "id": "V4", "title": "Artifact Framework", "path": "genesis/governance/constitution/Volume-IV-Artifact-Framework.md" },
+    { "id": "V5", "title": "Business Genome Framework", "path": "genesis/governance/constitution/Volume-V-Business-Genome-Framework.md" },
+    { "id": "V6", "title": "Certification Standards", "path": "genesis/governance/constitution/Volume-VI-Certification-Standards.md" },
+    { "id": "V7", "title": "Engineering Standards", "path": "genesis/governance/constitution/Volume-VII-Engineering-Standards.md" },
+    { "id": "V8", "title": "Operational Standards", "path": "genesis/governance/constitution/Volume-VIII-Operational-Standards.md" },
+    { "id": "V9", "title": "Audit Standards", "path": "genesis/governance/constitution/Volume-IX-Audit-Standards.md" },
+    { "id": "V10", "title": "Evolution Standards", "path": "genesis/governance/constitution/Volume-X-Evolution-Standards.md" }
+  ]
+}

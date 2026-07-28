@@ -1,0 +1,18 @@
+{
+  "schemaIdentifier": "gccs-0001/compliance-states",
+  "schemaVersion": "1.0.0",
+  "states": [
+    "COMPLIANT",
+    "COMPLIANT WITH CONDITIONS",
+    "PARTIALLY COMPLIANT",
+    "NON-COMPLIANT",
+    "NOT APPLICABLE",
+    "INSUFFICIENT EVIDENCE",
+    "SUPERSEDED",
+    "WITHDRAWN"
+  ],
+  "usage": {
+    "requiredForClauseEvaluation": true,
+    "requiredForDecisionAggregation": true
+  }
+}

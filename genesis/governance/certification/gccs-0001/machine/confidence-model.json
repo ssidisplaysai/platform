@@ -1,0 +1,10 @@
+{
+  "schemaIdentifier": "gccs-0001/confidence-model",
+  "schemaVersion": "1.0.0",
+  "ratings": ["Low", "Medium", "High", "Verified", "Deterministic"],
+  "thresholds": {
+    "Certified": "High",
+    "Certified With Conditions": "Medium",
+    "Deterministic": "Verified+Reproducible"
+  }
+}

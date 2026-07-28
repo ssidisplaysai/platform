@@ -1,0 +1,41 @@
+{
+  "schemaIdentifier": "ggl-0001/governance-registry",
+  "schemaVersion": "1.0.0",
+  "authoritySource": "genesis/CONSTITUTION.md",
+  "artifacts": [
+    {
+      "id": "GGL-README",
+      "path": "genesis/governance/README.md",
+      "authority": "constitution",
+      "dependencies": ["genesis/CONSTITUTION.md"],
+      "consumers": ["all-programs"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GAFS", "GGTS"],
+      "relatedProcedures": ["governance-lifecycle", "artifact-lifecycle"],
+      "implementationConsumers": ["all-implementation-packages"],
+      "certificationConsumers": ["all-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["certification-and-audit-packages"]
+    },
+    {
+      "id": "GGL-STANDARDS",
+      "path": "genesis/governance/standards/Genesis-Standards-Registry.md",
+      "authority": "governance-library",
+      "dependencies": ["genesis/governance/Genesis-Governance-Authority-Model.md"],
+      "consumers": ["procedure-authors", "implementation-packages", "audit-packages"],
+      "successors": [],
+      "supersessionPolicy": "semantic-versioned-successor"
+    },
+    {
+      "id": "GGL-PROCEDURES",
+      "path": "genesis/governance/procedures/Genesis-Governance-Procedures.md",
+      "authority": "governance-library",
+      "dependencies": ["genesis/governance/standards/Genesis-Standards-Registry.md"],
+      "consumers": ["implementation-packages", "certification-packages", "audit-packages"],
+      "successors": [],
+      "supersessionPolicy": "explicit-transition-rules"
+    }
+  ]
+}

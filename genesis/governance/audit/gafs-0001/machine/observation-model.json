@@ -1,0 +1,13 @@
+{
+  "schemaIdentifier": "gafs-0001/observation-model",
+  "schemaVersion": "1.0.0",
+  "fields": [
+    "observationId",
+    "type",
+    "description",
+    "evidenceRefs",
+    "traceabilityId",
+    "lifecycleState"
+  ],
+  "types": ["Observation", "Recommendation", "Exception Note"]
+}

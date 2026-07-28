@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gccs-0001/certification-registry.schema.json",
+  "type": "object",
+  "required": ["schemaIdentifier", "schemaVersion", "certifications"],
+  "properties": {
+    "schemaIdentifier": { "const": "gccs-0001/certification-registry" },
+    "schemaVersion": { "type": "string" },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "certificationId",
+          "targetId",
+          "decisionId",
+          "lifecycleState",
+          "clauseRefs",
+          "evidenceRefs"
+        ],
+        "properties": {
+          "certificationId": { "type": "string" },
+          "targetId": { "type": "string" },
+          "decisionId": { "type": "string" },
+          "lifecycleState": { "type": "string" },
+          "clauseRefs": { "type": "array", "items": { "type": "string" } },
+          "evidenceRefs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

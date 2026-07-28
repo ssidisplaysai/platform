@@ -1,0 +1,11 @@
+{
+  "schemaIdentifier": "ggl-0001/dependencies",
+  "schemaVersion": "1.0.0",
+  "dependencies": [
+    { "artifact": "Genesis-Governance-Library.md", "dependsOn": ["genesis/CONSTITUTION.md"] },
+    { "artifact": "Genesis-Standards-Registry.md", "dependsOn": ["Genesis-Governance-Authority-Model.md"] },
+    { "artifact": "Genesis-Governance-Procedures.md", "dependsOn": ["Genesis-Standards-Registry.md"] },
+    { "artifact": "Genesis-Certification-Standards.md", "dependsOn": ["Genesis-Standards-Registry.md", "Genesis-Governance-Traceability-Model.md"] },
+    { "artifact": "Genesis-Audit-Standards.md", "dependsOn": ["Genesis-Governance-Traceability-Model.md"] }
+  ]
+}

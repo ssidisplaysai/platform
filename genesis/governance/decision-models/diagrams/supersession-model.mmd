@@ -1,0 +1,5 @@
+graph LR
+  PriorArtifact -->|superseded-by| SuccessorArtifact
+  PriorArtifact -->|retains| HistoricalTrace
+  SuccessorArtifact -->|inherits| AuthorityChain
+  SuccessorArtifact -->|maps| MigrationConstraints

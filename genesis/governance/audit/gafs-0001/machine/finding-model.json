@@ -1,0 +1,27 @@
+{
+  "schemaIdentifier": "gafs-0001/finding-model",
+  "schemaVersion": "1.0.0",
+  "classes": [
+    "Informational",
+    "Observation",
+    "Recommendation",
+    "Minor Finding",
+    "Major Finding",
+    "Critical Finding",
+    "Constitutional Finding",
+    "Inherited Finding",
+    "Environmental Finding",
+    "False Positive",
+    "Suppressed Finding",
+    "Resolved Finding"
+  ],
+  "requiredFields": [
+    "findingId",
+    "class",
+    "severity",
+    "confidence",
+    "evidenceRefs",
+    "traceabilityId",
+    "lifecycleState"
+  ]
+}

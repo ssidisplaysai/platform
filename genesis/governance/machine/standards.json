@@ -1,0 +1,23 @@
+{
+  "schemaIdentifier": "ggl-0001/standards",
+  "schemaVersion": "1.0.0",
+  "standards": [
+    { "id": "GCCS", "family": "certification", "title": "Genesis Constitutional Certification Standard" },
+    { "id": "GATS", "family": "certification", "title": "Genesis Architecture Certification Standard" },
+    { "id": "GBAS", "family": "certification", "title": "Genesis Business Agent Certification Standard" },
+    { "id": "GEAS", "family": "certification", "title": "Genesis Enterprise Agent Certification Standard" },
+    { "id": "GBGS", "family": "certification", "title": "Genesis Business Genome Certification Standard" },
+    { "id": "GRTS", "family": "certification", "title": "Genesis Runtime Certification Standard" },
+    { "id": "GAPS", "family": "certification", "title": "Genesis Application Platform Certification Standard" },
+    { "id": "GECS", "family": "certification", "title": "Genesis Executive Certification Standard" },
+    { "id": "GAFS", "family": "audit", "title": "Genesis Audit Framework Standard" },
+    { "id": "GEVS", "family": "audit", "title": "Genesis Evidence Standard" },
+    { "id": "GBLS", "family": "audit", "title": "Genesis Baseline Standard" },
+    { "id": "GDS", "family": "audit", "title": "Genesis Determinism Standard" },
+    { "id": "GMPS", "family": "audit", "title": "Genesis Mutation Protection Standard" },
+    { "id": "GRS", "family": "audit", "title": "Genesis Reporting Standard" },
+    { "id": "GGTS", "family": "audit", "title": "Genesis Governance Traceability Standard" },
+    { "id": "GDRS", "family": "audit", "title": "Genesis Decision Recording Standard" },
+    { "id": "GSS", "family": "audit", "title": "Genesis Supersession Standard" }
+  ]
+}

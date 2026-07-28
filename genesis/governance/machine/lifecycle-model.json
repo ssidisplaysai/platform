@@ -1,0 +1,18 @@
+{
+  "schemaIdentifier": "ggl-0001/lifecycle-model",
+  "schemaVersion": "1.0.0",
+  "states": ["draft", "proposed", "ratified", "active", "certified", "superseded", "archived"],
+  "transitions": [
+    { "from": "draft", "to": "proposed" },
+    { "from": "proposed", "to": "ratified" },
+    { "from": "ratified", "to": "active" },
+    { "from": "active", "to": "certified" },
+    { "from": "active", "to": "superseded" },
+    { "from": "certified", "to": "superseded" },
+    { "from": "superseded", "to": "archived" }
+  ],
+  "controls": {
+    "requiresSuccessorForSupersession": true,
+    "preserveTraceabilityOnArchive": true
+  }
+}

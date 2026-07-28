@@ -1,0 +1,26 @@
+{
+  "schemaIdentifier": "gccs-0001/decision-dependencies",
+  "schemaVersion": "1.0.0",
+  "nodes": [
+    "jurisdiction-validation",
+    "scope-validation",
+    "evidence-admissibility",
+    "clause-evaluation",
+    "compliance-aggregation",
+    "severity-threshold-check",
+    "confidence-threshold-check",
+    "decision-issuance",
+    "traceability-registration"
+  ],
+  "edges": [
+    { "from": "jurisdiction-validation", "to": "scope-validation" },
+    { "from": "scope-validation", "to": "evidence-admissibility" },
+    { "from": "evidence-admissibility", "to": "clause-evaluation" },
+    { "from": "clause-evaluation", "to": "compliance-aggregation" },
+    { "from": "compliance-aggregation", "to": "severity-threshold-check" },
+    { "from": "compliance-aggregation", "to": "confidence-threshold-check" },
+    { "from": "severity-threshold-check", "to": "decision-issuance" },
+    { "from": "confidence-threshold-check", "to": "decision-issuance" },
+    { "from": "decision-issuance", "to": "traceability-registration" }
+  ]
+}

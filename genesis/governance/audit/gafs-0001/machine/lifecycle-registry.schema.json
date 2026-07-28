@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gafs-0001/lifecycle-registry.schema.json",
+  "type": "object",
+  "required": ["schemaIdentifier", "schemaVersion", "entries"],
+  "properties": {
+    "schemaIdentifier": { "const": "gafs-0001/lifecycle-registry" },
+    "schemaVersion": { "type": "string" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["entityId", "state", "timestamp"],
+        "properties": {
+          "entityId": { "type": "string" },
+          "state": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "previousState": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

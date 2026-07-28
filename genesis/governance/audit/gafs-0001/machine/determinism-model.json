@@ -1,0 +1,13 @@
+{
+  "schemaIdentifier": "gafs-0001/determinism-model",
+  "schemaVersion": "1.0.0",
+  "requirements": [
+    "repeatability",
+    "stable-outputs",
+    "canonical-ordering",
+    "hash-verification",
+    "environment-independence-where-practical",
+    "artifact-reproducibility"
+  ],
+  "validationFields": ["runHashes", "allEqual", "varianceNotes"]
+}

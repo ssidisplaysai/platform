@@ -1,0 +1,13 @@
+{
+  "schemaIdentifier": "gcd-0002/hall-update",
+  "schemaVersion": "1.0.0",
+  "hallPath": "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+  "entry": {
+    "decisionId": "GCD-0002",
+    "title": "Adoption of the Genesis Governance Library",
+    "state": "APPROVED",
+    "date": "2026-07-28",
+    "authority": "genesis/CONSTITUTION.md",
+    "artifact": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md"
+  }
+}

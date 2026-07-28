@@ -1,0 +1,21 @@
+{
+  "schemaIdentifier": "gccs-0001/authority-graph",
+  "schemaVersion": "1.0.0",
+  "nodes": [
+    "constitution",
+    "governance-library",
+    "governance-authority-model",
+    "governance-taxonomy",
+    "governance-traceability-model",
+    "gccs-0001"
+  ],
+  "edges": [
+    { "from": "constitution", "to": "governance-library", "type": "authority" },
+    { "from": "governance-library", "to": "governance-authority-model", "type": "authority" },
+    { "from": "governance-library", "to": "governance-taxonomy", "type": "authority" },
+    { "from": "governance-library", "to": "governance-traceability-model", "type": "authority" },
+    { "from": "governance-authority-model", "to": "gccs-0001", "type": "authority" },
+    { "from": "governance-taxonomy", "to": "gccs-0001", "type": "classification" },
+    { "from": "governance-traceability-model", "to": "gccs-0001", "type": "traceability" }
+  ]
+}

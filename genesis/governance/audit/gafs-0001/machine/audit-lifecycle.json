@@ -1,0 +1,20 @@
+{
+  "schemaIdentifier": "gafs-0001/audit-lifecycle",
+  "schemaVersion": "1.0.0",
+  "phases": [
+    "Planning",
+    "Preparation",
+    "Inventory",
+    "Evidence Collection",
+    "Evidence Validation",
+    "Analysis",
+    "Finding Generation",
+    "Review",
+    "Certification Input",
+    "Report Generation",
+    "Archival",
+    "Supersession",
+    "Reassessment"
+  ],
+  "required": true
+}

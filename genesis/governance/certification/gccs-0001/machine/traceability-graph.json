@@ -1,0 +1,24 @@
+{
+  "schemaIdentifier": "gccs-0001/traceability-graph",
+  "schemaVersion": "1.0.0",
+  "requiredDecisionLinks": [
+    "constitutionalClauses",
+    "evidence",
+    "standards",
+    "procedures",
+    "affectedArtifacts",
+    "supportingDocuments",
+    "machineIdentifiers",
+    "lifecycleIdentifiers",
+    "supersessionRelationships"
+  ],
+  "requiredReportLinks": [
+    "authority",
+    "scope",
+    "inputs",
+    "analysis",
+    "clauseEvaluation",
+    "decision",
+    "traceability"
+  ]
+}

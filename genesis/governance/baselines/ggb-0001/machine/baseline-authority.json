@@ -1,0 +1,77 @@
+{
+  "schemaIdentifier": "ggb-0001/baseline-authority",
+  "schemaVersion": "1.0.0",
+  "nodes": [
+    "CONSTITUTION",
+    "GCD-0002",
+    "GGL-0001",
+    "GOV-AUTHORITY",
+    "GOV-TRACEABILITY",
+    "GOV-TAXONOMY",
+    "GOV-LIFECYCLE",
+    "GCCS-0001",
+    "GAFS-0001"
+  ],
+  "edges": [
+    {
+      "from": "CONSTITUTION",
+      "to": "GCD-0002",
+      "type": "authority"
+    },
+    {
+      "from": "CONSTITUTION",
+      "to": "GGL-0001",
+      "type": "authority"
+    },
+    {
+      "from": "GCD-0002",
+      "to": "GGL-0001",
+      "type": "adoption"
+    },
+    {
+      "from": "GGL-0001",
+      "to": "GOV-AUTHORITY",
+      "type": "governance"
+    },
+    {
+      "from": "GGL-0001",
+      "to": "GOV-TRACEABILITY",
+      "type": "governance"
+    },
+    {
+      "from": "GGL-0001",
+      "to": "GOV-TAXONOMY",
+      "type": "governance"
+    },
+    {
+      "from": "GGL-0001",
+      "to": "GOV-LIFECYCLE",
+      "type": "governance"
+    },
+    {
+      "from": "GOV-AUTHORITY",
+      "to": "GCCS-0001",
+      "type": "authority"
+    },
+    {
+      "from": "GOV-TRACEABILITY",
+      "to": "GCCS-0001",
+      "type": "traceability"
+    },
+    {
+      "from": "GOV-TAXONOMY",
+      "to": "GCCS-0001",
+      "type": "classification"
+    },
+    {
+      "from": "GCCS-0001",
+      "to": "GAFS-0001",
+      "type": "framework-binding"
+    },
+    {
+      "from": "GAFS-0001",
+      "to": "FUTURE-GAR-PACKAGES",
+      "type": "implementation-mandate"
+    }
+  ]
+}

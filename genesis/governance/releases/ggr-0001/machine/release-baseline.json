@@ -1,0 +1,12 @@
+{
+  "schemaIdentifier": "gfr-0001/release-baseline",
+  "schemaVersion": "1.0.0",
+  "releaseId": "GFR-0001",
+  "baseline": {
+    "baselineId": "GGB-0001",
+    "baselineVersion": "1.0.0",
+    "baselinePath": "genesis/governance/baselines/ggb-0001",
+    "baselineManifest": "genesis/governance/baselines/ggb-0001/machine/baseline-manifest.json",
+    "baselineIntegrity": "genesis/governance/baselines/ggb-0001/machine/baseline-integrity.json"
+  }
+}

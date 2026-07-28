@@ -1,0 +1,96 @@
+# Genesis Governance Baseline Integrity Report
+
+## Verification Method
+- Canonical hash method: sha256-lf-normalized
+- Verification timestamp: 2026-07-28T00:00:00Z
+
+## Integrity Results
+- CONSTITUTION
+  - Exists: true
+  - Canonical Identity: CONSTITUTION@baseline-ref-1.0
+  - Normalized SHA256: 7565447712797232e37e683c1d489d198bc74f41a1d7b4d56a0103629cb25f19
+  - Bytes: 810
+  - Lifecycle: Active
+  - Governance Owner: Architecture Review Board
+  - Verification: verified
+- GCS-V2
+  - Exists: true
+  - Canonical Identity: GCS-V2@baseline-ref-1.0
+  - Normalized SHA256: 3e30431c3c69ef8ebc060afbe2154e5b191b5063d11000712eaa2091916f3421
+  - Bytes: 493
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GCD-0002
+  - Exists: true
+  - Canonical Identity: GCD-0002@1.0.0
+  - Normalized SHA256: 7eaeea0cd00fc5c1a7674d12299c38ac727dc7ed27a053f9a11dd39e4df35fb8
+  - Bytes: 989
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- HALL-DECISIONS
+  - Exists: true
+  - Canonical Identity: HALL-DECISIONS@1.0.0
+  - Normalized SHA256: d137b0ddc80c0387b89dd8f6dd0e48995d71c78c5cd73e8810ed22103f368985
+  - Bytes: 329
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GGL-0001
+  - Exists: true
+  - Canonical Identity: GGL-0001@1.0.0
+  - Normalized SHA256: 8f8c83b3b7978170608b000267c44ed88b5f821279899064e01e84963da67964
+  - Bytes: 1451
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GCCS-0001
+  - Exists: true
+  - Canonical Identity: GCCS-0001@1.0.0
+  - Normalized SHA256: 4b2e7ef1d68000c60afbefb73c44e57499d0cb508b73605f1183ae77c8b5f37f
+  - Bytes: 3974
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GAFS-0001
+  - Exists: true
+  - Canonical Identity: GAFS-0001@1.0.0
+  - Normalized SHA256: dcdca660f5f8ac2b75375b23827a1f8c2c4d3cfb64bb6bc3cd80bda84bb75b01
+  - Bytes: 2652
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GOV-AUTHORITY
+  - Exists: true
+  - Canonical Identity: GOV-AUTHORITY@1.0.0
+  - Normalized SHA256: 96d3717ed1f5e4283a6951dd9d0685cd83276dacaec4d03ef37dfea60eb08708
+  - Bytes: 908
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GOV-TRACEABILITY
+  - Exists: true
+  - Canonical Identity: GOV-TRACEABILITY@1.0.0
+  - Normalized SHA256: 7dff5054d8061546ec58431ce4b9f23d41617ad617577acc389a73f4b64960a4
+  - Bytes: 780
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GOV-TAXONOMY
+  - Exists: true
+  - Canonical Identity: GOV-TAXONOMY@1.0.0
+  - Normalized SHA256: 8a8fe1b93e6603990ebb91fd228351553dd655132ee9ba2b4c84614965c1d255
+  - Bytes: 908
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+- GOV-LIFECYCLE
+  - Exists: true
+  - Canonical Identity: GOV-LIFECYCLE@1.0.0
+  - Normalized SHA256: e6def2561920a681a9eb572d449b95f58d1b18861b671cd4c9a9feb7d2c04ba0
+  - Bytes: 818
+  - Lifecycle: Active
+  - Governance Owner: Genesis Governance Configuration Authority
+  - Verification: verified
+

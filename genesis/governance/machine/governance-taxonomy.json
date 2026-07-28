@@ -1,0 +1,35 @@
+{
+  "schemaIdentifier": "ggl-0001/governance-taxonomy",
+  "schemaVersion": "1.0.0",
+  "levels": [
+    "constitutional-authority",
+    "governance-library-authority",
+    "standards",
+    "procedures",
+    "implementations",
+    "evidence",
+    "certification",
+    "operational-decisions"
+  ],
+  "domains": [
+    "constitution",
+    "architecture",
+    "artifacts",
+    "runtime-governance",
+    "business-genome-governance",
+    "agent-governance",
+    "certification",
+    "audit",
+    "evolution"
+  ],
+  "artifactTypes": [
+    "standard",
+    "procedure",
+    "certification-standard",
+    "audit-standard",
+    "lifecycle-policy",
+    "decision-model",
+    "registry-entry",
+    "terminology-entry"
+  ]
+}

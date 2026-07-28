@@ -1,0 +1,19 @@
+{
+  "schemaIdentifier": "ggb-0001/baseline-registry",
+  "schemaVersion": "1.0.0",
+  "baselines": [
+    {
+      "baselineId": "GGB-0001",
+      "version": "1.0.0",
+      "title": "Genesis Governance Baseline v1.0",
+      "status": "Active",
+      "authoritySource": "genesis/CONSTITUTION.md",
+      "location": "genesis/governance/baselines/ggb-0001",
+      "supersession": {
+        "status": "active",
+        "supersedesBaselineId": null,
+        "successorBaselineId": null
+      }
+    }
+  ]
+}

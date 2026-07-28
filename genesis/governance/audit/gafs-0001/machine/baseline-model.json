@@ -1,0 +1,19 @@
+{
+  "schemaIdentifier": "gafs-0001/baseline-model",
+  "schemaVersion": "1.0.0",
+  "requiredFields": [
+    "baselineId",
+    "authoritySource",
+    "scope",
+    "canonicalHashMethod",
+    "versionBinding",
+    "createdAt",
+    "supersession"
+  ],
+  "rules": [
+    "explicit-authority-required",
+    "canonical-hash-required",
+    "historical-retention-required",
+    "supersession-lineage-required"
+  ]
+}

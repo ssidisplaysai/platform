@@ -1,0 +1,20 @@
+{
+  "schemaIdentifier": "gccs-0001/severity-model",
+  "schemaVersion": "1.0.0",
+  "levels": [
+    "Informational",
+    "Minor",
+    "Moderate",
+    "Major",
+    "Critical",
+    "Constitutional Blocker"
+  ],
+  "decisionImpact": {
+    "Informational": "no-direct-impact",
+    "Minor": "condition-eligible",
+    "Moderate": "remediation-condition-required",
+    "Major": "blocks-certified-unless-governed-condition",
+    "Critical": "not-certified-default",
+    "Constitutional Blocker": "not-certified-mandatory"
+  }
+}
