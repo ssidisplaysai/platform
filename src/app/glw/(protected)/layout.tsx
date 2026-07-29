@@ -2,9 +2,36 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { GlwShell } from "@/components/glw/glw-shell";
 import { getGlwSession } from "@/lib/glw/auth";
-import { buildGenesisSubjectFromSession } from "@/platform/gop/auth/runtime";
-import { getGenesisNavigationItems } from "@/platform/gop/runtime/loader";
-import { getGenesisWorkspaceRegistry, resolveAuthorizedWorkspaces } from "@/platform/gop/workspaces/runtime";
+import { glwSites } from "@/lib/glw/sites";
+import { initializePlatform } from "@/lib/gop/platform-bootstrap-api";
+import type { GenesisWorkspaceDescriptor } from "@/platform/gop/contracts";
+import { buildGenesisSubjectFromSession, isSubjectAuthorizedForRoute } from "@/platform/gop/auth/runtime";
+
+const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
+const GLW_MODULE_ID = "glw.core";
+
+const GLW_WORKSPACE_DESCRIPTORS: GenesisWorkspaceDescriptor[] = [
+  {
+    workspaceId: GLW_WORKSPACE_ID,
+    name: "LED Display Warehouse",
+    description: "GLW reference workspace",
+    enabled: true,
+    enabledModuleIds: [GLW_MODULE_ID],
+    defaultModuleId: GLW_MODULE_ID,
+    availableSites: glwSites.map((site) => ({
+      siteId: site.id,
+      name: site.name,
+      region: site.region,
+    })),
+    featureFlags: ["gop.events", "gop.inspector"],
+    branding: {
+      shortName: "GLW",
+      logoText: "GLW",
+    },
+    environment: "development",
+    order: 10,
+  },
+];
 
 export const metadata: Metadata = {
   title: "GLW",
@@ -23,25 +50,28 @@ export default async function ProtectedGlwLayout({
   }
 
   const subject = buildGenesisSubjectFromSession(session);
-  const authorizedWorkspaces = resolveAuthorizedWorkspaces(subject);
-
-  if (authorizedWorkspaces.length === 0) {
-    redirect("/glw/login");
-  }
-
-  const workspace = authorizedWorkspaces[0] ?? getGenesisWorkspaceRegistry().list()[0];
-
-  if (!workspace) {
-    redirect("/glw/login");
-  }
-
-  const navigationItems = getGenesisNavigationItems({
+  const isAllowed = isSubjectAuthorizedForRoute({
     subject,
-    workspaceId: workspace.workspaceId,
+    workspaceId: GLW_WORKSPACE_ID,
+    moduleId: GLW_MODULE_ID,
+    route: "/glw",
   });
 
+  if (!isAllowed) {
+    redirect("/glw/login");
+  }
+
+  const bootstrap = initializePlatform({
+    subject,
+    workspaceDescriptors: GLW_WORKSPACE_DESCRIPTORS,
+  });
+
+  if (!bootstrap.workspace) {
+    redirect("/glw/login");
+  }
+
   return (
-    <GlwShell navigationItems={navigationItems} workspace={workspace}>
+    <GlwShell navigationItems={bootstrap.navigationItems} workspace={bootstrap.workspace}>
       {children}
     </GlwShell>
   );
