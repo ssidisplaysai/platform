@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-0001B-v0.1.0",
+  "status": "PASS_WITH_OPEN_DECISIONS",
+  "checks": {
+    "repositoryDiscovery": true,
+    "crossReferenceValidation": true,
+    "terminologyConsistencyReview": true,
+    "traceabilityValidation": true,
+    "packageConsistencyValidation": true,
+    "governanceInheritanceValidation": true,
+    "noFeatureImplementation": true,
+    "noSpnImplementation": true,
+    "noGstp0002Start": true
+  }
+}

@@ -1,7 +1,7 @@
-# Proposed Next Package Recommendation
+# Next Package Recommendation
 
-## Historical Recommendation Status
-The recommendation path from this package is complete in the current Foundation baseline.
+## Recommended Next Package
+GSTP-0003 - Enterprise Service Contracts
 
 ## Canonical Progression (Normalized)
 GSTP-M0001 (completed)
@@ -15,4 +15,4 @@ GSTP-M0001 (completed)
 -> Application Constitutions (not started)
 
 ## Boundary
-This file records release-synchronization state only and does not start downstream packages.
+Recommendation only. GSTP-0003 is not started in this package.

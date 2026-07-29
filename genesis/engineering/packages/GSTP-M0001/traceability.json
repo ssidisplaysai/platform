@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-M0001-v0.1.0",
+  "subject": {
+    "id": "GSTP-M0001",
+    "title": "The STONER Foundational Library"
+  },
+  "evidence": [
+    "genesis/foundation/FOUNDATION-REGISTRY-v1.0.md",
+    "genesis/foundation/FOUNDATION-CERTIFICATE-v1.0.md",
+    "genesis/engineering/packages/GSTP-0001/00-package-manifest.md",
+    "genesis/engineering/packages/GSTP-0001A/00-package-manifest.md"
+  ]
+}

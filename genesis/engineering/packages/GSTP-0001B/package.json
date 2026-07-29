@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "0.1.0",
+  "packageStatus": "CompletePendingArchitectureReview",
+  "packageId": "GEPKG-GSTP-0001B-v0.1.0",
+  "packageUuid": "47a3be8c-df4b-4a71-a4c3-9703625df6b7",
+  "subjectId": "GSTP-0001B",
+  "subjectTitle": "STONER Enterprise Playbook",
+  "subjectType": "EnterprisePlaybookPackage",
+  "subjectStatus": "CompletePendingArchitectureReview",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationPreserved": true,
+  "stoppedBeforeCommit": true,
+  "constraints": {
+    "discoveryOnly": true,
+    "noRuntimeImplementation": true,
+    "noApiImplementation": true,
+    "noDatabaseImplementation": true,
+    "noUiImplementation": true,
+    "noWorkflowImplementation": true,
+    "noQrImplementation": true,
+    "noSpnImplementation": true,
+    "noGstp0002Start": true
+  },
+  "evidence": {
+    "foundationPackages": [
+      "genesis/engineering/packages/GSTP-M0001/00-package-manifest.md",
+      "genesis/engineering/packages/GSTP-0001/00-package-manifest.md",
+      "genesis/engineering/packages/GSTP-0001A/00-package-manifest.md",
+      "genesis/engineering/packages/GSTP-F0001/00-package-manifest.md"
+    ]
+  }
+}

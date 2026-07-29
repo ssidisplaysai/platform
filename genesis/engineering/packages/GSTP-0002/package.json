@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "0.1.0",
+  "packageStatus": "CompletePendingArchitectureReview",
+  "packageId": "GEPKG-GSTP-0002-v0.1.0",
+  "packageUuid": "9f62405a-11f0-4a2a-a10e-61a7c87a2cb5",
+  "subjectId": "GSTP-0002",
+  "subjectTitle": "Genesis STONER Platform Enterprise Semantic Contracts",
+  "subjectType": "EnterpriseSemanticContractPackage",
+  "subjectStatus": "CompletePendingArchitectureReview",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationPreserved": true,
+  "noImplementation": true,
+  "stoppedBeforeCommit": true,
+  "constraints": {
+    "noRuntimeImplementation": true,
+    "noApiImplementation": true,
+    "noDatabaseImplementation": true,
+    "noUiImplementation": true,
+    "noWorkflowImplementation": true,
+    "noApplicationConstitutionStart": true,
+    "noGstp0003Start": true
+  }
+}

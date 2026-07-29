@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-0002-v0.1.0",
+  "status": "PASS_WITH_OPEN_DECISIONS",
+  "checks": {
+    "duplicateSemanticDetection": true,
+    "ownershipValidation": true,
+    "relationshipValidation": true,
+    "terminologyValidation": true,
+    "crossReferenceValidation": true,
+    "inheritanceValidation": true,
+    "reservedWordValidation": true,
+    "noImplementation": true,
+    "noGstp0003Start": true
+  }
+}

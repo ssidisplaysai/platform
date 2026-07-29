@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-M0001-v0.1.0",
+  "createdFiles": [
+    "genesis/engineering/packages/GSTP-M0001/*"
+  ],
+  "modifiedFiles": [],
+  "deletedFiles": [],
+  "runtimeCodeChanged": false,
+  "databaseArtifactsChanged": false,
+  "apiArtifactsChanged": false
+}

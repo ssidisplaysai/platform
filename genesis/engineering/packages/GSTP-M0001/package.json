@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "0.1.0",
+  "packageStatus": "CompletePendingArchitectureReview",
+  "packageId": "GEPKG-GSTP-M0001-v0.1.0",
+  "packageUuid": "b6f97bc8-6dbf-4f84-970f-548eb05df779",
+  "subjectId": "GSTP-M0001",
+  "subjectTitle": "The STONER Foundational Library",
+  "subjectType": "FoundationalPhilosophyPackage",
+  "subjectStatus": "CompletePendingArchitectureReview",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationPreserved": true,
+  "stoppedBeforeCommit": true,
+  "constraints": {
+    "discoveryOnly": true,
+    "noRuntimeImplementation": true,
+    "noApiImplementation": true,
+    "noDatabaseImplementation": true,
+    "noUiImplementation": true,
+    "noWorkflowImplementation": true,
+    "noQrImplementation": true,
+    "noSpnImplementation": true
+  },
+  "evidence": {
+    "canonicalEngineeringRoot": [
+      "genesis/foundation/FOUNDATION-REGISTRY-v1.0.md",
+      "genesis/foundation/FOUNDATION-CERTIFICATE-v1.0.md"
+    ],
+    "packagePatternReference": [
+      "genesis/engineering/packages/GSTP-0001/00-package-manifest.md",
+      "genesis/engineering/packages/GSTP-0001A/00-package-manifest.md"
+    ]
+  }
+}

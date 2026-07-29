@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-0002-v0.1.0",
+  "inheritsFrom": [
+    "GSTP-M0001",
+    "GSTP-0001",
+    "GSTP-0001A",
+    "GSTP-F0001",
+    "GSTP-0001B"
+  ],
+  "semanticFlow": [
+    "Authority",
+    "Dictionary",
+    "Relationships",
+    "Invariants",
+    "Rules",
+    "Ownership",
+    "TerminologyGovernance",
+    "AiGuidance",
+    "Validation"
+  ]
+}

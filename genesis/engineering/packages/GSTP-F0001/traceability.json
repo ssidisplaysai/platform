@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-F0001-v0.1.0",
+  "subject": {
+    "id": "GSTP-F0001",
+    "title": "Genesis STONER Platform Foundation Collection"
+  },
+  "foundationCollection": [
+    "GSTP-M0001",
+    "GSTP-0001",
+    "GSTP-0001A",
+    "GSTP-0001B",
+    "GSTP-0002"
+  ],
+  "inheritanceLevels": [
+    "L0-Philosophy",
+    "L1-Constitution",
+    "L2-Architecture",
+    "L3-Blueprint",
+    "L4-DomainContracts",
+    "L5-ApplicationConstitutions",
+    "L6-Engineering"
+  ]
+}

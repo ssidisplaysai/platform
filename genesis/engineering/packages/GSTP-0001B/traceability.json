@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-0001B-v0.1.0",
+  "subject": {
+    "id": "GSTP-0001B",
+    "title": "STONER Enterprise Playbook"
+  },
+  "inheritsFrom": [
+    "GSTP-M0001",
+    "GSTP-0001",
+    "GSTP-0001A",
+    "GSTP-F0001"
+  ],
+  "playbookFlow": [
+    "Vision",
+    "BusinessStrategy",
+    "OperatingModel",
+    "EnterpriseArchitecture",
+    "FutureEngineering"
+  ]
+}

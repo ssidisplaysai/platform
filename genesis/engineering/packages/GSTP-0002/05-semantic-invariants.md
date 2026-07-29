@@ -1,0 +1,84 @@
+# Semantic Invariants
+
+## Global Invariants
+- Every concept has exactly one authoritative definition.
+- Every concept has exactly one owning business domain.
+- Every lifecycle transition must preserve semantic traceability.
+- No alias may override canonical meaning.
+- No policy, application, or AI agent may redefine semantic authority.
+
+## Required Enterprise Invariants
+- Every Passport belongs to exactly one Customer Identity.
+- Every Product has one authoritative Product Identity.
+- Every Commission originates from an auditable business event.
+- Every Reward has a traceable source.
+- Every QR Asset resolves to exactly one authoritative destination at any moment in time.
+
+## Concept-Level Invariants
+- Customer: Canonical ownership and lineage must remain intact across all references and versions.
+- Account: Canonical ownership and lineage must remain intact across all references and versions.
+- Identity: Canonical ownership and lineage must remain intact across all references and versions.
+- Profile: Canonical ownership and lineage must remain intact across all references and versions.
+- Product: Canonical ownership and lineage must remain intact across all references and versions.
+- SKU: Canonical ownership and lineage must remain intact across all references and versions.
+- Variant: Canonical ownership and lineage must remain intact across all references and versions.
+- Collection: Canonical ownership and lineage must remain intact across all references and versions.
+- Collector: Canonical ownership and lineage must remain intact across all references and versions.
+- Passport: Canonical ownership and lineage must remain intact across all references and versions.
+- Reward: Canonical ownership and lineage must remain intact across all references and versions.
+- Badge: Canonical ownership and lineage must remain intact across all references and versions.
+- Achievement: Canonical ownership and lineage must remain intact across all references and versions.
+- Partner: Canonical ownership and lineage must remain intact across all references and versions.
+- Affiliate: Canonical ownership and lineage must remain intact across all references and versions.
+- Retailer: Canonical ownership and lineage must remain intact across all references and versions.
+- Distributor: Canonical ownership and lineage must remain intact across all references and versions.
+- Manufacturer: Canonical ownership and lineage must remain intact across all references and versions.
+- Supplier: Canonical ownership and lineage must remain intact across all references and versions.
+- Vendor: Canonical ownership and lineage must remain intact across all references and versions.
+- Store: Canonical ownership and lineage must remain intact across all references and versions.
+- Region: Canonical ownership and lineage must remain intact across all references and versions.
+- Territory: Canonical ownership and lineage must remain intact across all references and versions.
+- Order: Canonical ownership and lineage must remain intact across all references and versions.
+- Cart: Canonical ownership and lineage must remain intact across all references and versions.
+- Invoice: Canonical ownership and lineage must remain intact across all references and versions.
+- Payment: Canonical ownership and lineage must remain intact across all references and versions.
+- Commission: Canonical ownership and lineage must remain intact across all references and versions.
+- Campaign: Canonical ownership and lineage must remain intact across all references and versions.
+- Promotion: Canonical ownership and lineage must remain intact across all references and versions.
+- Event: Canonical ownership and lineage must remain intact across all references and versions.
+- Experience: Canonical ownership and lineage must remain intact across all references and versions.
+- Community: Canonical ownership and lineage must remain intact across all references and versions.
+- Content: Canonical ownership and lineage must remain intact across all references and versions.
+- Media Asset: Canonical ownership and lineage must remain intact across all references and versions.
+- QR Asset: Canonical ownership and lineage must remain intact across all references and versions.
+- Digital Twin: Canonical ownership and lineage must remain intact across all references and versions.
+- Registration: Canonical ownership and lineage must remain intact across all references and versions.
+- Authentication: Canonical ownership and lineage must remain intact across all references and versions.
+- Authorization: Canonical ownership and lineage must remain intact across all references and versions.
+- Inventory: Canonical ownership and lineage must remain intact across all references and versions.
+- Warehouse: Canonical ownership and lineage must remain intact across all references and versions.
+- Shipment: Canonical ownership and lineage must remain intact across all references and versions.
+- Return: Canonical ownership and lineage must remain intact across all references and versions.
+- Warranty: Canonical ownership and lineage must remain intact across all references and versions.
+- Support Case: Canonical ownership and lineage must remain intact across all references and versions.
+- Notification: Canonical ownership and lineage must remain intact across all references and versions.
+- Task: Canonical ownership and lineage must remain intact across all references and versions.
+- Workflow: Canonical ownership and lineage must remain intact across all references and versions.
+- Document: Canonical ownership and lineage must remain intact across all references and versions.
+- Policy: Canonical ownership and lineage must remain intact across all references and versions.
+- Audit Record: Canonical ownership and lineage must remain intact across all references and versions.
+- Ledger Entry: Canonical ownership and lineage must remain intact across all references and versions.
+- Analytics Event: Canonical ownership and lineage must remain intact across all references and versions.
+- Executive Metric: Canonical ownership and lineage must remain intact across all references and versions.
+- Business Objective: Canonical ownership and lineage must remain intact across all references and versions.
+- Capability: Canonical ownership and lineage must remain intact across all references and versions.
+- Application: Canonical ownership and lineage must remain intact across all references and versions.
+- Shared Service: Canonical ownership and lineage must remain intact across all references and versions.
+- AI Agent: Canonical ownership and lineage must remain intact across all references and versions.
+- Recommendation: Canonical ownership and lineage must remain intact across all references and versions.
+- Search Index: Canonical ownership and lineage must remain intact across all references and versions.
+- Configuration: Canonical ownership and lineage must remain intact across all references and versions.
+- Feature Flag: Canonical ownership and lineage must remain intact across all references and versions.
+- System Health: Canonical ownership and lineage must remain intact across all references and versions.
+- Operational Metric: Canonical ownership and lineage must remain intact across all references and versions.
+- Executive Dashboard: Canonical ownership and lineage must remain intact across all references and versions.

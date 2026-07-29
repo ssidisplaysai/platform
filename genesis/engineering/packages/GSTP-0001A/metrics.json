@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-0001A-v0.1.0",
+  "artifactCount": 35,
+  "requiredDeliverablesCount": 28,
+  "requiredDeliverablesProvided": 28,
+  "openDecisionCount": 10,
+  "riskCount": 10,
+  "validationStatus": "PASS_WITH_OPEN_DECISIONS"
+}

@@ -12,30 +12,11 @@
 - Reviews: architecture, legal, accounting, security, privacy flagged as required for open decisions.
 - Completion boundary: architecture-only corpus complete.
 
-### GSTP-0002 — STONER Platform Domain and Application Model
-- Mission: canonical domain and application model.
-- Scope: platform and app registration models.
-- Non-scope: runtime implementation.
-- Prerequisites: registration and review decisions.
-
-### GSTP-0003 — STONER Shared Identity, Registry, and Permissions
-- Mission: shared identity and permission architecture.
-- Prerequisites: GSTP-0002.
-
-### GSTP-0004 — STONER Shared Commerce and Product Boundary
-- Mission: commerce boundary definition and integration contracts.
-
-### GSTP-0005 — STONER Shared Data, Analytics, and Intelligence
-- Mission: cross-app analytics ownership and privacy controls.
-
-### GSTP-0006 — STONER Shared Integration and Event Architecture
-- Mission: external integration and event contracts.
-
-### GSTP-0007 — STONER Platform Security, Privacy, and Compliance
-- Mission: formal policy architecture.
-
-### GSTP-0008 — STONER Platform Certification and Release Model
-- Mission: certification and release governance profile.
+### Canonical Progression State (Release-Normalized)
+- GSTP-0002 — Enterprise Semantic Contracts (completed)
+- GSTP-0003 — Enterprise Service Contracts (not started)
+- GSTP-0004 — Enterprise Policy Contracts (not started)
+- Application Constitutions — Partner Network, Passport, Commerce, Inventory, Manufacturing, Retail, Marketing, Community, Rewards, Analytics, AI (not started)
 
 ## SPN Program
 

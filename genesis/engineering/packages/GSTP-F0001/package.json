@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "0.1.0",
+  "packageStatus": "CompletePendingArchitectureReview",
+  "packageId": "GEPKG-GSTP-F0001-v0.1.0",
+  "packageUuid": "9d10c362-69c8-4b5d-a1f1-37fe55ecaf0a",
+  "subjectId": "GSTP-F0001",
+  "subjectTitle": "Genesis STONER Platform Foundation Collection",
+  "subjectType": "GovernanceArchitecturePackage",
+  "subjectStatus": "CompletePendingArchitectureReview",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationPreserved": true,
+  "stoppedBeforeCommit": true,
+  "constraints": {
+    "discoveryOnly": true,
+    "noRuntimeImplementation": true,
+    "noApiImplementation": true,
+    "noDatabaseImplementation": true,
+    "noUiImplementation": true,
+    "noWorkflowImplementation": true,
+    "noQrImplementation": true,
+    "noSpnImplementation": true,
+    "noGstp0002Start": true
+  },
+  "evidence": {
+    "canonicalEngineeringRoot": [
+      "genesis/foundation/FOUNDATION-REGISTRY-v1.0.md",
+      "genesis/foundation/FOUNDATION-CERTIFICATE-v1.0.md"
+    ],
+    "foundationCollection": [
+      "genesis/engineering/packages/GSTP-M0001/00-package-manifest.md",
+      "genesis/engineering/packages/GSTP-0001/00-package-manifest.md",
+      "genesis/engineering/packages/GSTP-0001A/00-package-manifest.md"
+    ]
+  }
+}

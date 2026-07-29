@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GSTP-0001A-v0.1.0",
+  "subject": {
+    "id": "GSTP-0001A",
+    "title": "Genesis STONER Platform Enterprise Domain Architecture"
+  },
+  "evidence": [
+    "genesis/foundation/FOUNDATION-REGISTRY-v1.0.md",
+    "genesis/foundation/FOUNDATION-CERTIFICATE-v1.0.md",
+    "genesis/engineering/packages/GSTP-0001/00-package-manifest.md",
+    "genesis/specifications/GSP-0001-Specification-Governance-v1.0.md",
+    "genesis/governance-decisions/GD-0001-Approve-GSP-0001.md"
+  ]
+}
