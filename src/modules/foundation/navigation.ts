@@ -18,6 +18,12 @@ export const FOUNDATION_NAVIGATION_ITEMS: readonly NavigationItem[] = [
     requiredPermissions: ["workspace:view"],
   },
   {
+    id: "sites",
+    label: "Sites",
+    href: "/sites",
+    requiredPermissions: ["sites:read"],
+  },
+  {
     id: "settings",
     label: "Settings",
     href: "/settings",
@@ -52,11 +58,25 @@ export const FOUNDATION_COMMANDS: readonly CommandPaletteAction[] = [
     requiredPermissions: ["workspace:view", "command_palette:use"],
   },
   {
+    id: "open-sites",
+    label: "Open Sites",
+    description: "Review multi-site status and readiness",
+    href: "/sites",
+    requiredPermissions: ["sites:read", "command_palette:use"],
+  },
+  {
     id: "open-settings",
     label: "Open Settings",
     description: "Review workspace and organization settings",
     href: "/settings",
     requiredPermissions: ["settings:view", "command_palette:use"],
+  },
+  {
+    id: "open-new-site",
+    label: "Create New Site",
+    description: "Open bounded site creation foundation",
+    href: "/sites/new",
+    requiredPermissions: ["sites:create", "command_palette:use"],
   },
   {
     id: "open-notifications",
@@ -105,6 +125,22 @@ export const FOUNDATION_SEARCH_INDEX: readonly EnterpriseSearchItem[] = [
     href: "/audit",
     scope: "all",
     requiredPermissions: ["audit:view"],
+  },
+  {
+    id: "sites-multi-site",
+    title: "Multi-Site Management",
+    subtitle: "List and govern site status, health, and readiness",
+    href: "/sites",
+    scope: "sites",
+    requiredPermissions: ["sites:read"],
+  },
+  {
+    id: "sites-new",
+    title: "Create Site Foundation",
+    subtitle: "Configure non-secret fields for a new site",
+    href: "/sites/new",
+    scope: "sites",
+    requiredPermissions: ["sites:create"],
   },
   {
     id: "organization-registry",

@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFoundationContext, getSitesForOrganization } from "@/modules/foundation/context";
 import { FOUNDATION_COMMANDS, FOUNDATION_NAVIGATION_ITEMS } from "@/modules/foundation/navigation";
 import { hasPermission, resolvePermissions } from "@/modules/foundation/permissions";
 import { getVisibleCommandPaletteActions, getVisibleNavigationItems } from "@/modules/foundation/selectors";
+
+const ORGANIZATION_STORAGE_KEY = "gcp.selectedOrganizationId";
+const SITE_STORAGE_KEY = "gcp.selectedSiteId";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -16,11 +19,62 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [foundationContext.user.roles],
   );
 
-  const [selectedOrganizationId, setSelectedOrganizationId] = useState(
+  const initialSelection = useMemo(() => {
+    if (typeof window === "undefined") {
+      return {
+        organizationId: foundationContext.selectedOrganizationId,
+        siteId: foundationContext.selectedSiteId,
+        message: null as string | null,
+      };
+    }
+
+    const persistedOrganizationId = localStorage.getItem(ORGANIZATION_STORAGE_KEY);
+    const persistedSiteId = localStorage.getItem(SITE_STORAGE_KEY);
+
+    const organizationId =
+      persistedOrganizationId &&
+      foundationContext.organizations.some(
+        (organization) => organization.id === persistedOrganizationId,
+      )
+        ? persistedOrganizationId
+        : foundationContext.selectedOrganizationId;
+
+    if (!persistedSiteId) {
+      return {
+        organizationId,
+        siteId: foundationContext.selectedSiteId,
+        message: null as string | null,
+      };
+    }
+
+    if (foundationContext.sites.some((site) => site.id === persistedSiteId)) {
+      return {
+        organizationId,
+        siteId: persistedSiteId,
+        message: null as string | null,
+      };
+    }
+
+    return {
+      organizationId,
+      siteId: "",
+      message: `Selected site ${persistedSiteId} is unavailable or unauthorized in this context.`,
+    };
+  }, [
+    foundationContext.organizations,
     foundationContext.selectedOrganizationId,
+    foundationContext.selectedSiteId,
+    foundationContext.sites,
+  ]);
+
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState(
+    initialSelection.organizationId,
   );
 
-  const [selectedSiteId, setSelectedSiteId] = useState(foundationContext.selectedSiteId);
+  const [selectedSiteId, setSelectedSiteId] = useState(initialSelection.siteId);
+  const [siteSelectionMessage, setSiteSelectionMessage] = useState<string | null>(
+    initialSelection.message,
+  );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
 
@@ -46,6 +100,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const canUseCommandPalette = hasPermission(permissions, "command_palette:use");
 
+  const selectedSite = useMemo(
+    () => foundationContext.sites.find((site) => site.id === selectedSiteId) ?? null,
+    [foundationContext.sites, selectedSiteId],
+  );
+
+  useEffect(() => {
+    if (selectedOrganizationId) {
+      localStorage.setItem(ORGANIZATION_STORAGE_KEY, selectedOrganizationId);
+    }
+  }, [selectedOrganizationId]);
+
+  useEffect(() => {
+    if (selectedSiteId) {
+      localStorage.setItem(SITE_STORAGE_KEY, selectedSiteId);
+    }
+  }, [selectedSiteId]);
+
   function handleOrganizationChange(nextOrganizationId: string) {
     setSelectedOrganizationId(nextOrganizationId);
     const nextSite = foundationContext.sites.find(
@@ -54,7 +125,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     if (nextSite) {
       setSelectedSiteId(nextSite.id);
+      setSiteSelectionMessage(null);
+      return;
     }
+
+    setSelectedSiteId("");
+    setSiteSelectionMessage(
+      "No configured sites are currently available for the selected organization.",
+    );
   }
 
   return (
@@ -92,15 +170,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </label>
             <select
               value={selectedSiteId}
-              onChange={(event) => setSelectedSiteId(event.target.value)}
+              onChange={(event) => {
+                setSelectedSiteId(event.target.value);
+                setSiteSelectionMessage(null);
+              }}
               className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500"
             >
+              <option value="">Select a site context</option>
               {availableSites.map((site) => (
                 <option key={site.id} value={site.id}>
                   {site.name} ({site.region})
                 </option>
               ))}
             </select>
+
+            {selectedSite ? (
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full border border-zinc-700 px-2 py-1 text-zinc-300">
+                  {selectedSite.environment}
+                </span>
+                <span className="rounded-full border border-zinc-700 px-2 py-1 text-zinc-300">
+                  health: {selectedSite.health}
+                </span>
+                <span className="rounded-full border border-zinc-700 px-2 py-1 text-zinc-300">
+                  publishing: {selectedSite.publishing}
+                </span>
+                {!selectedSite.enabled ? (
+                  <span className="rounded-full border border-amber-600/50 bg-amber-600/10 px-2 py-1 text-amber-300">
+                    disabled
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+
+            {siteSelectionMessage ? (
+              <p className="mt-3 text-xs text-amber-300">{siteSelectionMessage}</p>
+            ) : null}
           </section>
 
           <nav className="mt-8 space-y-2">

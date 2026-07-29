@@ -36,12 +36,12 @@ describe("GCP-0002B commerce foundation", () => {
 
   test("filters sites by selected organization", () => {
     const context = createFoundationContext();
-    const organization = context.organizations[0];
+    const organizationId = "led-display-warehouse";
 
-    const sites = getSitesForOrganization(context.sites, organization.id);
+    const sites = getSitesForOrganization(context.sites, organizationId);
 
     expect(sites.length).toBeGreaterThan(0);
-    expect(sites.every((site) => site.organizationId === organization.id)).toBe(
+    expect(sites.every((site) => site.organizationId === organizationId)).toBe(
       true,
     );
   });

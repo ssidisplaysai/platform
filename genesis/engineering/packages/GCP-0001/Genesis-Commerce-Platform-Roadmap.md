@@ -44,6 +44,10 @@ Objectives:
 - Define health and environment status model
 - Enforce no-secret storage in application records
 
+Implementation checkpoint:
+- GCP-0002C implemented bounded multi-site foundation routes, typed site configuration contracts, deterministic readiness/publishing guard policy, and non-secret integration reference handling.
+- Runtime publishing, workflow execution, and external authority integrations remain out of scope.
+
 Dependencies:
 - Phase 2
 
@@ -145,3 +149,4 @@ Roadmap is complete when all modules have assigned phase ownership, explicit dep
 - Phase 0: COMPLETE WITH EXTERNAL CONDITIONS (per GCP-0002A-R1)
 - Phase 1: Architecture package complete
 - Phase 2: Foundation implementation baseline established by GCP-0002B
+- Phase 3: Multi-site platform foundation established by GCP-0002C bounded implementation
