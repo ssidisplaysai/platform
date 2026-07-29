@@ -21,3 +21,8 @@ Each product-site assignment includes:
 1. Site assignment context is reused for reservation and availability scope evaluation.
 2. Inventory reservation records include explicit site references for bounded allocation tracking.
 3. Product-site scope remains application-level and does not migrate platform semantic authority.
+
+## GCP-0002F Profile Relationship
+1. Product-site behavior now resolves profile assignments through deterministic direct-then-site-then-default inheritance.
+2. Assignment-level profile references support bounded overrides without duplicating configuration definitions.
+3. Profile assignment visibility exposes direct usage, inherited usage, and blocking readiness dependencies.

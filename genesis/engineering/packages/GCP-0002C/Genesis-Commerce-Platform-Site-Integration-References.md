@@ -23,3 +23,8 @@ Site integrations are represented through opaque references:
 
 ## Publishing Safety Implication
 Missing references propagate deterministic blockers in readiness and publishing guard outputs.
+
+## GCP-0002F Profile-System Relationship
+1. Site profile and integration fields are now interpreted as profile-assignment references instead of implementation payload locations.
+2. Reusable profile registries provide centralized configuration for WordPress/workflow/prompt/image/SEO/brand/analytics policies.
+3. Site-level assignment participates in deterministic inheritance for product/category/page/blog/media targets.

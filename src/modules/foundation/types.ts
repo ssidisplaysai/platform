@@ -47,6 +47,12 @@ export type PermissionAction =
   | "inventory:count"
   | "inventory:approve_count"
   | "inventory:view_audit"
+  | "profiles:read"
+  | "profiles:create"
+  | "profiles:update"
+  | "profiles:validate"
+  | "profiles:evaluate_readiness"
+  | "profiles:assign"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -115,7 +121,199 @@ export type SearchScope =
   | "inventory"
   | "locations"
   | "movements"
-  | "reservations";
+  | "reservations"
+  | "profiles"
+  | "publishing_profiles"
+  | "wordpress_profiles"
+  | "workflow_profiles"
+  | "prompt_profiles"
+  | "image_profiles"
+  | "seo_profiles"
+  | "brand_profiles"
+  | "analytics_profiles";
+
+export type IntegrationProfileType =
+  | "publishing"
+  | "wordpress"
+  | "workflow"
+  | "prompt"
+  | "image"
+  | "seo"
+  | "brand"
+  | "analytics";
+
+export type IntegrationProfileStatus =
+  | "draft"
+  | "active"
+  | "suspended"
+  | "archived";
+
+export type IntegrationProfileAssignmentTargetType =
+  | "site"
+  | "product"
+  | "category"
+  | "page_template"
+  | "blog_template"
+  | "media";
+
+export type IntegrationProfileReferenceSet = {
+  credentialReference: string | null;
+  workflowReference: string | null;
+  promptReference: string | null;
+  providerReference: string | null;
+  brandReference: string | null;
+  workflowProfileReference: string | null;
+  wordpressProfileReference: string | null;
+  promptProfileReference: string | null;
+  imageProfileReference: string | null;
+  seoProfileReference: string | null;
+  analyticsProfileReference: string | null;
+  titleStrategyReference: string | null;
+  metaStrategyReference: string | null;
+  schemaReference: string | null;
+  openGraphReference: string | null;
+  slugStrategyReference: string | null;
+  canonicalPolicyReference: string | null;
+  logoReference: string | null;
+  colorPaletteReference: string | null;
+  typographyReference: string | null;
+  voiceReference: string | null;
+  defaultCtaReference: string | null;
+  assetReference: string | null;
+  baseUrlReference: string | null;
+  authorReference: string | null;
+  categoryReference: string | null;
+  postStatusReference: string | null;
+  featuredImagePolicyReference: string | null;
+  imageInsertionPolicyReference: string | null;
+  yoastPolicyReference: string | null;
+  inputContractReference: string | null;
+  outputContractReference: string | null;
+  retryPolicyReference: string | null;
+  executionTimeoutReference: string | null;
+  environmentReference: string | null;
+};
+
+export type IntegrationProfileConfiguration = {
+  profileId: string;
+  profileType: IntegrationProfileType;
+  organizationId: string;
+  profileName: string;
+  description: string | null;
+  status: IntegrationProfileStatus;
+  enabled: boolean;
+  version: string;
+  assignedSiteIds: readonly string[];
+  defaultForOrganization: boolean;
+  references: IntegrationProfileReferenceSet;
+  createdAt: string;
+  updatedAt: string;
+  notes: string | null;
+};
+
+export type IntegrationProfileReadinessCondition = {
+  key:
+    | "profile_enabled"
+    | "status_permits_operation"
+    | "version_present"
+    | "wordpress_base_url_reference_present"
+    | "wordpress_credential_reference_present"
+    | "workflow_reference_present"
+    | "provider_reference_present"
+    | "prompt_reference_present"
+    | "image_provider_reference_present"
+    | "seo_title_strategy_present"
+    | "seo_meta_strategy_present"
+    | "seo_schema_reference_present"
+    | "seo_open_graph_reference_present"
+    | "seo_slug_strategy_present"
+    | "seo_canonical_policy_present"
+    | "brand_logo_reference_present"
+    | "brand_palette_reference_present"
+    | "brand_typography_reference_present"
+    | "brand_voice_reference_present"
+    | "brand_cta_reference_present"
+    | "publishing_wordpress_profile_present"
+    | "publishing_workflow_profile_present"
+    | "publishing_prompt_profile_present"
+    | "publishing_seo_profile_present"
+    | "analytics_provider_reference_present"
+    | "retry_policy_reference_present"
+    | "execution_timeout_reference_present";
+  passed: boolean;
+  details: string;
+};
+
+export type IntegrationProfileReadinessResult = {
+  profileId: string;
+  profileType: IntegrationProfileType;
+  ready: boolean;
+  warnings: readonly string[];
+  blockers: readonly string[];
+  checkedConditions: readonly IntegrationProfileReadinessCondition[];
+  timestamp: string;
+};
+
+export type IntegrationProfileValidationIssue = {
+  field: string;
+  message: string;
+};
+
+export type IntegrationProfileValidationResult = {
+  valid: boolean;
+  issues: readonly IntegrationProfileValidationIssue[];
+};
+
+export type NewIntegrationProfileInput = Omit<
+  IntegrationProfileConfiguration,
+  "createdAt" | "updatedAt"
+>;
+
+export type UpdateIntegrationProfileInput = Partial<
+  Omit<
+    IntegrationProfileConfiguration,
+    "profileId" | "organizationId" | "profileType" | "createdAt"
+  >
+>;
+
+export type IntegrationProfileListFilters = {
+  organizationId?: string;
+  profileType?: IntegrationProfileType;
+  status?: IntegrationProfileStatus;
+  enabled?: boolean;
+  siteId?: string;
+  query?: string;
+};
+
+export type IntegrationProfileAssignmentRecord = {
+  assignmentId: string;
+  organizationId: string;
+  targetType: IntegrationProfileAssignmentTargetType;
+  targetId: string;
+  siteId: string | null;
+  profileType: IntegrationProfileType;
+  profileId: string;
+  inherited: boolean;
+  createdAt: string;
+  updatedAt: string;
+  notes: string | null;
+};
+
+export type IntegrationProfileUsageRecord = {
+  profileId: string;
+  targetType: IntegrationProfileAssignmentTargetType;
+  targetId: string;
+  siteId: string | null;
+  inherited: boolean;
+};
+
+export type EffectiveProfileAssignment = {
+  profileType: IntegrationProfileType;
+  directProfileId: string | null;
+  inheritedProfileId: string | null;
+  effectiveProfileId: string | null;
+  inheritanceSource: "direct" | "site" | "organization_default" | "none";
+};
 
 export type SiteLifecycleState =
   | "draft"
@@ -913,6 +1111,7 @@ export type EnterpriseSearchItem = {
     | "location"
     | "movement"
     | "reservation"
+    | "profile"
     | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";

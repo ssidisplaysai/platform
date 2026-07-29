@@ -159,3 +159,16 @@ Constraints preserved:
 1. No external WMS/ERP runtime integration
 2. No durable transactional database introduction in this package
 3. No procurement/order-fulfillment automation migration
+
+## GCP-0002F Integration Profiles Foundation Status
+Implemented reusable profile configuration foundations in bounded form:
+1. Typed integration profiles for publishing, WordPress, workflow, prompt, image, SEO, brand, and analytics profile families
+2. Fixture-backed profile repository with deterministic list/create/update and assignment/inheritance resolution
+3. Deterministic profile readiness policy outputs with blockers and warnings
+4. Profile UI and API foundations for list/detail/validate/readiness surfaces
+5. Navigation, command palette, and enterprise search extensions for profile discovery
+
+Constraints preserved:
+1. No publishing or workflow runtime execution
+2. No external API invocation
+3. No Business Genome mutation authority migration
