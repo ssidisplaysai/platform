@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "0.1.0",
+  "packageStatus": "CompletePendingArchitectureReview",
+  "packageId": "GEPKG-GSTP-0001-v0.1.0",
+  "packageUuid": "3c0adf1d-38d2-451e-9725-3b35d180d67b",
+  "subjectId": "GSTP-0001",
+  "subjectTitle": "Genesis STONER Platform Constitutional Foundation",
+  "subjectType": "ArchitectureFoundationPackage",
+  "subjectStatus": "CompletePendingArchitectureReview",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationPreserved": true,
+  "stoppedBeforeCommit": true,
+  "constraints": {
+    "discoveryOnly": true,
+    "noRuntimeImplementation": true,
+    "noApiImplementation": true,
+    "noDatabaseImplementation": true,
+    "noUiImplementation": true
+  },
+  "evidence": {
+    "identifierAuthorityRecord": [
+      "genesis/specifications/GSP-0001-Specification-Governance-v1.0.md",
+      "genesis/governance-decisions/GD-0001-Approve-GSP-0001.md"
+    ],
+    "canonicalEngineeringRoot": [
+      "genesis/foundation/FOUNDATION-REGISTRY-v1.0.md",
+      "genesis/foundation/FOUNDATION-CERTIFICATE-v1.0.md"
+    ]
+  }
+}
