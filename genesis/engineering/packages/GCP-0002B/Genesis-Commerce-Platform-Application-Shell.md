@@ -39,3 +39,8 @@
 2. Selected organization and selected site persist in client storage where available.
 3. Invalid persisted site IDs do not silently fall back; shell shows explicit unavailable-site messaging.
 4. Site badges now expose environment, health, publishing status, and disabled-state indication.
+
+## GCP-0002D Product/Catalog Extension
+1. Shell navigation now includes Products, Categories, and Manufacturers entries when permitted.
+2. Command palette now includes product catalog actions for products, categories, and manufacturers.
+3. Existing organization/site selection behavior remains unchanged and is reused by product/catalog routes.

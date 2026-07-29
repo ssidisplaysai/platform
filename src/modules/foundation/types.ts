@@ -19,6 +19,17 @@ export type PermissionAction =
   | "sites:manage_integrations"
   | "sites:view_health"
   | "sites:view_audit"
+  | "products:read"
+  | "products:create"
+  | "products:update"
+  | "products:archive"
+  | "products:manage_categories"
+  | "products:manage_manufacturers"
+  | "products:manage_specifications"
+  | "products:assign_sites"
+  | "products:evaluate_readiness"
+  | "products:view_internal"
+  | "products:view_audit"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -75,7 +86,15 @@ export type CommandPaletteAction = {
   requiredPermissions?: readonly PermissionAction[];
 };
 
-export type SearchScope = "all" | "organizations" | "sites" | "users" | "settings";
+export type SearchScope =
+  | "all"
+  | "organizations"
+  | "sites"
+  | "users"
+  | "settings"
+  | "products"
+  | "categories"
+  | "manufacturers";
 
 export type SiteLifecycleState =
   | "draft"
@@ -248,12 +267,274 @@ export type SiteActivityRecord = {
   summary: string;
 };
 
+export type ProductLifecycleState =
+  | "draft"
+  | "configuring"
+  | "active"
+  | "suspended"
+  | "archived";
+
+export type ProductCatalogStatus =
+  | "incomplete"
+  | "review_required"
+  | "ready"
+  | "published"
+  | "blocked";
+
+export type ProductVisibilityState =
+  | "hidden"
+  | "internal"
+  | "site_visible"
+  | "public_candidate";
+
+export type ProductType =
+  | "led_display"
+  | "digital_sphere"
+  | "oled_display"
+  | "kiosk"
+  | "projection_film"
+  | "projector_enclosure"
+  | "touch_display"
+  | "accessory"
+  | "custom_fabrication"
+  | "service";
+
+export type ProductSitePublicationStatus =
+  | "disabled"
+  | "not_ready"
+  | "ready"
+  | "blocked"
+  | "published";
+
+export type ProductPricingDisplayMode =
+  | "hidden"
+  | "request_quote"
+  | "range"
+  | "fixed";
+
+export type ProductSpecificationVisibility = "public" | "internal";
+
+export type ProductSpecification = {
+  specificationId: string;
+  specificationGroup: string;
+  key: string;
+  displayLabel: string;
+  rawValue: string;
+  normalizedValue: string | null;
+  unit: string | null;
+  sortOrder: number;
+  sourceReference: string | null;
+  evidenceReference: string | null;
+  confidence: number | null;
+  visibility: ProductSpecificationVisibility;
+};
+
+export type ProductMediaReferences = {
+  primaryImageReference: string | null;
+  galleryImageReferences: readonly string[];
+  videoReferences: readonly string[];
+};
+
+export type ProductDocumentReferences = {
+  technicalDrawingReferences: readonly string[];
+  specSheetReferences: readonly string[];
+  brochureReferences: readonly string[];
+  manualReferences: readonly string[];
+  installationGuideReferences: readonly string[];
+  warrantyDocumentReferences: readonly string[];
+};
+
+export type ProductSiteAssignment = {
+  siteId: string;
+  enabledForSite: boolean;
+  siteSpecificSlug: string;
+  siteSpecificDisplayName: string | null;
+  siteSpecificShortDescription: string | null;
+  visibility: ProductVisibilityState;
+  featured: boolean;
+  sortOrder: number;
+  categoryIds: readonly string[];
+  defaultContentType: SiteDefaultContentType;
+  publicationStatus: ProductSitePublicationStatus;
+  seoProfileReference: string | null;
+  promptProfileReference: string | null;
+  imageProfileReference: string | null;
+  pricingDisplayMode: ProductPricingDisplayMode;
+  lastReadinessEvaluation: string | null;
+  lastPublicationReference: string | null;
+};
+
+export type ProductConfiguration = {
+  productId: string;
+  organizationId: string;
+  productName: string;
+  displayName: string;
+  slug: string;
+  sku: string;
+  modelNumber: string | null;
+  shortDescription: string | null;
+  fullDescription: string | null;
+  productType: ProductType | null;
+  productFamily: string | null;
+  categoryIds: readonly string[];
+  manufacturerId: string | null;
+  brandReference: string | null;
+  lifecycleState: ProductLifecycleState;
+  catalogStatus: ProductCatalogStatus;
+  enabled: boolean;
+  visibility: ProductVisibilityState;
+  featured: boolean;
+  primarySiteId: string | null;
+  assignedSiteIds: readonly string[];
+  siteAssignments: readonly ProductSiteAssignment[];
+  media: ProductMediaReferences;
+  documents: ProductDocumentReferences;
+  specifications: readonly ProductSpecification[];
+  seoProfileReference: string | null;
+  promptProfileReference: string | null;
+  businessGenomeObjectReference: string | null;
+  sourceEvidenceReference: string | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  notes: string | null;
+};
+
+export type CategoryStatus = "active" | "suspended" | "archived";
+
+export type ProductCategory = {
+  categoryId: string;
+  organizationId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  parentCategoryId: string | null;
+  status: CategoryStatus;
+  sortOrder: number;
+  siteAssignments: readonly string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ManufacturerStatus = "active" | "suspended" | "archived";
+
+export type ProductManufacturer = {
+  manufacturerId: string;
+  organizationId: string;
+  name: string;
+  displayName: string;
+  slug: string;
+  website: string | null;
+  status: ManufacturerStatus;
+  businessGenomeReference: string | null;
+  notes: string | null;
+};
+
+export type ProductReadinessCondition = {
+  key:
+    | "product_enabled"
+    | "lifecycle_permits_operation"
+    | "name_present"
+    | "slug_valid"
+    | "sku_present"
+    | "product_type_present"
+    | "category_assigned"
+    | "primary_site_assigned"
+    | "site_assignment_enabled"
+    | "required_description_present"
+    | "required_specifications_present"
+    | "primary_image_present"
+    | "manufacturer_present_or_exception"
+    | "site_active"
+    | "site_publishability_compatible"
+    | "visibility_compatible"
+    | "required_profile_references_present"
+    | "user_has_permission";
+  passed: boolean;
+  details: string;
+};
+
+export type ProductReadinessStatus = "ready" | "blocked" | "warning";
+
+export type ProductReadinessResult = {
+  ready: boolean;
+  status: ProductReadinessStatus;
+  blockingReasons: readonly string[];
+  warnings: readonly string[];
+  checkedConditions: readonly ProductReadinessCondition[];
+  checkedAt: string;
+};
+
+export type ProductValidationIssue = {
+  field: string;
+  message: string;
+};
+
+export type ProductValidationResult = {
+  valid: boolean;
+  issues: readonly ProductValidationIssue[];
+};
+
+export type NewProductInput = Omit<
+  ProductConfiguration,
+  | "productId"
+  | "lifecycleState"
+  | "catalogStatus"
+  | "enabled"
+  | "visibility"
+  | "featured"
+  | "createdAt"
+  | "updatedAt"
+  | "publishedAt"
+>;
+
+export type UpdateProductInput = Partial<
+  Omit<
+    ProductConfiguration,
+    "productId" | "organizationId" | "createdAt" | "businessGenomeObjectReference"
+  >
+>;
+
+export type ProductListFilters = {
+  organizationId?: string;
+  siteId?: string;
+  lifecycleState?: ProductLifecycleState;
+  catalogStatus?: ProductCatalogStatus;
+  visibility?: ProductVisibilityState;
+  categoryId?: string;
+  manufacturerId?: string;
+  query?: string;
+};
+
+export type ProductActivityType =
+  | "product_created"
+  | "product_updated"
+  | "product_archived"
+  | "category_assigned"
+  | "manufacturer_assigned"
+  | "site_assigned"
+  | "specification_changed"
+  | "product_readiness_evaluated";
+
+export type ProductActivityRecord = {
+  activityId: string;
+  productId: string;
+  organizationId: string;
+  type: ProductActivityType;
+  actor: string;
+  createdAt: string;
+  summary: string;
+};
+
 export type EnterpriseSearchItem = {
   id: string;
   title: string;
   subtitle: string;
   href: string;
   scope: SearchScope;
+  resultType?: "product" | "category" | "manufacturer" | "generic";
+  supportingIdentifier?: string;
+  readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";
   requiredPermissions?: readonly PermissionAction[];
 };
 

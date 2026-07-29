@@ -72,3 +72,8 @@ The multi-site architecture preserves tenant isolation while keeping platform-le
 3. Deterministic readiness and publishing guard logic is implemented with explainable blocking conditions.
 4. Secondary Test Site is represented as disabled/not-configured and cannot publish.
 5. No runtime publication, credential resolution, or workflow execution authority was introduced.
+
+## GCP-0002D Integration Delta
+1. Product records now include explicit site assignments scoped to site identifiers.
+2. Product readiness checks now consume site enabled/publishability state as bounded dependencies.
+3. Product catalog routes do not mutate site runtime authority and preserve site governance boundaries.

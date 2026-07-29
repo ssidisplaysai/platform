@@ -133,3 +133,16 @@ Constraints preserved:
 1. No raw credential storage
 2. No runtime publication execution
 3. No marketing/workflow/analytics authority migration
+
+## GCP-0002D Product and Catalog Foundation Status
+Implemented commerce module foundations in bounded form:
+1. Product, category, manufacturer, assignment, and specification contracts
+2. Fixture-backed product/category/manufacturer repositories with validation
+3. Product list/detail/settings/sites/specifications route foundations
+4. Product create/update/readiness API foundations with role-based authorization
+5. Deterministic product readiness and publishing guard contracts
+
+Constraints preserved:
+1. No pricing/inventory/customer/order runtime implementation
+2. No external publication execution
+3. No secret storage in product/catalog records
