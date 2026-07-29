@@ -1,34 +1,33 @@
 # Genesis Commerce Platform Repository and Persistence Assessment
 
 ## Repository Model Summary
-- Site, product, inventory, profile, and customer repositories are fixture-seeded in-memory map stores.
-- Mutations are process-local.
-- No durable database transaction boundary is implemented.
+- Site, product, inventory, profile, and customer repositories are durable state repositories backed by revisioned persistence envelopes.
+- Mutations execute against in-memory working maps and are committed to durable storage per repository namespace.
+- Inventory multi-step writes use snapshot rollback + durable commit sequencing.
 
 ## Persistence Characteristics
-- Durability: none beyond process lifetime.
-- Concurrency control: no lock/version conflict control beyond local map mutation ordering.
-- Idempotency: partial support (inventory movement idempotency key map), not universal across domains.
-- Atomicity: multi-entity writes are not wrapped in transactional units.
-- Isolation: no cross-request transactional isolation guarantees.
-- Recovery: restart resets to fixture baseline.
+- Durability: yes, through persisted repository state envelopes.
+- Concurrency control: optimistic revision token checking through expectedRevision commits.
+- Idempotency: partial support remains (inventory movement idempotency key map), unchanged from bounded scope.
+- Atomicity: repository-local snapshot rollback and commit semantics implemented; inventory multi-step flows are transaction-safe.
+- Isolation: bounded repository-local isolation with optimistic commit conflict protection.
+- Recovery: process restart reloads durable state; deterministic fixture reset remains available for test/dev.
 
 ## Domain-Specific Notes
-- Inventory includes strong bounded safeguards (state checks, reversal controls, reservation flow), but still non-durable.
-- Customer/contact/address synchronization rules are deterministic but not transactionally protected.
-- Profile assignment inheritance is deterministic but in-memory only.
+- Inventory preserves state checks/reversal/reservation safeguards and now persists with rollback semantics.
+- Customer/contact/address synchronization remains deterministic and now persists durably.
+- Profile assignment inheritance remains deterministic and now persists durably.
 
 ## Quote Readiness Impact
-- Current persistence boundary is adequate for bounded foundation demonstrations and tests.
-- Current persistence boundary is unsafe for transactional aggregates.
-- Quotes SHALL NOT begin on this persistence layer without a durable transactional replacement.
+- Current persistence boundary is durable and transaction-foundation capable for bounded foundation progression.
+- Quote aggregate design remains separately gated by package scope and explicit quote-domain authorization.
+- This assessment closes the durability blocker only; it does not authorize quote feature implementation.
 
-## Required Preconditions Before GCP-0002H
-1. Introduce durable persistence layer for organization/site/product/inventory/customer/profile entities.
-2. Add transactional guarantees for inventory reservation/fulfillment and future quote operations.
-3. Define idempotency strategy for quote creation/update APIs.
-4. Establish migration strategy from fixture stores to durable repository implementations.
+## Implemented Preconditions in R1B
+1. Durable persistence layer introduced for organization/site/product/inventory/customer/profile entities.
+2. Transactional guarantees added for inventory reservation/fulfillment and reversal flows.
+3. Persistence migration artifacts and test report produced for durable foundation boundary.
 
 ## Assessment Decision
-- Foundation repository boundary status: Adequate only for development and bounded architecture validation.
-- Transactional suitability: Not ready.
+- Foundation repository boundary status: Durable and bounded-transaction ready.
+- Transactional suitability: Ready for subsequent bounded foundation packages.

@@ -11,6 +11,12 @@ import {
   FOUNDATION_INVENTORY_STOCK,
 } from "./inventory-fixtures";
 import {
+  deepClone,
+  loadPersistedState,
+  resetPersistedState,
+  savePersistedState,
+} from "./foundation-persistence";
+import {
   validateInventoryLocationHierarchy,
   validateMovementInput,
   validateNonNegativeQuantities,
@@ -33,6 +39,17 @@ import type {
   ProductConfiguration,
 } from "./types";
 
+const PERSISTENCE_NAMESPACE = "inventory-repository";
+
+type InventoryRepositoryState = {
+  locations: InventoryLocationConfiguration[];
+  stocks: InventoryStockRecord[];
+  movements: InventoryMovementRecord[];
+  reservations: InventoryReservationRecord[];
+  counts: InventoryCountRecord[];
+  movementIdempotency: [string, string][];
+};
+
 const locationStore = new Map<string, InventoryLocationConfiguration>();
 const stockStore = new Map<string, InventoryStockRecord>();
 const movementStore = new Map<string, InventoryMovementRecord>();
@@ -41,36 +58,83 @@ const countStore = new Map<string, InventoryCountRecord>();
 
 const movementIdempotencyStore = new Map<string, string>();
 
-function seedStores(): void {
+function createSeedState(): InventoryRepositoryState {
+  return {
+    locations: FOUNDATION_INVENTORY_LOCATIONS.map((location) => deepClone(location)),
+    stocks: FOUNDATION_INVENTORY_STOCK.map((stock) => deepClone(stock)),
+    movements: FOUNDATION_INVENTORY_MOVEMENTS.map((movement) => deepClone(movement)),
+    reservations: FOUNDATION_INVENTORY_RESERVATIONS.map((reservation) => deepClone(reservation)),
+    counts: FOUNDATION_INVENTORY_COUNTS.map((count) => deepClone(count)),
+    movementIdempotency: [],
+  };
+}
+
+function applyState(state: InventoryRepositoryState): void {
   locationStore.clear();
-  FOUNDATION_INVENTORY_LOCATIONS.forEach((location) => {
-    locationStore.set(location.locationId, { ...location });
+  state.locations.forEach((location) => {
+    locationStore.set(location.locationId, deepClone(location));
   });
 
   stockStore.clear();
-  FOUNDATION_INVENTORY_STOCK.forEach((stock) => {
-    stockStore.set(stock.inventoryRecordId, { ...stock });
+  state.stocks.forEach((stock) => {
+    stockStore.set(stock.inventoryRecordId, deepClone(stock));
   });
 
   movementStore.clear();
-  FOUNDATION_INVENTORY_MOVEMENTS.forEach((movement) => {
-    movementStore.set(movement.movementId, { ...movement });
+  state.movements.forEach((movement) => {
+    movementStore.set(movement.movementId, deepClone(movement));
   });
 
   reservationStore.clear();
-  FOUNDATION_INVENTORY_RESERVATIONS.forEach((reservation) => {
-    reservationStore.set(reservation.reservationId, { ...reservation });
+  state.reservations.forEach((reservation) => {
+    reservationStore.set(reservation.reservationId, deepClone(reservation));
   });
 
   countStore.clear();
-  FOUNDATION_INVENTORY_COUNTS.forEach((count) => {
-    countStore.set(count.countId, { ...count });
+  state.counts.forEach((count) => {
+    countStore.set(count.countId, deepClone(count));
   });
 
   movementIdempotencyStore.clear();
+  state.movementIdempotency.forEach(([key, movementId]) => {
+    movementIdempotencyStore.set(key, movementId);
+  });
 }
 
-seedStores();
+function snapshotState(): InventoryRepositoryState {
+  return {
+    locations: Array.from(locationStore.values()).map((location) => deepClone(location)),
+    stocks: Array.from(stockStore.values()).map((stock) => deepClone(stock)),
+    movements: Array.from(movementStore.values()).map((movement) => deepClone(movement)),
+    reservations: Array.from(reservationStore.values()).map((reservation) => deepClone(reservation)),
+    counts: Array.from(countStore.values()).map((count) => deepClone(count)),
+    movementIdempotency: Array.from(movementIdempotencyStore.entries()),
+  };
+}
+
+let stateRevision = 0;
+
+function loadStateFromPersistence(): void {
+  const loaded = loadPersistedState<InventoryRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+
+  applyState(loaded.state);
+  stateRevision = loaded.revision;
+}
+
+function persistCurrentState(): void {
+  const saved = savePersistedState<InventoryRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    state: snapshotState(),
+    expectedRevision: stateRevision,
+  });
+
+  stateRevision = saved.revision;
+}
+
+loadStateFromPersistence();
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -468,6 +532,8 @@ export function createInventoryMovement(input: NewInventoryMovementInput): {
     };
   }
 
+  const stateBeforeMutation = snapshotState();
+
   try {
     const product = requireProduct(input.organizationId, input.productId);
 
@@ -557,8 +623,11 @@ export function createInventoryMovement(input: NewInventoryMovementInput): {
       movementIdempotencyStore.set(input.idempotencyKey, movementId);
     }
 
+    persistCurrentState();
+
     return { validation, movement };
   } catch (error) {
+    applyState(stateBeforeMutation);
     return {
       validation: {
         valid: false,
@@ -634,30 +703,45 @@ export function reverseInventoryMovement(input: {
     evidenceReference: null,
   };
 
+  const stateBeforeReversal = snapshotState();
+
   const result = createInventoryMovement(reverseInput);
   if (!result.validation.valid || !result.movement) {
     return result;
   }
 
-  const reversed: InventoryMovementRecord = {
-    ...result.movement,
-    movementType: "reversal",
-    reversedMovementId: original.movementId,
-    referenceType: "movement_reversal",
-  };
+  try {
+    const reversed: InventoryMovementRecord = {
+      ...result.movement,
+      movementType: "reversal",
+      reversedMovementId: original.movementId,
+      referenceType: "movement_reversal",
+    };
 
-  movementStore.set(reversed.movementId, reversed);
+    movementStore.set(reversed.movementId, reversed);
 
-  const updatedOriginal: InventoryMovementRecord = {
-    ...original,
-    status: "reversed",
-  };
-  movementStore.set(original.movementId, updatedOriginal);
+    const updatedOriginal: InventoryMovementRecord = {
+      ...original,
+      status: "reversed",
+    };
+    movementStore.set(original.movementId, updatedOriginal);
 
-  return {
-    validation: { valid: true, issues: [] },
-    movement: reversed,
-  };
+    persistCurrentState();
+
+    return {
+      validation: { valid: true, issues: [] },
+      movement: reversed,
+    };
+  } catch (error) {
+    applyState(stateBeforeReversal);
+    return {
+      validation: {
+        valid: false,
+        issues: [{ field: "reversal", message: (error as Error).message }],
+      },
+      movement: null,
+    };
+  }
 }
 
 export function createInventoryReservation(input: NewInventoryReservationInput): {
@@ -668,6 +752,8 @@ export function createInventoryReservation(input: NewInventoryReservationInput):
   if (!validation.valid) {
     return { validation, reservation: null };
   }
+
+  const stateBeforeMutation = snapshotState();
 
   try {
     const product = requireProduct(input.organizationId, input.productId);
@@ -748,8 +834,11 @@ export function createInventoryReservation(input: NewInventoryReservationInput):
     };
     movementStore.set(movementId, movement);
 
+    persistCurrentState();
+
     return { validation, reservation };
   } catch (error) {
+    applyState(stateBeforeMutation);
     return {
       validation: {
         valid: false,
@@ -800,6 +889,8 @@ export function releaseInventoryReservation(input: {
     };
   }
 
+  const stateBeforeMutation = snapshotState();
+
   try {
     const product = requireProduct(reservation.organizationId, reservation.productId);
     const location = requireLocation(reservation.organizationId, reservation.locationId);
@@ -828,11 +919,14 @@ export function releaseInventoryReservation(input: {
 
     reservationStore.set(updatedReservation.reservationId, updatedReservation);
 
+    persistCurrentState();
+
     return {
       validation: { valid: true, issues: [] },
       reservation: updatedReservation,
     };
   } catch (error) {
+    applyState(stateBeforeMutation);
     return {
       validation: {
         valid: false,
@@ -887,6 +981,8 @@ export function fulfillInventoryReservation(input: {
     };
   }
 
+  const stateBeforeMutation = snapshotState();
+
   const movementResult = createInventoryMovement({
     organizationId: reservation.organizationId,
     productId: reservation.productId,
@@ -923,6 +1019,20 @@ export function fulfillInventoryReservation(input: {
 
   reservationStore.set(updatedReservation.reservationId, updatedReservation);
 
+  try {
+    persistCurrentState();
+  } catch (error) {
+    applyState(stateBeforeMutation);
+    return {
+      validation: {
+        valid: false,
+        issues: [{ field: "fulfillment", message: (error as Error).message }],
+      },
+      reservation: null,
+      movement: null,
+    };
+  }
+
   return {
     validation: { valid: true, issues: [] },
     reservation: updatedReservation,
@@ -931,6 +1041,7 @@ export function fulfillInventoryReservation(input: {
 }
 
 export function expireInventoryReservations(asOf: string): number {
+  const stateBeforeMutation = snapshotState();
   let expired = 0;
 
   Array.from(reservationStore.values()).forEach((reservation) => {
@@ -953,6 +1064,15 @@ export function expireInventoryReservations(asOf: string): number {
       }
     }
   });
+
+  if (expired > 0) {
+    try {
+      persistCurrentState();
+    } catch {
+      applyState(stateBeforeMutation);
+      return 0;
+    }
+  }
 
   return expired;
 }
@@ -1153,7 +1273,21 @@ export function createInventoryCount(input: {
     adjustmentReference: null,
   };
 
-  countStore.set(count.countId, count);
+  const stateBeforeMutation = snapshotState();
+
+  try {
+    countStore.set(count.countId, count);
+    persistCurrentState();
+  } catch (error) {
+    applyState(stateBeforeMutation);
+    return {
+      validation: {
+        valid: false,
+        issues: [{ field: "count", message: (error as Error).message }],
+      },
+      count: null,
+    };
+  }
 
   return {
     validation: { valid: true, issues: [] },
@@ -1211,6 +1345,7 @@ export function applyInventoryCount(input: {
   }
 
   const product = requireProduct(count.organizationId, count.productId);
+  const stateBeforeMutation = snapshotState();
   stock.onHandQuantity = count.countedQuantity;
   stock.lastCountedAt = nowIso();
   stock.lastMovementAt = nowIso();
@@ -1225,7 +1360,19 @@ export function applyInventoryCount(input: {
     timestamp: nowIso(),
   };
 
-  countStore.set(count.countId, updatedCount);
+  try {
+    countStore.set(count.countId, updatedCount);
+    persistCurrentState();
+  } catch (error) {
+    applyState(stateBeforeMutation);
+    return {
+      validation: {
+        valid: false,
+        issues: [{ field: "count", message: (error as Error).message }],
+      },
+      count: null,
+    };
+  }
 
   return {
     validation: { valid: true, issues: [] },
@@ -1332,5 +1479,11 @@ export function resolveSiteForInventoryLocation(locationId: string): string | nu
 }
 
 export function resetInventoryRepositoryForTests(): void {
-  seedStores();
+  const reset = resetPersistedState<InventoryRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+
+  applyState(reset.state);
+  stateRevision = reset.revision;
 }

@@ -4,6 +4,7 @@ import { GET as getProductById, PATCH as patchProduct } from "@/app/api/products
 import { GET as getProductReadiness } from "@/app/api/products/[productId]/readiness/route";
 import { GET as getCategories, POST as postCategories } from "@/app/api/categories/route";
 import { GET as getManufacturers, POST as postManufacturers } from "@/app/api/manufacturers/route";
+import { resetProductRepositoryForTests } from "@/modules/foundation/product-repository";
 
 function jsonRequest(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
@@ -30,6 +31,10 @@ function authHeaders(input: {
 }
 
 describe("GCP-0002D product API authorization and behavior", () => {
+  beforeEach(() => {
+    resetProductRepositoryForTests();
+  });
+
   test("GET /api/products requires auth and scope headers", async () => {
     const noAuth = await getProducts(jsonRequest("http://localhost/api/products"));
     expect(noAuth.status).toBe(401);

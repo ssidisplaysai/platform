@@ -4,6 +4,12 @@ import {
   FOUNDATION_PRODUCTS,
 } from "./catalog-fixtures";
 import {
+  deepClone,
+  loadPersistedState,
+  resetPersistedState,
+  savePersistedState,
+} from "./foundation-persistence";
+import {
   validateCategoryHierarchy,
   validateManufacturerReference,
   validateNewProductInput,
@@ -18,17 +24,74 @@ import type {
   UpdateProductInput,
 } from "./types";
 
-const productStore = new Map<string, ProductConfiguration>(
-  FOUNDATION_PRODUCTS.map((product) => [product.productId, product]),
-);
+const PERSISTENCE_NAMESPACE = "product-repository";
 
-const categoryStore = new Map<string, ProductCategory>(
-  FOUNDATION_CATEGORIES.map((category) => [category.categoryId, category]),
-);
+type ProductRepositoryState = {
+  products: ProductConfiguration[];
+  categories: ProductCategory[];
+  manufacturers: ProductManufacturer[];
+};
 
-const manufacturerStore = new Map<string, ProductManufacturer>(
-  FOUNDATION_MANUFACTURERS.map((manufacturer) => [manufacturer.manufacturerId, manufacturer]),
-);
+const productStore = new Map<string, ProductConfiguration>();
+const categoryStore = new Map<string, ProductCategory>();
+const manufacturerStore = new Map<string, ProductManufacturer>();
+
+function createSeedState(): ProductRepositoryState {
+  return {
+    products: FOUNDATION_PRODUCTS.map((product) => deepClone(product)),
+    categories: FOUNDATION_CATEGORIES.map((category) => deepClone(category)),
+    manufacturers: FOUNDATION_MANUFACTURERS.map((manufacturer) => deepClone(manufacturer)),
+  };
+}
+
+function applyState(state: ProductRepositoryState): void {
+  productStore.clear();
+  state.products.forEach((product) => {
+    productStore.set(product.productId, deepClone(product));
+  });
+
+  categoryStore.clear();
+  state.categories.forEach((category) => {
+    categoryStore.set(category.categoryId, deepClone(category));
+  });
+
+  manufacturerStore.clear();
+  state.manufacturers.forEach((manufacturer) => {
+    manufacturerStore.set(manufacturer.manufacturerId, deepClone(manufacturer));
+  });
+}
+
+function snapshotState(): ProductRepositoryState {
+  return {
+    products: Array.from(productStore.values()).map((product) => deepClone(product)),
+    categories: Array.from(categoryStore.values()).map((category) => deepClone(category)),
+    manufacturers: Array.from(manufacturerStore.values()).map((manufacturer) =>
+      deepClone(manufacturer),
+    ),
+  };
+}
+
+let stateRevision = 0;
+
+function loadStateFromPersistence(): void {
+  const loaded = loadPersistedState<ProductRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+  applyState(loaded.state);
+  stateRevision = loaded.revision;
+}
+
+function persistCurrentState(): void {
+  const saved = savePersistedState<ProductRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    state: snapshotState(),
+    expectedRevision: stateRevision,
+  });
+  stateRevision = saved.revision;
+}
+
+loadStateFromPersistence();
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -133,6 +196,7 @@ export function createProduct(input: NewProductInput): {
   };
 
   productStore.set(productId, product);
+  persistCurrentState();
   return { validation, product };
 }
 
@@ -196,9 +260,19 @@ export function updateProduct(
   };
 
   productStore.set(productId, updated);
+  persistCurrentState();
   return { validation, product: updated };
 }
 
 export function validateCategories(): ProductValidationResult {
   return validateCategoryHierarchy(listCategories());
+}
+
+export function resetProductRepositoryForTests(): void {
+  const reset = resetPersistedState<ProductRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+  applyState(reset.state);
+  stateRevision = reset.revision;
 }

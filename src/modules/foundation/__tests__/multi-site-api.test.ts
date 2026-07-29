@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { GET as getSites } from "@/app/api/sites/route";
 import { GET as getSiteById, PATCH as patchSite } from "@/app/api/sites/[siteId]/route";
+import { resetSiteRepositoryForTests } from "@/modules/foundation/site-repository";
 
 function request(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
@@ -27,6 +28,10 @@ function authHeaders(input: {
 }
 
 describe("GCP-0002C site API authorization conformance", () => {
+  beforeEach(() => {
+    resetSiteRepositoryForTests();
+  });
+
   test("site collection read requires authentication and capability", async () => {
     const noAuth = await getSites(request("http://localhost/api/sites"));
     expect(noAuth.status).toBe(401);

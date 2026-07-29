@@ -1,19 +1,27 @@
 # Genesis Commerce Platform Transactional Readiness Decision
 
 ## Decision
-NOT READY - REMEDIATION REQUIRED
+READY FOR BOUNDED FOUNDATION PROGRESSION
 
 ## Rationale
-1. Persistence model is in-memory, non-durable, and non-transactional across all foundation repositories.
-2. Read API authorization is inconsistent with declared permission model on selected endpoints.
-3. Repository-wide baseline failures remain substantial and unresolved in broader domains, increasing integration risk for new aggregates.
+1. Authorization conformance blocker (F001) was closed in R1A with strict route-level capability and scope enforcement.
+2. Persistence durability blocker (F002) was closed in R1B through durable revisioned repository state and rollback-capable inventory mutation model.
+3. Focused foundation validation and scoped lint pass with no new regressions in GCP bounded scope.
+4. Repository-wide baseline failures remain outside GCP-0002M1 bounded scope and are tracked as pre-existing debt.
 
-## Preconditions Required For Readiness
-1. Complete GCP-0002M1-R1 remediation for authorization conformance and persistence prerequisites.
-2. Re-run foundation and repository validation matrix with no new regressions in GCP scope.
-3. Certify transactional persistence and idempotency strategy before quote aggregate design starts.
+## Preconditions Status
+1. GCP-0002M1-R1A authorization conformance: COMPLETE.
+2. GCP-0002M1-R1B durable persistence and transaction foundation: COMPLETE.
+3. Focused foundation and persistence validation matrix: COMPLETE.
+
+## Guardrails Preserved
+1. This readiness decision does not authorize implementation of quote/order/payment/invoice features.
+2. Future aggregate package authorization remains separately governed.
 
 ## Related Artifacts
 - Genesis-Commerce-Platform-Repository-and-Persistence-Assessment.md
 - Genesis-Commerce-Platform-Foundation-Audit-Findings.md
 - GCP-0002M1-R1-Remediation-Recommendation.md
+- GCP-0002M1-R1B-Durable-Persistence-Remediation.md
+- Genesis-Commerce-Platform-Transaction-Model.md
+- Genesis-Commerce-Platform-Persistence-Test-Report.md

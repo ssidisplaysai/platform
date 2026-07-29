@@ -4,6 +4,12 @@ import {
   FOUNDATION_INTEGRATION_PROFILE_ASSIGNMENTS,
   FOUNDATION_INTEGRATION_PROFILES,
 } from "./integration-profile-fixtures";
+import {
+  deepClone,
+  loadPersistedState,
+  resetPersistedState,
+  savePersistedState,
+} from "./foundation-persistence";
 import { evaluateIntegrationProfileReadiness } from "./integration-profile-readiness";
 import {
   validateNewIntegrationProfileInput,
@@ -24,8 +30,77 @@ import type {
   UpdateIntegrationProfileInput,
 } from "./types";
 
+const PERSISTENCE_NAMESPACE = "integration-profile-repository";
+
+type IntegrationProfileRepositoryState = {
+  profiles: IntegrationProfileConfiguration[];
+  assignments: IntegrationProfileAssignmentRecord[];
+};
+
 const profileStore = new Map<string, IntegrationProfileConfiguration>();
 const assignmentStore = new Map<string, IntegrationProfileAssignmentRecord>();
+
+function createSeedState(): IntegrationProfileRepositoryState {
+  return {
+    profiles: FOUNDATION_INTEGRATION_PROFILES.map((profile) => ({
+      ...deepClone(profile),
+      assignedSiteIds: [...profile.assignedSiteIds],
+      references: { ...profile.references },
+    })),
+    assignments: FOUNDATION_INTEGRATION_PROFILE_ASSIGNMENTS.map((assignment) =>
+      deepClone(assignment),
+    ),
+  };
+}
+
+function applyState(state: IntegrationProfileRepositoryState): void {
+  profileStore.clear();
+  state.profiles.forEach((profile) => {
+    profileStore.set(profile.profileId, {
+      ...deepClone(profile),
+      assignedSiteIds: [...profile.assignedSiteIds],
+      references: { ...profile.references },
+    });
+  });
+
+  assignmentStore.clear();
+  state.assignments.forEach((assignment) => {
+    assignmentStore.set(assignment.assignmentId, deepClone(assignment));
+  });
+}
+
+function snapshotState(): IntegrationProfileRepositoryState {
+  return {
+    profiles: Array.from(profileStore.values()).map((profile) => ({
+      ...deepClone(profile),
+      assignedSiteIds: [...profile.assignedSiteIds],
+      references: { ...profile.references },
+    })),
+    assignments: Array.from(assignmentStore.values()).map((assignment) => deepClone(assignment)),
+  };
+}
+
+let stateRevision = 0;
+
+function loadStateFromPersistence(): void {
+  const loaded = loadPersistedState<IntegrationProfileRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+
+  applyState(loaded.state);
+  stateRevision = loaded.revision;
+}
+
+function persistCurrentState(): void {
+  const saved = savePersistedState<IntegrationProfileRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    state: snapshotState(),
+    expectedRevision: stateRevision,
+  });
+
+  stateRevision = saved.revision;
+}
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -40,23 +115,7 @@ function createAssignmentId(input: {
   return `profile-assignment-${input.organizationId}-${input.targetType}-${input.targetId}-${input.profileType}`;
 }
 
-function seedStores(): void {
-  profileStore.clear();
-  FOUNDATION_INTEGRATION_PROFILES.forEach((profile) => {
-    profileStore.set(profile.profileId, {
-      ...profile,
-      assignedSiteIds: [...profile.assignedSiteIds],
-      references: { ...profile.references },
-    });
-  });
-
-  assignmentStore.clear();
-  FOUNDATION_INTEGRATION_PROFILE_ASSIGNMENTS.forEach((assignment) => {
-    assignmentStore.set(assignment.assignmentId, { ...assignment });
-  });
-}
-
-seedStores();
+loadStateFromPersistence();
 
 function profileMatchesFilters(
   profile: IntegrationProfileConfiguration,
@@ -196,6 +255,7 @@ export function createIntegrationProfile(input: NewIntegrationProfileInput): {
   };
 
   profileStore.set(profile.profileId, profile);
+  persistCurrentState();
   return { validation, profile };
 }
 
@@ -234,6 +294,7 @@ export function updateIntegrationProfile(
   };
 
   profileStore.set(profileId, updated);
+  persistCurrentState();
   return { validation, profile: updated };
 }
 
@@ -504,6 +565,7 @@ export function upsertProfileAssignment(input: {
   };
 
   assignmentStore.set(assignmentId, assignment);
+  persistCurrentState();
   return {
     validation: { valid: true, issues: [] },
     assignment,
@@ -511,5 +573,11 @@ export function upsertProfileAssignment(input: {
 }
 
 export function resetIntegrationProfileRepositoryForTests(): void {
-  seedStores();
+  const reset = resetPersistedState<IntegrationProfileRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+
+  applyState(reset.state);
+  stateRevision = reset.revision;
 }
