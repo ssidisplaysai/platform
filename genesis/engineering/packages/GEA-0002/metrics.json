@@ -1,0 +1,23 @@
+{
+  "counts": {
+    "markdownArtifacts": 30,
+    "jsonArtifacts": 5,
+    "totalArtifacts": 35,
+    "requiredEntityTypes": 26,
+    "requiredRelationshipClasses": 10,
+    "requiredAuthorityClasses": 4,
+    "requiredDomainCoverage": 27,
+    "validationGates": 32,
+    "validationChecks": 38
+  },
+  "status": {
+    "packageCompleteness": "PASS",
+    "jsonIntegrity": "PASS",
+    "architectureCoverage": "PASS",
+    "traceabilityPkgScope": "PASS",
+    "traceabilityArchitectureScope": "PASS",
+    "traceabilityRuntimeScope": "NOT APPLICABLE",
+    "traceabilityOutputScope": "NOT APPLICABLE",
+    "implementationArtifacts": "PASS"
+  }
+}

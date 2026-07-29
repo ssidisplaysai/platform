@@ -1,0 +1,25 @@
+{
+  "packageId": "GEPKG-GEA-0002-v0.1.0",
+  "subjectId": "GEA-0002",
+  "subjectTitle": "Genesis Atlas Compiler Architecture",
+  "subjectType": "AtlasCompilerArchitecturePackage",
+  "version": "0.1.0",
+  "status": "CompletePendingArchitectureReview",
+  "generatedAt": "2026-07-29T00:00:00Z",
+  "constraints": [
+    "Architecture only",
+    "No compiler implementation",
+    "Additive and immutable-source preserving"
+  ],
+  "artifacts": {
+    "readme": "README.md",
+    "numbered": 29,
+    "json": [
+      "package.json",
+      "metrics.json",
+      "validation.json",
+      "traceability.json",
+      "repository-impact.json"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "specificationSource": "genesis/engineering/packages/GEA-0001/00-package-manifest.md",
+  "authoritySources": [
+    "genesis/CONSTITUTION.md",
+    "genesis/specifications/GSP-0001-Specification-Governance-v1.0.md",
+    "genesis/architecture/standards.md",
+    "genesis/architecture/freezes/AFR-0004-Genesis-Runtime-Foundation-Freeze-v1.0.md",
+    "genesis/architecture/freezes/AFR-0007-Genesis-Constitutional-Release-1.0.md",
+    "genesis/architecture/framework/GAF-0001-Genesis-Architectural-Framework.md",
+    "genesis/engineering/packages/GEAF-0001/00-package-manifest.md",
+    "genesis/engineering/packages/GCAP-0001/00-package-manifest.md",
+    "genesis/compiler/BGC-0001-Business-Genome-Compiler-Architecture-v1.0.md",
+    "docs/architecture/GCF-0001_Genesis_Compiler_Framework_Specification_v1.md",
+    "GCF-VR-0001_Compiler_Kernel_Validation_Report.md",
+    "GENESIS-ENTERPRISE-FOUNDATION-V1.0-RELEASE.md",
+    "GENESIS-ENTERPRISE-FOUNDATION-V1.0-CERTIFICATE.md",
+    "genesis/engineering/packages/GEA-0001/19-relationship-framework.md",
+    "genesis/engineering/packages/GEA-0001/20-boundary-enforcement.md"
+  ],
+  "lineageNote": "GEA-0002 consumes GEA-0001 semantics and defines compiler architecture to instantiate Atlas evidence mappings.",
+  "traceabilityDepth": "artifact-level",
+  "traceabilityScopes": {
+    "TRACE-PKG-001": {
+      "scope": "Architecture package source traceability",
+      "result": "PASS"
+    },
+    "TRACE-ARCH-001": {
+      "scope": "Traceability architecture completeness",
+      "result": "PASS"
+    },
+    "TRACE-RUNTIME-001": {
+      "scope": "Compiled node and edge provenance",
+      "result": "NOT APPLICABLE"
+    },
+    "TRACE-OUTPUT-001": {
+      "scope": "Generated Atlas traceability integrity",
+      "result": "NOT APPLICABLE"
+    }
+  }
+}

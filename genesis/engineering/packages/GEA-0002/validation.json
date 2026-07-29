@@ -1,0 +1,157 @@
+{
+  "validationReport": "28-validation-report.md",
+  "checks": [
+    {
+      "name": "readme-presence",
+      "result": "PASS"
+    },
+    {
+      "name": "numbered-artifact-continuity",
+      "result": "PASS"
+    },
+    {
+      "name": "total-artifact-count",
+      "result": "PASS"
+    },
+    {
+      "name": "json-parse",
+      "result": "PASS"
+    },
+    {
+      "name": "duplicate-identifier-detection",
+      "result": "PASS"
+    },
+    {
+      "name": "placeholder-detection",
+      "result": "PASS"
+    },
+    {
+      "name": "temporary-file-detection",
+      "result": "PASS"
+    },
+    {
+      "name": "cross-reference-integrity",
+      "result": "PASS"
+    },
+    {
+      "name": "broken-path-detection",
+      "result": "PASS"
+    },
+    {
+      "name": "traceability-integrity",
+      "result": "PASS"
+    },
+    {
+      "name": "trace-pkg-001-architecture-package-source-traceability",
+      "result": "PASS"
+    },
+    {
+      "name": "trace-arch-001-traceability-architecture-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "trace-runtime-001-compiled-node-edge-provenance",
+      "result": "NOT APPLICABLE"
+    },
+    {
+      "name": "trace-output-001-generated-atlas-traceability-integrity",
+      "result": "NOT APPLICABLE"
+    },
+    {
+      "name": "terminology-consistency",
+      "result": "PASS"
+    },
+    {
+      "name": "entity-model-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "relationship-model-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "ownership-model-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "entity-model-consistency",
+      "result": "PASS"
+    },
+    {
+      "name": "relationship-model-consistency",
+      "result": "PASS"
+    },
+    {
+      "name": "ownership-model-consistency",
+      "result": "PASS"
+    },
+    {
+      "name": "authority-classification-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "domain-coverage-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "validation-model-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "determinism-model-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "determinism-model-consistency",
+      "result": "PASS"
+    },
+    {
+      "name": "failure-model-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "boundary-integrity",
+      "result": "PASS"
+    },
+    {
+      "name": "repository-impact-integrity",
+      "result": "PASS"
+    },
+    {
+      "name": "no-unauthorized-implementation-artifacts",
+      "result": "PASS"
+    },
+    {
+      "name": "stale-evidence-policy-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "query-contract-matrix-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "output-contract-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "compatibility-criteria-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "traceability-scope-clarity",
+      "result": "PASS"
+    },
+    {
+      "name": "parser-precedence-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "diagnostic-ordering-completeness",
+      "result": "PASS"
+    },
+    {
+      "name": "validation-stage-blocking-completeness",
+      "result": "PASS"
+    }
+  ]
+}
