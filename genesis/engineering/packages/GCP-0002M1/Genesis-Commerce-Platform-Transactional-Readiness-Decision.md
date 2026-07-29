@@ -1,7 +1,7 @@
 # Genesis Commerce Platform Transactional Readiness Decision
 
 ## Decision
-READY FOR BOUNDED FOUNDATION PROGRESSION
+READY FOR QUOTE FOUNDATION
 
 ## Rationale
 1. Authorization conformance blocker (F001) was closed in R1A with strict route-level capability and scope enforcement.
@@ -15,8 +15,17 @@ READY FOR BOUNDED FOUNDATION PROGRESSION
 3. Focused foundation and persistence validation matrix: COMPLETE.
 
 ## Guardrails Preserved
-1. This readiness decision does not authorize implementation of quote/order/payment/invoice features.
-2. Future aggregate package authorization remains separately governed.
+1. This readiness decision authorizes quote foundation package initiation only.
+2. It does not authorize order/invoice/payment/tax/shipping implementation.
+3. Implementation boundaries remain governed by the GCP-0002H package contract.
+
+## M2 Verification Certification
+1. Foundation status: FROZEN.
+2. Certification: FOUNDATION CERTIFIED.
+3. Architecture status: CONFORMING.
+4. Persistence status: CERTIFIED.
+5. Authorization status: CERTIFIED.
+6. Commerce platform status: PRODUCTION FOUNDATION COMPLETE.
 
 ## Related Artifacts
 - Genesis-Commerce-Platform-Repository-and-Persistence-Assessment.md
@@ -25,3 +34,6 @@ READY FOR BOUNDED FOUNDATION PROGRESSION
 - GCP-0002M1-R1B-Durable-Persistence-Remediation.md
 - Genesis-Commerce-Platform-Transaction-Model.md
 - Genesis-Commerce-Platform-Persistence-Test-Report.md
+- ../GCP-0002M2/GCP-0002M2-Commerce-Foundation-Freeze-Verification.md
+- ../GCP-0002M2/Genesis-Commerce-Platform-Foundation-Certificate.md
+- ../GCP-0002M2/Genesis-Commerce-Platform-Transactional-Authorization.md
