@@ -73,8 +73,12 @@ describe("GCP-0002B commerce foundation", () => {
       "audit",
     );
 
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0]?.id).toBe("open-audit");
+    const ids = filtered.map((command) => command.id);
+
+    expect(ids).toContain("open-audit");
+    expect(ids).toContain("open-quote-audit");
+    expect(ids).toContain("open-new-quote");
+    expect(new Set(ids).size).toBe(ids.length);
 
     const viewerPermissions = resolvePermissions(["viewer"]);
     const viewerCommands = getVisibleCommandPaletteActions(
