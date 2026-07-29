@@ -56,3 +56,9 @@ Future modules should append typed navigation items with requiredPermissions and
 2. Added command actions for profile registries: Profiles, Publishing Profiles, WordPress Profiles, Workflow Profiles.
 3. Added enterprise search index entries for profile families (publishing, WordPress, workflow, prompt, image, SEO, brand, analytics).
 4. Permission gates are enforced through profiles:* capability requirements.
+
+## GCP-0002G Extension
+1. Added navigation route: Customers (/customers).
+2. Added command actions for customer account, contact, and address foundations.
+3. Added enterprise search index entries for customer registries (customers, customer accounts, customer contacts, customer addresses).
+4. Permission gates are enforced through customers:*, contacts:*, and addresses:* capability requirements.

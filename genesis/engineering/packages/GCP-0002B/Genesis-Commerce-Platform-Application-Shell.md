@@ -54,3 +54,8 @@
 1. Shell navigation now includes Profiles entry when profile read permission is present.
 2. Command palette now includes profile actions for publishing, WordPress, workflow, prompt, image, SEO, brand, and analytics registries.
 3. Existing organization/site context is reused for profile assignment, inheritance, and readiness visibility.
+
+## GCP-0002G Customer Foundation Extension
+1. Shell navigation now includes Customers entry when customer read permission is present.
+2. Command palette now includes customer actions for registry, account creation, contacts, addresses, and readiness analysis.
+3. Existing organization/site context is reused for customer account, contact, and address management surfaces.
