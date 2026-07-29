@@ -1,6 +1,12 @@
-import { glwSites } from "@/lib/glw/sites";
 import { createGenesisWorkspaceRegistry } from "./registry";
 import type { GenesisAuthorizationSubject } from "../contracts";
+
+const defaultSites = [
+  { siteId: "led-display-warehouse", name: "LED Display Warehouse", region: "Austin, TX" },
+  { siteId: "california-outdoor-led", name: "California Outdoor LED", region: "Los Angeles, CA" },
+  { siteId: "sphere-rental-dallas", name: "Sphere Rental Dallas", region: "Dallas, TX" },
+  { siteId: "projection-screen-chicago", name: "Projection Screen Chicago", region: "Chicago, IL" },
+];
 
 const registry = createGenesisWorkspaceRegistry([
   {
@@ -10,11 +16,7 @@ const registry = createGenesisWorkspaceRegistry([
     enabled: true,
     enabledModuleIds: ["glw.core"],
     defaultModuleId: "glw.core",
-    availableSites: glwSites.map((site) => ({
-      siteId: site.id,
-      name: site.name,
-      region: site.region,
-    })),
+    availableSites: defaultSites,
     featureFlags: ["gop.events", "gop.inspector"],
     branding: {
       shortName: "GLW",

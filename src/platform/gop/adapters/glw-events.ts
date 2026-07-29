@@ -1,12 +1,12 @@
-import type { GlwJobRecord, GlwJobStatus } from "@/lib/glw/jobs";
+import type { GenesisApplicationJobRecord, GenesisApplicationJobStatus } from "../contracts";
 import type { GenesisEventAppendInput, GenesisEventStore } from "../event-store";
 import type { GenesisJobStatus } from "../contracts";
 
-function mapStatus(status: GlwJobStatus): GenesisJobStatus {
+function mapStatus(status: GenesisApplicationJobStatus): GenesisJobStatus {
   return status;
 }
 
-function stageForStatus(status: GlwJobStatus): string {
+function stageForStatus(status: GenesisApplicationJobStatus): string {
   switch (status) {
     case "QUEUED":
       return "queued";
@@ -31,7 +31,7 @@ function stageForStatus(status: GlwJobStatus): string {
   }
 }
 
-function eventTypeForStatus(status: GlwJobStatus): string {
+function eventTypeForStatus(status: GenesisApplicationJobStatus): string {
   switch (status) {
     case "QUEUED":
       return "QUEUED";
@@ -52,7 +52,7 @@ function eventTypeForStatus(status: GlwJobStatus): string {
   }
 }
 
-export function createGlwEventFromJob(job: GlwJobRecord, overrides?: Partial<GenesisEventAppendInput>): GenesisEventAppendInput {
+export function createGlwEventFromJob(job: GenesisApplicationJobRecord, overrides?: Partial<GenesisEventAppendInput>): GenesisEventAppendInput {
   const eventType = eventTypeForStatus(job.status);
 
   return {
@@ -86,7 +86,7 @@ export function createGlwEventFromJob(job: GlwJobRecord, overrides?: Partial<Gen
 
 export async function emitGlwJobLifecycleEvent(
   store: GenesisEventStore | null,
-  job: GlwJobRecord,
+  job: GenesisApplicationJobRecord,
   overrides?: Partial<GenesisEventAppendInput>,
 ): Promise<void> {
   if (!store) {
@@ -96,7 +96,7 @@ export async function emitGlwJobLifecycleEvent(
   await store.appendEventIdempotently(createGlwEventFromJob(job, overrides));
 }
 
-export async function backfillGlwJobEvents(store: GenesisEventStore | null, job: GlwJobRecord): Promise<void> {
+export async function backfillGlwJobEvents(store: GenesisEventStore | null, job: GenesisApplicationJobRecord): Promise<void> {
   if (!store) {
     return;
   }

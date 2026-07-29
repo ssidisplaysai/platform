@@ -1,4 +1,7 @@
 import type {
+  GenesisApplicationJobRecord,
+  GenesisApplicationJobStatus,
+  GenesisApplicationJobType,
   GenesisJob,
   GenesisJobEvent,
   GenesisJobStatus,
@@ -6,17 +9,16 @@ import type {
   GenesisModuleManifest,
 } from "../contracts";
 import { createGenesisJobSnapshot } from "../job-engine";
-import type { GlwJobRecord, GlwJobStatus, GlwJobType } from "@/lib/glw/jobs";
 
-export function mapGlwJobTypeToGenesisJobType(jobType: GlwJobType): GenesisJobType {
+export function mapGlwJobTypeToGenesisJobType(jobType: GenesisApplicationJobType): GenesisJobType {
   return jobType;
 }
 
-export function mapGlwJobStatusToGenesisJobStatus(status: GlwJobStatus): GenesisJobStatus {
+export function mapGlwJobStatusToGenesisJobStatus(status: GenesisApplicationJobStatus): GenesisJobStatus {
   return status;
 }
 
-export function toGenesisJob(job: GlwJobRecord): GenesisJob<GenesisJobType, GlwJobRecord["input"], GlwJobRecord["result"]> {
+export function toGenesisJob(job: GenesisApplicationJobRecord): GenesisJob<GenesisJobType, GenesisApplicationJobRecord["input"], GenesisApplicationJobRecord["result"]> {
   return {
     jobId: job.id,
     type: mapGlwJobTypeToGenesisJobType(job.type),
@@ -109,7 +111,7 @@ export function buildGlwGenesisModuleManifest(): GenesisModuleManifest {
   };
 }
 
-export function snapshotGlwJobAsGenesis(job: GlwJobRecord) {
+export function snapshotGlwJobAsGenesis(job: GenesisApplicationJobRecord) {
   const genesisJob = toGenesisJob(job);
   const snapshot = createGenesisJobSnapshot(genesisJob);
 

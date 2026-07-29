@@ -1,17 +1,30 @@
-import type { GlwJobRecord } from "@/lib/glw/jobs";
-import { getGlwJobOperatorSnapshot } from "@/lib/glw/jobs";
-import type { GenesisJob, GenesisJobEvent } from "../contracts";
+import type { GenesisApplicationJobRecord, GenesisJob, GenesisJobEvent } from "../contracts";
 import type { GenesisPersistedEvent } from "../event-store";
 
-function buildTimelineEvents(job: GlwJobRecord): GenesisJobEvent[] {
-  const snapshot = getGlwJobOperatorSnapshot(job);
+const statusTimeline = [
+  { status: "QUEUED", label: "Queued" },
+  { status: "STARTING", label: "Starting" },
+  { status: "RUNNING", label: "Running" },
+  { status: "GENERATING_CONTENT", label: "Generating Content" },
+  { status: "GENERATING_IMAGE", label: "Generating Image" },
+  { status: "UPLOADING_IMAGE", label: "Uploading Image" },
+  { status: "PUBLISHING", label: "Publishing" },
+  { status: "COMPLETE", label: "Complete" },
+  { status: "FAILED", label: "Failed" },
+] as const;
 
-  return snapshot.timeline.map((entry, index) => ({
-    eventId: `${job.id}_timeline_${entry.key}`,
+function buildTimelineEvents(job: GenesisApplicationJobRecord): GenesisJobEvent[] {
+  const activeIndex = statusTimeline.findIndex((entry) => entry.status === job.status);
+  const visibleTimeline = activeIndex === -1
+    ? statusTimeline.slice(0, 1)
+    : statusTimeline.slice(0, activeIndex + 1);
+
+  return visibleTimeline.map((entry, index) => ({
+    eventId: `${job.id}_timeline_${entry.status.toLowerCase()}`,
     jobId: job.id,
     moduleId: "glw.core",
     jobType: job.type,
-    type: entry.label.toUpperCase().replaceAll(" ", "_"),
+    type: entry.status,
     label: entry.label,
     stage: entry.label.toLowerCase().replaceAll(" ", "_"),
     status: job.status,
@@ -48,7 +61,7 @@ function mapPersistedEvent(event: GenesisPersistedEvent): GenesisJobEvent {
   };
 }
 
-export function mapGlwJobToInspectorJob(job: GlwJobRecord, persistedEvents: GenesisPersistedEvent[] = []): GenesisJob {
+export function mapGlwJobToInspectorJob(job: GenesisApplicationJobRecord, persistedEvents: GenesisPersistedEvent[] = []): GenesisJob {
   const events = persistedEvents.length > 0
     ? persistedEvents.map(mapPersistedEvent)
     : buildTimelineEvents(job);

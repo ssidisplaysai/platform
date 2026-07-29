@@ -690,3 +690,90 @@ export type GenesisWorkspaceDescriptor = {
   environment?: string;
   order?: number;
 };
+
+export type GenesisApplicationJobType = "PAGE_GENERATION" | "BLOG_GENERATION";
+
+export type GenesisApplicationJobStatus =
+  | "QUEUED"
+  | "STARTING"
+  | "RUNNING"
+  | "GENERATING_CONTENT"
+  | "GENERATING_IMAGE"
+  | "UPLOADING_IMAGE"
+  | "PUBLISHING"
+  | "COMPLETE"
+  | "FAILED";
+
+export type GenesisApplicationPageJobInput = {
+  type: "page_generation";
+  site: {
+    id: string;
+    name: string;
+  };
+  page: {
+    title: string;
+    targetSlug: string;
+    primaryKeyword: string;
+    secondaryKeywords: string[];
+    wordCount: number;
+    tone: string;
+    audience: string;
+    callToAction: string;
+    category: string;
+    status: "draft" | "publish";
+  };
+  promptData: {
+    tone: string;
+    audience: string;
+    callToAction: string;
+  };
+  seoSettings: {
+    targetSlug: string;
+    primaryKeyword: string;
+    secondaryKeywords: string[];
+    category: string;
+  };
+  publishingSettings: {
+    status: "draft" | "publish";
+    wordCount: number;
+  };
+  imageSettings: {
+    generateFeaturedImage: boolean;
+    style: string;
+  };
+  callbackUrl?: string;
+};
+
+export type GenesisApplicationJobError = {
+  message: string;
+  step?: string;
+  code?: string;
+};
+
+export type GenesisApplicationJobResult = {
+  executionId: string;
+  status: GenesisApplicationJobStatus;
+  title?: string;
+  wordpressPageId?: string | number;
+  wordpressUrl?: string;
+  wordpressPostId?: string | number;
+  featuredImageUrl?: string;
+  executionTimeMs?: number;
+};
+
+export type GenesisApplicationJobRecord = {
+  id: string;
+  type: GenesisApplicationJobType;
+  status: GenesisApplicationJobStatus;
+  retryOfJobId: string | null;
+  siteId: string;
+  title: string;
+  input: GenesisApplicationPageJobInput;
+  result: GenesisApplicationJobResult | null;
+  error: GenesisApplicationJobError | null;
+  externalExecutionId: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

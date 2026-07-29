@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type { GenesisExecution, GenesisExecutionSnapshot } from "../contracts";
 import type { GenesisEventStore } from "../event-store";
-import { getPrismaClient } from "@/lib/glw/prisma";
+import { getPlatformPrismaClient } from "./prisma";
 import { replayExecutionFromSnapshotAndEvents } from "./replay-engine";
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue {
@@ -163,7 +163,7 @@ export type GenesisExecutionRepository = {
   loadRecoverableExecutions: () => Promise<GenesisExecution[]>;
 };
 
-export function createPrismaExecutionRepository(prisma: PrismaClient = getPrismaClient()): GenesisExecutionRepository {
+export function createPrismaExecutionRepository(prisma: PrismaClient = getPlatformPrismaClient()): GenesisExecutionRepository {
   return {
     async saveExecution(execution) {
       const saved = await prisma.gopExecution.upsert({
