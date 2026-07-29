@@ -17,3 +17,8 @@ Each product record includes:
 2. Duplicate slug and duplicate sku are blocked per organization.
 3. Raw secret fields are rejected.
 4. Product ID is immutable.
+
+## GCP-0002E Inventory Relationship
+1. Product lifecycle state participates in inventory stock status and availability evaluation.
+2. Archived products are blocked from inventory transaction processing.
+3. Product identity is required for inventory movement, reservation, and count scopes.
