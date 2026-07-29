@@ -66,6 +66,21 @@ export type PermissionAction =
   | "addresses:read"
   | "addresses:create"
   | "addresses:update"
+  | "quotes:read"
+  | "quotes:create"
+  | "quotes:update"
+  | "quotes:update_lines"
+  | "quotes:create_revision"
+  | "quotes:submit"
+  | "quotes:approve"
+  | "quotes:reject"
+  | "quotes:withdraw"
+  | "quotes:present"
+  | "quotes:accept"
+  | "quotes:cancel"
+  | "quotes:expire"
+  | "quotes:convert"
+  | "quotes:view_audit"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -147,7 +162,12 @@ export type SearchScope =
   | "customers"
   | "customer_accounts"
   | "customer_contacts"
-  | "customer_addresses";
+  | "customer_addresses"
+  | "quotes"
+  | "quote_registry"
+  | "quote_lines"
+  | "quote_revisions"
+  | "quote_audit";
 
 export type IntegrationProfileType =
   | "publishing"
@@ -1333,6 +1353,10 @@ export type EnterpriseSearchItem = {
     | "customer"
     | "contact"
     | "address"
+    | "quote"
+    | "quote_line"
+    | "quote_revision"
+    | "quote_audit"
     | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";
