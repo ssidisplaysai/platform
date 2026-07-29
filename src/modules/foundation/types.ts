@@ -81,6 +81,14 @@ export type PermissionAction =
   | "quotes:expire"
   | "quotes:convert"
   | "quotes:view_audit"
+  | "orders:read"
+  | "orders:create"
+  | "orders:update"
+  | "orders:approve"
+  | "orders:release"
+  | "orders:revise"
+  | "orders:cancel"
+  | "orders:view_audit"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -167,7 +175,11 @@ export type SearchScope =
   | "quote_registry"
   | "quote_lines"
   | "quote_revisions"
-  | "quote_audit";
+  | "quote_audit"
+  | "orders"
+  | "order_registry"
+  | "order_revisions"
+  | "order_audit";
 
 export type IntegrationProfileType =
   | "publishing"
@@ -1357,6 +1369,9 @@ export type EnterpriseSearchItem = {
     | "quote_line"
     | "quote_revision"
     | "quote_audit"
+    | "order"
+    | "order_revision"
+    | "order_audit"
     | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";

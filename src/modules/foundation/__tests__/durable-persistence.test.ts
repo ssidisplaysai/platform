@@ -18,6 +18,19 @@ import {
   resetCustomerRepositoryForTests,
 } from "@/modules/foundation/customer-repository";
 import {
+  acceptQuote,
+  addQuoteLine,
+  approveQuote,
+  createQuote,
+  presentQuote,
+  resetQuoteRepositoryForTests,
+  submitQuote,
+} from "@/modules/foundation/quote-repository";
+import {
+  createSalesOrderFromQuote,
+  resetSalesOrderRepositoryForTests,
+} from "@/modules/foundation/sales-order-repository";
+import {
   FoundationPersistenceConflictError,
   loadPersistedState,
   resetPersistedState,
@@ -30,6 +43,79 @@ describe("GCP-0002M1-R1B durable persistence and transaction foundation", () => 
     resetProductRepositoryForTests();
     resetInventoryRepositoryForTests();
     resetCustomerRepositoryForTests();
+    resetQuoteRepositoryForTests();
+    resetSalesOrderRepositoryForTests();
+  });
+
+  test("sales order conversion persists durable quote lineage", () => {
+    const createdQuote = createQuote({
+      organizationId: "led-display-warehouse",
+      customerReference: "cust-ledw-stadium-group",
+      primaryContactReference: null,
+      ownerReference: "owner-ledw-commerce",
+      salesRepresentativeReference: "sales-ledw-001",
+      siteReference: "site-led-display-warehouse-production",
+      currency: "USD",
+      effectiveDate: "2026-01-01T00:00:00.000Z",
+      expirationDate: "2026-01-31T00:00:00.000Z",
+      commercialTerms: { paymentTermsReference: null, freightTermsReference: null, exchangeRate: 1 },
+      internalNotes: null,
+      customerNotes: null,
+      metadata: {},
+      actor: "durable-test",
+    });
+
+    const quoteId = createdQuote.quote?.documentId as string;
+
+    addQuoteLine({
+      quoteId,
+      actor: "durable-test",
+      line: {
+        productId: "prod-indoor-led-video-wall",
+        sku: "LEDW-IN-001",
+        productRevision: "rev-1",
+        catalogRevision: "cat-1",
+        displayName: "Indoor LED Wall",
+        description: null,
+        quantity: 1,
+        unitOfMeasure: "ea",
+        unitPrice: 100,
+        discount: 0,
+        currency: "USD",
+        taxClassification: null,
+        siteReference: "site-led-display-warehouse-production",
+        metadata: {},
+      },
+    });
+
+    submitQuote({ quoteId, actor: "durable-approver", notes: null });
+    approveQuote({ quoteId, actor: "durable-approver", notes: null });
+    presentQuote({ quoteId, actor: "durable-seller", notes: null });
+    acceptQuote({ quoteId, actor: "durable-customer", notes: null });
+
+    const createdOrder = createSalesOrderFromQuote({
+      payload: { quoteId, referenceNumber: "DURABLE-REF-1" },
+      actor: "durable-test",
+    });
+
+    expect(createdOrder.validation.valid).toBe(true);
+    expect(createdOrder.order).toBeTruthy();
+
+    const persisted = loadPersistedState({
+      namespace: "sales-order-repository",
+      seedFactory: () => ({
+        orders: [],
+        auditEvents: [],
+        publishedEvents: [],
+        sequenceByOrganization: {},
+        orderIdByQuoteId: {},
+      }),
+    });
+
+    expect(Array.isArray(persisted.state.orders)).toBe(true);
+    expect(persisted.state.orders.length).toBe(1);
+    expect(persisted.state.orders[0].quoteLineage.quoteId).toBe(quoteId);
+    expect(persisted.state.orders[0].quoteLineage.acceptedBy).toBe("durable-customer");
   });
 
   test("site mutations persist across module reload", () => {
