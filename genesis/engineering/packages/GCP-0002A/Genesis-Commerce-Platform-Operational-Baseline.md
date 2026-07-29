@@ -39,3 +39,10 @@ PHASE 0 COMPLETE WITH EXTERNAL CONDITIONS
 
 ## Operational Baseline Decision
 The local platform is suitable for continuing implementation planning and bounded development work. Phase 0 is complete with explicit external conditions pending n8n endpoint/workflow readiness and credential provisioning for WordPress publication validation.
+
+## GCP-0002B Addendum
+Bounded implementation verification completed on feature/gcp-0002b-commerce-foundation:
+1. Foundation routes /settings, /notifications, /audit, and /search returned HTTP 200 in local smoke checks.
+2. Focused GCP-0002B test suite passed (1 suite, 7 tests).
+3. Scoped lint for touched foundation files passed.
+4. Repository-wide build/test/typecheck remained in known baseline failure state outside GCP-0002B scope.
