@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GCAP-0001-v0.1.0",
+  "authorities": [
+    "genesis/CONSTITUTION.md",
+    "genesis/specifications/GSP-0001-Specification-Governance-v1.0.md",
+    "genesis/architecture/framework/GAF-0001-Genesis-Architectural-Framework.md",
+    "genesis/architecture/standards.md",
+    "genesis/architecture/freezes/AFR-0004-Genesis-Runtime-Foundation-Freeze-v1.0.md",
+    "genesis/architecture/freezes/AFR-0007-Genesis-Constitutional-Release-1.0.md",
+    "genesis/constitutional-services/architecture/GCSA-0001-Genesis-Constitutional-Services-Architecture.md",
+    "genesis/compiler/BGC-0001-Business-Genome-Compiler-Architecture-v1.0.md",
+    "genesis/genome/BGS-0001-Business-Genome-Specification-v1.0.md",
+    "genesis/engineering/packages/GEAF-0001/00-package-manifest.md",
+    "GSTP-FOUNDATION-V1.0-RELEASE.md"
+  ],
+  "partition": [
+    "UniversalEnterpriseCapability",
+    "GenesisCapability",
+    "ApplicationCapability",
+    "BusinessCapability"
+  ]
+}

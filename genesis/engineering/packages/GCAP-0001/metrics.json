@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GCAP-0001-v0.1.0",
+  "artifactCount": 35,
+  "requiredDeliverablesCount": 28,
+  "requiredDeliverablesProvided": 28,
+  "capabilityCount": 30,
+  "domainCount": 29,
+  "validationStatus": "PASS"
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GEAF-0001-v0.1.0",
+  "artifactCount": 35,
+  "requiredDeliverablesCount": 28,
+  "requiredDeliverablesProvided": 28,
+  "evidenceSourceCount": 10,
+  "patternCount": 16,
+  "validationStatus": "PASS"
+}

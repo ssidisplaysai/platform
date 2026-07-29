@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GCAP-0001-v0.1.0",
+  "status": "PASS",
+  "checks": {
+    "capabilityCompleteness": true,
+    "ownershipCompleteness": true,
+    "dependencyIntegrity": true,
+    "boundaryIntegrity": true,
+    "governanceIntegrity": true,
+    "terminologyConsistency": true,
+    "traceabilityIntegrity": true,
+    "jsonValidity": true,
+    "crossReferenceIntegrity": true,
+    "repositoryImpactIntegrity": true,
+    "noImplementation": true,
+    "noGenesisMutation": true,
+    "noGstpMutation": true
+  }
+}

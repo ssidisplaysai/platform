@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GCAP-0001-v0.1.0",
+  "createdFiles": [
+    "genesis/engineering/packages/GCAP-0001/*"
+  ],
+  "modifiedFiles": [],
+  "deletedFiles": [],
+  "runtimeCodeChanged": false,
+  "apiArtifactsChanged": false,
+  "databaseArtifactsChanged": false,
+  "workflowArtifactsChanged": false,
+  "uiArtifactsChanged": false,
+  "genesisArtifactsChanged": false,
+  "gstpArtifactsChanged": false
+}

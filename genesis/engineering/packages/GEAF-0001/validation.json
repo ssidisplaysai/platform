@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GEAF-0001-v0.1.0",
+  "status": "PASS",
+  "checks": {
+    "completenessValidation": true,
+    "evidenceCoverageValidation": true,
+    "crossReferenceValidation": true,
+    "terminologyValidation": true,
+    "traceabilityValidation": true,
+    "governanceInheritanceValidation": true,
+    "noImplementationValidation": true,
+    "noGstpMutationValidation": true
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "0.1.0",
+  "packageStatus": "CompletePendingArchitectureReview",
+  "packageId": "GEPKG-GCAP-0001-v0.1.0",
+  "packageUuid": "4ac2af8f-a8de-4a15-b450-30df688b6282",
+  "subjectId": "GCAP-0001",
+  "subjectTitle": "Genesis Capability Architecture",
+  "subjectType": "ConstitutionalCapabilityArchitecturePackage",
+  "subjectStatus": "CompletePendingArchitectureReview",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationPreserved": true,
+  "noImplementation": true,
+  "stoppedBeforeCommit": true,
+  "constraints": {
+    "noRuntimeImplementation": true,
+    "noApiImplementation": true,
+    "noDatabaseImplementation": true,
+    "noWorkflowImplementation": true,
+    "noUiImplementation": true,
+    "noGenesisMutation": true,
+    "noGstpMutation": true,
+    "noBusinessLogicAbsorption": true
+  }
+}

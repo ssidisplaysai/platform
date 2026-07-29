@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0",
+  "packageId": "GEPKG-GEAF-0001-v0.1.0",
+  "inheritsFrom": [
+    "GAV-0001",
+    "GAF-0001",
+    "GCSA-PROGRAM-0001",
+    "GCSA-0001",
+    "GAR-0046",
+    "AFR-0004",
+    "BGC-0001",
+    "GAR-0016"
+  ],
+  "patternPartition": [
+    "Universal",
+    "GenesisOwned",
+    "ApplicationSpecific"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "packageVersion": "0.1.0",
+  "packageStatus": "CompletePendingArchitectureReview",
+  "packageId": "GEPKG-GEAF-0001-v0.1.0",
+  "packageUuid": "f0f8ff53-cb1d-4b83-9cb0-45f9fe3ec642",
+  "subjectId": "GEAF-0001",
+  "subjectTitle": "Genesis Enterprise Architecture Framework",
+  "subjectType": "EnterpriseArchitectureFrameworkPackage",
+  "subjectStatus": "CompletePendingArchitectureReview",
+  "engineeringStatus": "Complete",
+  "reviewStatus": "NotReviewed",
+  "certificationStatus": "None",
+  "foundationPreserved": true,
+  "noImplementation": true,
+  "stoppedBeforeCommit": true,
+  "constraints": {
+    "noRuntimeImplementation": true,
+    "noCompilerImplementation": true,
+    "noApiImplementation": true,
+    "noDatabaseImplementation": true,
+    "noUiImplementation": true,
+    "noWorkflowImplementation": true,
+    "noGstpMutation": true,
+    "noBusinessLogicAbsorption": true
+  }
+}
