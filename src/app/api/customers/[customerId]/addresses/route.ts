@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { recordCustomerActivity } from "@/modules/foundation/customer-audit";
 import {
   createCustomerAddress,
@@ -15,13 +19,26 @@ type RouteContext = {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "addresses:read")) {
+  const auth = authorizeRequest(request, "addresses:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { customerId } = await context.params;
   const customer = getCustomerById(customerId);
-  if (!customer) {
+  const scopedCustomerVisible =
+    customer &&
+    customer.organizationId === scope.organizationId &&
+    (!scope.siteId ||
+      customer.primarySiteId === scope.siteId ||
+      customer.associatedSiteIds.includes(scope.siteId));
+
+  if (!scopedCustomerVisible) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
 
@@ -29,8 +46,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "addresses:create")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = authorizeRequest(request, "addresses:create");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const { customerId } = await context.params;

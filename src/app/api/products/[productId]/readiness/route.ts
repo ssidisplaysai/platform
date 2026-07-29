@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  isRecordInScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { recordProductActivity } from "@/modules/foundation/product-audit";
 import { evaluateProductReadiness } from "@/modules/foundation/product-readiness";
@@ -12,26 +17,34 @@ type RouteContext = {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "products:evaluate_readiness")) {
+  const auth = authorizeRequest(request, "products:evaluate_readiness");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { productId } = await context.params;
   const product = getProductById(productId);
 
-  if (!product) {
+  if (
+    !product ||
+    !isRecordInScope({
+      recordOrganizationId: product.organizationId,
+      recordSiteId: product.primarySiteId,
+      scope,
+    })
+  ) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
-
-  const roleHeader = request.headers.get("x-gcp-roles") ?? "ops_manager";
-  const roles = roleHeader.split(",").map((value) => value.trim()).filter((value) => value.length > 0) as Array<
-    "platform_admin" | "ops_manager" | "company_operator" | "analyst" | "viewer"
-  >;
 
   const readiness = evaluateProductReadiness({
     product,
     requiredPermission: "products:evaluate_readiness",
-    permissions: resolvePermissions(roles),
+    permissions: resolvePermissions(auth.roles),
   });
 
   recordProductActivity({

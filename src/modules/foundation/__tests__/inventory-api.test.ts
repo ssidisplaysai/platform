@@ -13,38 +13,71 @@ function request(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
 }
 
+function authHeaders(input: {
+  role?: "platform_admin" | "ops_manager" | "company_operator" | "analyst" | "viewer";
+  organizationId?: string;
+  siteId?: string;
+}): Record<string, string> {
+  const headers: Record<string, string> = {};
+
+  if (input.role) {
+    headers["x-gcp-roles"] = input.role;
+  }
+  if (input.organizationId) {
+    headers["x-gcp-organization-id"] = input.organizationId;
+  }
+  if (input.siteId) {
+    headers["x-gcp-site-id"] = input.siteId;
+  }
+
+  return headers;
+}
+
 describe("GCP-0002E inventory API auth and behavior", () => {
   beforeEach(() => {
     resetInventoryRepositoryForTests();
   });
 
   test("read endpoints enforce authorization", async () => {
-    const inventory = await getInventory();
+    const noAuthInventory = await getInventory(request("http://localhost/api/inventory"));
+    expect(noAuthInventory.status).toBe(401);
+
+    const inventory = await getInventory(request("http://localhost/api/inventory", {
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
+    }));
     expect(inventory.status).toBe(200);
 
     const locationsForbidden = await getLocations(request("http://localhost/api/inventory/locations", {
-      headers: { "x-gcp-roles": "viewer" },
+      headers: authHeaders({ role: "viewer", organizationId: "led-display-warehouse" }),
     }));
     expect(locationsForbidden.status).toBe(403);
 
     const locationsAllowed = await getLocations(request("http://localhost/api/inventory/locations", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
     expect(locationsAllowed.status).toBe(200);
   });
 
   test("availability endpoint validates required query params", async () => {
     const bad = await getAvailability(request("http://localhost/api/inventory/availability", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
 
     expect(bad.status).toBe(400);
 
     const good = await getAvailability(request("http://localhost/api/inventory/availability?organizationId=led-display-warehouse&productId=prod-indoor-led-video-wall", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
 
     expect(good.status).toBe(200);
+  });
+
+  test("availability endpoint rejects cross-organization scope mismatch", async () => {
+    const response = await getAvailability(request("http://localhost/api/inventory/availability?organizationId=led-display-warehouse&productId=prod-indoor-led-video-wall", {
+      headers: authHeaders({ role: "ops_manager", organizationId: "other-org" }),
+    }));
+
+    expect(response.status).toBe(403);
   });
 
   test("viewer cannot create movement; ops_manager can", async () => {

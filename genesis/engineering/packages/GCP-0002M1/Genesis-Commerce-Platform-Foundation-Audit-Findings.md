@@ -15,9 +15,21 @@
   - Enforce server-side read authorization on affected collection GET handlers or revise permission policy and docs to match implementation.
 - Recommended action:
   - Add shared auth wrapper for collection handlers and regression tests for viewer denial/allowance matrix.
-- Blocking status: Blocking
+- Blocking status: Resolved in R1A
 - Owner category: Application API ownership
-- Target package: GCP-0002M1-R1
+- Target package: GCP-0002M1-R1A
+- Remediation summary:
+  - Strict auth introduced in `src/modules/foundation/api-auth.ts` via `authorizeRequest`.
+  - Read capability checks enforced for affected site/product/inventory routes.
+  - Mandatory organization scope and optional site scope applied to read collections/details.
+  - Viewer now receives 403; unauthenticated requests receive 401.
+  - New and updated tests validate no-auth, viewer denial, authorized reads, and scope behavior.
+- Runtime verification:
+  - Focused authorization suites passed (35 tests).
+  - Full focused GCP regression passed (95 tests).
+- Closure status: CLOSED
+- Residual conditions:
+  - None for F001 within bounded authorization scope.
 
 ## GCP-0002M1-F002
 - Title: Foundation persistence is non-durable and non-transactional for transactional aggregate needs
@@ -36,7 +48,7 @@
   - Introduce repository interfaces plus persistence adapters with migration plan from fixture stores.
 - Blocking status: Blocking
 - Owner category: Platform application architecture
-- Target package: GCP-0002M1-R1
+- Target package: GCP-0002M1-R1B
 
 ## GCP-0002M1-F003
 - Title: Readiness result contract fields diverge across domains
@@ -107,6 +119,6 @@
   - Add explicit viewer/analyst/operator read-policy assertions for all foundation collection APIs.
 - Recommended action:
   - Add one shared authorization contract test helper.
-- Blocking status: Non-blocking but high priority
+- Blocking status: Resolved in R1A
 - Owner category: Test engineering
-- Target package: GCP-0002M1-R1
+- Target package: GCP-0002M1-R1A

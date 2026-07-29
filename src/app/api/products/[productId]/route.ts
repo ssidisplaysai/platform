@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  isRecordInScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { recordProductActivity } from "@/modules/foundation/product-audit";
 import { getProductById, updateProduct } from "@/modules/foundation/product-repository";
 import type { UpdateProductInput } from "@/modules/foundation/types";
@@ -10,11 +15,28 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
+  const auth = authorizeRequest(request, "products:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { productId } = await context.params;
   const product = getProductById(productId);
 
-  if (!product) {
+  if (
+    !product ||
+    !isRecordInScope({
+      recordOrganizationId: product.organizationId,
+      recordSiteId: product.primarySiteId,
+      scope,
+    })
+  ) {
     return NextResponse.json({ error: "Product not found" }, { status: 404 });
   }
 
@@ -22,8 +44,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "products:update")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = authorizeRequest(request, "products:update");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const { productId } = await context.params;

@@ -86,3 +86,9 @@
 - Detail pages/APIs are consistently dynamic-segment based.
 - Settings and readiness routes are consistently nested under domain identifiers.
 - Singular/plural split exists for profiles: list/family under /profiles, detail under /profile/[id]. This is workable but should be explicitly governed to prevent future drift.
+
+## R1A Authorization Conformance Notes
+- Collection and detail reads across sites/products/inventory/taxonomy now enforce capability checks server-side.
+- Read APIs use strict auth identity (`x-gcp-roles`); missing identity returns 401.
+- Read APIs enforce required organization scope and optional site scope narrowing.
+- Detail routes return 404 for out-of-scope resources to avoid existence disclosure.

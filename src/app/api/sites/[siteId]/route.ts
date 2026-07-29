@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSiteById, updateSite } from "@/modules/foundation/site-repository";
 import type { UpdateSiteInput } from "@/modules/foundation/types";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  isRecordInScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { recordSiteActivity } from "@/modules/foundation/site-audit";
 
 type RouteContext = {
@@ -11,13 +16,23 @@ type RouteContext = {
 };
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext,
 ) {
+  const auth = authorizeRequest(request, "sites:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { siteId } = await context.params;
   const site = getSiteById(siteId);
 
-  if (!site) {
+  if (!site || !isRecordInScope({ recordOrganizationId: site.organizationId, recordSiteId: site.siteId, scope })) {
     return NextResponse.json({ error: "Site not found" }, { status: 404 });
   }
 
@@ -25,8 +40,9 @@ export async function GET(
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "sites:update")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = authorizeRequest(request, "sites:update");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const { siteId } = await context.params;

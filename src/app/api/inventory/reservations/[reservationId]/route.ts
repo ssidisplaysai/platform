@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { getInventoryReservationById } from "@/modules/foundation/inventory-repository";
 
 type RouteContext = {
@@ -7,14 +11,24 @@ type RouteContext = {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "inventory:read")) {
+  const auth = authorizeRequest(request, "inventory:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { reservationId } = await context.params;
   const reservation = getInventoryReservationById(reservationId);
 
-  if (!reservation) {
+  if (
+    !reservation ||
+    reservation.organizationId !== scope.organizationId ||
+    (scope.siteId && reservation.siteId !== scope.siteId)
+  ) {
     return NextResponse.json({ error: "Reservation Not Found" }, { status: 404 });
   }
 

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import {
   getIntegrationProfileById,
   updateIntegrationProfile,
@@ -13,14 +17,24 @@ type RouteContext = {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "profiles:read")) {
+  const auth = authorizeRequest(request, "profiles:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { profileId } = await context.params;
   const profile = getIntegrationProfileById(profileId);
 
-  if (!profile) {
+  if (!profile || profile.organizationId !== scope.organizationId) {
+    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+  }
+
+  if (scope.siteId && !profile.assignedSiteIds.includes(scope.siteId)) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
@@ -28,8 +42,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "profiles:update")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = authorizeRequest(request, "profiles:update");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const { profileId } = await context.params;

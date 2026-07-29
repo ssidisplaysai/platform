@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { recordInventoryActivity } from "@/modules/foundation/inventory-audit";
-import { createInventoryMovement, listInventoryMovements } from "@/modules/foundation/inventory-repository";
+import {
+  createInventoryMovement,
+  listInventoryLocations,
+  listInventoryMovements,
+} from "@/modules/foundation/inventory-repository";
 import type { NewInventoryMovementInput } from "@/modules/foundation/types";
 
 function movementActivityType(movementType: NewInventoryMovementInput["movementType"]) {
@@ -26,16 +34,53 @@ function movementActivityType(movementType: NewInventoryMovementInput["movementT
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request, "inventory:read")) {
+  const auth = authorizeRequest(request, "inventory:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  return NextResponse.json({ movements: listInventoryMovements() });
+  const scopedLocationIds = scope.siteId
+    ? new Set(
+      listInventoryLocations()
+        .filter(
+          (location) =>
+            location.organizationId === scope.organizationId && location.siteId === scope.siteId,
+        )
+        .map((location) => location.locationId),
+    )
+    : null;
+
+  const movements = listInventoryMovements().filter((movement) => {
+    if (movement.organizationId !== scope.organizationId) {
+      return false;
+    }
+
+    if (!scopedLocationIds) {
+      return true;
+    }
+
+    const sourceAllowed = movement.sourceLocationId
+      ? scopedLocationIds.has(movement.sourceLocationId)
+      : false;
+    const destinationAllowed = movement.destinationLocationId
+      ? scopedLocationIds.has(movement.destinationLocationId)
+      : false;
+
+    return sourceAllowed || destinationAllowed;
+  });
+
+  return NextResponse.json({ movements });
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request, "inventory:create_movement")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = authorizeRequest(request, "inventory:create_movement");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const body = (await request.json()) as NewInventoryMovementInput;
