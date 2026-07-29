@@ -89,6 +89,13 @@ export type PermissionAction =
   | "orders:revise"
   | "orders:cancel"
   | "orders:view_audit"
+  | "manufacturing:read"
+  | "manufacturing:create"
+  | "manufacturing:update"
+  | "manufacturing:revise"
+  | "manufacturing:transition"
+  | "manufacturing:view_audit"
+  | "manufacturing:publish_events"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -179,7 +186,11 @@ export type SearchScope =
   | "orders"
   | "order_registry"
   | "order_revisions"
-  | "order_audit";
+  | "order_audit"
+  | "manufacturing"
+  | "manufacturing_foundation"
+  | "manufacturing_revisions"
+  | "manufacturing_audit";
 
 export type IntegrationProfileType =
   | "publishing"
@@ -1372,6 +1383,9 @@ export type EnterpriseSearchItem = {
     | "order"
     | "order_revision"
     | "order_audit"
+    | "manufacturing_foundation"
+    | "manufacturing_revision"
+    | "manufacturing_audit"
     | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";
