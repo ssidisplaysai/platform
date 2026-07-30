@@ -1,0 +1,58 @@
+{
+  "program": "GPC-0001",
+  "workPackage": "GPC-0001A-06",
+  "title": "Security and Secrets Production Certification",
+  "date": "2026-07-29",
+  "branch": "feature/gar-0003-constitutional-assessment",
+  "baselineDependencies": [
+    {
+      "workPackage": "GPC-0001A-01",
+      "commit": "35330847ff7fed5aa42ff3e413c68063f3d1ed96"
+    },
+    {
+      "workPackage": "GPC-0001A-02",
+      "commit": "a7076538ba560b2648d9a4c6b1265b2b7734dfe6"
+    },
+    {
+      "workPackage": "GPC-0001A-03",
+      "commit": "e7024f9aebab3ad7207cc00176df1d988d36b81e"
+    },
+    {
+      "workPackage": "GPC-0001A-04",
+      "commit": "14b9611714a471171c7b3c5e04eca47678383d3e"
+    },
+    {
+      "workPackage": "GPC-0001A-05",
+      "commit": "e7e871b"
+    }
+  ],
+  "artifacts": [
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-06/01-Security-Architecture.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-06/02-Secrets-Management.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-06/03-Access-Control-and-IAM.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-06/04-Security-Operations.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-06/05-Security-Certification-Checklist.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-06/06-Evidence.json"
+  ],
+  "productionEvidenceRegister": {
+    "path": "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/06-Production-Evidence-Register.csv",
+    "updatedByWorkPackage": "GPC-0001A-06"
+  },
+  "validation": {
+    "securityBoundariesDocumented": "pass",
+    "secretsOwnershipDocumented": "pass_with_conditions",
+    "secretLifecycleDocumented": "pass_with_conditions",
+    "accessControlResponsibilitiesDocumented": "pass",
+    "authenticationAndAuthorizationBoundariesConsistentWithCertifiedBaseline": "pass",
+    "securityOperationsDocumented": "pass_with_conditions",
+    "externalSecurityEvidenceTrackedInProductionEvidenceRegister": "pass",
+    "productionSecurityAssumptionsExplicitlyIdentified": "pass"
+  },
+  "openConditions": [
+    "Enterprise secrets manager controls, secret rotation records, and emergency revocation procedures are external and pending evidence.",
+    "Cloud IAM, KMS, certificate management, firewall, WAF, and endpoint security controls are external and pending evidence.",
+    "Security event retention policy and SIEM evidence are external and pending evidence.",
+    "Vulnerability scanning and patch SLA process evidence are external and pending evidence."
+  ],
+  "decision": "APPROVED_WITH_CONDITIONS"
+}
