@@ -1,0 +1,59 @@
+{
+  "program": "GPC-0001",
+  "application": "GLW - LED Display Warehouse",
+  "date": "2026-07-29",
+  "decision": "PRODUCTION_CERTIFIED_WITH_ACCEPTED_OPERATIONAL_CONDITIONS",
+  "decisionLabel": "PRODUCTION CERTIFIED WITH ACCEPTED OPERATIONAL CONDITIONS",
+  "board": "GPC-0001 Certification Board",
+  "scope": {
+    "reviewedWorkPackages": [
+      "GPC-0001A-01",
+      "GPC-0001A-02",
+      "GPC-0001A-03",
+      "GPC-0001A-04",
+      "GPC-0001A-05",
+      "GPC-0001A-06"
+    ],
+    "architectureRedesignPerformed": false,
+    "runtimeChangesPerformed": false,
+    "featureImplementationPerformed": false,
+    "remediationPerformed": false
+  },
+  "productionEvidenceRegister": {
+    "path": "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/06-Production-Evidence-Register.csv",
+    "totalEvidenceIds": 73,
+    "verified": 44,
+    "pending": 28,
+    "missing": 1,
+    "duplicateIdGroups": 0,
+    "internalConsistency": "valid",
+    "idRange": {
+      "first": "GPE-0001",
+      "last": "GPE-0073"
+    }
+  },
+  "classificationSummary": {
+    "productionBlockers": 0,
+    "acceptedOperationalConditions": 29,
+    "futureOperationalImprovements": 0
+  },
+  "boardValidations": {
+    "allWorkPackagesCompletedAndCertified": true,
+    "allCertificationArtifactsPresent": true,
+    "noUnresolvedArchitecturalDefectsIdentified": true,
+    "noUnresolvedRuntimeDefectsIdentified": true,
+    "noUnresolvedConstitutionalIssuesIdentified": true,
+    "atlasGuardrailsEffective": true,
+    "atlasGuardrailsEvidence": {
+      "command": "npm run atlas:certify",
+      "guardrailViolations": 0,
+      "atlasTestsPassed": true,
+      "regressionSuitesPassed": "9/9"
+    }
+  },
+  "acceptedRiskStatement": "External evidence items remain pending for unconditional attestation, but in-repository controls and governance are sufficient for conditional production certification.",
+  "references": [
+    "genesis/audits/GPC-0001/final/01-Final-Production-Certification-Report.md",
+    "genesis/audits/GPC-0001/final/04-Accepted-Operational-Conditions.md"
+  ]
+}
