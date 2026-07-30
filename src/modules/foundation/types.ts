@@ -118,6 +118,16 @@ export type PermissionAction =
   | "production_jobs:revise"
   | "production_jobs:view_audit"
   | "production_jobs:view_revisions"
+  | "operations:read"
+  | "operations:create"
+  | "operations:update"
+  | "operations:release"
+  | "operations:cancel"
+  | "operations:revise"
+  | "operations:view_audit"
+  | "operations:view_revisions"
+  | "operations:view_lineage"
+  | "operations:search"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -220,7 +230,13 @@ export type SearchScope =
   | "production_jobs"
   | "production_job_registry"
   | "production_job_revisions"
-  | "production_job_audit";
+  | "production_job_audit"
+  | "operations"
+  | "operation_registry"
+  | "operation_revisions"
+  | "operation_audit"
+  | "operation_lineage"
+  | "operation_timeline";
 
 export type IntegrationProfileType =
   | "publishing"

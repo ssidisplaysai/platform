@@ -78,6 +78,12 @@ export const FOUNDATION_NAVIGATION_ITEMS: readonly NavigationItem[] = [
     requiredPermissions: ["production_jobs:read"],
   },
   {
+    id: "operations",
+    label: "Operations",
+    href: "/operations",
+    requiredPermissions: ["operations:read"],
+  },
+  {
     id: "profiles",
     label: "Profiles",
     href: "/profiles",
@@ -307,6 +313,27 @@ export const FOUNDATION_COMMANDS: readonly CommandPaletteAction[] = [
     requiredPermissions: ["production_jobs:view_audit", "command_palette:use"],
   },
   {
+    id: "open-operations",
+    label: "Open Operations",
+    description: "Review manufacturing operations and deterministic lifecycle state",
+    href: "/operations",
+    requiredPermissions: ["operations:read", "command_palette:use"],
+  },
+  {
+    id: "open-new-operation",
+    label: "Create Operation",
+    description: "Create an operation from a production job without executing work",
+    href: "/operations/new",
+    requiredPermissions: ["operations:create", "command_palette:use"],
+  },
+  {
+    id: "open-operation-audit",
+    label: "Open Operation Audit",
+    description: "Inspect operation revisions, lifecycle events, and lineage",
+    href: "/operations",
+    requiredPermissions: ["operations:view_audit", "command_palette:use"],
+  },
+  {
     id: "open-profiles",
     label: "Open Profiles",
     description: "Review reusable integration profiles and readiness",
@@ -319,6 +346,13 @@ export const FOUNDATION_COMMANDS: readonly CommandPaletteAction[] = [
     description: "Review publishing profile assignments and blockers",
     href: "/profiles/publishing",
     requiredPermissions: ["profiles:read", "command_palette:use"],
+  {
+    id: "operations-search",
+    title: "Operations",
+    subtitle: "Discrete manufacturing step definitions within production jobs",
+    href: "/operations",
+    scope: "operations",
+  },
   },
   {
     id: "open-wordpress-profiles",
