@@ -1,0 +1,82 @@
+{
+  "program": "GPC-0001",
+  "workPackage": "GPC-0001A-05",
+  "title": "Performance, Load, and Scalability Certification",
+  "date": "2026-07-29",
+  "branch": "feature/gar-0003-constitutional-assessment",
+  "baselineDependencies": [
+    {
+      "workPackage": "GPC-0001A-01",
+      "commit": "35330847ff7fed5aa42ff3e413c68063f3d1ed96"
+    },
+    {
+      "workPackage": "GPC-0001A-02",
+      "commit": "a7076538ba560b2648d9a4c6b1265b2b7734dfe6"
+    },
+    {
+      "workPackage": "GPC-0001A-03",
+      "commit": "e7024f9aebab3ad7207cc00176df1d988d36b81e"
+    },
+    {
+      "workPackage": "GPC-0001A-04",
+      "commit": "14b9611714a471171c7b3c5e04eca47678383d3e"
+    }
+  ],
+  "artifacts": [
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-05/01-Performance-Strategy.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-05/02-Capacity-Planning.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-05/03-Load-and-Stress-Test-Plan.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-05/04-Performance-Acceptance-Criteria.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-05/05-Scalability-Assessment.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-05/06-Evidence.json"
+  ],
+  "productionEvidenceRegister": {
+    "path": "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/06-Production-Evidence-Register.csv",
+    "updatedByWorkPackage": "GPC-0001A-05"
+  },
+  "evidenceSources": [
+    "src/lib/gop/events-api.ts:103",
+    "src/lib/gop/events-api.ts:112",
+    "src/lib/gop/events-api.ts:119",
+    "src/lib/gop/events-api.ts:121",
+    "src/platform/gop/runtime/queue-manager.ts:550",
+    "src/platform/gop/runtime/queue-manager.ts:553",
+    "src/platform/gop/runtime/queue-manager.ts:556",
+    "src/platform/gop/runtime/queue-manager.ts:558",
+    "src/platform/gop/runtime/queue-manager.ts:559",
+    "src/platform/gop/runtime/worker-registry.ts:189",
+    "src/platform/gop/runtime/worker-registry.ts:202",
+    "src/components/gop/gop-operations-center.tsx:160",
+    "src/components/gop/gop-operations-center.tsx:164",
+    "src/components/gop/gop-operations-center.tsx:215",
+    "src/lib/glw/page-generation-api.ts:325",
+    "src/lib/glw/page-generation-api.ts:329",
+    "src/lib/glw/page-generation-api.ts:334",
+    "src/lib/glw/prisma.ts:13",
+    "src/platform/gop/runtime/prisma.ts:13",
+    "docs/gop/gop-0006-runtime-fabric.md:145",
+    "docs/gop/gop-0006-runtime-fabric.md:147",
+    "docs/gop/gop-0006-runtime-fabric.md:149",
+    "docs/gop/gop-0006-runtime-fabric.md:152",
+    "src/app/api/gop/metrics/route.ts:2",
+    "src/app/api/gop/operations/route.ts:2",
+    "src/app/api/glw/dashboard/route.ts:2",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/06-Production-Evidence-Register.csv:1"
+  ],
+  "validation": {
+    "criticalServicesHaveDocumentedPerformanceObjectives": "pass",
+    "capacityAssumptionsDocumented": "pass",
+    "scalabilityAssumptionsDocumented": "pass",
+    "performanceVerificationStrategyExists": "pass",
+    "loadTestingApproachDocumented": "pass",
+    "performanceAcceptanceCriteriaDefinedOrDeferredWithEvidence": "pass",
+    "externalPerformanceEvidenceTrackedInProductionEvidenceRegister": "pass_with_conditions"
+  },
+  "openConditions": [
+    "Numeric production performance targets and attainment records are not present in repository evidence.",
+    "External APM, cloud metrics, and DB analytics evidence is pending.",
+    "External load, stress, and soak execution evidence is pending.",
+    "Infrastructure-level capacity and utilization thresholds remain pending external evidence."
+  ],
+  "decision": "APPROVED_WITH_CONDITIONS"
+}
