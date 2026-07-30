@@ -654,7 +654,11 @@ export function listExecutionRevisions(executionId: string): readonly ExecutionR
 export function listExecutionPublishedEvents(executionId: string): readonly ExecutionPublishedEvent[] {
   return Array.from(eventStore.values())
     .filter((event) => event.aggregateId === executionId)
-    .sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+    .sort((left, right) =>
+      left.aggregateVersion - right.aggregateVersion ||
+      left.timestamp.localeCompare(right.timestamp) ||
+      left.eventId.localeCompare(right.eventId),
+    );
 }
 
 export function listExecutionTimeline(executionId: string): readonly ExecutionTimelineEntry[] {
@@ -1013,7 +1017,7 @@ export function markExecutionReady(input: { executionId: string; actor: string; 
     changedFields: ["status"],
     correlationId: existing.lineage.correlationId,
     causationId: existing.lineage.causationId,
-    eventType: "ExecutionReady",
+    eventType: "ExecutionUpdated",
     eventPayload: { status: "ready", eventReason: input.reason ?? "Execution marked ready" },
   });
 }
@@ -1041,7 +1045,7 @@ export function waitExecution(input: { executionId: string; actor: string; reaso
     changedFields: ["status"],
     correlationId: existing.lineage.correlationId,
     causationId: existing.lineage.causationId,
-    eventType: "ExecutionWaiting",
+    eventType: "ExecutionUpdated",
     eventPayload: { status: "waiting", eventReason: input.reason ?? "Execution waiting" },
   });
 }

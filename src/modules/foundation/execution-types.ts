@@ -88,8 +88,6 @@ export type ExecutionAuditEvent = {
 export type ExecutionEventType =
   | "ExecutionCreated"
   | "ExecutionUpdated"
-  | "ExecutionReady"
-  | "ExecutionWaiting"
   | "ExecutionStarted"
   | "ExecutionPaused"
   | "ExecutionResumed"

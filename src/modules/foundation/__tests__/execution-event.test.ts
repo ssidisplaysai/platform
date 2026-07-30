@@ -1,13 +1,16 @@
 import {
   archiveExecution,
+  cancelExecution,
   completeExecution,
   createExecution,
   createExecutionRevision,
   blockExecution,
+  failExecution,
   getExecutionById,
   listExecutionPublishedEvents,
   markExecutionReady,
   pauseExecution,
+  recoverExecution,
   resetExecutionRepositoryForTests,
   resumeExecution,
   startExecution,
@@ -158,8 +161,8 @@ describe("GMP-0008A execution events", () => {
       "ExecutionCreated",
       "ExecutionUpdated",
       "ExecutionRevised",
-      "ExecutionReady",
-      "ExecutionWaiting",
+      "ExecutionUpdated",
+      "ExecutionUpdated",
       "ExecutionStarted",
       "ExecutionPaused",
       "ExecutionResumed",
@@ -235,5 +238,70 @@ describe("GMP-0008A execution events", () => {
     expect(invalid.validation.valid).toBe(false);
     expect(listExecutionPublishedEvents(executionId)).toHaveLength(beforeEvents.length);
     expect(getExecutionById(executionId)?.status).toBe("created");
+  });
+
+  test("cancel, fail, and recover transitions emit supported events only", () => {
+    const cancellable = createExecution({
+      payload: createExecutionPayload({
+        executionName: "Cancelable execution",
+        scheduleId: "schedule-ledw-006",
+        workOrderId: "work-order-ledw-006",
+        correlationId: "corr-cancelable-001",
+        causationId: "cause-cancelable-001",
+      }),
+      actor: "planner",
+    });
+    const cancellableId = cancellable.execution?.documentId as string;
+
+    expect(markExecutionReady({ executionId: cancellableId, actor: "planner" }).validation.valid).toBe(true);
+    expect(cancelExecution({ executionId: cancellableId, actor: "supervisor", reason: "Cancelled by supervisor" }).validation.valid).toBe(true);
+
+    const cancelEvents = listExecutionPublishedEvents(cancellableId);
+    expect(cancelEvents.some((event) => event.eventType === "ExecutionCancelled")).toBe(true);
+    expect(cancelEvents.some((event) => event.eventType === "ExecutionReady")).toBe(false);
+    expect(cancelEvents.some((event) => event.eventType === "ExecutionWaiting")).toBe(false);
+
+    const recoverable = createExecution({
+      payload: createExecutionPayload({
+        executionName: "Recoverable execution",
+        scheduleId: "schedule-ledw-007",
+        workOrderId: "work-order-ledw-007",
+        correlationId: "corr-recoverable-001",
+        causationId: "cause-recoverable-001",
+      }),
+      actor: "planner",
+    });
+    const recoverableId = recoverable.execution?.documentId as string;
+
+    expect(markExecutionReady({ executionId: recoverableId, actor: "planner" }).validation.valid).toBe(true);
+    expect(startExecution({ executionId: recoverableId, actor: "supervisor" }).validation.valid).toBe(true);
+    expect(failExecution({ executionId: recoverableId, actor: "supervisor", reason: "Unexpected failure" }).validation.valid).toBe(true);
+    expect(recoverExecution({ executionId: recoverableId, actor: "supervisor", reason: "Recovered and resumed" }).validation.valid).toBe(true);
+
+    const recoverEvents = listExecutionPublishedEvents(recoverableId);
+    expect(recoverEvents.some((event) => event.eventType === "ExecutionFailed")).toBe(true);
+    expect(recoverEvents.some((event) => event.eventType === "ExecutionRecovered")).toBe(true);
+  });
+
+  test("repeated lifecycle requests do not publish duplicate success events", () => {
+    const created = createExecution({
+      payload: createExecutionPayload({
+        executionName: "Duplicate guard execution",
+        scheduleId: "schedule-ledw-008",
+        workOrderId: "work-order-ledw-008",
+        correlationId: "corr-duplicate-001",
+        causationId: "cause-duplicate-001",
+      }),
+      actor: "planner",
+    });
+    const executionId = created.execution?.documentId as string;
+
+    expect(markExecutionReady({ executionId, actor: "planner" }).validation.valid).toBe(true);
+    expect(startExecution({ executionId, actor: "supervisor" }).validation.valid).toBe(true);
+    const beforeRepeat = listExecutionPublishedEvents(executionId).length;
+
+    const repeated = startExecution({ executionId, actor: "supervisor" });
+    expect(repeated.validation.valid).toBe(false);
+    expect(listExecutionPublishedEvents(executionId)).toHaveLength(beforeRepeat);
   });
 });

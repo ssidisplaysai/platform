@@ -64,18 +64,18 @@ This package implements the execution foundation only. It covers:
 Execution event publication is implemented with a durable repository-backed event record. The approved event contracts are:
 1. ExecutionCreated
 2. ExecutionUpdated
-3. ExecutionReady
-4. ExecutionWaiting
-5. ExecutionStarted
-6. ExecutionPaused
-7. ExecutionBlocked
-8. ExecutionResumed
-9. ExecutionCompleted
-10. ExecutionCancelled
-11. ExecutionFailed
-12. ExecutionRecovered
-13. ExecutionArchived
-14. ExecutionRevised
+3. ExecutionStarted
+4. ExecutionPaused
+5. ExecutionBlocked
+6. ExecutionResumed
+7. ExecutionCompleted
+8. ExecutionCancelled
+9. ExecutionFailed
+10. ExecutionRecovered
+11. ExecutionArchived
+12. ExecutionRevised
+
+Ready and waiting lifecycle transitions publish as ExecutionUpdated with payload status values of ready or waiting.
 
 ## Event Envelope
 Every published execution event includes:

@@ -6,7 +6,10 @@ import { GET as executionAuditApi } from "@/app/api/executions/[executionId]/aud
 import { GET as executionRevisionsApi } from "@/app/api/executions/[executionId]/revisions/route";
 import { GET as executionTimelineApi } from "@/app/api/executions/[executionId]/timeline/route";
 import { POST as transitionExecutionApi } from "@/app/api/executions/[executionId]/transition/route";
-import { resetExecutionRepositoryForTests } from "@/modules/foundation/execution-repository";
+import {
+  listExecutionPublishedEvents,
+  resetExecutionRepositoryForTests,
+} from "@/modules/foundation/execution-repository";
 
 type SupportedRole =
   | "platform_admin"
@@ -121,6 +124,21 @@ describe("GMP-0008A execution API", () => {
     );
     expect(created.status).toBe(201);
     const executionId = ((await created.json()) as { execution: { documentId: string } }).execution.documentId;
+    const eventsAfterCreate = listExecutionPublishedEvents(executionId).length;
+
+    const unauthorizedTransition = await transitionExecutionApi(
+      request(`http://localhost/api/executions/${executionId}/transition`, {
+        method: "POST",
+        headers: {
+          ...authHeaders({ role: "viewer", organizationId: "led-display-warehouse", actor: "ops" }),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ action: "start", reason: "forbidden transition" }),
+      }),
+      { params: Promise.resolve({ executionId }) },
+    );
+    expect(unauthorizedTransition.status).toBe(403);
+    expect(listExecutionPublishedEvents(executionId)).toHaveLength(eventsAfterCreate);
 
     const listed = await listExecutionsApi(
       request("http://localhost/api/executions", {
@@ -156,6 +174,21 @@ describe("GMP-0008A execution API", () => {
       { params: Promise.resolve({ executionId }) },
     );
     expect(patch.status).toBe(200);
+
+    const eventsAfterPatch = listExecutionPublishedEvents(executionId).length;
+    const invalidPatch = await patchExecutionApi(
+      request(`http://localhost/api/executions/${executionId}?expectedVersion=2`, {
+        method: "PATCH",
+        headers: {
+          ...authHeaders({ role: "operations", organizationId: "led-display-warehouse", actor: "ops" }),
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ progress: 101 }),
+      }),
+      { params: Promise.resolve({ executionId }) },
+    );
+    expect(invalidPatch.status).toBe(400);
+    expect(listExecutionPublishedEvents(executionId)).toHaveLength(eventsAfterPatch);
 
     const ready = await transitionExecutionApi(
       request(`http://localhost/api/executions/${executionId}/transition`, {
