@@ -55,6 +55,9 @@ This catalog indexes all constitutional package roots currently present under `g
 | GMK-I006 | Marketing Growth Intelligence | Growth intelligence architecture | Indexed | GMK | GMK-I005 | GMK-I007 |
 | GMK-I007 | Marketing Decision Intelligence | Decision intelligence architecture | Indexed | GMK | GMK-I006 | GMK-I007A |
 | GMK-I007A | Marketing Decision Certification | Decision intelligence certification | Indexed | GMK | GMK-I007 | None |
+| GMP-0008 | Manufacturing Execution Architecture | Manufacturing execution constitutional architecture | Indexed | GMP | GMP-0007 | GMP-0008A |
+| GMP-0008A | Manufacturing Execution Foundation | Manufacturing execution implementation foundation | Indexed | GMP | GMP-0008 | GMP-0008B |
+| GMP-0008B | Manufacturing Execution Certification | Manufacturing execution certified baseline closeout | Indexed | GMP | GMP-0008A | None |
 | GRBR-0001 | Repository Baseline Review | Repository baseline and risk review | Indexed | GRBR | GARR-0001B | GRBR-0001A |
 
 ## Catalog Integrity Rules

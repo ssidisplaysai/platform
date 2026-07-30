@@ -6,8 +6,17 @@
 ## Branch
 - feature/gcp-0002m1-r1b-durable-persistence
 
-## Certified Commit
+## Certified Implementation Commit
 - 32eeb6b
+- Meaning: The final Manufacturing Execution implementation and remediation commit evaluated as satisfying the certification requirements.
+
+## Governance Closeout Commit
+- 92a2cb9557da4cda1ca77dacb88b6502e913d445
+- Meaning: The documentation and governance closeout commit that records the final certification state.
+
+## Frozen Certified Baseline Commit
+- 92a2cb9557da4cda1ca77dacb88b6502e913d445
+- Meaning: The complete frozen repository baseline, including certified implementation and governance closeout records.
 
 ## Architecture Reviewed
 - GMP-0008 Genesis Manufacturing Execution Architecture package and bounded execution authority model.
@@ -63,6 +72,9 @@
 
 ## Tag Created
 - GMP-0008B-v1.0.0 (annotated certification tag for this closeout baseline).
+
+## Tag Target
+- 92a2cb9557da4cda1ca77dacb88b6502e913d445
 
 ## Merge Readiness Recommendation
 - Ready for governed pull-request merge to the protected integration branch after closeout commit and tag publication.
