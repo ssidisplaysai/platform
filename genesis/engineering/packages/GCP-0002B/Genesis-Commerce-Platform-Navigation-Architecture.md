@@ -38,3 +38,9 @@ All command actions require command_palette:use plus route-specific permissions.
 
 ## Extension Pattern
 Future modules should append typed navigation items with requiredPermissions and avoid direct shell hardcoding.
+
+## GCP-0002D Extension
+1. Added navigation routes: Products (/products), Categories (/categories), Manufacturers (/manufacturers).
+2. Added command actions: Open Products, Create New Product, Open Categories, Open Manufacturers.
+3. Added enterprise search index entries for product, category, and manufacturer registries.
+4. Permission gates are enforced through products:* capability requirements.
