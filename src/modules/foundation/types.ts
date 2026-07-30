@@ -1,6 +1,7 @@
 export type AppRole =
   | "platform_admin"
   | "ops_manager"
+  | "operations"
   | "company_operator"
   | "analyst"
   | "manufacturing_planner"
@@ -109,6 +110,14 @@ export type PermissionAction =
   | "work_orders:cancel"
   | "work_orders:view_audit"
   | "work_orders:view_revisions"
+  | "production_jobs:read"
+  | "production_jobs:create"
+  | "production_jobs:release"
+  | "production_jobs:pause"
+  | "production_jobs:cancel"
+  | "production_jobs:revise"
+  | "production_jobs:view_audit"
+  | "production_jobs:view_revisions"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -207,7 +216,11 @@ export type SearchScope =
   | "work_orders"
   | "work_order_registry"
   | "work_order_revisions"
-  | "work_order_audit";
+  | "work_order_audit"
+  | "production_jobs"
+  | "production_job_registry"
+  | "production_job_revisions"
+  | "production_job_audit";
 
 export type IntegrationProfileType =
   | "publishing"
@@ -1406,6 +1419,9 @@ export type EnterpriseSearchItem = {
     | "work_order"
     | "work_order_revision"
     | "work_order_audit"
+    | "production_job"
+    | "production_job_revision"
+    | "production_job_audit"
     | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";

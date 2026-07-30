@@ -5,6 +5,7 @@ import { resolvePermissions } from "./permissions";
 const ALLOWED_ROLES: readonly AppRole[] = [
   "platform_admin",
   "ops_manager",
+  "operations",
   "company_operator",
   "analyst",
   "manufacturing_planner",

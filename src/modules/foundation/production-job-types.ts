@@ -1,94 +1,98 @@
 import type { CommerceDocumentBase } from "./commerce-document";
 
-export type WorkOrderStatus =
+export type ProductionJobStatus =
   | "draft"
-  | "planned"
+  | "queued"
+  | "ready"
   | "released"
-  | "in_production"
+  | "running"
   | "paused"
   | "completed"
   | "cancelled"
   | "closed";
 
-export type WorkOrderLineRecord = {
+export type ProductionJobLineRecord = {
   lineId: string;
+  workOrderLineId: string;
   productId: string;
   sku: string;
   displayName: string;
   quantity: number;
   unitOfMeasure: string;
-  sourceSalesOrderLineId: string | null;
   metadata: Readonly<Record<string, string>>;
 };
 
-export type WorkOrderCommercialLineage = {
+export type ProductionJobLineage = {
+  workOrderId: string;
+  workOrderRevision: number;
   originSalesOrderId: string;
   originSalesOrderRevision: number;
   originQuoteId: string;
   originQuoteRevision: number;
   organizationId: string;
-  pricingSnapshotReference: string;
-  conversionEventId: string;
   correlationId: string;
   causationId: string;
+  manufacturingVersion: string;
   createdBy: string;
   createdTimestamp: string;
-  manufacturingVersion: string;
 };
 
-export type WorkOrderRevisionRecord = {
+export type ProductionJobRevisionRecord = {
   revisionNumber: number;
   parentRevision: number | null;
   author: string;
   timestamp: string;
   reason: string;
   changedFields: readonly string[];
-  previousState: WorkOrderStatus;
-  resultingState: WorkOrderStatus;
+  previousState: ProductionJobStatus;
+  resultingState: ProductionJobStatus;
   lineageContinuity: boolean;
 };
 
-export type WorkOrderAuditAction =
-  | "work_order_created"
-  | "work_order_viewed"
-  | "work_order_updated"
-  | "work_order_planned"
-  | "work_order_released"
-  | "work_order_paused"
-  | "work_order_resumed"
-  | "work_order_completed"
-  | "work_order_cancelled"
-  | "work_order_closed"
-  | "work_order_revision_created";
+export type ProductionJobAuditAction =
+  | "production_job_created"
+  | "production_job_viewed"
+  | "production_job_updated"
+  | "production_job_queued"
+  | "production_job_readied"
+  | "production_job_released"
+  | "production_job_started"
+  | "production_job_paused"
+  | "production_job_resumed"
+  | "production_job_completed"
+  | "production_job_cancelled"
+  | "production_job_closed"
+  | "production_job_revision_created";
 
-export type WorkOrderAuditEvent = {
+export type ProductionJobAuditEvent = {
   eventId: string;
-  workOrderId: string;
+  productionJobId: string;
   organizationId: string;
   actor: string;
-  action: WorkOrderAuditAction;
-  previousState: WorkOrderStatus;
-  resultingState: WorkOrderStatus;
+  action: ProductionJobAuditAction;
+  previousState: ProductionJobStatus;
+  resultingState: ProductionJobStatus;
   correlationId: string;
   causationId: string;
   metadata: Readonly<Record<string, string | number | boolean | null>>;
   createdAt: string;
 };
 
-export type WorkOrderEventType =
-  | "WorkOrderCreated"
-  | "WorkOrderReleased"
-  | "WorkOrderPaused"
-  | "WorkOrderCompleted"
-  | "WorkOrderCancelled"
-  | "WorkOrderClosed"
-  | "WorkOrderRevised"
-  | "WorkOrderResumed";
+export type ProductionJobEventType =
+  | "ProductionJobCreated"
+  | "ProductionJobReleased"
+  | "ProductionJobStarted"
+  | "ProductionJobPaused"
+  | "ProductionJobResumed"
+  | "ProductionJobCompleted"
+  | "ProductionJobCancelled"
+  | "ProductionJobClosed"
+  | "ProductionJobRevised";
 
-export type WorkOrderPublishedEvent = {
+export type ProductionJobPublishedEvent = {
   eventId: string;
   contractVersion: string;
-  aggregateType: "work_order";
+  aggregateType: "production_job";
   aggregateId: string;
   aggregateVersion: number;
   correlationId: string;
@@ -96,97 +100,102 @@ export type WorkOrderPublishedEvent = {
   timestamp: string;
   actor: string;
   organizationId: string;
-  type: WorkOrderEventType;
+  type: ProductionJobEventType;
   payload: Readonly<Record<string, string | number | boolean | null>>;
   metadata: Readonly<Record<string, string | number | boolean | null>>;
 };
 
-export type WorkOrderTimelineEntry = {
+export type ProductionJobTimelineEntry = {
   timestamp: string;
   category: "audit" | "revision" | "event";
   title: string;
   detail: string;
 };
 
-export type WorkOrderRecord = CommerceDocumentBase & {
-  workOrderNumber: string;
-  status: WorkOrderStatus;
-  siteReference: string | null;
+export type ProductionJobRecord = CommerceDocumentBase & {
+  productionJobNumber: string;
+  status: ProductionJobStatus;
   referenceNumber: string | null;
+  executionContext: string | null;
   requestedStartDate: string | null;
   requestedCompletionDate: string | null;
-  commercialLineage: WorkOrderCommercialLineage;
-  lines: readonly WorkOrderLineRecord[];
-  revisionHistory: readonly WorkOrderRevisionRecord[];
+  lineage: ProductionJobLineage;
+  lines: readonly ProductionJobLineRecord[];
+  revisionHistory: readonly ProductionJobRevisionRecord[];
 };
 
-export type WorkOrderValidationIssue = {
+export type ProductionJobValidationIssue = {
   field: string;
   message: string;
 };
 
-export type WorkOrderValidationResult = {
+export type ProductionJobValidationResult = {
   valid: boolean;
-  issues: readonly WorkOrderValidationIssue[];
+  issues: readonly ProductionJobValidationIssue[];
 };
 
-export type NewWorkOrderInput = {
+export type NewProductionJobInput = {
   organizationId: string;
   customerReference: string;
   ownerReference: string;
   salesRepresentativeReference: string | null;
   siteReference: string | null;
   referenceNumber: string | null;
+  executionContext: string | null;
   requestedStartDate: string | null;
   requestedCompletionDate: string | null;
-  commercialLineage: WorkOrderCommercialLineage;
-  lines: readonly WorkOrderLineRecord[];
+  lineage: ProductionJobLineage;
+  lines: readonly ProductionJobLineRecord[];
   metadata: Readonly<Record<string, string>>;
 };
 
-export type NewWorkOrderFromOrderInput = {
-  orderId: string;
+export type NewProductionJobFromWorkOrderInput = {
+  workOrderId: string;
   referenceNumber: string | null;
+  executionContext: string | null;
   correlationId: string | null;
   causationId: string | null;
 };
 
-export type UpdateWorkOrderDraftInput = Partial<
+export type UpdateProductionJobDraftInput = Partial<
   Pick<
-    WorkOrderRecord,
+    ProductionJobRecord,
     | "ownerReference"
     | "salesRepresentativeReference"
     | "siteReference"
     | "referenceNumber"
+    | "executionContext"
     | "requestedStartDate"
     | "requestedCompletionDate"
     | "metadata"
   >
 >;
 
-export type WorkOrderListFilters = {
+export type ProductionJobListFilters = {
   organizationId?: string;
   siteReference?: string;
-  status?: WorkOrderStatus;
+  status?: ProductionJobStatus;
+  workOrderId?: string;
   salesOrderId?: string;
   quoteId?: string;
   customerReference?: string;
   query?: string;
 };
 
-export type WorkOrderSearchFilters = {
+export type ProductionJobSearchFilters = {
   organizationId?: string;
   siteReference?: string;
   query: string;
 };
 
-export type WorkOrderSearchResult = {
+export type ProductionJobSearchResult = {
+  productionJobId: string;
+  productionJobNumber: string;
   workOrderId: string;
-  workOrderNumber: string;
   originSalesOrderId: string;
   originQuoteId: string;
   customerReference: string;
-  status: WorkOrderStatus;
+  status: ProductionJobStatus;
   referenceNumber: string | null;
   matchedFields: readonly string[];
 };
