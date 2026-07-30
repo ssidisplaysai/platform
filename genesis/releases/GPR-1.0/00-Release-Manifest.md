@@ -6,7 +6,7 @@ Release Date: 2026-07-30
 Release ID: GPR-1.0
 Repository: platform-glw
 Branch: feature/gar-0003-constitutional-assessment
-Release Commit: PENDING_RELEASE_COMMIT
+Release Commit: 3f763d71452b2158f8c5199d0204694166325f8a
 Git Tag: gpr-1.0.0
 
 ## Architectural Scope

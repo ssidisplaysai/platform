@@ -21,6 +21,6 @@ Future Genesis engineering shall inherit from this certified release.
 Release Version: 1.0.0
 Date: 2026-07-30
 Repository: platform-glw
-Commit: PENDING_RELEASE_COMMIT
+Commit: 3f763d71452b2158f8c5199d0204694166325f8a
 Git Tag: gpr-1.0.0
 Certification Authority: Genesis Platform Release Program
