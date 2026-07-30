@@ -10,9 +10,9 @@ Official promotion contract for Genesis Version 1.0 progression.
 ## Gate 1 Governance
 | Item | Description | Current Status | Blocking | Evidence Source | Completion Criteria | Owner |
 |---|---|---|---|---|---|---|
-| G1-01 | Governance catalog synchronized to local package reality | Complete | No | GAR-0003 Governance Debt GD-001; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md (synchronization attestation dated 2026-07-30); parity verification result (34 catalog, 34 local, zero mismatches) | Catalog parity attestation published and approved | Release Office + Governance |
-| G1-02 | Lifecycle metadata normalized across package roots | Complete | No | GAR-0003 Governance Debt GD-002; package-root lifecycle normalization records in genesis/engineering/packages/*/LIFECYCLE-METADATA.md; governance consistency verification (34 roots, 34 records, 0 inconsistencies remaining) | Canonical lifecycle markers present and consistent | Governance |
-| G1-03 | Constitutional baseline completeness ratified | Complete | No | GEAI index set; catalog parity attestation; lifecycle normalization verification results | Constitutional references reconciled with package registry | Governance |
+| G1-01 | Governance catalog synchronized to local package reality | In Progress | Yes | GAR-0003 Governance Debt GD-001; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md; genesis/engineering/packages/GRC-0001/Genesis-Version-1.0-Release-Candidate-Assessment.md (40 local roots, 34 catalog entries, 6 active roots missing from catalog) | Catalog parity attestation published and approved for the current local baseline | Release Office + Governance |
+| G1-02 | Lifecycle metadata normalized across package roots | In Progress | Yes | GAR-0003 Governance Debt GD-002; genesis/engineering/packages/GRC-0001/Genesis-Version-1.0-Release-Candidate-Assessment.md (40 roots, 35 lifecycle records, 5 active governance roots missing metadata) | Canonical lifecycle markers present and consistent across all current package roots | Governance |
+| G1-03 | Constitutional baseline completeness ratified | In Progress | Yes | GEAI index set; current catalog parity review; current lifecycle completeness review | Constitutional references reconciled with the current package registry | Governance |
 | G1-04 | Governance registry synchronization completed | Not Started | Yes | GEAI index artifacts, audit index | Governance indexes updated with no unresolved drift | Governance |
 
 ## Gate 2 Certification
@@ -21,7 +21,7 @@ Official promotion contract for Genesis Version 1.0 progression.
 | G2-01 | Mandatory certification packages complete | Complete | No | genesis/engineering/packages/GRP-0001/Genesis-Certification-Auditability-Report.md; genesis/engineering/packages/GAR-0003/Genesis-Certification-Matrix.md (RB-003 update) | Required packages have complete and auditable certification records | Domain Owners + Certification |
 | G2-02 | Open certification exceptions closed | Not Started | Yes | GAR-0003 debt registers | No open high-severity certification exceptions | Certification |
 | G2-03 | Certification registry synchronized | Complete | No | genesis/engineering/packages/GEAI-0001/Genesis-Certification-Index.md (RB-003 normalization); genesis/engineering/packages/GRP-0001/Genesis-Certification-Auditability-Report.md | Index matches auditable local certification artifacts | Certification + Governance |
-| G2-04 | Required package certifications complete for promotion scope | In Progress | Yes | genesis/engineering/packages/GAR-0003/Genesis-Certification-Matrix.md; package certification artifacts; genesis/engineering/packages/GRP-0001/Genesis-Certification-Auditability-Report.md | Promotion scope package certifications complete and signed | Certification Board |
+| G2-04 | Required package certifications complete for promotion scope | In Progress | Yes | genesis/engineering/packages/GAR-0003/Genesis-Certification-Matrix.md; package certification artifacts; genesis/engineering/packages/GRP-0001/Genesis-Certification-Auditability-Report.md; genesis/engineering/packages/GRC-0001/Genesis-Version-1.0-Release-Candidate-Assessment.md | Promotion scope package certifications complete and signed | Certification Board |
 
 ## Gate 3 Integration
 | Item | Description | Current Status | Blocking | Evidence Source | Completion Criteria | Owner |
@@ -52,3 +52,7 @@ Official promotion contract for Genesis Version 1.0 progression.
 
 ## Promotion Rule
 Version 1.0 promotion is permitted only when all Gate 1 through Gate 5 items are Complete and independently attested.
+
+## GRC-0001 Current Decision
+- Release Candidate recommendation: `NOT READY`
+- Basis: convergence complete, certification intact, engineering health positive, governance completeness and downstream gate closure incomplete.

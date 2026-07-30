@@ -11,8 +11,8 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 ## Backlog Items
 | ID | Backlog Item | Priority | Dependencies | Estimated Effort | Risk | Required Evidence | Blocking Version 1.0 | Status |
 |---|---|---|---|---|---|---|---|---|
-| RB-001 | Synchronize constitutional catalog to local package reality and publish attestation | P0 | None | Medium | High | Catalog parity report approved by governance | Yes | Complete |
-| RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | Complete |
+| RB-001 | Synchronize constitutional catalog to local package reality and publish attestation | P0 | None | Medium | High | Catalog parity report approved by governance | Yes | In Progress |
+| RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | In Progress |
 | RB-003 | Close enterprise certification auditability gaps for required promotion scope | P0 | RB-001, RB-002 | Medium to High | High | Updated certification registry with complete local evidence | Yes | Complete |
 | RB-004 | Converge release-critical branches into governed PR sequence | P0 | RB-001, RB-002 | High | High | Merge ledger, approvals, and post-merge validation results | Yes | Complete |
 | RB-005 | Complete dependency validation after convergence | P1 | RB-004 | Medium | Medium to High | Dependency validation sign-off report | Yes | Not Started |
@@ -161,6 +161,23 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 - Effect on readiness:
 1. Gate 3 critical-branch merge execution is complete.
 2. RB-004 no longer blocks Version 1.0 progression.
+
+## GRC-0001 Certification Update
+- Certification package: GRC-0001 Version 1.0 Release Candidate Readiness Assessment.
+- Assessed decision: NOT READY.
+- Findings:
+1. Release-critical branch convergence is complete and validated.
+2. Required Version 1.0 certification packages remain present and certified.
+3. Catalog parity has drifted from the earlier 34-root baseline; 6 active package roots are now missing from the constitutional package catalog.
+4. Lifecycle metadata coverage is incomplete for 5 active governance package roots.
+5. RB-005 through RB-012 remain open.
+- Status impact:
+1. RB-001 reopened as In Progress against the current 40-root local baseline.
+2. RB-002 reopened as In Progress against the current 40-root local baseline.
+3. RB-004 remains Complete.
+- Effect on readiness:
+1. Release Candidate authorization is blocked by governance completeness and downstream gate closure.
+2. Convergence completion alone is insufficient for Version 1.0 Release Candidate status.
 
 ## Backlog Ordering
 1. RB-001

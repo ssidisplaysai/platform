@@ -114,3 +114,10 @@ GRO-0006B outcomes recorded separately:
 2. Remaining governed convergence merges completed: PR #18 -> `96bfab4f6e9f4e0f77e51daf563c3cf86463eae6`, PR #19 -> `2dfd4b4005008959e4d03a51b0ea17d67569d4a4`, PR #20 -> `3943b68255db33c3cae25b1a82f7883e0d574d87`, PR #12 -> `f2b220194b9d40b8722698dd5187fe03f747dc11`.
 3. Focused customer, persistence, authorization, and manufacturing execution validations passed post-merge.
 4. RB-004 governed release-critical branch convergence is complete; next authorized package is GRC-0001 when separately approved.
+
+GRC-0001 outcomes recorded separately:
+1. Release-critical convergence baseline was reverified against `origin/main` at `f2b220194b9d40b8722698dd5187fe03f747dc11`.
+2. Engineering health was revalidated: Genesis Doctor Healthy, Genesis Self Validation VALID, and focused release-critical validation suites passed.
+3. Required certification packages remained certified and `GMP-0008B-v1.0.0` tag integrity remained unchanged.
+4. Release Candidate assessment concluded `NOT READY` because governance catalog parity and lifecycle completeness are not current for the 40-root local baseline, and downstream Gate 2 through Gate 5 items remain incomplete.
+5. Next required work is governance resynchronization plus downstream gate closure, not implementation change or new feature execution.
