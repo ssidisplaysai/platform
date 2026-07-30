@@ -1,0 +1,106 @@
+{
+  "schemaIdentifier": "gpr-0001a-07/evidence",
+  "schemaVersion": "1.0.0",
+  "packageId": "GPR-0001A-07",
+  "title": "Constitutional Recertification Evidence",
+  "evaluatedAt": "2026-07-29",
+  "baseline": {
+    "sliceCommits": {
+      "GPR-0001A-01": "a04ccbb",
+      "GPR-0001A-02A": "af81f3a",
+      "GPR-0001A-02B": "f6ac077",
+      "GPR-0001A-03": "217364a",
+      "GPR-0001A-04": "3bf99cf",
+      "GPR-0001A-05": "c32983e"
+    },
+    "head": "c32983e"
+  },
+  "evidence": [
+    {
+      "id": "GPR07-EVD-001",
+      "requirement": "Dependency boundary integrity",
+      "method": "static-scan",
+      "command": "Select-String in src/platform/gop for @/lib/glw|@/app/glw|@/components/glw",
+      "result": "PASS",
+      "details": "PLATFORM_TO_GLW_IMPORTS=0"
+    },
+    {
+      "id": "GPR07-EVD-002",
+      "requirement": "Authentication boundary preservation",
+      "method": "static-scan",
+      "command": "Select-String in src/platform/gop/auth/authentication.ts for authorize|policy|permission|workspaceMembership|action",
+      "result": "PASS",
+      "details": "AUTHN_POLICY_TOKEN=0"
+    },
+    {
+      "id": "GPR07-EVD-003",
+      "requirement": "Authorization boundary preservation",
+      "method": "static-scan",
+      "command": "Select-String in src/platform/gop/auth/authorization.ts for getGlwSession|createGlwSession|destroyGlwSession|validateGlwCredentials|cookies(|password|token",
+      "result": "PASS",
+      "details": "AUTHZ_AUTHN_TOKEN=0"
+    },
+    {
+      "id": "GPR07-EVD-004",
+      "requirement": "Workspace identity normalization integrity",
+      "method": "static-scan",
+      "command": "Select-String in src/platform/gop + src/lib/gop + src/app/glw/(protected) for glw-led-display-warehouse|GLW_WORKSPACE_ID",
+      "result": "PASS",
+      "details": "Remaining occurrences are confined to canonical source file src/platform/gop/workspaces/identity.ts"
+    },
+    {
+      "id": "GPR07-EVD-005",
+      "requirement": "Measurable architectural simplification",
+      "method": "git-metric",
+      "command": "git grep count comparison for glw-led-display-warehouse at 3bf99cf vs HEAD",
+      "result": "PASS",
+      "details": "WORKSPACE_LITERAL_COUNT_BEFORE=37; AFTER=20; REDUCTION=17"
+    },
+    {
+      "id": "GPR07-EVD-006",
+      "requirement": "Bootstrap architecture preservation",
+      "method": "static-scan",
+      "command": "Select-String in src/lib/gop/platform-bootstrap-api.ts for @/app/|@/components/glw|@/lib/glw",
+      "result": "PASS",
+      "details": "BOOTSTRAP_APP_LEAK=0"
+    },
+    {
+      "id": "GPR07-EVD-007",
+      "requirement": "Persistence abstraction integrity",
+      "method": "static-scan",
+      "command": "Select-String for Prisma imports in src/platform/gop",
+      "result": "PASS",
+      "details": "Prisma coupling is limited to persistence adapters and runtime composition boundary (runtime/prisma.ts, runtime/event-store.ts, persistence/prisma-*)"
+    },
+    {
+      "id": "GPR07-EVD-008",
+      "requirement": "Runtime behavior preservation",
+      "method": "tests",
+      "command": "npm test -- --runTestsByPath tests/gop/orchestration-runtime.test.ts tests/gop/runtime-fabric.test.ts",
+      "result": "PASS",
+      "details": "Runtime regression suites pass"
+    },
+    {
+      "id": "GPR07-EVD-009",
+      "requirement": "API compatibility and routing preservation",
+      "method": "tests",
+      "command": "npm test -- --runTestsByPath tests/gop/operations-api.test.ts tests/gop/platform-bootstrap-api.test.ts tests/gop/loader-context.test.ts",
+      "result": "PASS",
+      "details": "API/loader/bootstrap compatibility suites pass"
+    },
+    {
+      "id": "GPR07-EVD-010",
+      "requirement": "Backward compatibility",
+      "method": "aggregate-regression",
+      "command": "npm test -- --runTestsByPath tests/gop/platform-bootstrap-api.test.ts tests/gop/loader-context.test.ts tests/gop/authorization-boundary.test.ts tests/gop/auth-runtime-compatibility.test.ts tests/gop/runtime-event-store-composition.test.ts tests/gop/prisma-execution-repository-composition.test.ts tests/gop/operations-api.test.ts tests/gop/orchestration-runtime.test.ts tests/gop/runtime-fabric.test.ts",
+      "result": "PASS",
+      "details": "9 suites passed; 25 tests passed; 0 failures"
+    }
+  ],
+  "decision": {
+    "status": "APPROVED",
+    "blockers": [],
+    "implementationRequired": false,
+    "notes": "No constitutional recertification blocker was detected."
+  }
+}
