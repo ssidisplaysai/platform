@@ -11,6 +11,7 @@ import { authorizeGenesisJobAction } from "@/platform/gop/actions/authorization"
 import type { GenesisJobStatus, GenesisJobType } from "@/platform/gop/contracts";
 import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 import { getGenesisAuthenticationService } from "@/platform/identity/services";
+import { getGenesisAuthorizationService } from "@/platform/gop/auth/authorization";
 
 const GLW_MODULE_ID = "glw.core";
 const MAX_REPLAY_EVENTS = 300;
@@ -122,6 +123,35 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
   const authentication = authenticationService.getMetrics();
   const authenticationProviders = authenticationService.getProviderHealth();
   const authenticationHealth = await authenticationService.healthSnapshot();
+  const authorizationService = getGenesisAuthorizationService();
+  const authorizationMetrics = authorizationService.getMetrics();
+  const authorizationHealth = authorizationService.healthSnapshot({
+    requestId: "health-metrics",
+    principalId: subject.actorId,
+    principalName: subject.actorName,
+    actionId: "metrics:view",
+    actionType: "metrics_access",
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
+    moduleId: GLW_MODULE_ID,
+    roles: [subject.role],
+    memberships: subject.workspaceMemberships,
+    permissionSet: {
+      directPermissions: subject.permissions,
+      inheritedPermissions: [],
+      capabilityPermissions: [],
+      workspacePermissions: [],
+      resourcePermissions: [],
+    },
+    capabilities: [],
+    resource: {
+      resourceType: "SERVICE",
+      workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
+      moduleId: GLW_MODULE_ID,
+      route: "/api/gop/metrics",
+    },
+    contractVersion: "1.0.0",
+    requestedAt: new Date().toISOString(),
+  });
 
   return NextResponse.json({
     metrics,
@@ -130,6 +160,8 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
     authentication,
     authenticationProviders,
     authenticationHealth,
+    authorizationMetrics,
+    authorizationHealth,
   });
 }
 
