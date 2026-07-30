@@ -1,0 +1,291 @@
+﻿{
+    "Summary":  {
+                    "PackagesInspected":  34,
+                    "CertificationRecordsInspected":  34,
+                    "InconsistenciesFound_Pre":  15,
+                    "InconsistenciesCorrected":  15,
+                    "InconsistenciesRemaining":  0,
+                    "RequiredPackagesComplete":  6,
+                    "DocumentationGap":  0,
+                    "GovernanceGap":  0,
+                    "ValidationGap":  0,
+                    "ImplementationRequired":  0,
+                    "NotRequired":  28,
+                    "MissingRequiredInCertificationIndex":  "",
+                    "NonLocalEntriesInCertificationIndex":  ""
+                },
+    "Rows":  [
+                 {
+                     "Package":  "GAR-0003",
+                     "Required":  false,
+                     "LifecycleState":  "ASSESSED",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCDF-0001",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0001",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002A",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002A-R1",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002B",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002C",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002D",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002E",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002F",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002G",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002H-A",
+                     "Required":  true,
+                     "LifecycleState":  "CERTIFIED",
+                     "CertEvidenceFiles":  3,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "COMPLETE"
+                 },
+                 {
+                     "Package":  "GCP-0002I",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002I-A",
+                     "Required":  true,
+                     "LifecycleState":  "CERTIFIED",
+                     "CertEvidenceFiles":  2,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "COMPLETE"
+                 },
+                 {
+                     "Package":  "GCP-0002J",
+                     "Required":  false,
+                     "LifecycleState":  "APPROVED",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002M1",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GCP-0002M2",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  1,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GEAA-0001",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GEAI-0001",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GEAS-0001",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0001",
+                     "Required":  false,
+                     "LifecycleState":  "APPROVED",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0001A",
+                     "Required":  false,
+                     "LifecycleState":  "IMPLEMENTED",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0002",
+                     "Required":  false,
+                     "LifecycleState":  "IMPLEMENTED",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0002A",
+                     "Required":  true,
+                     "LifecycleState":  "CERTIFIED",
+                     "CertEvidenceFiles":  2,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "COMPLETE"
+                 },
+                 {
+                     "Package":  "GMP-0003",
+                     "Required":  false,
+                     "LifecycleState":  "IN_REVIEW",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0003A",
+                     "Required":  true,
+                     "LifecycleState":  "CERTIFIED",
+                     "CertEvidenceFiles":  2,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "COMPLETE"
+                 },
+                 {
+                     "Package":  "GMP-0004A",
+                     "Required":  false,
+                     "LifecycleState":  "IMPLEMENTED",
+                     "CertEvidenceFiles":  2,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0005A",
+                     "Required":  false,
+                     "LifecycleState":  "IMPLEMENTED",
+                     "CertEvidenceFiles":  2,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0006A",
+                     "Required":  true,
+                     "LifecycleState":  "CERTIFIED",
+                     "CertEvidenceFiles":  2,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "COMPLETE"
+                 },
+                 {
+                     "Package":  "GMP-0007",
+                     "Required":  false,
+                     "LifecycleState":  "APPROVED",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0008",
+                     "Required":  false,
+                     "LifecycleState":  "APPROVED",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0008A",
+                     "Required":  false,
+                     "LifecycleState":  "IMPLEMENTED",
+                     "CertEvidenceFiles":  0,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 },
+                 {
+                     "Package":  "GMP-0008B",
+                     "Required":  true,
+                     "LifecycleState":  "CERTIFIED",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "COMPLETE"
+                 },
+                 {
+                     "Package":  "GRP-0001",
+                     "Required":  false,
+                     "LifecycleState":  "GOVERNANCE_ACTIVE",
+                     "CertEvidenceFiles":  1,
+                     "UnresolvedCrossRefs":  0,
+                     "Classification":  "Not Required For Version 1.0"
+                 }
+             ]
+}

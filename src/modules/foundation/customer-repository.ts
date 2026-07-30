@@ -3,6 +3,12 @@ import {
   FOUNDATION_CUSTOMER_CONTACTS,
   FOUNDATION_CUSTOMERS,
 } from "./customer-fixtures";
+import {
+  deepClone,
+  loadPersistedState,
+  resetPersistedState,
+  savePersistedState,
+} from "./foundation-persistence";
 import { evaluateCustomerReadiness } from "./customer-readiness";
 import {
   validateCustomerReadinessLinks,
@@ -30,9 +36,87 @@ import type {
   UpdateCustomerInput,
 } from "./types";
 
+const PERSISTENCE_NAMESPACE = "customer-repository";
+
+type CustomerRepositoryState = {
+  customers: CustomerConfiguration[];
+  contacts: CustomerContactRecord[];
+  addresses: CustomerAddressRecord[];
+};
+
 const customerStore = new Map<string, CustomerConfiguration>();
 const contactStore = new Map<string, CustomerContactRecord>();
 const addressStore = new Map<string, CustomerAddressRecord>();
+
+function createSeedState(): CustomerRepositoryState {
+  return {
+    customers: FOUNDATION_CUSTOMERS.map((customer) => ({
+      ...deepClone(customer),
+      associatedSiteIds: [...customer.associatedSiteIds],
+      communicationPreferences: { ...customer.communicationPreferences },
+      tags: [...customer.tags],
+    })),
+    contacts: FOUNDATION_CUSTOMER_CONTACTS.map((contact) => deepClone(contact)),
+    addresses: FOUNDATION_CUSTOMER_ADDRESSES.map((address) => deepClone(address)),
+  };
+}
+
+function applyState(state: CustomerRepositoryState): void {
+  customerStore.clear();
+  state.customers.forEach((customer) => {
+    customerStore.set(customer.customerId, {
+      ...deepClone(customer),
+      associatedSiteIds: [...customer.associatedSiteIds],
+      communicationPreferences: { ...customer.communicationPreferences },
+      tags: [...customer.tags],
+    });
+  });
+
+  contactStore.clear();
+  state.contacts.forEach((contact) => {
+    contactStore.set(contact.contactId, deepClone(contact));
+  });
+
+  addressStore.clear();
+  state.addresses.forEach((address) => {
+    addressStore.set(address.addressId, deepClone(address));
+  });
+}
+
+function snapshotState(): CustomerRepositoryState {
+  return {
+    customers: Array.from(customerStore.values()).map((customer) => ({
+      ...deepClone(customer),
+      associatedSiteIds: [...customer.associatedSiteIds],
+      communicationPreferences: { ...customer.communicationPreferences },
+      tags: [...customer.tags],
+    })),
+    contacts: Array.from(contactStore.values()).map((contact) => deepClone(contact)),
+    addresses: Array.from(addressStore.values()).map((address) => deepClone(address)),
+  };
+}
+
+let stateRevision = 0;
+
+function loadStateFromPersistence(): void {
+  const loaded = loadPersistedState<CustomerRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+
+  applyState(loaded.state);
+  stateRevision = loaded.revision;
+}
+
+function persistCurrentState(): void {
+  const saved = savePersistedState<CustomerRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    state: snapshotState(),
+    expectedRevision: stateRevision,
+  });
+
+  stateRevision = saved.revision;
+}
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -69,29 +153,7 @@ function createAddressId(customerId: string, label: string): string {
   return `addr-${customerId}-${normalized}`;
 }
 
-function seedStores(): void {
-  customerStore.clear();
-  FOUNDATION_CUSTOMERS.forEach((customer) => {
-    customerStore.set(customer.customerId, {
-      ...customer,
-      associatedSiteIds: [...customer.associatedSiteIds],
-      communicationPreferences: { ...customer.communicationPreferences },
-      tags: [...customer.tags],
-    });
-  });
-
-  contactStore.clear();
-  FOUNDATION_CUSTOMER_CONTACTS.forEach((contact) => {
-    contactStore.set(contact.contactId, { ...contact });
-  });
-
-  addressStore.clear();
-  FOUNDATION_CUSTOMER_ADDRESSES.forEach((address) => {
-    addressStore.set(address.addressId, { ...address });
-  });
-}
-
-seedStores();
+loadStateFromPersistence();
 
 function hasDuplicateAccountCode(
   organizationId: string,
@@ -268,6 +330,7 @@ export function createCustomer(input: NewCustomerInput): {
   };
 
   customerStore.set(customerId, customer);
+  persistCurrentState();
   return { validation, customer };
 }
 
@@ -333,6 +396,7 @@ export function updateCustomer(
   };
 
   customerStore.set(customerId, updated);
+  persistCurrentState();
   return { validation, customer: updated };
 }
 
@@ -394,6 +458,7 @@ export function createCustomerContact(
 
   contactStore.set(contactId, contact);
   setPrimaryContactIfUnset(customerId, contactId);
+  persistCurrentState();
 
   return { validation, contact };
 }
@@ -437,6 +502,7 @@ export function updateCustomerContact(
   };
 
   contactStore.set(contactId, updated);
+  persistCurrentState();
   return { validation, contact: updated };
 }
 
@@ -498,6 +564,7 @@ export function createCustomerAddress(
 
   addressStore.set(addressId, address);
   synchronizeAddressDefaults(customerId);
+  persistCurrentState();
 
   return { validation, address };
 }
@@ -543,6 +610,7 @@ export function updateCustomerAddress(
 
   addressStore.set(addressId, updated);
   synchronizeAddressDefaults(customerId);
+  persistCurrentState();
 
   return { validation, address: updated };
 }
@@ -634,5 +702,11 @@ export function detectCustomerDuplicates(customerId: string): readonly CustomerD
 }
 
 export function resetCustomerRepositoryForTests(): void {
-  seedStores();
+  const reset = resetPersistedState<CustomerRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+
+  applyState(reset.state);
+  stateRevision = reset.revision;
 }

@@ -37,18 +37,33 @@
 - Severity: Critical
 - Classification: Data-integrity defect
 - Evidence:
-  - In-memory Map repositories and fixture seeding in site/product/inventory/profile/customer repositories.
-  - Process-local mutation and no durable transactional boundary.
-  - Files: src/modules/foundation/site-repository.ts, src/modules/foundation/product-repository.ts, src/modules/foundation/inventory-repository.ts, src/modules/foundation/integration-profile-repository.ts, src/modules/foundation/customer-repository.ts
+  - Durable state runtime implemented in src/modules/foundation/foundation-persistence.ts.
+  - Site/product/inventory/profile/customer repositories migrated to revisioned durable state envelopes.
+  - Inventory multi-step mutations include snapshot rollback semantics.
+  - Durable persistence validation suite added and passing.
+  - Files: src/modules/foundation/foundation-persistence.ts, src/modules/foundation/site-repository.ts, src/modules/foundation/product-repository.ts, src/modules/foundation/inventory-repository.ts, src/modules/foundation/integration-profile-repository.ts, src/modules/foundation/customer-repository.ts, src/modules/foundation/__tests__/durable-persistence.test.ts
 - Impact:
   - Quote aggregate cannot be safely implemented with durability, concurrency, and atomicity requirements.
 - Required action:
   - Establish durable repositories and transaction strategy before quote module starts.
 - Recommended action:
   - Introduce repository interfaces plus persistence adapters with migration plan from fixture stores.
-- Blocking status: Blocking
+- Blocking status: Resolved in R1B
 - Owner category: Platform application architecture
 - Target package: GCP-0002M1-R1B
+- Remediation summary:
+  - Introduced durable persistence engine with schema envelope, revision tokens, and atomic write pattern.
+  - Added optimistic concurrency conflict signaling at persistence boundary.
+  - Added inventory rollback handling for movement/reservation/fulfillment/reversal workflows.
+  - Added deterministic reset hooks for tests and integrated site/product reset coverage.
+  - Added persistence conformance tests for durability, rollback, conflict handling, and reset determinism.
+- Runtime verification:
+  - Focused foundation regression passed: 11 suites, 93 tests.
+  - Durable persistence suite passed: 1 suite, 5 tests.
+  - Scoped lint on touched R1B files passed.
+- Closure status: CLOSED
+- Residual conditions:
+  - Quote/order/payment/invoice implementation remains out of scope and separately gated.
 
 ## GCP-0002M1-F003
 - Title: Readiness result contract fields diverge across domains

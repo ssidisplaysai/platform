@@ -7,6 +7,7 @@ import {
   listCategories,
   listManufacturers,
   listProducts,
+  resetProductRepositoryForTests,
   updateProduct,
   validateCategories,
 } from "@/modules/foundation/product-repository";
@@ -73,6 +74,10 @@ function buildNewProductInput() {
 }
 
 describe("GCP-0002D product and catalog foundation", () => {
+  beforeEach(() => {
+    resetProductRepositoryForTests();
+  });
+
   test("fixture-backed products exist", () => {
     const products = listProducts();
     expect(products.length).toBeGreaterThanOrEqual(6);

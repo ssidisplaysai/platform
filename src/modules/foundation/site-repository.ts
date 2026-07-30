@@ -1,4 +1,10 @@
 import { FOUNDATION_SITE_FIXTURES } from "./site-fixtures";
+import {
+  deepClone,
+  loadPersistedState,
+  savePersistedState,
+  resetPersistedState,
+} from "./foundation-persistence";
 import type {
   NewSiteInput,
   SiteConfiguration,
@@ -7,9 +13,54 @@ import type {
 } from "./types";
 import { validateNewSiteInput, validateUpdateSiteInput } from "./site-validation";
 
-const siteStore = new Map<string, SiteConfiguration>(
-  FOUNDATION_SITE_FIXTURES.map((site) => [site.siteId, site]),
-);
+const PERSISTENCE_NAMESPACE = "site-repository";
+
+type SiteRepositoryState = {
+  sites: SiteConfiguration[];
+};
+
+const siteStore = new Map<string, SiteConfiguration>();
+
+function createSeedState(): SiteRepositoryState {
+  return {
+    sites: FOUNDATION_SITE_FIXTURES.map((site) => deepClone(site)),
+  };
+}
+
+function applyState(state: SiteRepositoryState): void {
+  siteStore.clear();
+  state.sites.forEach((site) => {
+    siteStore.set(site.siteId, deepClone(site));
+  });
+}
+
+function snapshotState(): SiteRepositoryState {
+  return {
+    sites: Array.from(siteStore.values()).map((site) => deepClone(site)),
+  };
+}
+
+let stateRevision = 0;
+
+function loadStateFromPersistence(): void {
+  const loaded = loadPersistedState<SiteRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+  applyState(loaded.state);
+  stateRevision = loaded.revision;
+}
+
+function persistCurrentState(): void {
+  const saved = savePersistedState<SiteRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    state: snapshotState(),
+    expectedRevision: stateRevision,
+  });
+  stateRevision = saved.revision;
+}
+
+loadStateFromPersistence();
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -76,6 +127,7 @@ export function createSite(input: NewSiteInput): {
   };
 
   siteStore.set(siteId, site);
+  persistCurrentState();
   return { validation, site };
 }
 
@@ -117,5 +169,15 @@ export function updateSite(
   };
 
   siteStore.set(siteId, updated);
+  persistCurrentState();
   return { validation, site: updated };
+}
+
+export function resetSiteRepositoryForTests(): void {
+  const reset = resetPersistedState<SiteRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: createSeedState,
+  });
+  applyState(reset.state);
+  stateRevision = reset.revision;
 }

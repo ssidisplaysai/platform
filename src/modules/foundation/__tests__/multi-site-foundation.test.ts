@@ -2,7 +2,7 @@ import { createFoundationContext, getSitesForOrganization } from "@/modules/foun
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { evaluatePublishingGuard } from "@/modules/foundation/site-publishing-guard";
 import { evaluateSiteReadiness } from "@/modules/foundation/site-readiness";
-import { getSiteById, listSites } from "@/modules/foundation/site-repository";
+import { getSiteById, listSites, resetSiteRepositoryForTests } from "@/modules/foundation/site-repository";
 import { filterSites } from "@/modules/foundation/site-selectors";
 import { resolveSiteAccess } from "@/modules/foundation/site-access";
 import { validateNewSiteInput, validateUpdateSiteInput } from "@/modules/foundation/site-validation";
@@ -78,6 +78,10 @@ function createValidNewSiteInput(): NewSiteInput {
 }
 
 describe("GCP-0002C multi-site foundation", () => {
+  beforeEach(() => {
+    resetSiteRepositoryForTests();
+  });
+
   test("LED Display Warehouse site appears", () => {
     const sites = listSites();
     expect(

@@ -1,0 +1,23 @@
+﻿# LIFECYCLE METADATA
+
+- Package Identifier: GRP-0001
+- Program Identifier: GRP
+- Package Title: Genesis Version 1.0 Release Program
+- Lifecycle State: GOVERNANCE_ACTIVE
+- Status Value: GOVERNANCE_ACTIVE
+- Lifecycle Decision Record: UNSPECIFIED
+- Approval Record: No explicit APPROVED marker found in package README metadata.
+- Implementation Record: No explicit IMPLEMENTED marker found in package README metadata.
+- Certification Record: No certification marker found in README or certification index.
+- Closeout Record: Release program establishment recorded in GRP-0001 package.
+- Baseline Reference: genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Commit Reference: Commit not explicitly recorded in package root metadata.
+- Release Reference: GRP/GAR governance package lineage.
+- Version Reference: Version not explicitly recorded in package root metadata.
+- Package Owner: Program GRP governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GRP-0001
+- Cross-Document References: README.md; genesis/engineering/packages/GEAI-0001/Genesis-Certification-Index.md; genesis/engineering/packages/GRP-0001/Genesis-Version-1.0-Gate-Checklist.md
+- Dependencies Reference: GAR-0003
+- Successor Reference: GRP-0001A
+- Last Normalized Date: 2026-07-30
+- Normalization Source: GRP-0001B RB-002 lifecycle metadata normalization
