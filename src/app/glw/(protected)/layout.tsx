@@ -5,7 +5,9 @@ import { getGlwSession } from "@/lib/glw/auth";
 import { glwSites } from "@/lib/glw/sites";
 import { initializePlatform } from "@/lib/gop/platform-bootstrap-api";
 import type { GenesisWorkspaceDescriptor } from "@/platform/gop/contracts";
-import { buildGenesisSubjectFromSession, isSubjectAuthorizedForRoute } from "@/platform/gop/auth/runtime";
+import { getGenesisAuthenticatedIdentityFromSession } from "@/platform/gop/auth/authentication";
+import { createGenesisAuthorizationSubjectFromIdentity } from "@/platform/gop/auth/authorization";
+import { isSubjectAuthorizedForRoute } from "@/platform/gop/auth/runtime";
 
 const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
 const GLW_MODULE_ID = "glw.core";
@@ -49,7 +51,8 @@ export default async function ProtectedGlwLayout({
     redirect("/glw/login");
   }
 
-  const subject = buildGenesisSubjectFromSession(session);
+  const identity = getGenesisAuthenticatedIdentityFromSession(session);
+  const subject = createGenesisAuthorizationSubjectFromIdentity(identity);
   const isAllowed = isSubjectAuthorizedForRoute({
     subject,
     workspaceId: GLW_WORKSPACE_ID,

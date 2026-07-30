@@ -513,6 +513,13 @@ export type GenesisAuthorizationSubject = {
   permissions: string[];
 };
 
+export type GenesisAuthenticatedIdentity = {
+  actorId: string;
+  actorName?: string;
+  email: string;
+  expiresAt: number;
+};
+
 export type GenesisAuthorizationRequest = {
   subject: GenesisAuthorizationSubject;
   workspaceId?: string;
