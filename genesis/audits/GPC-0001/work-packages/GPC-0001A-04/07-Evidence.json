@@ -1,0 +1,105 @@
+{
+  "program": "GPC-0001",
+  "workPackage": "GPC-0001A-04",
+  "title": "Production Rollback and Release Recovery Certification",
+  "date": "2026-07-29",
+  "branch": "feature/gar-0003-constitutional-assessment",
+  "baselineDependencies": [
+    {
+      "workPackage": "GPC-0001A-01",
+      "commit": "35330847ff7fed5aa42ff3e413c68063f3d1ed96"
+    },
+    {
+      "workPackage": "GPC-0001A-02",
+      "commit": "a7076538ba560b2648d9a4c6b1265b2b7734dfe6"
+    },
+    {
+      "workPackage": "GPC-0001A-03",
+      "commit": "e7024f9aebab3ad7207cc00176df1d988d36b81e"
+    }
+  ],
+  "artifacts": [
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/01-Release-Management-Process.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/02-Rollback-Runbook.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/03-Release-Recovery-Plan.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/04-Release-Validation-Checklist.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/05-Rollback-Decision-Matrix.md",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/06-Production-Evidence-Register.csv",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/07-Evidence.json"
+  ],
+  "evidenceSources": [
+    "genesis/constitution/gpm-0001/Genesis-Release-Train.md:9",
+    "genesis/constitution/gpm-0001/Genesis-Release-Train.md:32",
+    "genesis/constitution/gpm-0001/Genesis-Release-Train.md:35",
+    "genesis/constitution/gpm-0001/Genesis-Release-Train.md:44",
+    ".github/workflows/atlas-guardrails.yml:26",
+    "package.json:7",
+    "package.json:8",
+    "package.json:20",
+    "ENGINEERING_CONTACTS.md:10",
+    "ENGINEERING_CONTACTS.md:13",
+    "ENGINEERING_CONTACTS.md:15",
+    "ENGINEERING_CONTACTS.md:19",
+    "ENGINEERING_CONTACTS.md:21",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/03-Deployment-Runbook.md:13",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/03-Deployment-Runbook.md:44",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/03-Deployment-Runbook.md:45",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/03-Deployment-Runbook.md:86",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/03-Deployment-Runbook.md:102",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/05-Production-Verification-Checklist.md:20",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/05-Production-Verification-Checklist.md:27",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-01/05-Production-Verification-Checklist.md:28",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-02/02-Restore-Runbook.md:44",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-02/02-Restore-Runbook.md:112",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-02/03-Disaster-Recovery-Plan.md:23",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-02/03-Disaster-Recovery-Plan.md:47",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-02/03-Disaster-Recovery-Plan.md:87",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-03/03-Incident-Response-Runbook.md:41",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-03/03-Incident-Response-Runbook.md:48",
+    "genesis/audits/GPC-0001/work-packages/GPC-0001A-03/03-Incident-Response-Runbook.md:121",
+    "src/app/api/glw/jobs/[id]/retry/route.ts:2",
+    "src/app/api/glw/jobs/callback/retry/route.ts:2",
+    "src/app/api/gop/dead-letters/[id]/retry/route.ts:2",
+    "src/app/api/gmp/publishing/publications/[publicationId]/rollback/route.ts:2",
+    "src/lib/glw/page-generation-api.ts:154",
+    "src/lib/glw/page-generation-api.ts:171",
+    "src/lib/glw/page-generation-api.ts:182",
+    "src/lib/gop/fabric-api.ts:56",
+    "src/lib/gop/fabric-api.ts:67",
+    "src/lib/glw/prisma.ts:13",
+    "src/platform/gop/runtime/prisma.ts:13",
+    "src/platform/gop/workspaces/identity.ts:24",
+    "src/platform/gop/workspaces/identity.ts:53",
+    "src/lib/gop/platform-bootstrap-api.ts:18",
+    "src/lib/gop/platform-bootstrap-api.ts:55"
+  ],
+  "validation": {
+    "everyReleaseHasOwner": "pass",
+    "everyReleaseStageHasAcceptanceCriteria": "pass",
+    "everyDeploymentHasValidationSteps": "pass",
+    "everyRollbackPathDocumented": "pass",
+    "databaseRecoveryStrategyDocumented": "pass",
+    "recoveryDecisionAuthorityDocumented": "pass",
+    "externalRollbackEvidenceRecorded": "pass_with_conditions",
+    "productionEvidenceRegisterCompleteAndInternallyConsistent": "pass"
+  },
+  "productionEvidenceRegister": {
+    "path": "genesis/audits/GPC-0001/work-packages/GPC-0001A-04/06-Production-Evidence-Register.csv",
+    "totalRows": 37,
+    "verifiedRows": 25,
+    "pendingRows": 11,
+    "missingRows": 1
+  },
+  "openConditions": [
+    "External deployment platform rollback execution evidence is pending.",
+    "External database rollback or forward-recovery execution evidence is pending.",
+    "External configuration rollback control evidence is pending.",
+    "External DNS/SSL/reverse-proxy rollback evidence is pending.",
+    "External compute and partial-deployment recovery evidence is pending.",
+    "External release communications and audit-trail evidence is pending.",
+    "External dynamic feature-flag rollback evidence is missing if such platform is used in production.",
+    "External release-approval sign-off records are pending.",
+    "External monitoring and incident-management execution records remain pending from A-03 continuity requirements."
+  ],
+  "decision": "APPROVED_WITH_CONDITIONS"
+}
