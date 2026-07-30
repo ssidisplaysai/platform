@@ -1,7 +1,7 @@
 # Genesis Release Dashboard
 
 ## Overall Readiness
-78%
+80%
 
 ## Current Executive Decision
 NOT READY
@@ -10,7 +10,7 @@ NOT READY
 READY FOR BETA
 
 ## Release Status
-Governance-controlled promotion program active under GRP-0001D execution. RB-001 through RB-003 completed; RB-004 convergence execution in progress.
+Governance-controlled promotion program active under GRO-0001 operations. RB-001 through RB-003 completed; RB-004 operational convergence in progress.
 
 ## Current Gate
 Gate 3 Integration (convergence planning complete; merge approvals pending)
@@ -40,7 +40,8 @@ Required Scope Auditable
 
 ## Merge Status
 Partially converged (governance)
-- Dependency chain and merge order are defined; 8 required PRs remain unopened and 1 open PR requires refresh/revalidation.
+- Dependency chain and merge order are defined; all in-scope branches are now published to origin.
+- 8 required PRs remain uncreated due authorization constraints; PR #12 head is synchronized and pending review.
 
 ## Critical Path
 1. Gate 1 governance registry synchronization.
@@ -51,16 +52,16 @@ Partially converged (governance)
 
 ## Next Milestone
 Gate 3 Convergence Execution Review
-- Deliverables: PR coverage for all release-critical dependency branches, approval evidence, and merge ledger.
+- Deliverables: PR creation for 8 missing branches, approval evidence for PR #12 and dependency-chain PRs, and merge ledger.
 
 ## Latest Blocker Execution
-- Executed blocker: RB-004 Release-critical branch convergence.
+- Executed operational package: GRO-0001 Release-critical branch convergence operations.
 - Evidence:
-1. Genesis-Branch-Convergence-Report.md published with release-critical branch inventory and merge dependency graph.
-2. 11 release-critical branches inspected, with 0 predicted merge-content conflicts.
-3. PR inventory confirms 1 open PR and 8 required dependency-chain PRs not yet opened.
+1. All 9 in-scope release-critical branches published to origin and remote HEAD aligned with local HEAD.
+2. Existing PR #12 head synchronized to current branch commit.
+3. Automated creation attempts for 8 missing PRs failed with 401 Unauthorized; manual PR URLs prepared in GRO-0001 report.
 - Remaining dependencies impacted:
-1. RB-004 remains in progress until governed PR sequence is fully executed and approved.
+1. RB-004 remains in progress until governed PR sequence is fully created, reviewed, approved, and merged.
 2. Version 1.0 remains blocked by remaining Gate 1, Gate 2 sign-off, Gate 3 merge execution, Gate 4, and Gate 5 requirements.
 
 ## Dashboard Evidence Baseline
