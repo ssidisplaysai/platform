@@ -41,3 +41,18 @@ Constitution -> Governance Library -> Standards -> Procedures -> Implementations
 
 ## Machine Outputs
 See [machine/governance-registry.json](machine/governance-registry.json) for canonical machine-readable registry.
+
+## Post-Baseline Governance Publications (GPT-0001)
+- [directives/GPD-0001-Genesis-Post-Baseline-Platform-Directive.md](directives/GPD-0001-Genesis-Post-Baseline-Platform-Directive.md)
+- [directives/GPD-0001A-Genesis-Baseline-Freeze-Policy.md](directives/GPD-0001A-Genesis-Baseline-Freeze-Policy.md)
+- [roadmaps/Genesis-Post-Baseline-Delivery-Model.md](roadmaps/Genesis-Post-Baseline-Delivery-Model.md)
+- [standards/Genesis-Platform-Change-Justification-Standard.md](standards/Genesis-Platform-Change-Justification-Standard.md)
+- [standards/Genesis-Enterprise-Value-Delivery-Standard.md](standards/Genesis-Enterprise-Value-Delivery-Standard.md)
+- [milestones/Genesis-Hall-of-Milestones.md](milestones/Genesis-Hall-of-Milestones.md)
+- [milestones/Genesis-Milestone-Registration-Standard.md](milestones/Genesis-Milestone-Registration-Standard.md)
+- [briefs/Genesis-Post-Baseline-Executive-Brief.md](briefs/Genesis-Post-Baseline-Executive-Brief.md)
+- [baselines/GPR-1.0-Baseline-Inheritance-Statement.md](baselines/GPR-1.0-Baseline-Inheritance-Statement.md)
+- [programs/GID-Program-Charter.md](programs/GID-Program-Charter.md)
+
+## Baseline Status
+- GPR-1.0 is treated as complete, certified, and frozen for post-baseline governance and planning.
