@@ -346,6 +346,28 @@ export const FOUNDATION_COMMANDS: readonly CommandPaletteAction[] = [
     description: "Review publishing profile assignments and blockers",
     href: "/profiles/publishing",
     requiredPermissions: ["profiles:read", "command_palette:use"],
+  },
+  {
+    id: "open-routings",
+    label: "Open Routings",
+    description: "Review manufacturing process definitions and version history",
+    href: "/routings",
+    requiredPermissions: ["routings:read", "command_palette:use"],
+  },
+  {
+    id: "open-new-routing",
+    label: "Create Routing",
+    description: "Define ordered operation sequences without execution authority",
+    href: "/routings/new",
+    requiredPermissions: ["routings:create", "command_palette:use"],
+  },
+  {
+    id: "open-routing-audit",
+    label: "Open Routing Audit",
+    description: "Inspect routing revisions, lifecycle transitions, and version lineage",
+    href: "/routings",
+    requiredPermissions: ["routings:view_audit", "command_palette:use"],
+  },
   {
     id: "operations-search",
     title: "Operations",
@@ -353,6 +375,12 @@ export const FOUNDATION_COMMANDS: readonly CommandPaletteAction[] = [
     href: "/operations",
     scope: "operations",
   },
+  {
+    id: "routings-search",
+    title: "Routings",
+    subtitle: "Repeatable manufacturing process definitions with version lineage",
+    href: "/routings",
+    scope: "routings",
   },
   {
     id: "open-wordpress-profiles",

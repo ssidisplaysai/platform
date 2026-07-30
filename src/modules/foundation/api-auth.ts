@@ -9,6 +9,7 @@ const ALLOWED_ROLES: readonly AppRole[] = [
   "company_operator",
   "analyst",
   "manufacturing_planner",
+  "manufacturing_engineer",
   "production_supervisor",
   "executive",
   "administrator",
