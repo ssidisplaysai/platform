@@ -14,6 +14,26 @@ function request(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
 }
 
+function authHeaders(input: {
+  role?: "platform_admin" | "ops_manager" | "company_operator" | "analyst" | "viewer";
+  organizationId?: string;
+  siteId?: string;
+}): Record<string, string> {
+  const headers: Record<string, string> = {};
+
+  if (input.role) {
+    headers["x-gcp-roles"] = input.role;
+  }
+  if (input.organizationId) {
+    headers["x-gcp-organization-id"] = input.organizationId;
+  }
+  if (input.siteId) {
+    headers["x-gcp-site-id"] = input.siteId;
+  }
+
+  return headers;
+}
+
 describe("GCP-0002G customer API", () => {
   beforeEach(() => {
     resetCustomerRepositoryForTests();
@@ -22,12 +42,12 @@ describe("GCP-0002G customer API", () => {
 
   test("customer listing enforces read permission", async () => {
     const denied = await listCustomersApi(request("http://localhost/api/customers", {
-      headers: { "x-gcp-roles": "viewer" },
+      headers: authHeaders({ role: "viewer", organizationId: "led-display-warehouse" }),
     }));
     expect(denied.status).toBe(403);
 
     const allowed = await listCustomersApi(request("http://localhost/api/customers", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
     expect(allowed.status).toBe(200);
   });
@@ -95,7 +115,7 @@ describe("GCP-0002G customer API", () => {
 
   test("nested contacts and addresses routes support read/write behavior", async () => {
     const contactsRead = await contactsApi(request("http://localhost/api/customers/cust-ledw-stadium-group/contacts", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ customerId: "cust-ledw-stadium-group" }),
     });
@@ -135,7 +155,7 @@ describe("GCP-0002G customer API", () => {
     expect(contactPatch.status).toBe(200);
 
     const addressesRead = await addressesApi(request("http://localhost/api/customers/cust-ledw-stadium-group/addresses", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ customerId: "cust-ledw-stadium-group" }),
     });
@@ -181,28 +201,28 @@ describe("GCP-0002G customer API", () => {
 
   test("readiness and duplicate endpoints enforce expected roles", async () => {
     const readinessDenied = await customerReadinessApi(request("http://localhost/api/customers/cust-ledw-stadium-group/readiness", {
-      headers: { "x-gcp-roles": "viewer" },
+      headers: authHeaders({ role: "viewer", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ customerId: "cust-ledw-stadium-group" }),
     });
     expect(readinessDenied.status).toBe(403);
 
     const readinessAllowed = await customerReadinessApi(request("http://localhost/api/customers/cust-ledw-stadium-group/readiness", {
-      headers: { "x-gcp-roles": "analyst" },
+      headers: authHeaders({ role: "analyst", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ customerId: "cust-ledw-stadium-group" }),
     });
     expect(readinessAllowed.status).toBe(200);
 
     const duplicateDenied = await duplicatesApi(request("http://localhost/api/customers/cust-ledw-stadium-group/duplicates", {
-      headers: { "x-gcp-roles": "viewer" },
+      headers: authHeaders({ role: "viewer", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ customerId: "cust-ledw-stadium-group" }),
     });
     expect(duplicateDenied.status).toBe(403);
 
     const duplicateAllowed = await duplicatesApi(request("http://localhost/api/customers/cust-ledw-stadium-group/duplicates", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ customerId: "cust-ledw-stadium-group" }),
     });
@@ -211,7 +231,7 @@ describe("GCP-0002G customer API", () => {
 
   test("detail route returns not found for missing id", async () => {
     const missing = await getCustomerApi(request("http://localhost/api/customers/customer-missing", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ customerId: "customer-missing" }),
     });

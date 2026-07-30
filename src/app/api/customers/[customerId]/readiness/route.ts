@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized, resolveRequestRoles } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  resolveRequestRoles,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { recordCustomerActivity } from "@/modules/foundation/customer-audit";
 import { evaluateCustomerReadinessById, getCustomerById } from "@/modules/foundation/customer-repository";
 import { resolvePermissions } from "@/modules/foundation/permissions";
@@ -11,13 +16,26 @@ type RouteContext = {
 };
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  if (!isAuthorized(request, "customers:evaluate_readiness")) {
+  const auth = authorizeRequest(request, "customers:evaluate_readiness");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { customerId } = await context.params;
   const customer = getCustomerById(customerId);
-  if (!customer) {
+  const scopedCustomerVisible =
+    customer &&
+    customer.organizationId === scope.organizationId &&
+    (!scope.siteId ||
+      customer.primarySiteId === scope.siteId ||
+      customer.associatedSiteIds.includes(scope.siteId));
+
+  if (!scopedCustomerVisible) {
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
 

@@ -15,16 +15,20 @@
 ## API Authorization Verification (Sample)
 | Endpoint | Method | Declared Capability | Observed Viewer Result | Expected | Status |
 |---|---|---|---|---|---|
-| /api/sites | GET | sites:read | 200 | 403 | FAIL |
-| /api/products | GET | products:read | 200 | 403 | FAIL |
-| /api/inventory | GET | inventory:read | 200 | 403 | FAIL |
+| /api/sites | GET | sites:read | 403 | 403 | PASS |
+| /api/products | GET | products:read | 403 | 403 | PASS |
+| /api/inventory | GET | inventory:read | 403 | 403 | PASS |
 | /api/profiles | GET | profiles:read | 403 | 403 | PASS |
 | /api/customers | GET | customers:read | 403 | 403 | PASS |
 | /api/customers/{id}/readiness | GET | customers:evaluate_readiness | 403 | 403 | PASS |
 | /api/customers/{id}/readiness | GET (analyst) | customers:evaluate_readiness | 200 | 200 | PASS |
 | /api/inventory/movements | POST | inventory:create_movement | 403 | 403 | PASS |
+| /api/sites | GET (no auth header) | sites:read | 401 | 401 | PASS |
+| /api/products | GET (no auth header) | products:read | 401 | 401 | PASS |
+| /api/inventory | GET (no auth header) | inventory:read | 401 | 401 | PASS |
 
 ## Findings
 - Capability naming is deterministic and consistently namespaced.
-- Server-side enforcement is strong on most write and evaluation endpoints.
-- Read collection APIs for sites/products/inventory are inconsistent with permission model.
+- Server-side enforcement is strong on write and evaluation endpoints.
+- Read collection APIs for sites/products/inventory now conform to declared permission model.
+- Strict auth identity requirement and organization/site read scoping are enforced in remediated route families.

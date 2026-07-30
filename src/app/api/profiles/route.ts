@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import {
   createIntegrationProfile,
   listIntegrationProfiles,
@@ -31,13 +35,29 @@ function parseProfileType(value: string | null): IntegrationProfileType | undefi
 }
 
 export async function GET(request: NextRequest) {
-  if (!isAuthorized(request, "profiles:read")) {
+  const auth = authorizeRequest(request, "profiles:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const searchParams = request.nextUrl.searchParams;
+  const requestedOrganizationId = searchParams.get("organizationId");
+  if (requestedOrganizationId && requestedOrganizationId !== scope.organizationId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const requestedSiteId = searchParams.get("siteId");
+  if (scope.siteId && requestedSiteId && requestedSiteId !== scope.siteId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const profiles = listIntegrationProfiles({
-    organizationId: searchParams.get("organizationId") ?? undefined,
+    organizationId: scope.organizationId ?? undefined,
     profileType: parseProfileType(searchParams.get("profileType")),
     query: searchParams.get("query") ?? undefined,
     enabled: searchParams.get("enabled") === "true"
@@ -45,15 +65,16 @@ export async function GET(request: NextRequest) {
       : searchParams.get("enabled") === "false"
         ? false
         : undefined,
-    siteId: searchParams.get("siteId") ?? undefined,
+    siteId: scope.siteId ?? requestedSiteId ?? undefined,
   });
 
   return NextResponse.json({ profiles });
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request, "profiles:create")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = authorizeRequest(request, "profiles:create");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const body = (await request.json()) as NewIntegrationProfileInput;

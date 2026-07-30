@@ -9,20 +9,43 @@ function request(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
 }
 
+function authHeaders(input: {
+  role?: "platform_admin" | "ops_manager" | "company_operator" | "analyst" | "viewer";
+  organizationId?: string;
+  siteId?: string;
+}): Record<string, string> {
+  const headers: Record<string, string> = {};
+
+  if (input.role) {
+    headers["x-gcp-roles"] = input.role;
+  }
+  if (input.organizationId) {
+    headers["x-gcp-organization-id"] = input.organizationId;
+  }
+  if (input.siteId) {
+    headers["x-gcp-site-id"] = input.siteId;
+  }
+
+  return headers;
+}
+
 describe("GCP-0002F integration profiles API", () => {
   beforeEach(() => {
     resetIntegrationProfileRepositoryForTests();
   });
 
   test("profile listing requires read permission", async () => {
+    const unauthenticated = await listProfiles(request("http://localhost/api/profiles"));
+    expect(unauthenticated.status).toBe(401);
+
     const denied = await listProfiles(request("http://localhost/api/profiles", {
-      headers: { "x-gcp-roles": "viewer" },
+      headers: authHeaders({ role: "viewer", organizationId: "led-display-warehouse" }),
     }));
 
     expect(denied.status).toBe(403);
 
     const allowed = await listProfiles(request("http://localhost/api/profiles", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
 
     expect(allowed.status).toBe(200);
@@ -187,13 +210,13 @@ describe("GCP-0002F integration profiles API", () => {
 
   test("readiness endpoint supports single profile and full listing", async () => {
     const one = await getReadiness(request("http://localhost/api/profiles/readiness?profileId=profile-publishing-ledw-default", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
 
     expect(one.status).toBe(200);
 
     const all = await getReadiness(request("http://localhost/api/profiles/readiness", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }));
 
     expect(all.status).toBe(200);
@@ -201,7 +224,7 @@ describe("GCP-0002F integration profiles API", () => {
 
   test("profile detail endpoint returns not found for missing id", async () => {
     const missing = await getProfile(request("http://localhost/api/profiles/profile-missing", {
-      headers: { "x-gcp-roles": "ops_manager" },
+      headers: authHeaders({ role: "ops_manager", organizationId: "led-display-warehouse" }),
     }), {
       params: Promise.resolve({ profileId: "profile-missing" }),
     });

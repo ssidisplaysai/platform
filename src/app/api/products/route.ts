@@ -1,16 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthorized } from "@/modules/foundation/api-auth";
+import {
+  authorizeRequest,
+  hasOrganizationScope,
+  resolveRequestScope,
+} from "@/modules/foundation/api-auth";
 import { recordProductActivity } from "@/modules/foundation/product-audit";
 import { createProduct, listProducts } from "@/modules/foundation/product-repository";
+import { filterProducts } from "@/modules/foundation/product-selectors";
 import type { NewProductInput } from "@/modules/foundation/types";
 
-export async function GET() {
-  return NextResponse.json({ products: listProducts() });
+export async function GET(request: NextRequest) {
+  const auth = authorizeRequest(request, "products:read");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const products = filterProducts(listProducts(), {
+    organizationId: scope.organizationId ?? undefined,
+    siteId: scope.siteId ?? undefined,
+    query: request.nextUrl.searchParams.get("query") ?? undefined,
+  });
+
+  return NextResponse.json({ products });
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request, "products:create")) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const auth = authorizeRequest(request, "products:create");
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
   const body = (await request.json()) as NewProductInput;
