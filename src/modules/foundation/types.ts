@@ -3,6 +3,10 @@ export type AppRole =
   | "ops_manager"
   | "company_operator"
   | "analyst"
+  | "manufacturing_planner"
+  | "production_supervisor"
+  | "executive"
+  | "administrator"
   | "viewer";
 
 export type PermissionAction =
@@ -96,6 +100,15 @@ export type PermissionAction =
   | "manufacturing:transition"
   | "manufacturing:view_audit"
   | "manufacturing:publish_events"
+  | "work_orders:read"
+  | "work_orders:create"
+  | "work_orders:update"
+  | "work_orders:release"
+  | "work_orders:revise"
+  | "work_orders:pause"
+  | "work_orders:cancel"
+  | "work_orders:view_audit"
+  | "work_orders:view_revisions"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -190,7 +203,11 @@ export type SearchScope =
   | "manufacturing"
   | "manufacturing_foundation"
   | "manufacturing_revisions"
-  | "manufacturing_audit";
+  | "manufacturing_audit"
+  | "work_orders"
+  | "work_order_registry"
+  | "work_order_revisions"
+  | "work_order_audit";
 
 export type IntegrationProfileType =
   | "publishing"
@@ -1386,6 +1403,9 @@ export type EnterpriseSearchItem = {
     | "manufacturing_foundation"
     | "manufacturing_revision"
     | "manufacturing_audit"
+    | "work_order"
+    | "work_order_revision"
+    | "work_order_audit"
     | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";
