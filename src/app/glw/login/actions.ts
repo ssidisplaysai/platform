@@ -15,7 +15,7 @@ export async function loginToGlw(
   const password = String(formData.get("password") ?? "");
 
   try {
-    if (!validateGlwCredentials(email, password)) {
+    if (!(await validateGlwCredentials(email, password))) {
       return { error: "The email or password is incorrect." };
     }
 

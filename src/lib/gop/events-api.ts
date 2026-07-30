@@ -10,6 +10,7 @@ import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from 
 import { authorizeGenesisJobAction } from "@/platform/gop/actions/authorization";
 import type { GenesisJobStatus, GenesisJobType } from "@/platform/gop/contracts";
 import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
+import { getGenesisAuthenticationService } from "@/platform/identity/services";
 
 const GLW_MODULE_ID = "glw.core";
 const MAX_REPLAY_EVENTS = 300;
@@ -117,8 +118,10 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
 
   const derived = reduceEventsToMetrics(rows);
   const metrics = metricsFromDerived(derived);
+  const authentication = getGenesisAuthenticationService().getMetrics();
+  const authenticationProviders = getGenesisAuthenticationService().getProviderHealth();
 
-  return NextResponse.json({ metrics, derived, sampleSize: rows.length });
+  return NextResponse.json({ metrics, derived, sampleSize: rows.length, authentication, authenticationProviders });
 }
 
 export async function handleStreamJobEvents(request: Request, jobId: string): Promise<Response> {
