@@ -1,33 +1,13 @@
 # Genesis Constitutional Package Catalog
 
 ## Catalog Scope
-This catalog indexes all constitutional package roots currently present under `genesis/engineering/packages`. It is intentionally exhaustive to ensure all approved packages are included and no program roots are orphaned.
+This catalog indexes all package roots currently present under genesis/engineering/packages in this repository baseline. It is intentionally exhaustive for local package-root governance parity.
 
 ## Indexed Package Catalog
 | Identifier | Title | Purpose | Status | Governing Program | Dependencies | Successor Packages |
 |---|---|---|---|---|---|---|
-| GACP-0001 | Genesis Authority Convergence Program | Authority convergence architecture baseline | Indexed | GACP | GARR-0001B | None |
-| GARR-0001 | Genesis Architecture Readiness Review | Initial architecture readiness audit | Indexed | GARR | GKF-PKG-0001 | GARR-0001A |
-| GARR-0001A | Genesis Architecture Readiness Remediation | Readiness remediation package | Indexed | GARR | GARR-0001 | GARR-0001B |
-| GARR-0001B | Genesis Architecture Readiness Revalidation | Independent readiness revalidation | Indexed | GARR | GARR-0001A | GEAA-0001 |
-| GBG-0001 | Business Genome Program Baseline | Business Genome constitutional baseline | Indexed | GBG | GKF-PKG-0001 | GBG-0001A |
-| GBG-0001A | Business Genome Baseline Finalization | Baseline finalization and hardening | Indexed | GBG | GBG-0001 | GBG-0002 |
-| GBG-0002 | Business Genome Runtime Enablement | Runtime enablement architecture | Indexed | GBG | GBG-0001A | GBG-0002A |
-| GBG-0002A | Business Genome Runtime Certification | Runtime certification package | Indexed | GBG | GBG-0002 | GBG-0003 |
-| GBG-0003 | Classification Structural Parsing | Structural parsing architecture | Indexed | GBG | GBG-0002A | GBG-0003A |
-| GBG-0003A | Classification Parsing Certification Attempt | Initial certification assessment | Indexed | GBG | GBG-0003 | GBG-0003B |
-| GBG-0003B | Classification Parsing Remediation | Remediation for open blockers | Indexed | GBG | GBG-0003A | GBG-0003C |
-| GBG-0003C | Independent Recertification | Independent recertification review | Indexed | GBG | GBG-0003B | GBG-0003D |
-| GBG-0003D | Governance and Runtime Remediation | Governance and evidence remediation | Indexed | GBG | GBG-0003C | GBG-0003E |
-| GBG-0003E | Final Recertification Attempt | Recertification evidence review | Indexed | GBG | GBG-0003D | GBG-0003F |
-| GBG-0003F | Causation Contract Remediation | Event causation remediation | Indexed | GBG | GBG-0003E | GBG-0003G |
-| GBG-0003G | Final Independent Recertification | Independent final recertification | Indexed | GBG | GBG-0003F | GBG-0003H |
-| GBG-0003H | Final Governance Remediation | Final remediation closeout | Indexed | GBG | GBG-0003G | None |
-| GBGF-0001 | Business Genome Framework Baseline | Shared framework governance baseline | Indexed | GBGF | GBG-0001A | GBGF-0001A |
-| GBGF-0001A | Business Genome Framework Finalization | Framework finalization package | Indexed | GBGF | GBGF-0001 | None |
+| GAR-0003 | Genesis Constitutional Assessment | Executive readiness assessment baseline package | Indexed | GAR | GEAI-0001 | GRP-0001 |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
-| GCDM-0001 | Commerce Data Model | Canonical commerce data model architecture | Indexed | GCDM | GCP-0001 | GCDM-0001A |
-| GCDM-0001A | Commerce Data Model Certification | Data model certification package | Indexed | GCDM | GCDM-0001 | None |
 | GCP-0001 | Genesis Commerce Platform Foundation | Commerce platform constitutional baseline | Indexed | GCP | GARR-0001B | GCP-0002A |
 | GCP-0002A | Commerce Foundation Operational Baseline | Platform operational readiness baseline | Indexed | GCP | GCP-0001 | GCP-0002A-R1 |
 | GCP-0002A-R1 | Commerce Baseline Regression Alignment | Baseline closure and alignment | Indexed | GCP | GCP-0002A | GCP-0002B |
@@ -38,27 +18,33 @@ This catalog indexes all constitutional package roots currently present under `g
 | GCP-0002F | Integration Profile Foundation | Integration profile capability | Indexed | GCP | GCP-0002E | GCP-0002G |
 | GCP-0002G | Customer Foundation | Customer/account/contact capability | Indexed | GCP | GCP-0002F | GCP-0002H-A |
 | GCP-0002H-A | Quote Certification | Quote foundation certification | Indexed | GCP | GCP-0002G | GCP-0002M1 |
+| GCP-0002I | Sales Order Domain Model and Lifecycle | Sales order architecture and lifecycle foundations | Indexed | GCP | GCP-0002H-A | GCP-0002I-A |
+| GCP-0002I-A | Sales Order Foundation Certification | Sales order certification package | Indexed | GCP | GCP-0002I | GCP-0002J |
+| GCP-0002J | Quotation Foundation | Quotation architecture and governance package | Indexed | GCP | GCP-0002I-A | GCP-0002M1 |
 | GCP-0002M1 | Foundation Architecture Audit | Commerce foundation architectural audit | Indexed | GCP | GCP-0002H-A | GCP-0002M2 |
 | GCP-0002M2 | Foundation M2 Continuation | Continuation package placeholder | Indexed | GCP | GCP-0002M1 | None |
 | GEAA-0001 | Enterprise Application Architecture | Constitutional enterprise application architecture | Indexed | GEAA | GARR-0001B | GEAS-0001 |
 | GEAS-0001 | Enterprise Service Architecture | Constitutional enterprise service architecture | Indexed | GEAS | GEAA-0001 | GEAS-0001A |
 | GEAI-0001 | Genesis Enterprise Architecture Index | Authoritative architecture navigation and index package | Indexed | GEAI | GEAA-0001, GEAS-0001 | None |
-| GEP-3000 | Enterprise Platform Program 3000 | Enterprise platform architecture stream | Indexed | GEP | GARR-0001B | GEP-4000 |
-| GEP-4000 | Enterprise Platform Program 4000 | Enterprise platform extension stream | Indexed | GEP | GEP-3000 | None |
-| GKF-PKG-0001 | Genesis Constitutional Framework Package | Constitutional governance framework baseline | Indexed | GKF | None | GKF-PKG-0001A |
-| GKF-PKG-0001A | Constitutional Framework Finalization | Framework finalization and closure | Indexed | GKF | GKF-PKG-0001 | GKF-PKG-0001B |
-| GKF-PKG-0001B | Constitutional Freeze and Release | Governance freeze and release package | Indexed | GKF | GKF-PKG-0001A | None |
-| GMK-I001 | Marketing Kernel Foundation | Marketing kernel baseline architecture | Indexed | GMK | GKF-PKG-0001 | GMK-I002 |
-| GMK-I002 | Marketing Planning Intelligence | Planning intelligence architecture | Indexed | GMK | GMK-I001 | GMK-I004 |
-| GMK-I004 | Marketing Asset Intelligence | Asset intelligence architecture | Indexed | GMK | GMK-I002 | GMK-I005 |
-| GMK-I005 | Marketing Publishing Intelligence | Publishing intelligence architecture | Indexed | GMK | GMK-I004 | GMK-I006 |
-| GMK-I006 | Marketing Growth Intelligence | Growth intelligence architecture | Indexed | GMK | GMK-I005 | GMK-I007 |
-| GMK-I007 | Marketing Decision Intelligence | Decision intelligence architecture | Indexed | GMK | GMK-I006 | GMK-I007A |
-| GMK-I007A | Marketing Decision Certification | Decision intelligence certification | Indexed | GMK | GMK-I007 | None |
+| GMP-0001 | Manufacturing Foundation Architecture | Manufacturing program foundational architecture package | Indexed | GMP | GEAA-0001, GEAS-0001 | GMP-0001A |
+| GMP-0001A | Manufacturing Foundation Implementation | Manufacturing foundation implementation package | Indexed | GMP | GMP-0001 | GMP-0002 |
+| GMP-0002 | Work Order Foundation | Work order architecture and implementation package | Indexed | GMP | GMP-0001A | GMP-0002A |
+| GMP-0002A | Work Order Certification | Work order certification package | Indexed | GMP | GMP-0002 | GMP-0003 |
+| GMP-0003 | Production Job Foundation | Production job architecture and implementation package | Indexed | GMP | GMP-0002A | GMP-0003A |
+| GMP-0003A | Production Job Certification | Production job certification package | Indexed | GMP | GMP-0003 | GMP-0004A |
+| GMP-0004A | Operation Foundation Implementation | Operation implementation package | Indexed | GMP | GMP-0003A | GMP-0005A |
+| GMP-0005A | Routing Foundation Implementation | Routing implementation package | Indexed | GMP | GMP-0004A | GMP-0006A |
+| GMP-0006A | Scheduling Certification | Scheduling certification package | Indexed | GMP | GMP-0005A | GMP-0007 |
+| GMP-0007 | Manufacturing Integration Architecture | Manufacturing-to-enterprise integration architecture package | Indexed | GMP | GMP-0006A | GMP-0008 |
 | GMP-0008 | Manufacturing Execution Architecture | Manufacturing execution constitutional architecture | Indexed | GMP | GMP-0007 | GMP-0008A |
 | GMP-0008A | Manufacturing Execution Foundation | Manufacturing execution implementation foundation | Indexed | GMP | GMP-0008 | GMP-0008B |
 | GMP-0008B | Manufacturing Execution Certification | Manufacturing execution certified baseline closeout | Indexed | GMP | GMP-0008A | None |
-| GRBR-0001 | Repository Baseline Review | Repository baseline and risk review | Indexed | GRBR | GARR-0001B | GRBR-0001A |
+| GRP-0001 | Genesis Version 1.0 Release Program | Release governance package for promotion gates and executive controls | Indexed | GRP | GAR-0003 | GRP-0001A |
+
+## Synchronization Attestation
+- Date: 2026-07-30
+- Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
+- Result: Catalog identifiers now match local package roots.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.

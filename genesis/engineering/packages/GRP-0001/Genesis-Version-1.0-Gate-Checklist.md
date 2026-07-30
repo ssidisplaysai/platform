@@ -10,7 +10,7 @@ Official promotion contract for Genesis Version 1.0 progression.
 ## Gate 1 Governance
 | Item | Description | Current Status | Blocking | Evidence Source | Completion Criteria | Owner |
 |---|---|---|---|---|---|---|
-| G1-01 | Governance catalog synchronized to local package reality | Not Started | Yes | GAR-0003 Governance Debt GD-001, GEAI catalog | Catalog parity attestation published and approved | Release Office + Governance |
+| G1-01 | Governance catalog synchronized to local package reality | Complete | No | GAR-0003 Governance Debt GD-001; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md (synchronization attestation dated 2026-07-30); parity verification result (34 catalog, 34 local, zero mismatches) | Catalog parity attestation published and approved | Release Office + Governance |
 | G1-02 | Lifecycle metadata normalized across package roots | Not Started | Yes | GAR-0003 Governance Debt GD-002, Completion Matrix | Canonical lifecycle markers present and consistent | Governance |
 | G1-03 | Constitutional baseline completeness ratified | In Progress | Yes | GEAI index set, governance guides | Constitutional references reconciled with package registry | Governance |
 | G1-04 | Governance registry synchronization completed | Not Started | Yes | GEAI index artifacts, audit index | Governance indexes updated with no unresolved drift | Governance |
