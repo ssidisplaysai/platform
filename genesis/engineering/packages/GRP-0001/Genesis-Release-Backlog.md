@@ -14,7 +14,7 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 | RB-001 | Synchronize constitutional catalog to local package reality and publish attestation | P0 | None | Medium | High | Catalog parity report approved by governance | Yes | Complete |
 | RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | Complete |
 | RB-003 | Close enterprise certification auditability gaps for required promotion scope | P0 | RB-001, RB-002 | Medium to High | High | Updated certification registry with complete local evidence | Yes | Complete |
-| RB-004 | Converge release-critical branches into governed PR sequence | P0 | RB-001, RB-002 | High | High | Merge ledger, approvals, and post-merge validation results | Yes | Not Started |
+| RB-004 | Converge release-critical branches into governed PR sequence | P0 | RB-001, RB-002 | High | High | Merge ledger, approvals, and post-merge validation results | Yes | In Progress |
 | RB-005 | Complete dependency validation after convergence | P1 | RB-004 | Medium | Medium to High | Dependency validation sign-off report | Yes | Not Started |
 | RB-006 | Verify repository convergence thresholds are satisfied | P1 | RB-004 | Medium | Medium to High | Branch divergence closure report | Yes | Not Started |
 | RB-007 | Execute platform integration verification for release scope | P1 | RB-004, RB-005, RB-006 | Medium | Medium | Integration verification report approved | Yes | Not Started |
@@ -53,6 +53,17 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 4. Certification index synchronized to local auditable baseline and explicit Version 1.0 required certification scope.
 - Remaining dependencies after completion: RB-004 and downstream integration/production/executive blockers remain open.
 - Effect on readiness: certification auditability blocker is removed for Version 1.0 required scope; overall executive decision remains NOT READY.
+
+## GRP-0001D Execution Update
+- Selected blocker: RB-004.
+- Why selected: next critical-path P0 blocker after RB-003.
+- Gates affected: Gate 3 Integration (G3-01 advanced to In Progress).
+- Evidence:
+1. Genesis-Branch-Convergence-Report.md published with full branch inventory and classification.
+2. 11 release-critical branches inspected; 0 predicted merge-content conflicts.
+3. Open PR coverage found for 1 of 9 in-scope convergence branches; 8 required PRs missing.
+- Remaining dependencies after execution: approvals and dependency-chain PR execution remain open.
+- Effect on readiness: convergence governance is now deterministic and auditable; merge execution remains blocked by approvals and dependency sequencing.
 
 ## Backlog Ordering
 1. RB-001
