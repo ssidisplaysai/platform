@@ -11,13 +11,13 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 ## Backlog Items
 | ID | Backlog Item | Priority | Dependencies | Estimated Effort | Risk | Required Evidence | Blocking Version 1.0 | Status |
 |---|---|---|---|---|---|---|---|---|
-| RB-001 | Synchronize constitutional catalog to local package reality and publish attestation | P0 | None | Medium | High | Catalog parity report approved by governance | Yes | In Progress |
-| RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | In Progress |
+| RB-001 | Synchronize constitutional catalog to local package reality and publish attestation | P0 | None | Medium | High | Catalog parity report approved by governance | Yes | Complete |
+| RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | Complete |
 | RB-003 | Close enterprise certification auditability gaps for required promotion scope | P0 | RB-001, RB-002 | Medium to High | High | Updated certification registry with complete local evidence | Yes | Complete |
 | RB-004 | Converge release-critical branches into governed PR sequence | P0 | RB-001, RB-002 | High | High | Merge ledger, approvals, and post-merge validation results | Yes | Complete |
-| RB-005 | Complete dependency validation after convergence | P1 | RB-004 | Medium | Medium to High | Dependency validation sign-off report | Yes | Not Started |
-| RB-006 | Verify repository convergence thresholds are satisfied | P1 | RB-004 | Medium | Medium to High | Branch divergence closure report | Yes | Not Started |
-| RB-007 | Execute platform integration verification for release scope | P1 | RB-004, RB-005, RB-006 | Medium | Medium | Integration verification report approved | Yes | Not Started |
+| RB-005 | Complete dependency validation after convergence | P1 | RB-004 | Medium | Medium to High | Dependency validation sign-off report | Yes | Complete |
+| RB-006 | Verify repository convergence thresholds are satisfied | P1 | RB-004 | Medium | Medium to High | Branch divergence closure report | Yes | Complete |
+| RB-007 | Execute platform integration verification for release scope | P1 | RB-004, RB-005, RB-006 | Medium | Medium | Integration verification report approved | Yes | Complete |
 | RB-008 | Complete production validation bundle (deployment, monitoring, recovery, backup, audit, security) | P0 | RB-007 | Medium to High | High | Gate 4 evidence pack approved by operations and governance | Yes | Not Started |
 | RB-009 | Harden release governance execution path for protected-branch promotion | P2 | RB-004 | Low to Medium | Medium | Release governance runbook and tooling check evidence | No | Not Started |
 | RB-010 | Publish and pass Version 1.0 gate checklist execution report | P0 | RB-001 through RB-008 | Medium | High | Gate completion report with signatures | Yes | Not Started |
@@ -168,16 +168,37 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 - Findings:
 1. Release-critical branch convergence is complete and validated.
 2. Required Version 1.0 certification packages remain present and certified.
-3. Catalog parity has drifted from the earlier 34-root baseline; 6 active package roots are now missing from the constitutional package catalog.
-4. Lifecycle metadata coverage is incomplete for 5 active governance package roots.
-5. RB-005 through RB-012 remain open.
+3. Catalog parity and lifecycle completeness had drifted from the earlier 34-root baseline.
+4. Gate 4 and Gate 5 remained incomplete.
 - Status impact:
-1. RB-001 reopened as In Progress against the current 40-root local baseline.
-2. RB-002 reopened as In Progress against the current 40-root local baseline.
-3. RB-004 remains Complete.
+1. GRC-0001 identified governance completeness as the immediate remediation path.
+2. RB-004 remained Complete.
 - Effect on readiness:
-1. Release Candidate authorization is blocked by governance completeness and downstream gate closure.
-2. Convergence completion alone is insufficient for Version 1.0 Release Candidate status.
+1. Release Candidate authorization was blocked pending governance remediation and downstream gate closure.
+
+## GRR-0001 Governance Remediation Update
+- Governance package: GRR-0001 Version 1.0 Release Governance Remediation.
+- Assessed decision: NOT READY.
+- Operations completed:
+1. Constitutional catalog synchronized to the current 41-root local baseline.
+2. Lifecycle metadata completed for all current package roots.
+3. Gate 2 required-scope certification closure reverified and accepted as complete.
+4. Gate 3 dependency validation, convergence verification, and integration verification completed for the current baseline.
+- Status impact:
+1. RB-001 restored to Complete for the current baseline.
+2. RB-002 restored to Complete for the current baseline.
+3. RB-005 Complete.
+4. RB-006 Complete.
+5. RB-007 Complete.
+6. RB-004 remains Complete.
+- Remaining dependencies:
+1. RB-008 production validation bundle.
+2. RB-010 gate checklist execution report.
+3. RB-011 independent revalidation package.
+4. RB-012 executive sign-off cycle.
+- Effect on readiness:
+1. Governance completeness no longer blocks Release Candidate authorization.
+2. Remaining blockers are Gate 4 and Gate 5 only.
 
 ## Backlog Ordering
 1. RB-001

@@ -1,44 +1,48 @@
 # Genesis Release Dashboard
 
 ## Overall Readiness
-97%
+98%
 
 ## Current Executive Decision
 NOT READY
 
 ## Current Release Target
-READY FOR BETA
+READY FOR RELEASE CANDIDATE
 
 ## Release Status
-Governance-controlled promotion program active under GRC-0001 assessment. Governed convergence is complete, but Release Candidate assessment concluded `NOT READY`.
+Governance-controlled promotion program active under GRR-0001 remediation. Governance completeness is remediated for the current baseline, but Release Candidate authorization remains blocked by Gate 4 and Gate 5.
 
 ## Current Gate
-Release Candidate Readiness Review (Gate 1 governance completeness and Gate 2 through Gate 5 closures remain blocking)
+Gate 4 Production Validation (Gate 1 through Gate 3 complete; Gate 4 and Gate 5 remain blocking)
 
 ## Remaining Blockers
-1. Constitutional package catalog is not synchronized to the current 40-root local baseline.
-2. Lifecycle metadata is missing for five active governance package roots.
-3. Certification exceptions closure and certification-board sign-off are not complete.
-4. Gate 3 dependency validation, repository convergence verification, and platform integration verification are not complete.
-5. Gate 4 production validation and Gate 5 executive approvals are not complete.
+1. Gate 4 production validation evidence bundle is not complete.
+2. Gate 5 executive approval records are not complete.
 
 ## Open Risks
 1. Premature Version 1.0 declaration risk.
-2. Governance confidence risk from unresolved catalog and lifecycle-record drift.
-3. Post-convergence integration and regression risk until downstream validation gates close.
-4. Promotion timing risk from remaining certification, production, and executive approvals.
+2. Operational readiness risk until deployment, monitoring, recovery, backup, audit, and security validation close.
+3. Executive authorization risk until board, governance, architecture, release, and sponsor approvals are recorded.
+4. Promotion timing risk from remaining Gate 4 and Gate 5 closures.
 
 ## Governance Debt
-Medium to High
-- Primary open debts: GD-001, GD-002, GD-003, GD-004.
+Medium
+- Primary open debt: GD-003 outside required certification scope.
 
 ## Technical Debt
 Moderate to High
 - Primary debts: TD-001, TD-002, TD-003.
 
+## Governance Completeness
+Complete for current local baseline
+- Local package roots: 41
+- Constitutional catalog entries: 41
+- Lifecycle metadata records: 41
+- Governance registry parity mismatches: 0
+
 ## Certification Status
 Required Scope Auditable
-- Version 1.0 required certification package auditability is complete in local baseline.
+- Version 1.0 required certification package auditability is complete in the current local baseline.
 
 ## Merge Status
 Converged (governance)
@@ -56,13 +60,6 @@ Converged (governance)
 	- PR #12 -> `f2b220194b9d40b8722698dd5187fe03f747dc11`
 - Remaining open release-critical PRs: 0.
 
-## Governance Completeness
-Incomplete
-- Local package roots: 40
-- Constitutional catalog entries: 34
-- Missing package roots from catalog: GRC-0001, GRO-0001, GRO-0003, GRO-0004, GRO-0005, GRO-0006
-- Lifecycle metadata missing at active package roots: GRC-0001, GRO-0001, GRO-0003, GRO-0004, GRO-0005
-
 ## Critical Path
 1. Gate 1 governance registry synchronization.
 2. Gate 2 certification exception closure and sign-off.
@@ -71,20 +68,21 @@ Incomplete
 5. Gate 5 executive approvals.
 
 ## Next Milestone
-Governance Resynchronization and Downstream Gate Closure
-- Deliverables: refreshed catalog parity, refreshed lifecycle completeness, RB-005 dependency validation, RB-006 convergence verification, and RB-007 integration verification.
+Production Validation and Final Approval Closure
+- Deliverables: Gate 4 evidence bundle, Gate 5 approval records, and refreshed release-candidate decision packet.
 
 ## Latest Blocker Execution
-- Executed certification package: GRC-0001 Version 1.0 Release Candidate Readiness Assessment.
+- Executed governance remediation package: GRR-0001 Version 1.0 Release Governance Remediation.
 - Evidence:
-1. Baseline verified: `origin/main` remains `f2b220194b9d40b8722698dd5187fe03f747dc11` and all release-critical PRs are merged.
-2. Engineering health revalidated: Genesis Doctor Healthy, Genesis Self Validation VALID, focused release-critical suites passed (`11` suites, `49` tests).
-3. Governance completeness check found `40` local package roots, `34` catalog entries, and `35` lifecycle records.
-4. Final recommendation: `NOT READY` for official Release Candidate.
+1. Baseline reverified: `origin/main` remains `f2b220194b9d40b8722698dd5187fe03f747dc11` and all release-critical PRs remain merged.
+2. Constitutional package catalog updated to 41 of 41 current local package roots with zero mismatches.
+3. Lifecycle metadata coverage updated to 41 of 41 current package roots.
+4. Gate 2 and Gate 3 governance verification completed for the current Version 1.0 baseline.
+5. Final recommendation remains `NOT READY` because Gate 4 and Gate 5 remain incomplete.
 - Remaining dependencies impacted:
-1. RB-001 and RB-002 require renewed closure against the current local baseline.
-2. RB-004 is complete; RB-005 through RB-012 remain open.
-3. Version 1.0 remains blocked by Gate 1 governance completeness, Gate 2 closure, Gate 3 downstream verification, Gate 4, and Gate 5 requirements.
+1. RB-001 through RB-007 are complete for the current baseline.
+2. RB-008, RB-010, RB-011, and RB-012 remain open.
+3. Version 1.0 remains blocked by Gate 4 production validation and Gate 5 executive approval requirements.
 
 ## Dashboard Evidence Baseline
 - GAR-0003 executive readiness decision and readiness rationale.

@@ -39,12 +39,19 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GMP-0008 | Manufacturing Execution Architecture | Manufacturing execution constitutional architecture | Indexed | GMP | GMP-0007 | GMP-0008A |
 | GMP-0008A | Manufacturing Execution Foundation | Manufacturing execution implementation foundation | Indexed | GMP | GMP-0008 | GMP-0008B |
 | GMP-0008B | Manufacturing Execution Certification | Manufacturing execution certified baseline closeout | Indexed | GMP | GMP-0008A | None |
+| GRC-0001 | Version 1.0 Release Candidate Assessment | Release-candidate readiness certification package | Indexed | GRC | GRO-0006 | GRR-0001 |
+| GRO-0001 | Release-Critical Branch Convergence Operations | Operational branch publication and convergence preparation package | Indexed | GRO | GRP-0001 | GRO-0003 |
+| GRO-0003 | Governed Convergence Execution 1 | First governed convergence merge execution package | Indexed | GRO | GRO-0001 | GRO-0004 |
+| GRO-0004 | Governed Convergence Execution 2 | Second governed convergence merge execution package | Indexed | GRO | GRO-0003 | GRO-0005 |
+| GRO-0005 | Governed Convergence Execution 3 | Third governed convergence merge execution package | Indexed | GRO | GRO-0004 | GRO-0006 |
+| GRO-0006 | Governed Convergence Completion | Final governed convergence completion package | Indexed | GRO | GRO-0005 | GRC-0001 |
 | GRP-0001 | Genesis Version 1.0 Release Program | Release governance package for promotion gates and executive controls | Indexed | GRP | GAR-0003 | GRP-0001A |
+| GRR-0001 | Version 1.0 Release Governance Remediation | Governance completeness remediation for the current Release Candidate baseline | Indexed | GRR | GRC-0001 | None |
 
 ## Synchronization Attestation
 - Date: 2026-07-30
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: Catalog identifiers now match local package roots.
+- Result: 41 catalog identifiers, 41 local package roots, zero parity mismatches.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.

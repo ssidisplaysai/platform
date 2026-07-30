@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GRC-0001
+- Program Identifier: GRC
+- Package Title: Version 1.0 Release Candidate Readiness Assessment
+- Lifecycle State: COMPLETE
+- Status Value: COMPLETE
+- Lifecycle Decision Record: NOT READY decision recorded in Genesis-Version-1.0-Release-Candidate-Assessment.md.
+- Approval Record: Release governance assessment recorded in GRP-0001 dashboard and gate checklist.
+- Implementation Record: No implementation changes authorized in this package.
+- Certification Record: Required certification integrity reverified with no drift detected.
+- Closeout Record: Genesis-Version-1.0-Release-Candidate-Assessment.md
+- Baseline Reference: genesis/engineering/packages/GRO-0006/Genesis-Version-1.0-Convergence-Completion-Report.md
+- Commit Reference: Assessment branch commit history under feature/gcp-0002m1-r1b-durable-persistence.
+- Release Reference: genesis/engineering/packages/GRP-0001/Genesis-Release-Dashboard.md
+- Version Reference: Version 1.0 Release Candidate baseline.
+- Package Owner: Program GRC governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GRC-0001
+- Cross-Document References: Genesis-Version-1.0-Release-Candidate-Assessment.md; genesis/engineering/packages/GRP-0001/Genesis-Version-1.0-Gate-Checklist.md; genesis/engineering/packages/GRP-0001/Genesis-Release-Backlog.md
+- Dependencies Reference: GRO-0006
+- Successor Reference: GRR-0001
+- Last Normalized Date: 2026-07-30
+- Normalization Source: GRR-0001 governance remediation

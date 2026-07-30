@@ -121,3 +121,10 @@ GRC-0001 outcomes recorded separately:
 3. Required certification packages remained certified and `GMP-0008B-v1.0.0` tag integrity remained unchanged.
 4. Release Candidate assessment concluded `NOT READY` because governance catalog parity and lifecycle completeness are not current for the 40-root local baseline, and downstream Gate 2 through Gate 5 items remain incomplete.
 5. Next required work is governance resynchronization plus downstream gate closure, not implementation change or new feature execution.
+
+GRR-0001 outcomes recorded separately:
+1. Constitutional catalog synchronization was remediated for the current 41-root local baseline with zero parity mismatches.
+2. Lifecycle metadata completeness was remediated to 41 of 41 current package roots.
+3. Gate 2 required-scope certification closure and Gate 3 downstream governance verification were completed for the current Version 1.0 baseline.
+4. Release Candidate authorization remains `NOT READY` because Gate 4 production validation and Gate 5 executive approvals remain incomplete.
+5. Next required work is limited to production validation closure and final approval recording.
