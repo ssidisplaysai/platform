@@ -12,6 +12,7 @@ export * from "./runtime/orchestrator";
 export * from "./runtime/orchestration-runtime";
 export * from "./runtime/workflow-orchestrator";
 export * from "./runtime/execution-repository";
+export * from "./persistence/prisma-execution-repository";
 export * from "./runtime/snapshot-engine";
 export * from "./runtime/replay-engine";
 export * from "./runtime/worker-token";

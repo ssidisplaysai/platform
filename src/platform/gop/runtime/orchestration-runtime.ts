@@ -1,5 +1,5 @@
 import { createGenesisOrchestrationRuntime } from "./orchestrator";
-import { createPrismaExecutionRepository } from "./execution-repository";
+import { createPrismaExecutionRepository } from "../persistence/prisma-execution-repository";
 
 let singleton: ReturnType<typeof createGenesisOrchestrationRuntime> | null = null;
 
