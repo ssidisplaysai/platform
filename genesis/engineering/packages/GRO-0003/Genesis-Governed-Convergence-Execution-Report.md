@@ -48,11 +48,10 @@ Deletion evidence:
 | feature/gcp-0002g-customer-account-foundation | 15f6dc9 | 15f6dc9 | Yes | #18 | OPEN | Yes | main | MERGEABLE | 0 approvals | 0 | 0 | Present | Not required for V1.0 gate |
 | feature/gcp-0002m1-foundation-audit | a3e1dd6 | a3e1dd6 | Yes | #19 | OPEN | Yes | main | MERGEABLE | 0 approvals | 0 | 0 | Present | Not required for V1.0 gate |
 | feature/gcp-0002m1-r1a-authorization-conformance | 407b30c | 407b30c | Yes | #20 | OPEN | Yes | main | MERGEABLE | 0 approvals | 0 | 0 | Present | Not required for V1.0 gate |
-| feature/gcp-0002m1-r1b-durable-persistence | 8ea047d | a3a68e9 | No (local ahead) | #12 | OPEN | Yes | main | MERGEABLE | 0 approvals | 0 | 0 | Present | GMP-0008B required cert remains CERTIFIED |
+| feature/gcp-0002m1-r1b-durable-persistence | 5e4a79d | 5e4a79d | Yes | #12 | OPEN | Yes | main | MERGEABLE | 0 approvals | 0 | 0 | Present | GMP-0008B required cert remains CERTIFIED |
 
 Notes:
 - PR head alignment requirement is evaluated against remote branch HEAD and is satisfied for all PRs.
-- Local branch `feature/gcp-0002m1-r1b-durable-persistence` contains additional local documentation commits not pushed to origin; this does not invalidate PR #12 head alignment.
 
 ## PR #12 through #20 Alignment
 Summary:
