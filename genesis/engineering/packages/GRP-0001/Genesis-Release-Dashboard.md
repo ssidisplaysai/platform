@@ -1,7 +1,7 @@
 # Genesis Release Dashboard
 
 ## Overall Readiness
-85%
+90%
 
 ## Current Executive Decision
 NOT READY
@@ -10,10 +10,10 @@ NOT READY
 READY FOR BETA
 
 ## Release Status
-Governance-controlled promotion program active under GRO-0003 operations. RB-001 through RB-003 completed; RB-004 governed convergence execution remains in progress.
+Governance-controlled promotion program active under GRO-0004 operations. RB-001 through RB-003 completed; RB-004 governed convergence execution remains in progress.
 
 ## Current Gate
-Gate 3 Integration (single governed merge executed; convergence sequence and approvals pending)
+Gate 3 Integration (two governed merges executed; convergence sequence and approvals pending)
 
 ## Remaining Blockers
 1. Governance registry synchronization not complete.
@@ -43,7 +43,8 @@ Partially converged (governance)
 - Dependency chain and merge order are defined and ancestry-validated.
 - All 9 required PRs (#12-#20) exist and are aligned to their remote branch heads.
 - First governed merge completed: PR #13 merged to `main` at `25adf5245b3cc02e73b280893a6bed04ab254b0b`.
-- Remaining open release-critical PRs: 8 (#12, #14-#20).
+- Second governed merge completed: PR #14 merged to `main` at `d44d61407dc366da7b6321b91f27ba73eb826e80`.
+- Remaining open release-critical PRs: 7 (#12, #15-#20).
 
 ## Critical Path
 1. Gate 1 governance registry synchronization.
@@ -54,17 +55,17 @@ Partially converged (governance)
 
 ## Next Milestone
 Gate 3 Convergence Execution Review
-- Deliverables: approval evidence for remaining open PRs, continued one-by-one governed merges, and updated merge ledger.
+- Deliverables: approval evidence for remaining open PRs, continued one-by-one governed merges from PR #15 onward, and updated merge ledger.
 
 ## Latest Blocker Execution
-- Executed operational package: GRO-0003 Finalize PR Coverage and Begin Governed Branch Convergence.
+- Executed operational package: GRO-0004 Continue Governed Sequential Branch Convergence.
 - Evidence:
-1. Accidental remote branches `tmp-ignore` and `feature/gcp-0002b-commerce-foundation-pr` were verified safe and deleted.
-2. PR coverage and alignment verified for #12-#20: base `main`, no duplicates, no stale PR-head mismatches.
-3. First authorized convergence merge executed: PR #13 merged with expected head SHA lock.
-4. Post-merge validations passed: Genesis Doctor Healthy, Genesis Self Validation VALID.
+1. Prior merge verification confirmed PR #13 merge integrity and expected history in `main`.
+2. Remaining PR alignment revalidated for #12 and #14-#20 with no stale heads, no duplicates, and base `main`.
+3. Second authorized convergence merge executed: PR #14 merged with expected head SHA lock.
+4. Post-merge validations passed: Genesis Doctor Healthy, Genesis Self Validation VALID, focused Multi-Site Foundation tests passed.
 - Remaining dependencies impacted:
-1. RB-004 remains in progress until remaining 8 release-critical PRs are reviewed, approved, and merged in sequence.
+1. RB-004 remains in progress until remaining 7 release-critical PRs are reviewed, approved, and merged in sequence.
 2. Version 1.0 remains blocked by remaining Gate 1, Gate 2 sign-off, Gate 3 completion, Gate 4, and Gate 5 requirements.
 
 ## Dashboard Evidence Baseline

@@ -91,3 +91,9 @@ GRO-0003 outcomes recorded separately:
 2. Accidental remote branches cleaned up (`tmp-ignore`, `feature/gcp-0002b-commerce-foundation-pr`).
 3. First governed convergence merge completed: PR #13 merged to `main` at commit `25adf5245b3cc02e73b280893a6bed04ab254b0b`.
 4. RB-004 remains In Progress until remaining sequence is approved and merged.
+
+GRO-0004 outcomes recorded separately:
+1. Prior PR #13 merge integrity reverified and tag immutability confirmed for `GMP-0008B-v1.0.0`.
+2. Remaining alignment revalidated for #12 and #14 through #20 before second merge execution.
+3. Second governed convergence merge completed: PR #14 merged to `main` at commit `d44d61407dc366da7b6321b91f27ba73eb826e80`.
+4. Focused Multi-Site Foundation test suite passed post-merge; RB-004 remains In Progress pending remaining sequence.
