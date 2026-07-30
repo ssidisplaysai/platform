@@ -16,13 +16,14 @@ This index references constitutional certification-oriented packages and certifi
 | GBG-0003G | Final independent recertification | Final independent decision phase |
 | GMK-I007A | Marketing decision intelligence certification | Marketing kernel certification |
 | GCP-0002H-A | Quote foundation certification | Commerce quote certification |
+| GMP-0008B | Manufacturing execution foundation certification | Manufacturing execution baseline |
 | GEAA-0001 | Enterprise application architecture approval recommendation | Enterprise architecture stream |
 | GEAS-0001 | Enterprise service architecture approval recommendation | Enterprise architecture stream |
 
 ## Certification Navigation
 - Constitutional governance certification root: GKF-PKG family
 - Architecture readiness certification root: GARR family
-- Domain-specific certification roots: GCP, GBG, GMK, GCDM families
+- Domain-specific certification roots: GCP, GMP, GBG, GMK, GCDM families
 
 ## Certification Integrity Rule
 Certification packages must map to at least one governing constitutional package and one implementation or architecture scope.
