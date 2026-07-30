@@ -215,6 +215,8 @@ describe("GMP-0008A execution API", () => {
       { params: Promise.resolve({ executionId }) },
     );
     expect(waiting.status).toBe(200);
+    const eventsAfterWaiting = listExecutionPublishedEvents(executionId);
+    expect(eventsAfterWaiting.some((event) => event.eventType === "ExecutionWaiting")).toBe(true);
 
     const started = await transitionExecutionApi(
       request(`http://localhost/api/executions/${executionId}/transition`, {

@@ -1045,7 +1045,7 @@ export function waitExecution(input: { executionId: string; actor: string; reaso
     changedFields: ["status"],
     correlationId: existing.lineage.correlationId,
     causationId: existing.lineage.causationId,
-    eventType: "ExecutionUpdated",
+    eventType: "ExecutionWaiting",
     eventPayload: { status: "waiting", eventReason: input.reason ?? "Execution waiting" },
   });
 }

@@ -162,7 +162,7 @@ describe("GMP-0008A execution events", () => {
       "ExecutionUpdated",
       "ExecutionRevised",
       "ExecutionUpdated",
-      "ExecutionUpdated",
+      "ExecutionWaiting",
       "ExecutionStarted",
       "ExecutionPaused",
       "ExecutionResumed",
