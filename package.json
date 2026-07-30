@@ -14,6 +14,10 @@
     "gar2:scan": "node tools/genesis-audit/src/gar-0002-run.mjs",
     "gar2:validate": "node tools/genesis-audit/src/gar-0002-validate.mjs",
     "gar2:test": "jest tests/genesis-audit/gar-0002 --runInBand",
+    "atlas:guardrails": "node tools/atlas-guardrails/src/check.mjs",
+    "atlas:test": "jest tests/atlas-guardrails --runInBand",
+    "atlas:regression": "jest --runTestsByPath tests/gop/platform-bootstrap-api.test.ts tests/gop/loader-context.test.ts tests/gop/authorization-boundary.test.ts tests/gop/auth-runtime-compatibility.test.ts tests/gop/runtime-event-store-composition.test.ts tests/gop/prisma-execution-repository-composition.test.ts tests/gop/operations-api.test.ts tests/gop/orchestration-runtime.test.ts tests/gop/runtime-fabric.test.ts",
+    "atlas:certify": "npm run atlas:guardrails && npm run atlas:test && npm run atlas:regression",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },

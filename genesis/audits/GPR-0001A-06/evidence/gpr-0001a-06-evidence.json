@@ -1,0 +1,75 @@
+{
+  "schemaIdentifier": "gpr-0001a-06/evidence",
+  "schemaVersion": "1.0.0",
+  "packageId": "GPR-0001A-06",
+  "title": "Atlas Guardrails Enforcement Evidence",
+  "evaluatedAt": "2026-07-29",
+  "implementation": {
+    "guardrailScript": "tools/atlas-guardrails/src/check.mjs",
+    "guardrailTests": "tests/atlas-guardrails/atlas-guardrails.test.ts",
+    "ciWorkflow": ".github/workflows/atlas-guardrails.yml"
+  },
+  "requirements": [
+    {
+      "id": "GPR06-REQ-001",
+      "name": "Platform and application dependency boundary enforcement",
+      "result": "PASS",
+      "evidence": "PLATFORM_TO_GLW_IMPORTS=0"
+    },
+    {
+      "id": "GPR06-REQ-002",
+      "name": "Bootstrap boundary enforcement",
+      "result": "PASS",
+      "evidence": "BOOTSTRAP_APP_LEAK=0"
+    },
+    {
+      "id": "GPR06-REQ-003",
+      "name": "Authentication and authorization separation enforcement",
+      "result": "PASS",
+      "evidence": "AUTHN_POLICY_TOKEN=0 and AUTHZ_AUTHN_TOKEN=0"
+    },
+    {
+      "id": "GPR06-REQ-004",
+      "name": "Persistence abstraction boundary enforcement",
+      "result": "PASS",
+      "evidence": "ATLAS-PER-001 rule active with allowed Prisma coupling constrained to platform persistence adapters and runtime prisma composition module"
+    },
+    {
+      "id": "GPR06-REQ-005",
+      "name": "Workspace identity normalization enforcement",
+      "result": "PASS",
+      "evidence": "ATLAS-WS-001 rule active for certified normalization scope; guardrails pass after canonicalization fix in analytics access boundary"
+    },
+    {
+      "id": "GPR06-REQ-006",
+      "name": "CI validation integration",
+      "result": "PASS",
+      "evidence": "GitHub Actions workflow executes npm run atlas:certify on push and pull_request"
+    },
+    {
+      "id": "GPR06-REQ-007",
+      "name": "Regression prevention and runtime preservation",
+      "result": "PASS",
+      "evidence": "atlas:certify pipeline passed: guardrails pass, intentional violation tests passed (2/2), GOP regression suites passed (9 suites, 25 tests, 0 failures)"
+    }
+  ],
+  "validation": {
+    "commands": [
+      "npm run atlas:guardrails",
+      "npm run atlas:test",
+      "npm run atlas:regression",
+      "npm run atlas:certify"
+    ],
+    "results": {
+      "atlasGuardrails": "PASS",
+      "atlasIntentionalViolationTests": "PASS",
+      "atlasRegression": "PASS"
+    }
+  },
+  "decision": {
+    "status": "APPROVED",
+    "blockers": [],
+    "runtimeImpact": "No runtime functionality changed",
+    "notes": "One certification blocker was discovered and remediated: a remaining hardcoded workspace literal in analytics access boundary was normalized to canonical workspace identity constant."
+  }
+}
