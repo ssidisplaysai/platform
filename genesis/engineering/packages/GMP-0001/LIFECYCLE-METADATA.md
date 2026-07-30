@@ -1,0 +1,23 @@
+﻿# LIFECYCLE METADATA
+
+- Package Identifier: GMP-0001
+- Program Identifier: GMP
+- Package Title: Manufacturing Foundation Architecture
+- Lifecycle State: APPROVED
+- Status Value: APPROVED
+- Lifecycle Decision Record: APPROVED
+- Approval Record: Recorded in README decision metadata.
+- Implementation Record: No explicit IMPLEMENTED marker found in package README metadata.
+- Certification Record: No certification marker found in README or certification index.
+- Closeout Record: No explicit closeout record in package root metadata.
+- Baseline Reference: genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Commit Reference: Commit not explicitly recorded in package root metadata.
+- Release Reference: No direct release reference in package root metadata.
+- Version Reference: Version not explicitly recorded in package root metadata.
+- Package Owner: Program GMP governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GMP-0001
+- Cross-Document References: README.md; genesis/engineering/packages/GEAI-0001/Genesis-Certification-Index.md; genesis/engineering/packages/GRP-0001/Genesis-Version-1.0-Gate-Checklist.md
+- Dependencies Reference: GEAA-0001, GEAS-0001
+- Successor Reference: GMP-0001A
+- Last Normalized Date: 2026-07-30
+- Normalization Source: GRP-0001B RB-002 lifecycle metadata normalization

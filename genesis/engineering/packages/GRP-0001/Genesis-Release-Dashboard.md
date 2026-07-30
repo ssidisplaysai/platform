@@ -1,7 +1,7 @@
 # Genesis Release Dashboard
 
 ## Overall Readiness
-57%
+64%
 
 ## Current Executive Decision
 NOT READY
@@ -10,15 +10,15 @@ NOT READY
 READY FOR BETA
 
 ## Release Status
-Governance-controlled promotion program active under GRP-0001A execution. RB-001 completed.
+Governance-controlled promotion program active under GRP-0001B execution. RB-001 and RB-002 completed.
 
 ## Current Gate
-Gate 1 Governance (G1-02 now critical)
+Gate 1 Governance (G1-04 now critical)
 
 ## Remaining Blockers
-1. Lifecycle metadata not normalized across package roots.
-2. Critical branch convergence not complete.
-3. Certification coverage not uniformly auditable at enterprise scope.
+1. Governance registry synchronization not complete.
+2. Certification coverage not uniformly auditable at enterprise scope.
+3. Critical branch convergence not complete.
 
 ## Open Risks
 1. Premature Version 1.0 declaration risk.
@@ -28,7 +28,7 @@ Gate 1 Governance (G1-02 now critical)
 
 ## Governance Debt
 Medium to High
-- Primary open debts: GD-002, GD-003, GD-004.
+- Primary open debts: GD-003, GD-004.
 
 ## Technical Debt
 Moderate to High
@@ -43,7 +43,7 @@ Not converged
 - Multiple critical branches remain unmerged and behind main.
 
 ## Critical Path
-1. Gate 1 lifecycle normalization and governance registry synchronization.
+1. Gate 1 governance registry synchronization.
 2. Gate 2 certification completeness and exception closure.
 3. Gate 3 branch convergence and integration validation.
 4. Gate 4 production validation closure.
@@ -51,16 +51,16 @@ Not converged
 
 ## Next Milestone
 Gate 1 Governance Exit Review
-- Deliverables: lifecycle normalization report, governance registry sync report.
+- Deliverables: governance registry sync report.
 
 ## Latest Blocker Execution
-- Completed blocker: RB-001 Synchronize constitutional catalog to local package reality and publish attestation.
+- Completed blocker: RB-002 Normalize lifecycle metadata across package roots.
 - Evidence:
-1. genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md updated with synchronization attestation dated 2026-07-30.
-2. Governance parity validation: 34 catalog identifiers, 34 local package roots, zero mismatches.
+1. Lifecycle metadata normalization records generated in each governed package root as LIFECYCLE-METADATA.md.
+2. Governance consistency verification: 34 package roots inspected, 34 lifecycle records inspected, 34 inconsistencies found pre-normalization, 34 corrected, 0 remaining.
 - Remaining dependencies impacted:
-1. RB-002, RB-003, and RB-004 unblocked from RB-001 dependency perspective.
-2. Version 1.0 still blocked by remaining Gate 1 to Gate 5 requirements.
+1. RB-003 and RB-004 remain open and now lead critical path beyond Gate 1 registry sync.
+2. Version 1.0 remains blocked by remaining Gate 1 to Gate 5 requirements.
 
 ## Dashboard Evidence Baseline
 - GAR-0003 executive readiness decision and readiness rationale.

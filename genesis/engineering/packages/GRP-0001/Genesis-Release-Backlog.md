@@ -12,7 +12,7 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 | ID | Backlog Item | Priority | Dependencies | Estimated Effort | Risk | Required Evidence | Blocking Version 1.0 | Status |
 |---|---|---|---|---|---|---|---|---|
 | RB-001 | Synchronize constitutional catalog to local package reality and publish attestation | P0 | None | Medium | High | Catalog parity report approved by governance | Yes | Complete |
-| RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | Not Started |
+| RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | Complete |
 | RB-003 | Close enterprise certification auditability gaps for required promotion scope | P0 | RB-001, RB-002 | Medium to High | High | Updated certification registry with complete local evidence | Yes | Not Started |
 | RB-004 | Converge release-critical branches into governed PR sequence | P0 | RB-001, RB-002 | High | High | Merge ledger, approvals, and post-merge validation results | Yes | Not Started |
 | RB-005 | Complete dependency validation after convergence | P1 | RB-004 | Medium | Medium to High | Dependency validation sign-off report | Yes | Not Started |
@@ -31,6 +31,16 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 - Evidence: genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md synchronized with local package roots and parity verification shows 34 catalog identifiers, 34 local roots, zero mismatches.
 - Remaining dependencies after completion: RB-002, RB-003, RB-004 remain open and continue to block Version 1.0.
 - Effect on readiness: governance integrity improved; overall release decision remains NOT READY pending remaining blockers.
+
+## GRP-0001B Execution Update
+- Selected blocker: RB-002.
+- Why selected: next critical-path P0 blocker after RB-001 and prerequisite for RB-003 and RB-004.
+- Gates affected: Gate 1 Governance (G1-02 complete, G1-03 advanced).
+- Evidence:
+1. Lifecycle metadata normalization generated for every governed package root as LIFECYCLE-METADATA.md.
+2. Governance consistency verification result: 34 package roots inspected, 34 lifecycle records inspected, 34 inconsistencies found pre-normalization, 34 corrected, 0 remaining.
+- Remaining dependencies after completion: RB-003 and RB-004 remain open and continue to block Version 1.0.
+- Effect on readiness: lifecycle metadata is now deterministic and internally consistent at package-root level; overall release decision remains NOT READY pending certification and integration blockers.
 
 ## Backlog Ordering
 1. RB-001
