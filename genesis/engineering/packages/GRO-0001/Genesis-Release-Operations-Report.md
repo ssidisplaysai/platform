@@ -97,3 +97,9 @@ GRO-0004 outcomes recorded separately:
 2. Remaining alignment revalidated for #12 and #14 through #20 before second merge execution.
 3. Second governed convergence merge completed: PR #14 merged to `main` at commit `d44d61407dc366da7b6321b91f27ba73eb826e80`.
 4. Focused Multi-Site Foundation test suite passed post-merge; RB-004 remains In Progress pending remaining sequence.
+
+GRO-0005 outcomes recorded separately:
+1. Prior PR #13 and PR #14 merge integrity reverified before third merge execution.
+2. Remaining alignment revalidated for #12 and #15 through #20 before candidate execution.
+3. Third governed convergence merge completed: PR #15 merged to `main` at commit `db12b048bddd901e5280434a86aae202d2af2457`.
+4. Focused Product Catalog Foundation test suite passed post-merge; RB-004 remains In Progress pending remaining sequence.
