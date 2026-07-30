@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import type { IdentityAuditRecord } from "../contracts";
 import type { IdentityAuditSink } from "../ports";
+import {
+  type IdentityAuditStore,
+  getDefaultAuthenticationAuditStore,
+} from "../persistence";
 
 export type AuthenticationAuditEvent = {
   eventType: IdentityAuditRecord["eventType"];
@@ -9,36 +13,36 @@ export type AuthenticationAuditEvent = {
   details: IdentityAuditRecord["details"];
 };
 
-class InMemoryIdentityAuditSink implements IdentityAuditSink {
-  private readonly records: IdentityAuditRecord[] = [];
+const defaultAuditStore = getDefaultAuthenticationAuditStore();
 
-  async publish(record: IdentityAuditRecord): Promise<void> {
-    this.records.push(record);
-  }
-
-  list(): IdentityAuditRecord[] {
-    return [...this.records];
-  }
-}
-
-const defaultAuditSink = new InMemoryIdentityAuditSink();
-
-export function getIdentityAuditRecords(): IdentityAuditRecord[] {
-  return defaultAuditSink.list();
+export async function getIdentityAuditRecords(limit = 200): Promise<IdentityAuditRecord[]> {
+  return defaultAuditStore.listRecent(limit);
 }
 
 export class AuthenticationAuditWriter {
-  constructor(private readonly auditSink: IdentityAuditSink = defaultAuditSink) {}
+  constructor(private readonly auditSink: IdentityAuditSink = defaultAuditStore) {}
 
   async write(event: AuthenticationAuditEvent): Promise<void> {
-    await this.auditSink.publish({
-      auditId: randomUUID(),
-      eventType: event.eventType,
-      occurredAt: new Date().toISOString(),
-      principalId: event.principalId,
-      outcome: event.outcome,
-      details: event.details,
-    });
+    try {
+      await this.auditSink.publish({
+        auditId: randomUUID(),
+        eventType: event.eventType,
+        occurredAt: new Date().toISOString(),
+        principalId: event.principalId,
+        outcome: event.outcome,
+        details: event.details,
+      });
+    } catch {
+      // Preserve authentication runtime behavior if audit persistence is temporarily unavailable.
+    }
+  }
+
+  async listRecent(limit = 200): Promise<IdentityAuditRecord[]> {
+    if ("listRecent" in this.auditSink) {
+      return (this.auditSink as IdentityAuditStore).listRecent(limit);
+    }
+
+    return [];
   }
 
   async loginSuccess(principalId: string, providerId: string): Promise<void> {

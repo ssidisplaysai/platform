@@ -12,18 +12,18 @@ type GlwSession = {
   expiresAt: number;
 };
 
-export async function validateGlwCredentials(email: string, password: string): Promise<boolean> {
+export function validateGlwCredentials(email: string, password: string): Promise<boolean> {
   return validateGlwCredentialsThroughIdentity(email, password);
 }
 
-export async function createGlwSession(email: string): Promise<void> {
-  await createGlwSessionThroughIdentity(email);
+export function createGlwSession(email: string): Promise<void> {
+  return createGlwSessionThroughIdentity(email);
 }
 
-export async function getGlwSession(): Promise<GlwSession | null> {
+export function getGlwSession(): Promise<GlwSession | null> {
   return getGlwSessionThroughIdentity();
 }
 
-export async function destroyGlwSession(): Promise<void> {
-  await destroyGlwSessionThroughIdentity();
+export function destroyGlwSession(): Promise<void> {
+  return destroyGlwSessionThroughIdentity();
 }

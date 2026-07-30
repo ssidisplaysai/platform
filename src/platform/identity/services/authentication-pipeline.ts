@@ -70,7 +70,7 @@ export class AuthenticationPipeline {
         method: "PASSWORD",
       });
 
-      const issued = this.dependencies.sessionService.issueToken(verification.principalId);
+      const issued = await this.dependencies.sessionService.issueToken(verification.principalId);
       const session = {
         ...issued.descriptor,
         sessionId: randomUUID(),

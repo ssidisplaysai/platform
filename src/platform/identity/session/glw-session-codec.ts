@@ -35,43 +35,71 @@ function sign(secret: string, payload: string): string {
 
 export class GlwSessionCodec {
   private readonly revokedTokenHashes = new Set<string>();
+  private lastIssuedAtMs = 0;
 
   constructor(
     private readonly secret: string,
     private readonly ttlSeconds: number,
   ) {}
 
+  getTtlSeconds(): number {
+    return this.ttlSeconds;
+  }
+
+  tokenHash(token: string): string {
+    return hashToken(token);
+  }
+
   encode(payload: GlwSessionPayload): string {
     const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
     return `${encodedPayload}.${sign(this.secret, encodedPayload)}`;
   }
 
-  decode(token: string): GlwSessionPayload | null {
+  decodeWithStatus(token: string): { payload: GlwSessionPayload | null; reasonCode?: "INVALID_SESSION" | "EXPIRED_SESSION" | "REVOKED_SESSION" } {
     const [payload, signature] = token.split(".");
 
     if (!payload || !signature || !safeEquals(signature, sign(this.secret, payload))) {
-      return null;
+      return {
+        payload: null,
+        reasonCode: "INVALID_SESSION",
+      };
     }
 
     if (this.revokedTokenHashes.has(hashToken(token))) {
-      return null;
+      return {
+        payload: null,
+        reasonCode: "REVOKED_SESSION",
+      };
     }
 
     try {
       const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as GlwSessionPayload;
       if (!parsed.email || parsed.expiresAt <= Date.now()) {
         trackSessionExpired();
-        return null;
+        return {
+          payload: null,
+          reasonCode: "EXPIRED_SESSION",
+        };
       }
 
-      return parsed;
+      return { payload: parsed };
     } catch {
-      return null;
+      return {
+        payload: null,
+        reasonCode: "INVALID_SESSION",
+      };
     }
   }
 
+  decode(token: string): GlwSessionPayload | null {
+    return this.decodeWithStatus(token).payload;
+  }
+
   create(email: string): { token: string; payload: GlwSessionPayload; descriptor: SessionDescriptor } {
-    const expiresAt = Date.now() + this.ttlSeconds * 1000;
+    const now = Date.now();
+    const issuedAtMs = Math.max(now, this.lastIssuedAtMs + 1);
+    this.lastIssuedAtMs = issuedAtMs;
+    const expiresAt = issuedAtMs + this.ttlSeconds * 1000;
     const payload = {
       email: email.trim().toLowerCase(),
       expiresAt,
@@ -98,11 +126,12 @@ export class GlwSessionCodec {
   }
 
   validate(token: string): SessionValidationResult {
-    const decoded = this.decode(token);
+    const inspected = this.decodeWithStatus(token);
+    const decoded = inspected.payload;
     if (!decoded) {
       return {
         valid: false,
-        reasonCode: "INVALID_SESSION",
+        reasonCode: inspected.reasonCode ?? "INVALID_SESSION",
       };
     }
 

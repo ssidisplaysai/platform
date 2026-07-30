@@ -5138,3 +5138,42 @@ model GedAuditLineage {
   @@index([entityKey, occurredAt(sort: Desc)])
   @@index([eventType, occurredAt(sort: Desc)])
 }
+
+model IdentitySessionRecord {
+  sessionId                String   @id
+  tokenHash                String   @unique
+  principalId              String
+  identityId               String
+  authenticationContextId  String
+  issuedAt                 DateTime
+  expiresAt                DateTime
+  revokedAt                DateTime?
+  revocationReasonCode     String?
+  revokedByPrincipalId     String?
+  active                   Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([principalId, issuedAt(sort: Desc)])
+  @@index([active, expiresAt(sort: Desc)])
+  @@index([revokedAt, updatedAt(sort: Desc)])
+}
+
+model IdentityAuthenticationAudit {
+  auditId            String   @id
+  eventType          String
+  principalId        String?
+  workspaceId        String?
+  occurredAt         DateTime
+  actorPrincipalId   String?
+  correlationId      String?
+  causationId        String?
+  outcome            String
+  details            Json
+  createdAt          DateTime @default(now())
+
+  @@index([occurredAt(sort: Desc)])
+  @@index([eventType, occurredAt(sort: Desc)])
+  @@index([principalId, occurredAt(sort: Desc)])
+  @@index([outcome, occurredAt(sort: Desc)])
+}

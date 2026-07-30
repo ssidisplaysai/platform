@@ -118,10 +118,19 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
 
   const derived = reduceEventsToMetrics(rows);
   const metrics = metricsFromDerived(derived);
-  const authentication = getGenesisAuthenticationService().getMetrics();
-  const authenticationProviders = getGenesisAuthenticationService().getProviderHealth();
+  const authenticationService = getGenesisAuthenticationService();
+  const authentication = authenticationService.getMetrics();
+  const authenticationProviders = authenticationService.getProviderHealth();
+  const authenticationHealth = await authenticationService.healthSnapshot();
 
-  return NextResponse.json({ metrics, derived, sampleSize: rows.length, authentication, authenticationProviders });
+  return NextResponse.json({
+    metrics,
+    derived,
+    sampleSize: rows.length,
+    authentication,
+    authenticationProviders,
+    authenticationHealth,
+  });
 }
 
 export async function handleStreamJobEvents(request: Request, jobId: string): Promise<Response> {

@@ -69,10 +69,10 @@ export class GenesisAuthenticationService implements AuthenticationServicePort, 
     return this.sessionService.renewToken(token);
   }
 
-  revokeSessionToken(token: string, principalId?: string) {
-    this.sessionService.revokeToken(token);
-    if (principalId) {
-      void this.auditWriter.sessionRevoked(principalId);
+  async revokeSessionToken(token: string, principalId?: string) {
+    const revoked = await this.sessionService.revokeToken(token, "SESSION_REVOKED", principalId);
+    if (revoked && principalId) {
+      await this.auditWriter.sessionRevoked(principalId);
     }
   }
 
@@ -95,6 +95,7 @@ export class GenesisAuthenticationService implements AuthenticationServicePort, 
     const diagnostics = getIdentityConfigurationDiagnostics();
     const providerHealth = this.getProviderHealth();
     const metrics = this.getMetrics();
+    const activeSessions = await this.sessionService.countActiveSessions();
 
     const status = diagnostics.ok ? "HEALTHY" : "CRITICAL";
     return {
@@ -102,8 +103,17 @@ export class GenesisAuthenticationService implements AuthenticationServicePort, 
       checks: [
         {
           name: "configuration",
-          status: diagnostics.ok ? "PASS" : "FAIL",
-          detail: diagnostics.ok ? "Authentication configuration is valid." : `Missing: ${diagnostics.missingVariables.join(", ")}`,
+          status: diagnostics.missingVariables.length === 0 ? "PASS" : "FAIL",
+          detail: diagnostics.missingVariables.length === 0
+            ? "Authentication configuration is valid."
+            : `Missing: ${diagnostics.missingVariables.join(", ")}`,
+        },
+        {
+          name: "startup",
+          status: diagnostics.databaseConfigured ? "PASS" : "FAIL",
+          detail: diagnostics.databaseConfigured
+            ? "DATABASE_URL is configured for durable identity persistence."
+            : "DATABASE_URL is required for durable revocation and audit persistence.",
         },
         {
           name: "provider",
@@ -113,7 +123,7 @@ export class GenesisAuthenticationService implements AuthenticationServicePort, 
         {
           name: "session",
           status: "PASS",
-          detail: `active=${metrics.activeSessionCount}`,
+          detail: `active=${activeSessions}; inMemoryMetric=${metrics.activeSessionCount}`,
         },
       ],
       generatedAt: new Date().toISOString(),

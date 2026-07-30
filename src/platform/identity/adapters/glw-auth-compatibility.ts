@@ -27,7 +27,7 @@ export async function validateGlwCredentials(email: string, password: string): P
 
 export async function createGlwSession(email: string): Promise<void> {
   const service = getGenesisAuthenticationService();
-  const issued = service.createSessionToken(email);
+  const issued = await service.createSessionToken(email);
   const cookieStore = await cookies();
   const cookieConfig = getCookieConfiguration();
 
@@ -49,7 +49,7 @@ export async function getGlwSession(): Promise<GlwSession | null> {
     return null;
   }
 
-  const session = service.readSessionToken(token);
+  const session = await service.readSessionToken(token);
   if (!session) {
     return null;
   }
@@ -70,7 +70,7 @@ export async function renewGlwSession(): Promise<boolean> {
     return false;
   }
 
-  const renewed = service.renewSessionToken(token);
+  const renewed = await service.renewSessionToken(token);
   if (!renewed) {
     return false;
   }
@@ -93,8 +93,8 @@ export async function destroyGlwSession(): Promise<void> {
   const token = cookieStore.get(cookieConfig.name)?.value;
 
   if (token) {
-    const parsed = service.readSessionToken(token);
-    service.revokeSessionToken(token, parsed?.email);
+    const parsed = await service.readSessionToken(token);
+    await service.revokeSessionToken(token, parsed?.email);
     await service.recordLogout(parsed?.email);
   }
 

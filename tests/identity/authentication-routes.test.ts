@@ -55,11 +55,13 @@ describe("authentication route surfaces", () => {
       capability: string;
       metrics: { loginSuccessCount: number };
       providers: Array<{ providerId: string; status: string }>;
+      health: { status: string };
     };
 
     expect(response.status).toBe(200);
     expect(payload.capability).toBe("identity.authentication");
     expect(payload.metrics.loginSuccessCount).toBe(1);
     expect(payload.providers[0]?.providerId).toBe("glw-local");
+    expect(payload.health.status).toBe("HEALTHY");
   });
 });

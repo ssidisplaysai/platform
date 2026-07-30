@@ -40,16 +40,19 @@ export function getIdentityConfigurationDiagnostics(): {
   providerId: string;
   secureCookies: boolean;
   sessionTtlSeconds: number;
+  databaseConfigured: boolean;
   missingVariables: string[];
 } {
   const required = ["GLW_ADMIN_EMAIL", "GLW_ADMIN_PASSWORD", "GLW_AUTH_SECRET"];
   const missingVariables = required.filter((name) => !process.env[name]);
+  const databaseConfigured = Boolean(process.env.DATABASE_URL);
 
   return {
-    ok: missingVariables.length === 0,
+    ok: missingVariables.length === 0 && databaseConfigured,
     providerId: "glw-local",
     secureCookies: process.env.NODE_ENV === "production",
     sessionTtlSeconds: 60 * 60 * 12,
+    databaseConfigured,
     missingVariables,
   };
 }

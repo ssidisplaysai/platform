@@ -5,6 +5,7 @@ describe("genesis authentication service", () => {
     process.env.GLW_ADMIN_EMAIL = "admin@example.com";
     process.env.GLW_ADMIN_PASSWORD = "secret-123";
     process.env.GLW_AUTH_SECRET = "auth-secret";
+    delete process.env.DATABASE_URL;
   });
 
   it("authenticates valid credentials", async () => {
