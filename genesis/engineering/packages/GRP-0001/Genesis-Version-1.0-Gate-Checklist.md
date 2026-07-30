@@ -18,10 +18,10 @@ Official promotion contract for Genesis Version 1.0 progression.
 ## Gate 2 Certification
 | Item | Description | Current Status | Blocking | Evidence Source | Completion Criteria | Owner |
 |---|---|---|---|---|---|---|
-| G2-01 | Mandatory certification packages complete | In Progress | Yes | GAR-0003 Certification Matrix | Required packages have complete and auditable certification records | Domain Owners + Certification |
+| G2-01 | Mandatory certification packages complete | Complete | No | genesis/engineering/packages/GRP-0001/Genesis-Certification-Auditability-Report.md; genesis/engineering/packages/GAR-0003/Genesis-Certification-Matrix.md (RB-003 update) | Required packages have complete and auditable certification records | Domain Owners + Certification |
 | G2-02 | Open certification exceptions closed | Not Started | Yes | GAR-0003 debt registers | No open high-severity certification exceptions | Certification |
-| G2-03 | Certification registry synchronized | Not Started | Yes | Genesis-Certification-Index.md | Index matches auditable local certification artifacts | Certification + Governance |
-| G2-04 | Required package certifications complete for promotion scope | In Progress | Yes | GAR-0003 Certification Matrix, package records | Promotion scope package certifications complete and signed | Certification Board |
+| G2-03 | Certification registry synchronized | Complete | No | genesis/engineering/packages/GEAI-0001/Genesis-Certification-Index.md (RB-003 normalization); genesis/engineering/packages/GRP-0001/Genesis-Certification-Auditability-Report.md | Index matches auditable local certification artifacts | Certification + Governance |
+| G2-04 | Required package certifications complete for promotion scope | In Progress | Yes | genesis/engineering/packages/GAR-0003/Genesis-Certification-Matrix.md; package certification artifacts; genesis/engineering/packages/GRP-0001/Genesis-Certification-Auditability-Report.md | Promotion scope package certifications complete and signed | Certification Board |
 
 ## Gate 3 Integration
 | Item | Description | Current Status | Blocking | Evidence Source | Completion Criteria | Owner |

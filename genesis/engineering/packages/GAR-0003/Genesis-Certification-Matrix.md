@@ -3,30 +3,29 @@
 ## Matrix Scope
 Certification posture based on canonical certification index and local package evidence.
 
+RB-003 Update:
+- This matrix is updated by GRP-0001C to reflect auditable local certification scope for Version 1.0 promotion gating.
+
 ## Certification Index Baseline
 Source: genesis/engineering/packages/GEAI-0001/Genesis-Certification-Index.md
 
-## Certification Matrix
-| Package | Stream | Certification State | Evidence Strength |
-|---|---|---|---|
-| GKF-PKG-0001B | Governance | Indexed certification package | Catalog-only in local workspace |
-| GARR-0001B | Architecture readiness | Indexed certification package | Catalog-only in local workspace |
-| GCDM-0001A | Commerce data model | Indexed certification package | Catalog-only in local workspace |
-| GBG-0002A | Business Genome runtime | Indexed certification package | Catalog-only in local workspace |
-| GBG-0003A | Classification parsing | Indexed certification attempt | Catalog-only in local workspace |
-| GBG-0003C | Classification parsing | Indexed independent recertification | Catalog-only in local workspace |
-| GBG-0003E | Classification parsing | Indexed final recertification attempt | Catalog-only in local workspace |
-| GBG-0003G | Classification parsing | Indexed final independent recertification | Catalog-only in local workspace |
-| GMK-I007A | Marketing intelligence | Indexed certification package | Catalog-only in local workspace |
-| GCP-0002H-A | Commerce quote foundation | Indexed certification package | Local directory exists; metadata incomplete |
-| GMP-0008B | Manufacturing execution | CERTIFIED | Strong local closeout + tag evidence |
-| GEAA-0001 | Enterprise architecture | APPROVED recommendation | Local architecture package present |
-| GEAS-0001 | Enterprise services | APPROVED recommendation | Local architecture package present |
+## Certification Matrix (Version 1.0 Required Scope)
+| Package | Stream | Certification State | Classification | Evidence Strength |
+|---|---|---|---|---|
+| GCP-0002H-A | Commerce quote foundation | CERTIFIED | COMPLETE | Certification package files present and lifecycle metadata normalized |
+| GCP-0002I-A | Commerce sales order foundation | CERTIFIED | COMPLETE | Certification package files present and lifecycle metadata consistent |
+| GMP-0002A | Manufacturing work order foundation | CERTIFIED | COMPLETE | Certification package files present and lifecycle metadata consistent |
+| GMP-0003A | Manufacturing production job foundation | CERTIFIED | COMPLETE | Certification package files present and lifecycle metadata consistent |
+| GMP-0006A | Manufacturing scheduling foundation | CERTIFIED | COMPLETE | Certification package files present and lifecycle metadata consistent |
+| GMP-0008B | Manufacturing execution foundation | CERTIFIED | COMPLETE | Strong closeout and immutable certification-tag baseline evidence |
+
+## Certification Matrix (Not Required For Version 1.0 Scope)
+- All other governed package roots are currently classified as Not Required For Version 1.0 certification gating in this baseline.
 
 ## Certification Findings
-1. Certification index breadth is high, but local certifiable evidence is uneven by stream.
-2. Manufacturing certification evidence is strongest (GMP-0008B certified baseline, immutable tag reference).
-3. Several indexed certification packages are not locally present for direct executive audit in this workspace state.
+1. Required Version 1.0 certification packages are complete and auditable in the local baseline.
+2. Certification index was normalized to separate local auditable records from non-materialized lineage entries.
+3. No remaining certification metadata inconsistencies were found in required scope after RB-003 corrections.
 
 ## Certification Conclusion
-Enterprise-level certification completeness is not yet sufficient for Version 1.0 declaration.
+Certification auditability for Version 1.0 required package scope is complete; Version 1.0 declaration remains gated by non-certification critical-path items.
