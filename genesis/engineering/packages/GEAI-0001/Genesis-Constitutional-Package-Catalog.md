@@ -8,6 +8,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 |---|---|---|---|---|---|---|
 | GAR-0003 | Genesis Constitutional Assessment | Executive readiness assessment baseline package | Indexed | GAR | GEAI-0001 | GRP-0001 |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
+| GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
 | GCP-0001 | Genesis Commerce Platform Foundation | Commerce platform constitutional baseline | Indexed | GCP | GARR-0001B | GCP-0002A |
 | GCP-0002A | Commerce Foundation Operational Baseline | Platform operational readiness baseline | Indexed | GCP | GCP-0001 | GCP-0002A-R1 |
 | GCP-0002A-R1 | Commerce Baseline Regression Alignment | Baseline closure and alignment | Indexed | GCP | GCP-0002A | GCP-0002B |
@@ -39,6 +40,8 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GMP-0008 | Manufacturing Execution Architecture | Manufacturing execution constitutional architecture | Indexed | GMP | GMP-0007 | GMP-0008A |
 | GMP-0008A | Manufacturing Execution Foundation | Manufacturing execution implementation foundation | Indexed | GMP | GMP-0008 | GMP-0008B |
 | GMP-0008B | Manufacturing Execution Certification | Manufacturing execution certified baseline closeout | Indexed | GMP | GMP-0008A | None |
+| GRH-0000 | Genesis Release History Constitutional Institution | Constitutional institution governing production release history chronology | Indexed | GRH | GCD-0003 | GRH-0001 |
+| GRH-0001 | Genesis Release History Record v0.1.0 | Inaugural constitutional production release-history record | Indexed | GRH | GRH-0000 | GRH-0002 |
 | GRP-0001 | Genesis Version 1.0 Release Program | Release governance package for promotion gates and executive controls | Indexed | GRP | GAR-0003 | GRP-0001A |
 
 ## Synchronization Attestation

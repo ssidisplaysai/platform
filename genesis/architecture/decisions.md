@@ -15,3 +15,9 @@ This document records the architectural direction for Genesis OS and should be u
 - Services host business logic.
 - Repositories handle persistence concerns.
 - UI remains presentation-focused.
+
+## Constitutional Decision Register
+
+| Decision ID | Title | State | Reference |
+|---|---|---|---|
+| GCD-0003 | Genesis Operational Platform Established | APPROVED | genesis/engineering/packages/GCD-0003/Genesis-Operational-Platform-Established-Decision.md |
