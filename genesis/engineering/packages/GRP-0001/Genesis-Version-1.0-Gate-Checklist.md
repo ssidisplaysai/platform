@@ -34,25 +34,25 @@ Official promotion contract for Genesis Version 1.0 progression.
 ## Gate 4 Production Validation
 | Item | Description | Current Status | Blocking | Evidence Source | Completion Criteria | Owner |
 |---|---|---|---|---|---|---|
-| G4-01 | Deployment validation completed | Not Started | Yes | Production readiness records | Deployment rehearsal evidence approved | Operations |
-| G4-02 | Monitoring validation completed | Not Started | Yes | Observability and readiness records | Monitoring coverage and alerting sign-off complete | Operations + SRE |
-| G4-03 | Recovery validation completed | Not Started | Yes | Disaster recovery evidence | Recovery objectives validated in rehearsal | Operations |
-| G4-04 | Backup validation completed | Not Started | Yes | Backup/restore evidence | Backup restore drill passed and signed | Operations |
-| G4-05 | Audit validation completed | Not Started | Yes | Audit index and governance records | End-to-end audit traceability approved | Audit + Governance |
-| G4-06 | Security validation completed | Not Started | Yes | Security architecture and controls evidence | Security controls review approved | Security |
+| G4-01 | Deployment validation completed | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Production readiness records | Deployment rehearsal evidence approved | Operations |
+| G4-02 | Monitoring validation completed | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Observability and readiness records | Monitoring coverage and alerting sign-off complete | Operations + SRE |
+| G4-03 | Recovery validation completed | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Disaster recovery evidence | Recovery objectives validated in rehearsal | Operations |
+| G4-04 | Backup validation completed | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Backup/restore evidence | Backup restore drill passed and signed | Operations |
+| G4-05 | Audit validation completed | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; genesis/engineering/packages/GEAI-0001/Genesis-Audit-Index.md | End-to-end audit traceability approved | Audit + Governance |
+| G4-06 | Security validation completed | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Security architecture and controls evidence | Security controls review approved | Security |
 
 ## Gate 5 Executive Approval
 | Item | Description | Current Status | Blocking | Evidence Source | Completion Criteria | Owner |
 |---|---|---|---|---|---|---|
-| G5-01 | Board approval obtained | Not Started | Yes | Board brief and executive decision package | Formal board approval recorded | Executive Board |
-| G5-02 | Architecture approval obtained | Not Started | Yes | Architecture assessment and closure evidence | Architecture authority sign-off recorded | Architecture Council |
-| G5-03 | Governance approval obtained | Not Started | Yes | Governance debt closure evidence | Governance authority sign-off recorded | Governance Council |
-| G5-04 | Release approval obtained | Not Started | Yes | Release dashboard and gate completion report | Release authority sign-off recorded | Release Office |
-| G5-05 | Version approval obtained | Not Started | Yes | Final promotion packet | Official Version 1.0 approval recorded | Executive Sponsor |
+| G5-01 | Board approval obtained | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Board brief and executive decision package | Formal board approval recorded | Executive Board |
+| G5-02 | Architecture approval obtained | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Architecture assessment and closure evidence | Architecture authority sign-off recorded | Architecture Council |
+| G5-03 | Governance approval obtained | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Governance debt closure evidence | Governance authority sign-off recorded | Governance Council |
+| G5-04 | Release approval obtained | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Release dashboard and gate completion report | Release authority sign-off recorded | Release Office |
+| G5-05 | Version approval obtained | In Progress | Yes | genesis/engineering/packages/GRC-0002/Genesis-Version-1.0-Production-Validation-and-Authorization.md; Final promotion packet | Official Version 1.0 approval recorded | Executive Sponsor |
 
 ## Promotion Rule
 Version 1.0 promotion is permitted only when all Gate 1 through Gate 5 items are Complete and independently attested.
 
 ## Current Release Decision
 - Release Candidate recommendation: `NOT READY`
-- Basis: convergence complete, governance completeness remediated, certification intact, engineering health positive, Gate 4 and Gate 5 incomplete.
+- Basis: convergence complete, governance completeness remediated, certification intact, engineering health positive, and GRC-0002 execution confirms required Gate 4 and Gate 5 approval records remain incomplete.
