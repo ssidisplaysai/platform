@@ -12,6 +12,12 @@ export const FOUNDATION_NAVIGATION_ITEMS: readonly NavigationItem[] = [
     requiredPermissions: ["workspace:view"],
   },
   {
+    id: "glw",
+    label: "LED Display Warehouse",
+    href: "/glw",
+    requiredPermissions: ["workspace:view"],
+  },
+  {
     id: "companies",
     label: "Companies",
     href: "/companies",
