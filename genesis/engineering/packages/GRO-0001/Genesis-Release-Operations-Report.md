@@ -103,3 +103,14 @@ GRO-0005 outcomes recorded separately:
 2. Remaining alignment revalidated for #12 and #15 through #20 before candidate execution.
 3. Third governed convergence merge completed: PR #15 merged to `main` at commit `db12b048bddd901e5280434a86aae202d2af2457`.
 4. Focused Product Catalog Foundation test suite passed post-merge; RB-004 remains In Progress pending remaining sequence.
+
+GRO-0006A outcomes recorded separately:
+1. Repository audit confirmed PR #16 merged to `main` at commit `8ea5d718733adb0bf709815ce9cccb0ab46115ee`.
+2. Repository audit confirmed PR #17 merged to `main` at commit `2cd2d89ad95850deaf70f743407650416dbc097b`.
+3. No certification drift or dependency violation was found, and PR #18 was established as the correct continuation point.
+
+GRO-0006B outcomes recorded separately:
+1. Prior PR #13 through PR #17 merge integrity remained present on `main`.
+2. Remaining governed convergence merges completed: PR #18 -> `96bfab4f6e9f4e0f77e51daf563c3cf86463eae6`, PR #19 -> `2dfd4b4005008959e4d03a51b0ea17d67569d4a4`, PR #20 -> `3943b68255db33c3cae25b1a82f7883e0d574d87`, PR #12 -> `f2b220194b9d40b8722698dd5187fe03f747dc11`.
+3. Focused customer, persistence, authorization, and manufacturing execution validations passed post-merge.
+4. RB-004 governed release-critical branch convergence is complete; next authorized package is GRC-0001 when separately approved.

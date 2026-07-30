@@ -14,7 +14,7 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 | RB-001 | Synchronize constitutional catalog to local package reality and publish attestation | P0 | None | Medium | High | Catalog parity report approved by governance | Yes | Complete |
 | RB-002 | Normalize lifecycle metadata across package roots | P0 | RB-001 | Medium | High | Lifecycle normalization report and spot-audit pass | Yes | Complete |
 | RB-003 | Close enterprise certification auditability gaps for required promotion scope | P0 | RB-001, RB-002 | Medium to High | High | Updated certification registry with complete local evidence | Yes | Complete |
-| RB-004 | Converge release-critical branches into governed PR sequence | P0 | RB-001, RB-002 | High | High | Merge ledger, approvals, and post-merge validation results | Yes | In Progress |
+| RB-004 | Converge release-critical branches into governed PR sequence | P0 | RB-001, RB-002 | High | High | Merge ledger, approvals, and post-merge validation results | Yes | Complete |
 | RB-005 | Complete dependency validation after convergence | P1 | RB-004 | Medium | Medium to High | Dependency validation sign-off report | Yes | Not Started |
 | RB-006 | Verify repository convergence thresholds are satisfied | P1 | RB-004 | Medium | Medium to High | Branch divergence closure report | Yes | Not Started |
 | RB-007 | Execute platform integration verification for release scope | P1 | RB-004, RB-005, RB-006 | Medium | Medium | Integration verification report approved | Yes | Not Started |
@@ -128,6 +128,39 @@ Prioritized backlog of remaining blockers from GAR-0003 for promotion governance
 - Effect on readiness:
 1. Gate 3 convergence execution advanced by one additional governed merge.
 2. RB-004 remains open and blocking until full sequence completion and validation sign-off.
+
+## GRO-0006A Operational Update
+- Operational package: GRO-0006A Governed Preflight Audit and Continuation Point Determination.
+- RB-004 operational progress: In Progress.
+- Operations completed:
+1. Verified PR #16 merged at `8ea5d718733adb0bf709815ce9cccb0ab46115ee`.
+2. Verified PR #17 merged at `2cd2d89ad95850deaf70f743407650416dbc097b`.
+3. Confirmed no certification drift, no dependency violation, and no governance inconsistency.
+4. Established PR #18 as the correct continuation point.
+- Remaining dependencies:
+1. Complete governed merges for PR #18, PR #19, PR #20, and PR #12.
+2. Execute post-convergence validations and completion reporting.
+- Effect on readiness:
+1. Prevented duplicate merge execution against already merged PRs.
+2. Preserved governed progression by resetting the continuation point to repository reality.
+
+## GRO-0006B Operational Update
+- Operational package: GRO-0006B Resume Governed Version 1.0 Convergence at Verified Continuation Point.
+- RB-004 operational progress: Complete.
+- Operations completed:
+1. Re-verified PR #13 through PR #17 remained present on `main`.
+2. Executed the remaining governed merge sequence in order: PR #18, PR #19, PR #20, PR #12.
+3. Recorded merge commits `96bfab4f6e9f4e0f77e51daf563c3cf86463eae6`, `2dfd4b4005008959e4d03a51b0ea17d67569d4a4`, `3943b68255db33c3cae25b1a82f7883e0d574d87`, and `f2b220194b9d40b8722698dd5187fe03f747dc11`.
+4. Completed post-merge validation: Genesis Doctor Healthy, Genesis Self Validation VALID, focused customer, persistence, authorization, and manufacturing execution suites passed.
+5. Verified certification reference and `GMP-0008B-v1.0.0` tag integrity remained unchanged.
+- Remaining dependencies:
+1. RB-005 dependency validation sign-off.
+2. RB-006 repository convergence verification.
+3. RB-007 integration verification.
+4. RB-008 through RB-012 remaining production and executive gate closures.
+- Effect on readiness:
+1. Gate 3 critical-branch merge execution is complete.
+2. RB-004 no longer blocks Version 1.0 progression.
 
 ## Backlog Ordering
 1. RB-001

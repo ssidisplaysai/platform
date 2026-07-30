@@ -1,7 +1,7 @@
 # Genesis Release Dashboard
 
 ## Overall Readiness
-95%
+97%
 
 ## Current Executive Decision
 NOT READY
@@ -10,21 +10,21 @@ NOT READY
 READY FOR BETA
 
 ## Release Status
-Governance-controlled promotion program active under GRO-0005 operations. RB-001 through RB-003 completed; RB-004 governed convergence execution remains in progress.
+Governance-controlled promotion program active under GRO-0006B completion. RB-001 through RB-003 completed; RB-004 governed convergence execution is complete.
 
 ## Current Gate
-Gate 3 Integration (three governed merges executed; convergence sequence and approvals pending)
+Gate 3 Integration (critical branch convergence complete; downstream integration gate items pending)
 
 ## Remaining Blockers
 1. Governance registry synchronization not complete.
 2. Certification exceptions closure and certification-board sign-off not complete.
-3. Critical branch convergence approvals and remaining merge sequence not complete.
+3. Gate 3 dependency validation, repository convergence verification, and platform integration verification are not complete.
 
 ## Open Risks
 1. Premature Version 1.0 declaration risk.
-2. Merge conflict and regression risk from branch divergence.
+2. Post-convergence integration and regression risk until downstream validation gates close.
 3. Governance confidence risk from unresolved registry synchronization.
-4. Promotion timing risk from pending PR creation and approval sequencing.
+4. Promotion timing risk from remaining certification, production, and executive approvals.
 
 ## Governance Debt
 Medium to High
@@ -39,13 +39,20 @@ Required Scope Auditable
 - Version 1.0 required certification package auditability is complete in local baseline.
 
 ## Merge Status
-Partially converged (governance)
-- Dependency chain and merge order are defined and ancestry-validated.
-- All required release-critical PRs exist and remain aligned to remote branch heads.
-- First governed merge completed: PR #13 merged to `main` at `25adf5245b3cc02e73b280893a6bed04ab254b0b`.
-- Second governed merge completed: PR #14 merged to `main` at `d44d61407dc366da7b6321b91f27ba73eb826e80`.
-- Third governed merge completed: PR #15 merged to `main` at `db12b048bddd901e5280434a86aae202d2af2457`.
-- Remaining open release-critical PRs: 6 (#12, #16-#20).
+Converged (governance)
+- Dependency chain and merge order were executed and validated end to end.
+- All required release-critical PRs are merged into `main`.
+- Governed merges completed:
+	- PR #13 -> `25adf5245b3cc02e73b280893a6bed04ab254b0b`
+	- PR #14 -> `d44d61407dc366da7b6321b91f27ba73eb826e80`
+	- PR #15 -> `db12b048bddd901e5280434a86aae202d2af2457`
+	- PR #16 -> `8ea5d718733adb0bf709815ce9cccb0ab46115ee`
+	- PR #17 -> `2cd2d89ad95850deaf70f743407650416dbc097b`
+	- PR #18 -> `96bfab4f6e9f4e0f77e51daf563c3cf86463eae6`
+	- PR #19 -> `2dfd4b4005008959e4d03a51b0ea17d67569d4a4`
+	- PR #20 -> `3943b68255db33c3cae25b1a82f7883e0d574d87`
+	- PR #12 -> `f2b220194b9d40b8722698dd5187fe03f747dc11`
+- Remaining open release-critical PRs: 0.
 
 ## Critical Path
 1. Gate 1 governance registry synchronization.
@@ -55,19 +62,19 @@ Partially converged (governance)
 5. Gate 5 executive approvals.
 
 ## Next Milestone
-Gate 3 Convergence Execution Review
-- Deliverables: approval evidence for remaining open PRs, continued one-by-one governed merges from PR #16 onward, and updated merge ledger.
+GRC-0001 Release Candidate Assessment Readiness Review
+- Deliverables: governed convergence completion evidence, dependency validation sign-off, and refreshed release-candidate decision package.
 
 ## Latest Blocker Execution
-- Executed operational package: GRO-0005 Continue Governed Sequential Branch Convergence - Product Catalog Foundation.
+- Executed operational package: GRO-0006B Resume Governed Version 1.0 Convergence at Verified Continuation Point.
 - Evidence:
-1. Prior merge verification confirmed PR #13 and PR #14 merge integrity and expected history in `main`.
-2. Remaining PR alignment revalidated for #12 and #15-#20 with no stale heads, no duplicates, and base `main`.
-3. Third authorized convergence merge executed: PR #15 merged with expected head SHA lock.
-4. Post-merge validations passed: Genesis Doctor Healthy, Genesis Self Validation VALID, focused Product Catalog Foundation tests passed.
+1. GRO-0006A verified PR #16 and PR #17 had already merged and established PR #18 as the correct continuation point.
+2. GRO-0006B completed the remaining governed sequence: PR #18, PR #19, PR #20, and PR #12.
+3. Post-merge validations passed: Genesis Doctor Healthy, Genesis Self Validation VALID, focused customer, persistence, authorization, and manufacturing execution suites passed.
+4. Certification reference and tag integrity for `GMP-0008B-v1.0.0` remained intact.
 - Remaining dependencies impacted:
-1. RB-004 remains in progress until remaining 6 release-critical PRs are reviewed, approved, and merged in sequence.
-2. Version 1.0 remains blocked by remaining Gate 1, Gate 2 sign-off, Gate 3 completion, Gate 4, and Gate 5 requirements.
+1. RB-004 is complete; RB-005 through RB-012 remain open.
+2. Version 1.0 remains blocked by remaining Gate 1, Gate 2, Gate 3 downstream verification, Gate 4, and Gate 5 requirements.
 
 ## Dashboard Evidence Baseline
 - GAR-0003 executive readiness decision and readiness rationale.
