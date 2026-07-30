@@ -146,3 +146,16 @@ Constraints preserved:
 1. No pricing/inventory/customer/order runtime implementation
 2. No external publication execution
 3. No secret storage in product/catalog records
+
+## GCP-0002E Inventory and Availability Foundation Status
+Implemented commerce inventory foundations in bounded form:
+1. Inventory location/stock/movement/reservation/count typed contracts and validation boundaries
+2. Fixture-backed inventory repository with deterministic movement, reservation, and count application behaviors
+3. Availability and reorder evaluation policy foundations
+4. Inventory route and API foundations with role-based authorization checks
+5. Command palette, navigation, and search index extension for inventory surfaces
+
+Constraints preserved:
+1. No external WMS/ERP runtime integration
+2. No durable transactional database introduction in this package
+3. No procurement/order-fulfillment automation migration

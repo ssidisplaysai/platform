@@ -30,6 +30,23 @@ export type PermissionAction =
   | "products:evaluate_readiness"
   | "products:view_internal"
   | "products:view_audit"
+  | "inventory:read"
+  | "inventory:read_internal"
+  | "inventory:create_movement"
+  | "inventory:adjust"
+  | "inventory:transfer"
+  | "inventory:receive"
+  | "inventory:damage"
+  | "inventory:hold"
+  | "inventory:reserve"
+  | "inventory:release_reservation"
+  | "inventory:fulfill_reservation"
+  | "inventory:reverse_movement"
+  | "inventory:manage_locations"
+  | "inventory:manage_reorder_policy"
+  | "inventory:count"
+  | "inventory:approve_count"
+  | "inventory:view_audit"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -94,7 +111,11 @@ export type SearchScope =
   | "settings"
   | "products"
   | "categories"
-  | "manufacturers";
+  | "manufacturers"
+  | "inventory"
+  | "locations"
+  | "movements"
+  | "reservations";
 
 export type SiteLifecycleState =
   | "draft"
@@ -526,13 +547,373 @@ export type ProductActivityRecord = {
   summary: string;
 };
 
+export type InventoryLocationType =
+  | "warehouse"
+  | "showroom"
+  | "store"
+  | "office"
+  | "manufacturing"
+  | "third_party_logistics"
+  | "supplier_held"
+  | "virtual"
+  | "transit"
+  | "damaged_goods"
+  | "returns";
+
+export type InventoryLocationLifecycleState =
+  | "draft"
+  | "active"
+  | "suspended"
+  | "archived";
+
+export type InventoryLocationHealthStatus =
+  | "unknown"
+  | "operational"
+  | "degraded"
+  | "unavailable"
+  | "not_configured";
+
+export type InventoryLocationConfiguration = {
+  locationId: string;
+  organizationId: string;
+  siteId: string | null;
+  locationName: string;
+  displayName: string;
+  locationCode: string;
+  locationType: InventoryLocationType;
+  addressReference: string | null;
+  timeZone: string | null;
+  lifecycleState: InventoryLocationLifecycleState;
+  healthStatus: InventoryLocationHealthStatus;
+  enabled: boolean;
+  fulfillmentCapable: boolean;
+  reservationCapable: boolean;
+  receivingCapable: boolean;
+  shippingCapable: boolean;
+  defaultLocation: boolean;
+  parentLocationId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  notes: string | null;
+};
+
+export type InventoryUnitOfMeasure =
+  | "ea"
+  | "set"
+  | "kit"
+  | "sqm"
+  | "meter"
+  | "box"
+  | "roll";
+
+export type InventoryStockStatus =
+  | "unknown"
+  | "in_stock"
+  | "low_stock"
+  | "out_of_stock"
+  | "backordered"
+  | "incoming"
+  | "reserved"
+  | "unavailable"
+  | "discontinued";
+
+export type InventoryStockRecord = {
+  inventoryRecordId: string;
+  organizationId: string;
+  productId: string;
+  locationId: string;
+  siteId: string | null;
+  skuSnapshot: string;
+  unitOfMeasure: InventoryUnitOfMeasure;
+  onHandQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  incomingQuantity: number;
+  allocatedQuantity: number;
+  damagedQuantity: number;
+  inspectionHoldQuantity: number;
+  backorderedQuantity: number;
+  reorderPoint: number;
+  reorderQuantity: number;
+  safetyStock: number;
+  maximumStock: number | null;
+  stockStatus: InventoryStockStatus;
+  lastCountedAt: string | null;
+  lastMovementAt: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type InventoryMovementType =
+  | "receipt"
+  | "issue"
+  | "transfer"
+  | "adjustment_increase"
+  | "adjustment_decrease"
+  | "reservation"
+  | "reservation_release"
+  | "allocation"
+  | "allocation_release"
+  | "damage"
+  | "inspection_hold"
+  | "inspection_release"
+  | "return"
+  | "shipment"
+  | "count_correction"
+  | "reversal";
+
+export type InventoryMovementStatus =
+  | "draft"
+  | "requested"
+  | "completed"
+  | "rejected"
+  | "reversed"
+  | "cancelled";
+
+export type InventoryMovementRecord = {
+  movementId: string;
+  organizationId: string;
+  productId: string;
+  sourceLocationId: string | null;
+  destinationLocationId: string | null;
+  movementType: InventoryMovementType;
+  quantity: number;
+  unitOfMeasure: InventoryUnitOfMeasure;
+  reasonCode: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  actorReference: string;
+  correlationId: string | null;
+  idempotencyKey: string | null;
+  status: InventoryMovementStatus;
+  requestedAt: string;
+  completedAt: string | null;
+  reversedMovementId: string | null;
+  notes: string | null;
+  evidenceReference: string | null;
+};
+
+export type InventoryReservationStatus =
+  | "pending"
+  | "active"
+  | "released"
+  | "expired"
+  | "fulfilled"
+  | "cancelled"
+  | "rejected";
+
+export type InventoryReservationType =
+  | "quote_hold"
+  | "order_hold"
+  | "project_allocation"
+  | "rental_hold"
+  | "internal_hold"
+  | "manual_hold";
+
+export type InventoryReservationRecord = {
+  reservationId: string;
+  organizationId: string;
+  productId: string;
+  locationId: string;
+  siteId: string | null;
+  quantity: number;
+  unitOfMeasure: InventoryUnitOfMeasure;
+  status: InventoryReservationStatus;
+  reservationType: InventoryReservationType;
+  referenceType: string | null;
+  referenceId: string | null;
+  requestedBy: string;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  releasedAt: string | null;
+  fulfilledAt: string | null;
+  notes: string | null;
+};
+
+export type InventoryAvailabilityDisplayPolicy =
+  | "show_exact_quantity"
+  | "show_stock_status_only"
+  | "hide_quantity"
+  | "allow_backorder"
+  | "inquiry_only"
+  | "made_to_order"
+  | "rental_separate"
+  | "not_displayed";
+
+export type InventoryLocationAvailabilitySummary = {
+  locationId: string;
+  locationName: string;
+  onHandQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  incomingQuantity: number;
+  damagedQuantity: number;
+  inspectionHoldQuantity: number;
+  backorderedQuantity: number;
+  stockStatus: InventoryStockStatus;
+  fulfillmentCapable: boolean;
+};
+
+export type InventoryAvailabilityResult = {
+  productId: string;
+  siteId: string | null;
+  locationSummaries: readonly InventoryLocationAvailabilitySummary[];
+  onHandTotal: number;
+  reservedTotal: number;
+  availableTotal: number;
+  incomingTotal: number;
+  damagedTotal: number;
+  inspectionHoldTotal: number;
+  backorderedTotal: number;
+  stockStatus: InventoryStockStatus;
+  fulfillmentLocationIds: readonly string[];
+  warnings: readonly string[];
+  blockingConditions: readonly string[];
+  evaluationTimestamp: string;
+};
+
+export type InventoryReorderEvaluation = {
+  productId: string;
+  locationId: string;
+  reorderRecommended: boolean;
+  suggestedReorderQuantity: number;
+  reason: string;
+  warningLevel: "none" | "low" | "medium" | "high";
+  evaluationTimestamp: string;
+};
+
+export type InventoryCountStatus =
+  | "draft"
+  | "in_progress"
+  | "submitted"
+  | "approved"
+  | "applied"
+  | "cancelled";
+
+export type InventoryCountRecord = {
+  countId: string;
+  organizationId: string;
+  locationId: string;
+  productId: string;
+  expectedQuantity: number;
+  countedQuantity: number;
+  varianceQuantity: number;
+  status: InventoryCountStatus;
+  actor: string;
+  timestamp: string;
+  adjustmentReference: string | null;
+};
+
+export type InventoryValidationIssue = {
+  field: string;
+  message: string;
+};
+
+export type InventoryValidationResult = {
+  valid: boolean;
+  issues: readonly InventoryValidationIssue[];
+};
+
+export type InventoryLocationFilters = {
+  organizationId?: string;
+  siteId?: string;
+  locationType?: InventoryLocationType;
+  lifecycleState?: InventoryLocationLifecycleState;
+  enabled?: boolean;
+  query?: string;
+};
+
+export type InventoryStockFilters = {
+  organizationId?: string;
+  siteId?: string;
+  locationId?: string;
+  productId?: string;
+  stockStatus?: InventoryStockStatus;
+  lowStockOnly?: boolean;
+  enabledLocationOnly?: boolean;
+  query?: string;
+};
+
+export type NewInventoryMovementInput = {
+  organizationId: string;
+  productId: string;
+  sourceLocationId: string | null;
+  destinationLocationId: string | null;
+  movementType: InventoryMovementType;
+  quantity: number;
+  unitOfMeasure: InventoryUnitOfMeasure;
+  reasonCode: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  actorReference: string;
+  correlationId: string | null;
+  idempotencyKey: string | null;
+  notes: string | null;
+  evidenceReference: string | null;
+};
+
+export type NewInventoryReservationInput = {
+  organizationId: string;
+  productId: string;
+  locationId: string;
+  siteId: string | null;
+  quantity: number;
+  unitOfMeasure: InventoryUnitOfMeasure;
+  reservationType: InventoryReservationType;
+  referenceType: string | null;
+  referenceId: string | null;
+  requestedBy: string;
+  expiresAt: string | null;
+  notes: string | null;
+};
+
+export type InventoryActivityType =
+  | "location_created"
+  | "location_updated"
+  | "inventory_received"
+  | "inventory_issued"
+  | "inventory_transferred"
+  | "inventory_adjusted"
+  | "inventory_damaged"
+  | "inventory_hold_placed"
+  | "inventory_hold_released"
+  | "reservation_created"
+  | "reservation_released"
+  | "reservation_fulfilled"
+  | "movement_reversed"
+  | "inventory_count_submitted"
+  | "inventory_count_applied"
+  | "availability_evaluated"
+  | "reorder_evaluated";
+
+export type InventoryActivityRecord = {
+  activityId: string;
+  organizationId: string;
+  productId: string | null;
+  locationId: string | null;
+  type: InventoryActivityType;
+  actor: string;
+  createdAt: string;
+  summary: string;
+};
+
 export type EnterpriseSearchItem = {
   id: string;
   title: string;
   subtitle: string;
   href: string;
   scope: SearchScope;
-  resultType?: "product" | "category" | "manufacturer" | "generic";
+  resultType?:
+    | "product"
+    | "category"
+    | "manufacturer"
+    | "inventory"
+    | "location"
+    | "movement"
+    | "reservation"
+    | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";
   requiredPermissions?: readonly PermissionAction[];

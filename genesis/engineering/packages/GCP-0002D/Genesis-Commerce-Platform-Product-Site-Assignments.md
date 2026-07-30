@@ -16,3 +16,8 @@ Each product-site assignment includes:
 1. Assignment enablement participates in readiness checks.
 2. Site publication status must be compatible for publish readiness.
 3. Disabled or missing assignment blocks readiness.
+
+## GCP-0002E Inventory Relationship
+1. Site assignment context is reused for reservation and availability scope evaluation.
+2. Inventory reservation records include explicit site references for bounded allocation tracking.
+3. Product-site scope remains application-level and does not migrate platform semantic authority.

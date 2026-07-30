@@ -93,6 +93,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <Link href={`/products/${product.productId}/settings`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Product Settings</Link>
           <Link href={`/products/${product.productId}/sites`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Site Assignments</Link>
           <Link href={`/products/${product.productId}/specifications`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Specifications</Link>
+          <Link href={`/products/${product.productId}/inventory`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Inventory</Link>
         </div>
       </section>
     </AppShell>

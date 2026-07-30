@@ -151,3 +151,4 @@ Roadmap is complete when all modules have assigned phase ownership, explicit dep
 - Phase 2: Foundation implementation baseline established by GCP-0002B
 - Phase 3: Multi-site platform foundation established by GCP-0002C bounded implementation
 - Phase 4: Product and catalog foundation established by GCP-0002D bounded implementation
+- Phase 4: Inventory and availability foundation established by GCP-0002E bounded implementation

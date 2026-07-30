@@ -44,3 +44,8 @@
 1. Shell navigation now includes Products, Categories, and Manufacturers entries when permitted.
 2. Command palette now includes product catalog actions for products, categories, and manufacturers.
 3. Existing organization/site selection behavior remains unchanged and is reused by product/catalog routes.
+
+## GCP-0002E Inventory Extension
+1. Shell navigation now includes Inventory entry when inventory read permission is present.
+2. Command palette now includes inventory actions for locations, movements, reservations, and product inventory.
+3. Existing organization/site selection context is reused for inventory availability and reservation scope.

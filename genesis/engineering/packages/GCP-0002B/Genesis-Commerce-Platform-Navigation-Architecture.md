@@ -44,3 +44,9 @@ Future modules should append typed navigation items with requiredPermissions and
 2. Added command actions: Open Products, Create New Product, Open Categories, Open Manufacturers.
 3. Added enterprise search index entries for product, category, and manufacturer registries.
 4. Permission gates are enforced through products:* capability requirements.
+
+## GCP-0002E Extension
+1. Added navigation route: Inventory (/inventory).
+2. Added command actions: Open Inventory Locations, Open Inventory Movements, Create Inventory Movement, Open Inventory Reservations, Open Product Inventory.
+3. Added enterprise search index entries for inventory locations, stock, movements, and reservations.
+4. Permission gates are enforced through inventory:* capability requirements.
