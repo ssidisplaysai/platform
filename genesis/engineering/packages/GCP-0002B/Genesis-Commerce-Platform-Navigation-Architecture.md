@@ -50,3 +50,9 @@ Future modules should append typed navigation items with requiredPermissions and
 2. Added command actions: Open Inventory Locations, Open Inventory Movements, Create Inventory Movement, Open Inventory Reservations, Open Product Inventory.
 3. Added enterprise search index entries for inventory locations, stock, movements, and reservations.
 4. Permission gates are enforced through inventory:* capability requirements.
+
+## GCP-0002F Extension
+1. Added navigation route: Profiles (/profiles).
+2. Added command actions for profile registries: Profiles, Publishing Profiles, WordPress Profiles, Workflow Profiles.
+3. Added enterprise search index entries for profile families (publishing, WordPress, workflow, prompt, image, SEO, brand, analytics).
+4. Permission gates are enforced through profiles:* capability requirements.

@@ -49,3 +49,8 @@
 1. Shell navigation now includes Inventory entry when inventory read permission is present.
 2. Command palette now includes inventory actions for locations, movements, reservations, and product inventory.
 3. Existing organization/site selection context is reused for inventory availability and reservation scope.
+
+## GCP-0002F Integration Profiles Extension
+1. Shell navigation now includes Profiles entry when profile read permission is present.
+2. Command palette now includes profile actions for publishing, WordPress, workflow, prompt, image, SEO, brand, and analytics registries.
+3. Existing organization/site context is reused for profile assignment, inheritance, and readiness visibility.
