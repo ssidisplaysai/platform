@@ -1,0 +1,88 @@
+# Genesis Commerce Platform Route and API Inventory
+
+## UI Route Inventory
+- src/app/page.tsx
+- src/app/companies/page.tsx
+- src/app/companies/ssi/page.tsx
+- src/app/companies/[slug]/page.tsx
+- src/app/sites/page.tsx
+- src/app/sites/new/page.tsx
+- src/app/sites/[siteId]/page.tsx
+- src/app/sites/[siteId]/settings/page.tsx
+- src/app/sites/[siteId]/health/page.tsx
+- src/app/products/page.tsx
+- src/app/products/new/page.tsx
+- src/app/products/[productId]/page.tsx
+- src/app/products/[productId]/settings/page.tsx
+- src/app/products/[productId]/sites/page.tsx
+- src/app/products/[productId]/specifications/page.tsx
+- src/app/products/[productId]/inventory/page.tsx
+- src/app/categories/page.tsx
+- src/app/manufacturers/page.tsx
+- src/app/inventory/page.tsx
+- src/app/inventory/locations/page.tsx
+- src/app/inventory/locations/[locationId]/page.tsx
+- src/app/inventory/movements/page.tsx
+- src/app/inventory/movements/new/page.tsx
+- src/app/inventory/movements/[movementId]/page.tsx
+- src/app/inventory/reservations/page.tsx
+- src/app/inventory/reservations/[reservationId]/page.tsx
+- src/app/profiles/page.tsx
+- src/app/profiles/publishing/page.tsx
+- src/app/profiles/wordpress/page.tsx
+- src/app/profiles/workflows/page.tsx
+- src/app/profiles/prompts/page.tsx
+- src/app/profiles/images/page.tsx
+- src/app/profiles/seo/page.tsx
+- src/app/profiles/brands/page.tsx
+- src/app/profiles/analytics/page.tsx
+- src/app/profile/[id]/page.tsx
+- src/app/customers/page.tsx
+- src/app/customers/new/page.tsx
+- src/app/customers/[customerId]/page.tsx
+- src/app/customers/[customerId]/settings/page.tsx
+- src/app/customers/[customerId]/contacts/page.tsx
+- src/app/customers/[customerId]/contacts/new/page.tsx
+- src/app/customers/[customerId]/addresses/page.tsx
+- src/app/customers/[customerId]/addresses/new/page.tsx
+- src/app/customers/[customerId]/readiness/page.tsx
+- src/app/settings/page.tsx
+- src/app/notifications/page.tsx
+- src/app/audit/page.tsx
+- src/app/search/page.tsx
+
+## API Inventory
+- src/app/api/sites/route.ts
+- src/app/api/sites/[siteId]/route.ts
+- src/app/api/sites/[siteId]/connection-test/route.ts
+- src/app/api/products/route.ts
+- src/app/api/products/[productId]/route.ts
+- src/app/api/products/[productId]/readiness/route.ts
+- src/app/api/inventory/route.ts
+- src/app/api/inventory/availability/route.ts
+- src/app/api/inventory/counts/route.ts
+- src/app/api/inventory/locations/route.ts
+- src/app/api/inventory/locations/[locationId]/route.ts
+- src/app/api/inventory/movements/route.ts
+- src/app/api/inventory/movements/[movementId]/route.ts
+- src/app/api/inventory/movements/[movementId]/reverse/route.ts
+- src/app/api/inventory/reservations/route.ts
+- src/app/api/inventory/reservations/[reservationId]/route.ts
+- src/app/api/inventory/reservations/[reservationId]/release/route.ts
+- src/app/api/profiles/route.ts
+- src/app/api/profiles/[profileId]/route.ts
+- src/app/api/profiles/readiness/route.ts
+- src/app/api/profiles/validate/route.ts
+- src/app/api/customers/route.ts
+- src/app/api/customers/[customerId]/route.ts
+- src/app/api/customers/[customerId]/readiness/route.ts
+- src/app/api/customers/[customerId]/duplicates/route.ts
+- src/app/api/customers/[customerId]/contacts/route.ts
+- src/app/api/customers/[customerId]/contacts/[contactId]/route.ts
+- src/app/api/customers/[customerId]/addresses/route.ts
+- src/app/api/customers/[customerId]/addresses/[addressId]/route.ts
+
+## Convention Notes
+- Detail pages/APIs are consistently dynamic-segment based.
+- Settings and readiness routes are consistently nested under domain identifiers.
+- Singular/plural split exists for profiles: list/family under /profiles, detail under /profile/[id]. This is workable but should be explicitly governed to prevent future drift.
