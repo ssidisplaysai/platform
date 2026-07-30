@@ -9,8 +9,8 @@ import { createActionReference } from "@/platform/gop/auth/resolver";
 import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from "@/platform/gop/auth/runtime";
 import { authorizeGenesisJobAction } from "@/platform/gop/actions/authorization";
 import type { GenesisJobStatus, GenesisJobType } from "@/platform/gop/contracts";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
-const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
 const GLW_MODULE_ID = "glw.core";
 const MAX_REPLAY_EVENTS = 300;
 
@@ -44,7 +44,7 @@ async function authorizeJobRead(jobId: string) {
   const latest = events.length > 0 ? events[events.length - 1] : null;
   const decision = authorizeGenesisJobAction({
     subject,
-    workspaceId: GLW_WORKSPACE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: latest?.moduleId ?? GLW_MODULE_ID,
     jobType: (latest?.jobType ?? "PAGE_GENERATION") as GenesisJobType,
     jobStatus: (latest?.status ?? "QUEUED") as GenesisJobStatus,
@@ -86,11 +86,11 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
   const subject = buildGenesisSubjectFromSession(session);
   const metricsDecision = getGenesisAuthorizationResolver().authorize({
     subject,
-    workspaceId: GLW_WORKSPACE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: GLW_MODULE_ID,
     action: createActionReference("metrics:view", "metrics_access"),
     resource: {
-      workspaceId: GLW_WORKSPACE_ID,
+      workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
       moduleId: GLW_MODULE_ID,
     },
   });

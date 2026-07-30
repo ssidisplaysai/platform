@@ -8,31 +8,17 @@ import type { GenesisWorkspaceDescriptor } from "@/platform/gop/contracts";
 import { getGenesisAuthenticatedIdentityFromSession } from "@/platform/gop/auth/authentication";
 import { createGenesisAuthorizationSubjectFromIdentity } from "@/platform/gop/auth/authorization";
 import { isSubjectAuthorizedForRoute } from "@/platform/gop/auth/runtime";
-
-const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
-const GLW_MODULE_ID = "glw.core";
+import {
+  createPrimaryWorkspaceDescriptor,
+  GENESIS_PRIMARY_WORKSPACE_ID,
+  GENESIS_PRIMARY_WORKSPACE_MODULE_ID,
+  toWorkspaceSites,
+} from "@/platform/gop/workspaces/identity";
 
 const GLW_WORKSPACE_DESCRIPTORS: GenesisWorkspaceDescriptor[] = [
-  {
-    workspaceId: GLW_WORKSPACE_ID,
-    name: "LED Display Warehouse",
-    description: "GLW reference workspace",
-    enabled: true,
-    enabledModuleIds: [GLW_MODULE_ID],
-    defaultModuleId: GLW_MODULE_ID,
-    availableSites: glwSites.map((site) => ({
-      siteId: site.id,
-      name: site.name,
-      region: site.region,
-    })),
-    featureFlags: ["gop.events", "gop.inspector"],
-    branding: {
-      shortName: "GLW",
-      logoText: "GLW",
-    },
-    environment: "development",
-    order: 10,
-  },
+  createPrimaryWorkspaceDescriptor({
+    availableSites: toWorkspaceSites(glwSites),
+  }),
 ];
 
 export const metadata: Metadata = {
@@ -55,8 +41,8 @@ export default async function ProtectedGlwLayout({
   const subject = createGenesisAuthorizationSubjectFromIdentity(identity);
   const isAllowed = isSubjectAuthorizedForRoute({
     subject,
-    workspaceId: GLW_WORKSPACE_ID,
-    moduleId: GLW_MODULE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
+    moduleId: GENESIS_PRIMARY_WORKSPACE_MODULE_ID,
     route: "/glw",
   });
 

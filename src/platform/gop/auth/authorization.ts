@@ -7,6 +7,7 @@ import type {
 import { createActionReference, createGenesisAuthorizationResolver, createGenesisSubject } from "./resolver";
 import { genesisDefaultPolicies } from "./policies";
 import type { GenesisAuthorizationResolver } from "./resolver";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "../workspaces/identity";
 
 let resolver: GenesisAuthorizationResolver | null = null;
 
@@ -31,7 +32,7 @@ export function getGenesisAuthorizationResolver(): GenesisAuthorizationResolver 
 export function buildGenesisWorkspaceMemberships(actorId: string, role: GenesisPlatformRole): GenesisWorkspaceMembership[] {
   return [
     {
-      workspaceId: "glw-led-display-warehouse",
+      workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
       actorId,
       role,
       permissions: role === "VIEWER" ? ["read"] : ["read", "write", "admin"],

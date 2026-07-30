@@ -23,6 +23,7 @@ import type { GenesisEventStore } from "../event-store";
 import { metricsFromDerived, reduceEventsToMetrics } from "../metrics-from-events";
 import type { GenesisExecutionRepository } from "./execution-repository";
 import { createExecutionSnapshot } from "./snapshot-engine";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "../workspaces/identity";
 
 function quantile(values: number[], q: number): number {
   if (values.length === 0) {
@@ -375,7 +376,7 @@ export function createGenesisOrchestrationRuntime(options: { repository?: Genesi
       const executionId = `gexec_glw_${input.jobId}`;
       const created = createExecution({
         executionId,
-        workspaceId: "glw-led-display-warehouse",
+        workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
         moduleId: "glw.core",
         jobType: input.jobType,
         executionType: input.jobType,

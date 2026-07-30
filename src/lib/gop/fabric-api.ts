@@ -3,8 +3,8 @@ import { getGlwSession } from "@/lib/glw/auth";
 import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from "@/platform/gop/auth/runtime";
 import { createActionReference } from "@/platform/gop/auth/resolver";
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
-const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
 const GLW_MODULE_ID = "glw.core";
 
 function unauthorizedResponse(): NextResponse {
@@ -24,11 +24,11 @@ async function authorizeFabricControl() {
   const subject = buildGenesisSubjectFromSession(session);
   const decision = getGenesisAuthorizationResolver().authorize({
     subject,
-    workspaceId: GLW_WORKSPACE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: GLW_MODULE_ID,
     action: createActionReference("fabric:control", "admin_control"),
     resource: {
-      workspaceId: GLW_WORKSPACE_ID,
+      workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
       moduleId: GLW_MODULE_ID,
       route: "/api/gop/dead-letters",
     },

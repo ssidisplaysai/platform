@@ -698,6 +698,20 @@ export type GenesisWorkspaceDescriptor = {
   order?: number;
 };
 
+export type GenesisWorkspaceIdentity = {
+  workspaceId: string;
+  workspaceKey: string;
+  displayName: string;
+  aliases?: string[];
+  registration: {
+    defaultModuleId: string;
+    enabledModuleIds: string[];
+    featureFlags?: string[];
+    environment?: string;
+    order?: number;
+  };
+};
+
 export type GenesisApplicationJobType = "PAGE_GENERATION" | "BLOG_GENERATION";
 
 export type GenesisApplicationJobStatus =

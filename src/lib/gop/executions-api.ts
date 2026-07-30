@@ -6,8 +6,8 @@ import { authorizeGenesisJobAction } from "@/platform/gop/actions/authorization"
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
 import { getGenesisEventStore } from "@/platform/gop/runtime/event-store";
 import type { GenesisExecution, GenesisJobStatus, GenesisJobType } from "@/platform/gop/contracts";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
-const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
 const GLW_MODULE_ID = "glw.core";
 
 function unauthorizedResponse(): NextResponse {
@@ -44,11 +44,11 @@ async function authorizeOperationsRead() {
   const subject = buildGenesisSubjectFromSession(session);
   const decision = getGenesisAuthorizationResolver().authorize({
     subject,
-    workspaceId: GLW_WORKSPACE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: GLW_MODULE_ID,
     action: createActionReference("metrics:view", "metrics_access"),
     resource: {
-      workspaceId: GLW_WORKSPACE_ID,
+      workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
       moduleId: GLW_MODULE_ID,
       route: "/api/gop/executions",
     },
@@ -86,7 +86,7 @@ async function authorizeExecutionRead(execution: GenesisExecution) {
 }
 
 function parseListQuery(url: URL): { workspaceId?: string; moduleId?: string; status?: string; q?: string; limit?: number } {
-  const workspaceId = url.searchParams.get("workspaceId") ?? GLW_WORKSPACE_ID;
+  const workspaceId = url.searchParams.get("workspaceId") ?? GENESIS_PRIMARY_WORKSPACE_ID;
   const moduleId = url.searchParams.get("moduleId") ?? undefined;
   const status = url.searchParams.get("status") ?? undefined;
   const q = url.searchParams.get("q") ?? undefined;

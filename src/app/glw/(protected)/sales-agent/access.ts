@@ -2,8 +2,9 @@ import { notFound } from "next/navigation";
 import { getGlwSession } from "@/lib/glw/auth";
 import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from "@/platform/gop/auth/runtime";
 import { createActionReference } from "@/platform/gop/auth/resolver";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
-const WORKSPACE_ID = "glw-led-display-warehouse";
+const WORKSPACE_ID = GENESIS_PRIMARY_WORKSPACE_ID;
 const MODULE_ID = "gba.sales";
 
 const ROUTE_ACTION_MAP: Record<string, string> = {

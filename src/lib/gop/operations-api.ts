@@ -4,8 +4,8 @@ import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from 
 import { createActionReference } from "@/platform/gop/auth/resolver";
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
 import { getGenesisEventStore } from "@/platform/gop/runtime/event-store";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
-const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
 const GLW_MODULE_ID = "glw.core";
 
 function unauthorizedResponse(): NextResponse {
@@ -25,11 +25,11 @@ async function authorizeOperationsRead() {
   const subject = buildGenesisSubjectFromSession(session);
   const decision = getGenesisAuthorizationResolver().authorize({
     subject,
-    workspaceId: GLW_WORKSPACE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: GLW_MODULE_ID,
     action: createActionReference("metrics:view", "metrics_access"),
     resource: {
-      workspaceId: GLW_WORKSPACE_ID,
+      workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
       moduleId: GLW_MODULE_ID,
       route: "/glw/operations",
     },
@@ -49,7 +49,7 @@ export async function handleGetOperationsSnapshot(): Promise<NextResponse> {
   }
 
   const runtime = getGenesisOrchestrationRuntime();
-  const snapshot = await runtime.buildOperationsSnapshot(GLW_WORKSPACE_ID, getGenesisEventStore());
+  const snapshot = await runtime.buildOperationsSnapshot(GENESIS_PRIMARY_WORKSPACE_ID, getGenesisEventStore());
   return NextResponse.json({ snapshot });
 }
 
@@ -72,7 +72,7 @@ export async function handleOperationsStream(request: Request): Promise<Response
         }
       };
 
-      const initial = await runtime.buildOperationsSnapshot(GLW_WORKSPACE_ID, getGenesisEventStore());
+      const initial = await runtime.buildOperationsSnapshot(GENESIS_PRIMARY_WORKSPACE_ID, getGenesisEventStore());
       write(`event: snapshot\ndata: ${JSON.stringify({ snapshot: initial })}\n\n`);
 
       const heartbeat = setInterval(() => {
@@ -81,7 +81,7 @@ export async function handleOperationsStream(request: Request): Promise<Response
 
       const poll = setInterval(async () => {
         try {
-          const next = await runtime.buildOperationsSnapshot(GLW_WORKSPACE_ID, getGenesisEventStore());
+          const next = await runtime.buildOperationsSnapshot(GENESIS_PRIMARY_WORKSPACE_ID, getGenesisEventStore());
           write(`event: snapshot\ndata: ${JSON.stringify({ snapshot: next })}\n\n`);
         } catch {
           write(`event: error\ndata: ${JSON.stringify({ message: "operations_stream_poll_failed" })}\n\n`);

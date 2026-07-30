@@ -4,8 +4,8 @@ import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from 
 import { createActionReference } from "@/platform/gop/auth/resolver";
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
 import { verifyWorkerToken } from "@/platform/gop/runtime/worker-token";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
-const GLW_WORKSPACE_ID = "glw-led-display-warehouse";
 const GLW_MODULE_ID = "glw.core";
 
 function unauthorizedResponse(): NextResponse {
@@ -57,11 +57,11 @@ async function authorizeWorkerControl() {
   const subject = buildGenesisSubjectFromSession(session);
   const decision = getGenesisAuthorizationResolver().authorize({
     subject,
-    workspaceId: GLW_WORKSPACE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: GLW_MODULE_ID,
     action: createActionReference("worker:register", "admin_control"),
     resource: {
-      workspaceId: GLW_WORKSPACE_ID,
+      workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
       moduleId: GLW_MODULE_ID,
     },
   });
@@ -98,7 +98,7 @@ export async function handleRegisterWorker(request: Request): Promise<NextRespon
     workerType: body.workerType,
     capabilities: body.capabilities ?? [],
     maxCapacity: Math.max(1, body.maxCapacity ?? 1),
-    workspaceId: GLW_WORKSPACE_ID,
+    workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: GLW_MODULE_ID,
   });
 
@@ -166,7 +166,7 @@ export async function handleProtocolWorkerRegister(request: Request): Promise<Ne
     heartbeatIntervalMs: body.heartbeatIntervalMs,
     tokenId: verified.token.tokenId,
     authMode: "SIGNED_TOKEN",
-    workspaceId: body.workspaceId ?? GLW_WORKSPACE_ID,
+    workspaceId: body.workspaceId ?? GENESIS_PRIMARY_WORKSPACE_ID,
     moduleId: body.moduleId ?? GLW_MODULE_ID,
   });
 
