@@ -33,3 +33,9 @@
 1. Existing dashboard and companies routes remain operational
 2. No platform authority data ownership changes were introduced
 3. Shell supports future module insertion without rework of context/permission contracts
+
+## GCP-0002C Multi-Site Extension
+1. Shell site selector now uses explicit site configuration records instead of implicit per-organization placeholders.
+2. Selected organization and selected site persist in client storage where available.
+3. Invalid persisted site IDs do not silently fall back; shell shows explicit unavailable-site messaging.
+4. Site badges now expose environment, health, publishing status, and disabled-state indication.

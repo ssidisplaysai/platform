@@ -1,4 +1,5 @@
 import { CompanyRepository } from "@/core/repositories/CompanyRepository";
+import { listSites } from "./site-repository";
 import type {
   AppUser,
   FoundationContext,
@@ -24,13 +25,21 @@ export function buildOrganizationContext(): readonly OrganizationContext[] {
 export function buildSiteContext(
   organizations: readonly OrganizationContext[],
 ): readonly SiteContext[] {
-  return organizations.map((organization) => ({
-    id: `${organization.id}-primary-site`,
-    slug: `${organization.slug}-main`,
-    organizationId: organization.id,
-    name: `${organization.name} Primary`,
-    region: "US-CENTRAL",
-  }));
+  const organizationIds = new Set(organizations.map((organization) => organization.id));
+
+  return listSites()
+    .filter((site) => organizationIds.has(site.organizationId))
+    .map((site) => ({
+      id: site.siteId,
+      slug: site.slug,
+      organizationId: site.organizationId,
+      name: site.displayName,
+      region: "US-CENTRAL",
+      environment: site.environment,
+      health: site.healthStatus,
+      publishing: site.publishingStatus,
+      enabled: site.enabled,
+    }));
 }
 
 export function createFoundationContext(
@@ -39,10 +48,10 @@ export function createFoundationContext(
   const organizations = buildOrganizationContext();
   const sites = buildSiteContext(organizations);
 
-  const selectedOrganizationId = organizations[0]?.id ?? "";
+  const selectedOrganizationId =
+    sites[0]?.organizationId ?? organizations[0]?.id ?? "";
   const selectedSiteId =
     sites.find((site) => site.organizationId === selectedOrganizationId)?.id ??
-    sites[0]?.id ??
     "";
 
   return {

@@ -121,3 +121,15 @@ Implementation constraints preserved:
 1. No direct platform authority ownership migration
 2. No cross-domain commerce workflow expansion
 3. No external integration runtime additions
+
+## GCP-0002C Multi-Site Foundation Status
+Implemented site module foundations in bounded form:
+1. Explicit multi-site configuration contract and fixture-backed repository boundary
+2. Site list and detail route foundations
+3. Site health/readiness evaluation and publishing guard contracts
+4. Site creation/editing validation contracts and server-side write authorization checks
+
+Constraints preserved:
+1. No raw credential storage
+2. No runtime publication execution
+3. No marketing/workflow/analytics authority migration

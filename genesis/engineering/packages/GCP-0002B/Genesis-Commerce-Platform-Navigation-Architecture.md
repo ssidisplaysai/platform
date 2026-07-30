@@ -6,24 +6,28 @@ Navigation is now defined as typed architecture data with explicit permission re
 ## Navigation Inventory
 1. Mission Control (/)
 2. Companies (/companies)
-3. Settings (/settings)
-4. Notifications (/notifications)
-5. Audit (/audit)
-6. Enterprise Search (/search)
+3. Sites (/sites)
+4. Settings (/settings)
+5. Notifications (/notifications)
+6. Audit (/audit)
+7. Enterprise Search (/search)
 
 ## Permission Mapping
 1. workspace:view: Mission Control, Companies
-2. settings:view: Settings
-3. notifications:view: Notifications
-4. audit:view: Audit
-5. search:use: Enterprise Search
+2. sites:read: Sites
+3. settings:view: Settings
+4. notifications:view: Notifications
+5. audit:view: Audit
+6. search:use: Enterprise Search
 
 ## Command Palette Foundation Actions
 1. Open Companies
-2. Open Settings
-3. Open Notifications
-4. Open Audit
-5. Open Enterprise Search
+2. Open Sites
+3. Create New Site
+4. Open Settings
+5. Open Notifications
+6. Open Audit
+7. Open Enterprise Search
 
 All command actions require command_palette:use plus route-specific permissions.
 
