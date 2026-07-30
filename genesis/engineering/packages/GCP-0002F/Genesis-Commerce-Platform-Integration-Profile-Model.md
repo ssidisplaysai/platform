@@ -28,3 +28,8 @@ Each integration profile includes:
 1. Profiles store references only.
 2. Secret-like value patterns are rejected by validation.
 3. Binary payloads and inline credential values are rejected.
+
+## GCP-0002G Compatibility Note
+1. Integration profile contract shape remains unchanged by customer foundation scope.
+2. Customer/account/contact/address records consume bounded operational metadata and do not introduce profile secret storage.
+3. Cross-surface behavior remains composition-only: profile authority remains external to customer record ownership.

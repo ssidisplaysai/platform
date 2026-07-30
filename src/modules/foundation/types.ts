@@ -53,6 +53,19 @@ export type PermissionAction =
   | "profiles:validate"
   | "profiles:evaluate_readiness"
   | "profiles:assign"
+  | "customers:read"
+  | "customers:create"
+  | "customers:update"
+  | "customers:archive"
+  | "customers:evaluate_readiness"
+  | "customers:detect_duplicates"
+  | "customers:view_activity"
+  | "contacts:read"
+  | "contacts:create"
+  | "contacts:update"
+  | "addresses:read"
+  | "addresses:create"
+  | "addresses:update"
   | "settings:view"
   | "settings:manage"
   | "notifications:view"
@@ -130,7 +143,11 @@ export type SearchScope =
   | "image_profiles"
   | "seo_profiles"
   | "brand_profiles"
-  | "analytics_profiles";
+  | "analytics_profiles"
+  | "customers"
+  | "customer_accounts"
+  | "customer_contacts"
+  | "customer_addresses";
 
 export type IntegrationProfileType =
   | "publishing"
@@ -313,6 +330,207 @@ export type EffectiveProfileAssignment = {
   inheritedProfileId: string | null;
   effectiveProfileId: string | null;
   inheritanceSource: "direct" | "site" | "organization_default" | "none";
+};
+
+export type CustomerLifecycleState =
+  | "prospect"
+  | "active"
+  | "inactive"
+  | "suspended"
+  | "archived";
+
+export type CustomerAccountType =
+  | "direct"
+  | "dealer"
+  | "distributor"
+  | "partner"
+  | "internal"
+  | "other";
+
+export type CustomerCommunicationFrequency = "none" | "critical_only" | "weekly" | "realtime";
+
+export type CustomerCommunicationPreferences = {
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  phoneEnabled: boolean;
+  marketingOptIn: boolean;
+  operationalAlertsEnabled: boolean;
+  invoiceNoticesEnabled: boolean;
+  preferredFrequency: CustomerCommunicationFrequency;
+  timezone: string | null;
+};
+
+export type CustomerConfiguration = {
+  customerId: string;
+  organizationId: string;
+  accountName: string;
+  legalName: string | null;
+  accountCode: string;
+  accountType: CustomerAccountType;
+  lifecycleState: CustomerLifecycleState;
+  enabled: boolean;
+  primarySiteId: string | null;
+  associatedSiteIds: readonly string[];
+  primaryContactId: string | null;
+  billingAddressId: string | null;
+  shippingAddressId: string | null;
+  communicationPreferences: CustomerCommunicationPreferences;
+  taxExempt: boolean;
+  tags: readonly string[];
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomerContactRole =
+  | "owner"
+  | "procurement"
+  | "operations"
+  | "finance"
+  | "marketing"
+  | "technical"
+  | "other";
+
+export type CustomerContactRecord = {
+  contactId: string;
+  customerId: string;
+  organizationId: string;
+  fullName: string;
+  role: CustomerContactRole;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  preferredContact: boolean;
+  decisionMaker: boolean;
+  enabled: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomerAddressType = "billing" | "shipping" | "service" | "headquarters" | "other";
+
+export type CustomerAddressRecord = {
+  addressId: string;
+  customerId: string;
+  organizationId: string;
+  label: string;
+  addressType: CustomerAddressType;
+  line1: string;
+  line2: string | null;
+  city: string;
+  region: string;
+  postalCode: string;
+  countryCode: string;
+  siteId: string | null;
+  defaultBilling: boolean;
+  defaultShipping: boolean;
+  enabled: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CustomerReadinessCondition = {
+  key:
+    | "customer_enabled"
+    | "lifecycle_permits_operation"
+    | "primary_site_assigned"
+    | "site_association_present"
+    | "primary_contact_present"
+    | "contact_reachable"
+    | "billing_address_present"
+    | "shipping_address_present"
+    | "communication_preferences_defined"
+    | "user_has_permission";
+  passed: boolean;
+  details: string;
+};
+
+export type CustomerReadinessStatus = "ready" | "blocked" | "warning";
+
+export type CustomerReadinessResult = {
+  customerId: string;
+  ready: boolean;
+  status: CustomerReadinessStatus;
+  blockingReasons: readonly string[];
+  warnings: readonly string[];
+  checkedConditions: readonly CustomerReadinessCondition[];
+  checkedAt: string;
+};
+
+export type CustomerValidationIssue = {
+  field: string;
+  message: string;
+};
+
+export type CustomerValidationResult = {
+  valid: boolean;
+  issues: readonly CustomerValidationIssue[];
+};
+
+export type NewCustomerInput = Omit<
+  CustomerConfiguration,
+  "customerId" | "primaryContactId" | "billingAddressId" | "shippingAddressId" | "createdAt" | "updatedAt"
+>;
+
+export type UpdateCustomerInput = Partial<
+  Omit<CustomerConfiguration, "customerId" | "organizationId" | "createdAt">
+>;
+
+export type NewCustomerContactInput = Omit<
+  CustomerContactRecord,
+  "contactId" | "customerId" | "organizationId" | "createdAt" | "updatedAt"
+>;
+
+export type UpdateCustomerContactInput = Partial<
+  Omit<CustomerContactRecord, "contactId" | "customerId" | "organizationId" | "createdAt">
+>;
+
+export type NewCustomerAddressInput = Omit<
+  CustomerAddressRecord,
+  "addressId" | "customerId" | "organizationId" | "createdAt" | "updatedAt"
+>;
+
+export type UpdateCustomerAddressInput = Partial<
+  Omit<CustomerAddressRecord, "addressId" | "customerId" | "organizationId" | "createdAt">
+>;
+
+export type CustomerListFilters = {
+  organizationId?: string;
+  lifecycleState?: CustomerLifecycleState;
+  accountType?: CustomerAccountType;
+  enabled?: boolean;
+  siteId?: string;
+  query?: string;
+};
+
+export type CustomerDuplicateCandidate = {
+  customerId: string;
+  matchedCustomerId: string;
+  reasons: readonly string[];
+  confidence: number;
+};
+
+export type CustomerActivityType =
+  | "customer_created"
+  | "customer_updated"
+  | "customer_archived"
+  | "customer_readiness_evaluated"
+  | "contact_created"
+  | "contact_updated"
+  | "address_created"
+  | "address_updated"
+  | "duplicate_scan_requested";
+
+export type CustomerActivityRecord = {
+  activityId: string;
+  customerId: string;
+  organizationId: string;
+  type: CustomerActivityType;
+  actor: string;
+  createdAt: string;
+  summary: string;
 };
 
 export type SiteLifecycleState =
@@ -1112,6 +1330,9 @@ export type EnterpriseSearchItem = {
     | "movement"
     | "reservation"
     | "profile"
+    | "customer"
+    | "contact"
+    | "address"
     | "generic";
   supportingIdentifier?: string;
   readinessIndicator?: "ready" | "blocked" | "warning" | "unknown";

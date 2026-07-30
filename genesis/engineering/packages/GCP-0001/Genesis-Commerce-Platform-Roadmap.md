@@ -58,6 +58,12 @@ Objectives:
 - Define media and document operational boundaries
 - Align canonical entities with Business Genome where available
 
+Implementation checkpoints:
+- GCP-0002D implemented bounded product and catalog foundations.
+- GCP-0002E implemented bounded inventory and availability foundations.
+- GCP-0002F implemented bounded integration profile configuration foundations.
+- GCP-0002G implemented bounded customer, contact, and address management foundations.
+
 Dependencies:
 - Phase 2 and Phase 3
 
@@ -153,3 +159,4 @@ Roadmap is complete when all modules have assigned phase ownership, explicit dep
 - Phase 4: Product and catalog foundation established by GCP-0002D bounded implementation
 - Phase 4: Inventory and availability foundation established by GCP-0002E bounded implementation
 - Phase 4: Integration profiles and publishing configuration foundation established by GCP-0002F bounded implementation
+- Phase 4: Customer, contact, and account management foundation established by GCP-0002G bounded implementation

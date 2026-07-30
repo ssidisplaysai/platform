@@ -172,3 +172,16 @@ Constraints preserved:
 1. No publishing or workflow runtime execution
 2. No external API invocation
 3. No Business Genome mutation authority migration
+
+## GCP-0002G Customer, Contact, and Account Management Foundation Status
+Implemented customer-module foundations in bounded form:
+1. Typed customer account, customer contact, and customer address contracts with deterministic readiness and duplicate result types
+2. Fixture-backed customer repository with customer create/update/list operations and scoped duplicate safeguards
+3. Customer contact and address sub-record lifecycle operations with primary/default synchronization behavior
+4. Customer UI route and API route foundations for registry, detail, settings, contacts, addresses, readiness, and duplicate analysis
+5. Navigation, command palette, and enterprise search extensions for customer/account/contact/address discovery
+
+Constraints preserved:
+1. No quote/order/invoice/payment execution
+2. No CRM automation or campaign execution
+3. No external accounting/CRM authority migration
