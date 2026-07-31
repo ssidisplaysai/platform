@@ -59,7 +59,6 @@ function ensureDirectory(path: string): void {
 
 function namespaceFile(namespace: string): string {
   const root = resolvePersistenceRoot();
-  ensureDirectory(root);
   return join(root, `${namespace}.json`);
 }
 
@@ -151,19 +150,10 @@ export function loadPersistedState<T>(input: {
   }
 
   const seeded = input.seedFactory();
-  const revision = 0;
-  const initialEnvelope: PersistenceEnvelope<T> = {
-    schemaVersion: PERSISTENCE_SCHEMA_VERSION,
-    revision,
-    updatedAt: nowIso(),
-    data: deepClone(seeded),
-  };
-
-  atomicWriteEnvelope(filePath, initialEnvelope);
 
   return {
     state: deepClone(seeded),
-    revision,
+    revision: 0,
     seeded: true,
   };
 }
@@ -177,7 +167,13 @@ export function savePersistedState<T>(input: {
 } {
   const filePath = namespaceFile(input.namespace);
   const existing = readEnvelopeFromDisk<T>(filePath);
-  const currentRevision = existing?.revision ?? -1;
+  if (!existing && input.expectedRevision !== 0) {
+    throw new FoundationPersistenceConflictError(
+      `Revision conflict for ${input.namespace}: expected ${input.expectedRevision}, found missing state.`,
+    );
+  }
+
+  const currentRevision = existing?.revision ?? 0;
 
   if (currentRevision !== input.expectedRevision) {
     throw new FoundationPersistenceConflictError(
