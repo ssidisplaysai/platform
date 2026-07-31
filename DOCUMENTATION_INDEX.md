@@ -10,6 +10,7 @@
 | Document | Purpose | Read Time |
 |----------|---------|-----------|
 | [DELIVERY_MANIFEST.md](DELIVERY_MANIFEST.md) | Complete inventory of everything delivered | 10 min |
+| [CHANGELOG.md](CHANGELOG.md) | Canonical released version history for Genesis Enterprise OS | 3 min |
 | [DISCOVERY_STAGE_1_QUICK_REFERENCE.md](DISCOVERY_STAGE_1_QUICK_REFERENCE.md) | API documentation and usage examples | 15 min |
 | [DISCOVERY_STAGE_1_VALIDATION_SUMMARY.md](DISCOVERY_STAGE_1_VALIDATION_SUMMARY.md) | Executive validation results | 5 min |
 | [DISCOVERY_STAGE_1_COMPLETE_VALIDATION.md](DISCOVERY_STAGE_1_COMPLETE_VALIDATION.md) | Comprehensive technical validation | 30 min |

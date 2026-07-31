@@ -25,5 +25,6 @@
 ## Where To Start
 
 1. Read README.md.
-2. Read GENESIS_ENGINEERING_HANDBOOK.md.
-3. Read docs/governance/REPOSITORY_GOVERNANCE_GUIDE.md.
+2. Read CHANGELOG.md.
+3. Read GENESIS_ENGINEERING_HANDBOOK.md.
+4. Read docs/governance/REPOSITORY_GOVERNANCE_GUIDE.md.
