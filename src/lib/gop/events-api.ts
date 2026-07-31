@@ -68,7 +68,7 @@ async function authorizeJobRead(jobId: string) {
 
 export async function handleGetJobEvents(_request: Request, jobId: string): Promise<NextResponse> {
   const access = await authorizeJobRead(jobId);
-  if ("error" in access) {
+  if ("error" in access && access.error) {
     return access.error;
   }
 
@@ -167,7 +167,7 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
 
 export async function handleStreamJobEvents(request: Request, jobId: string): Promise<Response> {
   const access = await authorizeJobRead(jobId);
-  if ("error" in access) {
+  if ("error" in access && access.error) {
     return access.error;
   }
 

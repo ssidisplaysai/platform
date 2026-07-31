@@ -97,37 +97,39 @@ export class GenesisAuthenticationService implements AuthenticationServicePort, 
     const metrics = this.getMetrics();
     const activeSessions = await this.sessionService.countActiveSessions();
 
-    const status = diagnostics.ok ? "HEALTHY" : "CRITICAL";
+    const status: "HEALTHY" | "CRITICAL" = diagnostics.ok ? "HEALTHY" : "CRITICAL";
+    const checks: Array<{ name: string; status: "PASS" | "WARN" | "FAIL"; detail?: string }> = [
+      {
+        name: "configuration",
+        status: diagnostics.missingVariables.length === 0 ? "PASS" : "FAIL",
+        detail: diagnostics.missingVariables.length === 0
+          ? "Authentication configuration is valid."
+          : `Missing: ${diagnostics.missingVariables.join(", ")}`,
+      },
+      {
+        name: "startup",
+        status: diagnostics.databaseConfigured ? "PASS" : "FAIL",
+        detail: diagnostics.databaseConfigured
+          ? "DATABASE_URL is configured for durable identity persistence."
+          : "DATABASE_URL is required for durable revocation and audit persistence.",
+      },
+      {
+        name: "provider",
+        status: providerHealth.every((entry) => entry.status === "HEALTHY") ? "PASS" : "WARN",
+        detail: providerHealth.map((entry) => `${entry.providerId}:${entry.status}`).join("; "),
+      },
+      {
+        name: "session",
+        status: "PASS",
+        detail: `active=${activeSessions}; inMemoryMetric=${metrics.activeSessionCount}`,
+      },
+    ];
+
     return {
       status,
-      checks: [
-        {
-          name: "configuration",
-          status: diagnostics.missingVariables.length === 0 ? "PASS" : "FAIL",
-          detail: diagnostics.missingVariables.length === 0
-            ? "Authentication configuration is valid."
-            : `Missing: ${diagnostics.missingVariables.join(", ")}`,
-        },
-        {
-          name: "startup",
-          status: diagnostics.databaseConfigured ? "PASS" : "FAIL",
-          detail: diagnostics.databaseConfigured
-            ? "DATABASE_URL is configured for durable identity persistence."
-            : "DATABASE_URL is required for durable revocation and audit persistence.",
-        },
-        {
-          name: "provider",
-          status: providerHealth.every((entry) => entry.status === "HEALTHY") ? "PASS" : "WARN",
-          detail: providerHealth.map((entry) => `${entry.providerId}:${entry.status}`).join("; "),
-        },
-        {
-          name: "session",
-          status: "PASS",
-          detail: `active=${activeSessions}; inMemoryMetric=${metrics.activeSessionCount}`,
-        },
-      ],
+      checks,
       generatedAt: new Date().toISOString(),
-    } as const;
+    };
   }
 }
 

@@ -6,4 +6,4 @@ export * from "./session";
 export * from "./services";
 export * from "./persistence";
 export * from "./telemetry/authentication-metrics";
-export * from "./authorization";
+export * as authorization from "./authorization";

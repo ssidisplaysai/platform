@@ -1,8 +1,8 @@
 import { describe, expect, it, jest } from "@jest/globals";
 
 const redirectMock = jest.fn();
-const createSessionMock = jest.fn(async () => undefined);
-const validateCredentialsMock = jest.fn(async () => true);
+const createSessionMock = jest.fn(async (_email: string) => undefined);
+const validateCredentialsMock = jest.fn(async (_email: string, _password: string) => true);
 
 jest.mock("next/navigation", () => ({
   redirect: redirectMock,
