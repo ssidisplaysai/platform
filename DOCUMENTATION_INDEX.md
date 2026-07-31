@@ -41,6 +41,22 @@
 | [genesis/engineering/packages/WS-I/Business-Genome-Extension-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Extension-Model.md) | Additive extension contracts preserving canonical invariants | 6 min |
 | [genesis/engineering/packages/WS-I/Certification-Checklist.md](genesis/engineering/packages/WS-I/Certification-Checklist.md) | Deterministic certification readiness checklist for WS-I scope | 5 min |
 | [genesis/engineering/packages/WS-I/LIFECYCLE-METADATA.md](genesis/engineering/packages/WS-I/LIFECYCLE-METADATA.md) | WS-I lifecycle state, dependencies, and normalization metadata | 3 min |
+| [genesis/engineering/packages/GPO-0001/README.md](genesis/engineering/packages/GPO-0001/README.md) | GPO package identity, scope constraints, and constitutional executive governance intent | 4 min |
+| [genesis/engineering/packages/GPO-0001/GPO-0001-Genesis-Program-Office.md](genesis/engineering/packages/GPO-0001/GPO-0001-Genesis-Program-Office.md) | Constitutional executive operating model for the Genesis Program Office | 8 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Executive-Dashboard.md](genesis/engineering/packages/GPO-0001/Genesis-Executive-Dashboard.md) | Executive status dashboard for governance, engineering, production, and repository health | 8 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Enterprise-Roadmap.md](genesis/engineering/packages/GPO-0001/Genesis-Enterprise-Roadmap.md) | Constitutionally governed enterprise roadmap and program inventory | 8 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Master-Workstream-Registry.md](genesis/engineering/packages/GPO-0001/Genesis-Master-Workstream-Registry.md) | Canonical workstream registry for executive lifecycle oversight | 6 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Constitutional-Program-Registry.md](genesis/engineering/packages/GPO-0001/Genesis-Constitutional-Program-Registry.md) | Canonical program registry for constitutional governance | 6 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Certification-Dashboard.md](genesis/engineering/packages/GPO-0001/Genesis-Certification-Dashboard.md) | Certification readiness and governance attestation view | 6 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Release-Dashboard.md](genesis/engineering/packages/GPO-0001/Genesis-Release-Dashboard.md) | Release baseline and history visibility surface | 5 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Repository-Health.md](genesis/engineering/packages/GPO-0001/Genesis-Repository-Health.md) | Repository state, cleanliness, and merge visibility | 5 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Operational-Health.md](genesis/engineering/packages/GPO-0001/Genesis-Operational-Health.md) | Operational health visibility without runtime implementation | 5 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Dependency-Graph.md](genesis/engineering/packages/GPO-0001/Genesis-Dependency-Graph.md) | Deterministic dependency mapping across programs and workstreams | 6 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Milestone-Register.md](genesis/engineering/packages/GPO-0001/Genesis-Milestone-Register.md) | Constitutional milestone register for executive governance | 4 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Decision-Register.md](genesis/engineering/packages/GPO-0001/Genesis-Decision-Register.md) | Executive decision history and traceability register | 4 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Risk-Register.md](genesis/engineering/packages/GPO-0001/Genesis-Risk-Register.md) | Governance risk register and control mapping | 4 min |
+| [genesis/engineering/packages/GPO-0001/Genesis-Executive-Metrics.md](genesis/engineering/packages/GPO-0001/Genesis-Executive-Metrics.md) | Executive metrics for constitutional governance visibility | 4 min |
+| [genesis/engineering/packages/GPO-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GPO-0001/LIFECYCLE-METADATA.md) | GPO lifecycle state, dependencies, and registry metadata | 3 min |
 
 ---
 
