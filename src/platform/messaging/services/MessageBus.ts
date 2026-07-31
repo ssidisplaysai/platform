@@ -10,6 +10,7 @@ import type {
   TopicDefinition,
   Transport,
 } from "../contracts";
+import { FilePersistenceCoordinator, type PersistenceCoordinator } from "../persistence";
 import { InMemoryTransport } from "../transports/InMemoryTransport";
 import { AuditWriter } from "./AuditWriter";
 import { DeadLetterService } from "./DeadLetterService";
@@ -32,6 +33,8 @@ export type MessageCapabilityMetadata = {
     deadLetter: boolean;
     requestReply: boolean;
     duplicateDetectionHook: boolean;
+    persistence: boolean;
+    restartRecovery: boolean;
   };
 };
 
@@ -46,10 +49,13 @@ export class MessageBus implements Publisher, Subscriber {
   private readonly router: MessageRouter;
   private readonly transport: Transport;
   private readonly unsubscribeTransport: () => void;
+  private readonly persistence: PersistenceCoordinator;
+  private readonly ready: Promise<void>;
 
   constructor(options?: {
     transport?: Transport;
     duplicateDetector?: DuplicateDetector;
+    persistence?: PersistenceCoordinator;
   }) {
     this.topicRegistry = new TopicRegistry();
     this.subscriptionRegistry = new SubscriptionRegistry();
@@ -58,6 +64,7 @@ export class MessageBus implements Publisher, Subscriber {
     this.auditWriter = new AuditWriter();
     this.health = new MessageHealth();
     this.transport = options?.transport ?? new InMemoryTransport();
+    this.persistence = options?.persistence ?? new FilePersistenceCoordinator();
 
     this.pipeline = new DeliveryPipeline(
       new RetryService(),
@@ -65,13 +72,80 @@ export class MessageBus implements Publisher, Subscriber {
       this.metrics,
       this.auditWriter,
       options?.duplicateDetector,
+      {
+        onRetry: async (input) => {
+          await this.persistence.retryStore.append({
+            messageId: input.envelope.messageId,
+            topic: input.topic,
+            subscriptionId: input.subscription.id,
+            subscriberName: input.subscription.subscriberName,
+            attempt: input.attempt,
+            retriedAt: new Date().toISOString(),
+            reason: input.reason,
+          });
+        },
+        onDeadLetter: async (input) => {
+          await this.persistence.deadLetterStore.append({
+            topic: input.topic,
+            subscriptionId: input.subscription.id,
+            subscriberName: input.subscription.subscriberName,
+            envelope: input.envelope,
+            reason: input.reason,
+            failedAt: new Date().toISOString(),
+          });
+          await this.persistence.retryStore.clearByMessage(input.envelope.messageId);
+        },
+      },
     );
+
     this.router = new MessageRouter(this.topicRegistry, this.subscriptionRegistry);
 
     this.unsubscribeTransport = this.transport.subscribe(async (message) => {
       const subscriptions = this.router.route(message.topic, message.envelope);
+      if (subscriptions.length === 0) {
+        this.metrics.trackMissingSubscriber();
+        await this.updateDepthMetrics();
+        await this.persistOperationalState();
+        return;
+      }
+
       await this.pipeline.deliver(message.topic, message.envelope, subscriptions);
+      await this.persistence.messageStore.remove(message.envelope.messageId);
+      await this.persistence.retryStore.clearByMessage(message.envelope.messageId);
+      await this.updateDepthMetrics();
+      await this.persistOperationalState();
     });
+
+    this.ready = this.recover();
+  }
+
+  private async recover(): Promise<void> {
+    const snapshot = await this.persistence.loadRecoverySnapshot();
+
+    if (snapshot.metrics) {
+      this.metrics.hydrate(snapshot.metrics);
+    }
+
+    if (snapshot.deadLetters.length > 0) {
+      this.deadLetterService.restore(snapshot.deadLetters);
+    }
+
+    if (snapshot.auditRecords.length > 0) {
+      this.auditWriter.restore(snapshot.auditRecords);
+    }
+
+    for (const pending of snapshot.pendingMessages) {
+      if (!this.topicRegistry.has(pending.topic)) {
+        this.registerTopic({ name: pending.topic });
+      }
+    }
+
+    await this.updateDepthMetrics();
+    await this.persistOperationalState();
+  }
+
+  async waitUntilReady(): Promise<void> {
+    await this.ready;
   }
 
   registerTopic(topic: TopicDefinition): void {
@@ -84,6 +158,7 @@ export class MessageBus implements Publisher, Subscriber {
     }
 
     this.subscriptionRegistry.register(definition);
+    void this.replayPendingForTopic(definition.topic);
   }
 
   unsubscribe(subscriptionId: string): void {
@@ -91,21 +166,42 @@ export class MessageBus implements Publisher, Subscriber {
   }
 
   async publish<TPayload = unknown>(input: PublishInput<TPayload>): Promise<void> {
+    await this.ready;
     this.assertEnvelope(input.envelope);
+
     if (!this.topicRegistry.has(input.topic)) {
+      this.metrics.trackUnknownTopic();
       this.registerTopic({ name: input.topic });
     }
 
     const mode = input.mode ?? "PUBLISH_SUBSCRIBE";
     this.metrics.trackPublished(input.topic, mode);
-    await this.transport.publish({
+
+    await this.persistence.messageStore.enqueue({
       topic: input.topic,
-      envelope: input.envelope,
       mode,
+      enqueuedAt: new Date().toISOString(),
+      envelope: input.envelope,
     });
+    await this.updateDepthMetrics();
+
+    try {
+      await this.transport.publish({
+        topic: input.topic,
+        envelope: input.envelope,
+        mode,
+      });
+    } catch {
+      this.metrics.trackTransportFailure();
+      throw new Error("transport_publish_failed");
+    } finally {
+      await this.updateDepthMetrics();
+      await this.persistOperationalState();
+    }
   }
 
   async request<TPayload = unknown, TReply = unknown>(input: RequestInput<TPayload>): Promise<MessageEnvelope<TReply>> {
+    await this.ready;
     const replyTopic = `messaging.reply.${input.envelope.messageId}`;
     const timeoutMs = input.timeoutMs ?? 2000;
 
@@ -153,7 +249,11 @@ export class MessageBus implements Publisher, Subscriber {
   }
 
   getMetrics() {
-    return this.metrics.snapshot();
+    const snapshot = this.metrics.snapshot();
+    return {
+      ...snapshot,
+      duplicateRegistrationCount: this.subscriptionRegistry.getDuplicateRegistrationCount(),
+    };
   }
 
   getQueueStats() {
@@ -172,6 +272,22 @@ export class MessageBus implements Publisher, Subscriber {
     return this.auditWriter.list();
   }
 
+  async getOperationalReadiness() {
+    await this.updateDepthMetrics();
+    const retryDepth = await this.persistence.retryStore.depth();
+    const deadLetterDepth = await this.persistence.deadLetterStore.depth();
+    const oldestPendingMessageAt = await this.persistence.messageStore.oldestPendingTimestamp();
+
+    return {
+      queueDepth: this.metrics.snapshot().queueDepth,
+      retryDepth,
+      deadLetterDepth,
+      oldestPendingMessageAt,
+      durability: "FILE_PERSISTED",
+      multiNodeReadiness: "TRANSPORT_ABSTRACTION_READY",
+    } as const;
+  }
+
   healthSnapshot(): MessageHealthSnapshot {
     return this.health.snapshot({
       transport: this.transport.health(),
@@ -187,7 +303,7 @@ export class MessageBus implements Publisher, Subscriber {
     return {
       capabilityId: "platform.messaging",
       capabilityName: "Genesis Enterprise Messaging Platform",
-      version: "1.0.0",
+      version: "1.1.0",
       transport: this.transport.constructor.name,
       supportedModes: ["FIRE_AND_FORGET", "REQUEST_REPLY", "PUBLISH_SUBSCRIBE", "BROADCAST", "POINT_TO_POINT"],
       supports: {
@@ -195,12 +311,55 @@ export class MessageBus implements Publisher, Subscriber {
         deadLetter: true,
         requestReply: true,
         duplicateDetectionHook: true,
+        persistence: true,
+        restartRecovery: true,
       },
     };
   }
 
   shutdown(): void {
+    void this.persistOperationalState();
     this.unsubscribeTransport();
+  }
+
+  private async updateDepthMetrics(): Promise<void> {
+    const [pending, retryDepth, oldestPending] = await Promise.all([
+      this.persistence.messageStore.listPending(),
+      this.persistence.retryStore.depth(),
+      this.persistence.messageStore.oldestPendingTimestamp(),
+    ]);
+
+    this.metrics.updateDepths({
+      queueDepth: pending.length,
+      retryDepth,
+      oldestPendingMessageAt: oldestPending,
+    });
+  }
+
+  private async persistOperationalState(): Promise<void> {
+    try {
+      await this.persistence.metricsStore.save(this.metrics.snapshot());
+    } catch {
+      this.metrics.trackMetricsPersistenceFailure();
+    }
+
+    try {
+      await this.persistence.auditStore.saveAll(this.auditWriter.list());
+    } catch {
+      this.metrics.trackAuditFailure();
+    }
+  }
+
+  private async replayPendingForTopic(topic: string): Promise<void> {
+    const pending = await this.persistence.messageStore.listPending();
+    const targeted = pending.filter((entry) => entry.topic === topic);
+    for (const entry of targeted) {
+      await this.transport.publish({
+        topic: entry.topic,
+        envelope: entry.envelope,
+        mode: entry.mode,
+      });
+    }
   }
 
   private assertEnvelope(envelope: MessageEnvelope): void {

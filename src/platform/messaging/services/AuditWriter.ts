@@ -37,4 +37,9 @@ export class AuditWriter {
   list(): MessageAuditRecord[] {
     return this.records.map((record) => ({ ...record }));
   }
+
+  restore(records: MessageAuditRecord[]): void {
+    this.records.length = 0;
+    this.records.push(...records.map((record) => ({ ...record })));
+  }
 }

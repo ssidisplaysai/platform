@@ -20,6 +20,18 @@ export class DeadLetterService {
     return this.entries.map((entry) => ({ ...entry, envelope: { ...entry.envelope, headers: { ...entry.envelope.headers }, metadata: { ...entry.envelope.metadata } } }));
   }
 
+  restore(entries: DeadLetterEntry[]): void {
+    this.entries.length = 0;
+    this.entries.push(...entries.map((entry) => ({
+      ...entry,
+      envelope: {
+        ...entry.envelope,
+        headers: { ...entry.envelope.headers },
+        metadata: { ...entry.envelope.metadata },
+      },
+    })));
+  }
+
   size(): number {
     return this.entries.length;
   }

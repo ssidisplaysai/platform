@@ -21,6 +21,14 @@ jest.mock("@/platform/messaging", () => ({
     getQueueStats: () => ({ published: 10, delivered: 9, failed: 1, deadLettered: 1, inFlight: 0 }),
     getSubscriberStats: () => ({ "topic.orders.created": 2 }),
     getDeadLetters: () => [{ messageId: "dead-1" }],
+    getOperationalReadiness: async () => ({
+      queueDepth: 5,
+      retryDepth: 2,
+      deadLetterDepth: 1,
+      oldestPendingMessageAt: "2026-07-31T12:00:00.000Z",
+      durability: "FILE_PERSISTED",
+      multiNodeReadiness: "TRANSPORT_ABSTRACTION_READY",
+    }),
   }),
 }));
 
@@ -34,12 +42,14 @@ describe("gop mission control messaging endpoints", () => {
       capability?: string;
       metadata?: { capabilityId: string };
       health?: { status: string };
+      readiness?: { durability: string };
     };
 
     expect(response.status).toBe(200);
     expect(payload.capability).toBe("platform.messaging");
     expect(payload.metadata?.capabilityId).toBe("platform.messaging");
     expect(payload.health?.status).toBe("HEALTHY");
+    expect(payload.readiness?.durability).toBe("FILE_PERSISTED");
   });
 
   it("returns messaging metrics payload", async () => {
@@ -49,6 +59,9 @@ describe("gop mission control messaging endpoints", () => {
       metrics?: { publishedCount: number };
       deadLetters?: number;
       subscribers?: Record<string, number>;
+      queueDepth?: number;
+      retryDepth?: number;
+      oldestPendingMessageAt?: string;
     };
 
     expect(response.status).toBe(200);
@@ -56,5 +69,8 @@ describe("gop mission control messaging endpoints", () => {
     expect(payload.metrics?.publishedCount).toBe(10);
     expect(payload.deadLetters).toBe(1);
     expect(payload.subscribers?.["topic.orders.created"]).toBe(2);
+    expect(payload.queueDepth).toBe(5);
+    expect(payload.retryDepth).toBe(2);
+    expect(payload.oldestPendingMessageAt).toBe("2026-07-31T12:00:00.000Z");
   });
 });

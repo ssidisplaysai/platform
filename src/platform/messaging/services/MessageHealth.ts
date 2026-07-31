@@ -40,18 +40,23 @@ export class MessageHealth {
       },
       {
         name: "delivery",
-        status: metricSnapshot.failedCount > 0 ? "WARN" : "PASS",
-        detail: `published=${metricSnapshot.publishedCount}; delivered=${metricSnapshot.deliveredCount}; failed=${metricSnapshot.failedCount}`,
+        status: metricSnapshot.failureRate > 0.1 ? "WARN" : "PASS",
+        detail: `published=${metricSnapshot.publishedCount}; delivered=${metricSnapshot.deliveredCount}; failed=${metricSnapshot.failedCount}; failureRate=${metricSnapshot.failureRate.toFixed(3)}`,
       },
       {
         name: "dead_letter",
-        status: deadLetters > 0 ? "WARN" : "PASS",
-        detail: `entries=${deadLetters}`,
+        status: deadLetters > 100 ? "WARN" : "PASS",
+        detail: `entries=${deadLetters}; retryDepth=${metricSnapshot.retryDepth}`,
       },
       {
         name: "queue",
-        status: input.queueStats.inFlight > 1000 ? "WARN" : "PASS",
-        detail: `inFlight=${input.queueStats.inFlight}; delivered=${input.queueStats.delivered}`,
+        status: metricSnapshot.queueDepth > 1000 || input.queueStats.inFlight > 1000 ? "WARN" : "PASS",
+        detail: `inFlight=${input.queueStats.inFlight}; queueDepth=${metricSnapshot.queueDepth}; oldestPending=${metricSnapshot.oldestPendingMessageAt ?? "none"}`,
+      },
+      {
+        name: "durability",
+        status: metricSnapshot.metricsPersistenceFailureCount > 0 ? "WARN" : "PASS",
+        detail: `metricsPersistenceFailures=${metricSnapshot.metricsPersistenceFailureCount}; auditFailures=${metricSnapshot.auditFailureCount}; transportFailures=${metricSnapshot.transportFailureCount}`,
       },
     ];
 

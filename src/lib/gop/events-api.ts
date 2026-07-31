@@ -159,6 +159,7 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
   const messagingMetadata = messagingService.capabilityMetadata();
   const messagingQueue = messagingService.getQueueStats();
   const messagingSubscribers = messagingService.getSubscriberStats();
+  const messagingReadiness = await messagingService.getOperationalReadiness();
 
   return NextResponse.json({
     metrics,
@@ -174,6 +175,7 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
     messagingHealth,
     messagingQueue,
     messagingSubscribers,
+    messagingReadiness,
   });
 }
 

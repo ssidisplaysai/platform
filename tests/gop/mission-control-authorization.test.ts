@@ -70,6 +70,14 @@ jest.mock("@/platform/messaging", () => ({
     }),
     getQueueStats: () => ({ published: 3, delivered: 3, failed: 0, deadLettered: 0, inFlight: 0 }),
     getSubscriberStats: () => ({ "topic.example": 1 }),
+    getOperationalReadiness: async () => ({
+      queueDepth: 0,
+      retryDepth: 0,
+      deadLetterDepth: 0,
+      oldestPendingMessageAt: null,
+      durability: "FILE_PERSISTED",
+      multiNodeReadiness: "TRANSPORT_ABSTRACTION_READY",
+    }),
   }),
 }));
 
@@ -85,6 +93,7 @@ describe("gop mission control authorization integration", () => {
       messagingMetadata?: { capabilityId: string };
       messagingMetrics?: { publishedCount: number };
       messagingHealth?: { status: string };
+      messagingReadiness?: { durability: string };
     };
 
     expect(response.status).toBe(200);
@@ -94,5 +103,6 @@ describe("gop mission control authorization integration", () => {
     expect(payload.messagingMetadata?.capabilityId).toBe("platform.messaging");
     expect(payload.messagingMetrics?.publishedCount).toBe(3);
     expect(payload.messagingHealth?.status).toBe("HEALTHY");
+    expect(payload.messagingReadiness?.durability).toBe("FILE_PERSISTED");
   });
 });

@@ -9,6 +9,8 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const bus = getGenesisMessageBus();
+  const readiness = await bus.getOperationalReadiness();
+  const deadLetterEntries = bus.getDeadLetters();
   return NextResponse.json({
     capability: "platform.messaging",
     metadata: bus.capabilityMetadata(),
@@ -16,6 +18,11 @@ export async function GET(): Promise<NextResponse> {
     health: bus.healthSnapshot(),
     queue: bus.getQueueStats(),
     subscribers: bus.getSubscriberStats(),
-    deadLetters: bus.getDeadLetters().length,
+    deadLetters: deadLetterEntries.length,
+    queueDepth: readiness.queueDepth,
+    retryDepth: readiness.retryDepth,
+    deadLetterDepth: readiness.deadLetterDepth,
+    oldestPendingMessageAt: readiness.oldestPendingMessageAt,
+    readiness,
   });
 }

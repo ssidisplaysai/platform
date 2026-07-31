@@ -3,9 +3,13 @@ import type { SubscriptionDefinition } from "../contracts";
 export class SubscriptionRegistry {
   private readonly byTopic = new Map<string, Map<string, SubscriptionDefinition>>();
   private readonly topicBySubscription = new Map<string, string>();
+  private duplicateRegistrationCount = 0;
 
   register<TPayload = unknown>(definition: SubscriptionDefinition<TPayload>): void {
     const topicSubscriptions = this.byTopic.get(definition.topic) ?? new Map<string, SubscriptionDefinition>();
+    if (topicSubscriptions.has(definition.id)) {
+      this.duplicateRegistrationCount += 1;
+    }
     topicSubscriptions.set(definition.id, definition as SubscriptionDefinition);
     this.byTopic.set(definition.topic, topicSubscriptions);
     this.topicBySubscription.set(definition.id, definition.topic);
@@ -46,5 +50,9 @@ export class SubscriptionRegistry {
     }
 
     return snapshot;
+  }
+
+  getDuplicateRegistrationCount(): number {
+    return this.duplicateRegistrationCount;
   }
 }

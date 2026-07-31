@@ -9,9 +9,11 @@ export async function GET(): Promise<NextResponse> {
   }
 
   const bus = getGenesisMessageBus();
+  const readiness = await bus.getOperationalReadiness();
   return NextResponse.json({
     capability: "platform.messaging",
     metadata: bus.capabilityMetadata(),
     health: bus.healthSnapshot(),
+    readiness,
   });
 }
