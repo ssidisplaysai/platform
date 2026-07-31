@@ -27,7 +27,10 @@ Define the official release charter for Genesis Enterprise OS v0.2.0 and govern 
 This package is registered in canonical governance registries under GEAI-0001 and follows existing constitutional package catalog and lifecycle conventions.
 
 ## Decision Recommendation
-APPROVED FOR CHARTER BASELINE
+APPROVED
+
+## Approval Record
+- GPR-0003-Release-Charter-Approval.md
 
 ## Commit Intent
 docs(release): establish Genesis Enterprise OS v0.2.0 release charter
