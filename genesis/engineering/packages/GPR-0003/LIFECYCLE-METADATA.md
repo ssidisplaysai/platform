@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GPR-0003
+- Program Identifier: GPR
+- Package Title: Genesis Enterprise OS v0.2.0 Release Charter
+- Lifecycle State: GOVERNANCE_ACTIVE
+- Status Value: CHARTER_ESTABLISHED
+- Lifecycle Decision Record: v0.2.0 release charter established as constitutional governance baseline.
+- Approval Record: Charter baseline approved for governance planning; implementation remains gated.
+- Implementation Record: No implementation or runtime changes authorized in this package.
+- Certification Record: Certification criteria and release gates defined; no certification execution performed.
+- Closeout Record: GPR-0003-v0.2.0-Release-Charter.md
+- Baseline Reference: CHANGELOG.md (v0.1.0 certified release baseline)
+- Commit Reference: GPR-0003 charter documentation commit on active development branch.
+- Release Reference: Genesis Enterprise OS v0.2.0 (The Business Genome Release).
+- Version Reference: v0.2.0
+- Package Owner: Program GPR governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GPR-0003
+- Cross-Document References: README.md; GPR-0003-v0.2.0-Release-Charter.md; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Dependencies Reference: GRC-0002
+- Successor Reference: None
+- Last Normalized Date: 2026-07-30
+- Normalization Source: GPR-0003 package creation
