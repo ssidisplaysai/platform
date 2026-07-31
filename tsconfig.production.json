@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [
+    "next-env.d.ts",
+    "src/app/layout.tsx",
+    "src/app/glw/**/*.tsx",
+    "src/components/layout/**/*.ts",
+    "src/components/layout/**/*.tsx",
+    "src/core/repositories/CompanyRepository.ts",
+    "src/data/companies/**/*.ts",
+    "src/data/companies/**/*.tsx",
+    "src/modules/glw/**/*.ts",
+    "src/modules/glw/**/*.tsx",
+    "src/modules/foundation/context.ts",
+    "src/modules/foundation/site-context-source.ts",
+    "src/modules/foundation/site-fixtures.ts",
+    "src/modules/foundation/types.ts",
+    "src/modules/foundation/navigation.ts",
+    "src/modules/foundation/permissions.ts",
+    "src/modules/foundation/selectors.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/domain/**",
+    "src/evidence-ir/**",
+    "src/types/**"
+  ]
+}

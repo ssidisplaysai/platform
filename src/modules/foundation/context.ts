@@ -1,5 +1,5 @@
 import { CompanyRepository } from "@/core/repositories/CompanyRepository";
-import { listSites } from "./site-repository";
+import { listFoundationSitesForContext } from "./site-context-source";
 import type {
   AppUser,
   FoundationContext,
@@ -27,7 +27,7 @@ export function buildSiteContext(
 ): readonly SiteContext[] {
   const organizationIds = new Set(organizations.map((organization) => organization.id));
 
-  return listSites()
+  return listFoundationSitesForContext()
     .filter((site) => organizationIds.has(site.organizationId))
     .map((site) => ({
       id: site.siteId,

@@ -7,8 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:production": "eslint \"src/app/**/*.{ts,tsx}\" \"src/components/**/*.{ts,tsx}\" \"src/core/**/*.{ts,tsx}\" \"src/modules/**/*.{ts,tsx}\" --ignore-pattern \"**/__tests__/**\" --max-warnings=0",
     "test": "jest",
     "test:watch": "jest --watch",
+    "typecheck:production": "tsc --noEmit -p tsconfig.production.json",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },

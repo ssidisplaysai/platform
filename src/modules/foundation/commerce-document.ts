@@ -46,6 +46,7 @@ export type CommerceDocumentBase = {
   documentId: string;
   documentNumber: string;
   organizationId: string;
+  siteReference: string | null;
   owningApplicationId: string;
   createdAt: string;
   updatedAt: string;

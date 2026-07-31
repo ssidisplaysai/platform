@@ -22,8 +22,11 @@ export function resolveSiteAccess(input: {
   site: SiteConfiguration | null;
   permissions: Set<PermissionAction>;
 }): {
-  status: "ok" | "not_found" | "unauthorized";
-  site: SiteConfiguration | null;
+  status: "ok";
+  site: SiteConfiguration;
+} | {
+  status: "not_found" | "unauthorized";
+  site: null;
 } {
   if (!input.site) {
     return { status: "not_found", site: null };

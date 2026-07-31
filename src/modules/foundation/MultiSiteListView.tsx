@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CompanyRepository } from "@/core/repositories/CompanyRepository";
 import { filterSites, SITE_ENVIRONMENTS, SITE_HEALTH_STATES, SITE_LIFECYCLE_STATES } from "./site-selectors";
-import { listSites } from "./site-repository";
+import { listFoundationSitesForContext } from "./site-context-source";
 import type {
   SiteConfiguration,
   SiteEnvironment,
@@ -21,7 +21,7 @@ export function MultiSiteListView() {
       return {
         loading: false,
         error: null as string | null,
-        sites: listSites(),
+        sites: listFoundationSitesForContext(),
       };
     } catch (error) {
       return {

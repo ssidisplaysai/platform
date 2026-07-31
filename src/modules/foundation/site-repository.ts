@@ -1,3 +1,5 @@
+import "server-only";
+
 import { FOUNDATION_SITE_FIXTURES } from "./site-fixtures";
 import {
   deepClone,

@@ -43,6 +43,16 @@ export default async function SiteDetailPage({ params }: PageProps) {
     );
   }
 
+  if (!access.site) {
+    return (
+      <AppShell>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-sm text-zinc-300">
+          Site {siteId} is unavailable.
+        </div>
+      </AppShell>
+    );
+  }
+
   const site = access.site;
   const readiness = evaluateSiteReadiness({
     site,

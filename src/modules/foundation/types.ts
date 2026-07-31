@@ -5,6 +5,7 @@ export type AppRole =
   | "company_operator"
   | "analyst"
   | "manufacturing_planner"
+  | "manufacturing_engineer"
   | "production_supervisor"
   | "executive"
   | "administrator"
@@ -217,6 +218,9 @@ export type NavigationItem = {
 export type CommandPaletteAction = {
   id: string;
   label: string;
+  title?: string;
+  subtitle?: string;
+  scope?: string;
   description: string;
   href: string;
   requiredPermissions?: readonly PermissionAction[];
