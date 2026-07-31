@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GPR-0003A
+- Program Identifier: GPR
+- Package Title: Business Genome Implementation Authorization
+- Lifecycle State: GOVERNANCE_ACTIVE
+- Status Value: IMPLEMENTATION_PROGRAM_AUTHORIZED
+- Lifecycle Decision Record: Business Genome implementation program authorized with constitutional governance controls and no runtime authorization in this package.
+- Approval Record: Authorization decision recorded in GPR-0003A-Business-Genome-Implementation-Authorization.md.
+- Implementation Record: No implementation or runtime changes authorized in this package.
+- Certification Record: Certification framework established; no workstream certification execution performed in this package.
+- Closeout Record: GPR-0003A-Business-Genome-Implementation-Authorization.md
+- Baseline Reference: genesis/engineering/packages/GPR-0003/GPR-0003-v0.2.0-Release-Charter.md
+- Commit Reference: docs(gpr): authorize Business Genome implementation program.
+- Release Reference: Genesis Enterprise OS v0.2.0 (The Business Genome Release).
+- Version Reference: v0.2.0
+- Package Owner: Program GPR governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GPR-0003A
+- Cross-Document References: README.md; GPR-0003A-Business-Genome-Implementation-Authorization.md; Business-Genome-Implementation-Roadmap.md; Business-Genome-Workstreams.md; Business-Genome-Governance-Model.md; Business-Genome-Certification-Framework.md; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Dependencies Reference: GPR-0003
+- Successor Reference: None
+- Last Normalized Date: 2026-07-30
+- Normalization Source: GPR-0003A package creation
