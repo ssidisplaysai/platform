@@ -17,6 +17,20 @@
 
 ---
 
+## Constitutional Governance Packages
+
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| [genesis/engineering/packages/GPR-0003A/README.md](genesis/engineering/packages/GPR-0003A/README.md) | Package identity, scope constraints, and decision intent for Business Genome implementation authorization | 3 min |
+| [genesis/engineering/packages/GPR-0003A/GPR-0003A-Business-Genome-Implementation-Authorization.md](genesis/engineering/packages/GPR-0003A/GPR-0003A-Business-Genome-Implementation-Authorization.md) | Constitutional authorization decision, governance rules, and validation summary | 10 min |
+| [genesis/engineering/packages/GPR-0003A/Business-Genome-Implementation-Roadmap.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Implementation-Roadmap.md) | Deterministic sequencing, milestones, and dependency roadmap for WS-I through WS-IX | 8 min |
+| [genesis/engineering/packages/GPR-0003A/Business-Genome-Workstreams.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Workstreams.md) | Full workstream contracts with scope, non-goals, dependencies, and gate definitions | 15 min |
+| [genesis/engineering/packages/GPR-0003A/Business-Genome-Governance-Model.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Governance-Model.md) | Lifecycle, review cadence, gate model, rollback governance, and change control | 8 min |
+| [genesis/engineering/packages/GPR-0003A/Business-Genome-Certification-Framework.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Certification-Framework.md) | Independent certification boundaries, evidence requirements, and acceptance gates | 8 min |
+| [genesis/engineering/packages/GPR-0003A/LIFECYCLE-METADATA.md](genesis/engineering/packages/GPR-0003A/LIFECYCLE-METADATA.md) | Lifecycle state, dependency references, and package normalization metadata | 3 min |
+
+---
+
 ## What Is Genesis Discovery Engine?
 
 The **Genesis Discovery Engine** transforms **Discovery Interview PDFs** into **structured, auditable JSON** that preserves knowledge exactly as discovered — without summarization, inference, or classification.
