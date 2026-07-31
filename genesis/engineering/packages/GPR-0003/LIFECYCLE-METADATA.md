@@ -3,21 +3,21 @@
 - Package Identifier: GPR-0003
 - Program Identifier: GPR
 - Package Title: Genesis Enterprise OS v0.2.0 Release Charter
-- Lifecycle State: GOVERNANCE_ACTIVE
-- Status Value: CHARTER_ESTABLISHED
-- Lifecycle Decision Record: v0.2.0 release charter established as constitutional governance baseline.
-- Approval Record: Charter baseline approved for governance planning; implementation remains gated.
+- Lifecycle State: GOVERNANCE_APPROVED
+- Status Value: CHARTER_APPROVED
+- Lifecycle Decision Record: Formal constitutional review completed and the v0.2.0 release charter was approved as the governing contract baseline.
+- Approval Record: Approved on 2026-07-30 by Genesis Release Governance Authority for charter governance scope only; implementation remains gated.
 - Implementation Record: No implementation or runtime changes authorized in this package.
 - Certification Record: Certification criteria and release gates defined; no certification execution performed.
-- Closeout Record: GPR-0003-v0.2.0-Release-Charter.md
+- Closeout Record: GPR-0003-Release-Charter-Approval.md
 - Baseline Reference: CHANGELOG.md (v0.1.0 certified release baseline)
-- Commit Reference: GPR-0003 charter documentation commit on active development branch.
+- Commit Reference: GPR-0003 charter approval documentation commit on main.
 - Release Reference: Genesis Enterprise OS v0.2.0 (The Business Genome Release).
 - Version Reference: v0.2.0
 - Package Owner: Program GPR governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
 - Registry Entry: Genesis-Constitutional-Package-Catalog row for GPR-0003
-- Cross-Document References: README.md; GPR-0003-v0.2.0-Release-Charter.md; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
-- Dependencies Reference: GRC-0002
+- Cross-Document References: README.md; GPR-0003-v0.2.0-Release-Charter.md; GPR-0003-Release-Charter-Approval.md; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Dependencies Reference: GRC-0001
 - Successor Reference: None
 - Last Normalized Date: 2026-07-30
-- Normalization Source: GPR-0003 package creation
+- Normalization Source: Formal GPR-0003 constitutional charter approval review
