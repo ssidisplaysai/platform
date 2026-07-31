@@ -61,6 +61,7 @@ Genesis Enterprise Operating System
 - Navigation guide: `Genesis-Architecture-Navigation-Guide.md`
 - Release history institution: `genesis/engineering/packages/GRH-0000/Genesis-Release-History-Constitution.md`
 - Inaugural release record: `genesis/engineering/packages/GRH-0001/Genesis-Release-History-Record-v0.1.0.md`
+- Release evidence package: `genesis/releases/v0.1.0/README.md`
 
 ## Deterministic Navigation Rules
 1. Package identifier is the primary lookup key.

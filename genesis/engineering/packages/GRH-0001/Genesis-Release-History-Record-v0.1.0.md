@@ -1,7 +1,19 @@
 # GRH-0001 Release History Record
 
+## Release Identifier
+GPR-0002
+
 ## Version
-0.1.0
+v0.1.0
+
+## Status
+RELEASED
+
+## Release Commit
+7214c6adccc6078efe1aa1758b2908a9cf11d597
+
+## Annotated Tag
+v0.1.0
 
 ## Title
 Genesis Production Platform
@@ -58,3 +70,5 @@ This release is the constitutional inflection point where Genesis becomes an ope
 - genesis/engineering/packages/GCD-0003/Genesis-Production-Operations-Runbook.md
 - genesis/engineering/packages/GRH-0000/Genesis-Release-History-Constitution.md
 - genesis/engineering/packages/GRH-0000/Genesis-Release-Versioning-Strategy.md
+- genesis/releases/v0.1.0/README.md
+- genesis/releases/v0.1.0/10-Final-Release-Declaration.md
