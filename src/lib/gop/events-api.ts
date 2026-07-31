@@ -13,6 +13,7 @@ import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity
 import { getGenesisAuthenticationService } from "@/platform/identity/services";
 import { getGenesisAuthorizationService } from "@/platform/gop/auth/authorization";
 import { getGenesisMessageBus } from "@/platform/messaging";
+import { getGenesisWorkflowEngine } from "@/platform/workflow";
 
 const GLW_MODULE_ID = "glw.core";
 const MAX_REPLAY_EVENTS = 300;
@@ -160,6 +161,11 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
   const messagingQueue = messagingService.getQueueStats();
   const messagingSubscribers = messagingService.getSubscriberStats();
   const messagingReadiness = await messagingService.getOperationalReadiness();
+  const workflowService = getGenesisWorkflowEngine();
+  const workflowMetadata = workflowService.capabilityMetadata();
+  const workflowMetrics = workflowService.getMetrics();
+  const workflowHealth = await workflowService.healthSnapshot();
+  const workflowReadiness = workflowService.getOperationalReadiness();
 
   return NextResponse.json({
     metrics,
@@ -176,6 +182,10 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
     messagingQueue,
     messagingSubscribers,
     messagingReadiness,
+    workflowMetadata,
+    workflowMetrics,
+    workflowHealth,
+    workflowReadiness,
   });
 }
 

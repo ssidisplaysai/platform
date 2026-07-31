@@ -81,6 +81,27 @@ jest.mock("@/platform/messaging", () => ({
   }),
 }));
 
+jest.mock("@/platform/workflow", () => ({
+  getGenesisWorkflowEngine: () => ({
+    capabilityMetadata: () => ({ capabilityId: "platform.workflow", version: "1.0.0" }),
+    getMetrics: () => ({ createdInstances: 2, completedInstances: 1 }),
+    healthSnapshot: async () => ({
+      status: "HEALTHY",
+      checks: [{ name: "workflow-execution", status: "PASS", detail: "ok" }],
+      generatedAt: new Date().toISOString(),
+    }),
+    getOperationalReadiness: () => ({
+      runningInstances: 0,
+      pausedInstances: 0,
+      completedInstances: 1,
+      failedInstances: 0,
+      timedOutInstances: 0,
+      retries: 0,
+      compensationRuns: 0,
+    }),
+  }),
+}));
+
 import { handleGetGopMetrics } from "@/lib/gop/events-api";
 
 describe("gop mission control authorization integration", () => {
@@ -94,6 +115,10 @@ describe("gop mission control authorization integration", () => {
       messagingMetrics?: { publishedCount: number };
       messagingHealth?: { status: string };
       messagingReadiness?: { durability: string };
+      workflowMetadata?: { capabilityId: string };
+      workflowMetrics?: { createdInstances: number };
+      workflowHealth?: { status: string };
+      workflowReadiness?: { completedInstances: number };
     };
 
     expect(response.status).toBe(200);
@@ -104,5 +129,9 @@ describe("gop mission control authorization integration", () => {
     expect(payload.messagingMetrics?.publishedCount).toBe(3);
     expect(payload.messagingHealth?.status).toBe("HEALTHY");
     expect(payload.messagingReadiness?.durability).toBe("FILE_PERSISTED");
+    expect(payload.workflowMetadata?.capabilityId).toBe("platform.workflow");
+    expect(payload.workflowMetrics?.createdInstances).toBe(2);
+    expect(payload.workflowHealth?.status).toBe("HEALTHY");
+    expect(payload.workflowReadiness?.completedInstances).toBe(1);
   });
 });
