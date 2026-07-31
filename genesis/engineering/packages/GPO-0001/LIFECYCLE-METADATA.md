@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GPO-0001
+- Program Identifier: GPO
+- Package Title: Genesis Program Office
+- Lifecycle State: CONSTITUTIONAL_BASELINE
+- Status Value: EXECUTIVE_GOVERNANCE_ACTIVE
+- Lifecycle Decision Record: Genesis Program Office established as the constitutional executive management layer for Genesis Enterprise OS.
+- Approval Record: Approved for publication and governance-index registration.
+- Implementation Record: No runtime, UI, API, database, automation, or schema implementation is authorized in this package.
+- Certification Record: Governance model, registries, and dashboard artifacts are documented and cross-referenced.
+- Closeout Record: Pending PR review and merge closeout.
+- Baseline Reference: genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Commit Reference: docs(gpo): establish Genesis Program Office constitutional baseline
+- Release Reference: Genesis Enterprise OS v0.1.0
+- Version Reference: GPO-0001 constitutional baseline v1
+- Package Owner: GPO governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GPO-0001
+- Cross-Document References: README.md; GPO-0001-Genesis-Program-Office.md; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md; DOCUMENTATION_INDEX.md
+- Dependencies Reference: GEAI-0001; GPR-0003A; WS-I
+- Successor Reference: GPO-0002
+- Last Normalized Date: 2026-07-31
+- Normalization Source: GPO-0001 constitutional baseline creation
