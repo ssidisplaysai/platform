@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GLW-0002
+- Program Identifier: GLW
+- Package Title: GLW Capability Expansion Planning
+- Lifecycle State: PLANNED
+- Status Value: PLANNED
+- Lifecycle Decision Record: GLW-0002 planning package established.
+- Approval Record: Pending execution authorization.
+- Implementation Record: Not started (planning only).
+- Certification Record: Not applicable at planning stage.
+- Closeout Record: None
+- Baseline Reference: src/app/glw/page.tsx
+- Commit Reference: GLW-0002 planning documentation commit.
+- Release Reference: genesis/engineering/packages/GRH-0001/Genesis-Release-History-Record-v0.1.0.md
+- Version Reference: Post-v0.1.0 GLW planning baseline.
+- Package Owner: Program GLW governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GLW-0002
+- Cross-Document References: Genesis-GLW-0002-Planning-Package.md
+- Dependencies Reference: GPO-0002
+- Successor Reference: None
+- Last Normalized Date: 2026-07-30
+- Normalization Source: GLW-0002 planning package creation

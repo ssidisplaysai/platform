@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GRO-0001
+- Program Identifier: GRO
+- Package Title: Release-Critical Branch Convergence Operations
+- Lifecycle State: COMPLETE
+- Status Value: COMPLETE
+- Lifecycle Decision Record: Initial convergence operations completed and handed off to GRO-0003 continuation packages.
+- Approval Record: Operations evidence recorded in Genesis-Release-Operations-Report.md.
+- Implementation Record: Operations/governance package; no implementation changes authorized.
+- Certification Record: Not a certification package.
+- Closeout Record: Genesis-Release-Operations-Report.md
+- Baseline Reference: genesis/engineering/packages/GRP-0001/Genesis-Release-Backlog.md
+- Commit Reference: Historical GRO operational commits.
+- Release Reference: genesis/engineering/packages/GRP-0001/Genesis-Release-Dashboard.md
+- Version Reference: Version 1.0 convergence operations baseline.
+- Package Owner: Program GRO governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for GRO-0001
+- Cross-Document References: genesis/engineering/packages/GRO-0003/Genesis-Governed-Convergence-Execution-Report.md
+- Dependencies Reference: GRP-0001
+- Successor Reference: GRO-0003
+- Last Normalized Date: 2026-07-30
+- Normalization Source: GPO-0001A registry normalization

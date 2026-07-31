@@ -9,6 +9,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GAR-0003 | Genesis Constitutional Assessment | Executive readiness assessment baseline package | Indexed | GAR | GEAI-0001 | GRP-0001 |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
+| GLW-0002 | GLW Capability Expansion Planning | LED Warehouse capability expansion planning package | Indexed | GLW | GPO-0002 | None |
 | GCP-0001 | Genesis Commerce Platform Foundation | Commerce platform constitutional baseline | Indexed | GCP | GARR-0001B | GCP-0002A |
 | GCP-0002A | Commerce Foundation Operational Baseline | Platform operational readiness baseline | Indexed | GCP | GCP-0001 | GCP-0002A-R1 |
 | GCP-0002A-R1 | Commerce Baseline Regression Alignment | Baseline closure and alignment | Indexed | GCP | GCP-0002A | GCP-0002B |
@@ -40,8 +41,15 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GMP-0008 | Manufacturing Execution Architecture | Manufacturing execution constitutional architecture | Indexed | GMP | GMP-0007 | GMP-0008A |
 | GMP-0008A | Manufacturing Execution Foundation | Manufacturing execution implementation foundation | Indexed | GMP | GMP-0008 | GMP-0008B |
 | GMP-0008B | Manufacturing Execution Certification | Manufacturing execution certified baseline closeout | Indexed | GMP | GMP-0008A | None |
+| GPO-0001A | Production Release Finalization | Production readiness and closeout documentation package | Indexed | GPO | GCD-0003, GRH-0001 | GPO-0002 |
+| GPO-0002 | Platform Stabilization Planning | Post-v0.1.0 stabilization planning package | Indexed | GPO | GPO-0001A | GLW-0002 |
+| GRC-0001 | Genesis Release Candidate Assessment | Release candidate precondition and readiness assessment package | Indexed | GRC | GRO-0005 | GCD-0003 |
 | GRH-0000 | Genesis Release History Constitutional Institution | Constitutional institution governing production release history chronology | Indexed | GRH | GCD-0003 | GRH-0001 |
 | GRH-0001 | Genesis Release History Record v0.1.0 | Inaugural constitutional production release-history record | Indexed | GRH | GRH-0000 | GRH-0002 |
+| GRO-0001 | Genesis Release Operations Report | Operational execution and convergence readiness report package | Indexed | GRO | GRP-0001 | GRO-0003 |
+| GRO-0003 | Genesis Governed Convergence Execution Report | Governed convergence execution stage 1 package | Indexed | GRO | GRO-0001 | GRO-0004 |
+| GRO-0004 | Genesis Governed Convergence Execution Report GRO-0004 | Governed convergence execution stage 2 package | Indexed | GRO | GRO-0003 | GRO-0005 |
+| GRO-0005 | Genesis Governed Convergence Execution Report GRO-0005 | Governed convergence execution stage 3 package | Indexed | GRO | GRO-0004 | GRC-0001 |
 | GRP-0001 | Genesis Version 1.0 Release Program | Release governance package for promotion gates and executive controls | Indexed | GRP | GAR-0003 | GRP-0001A |
 
 ## Synchronization Attestation
