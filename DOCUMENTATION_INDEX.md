@@ -27,6 +27,20 @@
 | [genesis/engineering/packages/GPR-0003A/Business-Genome-Governance-Model.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Governance-Model.md) | Lifecycle, review cadence, gate model, rollback governance, and change control | 8 min |
 | [genesis/engineering/packages/GPR-0003A/Business-Genome-Certification-Framework.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Certification-Framework.md) | Independent certification boundaries, evidence requirements, and acceptance gates | 8 min |
 | [genesis/engineering/packages/GPR-0003A/LIFECYCLE-METADATA.md](genesis/engineering/packages/GPR-0003A/LIFECYCLE-METADATA.md) | Lifecycle state, dependency references, and package normalization metadata | 3 min |
+| [genesis/engineering/packages/WS-I/README.md](genesis/engineering/packages/WS-I/README.md) | WS-I package identity, scope, mission, and governance constraints for canonical model architecture | 4 min |
+| [genesis/engineering/packages/WS-I/WS-I-Canonical-Business-Model.md](genesis/engineering/packages/WS-I/WS-I-Canonical-Business-Model.md) | Workstream-level canonical model architecture contract and completion criteria | 8 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Entity-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Entity-Model.md) | Canonical entities and authority boundaries for Business Genome knowledge domains | 10 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Relationship-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Relationship-Model.md) | Deterministic typed relationship contracts across canonical entities | 8 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Evidence-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Evidence-Model.md) | Immutable evidence contracts for canonical claims | 6 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Provenance-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Provenance-Model.md) | Append-only provenance chain requirements for canonical lineage | 6 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Identity-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Identity-Model.md) | Deterministic identity rules and namespace constraints for canonical objects | 6 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Versioning-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Versioning-Model.md) | Lifecycle-aware version transition model for canonical objects | 6 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Invariants.md](genesis/engineering/packages/WS-I/Business-Genome-Invariants.md) | Constitutional invariants that all canonical model artifacts must satisfy | 6 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Boundary-Matrix.md](genesis/engineering/packages/WS-I/Business-Genome-Boundary-Matrix.md) | Non-overlapping domain authority boundaries and enforcement rules | 6 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Ownership-Matrix.md](genesis/engineering/packages/WS-I/Business-Genome-Ownership-Matrix.md) | Delivery, governance, and certification ownership assignments by domain | 6 min |
+| [genesis/engineering/packages/WS-I/Business-Genome-Extension-Model.md](genesis/engineering/packages/WS-I/Business-Genome-Extension-Model.md) | Additive extension contracts preserving canonical invariants | 6 min |
+| [genesis/engineering/packages/WS-I/Certification-Checklist.md](genesis/engineering/packages/WS-I/Certification-Checklist.md) | Deterministic certification readiness checklist for WS-I scope | 5 min |
+| [genesis/engineering/packages/WS-I/LIFECYCLE-METADATA.md](genesis/engineering/packages/WS-I/LIFECYCLE-METADATA.md) | WS-I lifecycle state, dependencies, and normalization metadata | 3 min |
 
 ---
 

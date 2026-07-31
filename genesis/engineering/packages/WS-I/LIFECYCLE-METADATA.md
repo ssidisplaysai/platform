@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: WS-I
+- Program Identifier: WS
+- Package Title: Business Genome Canonical Model
+- Lifecycle State: CERTIFICATION_READY
+- Status Value: CONSTITUTIONALLY_CERTIFIED_READY
+- Lifecycle Decision Record: Independent constitutional review completed and governance conditions closed for WS-I architectural baseline.
+- Approval Record: WS-I governance completion pass approved for publication and PR review.
+- Implementation Record: No runtime, compiler, ingestion, API, persistence, or graph implementation is authorized in this package.
+- Certification Record: Certification checklist completed with evidence-backed review entries; independent certifier attestation ready.
+- Closeout Record: Pending publication, PR review, and merge closeout.
+- Baseline Reference: genesis/engineering/packages/GPR-0003A/GPR-0003A-Business-Genome-Implementation-Authorization.md
+- Commit Reference: Pending docs(ws-i): close governance conditions for certification readiness.
+- Release Reference: Genesis Enterprise OS v0.2.0 (The Business Genome Release).
+- Version Reference: WS-I architectural baseline v1.
+- Package Owner: WS-I governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for WS-I
+- Cross-Document References: README.md; WS-I-Canonical-Business-Model.md; Business-Genome-Entity-Model.md; Business-Genome-Relationship-Model.md; Business-Genome-Evidence-Model.md; Business-Genome-Provenance-Model.md; Business-Genome-Identity-Model.md; Business-Genome-Versioning-Model.md; Business-Genome-Invariants.md; Business-Genome-Boundary-Matrix.md; Business-Genome-Ownership-Matrix.md; Business-Genome-Extension-Model.md; Certification-Checklist.md; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Dependencies Reference: GPR-0003A
+- Successor Reference: WS-II
+- Last Normalized Date: 2026-07-31
+- Normalization Source: WS-I governance completion pass

@@ -51,13 +51,14 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GRO-0004 | Genesis Governed Convergence Execution Report GRO-0004 | Governed convergence execution stage 2 package | Indexed | GRO | GRO-0003 | GRO-0005 |
 | GRO-0005 | Genesis Governed Convergence Execution Report GRO-0005 | Governed convergence execution stage 3 package | Indexed | GRO | GRO-0004 | GRC-0001 |
 | GPR-0003 | Genesis Enterprise OS v0.2.0 Release Charter | Constitutional release charter for The Business Genome Release | Indexed | GPR | GRC-0001 | GPR-0003A |
-| GPR-0003A | Business Genome Implementation Authorization | Constitutional implementation authorization package for the Business Genome Release | Indexed | GPR | GPR-0003 | None |
+| GPR-0003A | Business Genome Implementation Authorization | Constitutional implementation authorization package for the Business Genome Release | Indexed | GPR | GPR-0003 | WS-I |
 | GRP-0001 | Genesis Version 1.0 Release Program | Release governance package for promotion gates and executive controls | Indexed | GRP | GAR-0003 | GRP-0001A |
+| WS-I | Business Genome Canonical Model | Constitutional canonical business model architecture for Business Genome downstream workstreams | Indexed | WS | GPR-0003A | WS-II |
 
 ## Synchronization Attestation
-- Date: 2026-07-30
+- Date: 2026-07-31
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 47 catalog identifiers, 47 local package roots, zero parity mismatches.
+- Result: 48 catalog identifiers, 48 local package roots, zero parity mismatches.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.
