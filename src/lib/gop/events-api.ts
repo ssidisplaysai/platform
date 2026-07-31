@@ -12,6 +12,7 @@ import type { GenesisJobStatus, GenesisJobType } from "@/platform/gop/contracts"
 import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 import { getGenesisAuthenticationService } from "@/platform/identity/services";
 import { getGenesisAuthorizationService } from "@/platform/gop/auth/authorization";
+import { getGenesisMessageBus } from "@/platform/messaging";
 
 const GLW_MODULE_ID = "glw.core";
 const MAX_REPLAY_EVENTS = 300;
@@ -152,6 +153,12 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
     contractVersion: "1.0.0",
     requestedAt: new Date().toISOString(),
   });
+  const messagingService = getGenesisMessageBus();
+  const messagingMetrics = messagingService.getMetrics();
+  const messagingHealth = messagingService.healthSnapshot();
+  const messagingMetadata = messagingService.capabilityMetadata();
+  const messagingQueue = messagingService.getQueueStats();
+  const messagingSubscribers = messagingService.getSubscriberStats();
 
   return NextResponse.json({
     metrics,
@@ -162,6 +169,11 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
     authenticationHealth,
     authorizationMetrics,
     authorizationHealth,
+    messagingMetadata,
+    messagingMetrics,
+    messagingHealth,
+    messagingQueue,
+    messagingSubscribers,
   });
 }
 

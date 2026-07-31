@@ -3,6 +3,7 @@
   "include": [
     "next-env.d.ts",
     "src/platform/identity/**/*.ts",
+    "src/platform/messaging/**/*.ts",
     "src/platform/gop/auth/**/*.ts",
     "src/platform/gop/actions/authorization.ts",
     "src/platform/gop/workspaces/**/*.ts",
@@ -10,13 +11,16 @@
     "src/lib/gop/events-api.ts",
     "src/app/api/gop/authentication/**/*.ts",
     "src/app/api/gop/authorization/**/*.ts",
+    "src/app/api/gop/messaging/**/*.ts",
     "src/app/api/gop/metrics/route.ts",
     "tests/setup-jest.ts",
     "tests/identity/**/*.ts",
     "tests/gop/auth-runtime-compatibility.test.ts",
     "tests/gop/authorization-boundary.test.ts",
     "tests/gop/authorization-resolver.test.ts",
-    "tests/gop/mission-control-authorization.test.ts"
+    "tests/gop/mission-control-authorization.test.ts",
+    "tests/gop/mission-control-messaging.test.ts",
+    "tests/messaging/**/*.ts"
   ],
   "exclude": [
     "node_modules",

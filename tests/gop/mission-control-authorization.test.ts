@@ -59,6 +59,20 @@ jest.mock("@/platform/gop/auth/authorization", () => ({
   }),
 }));
 
+jest.mock("@/platform/messaging", () => ({
+  getGenesisMessageBus: () => ({
+    capabilityMetadata: () => ({ capabilityId: "platform.messaging", transport: "InMemoryTransport" }),
+    getMetrics: () => ({ publishedCount: 3, deliveredCount: 3 }),
+    healthSnapshot: () => ({
+      status: "HEALTHY",
+      checks: [{ name: "transport", status: "PASS", detail: "ok" }],
+      generatedAt: new Date().toISOString(),
+    }),
+    getQueueStats: () => ({ published: 3, delivered: 3, failed: 0, deadLettered: 0, inFlight: 0 }),
+    getSubscriberStats: () => ({ "topic.example": 1 }),
+  }),
+}));
+
 import { handleGetGopMetrics } from "@/lib/gop/events-api";
 
 describe("gop mission control authorization integration", () => {
@@ -68,11 +82,17 @@ describe("gop mission control authorization integration", () => {
       authorizationMetrics?: { evaluatedCount: number };
       authorizationHealth?: { status: string };
       authentication?: { loginSuccessCount: number };
+      messagingMetadata?: { capabilityId: string };
+      messagingMetrics?: { publishedCount: number };
+      messagingHealth?: { status: string };
     };
 
     expect(response.status).toBe(200);
     expect(payload.authentication?.loginSuccessCount).toBe(1);
     expect(payload.authorizationMetrics?.evaluatedCount).toBe(2);
     expect(payload.authorizationHealth?.status).toBe("HEALTHY");
+    expect(payload.messagingMetadata?.capabilityId).toBe("platform.messaging");
+    expect(payload.messagingMetrics?.publishedCount).toBe(3);
+    expect(payload.messagingHealth?.status).toBe("HEALTHY");
   });
 });
