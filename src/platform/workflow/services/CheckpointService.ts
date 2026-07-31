@@ -37,4 +37,33 @@ export class CheckpointService {
   list(instanceId: string): WorkflowCheckpoint[] {
     return [...(this.checkpointsByInstance.get(instanceId) ?? [])];
   }
+
+  listAll(): WorkflowCheckpoint[] {
+    return [...this.checkpointsByInstance.values()].flat().map((item) => ({
+      ...item,
+      context: {
+        tenant: item.context.tenant,
+        workspace: item.context.workspace,
+        initiatedBy: item.context.initiatedBy,
+        variables: { ...item.context.variables },
+      },
+    }));
+  }
+
+  restore(checkpoints: WorkflowCheckpoint[]): void {
+    this.checkpointsByInstance.clear();
+    for (const checkpoint of checkpoints) {
+      const existing = this.checkpointsByInstance.get(checkpoint.instanceId) ?? [];
+      existing.push({
+        ...checkpoint,
+        context: {
+          tenant: checkpoint.context.tenant,
+          workspace: checkpoint.context.workspace,
+          initiatedBy: checkpoint.context.initiatedBy,
+          variables: { ...checkpoint.context.variables },
+        },
+      });
+      this.checkpointsByInstance.set(checkpoint.instanceId, existing);
+    }
+  }
 }

@@ -11,10 +11,17 @@ export class WorkflowHealthService {
   }): WorkflowHealth {
     const metrics = input.metrics.snapshot();
     const hasFailures = metrics.failedInstances > 0 || metrics.timedOutInstances > 0;
+    const hasOperationalWarnings =
+      metrics.concurrencyConflictCount > 0 ||
+      metrics.lifecyclePublishFailureCount > 0 ||
+      metrics.auditPersistenceFailureCount > 0 ||
+      metrics.contextPersistenceFailureCount > 0;
     const dependencyHealthy =
       input.dependencyHealth.messaging.status === "HEALTHY" && input.dependencyHealth.identity.status === "HEALTHY";
 
-    const status: "HEALTHY" | "DEGRADED" = !hasFailures && dependencyHealthy ? "HEALTHY" : "DEGRADED";
+    const status: "HEALTHY" | "DEGRADED" = !hasFailures && !hasOperationalWarnings && dependencyHealthy
+      ? "HEALTHY"
+      : "DEGRADED";
 
     return {
       status,
@@ -22,7 +29,7 @@ export class WorkflowHealthService {
         {
           name: "workflow-execution",
           status: hasFailures ? "WARN" : "PASS",
-          detail: `failed=${metrics.failedInstances}; timedOut=${metrics.timedOutInstances}`,
+          detail: `active=${metrics.activeWorkflowInstances}; failed=${metrics.failedInstances}; timedOut=${metrics.timedOutInstances}`,
         },
         {
           name: "messaging-dependency",
@@ -33,6 +40,11 @@ export class WorkflowHealthService {
           name: "identity-dependency",
           status: input.dependencyHealth.identity.status === "HEALTHY" ? "PASS" : "WARN",
           detail: input.dependencyHealth.identity.status,
+        },
+        {
+          name: "orchestration-safety",
+          status: hasOperationalWarnings ? "WARN" : "PASS",
+          detail: `conflicts=${metrics.concurrencyConflictCount}; duplicateCommands=${metrics.duplicateCommandCount}; publishFailures=${metrics.lifecyclePublishFailureCount}`,
         },
       ],
       generatedAt: new Date().toISOString(),

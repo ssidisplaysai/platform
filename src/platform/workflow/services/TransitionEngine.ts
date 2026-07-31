@@ -17,6 +17,6 @@ export class TransitionEngine {
       }
     }
 
-    return null;
+    throw new Error(`workflow_invalid_transition:${step.id}`);
   }
 }

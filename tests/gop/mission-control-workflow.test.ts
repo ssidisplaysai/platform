@@ -18,12 +18,21 @@ jest.mock("@/platform/workflow", () => ({
       generatedAt: new Date().toISOString(),
     }),
     getOperationalReadiness: () => ({
-      runningInstances: 1,
+      activeWorkflowInstances: 1,
       pausedInstances: 0,
       completedInstances: 1,
       failedInstances: 0,
       timedOutInstances: 0,
       retries: 1,
+      checkpointCount: 1,
+      recoveryCount: 0,
+      concurrencyConflictCount: 0,
+      duplicateCommandCount: 0,
+      lifecyclePublishFailureCount: 0,
+      oldestActiveWorkflowAgeMs: 10,
+      oldestPendingRetryAgeMs: null,
+      durability: "FILE_PERSISTED",
+      multiNodeReadiness: "PERSISTENCE_COORDINATED_SINGLE_WRITER",
       compensationRuns: 0,
     }),
   }),
@@ -39,14 +48,14 @@ describe("gop mission control workflow endpoints", () => {
       capability?: string;
       metadata?: { capabilityId: string };
       health?: { status: string };
-      readiness?: { runningInstances: number };
+      readiness?: { activeWorkflowInstances: number };
     };
 
     expect(response.status).toBe(200);
     expect(payload.capability).toBe("platform.workflow");
     expect(payload.metadata?.capabilityId).toBe("platform.workflow");
     expect(payload.health?.status).toBe("HEALTHY");
-    expect(payload.readiness?.runningInstances).toBe(1);
+    expect(payload.readiness?.activeWorkflowInstances).toBe(1);
   });
 
   it("returns workflow metrics payload", async () => {

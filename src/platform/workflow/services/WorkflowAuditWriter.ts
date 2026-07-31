@@ -31,4 +31,14 @@ export class WorkflowAuditWriter {
       details: record.details ? { ...record.details } : undefined,
     }));
   }
+
+  restore(records: WorkflowAudit[]): void {
+    this.records.length = 0;
+    for (const record of records) {
+      this.records.push({
+        ...record,
+        details: record.details ? { ...record.details } : undefined,
+      });
+    }
+  }
 }

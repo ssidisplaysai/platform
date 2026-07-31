@@ -19,6 +19,17 @@ export class WorkflowExecutor {
     private readonly executionHistory: ExecutionHistory,
     private readonly auditWriter: WorkflowAuditWriter,
     private readonly metrics: WorkflowMetricsService,
+    private readonly callbacks?: {
+      onExecutionRecord?: (input: { instance: WorkflowInstance; stepId: string; attempt: number }) => Promise<void>;
+      onCheckpoint?: (input: { instance: WorkflowInstance; stepId: string; state: WorkflowState }) => Promise<void>;
+      onRetry?: (input: { instance: WorkflowInstance; stepId: string; attempt: number; reason: string }) => Promise<void>;
+      onRetryResolved?: (input: { instance: WorkflowInstance; stepId: string }) => Promise<void>;
+      onTimeout?: (input: { instance: WorkflowInstance; stepId: string; timeoutMs: number }) => Promise<void>;
+      onTimeoutResolved?: (input: { instance: WorkflowInstance; stepId: string }) => Promise<void>;
+      onCompensation?: (input: { instance: WorkflowInstance; stepId: string }) => Promise<void>;
+      onCompensationFailure?: (input: { instance: WorkflowInstance; stepId: string; reason: string }) => Promise<void>;
+      onStepDuration?: (durationMs: number) => void;
+    },
   ) {}
 
   async execute(definition: WorkflowDefinition, instance: WorkflowInstance): Promise<WorkflowInstance> {
@@ -28,7 +39,6 @@ export class WorkflowExecutor {
         instance.state = "FAILED";
         instance.failureReason = `workflow_step_not_found:${instance.currentStepId}`;
         instance.updatedAt = new Date().toISOString();
-        this.metrics.trackFailedInstance();
         return instance;
       }
 
@@ -44,8 +54,17 @@ export class WorkflowExecutor {
       let attempt = (instance.attemptsByStep[step.id] ?? 0) + 1;
 
       while (attempt <= maxAttempts) {
+        const startedAt = Date.now();
         try {
           instance.attemptsByStep[step.id] = attempt;
+          if (step.timeout) {
+            await this.callbacks?.onTimeout?.({
+              instance,
+              stepId: step.id,
+              timeoutMs: step.timeout.timeoutMs,
+            });
+          }
+
           const result = await this.stepExecutor.execute({
             workflow: { workflowId: instance.workflowId },
             definition,
@@ -54,8 +73,11 @@ export class WorkflowExecutor {
             step,
           });
 
+          this.metrics.trackStepDuration(Date.now() - startedAt);
+          this.callbacks?.onStepDuration?.(Date.now() - startedAt);
+
           instance.context = this.contextManager.merge(instance.context, result.outputVariables);
-          this.executionHistory.append({
+          const record = {
             recordId: randomUUID(),
             instanceId: instance.instanceId,
             workflowId: instance.workflowId,
@@ -63,7 +85,14 @@ export class WorkflowExecutor {
             attempt,
             result,
             executedAt: new Date().toISOString(),
-          });
+          };
+          this.executionHistory.append(record);
+          await this.callbacks?.onExecutionRecord?.({ instance, stepId: step.id, attempt });
+
+          if (step.timeout) {
+            await this.callbacks?.onTimeoutResolved?.({ instance, stepId: step.id });
+          }
+          await this.callbacks?.onRetryResolved?.({ instance, stepId: step.id });
 
           if (result.status === "FAILURE") {
             throw new Error(result.error ?? "workflow_step_failure");
@@ -72,7 +101,6 @@ export class WorkflowExecutor {
           if (result.status === "PAUSE" || result.status === "WAIT") {
             instance.state = "PAUSED";
             instance.updatedAt = new Date().toISOString();
-            this.metrics.trackPausedInstance();
             this.auditWriter.write({
               instanceId: instance.instanceId,
               workflowId: instance.workflowId,
@@ -80,19 +108,15 @@ export class WorkflowExecutor {
               message: `Workflow paused at step ${step.id}`,
             });
             this.metrics.trackAuditRecord();
+
             this.checkpointService.checkpoint({
               instanceId: instance.instanceId,
               stepId: step.id,
               state: instance.state,
               context: instance.context,
             });
-            this.auditWriter.write({
-              instanceId: instance.instanceId,
-              workflowId: instance.workflowId,
-              eventType: "WORKFLOW_CHECKPOINTED",
-              message: `Checkpoint created at step ${step.id}`,
-            });
-            this.metrics.trackAuditRecord();
+            this.metrics.trackCheckpoint();
+            await this.callbacks?.onCheckpoint?.({ instance, stepId: step.id, state: instance.state });
             return instance;
           }
 
@@ -112,65 +136,67 @@ export class WorkflowExecutor {
             instance.currentStepId = null;
             instance.completedAt = new Date().toISOString();
             instance.updatedAt = instance.completedAt;
-            this.metrics.trackCompletedInstance();
+            instance.lastExecutionCompletedAt = instance.completedAt;
             return instance;
           }
 
           instance.currentStepId = nextStepId;
           instance.updatedAt = new Date().toISOString();
+
           this.checkpointService.checkpoint({
             instanceId: instance.instanceId,
             stepId: step.id,
             state: instance.state,
             context: instance.context,
           });
-          this.auditWriter.write({
-            instanceId: instance.instanceId,
-            workflowId: instance.workflowId,
-            eventType: "WORKFLOW_CHECKPOINTED",
-            message: `Checkpoint created at step ${step.id}`,
-          });
-          this.metrics.trackAuditRecord();
+          this.metrics.trackCheckpoint();
+          await this.callbacks?.onCheckpoint?.({ instance, stepId: step.id, state: instance.state });
           break;
         } catch (error) {
+          const reason = error instanceof Error ? error.message : "workflow_step_failure";
           if (attempt < maxAttempts) {
+            this.metrics.trackRetry();
+            await this.callbacks?.onRetry?.({ instance, stepId: step.id, attempt, reason });
             attempt += 1;
-            this.metrics.trackRetriedStep();
             continue;
           }
 
           instance.state = this.timeoutState(error);
-          instance.failureReason = error instanceof Error ? error.message : "workflow_step_failure";
+          instance.failureReason = reason;
           instance.updatedAt = new Date().toISOString();
+          instance.lastExecutionCompletedAt = instance.updatedAt;
 
           this.auditWriter.write({
             instanceId: instance.instanceId,
             workflowId: instance.workflowId,
             eventType: "STEP_FAILED",
             message: `Step failed: ${step.id}`,
-            details: { reason: instance.failureReason },
+            details: { reason },
           });
           this.metrics.trackAuditRecord();
 
           if (instance.executedStepIds.length > 0) {
-            const previousState: WorkflowState = instance.state;
+            const previousState = instance.state;
             instance.state = "COMPENSATING";
-            const compensation = await this.compensationService.compensate(definition, instance, instance.context);
-            instance.state = previousState;
+            for (const executedStepId of [...instance.executedStepIds].reverse()) {
+              try {
+                await this.compensationService.compensate(definition, {
+                  ...instance,
+                  executedStepIds: [executedStepId],
+                }, instance.context);
+                await this.callbacks?.onCompensation?.({ instance, stepId: executedStepId });
+              } catch (compensationError) {
+                const compensationReason =
+                  compensationError instanceof Error ? compensationError.message : "workflow_compensation_failed";
+                await this.callbacks?.onCompensationFailure?.({
+                  instance,
+                  stepId: executedStepId,
+                  reason: compensationReason,
+                });
+              }
+            }
             this.metrics.trackCompensatedInstance();
-            this.auditWriter.write({
-              instanceId: instance.instanceId,
-              workflowId: instance.workflowId,
-              eventType: "WORKFLOW_COMPENSATED",
-              message: `Compensation completed for ${compensation.compensatedStepIds.length} step(s)` ,
-            });
-            this.metrics.trackAuditRecord();
-          }
-
-          if (instance.state === "TIMED_OUT") {
-            this.metrics.trackTimedOutInstance();
-          } else {
-            this.metrics.trackFailedInstance();
+            instance.state = previousState;
           }
 
           return instance;

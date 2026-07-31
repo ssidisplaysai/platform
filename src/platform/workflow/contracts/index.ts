@@ -128,20 +128,6 @@ export type WorkflowEvent = {
   data?: Record<string, unknown>;
 };
 
-export type WorkflowMetrics = {
-  registeredWorkflows: number;
-  createdInstances: number;
-  runningInstances: number;
-  pausedInstances: number;
-  completedInstances: number;
-  failedInstances: number;
-  cancelledInstances: number;
-  timedOutInstances: number;
-  retriedSteps: number;
-  compensatedInstances: number;
-  auditRecords: number;
-};
-
 export type WorkflowHealth = {
   status: "HEALTHY" | "DEGRADED";
   checks: Array<{ name: string; status: "PASS" | "WARN" | "FAIL"; detail: string }>;
@@ -168,6 +154,8 @@ export type WorkflowInstance = {
   instanceId: string;
   workflowId: string;
   definitionId: string;
+  idempotencyKey: string;
+  version: number;
   state: WorkflowState;
   currentStepId: string | null;
   context: WorkflowContext;
@@ -175,6 +163,36 @@ export type WorkflowInstance = {
   executedStepIds: string[];
   startedAt: string;
   updatedAt: string;
+  lastExecutionStartedAt?: string;
+  lastExecutionCompletedAt?: string;
   completedAt?: string;
   failureReason?: string;
+};
+
+export type WorkflowMetrics = {
+  registeredWorkflowDefinitions: number;
+  activeWorkflowInstances: number;
+  pausedInstances: number;
+  completedInstances: number;
+  failedInstances: number;
+  cancelledInstances: number;
+  timedOutInstances: number;
+  compensatingInstances: number;
+  retryCount: number;
+  checkpointCount: number;
+  recoveryCount: number;
+  concurrencyConflictCount: number;
+  duplicateCommandCount: number;
+  lifecyclePublishFailureCount: number;
+  auditPersistenceFailureCount: number;
+  contextPersistenceFailureCount: number;
+  averageExecutionDurationMs: number;
+  averageStepDurationMs: number;
+  oldestActiveWorkflowAgeMs: number | null;
+  oldestPendingRetryAgeMs: number | null;
+  createdInstances: number;
+  runningInstances: number;
+  retriedSteps: number;
+  compensatedInstances: number;
+  auditRecords: number;
 };
