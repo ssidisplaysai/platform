@@ -21,6 +21,12 @@ Implement the Phase 1 evidence runtime foundation as immutable, deterministic, r
 - EvidenceRuntimeRegistry with immutable registration records, validation integration, and health derivation
 - Runtime export wiring through src/compiler/runtime/index.ts and src/compiler/index.ts
 
+## Registry Duplicate and Failure Behavior
+- Duplicate registration policy: overwrite-by-evidenceId.
+- A second registration with the same evidenceId replaces the prior immutable record with the latest immutable record.
+- Registry cardinality remains stable for duplicate evidenceId registration.
+- Validator failure behavior: if validation throws during registration, no record is written and existing registry state is preserved.
+
 ## Key Implementation Files
 - src/compiler/runtime/evidence/contracts.ts
 - src/compiler/runtime/evidence/EvidenceRuntimeFactory.ts

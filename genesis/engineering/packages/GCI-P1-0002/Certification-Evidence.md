@@ -14,7 +14,9 @@
 5. Replay references are linked to source manifest and deterministic fingerprint material.
 6. Provenance and certification references are normalized and immutable.
 7. Registry behavior is deterministic and immutable for registration snapshots.
-8. Runtime module remains within authorized Phase 1 scope with out-of-scope boundary guard validation.
+8. Duplicate registration behavior is explicit and verified as overwrite-by-evidenceId with stable registry cardinality.
+9. Validator failure during registration is fail-fast and preserves registry integrity.
+10. Runtime module remains within authorized Phase 1 scope with out-of-scope boundary guard validation.
 
 ## Gate Recommendation
 GCI-P1-0002 implementation evidence supports certification review for Phase 1 evidence runtime foundation scope.

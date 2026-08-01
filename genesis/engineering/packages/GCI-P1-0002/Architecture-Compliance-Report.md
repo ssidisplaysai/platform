@@ -25,7 +25,11 @@
 - Validation results are structured and immutable.
 - Health status derivation is deterministic from lifecycle/state/validator outcomes.
 
-6. Architecture Boundary Guard Test
+6. Registry Integrity Policy
+- Duplicate registration behavior is explicit and deterministic: EvidenceRuntimeRegistry overwrites by evidenceId and preserves a single latest immutable record per evidenceId.
+- Validator failure during registration is fail-fast and does not mutate registry state.
+
+7. Architecture Boundary Guard Test
 - tests/compiler/runtime/evidence/evidence-runtime-registry-and-architecture.test.ts enforces out-of-scope terms are absent from runtime evidence module source files.
 
 ## Conclusion

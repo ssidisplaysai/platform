@@ -5,7 +5,7 @@ npx jest tests/compiler/runtime/evidence --runInBand --coverage --collectCoverag
 
 ## Results
 - Test Suites: 2 passed
-- Tests: 6 passed
+- Tests: 8 passed
 - Failures: 0
 
 ## Added Test Files
@@ -20,5 +20,7 @@ npx jest tests/compiler/runtime/evidence --runInBand --coverage --collectCoverag
 - Versioning behavior
 - Replay linkage
 - Registry behavior
+- Duplicate registration overwrite behavior
+- Validator failure behavior with registry integrity preservation
 - Health reporting
 - Architecture boundary guardrails

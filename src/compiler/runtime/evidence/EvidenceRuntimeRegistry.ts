@@ -46,6 +46,7 @@ export class EvidenceRuntimeRegistry {
       registeredAt: this.clock(),
     });
 
+    // Duplicate registrations are intentionally resolved by evidenceId overwrite to preserve latest immutable runtime snapshot.
     this.records.set(evidence.identity.evidenceId, record);
     return record;
   }

@@ -124,4 +124,67 @@ describe("EvidenceRuntimeRegistry and architecture guardrails", () => {
       }
     }
   });
+
+  it("overwrites duplicate evidenceId registration with latest immutable record", () => {
+    const factory = createFactory();
+    const registry = new EvidenceRuntimeRegistry({
+      factory,
+      clock: createClock(),
+      validators: [
+        {
+          name: "status-check",
+          validate: () => ({
+            status: "pass",
+            code: "OK",
+            message: "ok",
+          }),
+        },
+      ],
+    });
+
+    const first = factory.createEvidenceObject(createInput("duplicate-ref"));
+    const second = factory.createNextVersion(first, {
+      reason: "updated payload",
+      payloadReference: "sha256:duplicate-ref-v2",
+      lifecycleState: "VALIDATED",
+      state: "READY",
+    });
+
+    const firstRecord = registry.register(first);
+    assert.equal(registry.count(), 1);
+
+    const secondRecord = registry.register(second);
+    assert.equal(registry.count(), 1);
+
+    const stored = registry.getByEvidenceId(first.identity.evidenceId);
+    assert.notEqual(stored, undefined);
+    assert.equal(stored?.evidence.objectId, second.objectId);
+    assert.equal(stored?.evidence.version.ordinal, 2);
+    assert.equal(stored?.evidence.identity.evidenceId, first.identity.evidenceId);
+    assert.equal(stored?.evidence.replayReference.sourceManifestId, firstRecord.evidence.manifestReference.manifestId);
+    assert.equal(stored?.evidence.replayReference.sourceManifestId, secondRecord.evidence.manifestReference.manifestId);
+    assert.equal(Object.isFrozen(stored), true);
+  });
+
+  it("does not mutate registry state when validator throws during registration", () => {
+    const factory = createFactory();
+    const registry = new EvidenceRuntimeRegistry({
+      factory,
+      clock: createClock(),
+      validators: [
+        {
+          name: "throwing-validator",
+          validate: () => {
+            throw new Error("validator failure");
+          },
+        },
+      ],
+    });
+
+    const candidate = factory.createEvidenceObject(createInput("validator-failure-ref"));
+
+    assert.throws(() => registry.register(candidate), /validator failure/);
+    assert.equal(registry.count(), 0);
+    assert.equal(registry.getByEvidenceId(candidate.identity.evidenceId), undefined);
+  });
 });

@@ -26,6 +26,7 @@ export interface EvidenceLifecycle {
 }
 
 export interface EvidenceIdentity {
+  // Registry uniqueness key. EvidenceRuntimeRegistry uses this key and overwrites prior records on duplicate registration.
   readonly evidenceId: string;
   readonly sourceNamespace: string;
   readonly sourceReference: string;
