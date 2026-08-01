@@ -7,6 +7,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | Identifier | Title | Purpose | Status | Governing Program | Dependencies | Successor Packages |
 |---|---|---|---|---|---|---|
 | GAR-0003 | Genesis Constitutional Assessment | Executive readiness assessment baseline package | Indexed | GAR | GEAI-0001 | GRP-0001 |
+| GCI-P1-0001 | Compiler Runtime Foundation | Phase 1 implementation package for runtime host foundation, lifecycle, health, and bootstrap contexts | Indexed | GCI | GCI-0001, GCS-0001, WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, WS-IIIE | GCI-P1-0002 |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
 | GLW-0002 | GLW Capability Expansion Planning | LED Warehouse capability expansion planning package | Indexed | GLW | GPO-0002 | None |
@@ -57,9 +58,9 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | WS-I | Business Genome Canonical Model | Constitutional canonical business model architecture for Business Genome downstream workstreams | Indexed | WS | GPR-0003A | WS-II |
 
 ## Synchronization Attestation
-- Date: 2026-07-31
+- Date: 2026-08-01
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 49 catalog identifiers, 49 local package roots, zero parity mismatches.
+- Result: 50 catalog identifiers, 50 local package roots, zero parity mismatches.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.
