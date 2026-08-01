@@ -1,26 +1,3 @@
-export { CompilerRuntimeHost } from "./foundation/index";
-export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
-
-export type {
-  CertificationContext,
-  CompilerConfiguration,
-  CompilerEnvironment,
-  CompilerExecutionContext,
-  CompilerLifecycle,
-  CompilerLifecycleEvent,
-  CompilerLifecycleState,
-  CompilerRuntimeState,
-  CompilerSession,
-  CompilerSessionState,
-  DiagnosticSeverity,
-  HealthCheckResult,
-  HealthStatus,
-  ReplayContext,
-  RuntimeHealth,
-  RuntimeManifest,
-  StructuredDiagnostic,
-} from "./foundation/index";
-
 export type {
   EvidenceClassification,
   EvidenceClassificationLevel,
@@ -41,12 +18,14 @@ export type {
   EvidenceRuntimeFactoryConfiguration,
   EvidenceRuntimeFactoryOptions,
   EvidenceRuntimeObject,
-  EvidenceRuntimeRegistryOptions,
   EvidenceState,
   EvidenceValidationResult,
   EvidenceValidator,
   EvidenceVersion,
   EvidenceVersionChangeInput,
-  RegisteredEvidenceRuntime,
   ValidationStatus,
-} from "./evidence/index";
+} from "./contracts";
+
+export { EvidenceRuntimeFactory } from "./EvidenceRuntimeFactory";
+export type { EvidenceRuntimeRegistryOptions, RegisteredEvidenceRuntime } from "./EvidenceRuntimeRegistry";
+export { EvidenceRuntimeRegistry } from "./EvidenceRuntimeRegistry";
