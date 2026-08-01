@@ -7,6 +7,8 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | Identifier | Title | Purpose | Status | Governing Program | Dependencies | Successor Packages |
 |---|---|---|---|---|---|---|
 | GAR-0003 | Genesis Constitutional Assessment | Executive readiness assessment baseline package | Indexed | GAR | GEAI-0001 | GRP-0001 |
+| GCI-0001 | Genesis Compiler Implementation Program | Constitutional implementation program governing Genesis Compiler phased construction and certification | Indexed | GCI | Constitution, Governance Framework, WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, WS-IIIE, GCS-0001 | None |
+| GCI-P1-0001 | Compiler Runtime Foundation | Phase 1 implementation package for runtime host foundation, lifecycle, health, and bootstrap contexts | Indexed | GCI | GCI-0001, GCS-0001, WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, WS-IIIE | GCI-P1-0002 |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCP-0001 | Genesis Commerce Platform Foundation | Commerce platform constitutional baseline | Indexed | GCP | GARR-0001B | GCP-0002A |
 | GCP-0002A | Commerce Foundation Operational Baseline | Platform operational readiness baseline | Indexed | GCP | GCP-0001 | GCP-0002A-R1 |
@@ -50,11 +52,14 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GPR-0003A | Business Genome Implementation Authorization | Constitutional implementation authorization package for the Business Genome Release | Indexed | GPR | GPR-0003 | None |
 | GRP-0001 | Genesis Version 1.0 Release Program | Release governance package for promotion gates and executive controls | Indexed | GRP | GAR-0003 | GRP-0001A |
 | GRR-0001 | Version 1.0 Release Governance Remediation | Governance completeness remediation for the current Release Candidate baseline | Indexed | GRR | GRC-0001 | GRC-0002 |
+| WS-IIIC | Relationship Resolution Engine | Deterministic relationship resolution constitutional architecture package | Indexed | Business Genome | WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB | None |
+| WS-IIID | Business Rule Evaluation Engine | Deterministic business rule evaluation constitutional architecture package | Indexed | Business Genome | WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC | None |
+| WS-IIIE | Business Genome Assembly Engine | Deterministic business genome assembly constitutional architecture package | Indexed | Business Genome | WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID | None |
 
 ## Synchronization Attestation
-- Date: 2026-07-30
+- Date: 2026-08-01
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 44 catalog identifiers, 44 local package roots, zero parity mismatches.
+- Result: 49 catalog identifiers, 49 local package roots, zero parity mismatches.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.

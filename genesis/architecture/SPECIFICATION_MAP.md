@@ -53,6 +53,11 @@ flowchart TD
 - GBP defines projection contracts consumed by GRT.
 - Future standards must declare explicit parent dependencies and may not violate upstream invariants.
 
+## Current Normative GCS Package
+
+- GCS-0001: genesis/specifications/GCS-0001/Genesis-Compiler-Specification.md
+- Scope: normative compiler behavior, determinism law, replay contract, conformance and certification requirements.
+
 ## Governance Rule
 
 No downstream specification may redefine upstream canonical meaning.

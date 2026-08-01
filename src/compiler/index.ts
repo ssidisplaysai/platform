@@ -55,6 +55,7 @@ export { CompilerValidationEngine } from "./core/CompilerValidationEngine";
 export { CompilerVersionManager } from "./core/CompilerVersionManager";
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
+export { CompilerRuntimeHost } from "./runtime";
 export {
 	BUSINESS_GENOME_SEMANTIC_CLASSES,
 	BUSINESS_GENOME_RELATIONSHIP_CLASSES,
@@ -88,6 +89,25 @@ export type {
 	CompilerArtifact,
 	CompilerSessionState,
 } from "./core/types";
+
+export type {
+	CertificationContext,
+	CompilerConfiguration,
+	CompilerEnvironment,
+	CompilerExecutionContext,
+	CompilerLifecycle,
+	CompilerLifecycleEvent,
+	CompilerLifecycleState,
+	CompilerRuntimeState,
+	CompilerSession,
+	DiagnosticSeverity,
+	HealthCheckResult,
+	HealthStatus,
+	ReplayContext,
+	RuntimeHealth,
+	RuntimeManifest,
+	StructuredDiagnostic,
+} from "./runtime";
 
 export type {
 	BusinessGenomeSemanticClass,

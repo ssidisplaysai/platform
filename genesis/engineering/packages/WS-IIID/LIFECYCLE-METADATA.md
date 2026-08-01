@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: WS-IIID
+- Program Identifier: Business Genome
+- Package Title: Business Rule Evaluation Engine
+- Lifecycle State: GOVERNANCE_ACTIVE
+- Status Value: ARCHITECTURE_DEFINED
+- Lifecycle Decision Record: WS-IIID constitutional rule evaluation architecture defined with deterministic, replayable, immutable, auditable, versioned, and certifiable controls.
+- Approval Record: Pending independent constitutional certification decision.
+- Implementation Record: No implementation, scripting language, runtime, API, database, DSL implementation, AI, or code artifacts authorized in this package.
+- Certification Record: Certification requirements and checklist established; independent certification pending.
+- Closeout Record: Rule-Certification.md
+- Baseline Reference: genesis/engineering/packages/GPR-0003A/Business-Genome-Workstreams.md
+- Commit Reference: docs(ws-iiid): establish business rule evaluation constitutional architecture.
+- Release Reference: Genesis Enterprise OS Business Genome Program.
+- Version Reference: WS-IIID v1.0 constitutional architecture baseline.
+- Package Owner: Business Genome governance owner (see docs/governance/OWNERSHIP_MATRIX.md)
+- Registry Entry: Genesis-Constitutional-Package-Catalog row for WS-IIID
+- Cross-Document References: README.md; WS-IIID-Business-Rule-Evaluation-Engine.md; Business-Rule-Theory.md; Rule-Classification.md; Rule-Lifecycle.md; Rule-Evaluation-Architecture.md; Rule-Conflict-Resolution.md; Rule-Ledger.md; Rule-Provenance.md; Rule-Replay.md; Rule-Certification.md; Certification-Checklist.md; genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md
+- Dependencies Reference: WS-I; WS-II; WS-III; WS-IIIA; WS-IIIA-R1; WS-IIIB; WS-IIIC
+- Successor Reference: None
+- Last Normalized Date: 2026-07-31
+- Normalization Source: WS-IIID package creation

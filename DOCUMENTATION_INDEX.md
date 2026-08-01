@@ -28,6 +28,97 @@
 | [genesis/engineering/packages/GPR-0003A/Business-Genome-Governance-Model.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Governance-Model.md) | Lifecycle, review cadence, gate model, rollback governance, and change control | 8 min |
 | [genesis/engineering/packages/GPR-0003A/Business-Genome-Certification-Framework.md](genesis/engineering/packages/GPR-0003A/Business-Genome-Certification-Framework.md) | Independent certification boundaries, evidence requirements, and acceptance gates | 8 min |
 | [genesis/engineering/packages/GPR-0003A/LIFECYCLE-METADATA.md](genesis/engineering/packages/GPR-0003A/LIFECYCLE-METADATA.md) | Lifecycle state, dependency references, and package normalization metadata | 3 min |
+| [genesis/engineering/packages/WS-IIIC/README.md](genesis/engineering/packages/WS-IIIC/README.md) | Package identity, constitutional scope, and deterministic relationship resolution mission | 3 min |
+| [genesis/engineering/packages/WS-IIIC/WS-IIIC-Relationship-Resolution-Engine.md](genesis/engineering/packages/WS-IIIC/WS-IIIC-Relationship-Resolution-Engine.md) | Core relationship resolution architecture, invariants, classes, and decision model | 8 min |
+| [genesis/engineering/packages/WS-IIIC/Relationship-Theory.md](genesis/engineering/packages/WS-IIIC/Relationship-Theory.md) | Evidence-governed relationship theory, truth model, and contradiction handling | 6 min |
+| [genesis/engineering/packages/WS-IIIC/Canonical-Relationship-Model.md](genesis/engineering/packages/WS-IIIC/Canonical-Relationship-Model.md) | Canonical relationship record contract, directionality, cardinality, and lineage model | 6 min |
+| [genesis/engineering/packages/WS-IIIC/Relationship-Lifecycle.md](genesis/engineering/packages/WS-IIIC/Relationship-Lifecycle.md) | Relationship lifecycle states, transitions, supersession, retirement, and history controls | 6 min |
+| [genesis/engineering/packages/WS-IIIC/Relationship-Confidence-Model.md](genesis/engineering/packages/WS-IIIC/Relationship-Confidence-Model.md) | Confidence and authority model with deterministic contradiction-aware decision requirements | 6 min |
+| [genesis/engineering/packages/WS-IIIC/Relationship-Ledger.md](genesis/engineering/packages/WS-IIIC/Relationship-Ledger.md) | Immutable append-only relationship ledger architecture and audit contract | 6 min |
+| [genesis/engineering/packages/WS-IIIC/Relationship-Provenance.md](genesis/engineering/packages/WS-IIIC/Relationship-Provenance.md) | Provenance requirements across evidence, identity, rules, compiler, and replay manifests | 5 min |
+| [genesis/engineering/packages/WS-IIIC/Temporal-Relationship-Architecture.md](genesis/engineering/packages/WS-IIIC/Temporal-Relationship-Architecture.md) | Effective dating, expiration, concurrency, future relationships, and time-window governance | 5 min |
+| [genesis/engineering/packages/WS-IIIC/Relationship-Replay.md](genesis/engineering/packages/WS-IIIC/Relationship-Replay.md) | Deterministic replay inputs, output guarantees, and replay-failure controls | 5 min |
+| [genesis/engineering/packages/WS-IIIC/Relationship-Certification.md](genesis/engineering/packages/WS-IIIC/Relationship-Certification.md) | Independent certification boundary, evidence requirements, and blocking conditions | 5 min |
+| [genesis/engineering/packages/WS-IIIC/Certification-Checklist.md](genesis/engineering/packages/WS-IIIC/Certification-Checklist.md) | Independent constitutional certification checklist for WS-IIIC conformance | 4 min |
+| [genesis/engineering/packages/WS-IIIC/LIFECYCLE-METADATA.md](genesis/engineering/packages/WS-IIIC/LIFECYCLE-METADATA.md) | Lifecycle status, dependency chain, and package normalization metadata | 3 min |
+| [genesis/engineering/packages/WS-IIID/README.md](genesis/engineering/packages/WS-IIID/README.md) | Package identity, constitutional scope, and deterministic rule evaluation mission | 3 min |
+| [genesis/engineering/packages/WS-IIID/WS-IIID-Business-Rule-Evaluation-Engine.md](genesis/engineering/packages/WS-IIID/WS-IIID-Business-Rule-Evaluation-Engine.md) | Core business rule engine architecture, invariants, outcomes, and boundaries | 8 min |
+| [genesis/engineering/packages/WS-IIID/Business-Rule-Theory.md](genesis/engineering/packages/WS-IIID/Business-Rule-Theory.md) | Constitutional rule theory, non-invention principle, and authority model | 6 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Classification.md](genesis/engineering/packages/WS-IIID/Rule-Classification.md) | Deterministic classification across rule types and extension governance | 6 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Lifecycle.md](genesis/engineering/packages/WS-IIID/Rule-Lifecycle.md) | Rule lifecycle states, transitions, supersession, retirement, and history controls | 6 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Evaluation-Architecture.md](genesis/engineering/packages/WS-IIID/Rule-Evaluation-Architecture.md) | Rule model contract and deterministic execution architecture requirements | 7 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Conflict-Resolution.md](genesis/engineering/packages/WS-IIID/Rule-Conflict-Resolution.md) | Rule precedence, override governance, incompatibility, and authority-weighted resolution | 6 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Ledger.md](genesis/engineering/packages/WS-IIID/Rule-Ledger.md) | Immutable append-only rule ledger architecture and auditability contract | 6 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Provenance.md](genesis/engineering/packages/WS-IIID/Rule-Provenance.md) | Provenance requirements across evidence, entities, relationships, versions, and replay manifests | 5 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Replay.md](genesis/engineering/packages/WS-IIID/Rule-Replay.md) | Deterministic replay inputs, guarantees, and replay-failure conditions | 5 min |
+| [genesis/engineering/packages/WS-IIID/Rule-Certification.md](genesis/engineering/packages/WS-IIID/Rule-Certification.md) | Independent certification requirements, evidence model, and blocking conditions | 5 min |
+| [genesis/engineering/packages/WS-IIID/Certification-Checklist.md](genesis/engineering/packages/WS-IIID/Certification-Checklist.md) | Independent constitutional certification checklist for WS-IIID conformance | 4 min |
+| [genesis/engineering/packages/WS-IIID/LIFECYCLE-METADATA.md](genesis/engineering/packages/WS-IIID/LIFECYCLE-METADATA.md) | Lifecycle state, dependency chain, and package normalization metadata | 3 min |
+| [genesis/engineering/packages/WS-IIIE/README.md](genesis/engineering/packages/WS-IIIE/README.md) | Package identity, constitutional scope, and deterministic genome assembly mission | 3 min |
+| [genesis/engineering/packages/WS-IIIE/WS-IIIE-Business-Genome-Assembly-Engine.md](genesis/engineering/packages/WS-IIIE/WS-IIIE-Business-Genome-Assembly-Engine.md) | Core assembly engine architecture, boundaries, invariants, inputs, and outputs | 8 min |
+| [genesis/engineering/packages/WS-IIIE/Assembly-Theory.md](genesis/engineering/packages/WS-IIIE/Assembly-Theory.md) | Constitutional assembly theory and non-invention knowledge contract | 6 min |
+| [genesis/engineering/packages/WS-IIIE/Assembly-Architecture.md](genesis/engineering/packages/WS-IIIE/Assembly-Architecture.md) | Assembly operation model, stages, and failure/recovery governance | 7 min |
+| [genesis/engineering/packages/WS-IIIE/Genome-Versioning.md](genesis/engineering/packages/WS-IIIE/Genome-Versioning.md) | Governance for genome, snapshot, delta, assembly, and publication versions | 6 min |
+| [genesis/engineering/packages/WS-IIIE/Snapshot-and-Delta-Architecture.md](genesis/engineering/packages/WS-IIIE/Snapshot-and-Delta-Architecture.md) | Deterministic snapshot/delta generation and replay-compatible lineage controls | 6 min |
+| [genesis/engineering/packages/WS-IIIE/Integrity-Validation.md](genesis/engineering/packages/WS-IIIE/Integrity-Validation.md) | Referential integrity, cross-reference checks, orphan/duplicate detection, and health validation | 6 min |
+| [genesis/engineering/packages/WS-IIIE/Publication-Architecture.md](genesis/engineering/packages/WS-IIIE/Publication-Architecture.md) | Draft-to-archive publication lifecycle and manifest-governed transitions | 6 min |
+| [genesis/engineering/packages/WS-IIIE/Genome-Provenance.md](genesis/engineering/packages/WS-IIIE/Genome-Provenance.md) | Required provenance answers across compiler, evidence, identities, relationships, rules, manifests, and certification | 5 min |
+| [genesis/engineering/packages/WS-IIIE/Genome-Replay.md](genesis/engineering/packages/WS-IIIE/Genome-Replay.md) | Deterministic replay inputs, guarantees, and replay-failure rules for assembly outputs | 5 min |
+| [genesis/engineering/packages/WS-IIIE/Genome-Certification.md](genesis/engineering/packages/WS-IIIE/Genome-Certification.md) | Independent certification requirements and blocking conditions for WS-IIIE | 5 min |
+| [genesis/engineering/packages/WS-IIIE/Certification-Checklist.md](genesis/engineering/packages/WS-IIIE/Certification-Checklist.md) | Independent constitutional certification checklist for WS-IIIE conformance | 4 min |
+| [genesis/engineering/packages/WS-IIIE/LIFECYCLE-METADATA.md](genesis/engineering/packages/WS-IIIE/LIFECYCLE-METADATA.md) | Lifecycle state, dependency chain, and package normalization metadata | 3 min |
+| [genesis/engineering/packages/GCI-0001/README.md](genesis/engineering/packages/GCI-0001/README.md) | Package identity and constitutional authorization boundary for compiler implementation program | 3 min |
+| [genesis/engineering/packages/GCI-0001/Genesis-Compiler-Implementation-Program.md](genesis/engineering/packages/GCI-0001/Genesis-Compiler-Implementation-Program.md) | Official implementation program authority, constraints, and required outcomes | 8 min |
+| [genesis/engineering/packages/GCI-0001/Implementation-Principles.md](genesis/engineering/packages/GCI-0001/Implementation-Principles.md) | Constitutional implementation principles including determinism, replay, and no-drift controls | 5 min |
+| [genesis/engineering/packages/GCI-0001/Implementation-Roadmap.md](genesis/engineering/packages/GCI-0001/Implementation-Roadmap.md) | Nine-phase implementation sequence and gate-based promotion policy | 6 min |
+| [genesis/engineering/packages/GCI-0001/Implementation-Phase-Definitions.md](genesis/engineering/packages/GCI-0001/Implementation-Phase-Definitions.md) | Phase-by-phase purpose, scope, deliverables, dependencies, gates, and metrics | 10 min |
+| [genesis/engineering/packages/GCI-0001/Engineering-Standards.md](genesis/engineering/packages/GCI-0001/Engineering-Standards.md) | Mandatory engineering standards across coding, testing, review, and release | 5 min |
+| [genesis/engineering/packages/GCI-0001/Conformance-Program.md](genesis/engineering/packages/GCI-0001/Conformance-Program.md) | Required conformance, replay, determinism, certification, manifest, and regression validations | 6 min |
+| [genesis/engineering/packages/GCI-0001/Certification-Gates.md](genesis/engineering/packages/GCI-0001/Certification-Gates.md) | CG-1 through CG-9 gate model and blocking criteria | 5 min |
+| [genesis/engineering/packages/GCI-0001/Architecture-Protection.md](genesis/engineering/packages/GCI-0001/Architecture-Protection.md) | Implementation boundaries preventing constitutional and specification drift | 4 min |
+| [genesis/engineering/packages/GCI-0001/Implementation-Governance.md](genesis/engineering/packages/GCI-0001/Implementation-Governance.md) | Review structures, deviation approvals, exception handling, and change control | 6 min |
+| [genesis/engineering/packages/GCI-0001/Implementation-Risk-Management.md](genesis/engineering/packages/GCI-0001/Implementation-Risk-Management.md) | Risk taxonomy and promotion-blocking severity controls | 4 min |
+| [genesis/engineering/packages/GCI-0001/Implementation-Metrics.md](genesis/engineering/packages/GCI-0001/Implementation-Metrics.md) | Required implementation health and certification readiness metrics | 4 min |
+| [genesis/engineering/packages/GCI-0001/Implementation-Readiness.md](genesis/engineering/packages/GCI-0001/Implementation-Readiness.md) | Program start preconditions and readiness closure criteria | 4 min |
+| [genesis/engineering/packages/GCI-0001/Certification-Checklist.md](genesis/engineering/packages/GCI-0001/Certification-Checklist.md) | Independent constitutional certification checklist for GCI-0001 | 4 min |
+| [genesis/engineering/packages/GCI-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-0001/LIFECYCLE-METADATA.md) | Lifecycle state and governance metadata for implementation authorization package | 3 min |
+| [genesis/engineering/packages/GCI-P1-0001/README.md](genesis/engineering/packages/GCI-P1-0001/README.md) | Phase 1 package identity and scope for compiler runtime foundation implementation | 3 min |
+| [genesis/engineering/packages/GCI-P1-0001/Implementation-Report.md](genesis/engineering/packages/GCI-P1-0001/Implementation-Report.md) | Runtime foundation implementation details, delivered contracts, and scope closure | 6 min |
+| [genesis/engineering/packages/GCI-P1-0001/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P1-0001/Architecture-Compliance-Report.md) | Architecture compliance validation against constitutional and phase boundaries | 6 min |
+| [genesis/engineering/packages/GCI-P1-0001/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P1-0001/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for runtime foundation subset obligations | 5 min |
+| [genesis/engineering/packages/GCI-P1-0001/Test-Summary.md](genesis/engineering/packages/GCI-P1-0001/Test-Summary.md) | Test execution summary for lifecycle, health, replay, and architecture validations | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0001/Coverage-Summary.md) | Coverage summary for runtime foundation implementation scope | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0001/Certification-Evidence.md) | Certification evidence set and phase gate recommendation | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0001 | 3 min |
+
+---
+
+## Constitutional Specifications
+
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| [genesis/specifications/GCS-0001/README.md](genesis/specifications/GCS-0001/README.md) | Normative package identity and authority statement for Genesis Compiler Specification v1.0 | 3 min |
+| [genesis/specifications/GCS-0001/Genesis-Compiler-Specification.md](genesis/specifications/GCS-0001/Genesis-Compiler-Specification.md) | Master normative compiler definition, required outputs, and prohibitions | 10 min |
+| [genesis/specifications/GCS-0001/Compiler-Terminology.md](genesis/specifications/GCS-0001/Compiler-Terminology.md) | Normative terminology and compiler domain definitions | 4 min |
+| [genesis/specifications/GCS-0001/Compiler-Lifecycle-Specification.md](genesis/specifications/GCS-0001/Compiler-Lifecycle-Specification.md) | Normative compiler lifecycle states, transitions, and invariants | 5 min |
+| [genesis/specifications/GCS-0001/Compiler-Pipeline-Specification.md](genesis/specifications/GCS-0001/Compiler-Pipeline-Specification.md) | Normative pipeline contracts, stage boundaries, and required IO guarantees | 6 min |
+| [genesis/specifications/GCS-0001/Compiler-Pass-Specification.md](genesis/specifications/GCS-0001/Compiler-Pass-Specification.md) | Normative pass model, dependencies, and failure handling contracts | 5 min |
+| [genesis/specifications/GCS-0001/IBR-Specification.md](genesis/specifications/GCS-0001/IBR-Specification.md) | Normative Intermediate Business Representation guarantees and validity rules | 5 min |
+| [genesis/specifications/GCS-0001/Compiler-Instruction-Specification.md](genesis/specifications/GCS-0001/Compiler-Instruction-Specification.md) | Normative instruction contracts for deterministic compiler execution | 5 min |
+| [genesis/specifications/GCS-0001/Entity-Resolution-Specification.md](genesis/specifications/GCS-0001/Entity-Resolution-Specification.md) | Normative identity resolution behavior and prohibitions | 4 min |
+| [genesis/specifications/GCS-0001/Relationship-Resolution-Specification.md](genesis/specifications/GCS-0001/Relationship-Resolution-Specification.md) | Normative relationship resolution behavior and prohibitions | 4 min |
+| [genesis/specifications/GCS-0001/Business-Rule-Specification.md](genesis/specifications/GCS-0001/Business-Rule-Specification.md) | Normative business rule evaluation outcomes and constraints | 4 min |
+| [genesis/specifications/GCS-0001/Business-Genome-Assembly-Specification.md](genesis/specifications/GCS-0001/Business-Genome-Assembly-Specification.md) | Normative assembly behavior, inputs, outputs, and integrity constraints | 5 min |
+| [genesis/specifications/GCS-0001/Compiler-Manifest-Specification.md](genesis/specifications/GCS-0001/Compiler-Manifest-Specification.md) | Normative compiler manifest fields and validation constraints | 4 min |
+| [genesis/specifications/GCS-0001/Business-Genome-Output-Specification.md](genesis/specifications/GCS-0001/Business-Genome-Output-Specification.md) | Normative output set and immutable output guarantees | 5 min |
+| [genesis/specifications/GCS-0001/Determinism-Specification.md](genesis/specifications/GCS-0001/Determinism-Specification.md) | Formal determinism law and cross-language output equivalence requirements | 5 min |
+| [genesis/specifications/GCS-0001/Replay-Specification.md](genesis/specifications/GCS-0001/Replay-Specification.md) | Normative replay contract, inputs, guarantees, and failure rules | 5 min |
+| [genesis/specifications/GCS-0001/Compiler-Conformance-Specification.md](genesis/specifications/GCS-0001/Compiler-Conformance-Specification.md) | Conformance model, fixture obligations, and compliance decision rules | 6 min |
+| [genesis/specifications/GCS-0001/Certification-Specification.md](genesis/specifications/GCS-0001/Certification-Specification.md) | Normative certification states, required validations, and blocking conditions | 5 min |
+| [genesis/specifications/GCS-0001/Versioning-and-Compatibility.md](genesis/specifications/GCS-0001/Versioning-and-Compatibility.md) | Version domains, compatibility rules, and cross-version replay constraints | 4 min |
+| [genesis/specifications/GCS-0001/Glossary.md](genesis/specifications/GCS-0001/Glossary.md) | Glossary of normative terms used in GCS-0001 | 3 min |
+| [genesis/specifications/GCS-0001/Certification-Checklist.md](genesis/specifications/GCS-0001/Certification-Checklist.md) | Independent checklist for GCS-0001 conformance and certification readiness | 4 min |
+| [genesis/specifications/GCS-0001/LIFECYCLE-METADATA.md](genesis/specifications/GCS-0001/LIFECYCLE-METADATA.md) | Lifecycle state and normative package governance metadata | 3 min |
 
 ---
 
