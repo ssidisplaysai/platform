@@ -69,6 +69,14 @@
 | [genesis/engineering/packages/GCI-P1-0001/Certified-Snapshot-Equivalence-Report.md](genesis/engineering/packages/GCI-P1-0001/Certified-Snapshot-Equivalence-Report.md) | Scoped content-equivalence analysis between original certified source snapshot and clean integration commit | 5 min |
 | [genesis/engineering/packages/GCI-P1-0001/Clean-Integration-Certification-Decision.md](genesis/engineering/packages/GCI-P1-0001/Clean-Integration-Certification-Decision.md) | Independent certification decision for clean origin/main integration lineage | 4 min |
 | [genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0001 | 3 min |
+| [genesis/engineering/packages/GCI-P1-0002/README.md](genesis/engineering/packages/GCI-P1-0002/README.md) | Phase 1 package identity and scope for evidence runtime foundation implementation | 3 min |
+| [genesis/engineering/packages/GCI-P1-0002/Implementation-Report.md](genesis/engineering/packages/GCI-P1-0002/Implementation-Report.md) | Evidence runtime foundation implementation details, contracts, and services | 6 min |
+| [genesis/engineering/packages/GCI-P1-0002/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P1-0002/Architecture-Compliance-Report.md) | Architecture compliance validation for runtime-only evidence scope boundaries | 6 min |
+| [genesis/engineering/packages/GCI-P1-0002/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P1-0002/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for evidence runtime foundation subset obligations | 5 min |
+| [genesis/engineering/packages/GCI-P1-0002/Test-Summary.md](genesis/engineering/packages/GCI-P1-0002/Test-Summary.md) | Test execution summary for evidence runtime determinism, lifecycle, and registry validations | 4 min |
+| [genesis/engineering/packages/GCI-P1-0002/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0002/Coverage-Summary.md) | Coverage summary for evidence runtime foundation implementation scope | 4 min |
+| [genesis/engineering/packages/GCI-P1-0002/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0002/Certification-Evidence.md) | Certification evidence set and phase gate recommendation for GCI-P1-0002 | 4 min |
+| [genesis/engineering/packages/GCI-P1-0002/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0002/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0002 | 3 min |
 
 ---
 
