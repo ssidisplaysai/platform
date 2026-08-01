@@ -57,6 +57,18 @@
 | [genesis/engineering/packages/GPO-0001/Genesis-Risk-Register.md](genesis/engineering/packages/GPO-0001/Genesis-Risk-Register.md) | Governance risk register and control mapping | 4 min |
 | [genesis/engineering/packages/GPO-0001/Genesis-Executive-Metrics.md](genesis/engineering/packages/GPO-0001/Genesis-Executive-Metrics.md) | Executive metrics for constitutional governance visibility | 4 min |
 | [genesis/engineering/packages/GPO-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GPO-0001/LIFECYCLE-METADATA.md) | GPO lifecycle state, dependencies, and registry metadata | 3 min |
+| [genesis/engineering/packages/GCI-P1-0001/README.md](genesis/engineering/packages/GCI-P1-0001/README.md) | Phase 1 package identity and scope for compiler runtime foundation implementation | 3 min |
+| [genesis/engineering/packages/GCI-P1-0001/Implementation-Report.md](genesis/engineering/packages/GCI-P1-0001/Implementation-Report.md) | Runtime foundation implementation details, delivered contracts, and scope closure | 6 min |
+| [genesis/engineering/packages/GCI-P1-0001/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P1-0001/Architecture-Compliance-Report.md) | Architecture compliance validation against constitutional and phase boundaries | 6 min |
+| [genesis/engineering/packages/GCI-P1-0001/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P1-0001/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for runtime foundation subset obligations | 5 min |
+| [genesis/engineering/packages/GCI-P1-0001/Test-Summary.md](genesis/engineering/packages/GCI-P1-0001/Test-Summary.md) | Test execution summary for lifecycle, health, replay, and architecture validations | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0001/Coverage-Summary.md) | Coverage summary for runtime foundation implementation scope | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0001/Certification-Evidence.md) | Certification evidence set and phase gate recommendation | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/CG-1-Evidence-Matrix.md](genesis/engineering/packages/GCI-P1-0001/CG-1-Evidence-Matrix.md) | CG-1 validation-class evidence mapping and closure results | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/Certification-Closeout-Report.md](genesis/engineering/packages/GCI-P1-0001/Certification-Closeout-Report.md) | Certification condition closeout record advancing phase status to certified | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/Certified-Snapshot-Equivalence-Report.md](genesis/engineering/packages/GCI-P1-0001/Certified-Snapshot-Equivalence-Report.md) | Scoped content-equivalence analysis between original certified source snapshot and clean integration commit | 5 min |
+| [genesis/engineering/packages/GCI-P1-0001/Clean-Integration-Certification-Decision.md](genesis/engineering/packages/GCI-P1-0001/Clean-Integration-Certification-Decision.md) | Independent certification decision for clean origin/main integration lineage | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0001 | 3 min |
 
 ---
 
