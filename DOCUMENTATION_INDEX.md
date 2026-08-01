@@ -66,6 +66,8 @@
 | [genesis/engineering/packages/GCI-P1-0001/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0001/Certification-Evidence.md) | Certification evidence set and phase gate recommendation | 4 min |
 | [genesis/engineering/packages/GCI-P1-0001/CG-1-Evidence-Matrix.md](genesis/engineering/packages/GCI-P1-0001/CG-1-Evidence-Matrix.md) | CG-1 validation-class evidence mapping and closure results | 4 min |
 | [genesis/engineering/packages/GCI-P1-0001/Certification-Closeout-Report.md](genesis/engineering/packages/GCI-P1-0001/Certification-Closeout-Report.md) | Certification condition closeout record advancing phase status to certified | 4 min |
+| [genesis/engineering/packages/GCI-P1-0001/Certified-Snapshot-Equivalence-Report.md](genesis/engineering/packages/GCI-P1-0001/Certified-Snapshot-Equivalence-Report.md) | Scoped content-equivalence analysis between original certified source snapshot and clean integration commit | 5 min |
+| [genesis/engineering/packages/GCI-P1-0001/Clean-Integration-Certification-Decision.md](genesis/engineering/packages/GCI-P1-0001/Clean-Integration-Certification-Decision.md) | Independent certification decision for clean origin/main integration lineage | 4 min |
 | [genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0001/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0001 | 3 min |
 
 ---

@@ -47,4 +47,6 @@ Out of Scope:
 - Certification-Evidence.md
 - CG-1-Evidence-Matrix.md
 - Certification-Closeout-Report.md
+- Certified-Snapshot-Equivalence-Report.md
+- Clean-Integration-Certification-Decision.md
 - LIFECYCLE-METADATA.md

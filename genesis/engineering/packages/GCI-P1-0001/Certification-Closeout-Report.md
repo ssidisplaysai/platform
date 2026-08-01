@@ -32,6 +32,12 @@ No architectural or specification changes were introduced.
 ## Certification Decision
 GCI-P1-0001 status is closed as CERTIFIED for Phase 1 scope under CG-1.
 
+## Clean Integration Lineage
+- Original certification source snapshot: 60ddfb75be532d477d6d149c1658e0e06f9ba78c
+- Clean integration merge candidate commit: d459a34c8a7fe6ec312fabedbc099839ab2e2126
+- Equivalence evidence: Certified-Snapshot-Equivalence-Report.md
+- Clean integration certification decision: Clean-Integration-Certification-Decision.md
+
 ## Evidence References
 - CG-1-Evidence-Matrix.md
 - Certification-Evidence.md
@@ -39,4 +45,6 @@ GCI-P1-0001 status is closed as CERTIFIED for Phase 1 scope under CG-1.
 - GCS-0001-Conformance-Report.md
 - Test-Summary.md
 - Coverage-Summary.md
+- Certified-Snapshot-Equivalence-Report.md
+- Clean-Integration-Certification-Decision.md
 - LIFECYCLE-METADATA.md

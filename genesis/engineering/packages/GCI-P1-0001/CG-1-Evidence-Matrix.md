@@ -3,6 +3,10 @@
 ## Scope
 This matrix closes CG-1 certification conditions for GCI-P1-0001 by mapping each required GCI-0001 validation class to executed evidence.
 
+- Clean Integration Commit: d459a34c8a7fe6ec312fabedbc099839ab2e2126
+- Original Certification Source Snapshot: 60ddfb75be532d477d6d149c1658e0e06f9ba78c
+- Equivalence Record: Certified-Snapshot-Equivalence-Report.md
+
 | Requirement | Evidence | Evidence Location | Result | Reviewer | Status |
 |---|---|---|---|---|---|
 | Conformance | Runtime foundation lifecycle, context immutability, and phase boundary behaviors validated by executed test suites. | tests/compiler/runtime/foundation/compiler-runtime-host.test.ts; tests/compiler/runtime/foundation/runtime-foundation-architecture.test.ts; genesis/engineering/packages/GCI-P1-0001/Test-Summary.md | PASS | Independent Certification Review (GPT-5.3-Codex) | Closed |

@@ -7,6 +7,8 @@
 - Test execution and coverage outputs from focused runtime foundation suite
 - CG-1 validation class traceability matrix in CG-1-Evidence-Matrix.md
 - Certification closeout decision record in Certification-Closeout-Report.md
+- Clean integration equivalence evidence in Certified-Snapshot-Equivalence-Report.md
+- Clean integration certification decision in Clean-Integration-Certification-Decision.md
 
 ## Scope Clarifications
 - Runtime Manifest scope: The Runtime Manifest implemented by GCI-P1-0001 is the Phase 1 Runtime Bootstrap Manifest. It is not the complete Compiler Manifest defined by GCS-0001, and future phases extend this contract.
