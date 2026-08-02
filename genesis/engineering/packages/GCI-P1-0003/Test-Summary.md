@@ -5,7 +5,7 @@ npx jest tests/compiler/runtime/evidence-validation --runInBand --coverage --col
 
 ## Results
 - Test Suites: 2 passed
-- Tests: 6 passed
+- Tests: 7 passed
 - Failures: 0
 
 ## Added Test Files
