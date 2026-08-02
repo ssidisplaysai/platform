@@ -1,5 +1,6 @@
 export { CompilerRuntimeHost } from "./foundation/index";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
+export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./evidence-validation/index";
 
 export type {
   CertificationContext,
@@ -50,3 +51,19 @@ export type {
   RegisteredEvidenceRuntime,
   ValidationStatus,
 } from "./evidence/index";
+
+export type {
+  EvidenceValidationCertificationTrace,
+  EvidenceValidationLifecycleIntegrity,
+  EvidenceValidationReplayTrace,
+  EvidenceValidationRuntimeCheck,
+  EvidenceValidationRuntimeCheckStatus,
+  EvidenceValidationRuntimeFactoryConfiguration,
+  EvidenceValidationRuntimeFactoryOptions,
+  EvidenceValidationRuntimeOutcome,
+  EvidenceValidationRuntimeRecord,
+  EvidenceValidationRuntimeRegistryOptions,
+  EvidenceValidationRuntimeRule,
+  EvidenceValidationRuntimeRuleResult,
+  RegisteredEvidenceValidationRuntime,
+} from "./evidence-validation/index";

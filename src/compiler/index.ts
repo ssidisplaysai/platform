@@ -57,6 +57,7 @@ export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export { CompilerRuntimeHost } from "./runtime";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./runtime";
+export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./runtime";
 export {
 	BUSINESS_GENOME_SEMANTIC_CLASSES,
 	BUSINESS_GENOME_RELATIONSHIP_CLASSES,
@@ -127,9 +128,22 @@ export type {
 	EvidenceValidator as RuntimeEvidenceValidator,
 	EvidenceVersion,
 	EvidenceVersionChangeInput,
+	EvidenceValidationCertificationTrace,
+	EvidenceValidationLifecycleIntegrity,
+	EvidenceValidationReplayTrace,
+	EvidenceValidationRuntimeCheck,
+	EvidenceValidationRuntimeCheckStatus,
+	EvidenceValidationRuntimeFactoryConfiguration,
+	EvidenceValidationRuntimeFactoryOptions,
+	EvidenceValidationRuntimeOutcome,
+	EvidenceValidationRuntimeRecord,
+	EvidenceValidationRuntimeRegistryOptions,
+	EvidenceValidationRuntimeRule as RuntimeEvidenceValidationRuntimeRule,
+	EvidenceValidationRuntimeRuleResult,
 	HealthCheckResult,
 	HealthStatus,
 	RegisteredEvidenceRuntime,
+	RegisteredEvidenceValidationRuntime,
 	ReplayContext,
 	RuntimeHealth,
 	RuntimeManifest,
