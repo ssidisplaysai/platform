@@ -154,6 +154,7 @@ export type AIToolExecutionRequest = {
   tenant: string;
   workspace: string;
   permissions: string[];
+  authorizationDecision?: AIAuthorizationDecision;
 };
 
 export type AIToolExecutionResult = {
@@ -174,6 +175,36 @@ export type AIExecutionContext = {
   locale?: string;
   approvedBy?: string;
   humanApprovalCheckpoint?: boolean;
+  cancelSignal?: {
+    aborted: boolean;
+  };
+  metadata?: Record<string, unknown>;
+};
+
+export type AIAuthorizationDecision = {
+  allowed: boolean;
+  reason: string;
+  policyId: string;
+  cacheHit: boolean;
+  evaluatedAt: string;
+  provenance: {
+    source: "IDENTITY_AUTHORIZATION_SERVICE" | "GENESIS_AUTHORIZATION_RESOLVER";
+    principalId: string;
+    actionId: string;
+    workspaceId?: string;
+    requestId: string;
+  };
+  grantedPermissions: string[];
+};
+
+export type AIAuthorizationRequest = {
+  principalId: string;
+  principalName?: string;
+  tenant: string;
+  workspace: string;
+  agentId: string;
+  toolId: string;
+  requiredPermissions: string[];
   metadata?: Record<string, unknown>;
 };
 
@@ -240,6 +271,7 @@ export type AIMetricsSnapshot = {
   completedCount: number;
   failedCount: number;
   cancelledCount: number;
+  timedOutCount: number;
   waitingForApprovalCount: number;
   retryCount: number;
   fallbackCount: number;
@@ -252,6 +284,9 @@ export type AIMetricsSnapshot = {
   averageLatencyMs: number;
   outputValidationFailureCount: number;
   budgetExhaustedCount: number;
+  budgetRejectedCount: number;
+  authorizationDeniedCount: number;
+  authorizationErrorCount: number;
   providerHealth: Partial<Record<AIProviderName, AIHealthStatus>>;
   providerLatencyMs: Partial<Record<AIProviderName, number>>;
   modelUsage: Record<string, number>;
@@ -363,6 +398,7 @@ export function createDefaultAIMetrics(): AIMetricsSnapshot {
     completedCount: 0,
     failedCount: 0,
     cancelledCount: 0,
+    timedOutCount: 0,
     waitingForApprovalCount: 0,
     retryCount: 0,
     fallbackCount: 0,
@@ -375,6 +411,9 @@ export function createDefaultAIMetrics(): AIMetricsSnapshot {
     averageLatencyMs: 0,
     outputValidationFailureCount: 0,
     budgetExhaustedCount: 0,
+    budgetRejectedCount: 0,
+    authorizationDeniedCount: 0,
+    authorizationErrorCount: 0,
     providerHealth: {},
     providerLatencyMs: {},
     modelUsage: {},

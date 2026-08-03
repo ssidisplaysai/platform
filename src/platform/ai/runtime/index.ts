@@ -8,7 +8,7 @@ import { ExecutionAuditTrail } from "../audit";
 import { AIMetricsService } from "../metrics";
 import { AIHealthService } from "../health";
 import { MissionControlIntegrationService } from "../integration";
-import { AIExecutionEngine } from "../execution";
+import { AIExecutionEngine, type AIAuthorizationResolver } from "../execution";
 
 export type GenesisAIOrchestrationRuntime = {
   providers: AIProviderRegistry;
@@ -27,6 +27,8 @@ export type GenesisAIOrchestrationRuntime = {
 
 export type GenesisAIOrchestrationRuntimeOptions = {
   providers?: MockAIProvider[];
+  authorizationResolver?: AIAuthorizationResolver;
+  authorizationCacheTtlMs?: number;
 };
 
 export function createGenesisAIOrchestrationRuntime(options: GenesisAIOrchestrationRuntimeOptions = {}): GenesisAIOrchestrationRuntime {
@@ -41,7 +43,19 @@ export function createGenesisAIOrchestrationRuntime(options: GenesisAIOrchestrat
   const planner = new ExecutionPlanner();
   const health = new AIHealthService(providers, models, agents, prompts, tools, memory, audit, metrics);
   const integration = new MissionControlIntegrationService(providers, models, agents, prompts, tools, memory, audit, metrics, health);
-  const engine = new AIExecutionEngine(providers, agents, prompts, tools, models, planner, memory, audit, metrics);
+  const engine = new AIExecutionEngine(
+    providers,
+    agents,
+    prompts,
+    tools,
+    models,
+    planner,
+    memory,
+    audit,
+    metrics,
+    options.authorizationResolver,
+    options.authorizationCacheTtlMs,
+  );
 
   return { providers, agents, prompts, tools, models, memory, audit, metrics, health, integration, planner, engine };
 }

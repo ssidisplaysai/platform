@@ -5,6 +5,7 @@ export * from "./prompts";
 export * from "./tools";
 export * from "./planning";
 export * from "./execution";
+export * from "./authorization";
 export * from "./memory";
 export * from "./audit";
 export * from "./metrics";

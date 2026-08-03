@@ -27,7 +27,7 @@ export class AIMetricsService {
       this.increment("cancelledCount", 1);
     }
     if (status === "TIMED_OUT") {
-      this.increment("failedCount", 1);
+      this.increment("timedOutCount", 1);
     }
     if (status === "WAITING_FOR_APPROVAL") {
       this.increment("waitingForApprovalCount", 1);
@@ -60,6 +60,18 @@ export class AIMetricsService {
 
   recordBudgetExhausted(): void {
     this.increment("budgetExhaustedCount", 1);
+  }
+
+  recordBudgetRejected(): void {
+    this.increment("budgetRejectedCount", 1);
+  }
+
+  recordAuthorizationDenied(): void {
+    this.increment("authorizationDeniedCount", 1);
+  }
+
+  recordAuthorizationError(): void {
+    this.increment("authorizationErrorCount", 1);
   }
 
   recordOutputValidationFailure(): void {
