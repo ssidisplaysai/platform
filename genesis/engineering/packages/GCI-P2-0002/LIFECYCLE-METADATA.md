@@ -1,11 +1,11 @@
 # GCI-P2-0002 Lifecycle Metadata
 
 ## Lifecycle State
-- Current state: IMPLEMENTATION_VALIDATION_COMPLETE
-- Certification state: NOT_STARTED
-- Merge state: NOT_STARTED
-- Tag state: NOT_CREATED
-- Freeze state: NOT_STARTED
+- Current state: FROZEN
+- Certification state: COMPLETE
+- Merge state: COMPLETE
+- Tag state: COMPLETE
+- Freeze state: COMPLETE
 
 ## Governance References
 - Authorized by: GCI-AUTH-P2-0002
@@ -13,6 +13,6 @@
 - Runtime predecessor: GCI-P2-0001
 
 ## Operational Notes
-- Entity Runtime implementation and implementation-validation evidence are complete.
-- Certification, merge, tag, and freeze are intentionally out of current scope.
+- The implementation package is certified, merged, tagged, and frozen as an authoritative baseline.
 - Downstream runtimes remain unauthorized in this package.
+- This metadata is paired with GCI-P2-0002-Freeze-Report.md as the freeze record for the authorized runtime.
