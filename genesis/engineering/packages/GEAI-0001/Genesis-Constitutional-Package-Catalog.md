@@ -12,6 +12,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GCI-P1-0003 | Evidence Validation Runtime | Phase 1 implementation package for deterministic validation of immutable evidence runtime objects with replay/certification trace preservation | Indexed | GCI | GCI-0001, GCS-0001, GCI-P1-0001, GCI-P1-0002, GCI-P1-0002A | GCI-P1-0004 |
 | GCI-P1-0004 | Manifest Runtime | Phase 1 implementation package for deterministic manifest runtime records with replay/certification linkage and immutable version lineage | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GCI-0001, GCI-P1-0002A | GCI-P1-0005 |
 | GCI-P1-0005 | Replay Runtime | Phase 1 implementation package for deterministic replay records, lineage, graph construction, and traceability | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0002A, GCS-0001 | None |
+| GCF-1.1 | Genesis Compiler Foundation v1.1 | Constitutional foundation release recording complete Phase 1 runtime closeout as permanent compiler runtime substrate baseline | Indexed | GCF | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0005, GCS-0001 | None |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
 | GLW-0002 | GLW Capability Expansion Planning | LED Warehouse capability expansion planning package | Indexed | GLW | GPO-0002 | None |
@@ -64,7 +65,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 ## Synchronization Attestation
 - Date: 2026-08-03
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 54 catalog identifiers, 54 local package roots, zero parity mismatches.
+- Result: 55 catalog identifiers, 55 local package roots, zero parity mismatches.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.
