@@ -15,6 +15,7 @@ import { getGenesisAuthorizationService } from "@/platform/gop/auth/authorizatio
 import { getGenesisMessageBus } from "@/platform/messaging";
 import { getGenesisSchedulingEngine } from "@/platform/scheduling";
 import { getGenesisWorkflowEngine } from "@/platform/workflow";
+import { getGenesisNotificationEngine, getGenesisNotificationHealth } from "@/platform/notifications/services/runtime";
 
 const GLW_MODULE_ID = "glw.core";
 const MAX_REPLAY_EVENTS = 300;
@@ -172,6 +173,11 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
   const schedulingMetrics = schedulingService.getMetrics();
   const schedulingHealth = await schedulingService.healthSnapshot();
   const schedulingReadiness = schedulingService.getOperationalReadiness();
+  const notificationService = getGenesisNotificationEngine();
+  const notificationMetrics = await notificationService.getMetrics();
+  const notificationHealth = await getGenesisNotificationHealth();
+  const notificationDeadLetters = await notificationService.listDeadLetters();
+  const notificationRequests = await notificationService.listRequests();
 
   return NextResponse.json({
     metrics,
@@ -196,6 +202,10 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
     schedulingMetrics,
     schedulingHealth,
     schedulingReadiness,
+    notificationMetrics,
+    notificationHealth,
+    notificationDeadLetters: notificationDeadLetters.length,
+    notificationPending: notificationRequests.filter((item) => item.state === "QUEUED" || item.state === "DEFERRED").length,
   });
 }
 
