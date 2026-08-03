@@ -185,6 +185,14 @@
 | [genesis/engineering/packages/GCI-P2-0001/Coverage-Summary.md](genesis/engineering/packages/GCI-P2-0001/Coverage-Summary.md) | Coverage summary for the IBR runtime implementation slice | 4 min |
 | [genesis/engineering/packages/GCI-P2-0001/Certification-Evidence.md](genesis/engineering/packages/GCI-P2-0001/Certification-Evidence.md) | Implementation-validation evidence set for future independent certification review | 4 min |
 | [genesis/engineering/packages/GCI-P2-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0001/LIFECYCLE-METADATA.md) | Lifecycle metadata for the IBR implementation validation package | 3 min |
+| [genesis/engineering/packages/GCI-P2-0002/README.md](genesis/engineering/packages/GCI-P2-0002/README.md) | Package identity, scope, and implementation-validation boundary for Entity Runtime | 3 min |
+| [genesis/engineering/packages/GCI-P2-0002/Implementation-Report.md](genesis/engineering/packages/GCI-P2-0002/Implementation-Report.md) | Delivered Entity runtime implementation details, runtime behaviors, and scope closure | 6 min |
+| [genesis/engineering/packages/GCI-P2-0002/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P2-0002/Architecture-Compliance-Report.md) | Architecture boundary validation for Entity-runtime-only scope | 6 min |
+| [genesis/engineering/packages/GCI-P2-0002/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P2-0002/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for Entity implementation-validation obligations | 5 min |
+| [genesis/engineering/packages/GCI-P2-0002/Test-Summary.md](genesis/engineering/packages/GCI-P2-0002/Test-Summary.md) | Test execution summary for replay, IBR, and Entity validation | 4 min |
+| [genesis/engineering/packages/GCI-P2-0002/Coverage-Summary.md](genesis/engineering/packages/GCI-P2-0002/Coverage-Summary.md) | Coverage summary for the Entity runtime implementation slice | 4 min |
+| [genesis/engineering/packages/GCI-P2-0002/Certification-Evidence.md](genesis/engineering/packages/GCI-P2-0002/Certification-Evidence.md) | Implementation-validation evidence set for future independent certification review | 4 min |
+| [genesis/engineering/packages/GCI-P2-0002/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0002/LIFECYCLE-METADATA.md) | Lifecycle metadata for the Entity implementation validation package | 3 min |
 
 ---
 
