@@ -1,16 +1,22 @@
 import type { NotificationHealth } from "../contracts";
 import type { NotificationPersistence } from "../persistence";
 import type { NotificationProviderRegistry } from "../providers";
+import { NotificationMetricsService } from "./NotificationMetricsService";
 
 export class NotificationHealthService {
+  private readonly metricsService: NotificationMetricsService;
+
   constructor(
     private readonly persistence: NotificationPersistence,
     private readonly providers: NotificationProviderRegistry,
-  ) {}
+  ) {
+    this.metricsService = new NotificationMetricsService(persistence);
+  }
 
   async snapshot(): Promise<NotificationHealth> {
     const checks: NotificationHealth["checks"] = [];
     const recovered = await this.persistence.recover();
+    const metrics = await this.metricsService.getMetrics();
 
     checks.push({
       name: "registry",
@@ -69,8 +75,8 @@ export class NotificationHealthService {
 
     checks.push({
       name: "audit",
-      status: "PASS",
-      detail: "audit writer available",
+      status: metrics.auditFailures > 0 || metrics.auditBacklog > 0 ? "WARN" : "PASS",
+      detail: `auditFailures=${metrics.auditFailures}; auditRetries=${metrics.auditRetries}; auditRecoveries=${metrics.auditRecoveries}; auditBacklog=${metrics.auditBacklog}; auditLatencyMs=${metrics.auditLatencyMs}`,
     });
 
     checks.push({

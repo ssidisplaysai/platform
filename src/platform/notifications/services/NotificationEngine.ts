@@ -97,7 +97,7 @@ export class NotificationEngine {
       updatedAt: new Date().toISOString(),
     });
 
-    await this.audits.write({
+    await this.writeAuditWithRetry({
       requestId: request.requestId,
       notificationId: request.notificationId,
       eventType: "REQUEST_RECEIVED",
@@ -137,6 +137,9 @@ export class NotificationEngine {
         suppressed: false,
         deferred: false,
         duplicate: true,
+        auditFailures: 0,
+        auditRetries: 0,
+        auditTerminalFailure: false,
       };
     }
 
@@ -151,7 +154,7 @@ export class NotificationEngine {
 
     const resolution = this.resolver.resolve(workingRecord.request.recipients);
     if (resolution.unresolved.length > 0) {
-      await this.audits.write({
+      await this.writeAuditWithRetry({
         requestId,
         notificationId: definition.notificationId,
         eventType: "RECIPIENT_UNRESOLVED",
@@ -229,7 +232,7 @@ export class NotificationEngine {
         if (suppression.suppressed) {
           suppressed = true;
           await this.metrics.increment("suppressedNotifications", 1);
-          await this.audits.write({
+          await this.writeAuditWithRetry({
             requestId,
             notificationId: definition.notificationId,
             eventType: "SUPPRESSED",
@@ -315,7 +318,7 @@ export class NotificationEngine {
         if (result.status === "DELIVERED") {
           deliveredCount += 1;
           await this.metrics.recordDelivery(route.channel, true, Date.now() - deliveryStart);
-          await this.audits.write({
+          await this.writeAuditWithRetry({
             requestId,
             notificationId: definition.notificationId,
             eventType: "DELIVERY_SUCCEEDED",
@@ -345,7 +348,7 @@ export class NotificationEngine {
 
         if (retryDecision.retry) {
           await this.metrics.increment("retryCount", 1);
-          await this.audits.write({
+          await this.writeAuditWithRetry({
             requestId,
             notificationId: definition.notificationId,
             eventType: "RETRY_SCHEDULED",
@@ -375,7 +378,7 @@ export class NotificationEngine {
             },
           });
           await this.metrics.increment("deadLetteredNotifications", 1);
-          await this.audits.write({
+          await this.writeAuditWithRetry({
             requestId,
             notificationId: definition.notificationId,
             eventType: "DEAD_LETTER_CREATED",
@@ -419,6 +422,9 @@ export class NotificationEngine {
       suppressed,
       deferred,
       duplicate: false,
+      auditFailures: this.getAuditFailureCount(),
+      auditRetries: this.getAuditRetryCount(),
+      auditTerminalFailure: this.getAuditTerminalFailureCount() > 0,
     };
   }
 
@@ -491,7 +497,7 @@ export class NotificationEngine {
     }
 
     await this.metrics.increment("recoveryCount", 1);
-    await this.audits.writeMany(snapshot.diagnostics.map((diagnostic) => ({
+    await this.writeAuditManyWithRetry(snapshot.diagnostics.map((diagnostic) => ({
       eventType: diagnostic.severity === "ERROR" ? "CORRUPT_STATE_DETECTED" : "RECOVERY_PERFORMED",
       actorId,
       tenant: "system",
@@ -502,5 +508,98 @@ export class NotificationEngine {
         severity: diagnostic.severity,
       },
     })));
+  }
+
+  private auditFailureCount = 0;
+  private auditRetryCount = 0;
+  private auditTerminalFailureCount = 0;
+
+  private getAuditFailureCount(): number {
+    return this.auditFailureCount;
+  }
+
+  private getAuditRetryCount(): number {
+    return this.auditRetryCount;
+  }
+
+  private getAuditTerminalFailureCount(): number {
+    return this.auditTerminalFailureCount;
+  }
+
+  private async writeAuditWithRetry(record: Parameters<NotificationAuditWriter["write"]>[0]): Promise<void> {
+    const startedAt = Date.now();
+    try {
+      await this.audits.write(record);
+      await this.safeRecordAuditLatency(Date.now() - startedAt);
+      if (this.auditFailureCount > 0) {
+        await this.safeRecordAuditRecovery();
+        this.auditFailureCount -= 1;
+      }
+      return;
+    } catch (error) {
+      const retryable = this.isAuditRetryable(error);
+      this.auditFailureCount += 1;
+      await this.safeRecordAuditFailure(retryable);
+      if (retryable) {
+        this.auditRetryCount += 1;
+        try {
+          await this.audits.write(record);
+          await this.safeRecordAuditLatency(Date.now() - startedAt);
+          await this.safeRecordAuditRecovery();
+          if (this.auditFailureCount > 0) {
+            this.auditFailureCount -= 1;
+          }
+          return;
+        } catch (retryError) {
+          this.auditFailureCount += 1;
+          this.auditTerminalFailureCount += 1;
+          await this.safeRecordAuditFailure(this.isAuditRetryable(retryError));
+          await this.safeRecordAuditLatency(Date.now() - startedAt);
+          return;
+        }
+      }
+
+      this.auditTerminalFailureCount += 1;
+      await this.safeRecordAuditLatency(Date.now() - startedAt);
+    }
+  }
+
+  private async writeAuditManyWithRetry(records: Parameters<NotificationAuditWriter["writeMany"]>[0]): Promise<void> {
+    for (const record of records) {
+      await this.writeAuditWithRetry(record);
+    }
+  }
+
+  private isAuditRetryable(error: unknown): boolean {
+    if (typeof error === "object" && error !== null && "retryable" in error && typeof (error as { retryable?: unknown }).retryable === "boolean") {
+      return (error as { retryable: boolean }).retryable;
+    }
+
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    return message.includes("timeout") || message.includes("temporar") || message.includes("unavailable") || message.includes("enoent");
+  }
+
+  private async safeRecordAuditFailure(retryable: boolean): Promise<void> {
+    try {
+      await this.metrics.recordAuditFailure(retryable);
+    } catch {
+      this.auditTerminalFailureCount += 1;
+    }
+  }
+
+  private async safeRecordAuditRecovery(): Promise<void> {
+    try {
+      await this.metrics.recordAuditRecovery();
+    } catch {
+      this.auditTerminalFailureCount += 1;
+    }
+  }
+
+  private async safeRecordAuditLatency(latencyMs: number): Promise<void> {
+    try {
+      await this.metrics.recordAuditLatency(latencyMs);
+    } catch {
+      this.auditTerminalFailureCount += 1;
+    }
   }
 }

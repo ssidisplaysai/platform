@@ -138,6 +138,7 @@ export type RenderedNotification = {
   templateId: TemplateId;
   templateVersion: TemplateVersion;
   channel: NotificationChannel;
+  renderIdentity: string;
   subject?: string;
   title?: string;
   body: string;
@@ -238,6 +239,10 @@ export type NotificationMetrics = {
   quietHourDeferrals: number;
   providerFailures: number;
   auditFailures: number;
+  auditRetries: number;
+  auditRecoveries: number;
+  auditBacklog: number;
+  auditLatencyMs: number;
   recoveryCount: number;
   activeQueuedNotifications: number;
   activeDeferredNotifications: number;
@@ -311,4 +316,23 @@ export type NotificationProcessingResult = {
   suppressed: boolean;
   deferred: boolean;
   duplicate: boolean;
+  auditFailures: number;
+  auditRetries: number;
+  auditTerminalFailure: boolean;
+};
+
+export type NotificationAuditFailureRecord = {
+  failureId: string;
+  stage: string;
+  retryable: boolean;
+  severity: "WARN" | "ERROR";
+  message: string;
+  occurredAt: string;
+  record?: Partial<NotificationAuditRecord>;
+};
+
+export type NotificationAuditWriterError = Error & {
+  retryable: boolean;
+  severity: "WARN" | "ERROR";
+  stage: string;
 };

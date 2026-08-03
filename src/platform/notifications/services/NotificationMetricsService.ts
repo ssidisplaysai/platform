@@ -23,6 +23,10 @@ function defaultMetrics(): NotificationMetrics {
     quietHourDeferrals: 0,
     providerFailures: 0,
     auditFailures: 0,
+    auditRetries: 0,
+    auditRecoveries: 0,
+    auditBacklog: 0,
+    auditLatencyMs: 0,
     recoveryCount: 0,
     activeQueuedNotifications: 0,
     activeDeferredNotifications: 0,
@@ -90,6 +94,32 @@ export class NotificationMetricsService {
       (metrics.averageDeliveryLatencyMs * (sampleSize - 1) + latencyMs) / sampleSize,
     );
 
+    await this.persistence.metrics.save(metrics);
+  }
+
+  async recordAuditLatency(latencyMs: number): Promise<void> {
+    const metrics = await this.getMetrics();
+    const sampleSize = Math.max(1, metrics.auditFailures + metrics.auditRecoveries + 1);
+    metrics.auditLatencyMs = Math.round((metrics.auditLatencyMs * (sampleSize - 1) + latencyMs) / sampleSize);
+    await this.persistence.metrics.save(metrics);
+  }
+
+  async recordAuditFailure(retryable: boolean): Promise<void> {
+    const metrics = await this.getMetrics();
+    metrics.auditFailures += 1;
+    metrics.auditBacklog += 1;
+    if (retryable) {
+      metrics.auditRetries += 1;
+    }
+    await this.persistence.metrics.save(metrics);
+  }
+
+  async recordAuditRecovery(): Promise<void> {
+    const metrics = await this.getMetrics();
+    if (metrics.auditBacklog > 0) {
+      metrics.auditBacklog -= 1;
+    }
+    metrics.auditRecoveries += 1;
     await this.persistence.metrics.save(metrics);
   }
 }

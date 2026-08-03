@@ -12,6 +12,7 @@ import {
   createFileNotificationPersistence,
   createInMemoryProviderRegistry,
   NotificationEngine,
+  TemplateRenderer,
 } from "@/platform/notifications";
 
 function buildDefinition(overrides?: Partial<NotificationDefinition>): NotificationDefinition {
@@ -105,9 +106,13 @@ function buildRequest(overrides?: Partial<Omit<NotificationRequest, "requestId" 
 
 async function createEngine(options?: {
   providerFailure?: boolean;
+  persistenceOverride?: (persistence: ReturnType<typeof createFileNotificationPersistence>) => void | Promise<void>;
 }) {
   const root = await mkdtemp(join(tmpdir(), "gnp-1001-"));
   const persistence = createFileNotificationPersistence({ rootDir: root });
+  if (options?.persistenceOverride) {
+    await options.persistenceOverride(persistence);
+  }
   const providers = createInMemoryProviderRegistry({
     email: options?.providerFailure
       ? {
@@ -204,4 +209,85 @@ describe("GNP-1001 notification foundation", () => {
     const metrics = await engine.getMetrics();
     expect(metrics.deadLetteredNotifications).toBeGreaterThan(0);
   });
+
+  it("renders the same output for identical template inputs", () => {
+    const renderer = new TemplateRenderer();
+    const template = buildEmailTemplate({ locale: "en-US" });
+    const payload = {
+      jobName: "release-1.4",
+      status: "SUCCESS",
+    };
+
+    const first = renderer.render({ template, payload });
+    const second = renderer.render({ template, payload });
+
+    expect(first).toEqual(second);
+    expect(first.renderIdentity).toBe(second.renderIdentity);
+    expect(first.variables).not.toHaveProperty("renderId");
+    expect(JSON.stringify(first)).toBe(JSON.stringify(second));
+  });
+
+  it("completes notification delivery when audit persistence fails transiently", async () => {
+    let attempts = 0;
+    const engine = await createEngine({
+      persistenceOverride: async (persistence) => {
+        const originalAppend = persistence.audits.append.bind(persistence.audits);
+        persistence.audits.append = async (record) => {
+          attempts += 1;
+          if (attempts === 1) {
+            const error = new Error("audit_store_unavailable") as Error & { retryable?: boolean };
+            error.retryable = true;
+            throw error;
+          }
+          await originalAppend(record);
+        };
+      },
+    });
+
+    await engine.registerDefinition(buildDefinition());
+    await engine.registerTemplate(buildEmailTemplate());
+    await engine.registerTemplate(buildInAppTemplate());
+
+    const queued = await engine.queueRequest(buildRequest());
+    const processed = await engine.processRequest(queued.requestId);
+
+    expect(processed.state).toBe("DELIVERED");
+
+    const metrics = await engine.getMetrics();
+    expect(metrics.auditFailures).toBeGreaterThan(0);
+    expect(metrics.auditRetries).toBeGreaterThan(0);
+    expect(processed.auditTerminalFailure).toBe(false);
+  }, 15000);
+
+  it("marks terminal audit failures without blocking notification completion", async () => {
+    const engine = await createEngine({
+      persistenceOverride: (persistence) => {
+        persistence.audits.append = async () => {
+          const error = new Error("audit_store_unavailable") as Error & { retryable?: boolean };
+          error.retryable = false;
+          throw error;
+        };
+        persistence.audits.appendMany = async () => {
+          const error = new Error("audit_store_unavailable") as Error & { retryable?: boolean };
+          error.retryable = false;
+          throw error;
+        };
+      },
+    });
+
+    await engine.registerDefinition(buildDefinition());
+    await engine.registerTemplate(buildEmailTemplate());
+    await engine.registerTemplate(buildInAppTemplate());
+
+    const queued = await engine.queueRequest(buildRequest());
+    const processed = await engine.processRequest(queued.requestId);
+
+    expect(processed.state).toBe("DELIVERED");
+    expect(processed.auditFailures).toBeGreaterThan(0);
+    expect(processed.auditTerminalFailure).toBe(true);
+
+    const health = await engine.healthSnapshot();
+    expect(health.status).toBe("DEGRADED");
+    expect(health.checks.some((check) => check.name === "audit")).toBe(true);
+  }, 15000);
 });

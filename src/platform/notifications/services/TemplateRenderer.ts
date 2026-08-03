@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { RenderedNotification, TemplateDefinition } from "../contracts";
 
 type RenderInput = {
@@ -25,6 +24,27 @@ function interpolate(content: string, variables: Record<string, string>): string
   return content.replace(/\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}/g, (_, variableName: string) => variables[variableName] ?? "");
 }
 
+function stableStringify(input: Record<string, string>): string {
+  return JSON.stringify(Object.keys(input).sort().reduce<Record<string, string>>((result, key) => {
+    result[key] = input[key];
+    return result;
+  }, {}));
+}
+
+function buildRenderIdentity(template: TemplateDefinition, resolvedVariables: Record<string, string>, subject?: string, title?: string, body?: string): string {
+  const identitySource = {
+    templateId: template.templateId,
+    channel: template.channel,
+    version: `${template.version.major}.${template.version.minor}.${template.version.patch}`,
+    subject: subject ?? "",
+    title: title ?? "",
+    body: body ?? "",
+    variables: stableStringify(resolvedVariables),
+  };
+
+  return Buffer.from(JSON.stringify(identitySource), "utf8").toString("base64url");
+}
+
 export class TemplateRenderer {
   render(input: RenderInput): RenderedNotification {
     const requiredVariables = new Set<string>([
@@ -44,21 +64,23 @@ export class TemplateRenderer {
       resolvedVariables[variableName] = stringifyValue(input.payload[variableName] ?? null);
     }
 
+    const subject = input.template.subjectTemplate
+      ? interpolate(input.template.subjectTemplate, resolvedVariables)
+      : undefined;
+    const title = input.template.titleTemplate
+      ? interpolate(input.template.titleTemplate, resolvedVariables)
+      : undefined;
+    const body = interpolate(input.template.bodyTemplate, resolvedVariables);
+
     return {
       templateId: input.template.templateId,
       templateVersion: input.template.version,
       channel: input.template.channel,
-      subject: input.template.subjectTemplate
-        ? interpolate(input.template.subjectTemplate, resolvedVariables)
-        : undefined,
-      title: input.template.titleTemplate
-        ? interpolate(input.template.titleTemplate, resolvedVariables)
-        : undefined,
-      body: interpolate(input.template.bodyTemplate, resolvedVariables),
-      variables: {
-        ...resolvedVariables,
-        renderId: randomUUID(),
-      },
+      renderIdentity: buildRenderIdentity(input.template, resolvedVariables, subject, title, body),
+      subject,
+      title,
+      body,
+      variables: resolvedVariables,
     };
   }
 }
