@@ -13,6 +13,7 @@ import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity
 import { getGenesisAuthenticationService } from "@/platform/identity/services";
 import { getGenesisAuthorizationService } from "@/platform/gop/auth/authorization";
 import { getGenesisMessageBus } from "@/platform/messaging";
+import { getGenesisSchedulingEngine } from "@/platform/scheduling";
 import { getGenesisWorkflowEngine } from "@/platform/workflow";
 
 const GLW_MODULE_ID = "glw.core";
@@ -166,6 +167,11 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
   const workflowMetrics = workflowService.getMetrics();
   const workflowHealth = await workflowService.healthSnapshot();
   const workflowReadiness = workflowService.getOperationalReadiness();
+  const schedulingService = getGenesisSchedulingEngine();
+  const schedulingMetadata = schedulingService.capabilityMetadata();
+  const schedulingMetrics = schedulingService.getMetrics();
+  const schedulingHealth = await schedulingService.healthSnapshot();
+  const schedulingReadiness = schedulingService.getOperationalReadiness();
 
   return NextResponse.json({
     metrics,
@@ -186,6 +192,10 @@ export async function handleGetGopMetrics(request: Request): Promise<NextRespons
     workflowMetrics,
     workflowHealth,
     workflowReadiness,
+    schedulingMetadata,
+    schedulingMetrics,
+    schedulingHealth,
+    schedulingReadiness,
   });
 }
 
