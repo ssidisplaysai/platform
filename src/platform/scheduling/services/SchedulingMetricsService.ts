@@ -14,6 +14,11 @@ const defaultMetrics: ScheduleMetrics = {
   catchUpOccurrences: 0,
   duplicateClaimRejections: 0,
   claimConflicts: 0,
+  dstAmbiguityCount: 0,
+  corruptPersistenceCount: 0,
+  recoveryFailures: 0,
+  dispatchRetryCount: 0,
+  auditFailureCount: 0,
   dispatchFailures: 0,
   recoveryCount: 0,
   oldestOverdueOccurrenceAgeMs: null,
@@ -68,6 +73,26 @@ export class SchedulingMetricsService {
 
   trackClaimConflict(): void {
     this.metrics.claimConflicts += 1;
+  }
+
+  trackDstAmbiguity(count = 1): void {
+    this.metrics.dstAmbiguityCount += count;
+  }
+
+  trackCorruptPersistence(count = 1): void {
+    this.metrics.corruptPersistenceCount += count;
+  }
+
+  trackRecoveryFailure(): void {
+    this.metrics.recoveryFailures += 1;
+  }
+
+  trackDispatchRetry(count = 1): void {
+    this.metrics.dispatchRetryCount += count;
+  }
+
+  trackAuditFailure(count = 1): void {
+    this.metrics.auditFailureCount += count;
   }
 
   trackDispatchFailure(): void {

@@ -13,7 +13,7 @@ import type { ScheduleDefinitionStore } from "./ScheduleDefinitionStore";
 import type { ScheduleInstanceStore } from "./ScheduleInstanceStore";
 import type { ScheduleMetricsStore } from "./ScheduleMetricsStore";
 import type { ScheduleOccurrenceStore } from "./ScheduleOccurrenceStore";
-import type { SchedulingRecoverySnapshot } from "./types";
+import type { SchedulingRecoverySnapshotResult } from "./types";
 
 export interface SchedulingPersistenceCoordinator {
   readonly definitionStore: ScheduleDefinitionStore;
@@ -22,10 +22,11 @@ export interface SchedulingPersistenceCoordinator {
   readonly claimStore: ScheduleClaimStore;
   readonly auditStore: ScheduleAuditStore;
   readonly metricsStore: ScheduleMetricsStore;
-  loadRecoverySnapshot(): Promise<SchedulingRecoverySnapshot>;
+  loadRecoverySnapshot(): Promise<SchedulingRecoverySnapshotResult>;
 }
 
 export class FileSchedulingPersistenceCoordinator implements SchedulingPersistenceCoordinator {
+  private readonly dataStore: SchedulingDataStore;
   readonly definitionStore: ScheduleDefinitionStore;
   readonly instanceStore: ScheduleInstanceStore;
   readonly occurrenceStore: ScheduleOccurrenceStore;
@@ -34,32 +35,16 @@ export class FileSchedulingPersistenceCoordinator implements SchedulingPersisten
   readonly metricsStore: ScheduleMetricsStore;
 
   constructor(basePath?: string) {
-    const dataStore = new SchedulingDataStore(basePath);
-    this.definitionStore = new FileScheduleDefinitionStore(dataStore);
-    this.instanceStore = new FileScheduleInstanceStore(dataStore);
-    this.occurrenceStore = new FileScheduleOccurrenceStore(dataStore);
-    this.claimStore = new FileScheduleClaimStore(dataStore);
-    this.auditStore = new FileScheduleAuditStore(dataStore);
-    this.metricsStore = new FileScheduleMetricsStore(dataStore);
+    this.dataStore = new SchedulingDataStore(basePath);
+    this.definitionStore = new FileScheduleDefinitionStore(this.dataStore);
+    this.instanceStore = new FileScheduleInstanceStore(this.dataStore);
+    this.occurrenceStore = new FileScheduleOccurrenceStore(this.dataStore);
+    this.claimStore = new FileScheduleClaimStore(this.dataStore);
+    this.auditStore = new FileScheduleAuditStore(this.dataStore);
+    this.metricsStore = new FileScheduleMetricsStore(this.dataStore);
   }
 
-  async loadRecoverySnapshot(): Promise<SchedulingRecoverySnapshot> {
-    const [definitions, instances, occurrences, claims, audits, metrics] = await Promise.all([
-      this.definitionStore.list(),
-      this.instanceStore.list(),
-      this.occurrenceStore.listAll(),
-      this.claimStore.list(),
-      this.auditStore.list(),
-      this.metricsStore.load(),
-    ]);
-
-    return {
-      definitions,
-      instances,
-      occurrences,
-      claims,
-      audits,
-      metrics,
-    };
+  async loadRecoverySnapshot(): Promise<SchedulingRecoverySnapshotResult> {
+    return this.dataStore.readWithDiagnostics();
   }
 }

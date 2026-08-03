@@ -16,8 +16,22 @@ export class OccurrenceClaimService {
     private readonly claimTtlMs = 30_000,
   ) {}
 
-  async claim(input: { occurrenceId: string; owner: string; idempotencyKey: string }): Promise<ClaimResult> {
+  async claim(input: { occurrenceId: string; owner: string; idempotencyKey: string; logicalRunKey?: string }): Promise<ClaimResult> {
     const now = this.clock.now();
+
+    if (this.claimStore.claimAtomic) {
+      const atomic = await this.claimStore.claimAtomic({
+        occurrenceId: input.occurrenceId,
+        owner: input.owner,
+        idempotencyKey: input.idempotencyKey,
+        logicalRunKey: input.logicalRunKey,
+        claimId: randomUUID(),
+        claimedAt: now.toISOString(),
+        expiresAt: new Date(now.getTime() + this.claimTtlMs).toISOString(),
+      });
+      return atomic;
+    }
+
     const existing = await this.claimStore.getByOccurrenceId(input.occurrenceId);
 
     if (existing) {
@@ -34,6 +48,7 @@ export class OccurrenceClaimService {
       claimId: randomUUID(),
       occurrenceId: input.occurrenceId,
       idempotencyKey: input.idempotencyKey,
+      logicalRunKey: input.logicalRunKey,
       status: "CLAIMED",
       claimedAt: now.toISOString(),
       expiresAt: new Date(now.getTime() + this.claimTtlMs).toISOString(),

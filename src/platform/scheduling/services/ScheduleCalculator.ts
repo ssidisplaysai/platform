@@ -18,6 +18,12 @@ type ZonedParts = {
   weekday: number;
 };
 
+export type OccurrenceTimeClassification = {
+  localRunKey: string;
+  utcOffsetMinutes: number | null;
+  isDstAmbiguous: boolean;
+};
+
 type CronMatcher = {
   minute: (value: number) => boolean;
   hour: (value: number) => boolean;
@@ -40,6 +46,40 @@ const WEEKDAY_LOOKUP: Record<string, number> = {
 
 export class ScheduleCalculator {
   constructor(private readonly clock: Clock) {}
+
+  classifyOccurrenceTime(definition: ScheduleDefinition, dueAt: string): OccurrenceTimeClassification {
+    const candidate = new Date(dueAt);
+    if (Number.isNaN(candidate.getTime())) {
+      return {
+        localRunKey: `${definition.timezone.ianaName}:invalid:${dueAt}`,
+        utcOffsetMinutes: null,
+        isDstAmbiguous: false,
+      };
+    }
+
+    const currentParts = this.getZonedParts(candidate, definition.timezone.ianaName);
+    const currentOffset = this.getUtcOffsetMinutes(candidate, definition.timezone.ianaName);
+    const localRunKey = this.toLocalRunKey(definition.timezone.ianaName, currentParts);
+
+    // We classify fall-back repeated local hours by checking neighboring UTC instants.
+    const previous = new Date(candidate.getTime() - 60 * 60_000);
+    const next = new Date(candidate.getTime() + 60 * 60_000);
+    const previousKey = this.toLocalRunKey(definition.timezone.ianaName, this.getZonedParts(previous, definition.timezone.ianaName));
+    const nextKey = this.toLocalRunKey(definition.timezone.ianaName, this.getZonedParts(next, definition.timezone.ianaName));
+    const previousOffset = this.getUtcOffsetMinutes(previous, definition.timezone.ianaName);
+    const nextOffset = this.getUtcOffsetMinutes(next, definition.timezone.ianaName);
+
+    const isDstAmbiguous = (
+      (previousKey === localRunKey && previousOffset !== currentOffset)
+      || (nextKey === localRunKey && nextOffset !== currentOffset)
+    );
+
+    return {
+      localRunKey,
+      utcOffsetMinutes: currentOffset,
+      isDstAmbiguous,
+    };
+  }
 
   nextRun(definition: ScheduleDefinition, from?: Date, completedOccurrences = 0): NextRun {
     const reference = from ?? this.clock.now();
@@ -353,6 +393,40 @@ export class ScheduleCalculator {
       second: Number(lookup.second),
       weekday: WEEKDAY_LOOKUP[lookup.weekday] ?? 0,
     };
+  }
+
+  private getUtcOffsetMinutes(date: Date, timeZone: string): number | null {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "shortOffset",
+    });
+
+    const zonePart = formatter.formatToParts(date).find((part) => part.type === "timeZoneName")?.value;
+    if (!zonePart) {
+      return null;
+    }
+
+    const match = zonePart.match(/^GMT([+-])(\d{1,2})(?::(\d{2}))?$/);
+    if (!match) {
+      return null;
+    }
+
+    const sign = match[1] === "-" ? -1 : 1;
+    const hours = Number(match[2]);
+    const minutes = Number(match[3] ?? "0");
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return null;
+    }
+
+    return sign * ((hours * 60) + minutes);
+  }
+
+  private toLocalRunKey(timeZone: string, parts: ZonedParts): string {
+    const month = String(parts.month).padStart(2, "0");
+    const day = String(parts.day).padStart(2, "0");
+    const hour = String(parts.hour).padStart(2, "0");
+    const minute = String(parts.minute).padStart(2, "0");
+    return `${timeZone}:${parts.year}-${month}-${day}T${hour}:${minute}`;
   }
 
   private diffDays(from: ZonedParts, to: ZonedParts): number {

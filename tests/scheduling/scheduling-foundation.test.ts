@@ -1,4 +1,6 @@
 import { describe, expect, it, jest } from "@jest/globals";
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import type {
   ScheduleAuditRecord,
   ScheduleClaimRecord,
@@ -10,8 +12,11 @@ import type {
 } from "@/platform/scheduling";
 import {
   FileSchedulingPersistenceCoordinator,
+  FileScheduleClaimStore,
   MissedRunPolicyService,
+  OccurrenceClaimService,
   ScheduleCalculator,
+  SchedulingDataStore,
   SchedulingEngine,
   TestClock,
   WorkflowSchedulingAdapter,
@@ -81,6 +86,7 @@ function createCoordinator(state: MemoryState): SchedulingPersistenceCoordinator
       },
       listByInstance: async (instanceId) => clone(state.occurrences.filter((entry) => entry.instanceId === instanceId)),
       listAll: async () => clone(state.occurrences),
+      findByLogicalRunKey: async (instanceId, logicalRunKey) => clone(state.occurrences.find((entry) => entry.instanceId === instanceId && entry.logicalRunKey === logicalRunKey) ?? null),
     },
     claimStore: {
       upsert: async (claim) => {
@@ -107,12 +113,26 @@ function createCoordinator(state: MemoryState): SchedulingPersistenceCoordinator
       load: async () => clone(state.metrics),
     },
     loadRecoverySnapshot: async () => ({
-      definitions: clone(state.definitions),
-      instances: clone(state.instances),
-      occurrences: clone(state.occurrences),
-      claims: clone(state.claims),
-      audits: clone(state.audits),
-      metrics: clone(state.metrics),
+      snapshot: {
+        definitions: clone(state.definitions),
+        instances: clone(state.instances),
+        occurrences: clone(state.occurrences),
+        claims: clone(state.claims),
+        audits: clone(state.audits),
+        metrics: clone(state.metrics),
+      },
+      diagnostics: {
+        classification: "CLEAN",
+        missingFile: false,
+        corruptFile: false,
+        invalidDefinitions: 0,
+        invalidInstances: 0,
+        invalidOccurrences: 0,
+        invalidClaims: 0,
+        invalidAudits: 0,
+        invalidMetrics: 0,
+        totalInvalidRecords: 0,
+      },
     }),
   };
 }
@@ -143,19 +163,31 @@ function buildDefinition(overrides?: Partial<ScheduleDefinition>): ScheduleDefin
 function createEngine(options?: {
   state?: MemoryState;
   publishFailure?: boolean;
+  publishImpl?: (attempt: number) => Promise<void>;
   clock?: TestClock;
+  dispatchRetryLimit?: number;
+  dispatchTimeoutMs?: number;
+  persistence?: SchedulingPersistenceCoordinator;
   authorizer?: (input: { action: string; scheduleId: string; actorId: string }) => Promise<boolean> | boolean;
 }) {
   const state = options?.state ?? createState();
   const events: Array<{ topic: string; payload: Record<string, unknown> }> = [];
   const clock = options?.clock ?? new TestClock("2026-08-03T00:00:00.000Z");
+  let publishAttempts = 0;
 
   const engine = new SchedulingEngine({
     clock,
     authorizer: options?.authorizer,
-    persistence: createCoordinator(state),
+    persistence: options?.persistence ?? createCoordinator(state),
+    dispatchRetryLimit: options?.dispatchRetryLimit,
+    dispatchTimeoutMs: options?.dispatchTimeoutMs,
     messaging: {
       publish: async (input) => {
+        publishAttempts += 1;
+        if (options?.publishImpl) {
+          await options.publishImpl(publishAttempts);
+        }
+
         if (options?.publishFailure) {
           throw new Error("dispatch_failure");
         }
@@ -218,6 +250,49 @@ describe("GWS-1001 scheduling foundation", () => {
 
     const next = calculator.nextRun(schedule, new Date("2026-03-08T05:50:00.000Z"));
     expect(next.nextRunAt).toBe("2026-03-08T07:00:00.000Z");
+
+    const spring = calculator.classifyOccurrenceTime(schedule, "2026-03-08T07:00:00.000Z");
+    expect(spring.isDstAmbiguous).toBe(false);
+
+    const fallSchedule = buildDefinition({
+      timezone: { ianaName: "America/New_York" },
+      scheduleType: "RECURRING",
+      recurring: { frequency: "DAILY", interval: 1, timeOfDay: "01:30" },
+      interval: undefined,
+      startAt: "2026-11-01T00:00:00.000Z",
+    });
+    const fallbackA = calculator.classifyOccurrenceTime(fallSchedule, "2026-11-01T05:30:00.000Z");
+    const fallbackB = calculator.classifyOccurrenceTime(fallSchedule, "2026-11-01T06:30:00.000Z");
+    expect(fallbackA.isDstAmbiguous).toBe(true);
+    expect(fallbackB.isDstAmbiguous).toBe(true);
+    expect(fallbackA.localRunKey).toBe(fallbackB.localRunKey);
+    expect(fallbackA.utcOffsetMinutes).not.toBe(fallbackB.utcOffsetMinutes);
+  });
+
+  it("remains deterministic across multiple yearly DST transitions", () => {
+    const calculator = new ScheduleCalculator(new TestClock("2026-01-01T00:00:00.000Z"));
+    const schedule = buildDefinition({
+      timezone: { ianaName: "America/New_York" },
+      scheduleType: "RECURRING",
+      recurring: { frequency: "DAILY", interval: 1, timeOfDay: "01:30" },
+      interval: undefined,
+      startAt: "2025-01-01T00:00:00.000Z",
+    });
+
+    const repeatedLocalRuns = [
+      "2025-11-02T05:30:00.000Z",
+      "2025-11-02T06:30:00.000Z",
+      "2026-11-01T05:30:00.000Z",
+      "2026-11-01T06:30:00.000Z",
+      "2027-11-07T05:30:00.000Z",
+      "2027-11-07T06:30:00.000Z",
+    ];
+
+    for (const dueAt of repeatedLocalRuns) {
+      const classified = calculator.classifyOccurrenceTime(schedule, dueAt);
+      expect(classified.isDstAmbiguous).toBe(true);
+      expect(classified.localRunKey.startsWith("America/New_York:")).toBe(true);
+    }
   });
 
   it("applies missed-run policies including bounded catch-up and fail", () => {
@@ -292,6 +367,31 @@ describe("GWS-1001 scheduling foundation", () => {
     expect(metrics.catchUpOccurrences).toBeGreaterThan(0);
   });
 
+  it("applies deterministic fall-back duplicate prevention policy for repeated local timestamps", async () => {
+    const clock = new TestClock("2026-11-01T05:20:00.000Z");
+    const { engine, events } = createEngine({ clock });
+    await engine.waitUntilReady();
+
+    await engine.registerSchedule(buildDefinition({
+      state: "ACTIVE",
+      scheduleType: "RECURRING",
+      recurring: { frequency: "DAILY", interval: 1, timeOfDay: "01:30" },
+      interval: undefined,
+      timezone: { ianaName: "America/New_York" },
+      startAt: "2026-11-01T00:00:00.000Z",
+      missedRunPolicy: { type: "CATCH_UP_ALL" },
+    }));
+
+    clock.set("2026-11-01T07:40:00.000Z");
+    await engine.evaluateDueSchedules();
+
+    const metrics = engine.getMetrics();
+    expect(metrics.dstAmbiguityCount).toBeGreaterThan(0);
+    expect(metrics.skippedOccurrences).toBeGreaterThan(0);
+    expect(events.length).toBe(1);
+    expect(engine.getAuditRecords().some((entry) => entry.eventType === "OCCURRENCE_SKIPPED")).toBe(true);
+  });
+
   it("prevents duplicate occurrence dispatch using claim idempotency", async () => {
     const state = createState();
     const clock = new TestClock("2026-08-03T00:00:00.000Z");
@@ -322,6 +422,61 @@ describe("GWS-1001 scheduling foundation", () => {
     expect(state.audits.some((entry) => entry.eventType === "SCHEDULE_FAILED")).toBe(true);
   });
 
+  it("retries transient transport failures and records retry metrics", async () => {
+    let attempt = 0;
+    const { engine, clock, events } = createEngine({
+      publishImpl: async () => {
+        attempt += 1;
+        if (attempt < 2) {
+          throw new Error("transport unavailable");
+        }
+      },
+    });
+    await engine.waitUntilReady();
+
+    await engine.registerSchedule(buildDefinition({ state: "ACTIVE" }));
+    clock.advanceMs(60_000);
+    await engine.evaluateDueSchedules();
+
+    expect(events.length).toBeGreaterThan(0);
+    expect(engine.getMetrics().dispatchRetryCount).toBe(1);
+    expect(engine.getAuditRecords().some((entry) => entry.eventType === "DISPATCH_RETRY")).toBe(true);
+  });
+
+  it("classifies dispatch timeout with retry exhaustion", async () => {
+    const { engine, clock, state } = createEngine({
+      dispatchRetryLimit: 2,
+      dispatchTimeoutMs: 10,
+      publishImpl: async () => new Promise<void>(() => {}),
+    });
+    await engine.waitUntilReady();
+
+    await engine.registerSchedule(buildDefinition({ state: "ACTIVE" }));
+    clock.advanceMs(60_000);
+    await engine.evaluateDueSchedules();
+
+    expect(engine.getMetrics().dispatchRetryCount).toBe(1);
+    expect(engine.getMetrics().dispatchFailures).toBe(1);
+    expect(state.instances[0].state).toBe("FAILED");
+    expect(engine.getAuditRecords().some((entry) => entry.eventType === "DISPATCH_RETRY_EXHAUSTED")).toBe(true);
+  });
+
+  it("does not retry permanent dispatch failures", async () => {
+    const { engine, clock } = createEngine({
+      publishImpl: async () => {
+        throw new Error("invalid payload contract");
+      },
+    });
+    await engine.waitUntilReady();
+
+    await engine.registerSchedule(buildDefinition({ state: "ACTIVE" }));
+    clock.advanceMs(60_000);
+    await engine.evaluateDueSchedules();
+
+    expect(engine.getMetrics().dispatchRetryCount).toBe(0);
+    expect(engine.getMetrics().dispatchFailures).toBe(1);
+  });
+
   it("restores state on restart, recovers expired claims, and preserves audit continuity", async () => {
     const state = createState();
     const clock = new TestClock("2026-08-03T00:00:00.000Z");
@@ -337,6 +492,92 @@ describe("GWS-1001 scheduling foundation", () => {
 
     expect(second.engine.getMetrics().recoveryCount).toBeGreaterThan(0);
     expect(second.engine.getAuditRecords().length).toBeGreaterThan(0);
+  });
+
+  it("flags corrupt persistence files and classifies recovery state", async () => {
+    const basePath = join(process.cwd(), "data", `test-scheduling-corrupt-${Date.now()}`);
+    await mkdir(basePath, { recursive: true });
+    await writeFile(join(basePath, "scheduling-state.json"), "{ not-json", "utf8");
+
+    const coordinator = new FileSchedulingPersistenceCoordinator(basePath);
+    const result = await coordinator.loadRecoverySnapshot();
+    expect(result.diagnostics.classification).toBe("CORRUPT_FILE");
+    expect(result.snapshot.definitions).toEqual([]);
+    expect(result.snapshot.instances).toEqual([]);
+  });
+
+  it("sanitizes partial persistence records and reports invalid counters", async () => {
+    const basePath = join(process.cwd(), "data", `test-scheduling-partial-${Date.now()}`);
+    await mkdir(basePath, { recursive: true });
+    const valid = buildDefinition();
+
+    await writeFile(
+      join(basePath, "scheduling-state.json"),
+      JSON.stringify({
+        definitions: [valid, { broken: true }],
+        instances: [{ invalid: true }],
+        occurrences: [{ invalid: true }],
+        claims: [{ invalid: true }],
+        audits: [{ invalid: true }],
+        metrics: { invalid: true },
+      }),
+      "utf8",
+    );
+
+    const coordinator = new FileSchedulingPersistenceCoordinator(basePath);
+    const result = await coordinator.loadRecoverySnapshot();
+    expect(result.diagnostics.classification).toBe("PARTIAL_STATE");
+    expect(result.snapshot.definitions).toHaveLength(1);
+    expect(result.diagnostics.invalidDefinitions).toBe(1);
+    expect(result.diagnostics.invalidMetrics).toBe(1);
+  });
+
+  it("survives recovery load failures in safe degraded mode", async () => {
+    const state = createState();
+    const persistence = createCoordinator(state);
+    persistence.loadRecoverySnapshot = async () => {
+      throw new Error("recovery_load_failure");
+    };
+
+    const { engine } = createEngine({ persistence });
+    await engine.waitUntilReady();
+
+    const metrics = engine.getMetrics();
+    expect(metrics.recoveryFailures).toBe(1);
+    expect(engine.getAuditRecords().some((entry) => entry.eventType === "RECOVERY_FAILED")).toBe(true);
+  });
+
+  it("records audit persistence failures without crashing scheduling evaluation", async () => {
+    const state = createState();
+    const persistence = createCoordinator(state);
+    persistence.auditStore.append = async () => {
+      throw new Error("audit_store_down");
+    };
+
+    const { engine, clock } = createEngine({ persistence });
+    await engine.waitUntilReady();
+    await engine.registerSchedule(buildDefinition({ state: "ACTIVE" }));
+
+    clock.advanceMs(60_000);
+    await engine.evaluateDueSchedules();
+
+    expect(engine.getMetrics().auditFailureCount).toBeGreaterThan(0);
+    expect(engine.getAuditRecords().some((entry) => entry.eventType === "AUDIT_PERSISTENCE_FAILURE")).toBe(true);
+  });
+
+  it("supports atomic claim semantics with deterministic ownership and conflict rejection", async () => {
+    const basePath = join(process.cwd(), "data", `test-scheduling-claims-${Date.now()}`);
+    const store = new FileScheduleClaimStore(new SchedulingDataStore(basePath));
+    const service = new OccurrenceClaimService(store, new TestClock("2026-08-03T00:00:00.000Z"));
+
+    const [a, b] = await Promise.all([
+      service.claim({ occurrenceId: "occ-1", owner: "node-a", idempotencyKey: "key-a", logicalRunKey: "run-1" }),
+      service.claim({ occurrenceId: "occ-2", owner: "node-b", idempotencyKey: "key-b", logicalRunKey: "run-1" }),
+    ]);
+
+    const claimedCount = [a, b].filter((entry) => entry.claimed).length;
+    expect(claimedCount).toBe(1);
+    expect([a.reason, b.reason].includes("CONFLICT")).toBe(true);
   });
 
   it("enforces authorization boundary through injected authorizer", async () => {
@@ -363,11 +604,11 @@ describe("GWS-1001 scheduling foundation", () => {
 
   it("uses durable file persistence coordinator shape for restart safety", async () => {
     const coordinator = new FileSchedulingPersistenceCoordinator(`${process.cwd()}/data/test-scheduling-${Date.now()}`);
-    const snapshot = await coordinator.loadRecoverySnapshot();
-    expect(snapshot.definitions).toEqual([]);
-    expect(snapshot.instances).toEqual([]);
-    expect(snapshot.occurrences).toEqual([]);
-    expect(snapshot.claims).toEqual([]);
+    const result = await coordinator.loadRecoverySnapshot();
+    expect(result.snapshot.definitions).toEqual([]);
+    expect(result.snapshot.instances).toEqual([]);
+    expect(result.snapshot.occurrences).toEqual([]);
+    expect(result.snapshot.claims).toEqual([]);
   });
 
   it("surfaces health and readiness metrics for mission control observability", async () => {
@@ -380,5 +621,7 @@ describe("GWS-1001 scheduling foundation", () => {
     expect(health.status).toBe("HEALTHY");
     expect(readiness.durability).toBe("FILE_PERSISTED");
     expect(typeof readiness.averageSchedulingDelayMs).toBe("number");
+    expect(typeof readiness.dispatchRetryCount).toBe("number");
+    expect(typeof readiness.corruptPersistenceCount).toBe("number");
   });
 });

@@ -114,6 +114,9 @@ export type ScheduleOccurrence = {
   instanceId: string;
   scheduleId: ScheduleId;
   dueAt: string;
+  logicalRunKey?: string;
+  utcOffsetMinutes?: number;
+  isDstAmbiguous?: boolean;
   trigger: ScheduleTrigger;
   status: "PENDING" | "CLAIMED" | "DISPATCHED" | "SKIPPED" | "FAILED";
   claimId?: string;
@@ -174,8 +177,12 @@ export type ScheduleAuditRecord = {
     | "OCCURRENCE_SKIPPED"
     | "MISSED_RUN_DETECTED"
     | "CATCH_UP_EXECUTED"
+    | "DISPATCH_RETRY"
+    | "DISPATCH_RETRY_EXHAUSTED"
+    | "AUDIT_PERSISTENCE_FAILURE"
     | "SCHEDULE_FAILED"
     | "RECOVERY_PERFORMED"
+    | "RECOVERY_FAILED"
     | "CORRUPT_STATE_DETECTED";
   message: string;
   details?: Record<string, unknown>;
@@ -197,6 +204,11 @@ export type ScheduleMetrics = {
   catchUpOccurrences: number;
   duplicateClaimRejections: number;
   claimConflicts: number;
+  dstAmbiguityCount: number;
+  corruptPersistenceCount: number;
+  recoveryFailures: number;
+  dispatchRetryCount: number;
+  auditFailureCount: number;
   dispatchFailures: number;
   recoveryCount: number;
   oldestOverdueOccurrenceAgeMs: number | null;

@@ -64,11 +64,20 @@ export type SchedulingAuthorizer = (input: {
 
 const SYSTEM_ACTOR = "system:scheduling-engine";
 
+type DispatchFailureClassification = "TRANSPORT_UNAVAILABLE" | "DISPATCH_TIMEOUT" | "PERMANENT_FAILURE";
+
+type DispatchOutcome = {
+  dispatched: boolean;
+  attempts: number;
+  classification?: DispatchFailureClassification;
+  reason?: string;
+};
+
 export class SchedulingEngine {
   private readonly registry = new ScheduleRegistry();
   private readonly lifecycle = new ScheduleLifecycleService();
   private readonly metrics = new SchedulingMetricsService();
-  private readonly auditWriter = new SchedulingAuditWriter();
+  private readonly auditWriter: SchedulingAuditWriter;
   private readonly healthService = new SchedulingHealthService();
   private readonly calculator: ScheduleCalculator;
   private readonly missedRunPolicy = new MissedRunPolicyService();
@@ -76,18 +85,28 @@ export class SchedulingEngine {
   private readonly instances = new Map<string, ScheduleInstance>();
   private readonly indexByScheduleId = new Map<string, string>();
   private readonly ready: Promise<void>;
+  private persistenceStatus: "HEALTHY" | "DEGRADED" = "HEALTHY";
+  private recoveryStatus: "HEALTHY" | "DEGRADED" = "HEALTHY";
+  private claimingStatus: "HEALTHY" | "DEGRADED" = "HEALTHY";
+  private readonly dispatchRetryLimit: number;
+  private readonly dispatchTimeoutMs: number;
 
   constructor(private readonly options?: {
     clock?: Clock;
     messaging?: SchedulingPublisher;
     persistence?: SchedulingPersistenceCoordinator;
     authorizer?: SchedulingAuthorizer;
+    dispatchRetryLimit?: number;
+    dispatchTimeoutMs?: number;
   }) {
     this.clock = options?.clock ?? new SystemClock();
+    this.auditWriter = new SchedulingAuditWriter(this.clock);
     this.messaging = options?.messaging ?? getGenesisMessageBus();
     this.persistence = options?.persistence ?? new FileSchedulingPersistenceCoordinator();
     this.calculator = new ScheduleCalculator(this.clock);
     this.claimService = new OccurrenceClaimService(this.persistence.claimStore, this.clock);
+    this.dispatchRetryLimit = Math.max(1, options?.dispatchRetryLimit ?? 3);
+    this.dispatchTimeoutMs = Math.max(100, options?.dispatchTimeoutMs ?? 5_000);
     this.ready = this.recover();
   }
 
@@ -231,6 +250,30 @@ export class SchedulingEngine {
       }
 
       for (const occurrence of selected) {
+        if (occurrence.isDstAmbiguous) {
+          this.metrics.trackDstAmbiguity();
+          const existing = await this.lookupExistingLogicalRun(instance.instanceId, occurrence.logicalRunKey);
+          if (existing) {
+            occurrence.status = "SKIPPED";
+            this.metrics.trackSkippedOccurrence();
+            this.metrics.trackDuplicateClaimRejection();
+            await this.writeAudit({
+              scheduleId: instance.scheduleId,
+              instanceId: instance.instanceId,
+              occurrenceId: occurrence.occurrenceId,
+              eventType: "OCCURRENCE_SKIPPED",
+              actorId: SYSTEM_ACTOR,
+              message: "Skipped ambiguous DST duplicate local timestamp",
+              details: {
+                dueAt: occurrence.dueAt,
+                logicalRunKey: occurrence.logicalRunKey,
+                policy: "FIRST_LOCAL_TIMESTAMP_WINS",
+              },
+            });
+            continue;
+          }
+        }
+
         this.metrics.trackDueOccurrence();
         await this.persistence.occurrenceStore.append(occurrence);
         await this.writeAudit({
@@ -246,7 +289,8 @@ export class SchedulingEngine {
         const claim = await this.claimService.claim({
           occurrenceId: occurrence.occurrenceId,
           owner: SYSTEM_ACTOR,
-          idempotencyKey: `${occurrence.occurrenceId}:${occurrence.dueAt}`,
+          idempotencyKey: `${occurrence.logicalRunKey ?? occurrence.occurrenceId}:${occurrence.dueAt}`,
+          logicalRunKey: occurrence.logicalRunKey,
         });
 
         if (!claim.claimed || !claim.claim) {
@@ -275,11 +319,11 @@ export class SchedulingEngine {
         this.metrics.trackSchedulingDelay(Math.max(0, schedulingDelay));
 
         const dispatchStarted = this.clock.now();
-        const dispatched = await this.dispatchOccurrence(definition, instance, occurrence);
+        const dispatch = await this.dispatchOccurrence(definition, instance, occurrence);
         const latency = this.clock.now().getTime() - dispatchStarted.getTime();
         this.metrics.trackDispatchLatency(Math.max(0, latency));
 
-        if (dispatched) {
+        if (dispatch.dispatched) {
           this.metrics.trackDispatchedOccurrence();
           occurrence.status = "DISPATCHED";
           occurrence.dispatchedAt = this.clock.nowIso();
@@ -300,17 +344,17 @@ export class SchedulingEngine {
         } else {
           this.metrics.trackDispatchFailure();
           occurrence.status = "FAILED";
-          occurrence.errorCode = "SCHEDULE_DISPATCH_FAILURE";
+          occurrence.errorCode = dispatch.reason ?? "SCHEDULE_DISPATCH_FAILURE";
           await this.persistence.occurrenceStore.update(occurrence);
-          await this.claimService.markFailed(occurrence.occurrenceId, "dispatch_failed");
-          await this.failInstance(instance, "dispatch_failed");
+          await this.claimService.markFailed(occurrence.occurrenceId, dispatch.reason ?? "dispatch_failed");
+          await this.failInstance(instance, dispatch.reason ?? "dispatch_failed");
         }
 
         results.push({
           instance: structuredClone(instance),
           occurrence: structuredClone(occurrence),
-          dispatched,
-          reason: dispatched ? "dispatched" : "dispatch_failed",
+          dispatched: dispatch.dispatched,
+          reason: dispatch.dispatched ? "dispatched" : (dispatch.reason ?? "dispatch_failed"),
         });
       }
 
@@ -336,11 +380,11 @@ export class SchedulingEngine {
       metrics: this.metrics,
       dependencyHealth: {
         messaging: { status: messageHealth.status },
-        persistence: { status: "HEALTHY" },
+        persistence: { status: this.persistenceStatus },
         clock: { status: "HEALTHY" },
         calculator: { status: "HEALTHY" },
-        claiming: { status: "HEALTHY" },
-        recovery: { status: "HEALTHY" },
+        claiming: { status: this.claimingStatus },
+        recovery: { status: this.recoveryStatus },
         configuration: { status: "HEALTHY" },
       },
     });
@@ -361,6 +405,11 @@ export class SchedulingEngine {
       catchUpOccurrences: snapshot.catchUpOccurrences,
       duplicateClaimRejections: snapshot.duplicateClaimRejections,
       claimConflicts: snapshot.claimConflicts,
+      dstAmbiguityCount: snapshot.dstAmbiguityCount,
+      corruptPersistenceCount: snapshot.corruptPersistenceCount,
+      recoveryFailures: snapshot.recoveryFailures,
+      dispatchRetryCount: snapshot.dispatchRetryCount,
+      auditFailureCount: snapshot.auditFailureCount,
       dispatchFailures: snapshot.dispatchFailures,
       recoveryCount: snapshot.recoveryCount,
       oldestOverdueOccurrenceAgeMs: snapshot.oldestOverdueOccurrenceAgeMs,
@@ -404,31 +453,77 @@ export class SchedulingEngine {
   }
 
   private async recover(): Promise<void> {
-    const snapshot = await this.persistence.loadRecoverySnapshot();
-    this.registry.restore(snapshot.definitions);
+    try {
+      const { snapshot, diagnostics } = await this.persistence.loadRecoverySnapshot();
+      this.registry.restore(snapshot.definitions);
 
-    this.instances.clear();
-    this.indexByScheduleId.clear();
-    for (const instance of snapshot.instances) {
-      this.instances.set(instance.instanceId, structuredClone(instance));
-      this.indexByScheduleId.set(instance.scheduleId, instance.instanceId);
+      this.instances.clear();
+      this.indexByScheduleId.clear();
+      for (const instance of snapshot.instances) {
+        this.instances.set(instance.instanceId, structuredClone(instance));
+        this.indexByScheduleId.set(instance.scheduleId, instance.instanceId);
+      }
+
+      this.auditWriter.restore(snapshot.audits);
+      if (snapshot.metrics) {
+        this.metrics.hydrate(snapshot.metrics);
+      }
+
+      if (diagnostics.totalInvalidRecords > 0 || diagnostics.corruptFile) {
+        this.metrics.trackCorruptPersistence(Math.max(1, diagnostics.totalInvalidRecords));
+        this.persistenceStatus = "DEGRADED";
+        await this.writeAudit({
+          scheduleId: "system",
+          eventType: "CORRUPT_STATE_DETECTED",
+          actorId: SYSTEM_ACTOR,
+          message: "Corrupt or partial scheduling persistence state detected",
+          details: {
+            classification: diagnostics.classification,
+            missingFile: diagnostics.missingFile,
+            corruptFile: diagnostics.corruptFile,
+            invalidDefinitions: diagnostics.invalidDefinitions,
+            invalidInstances: diagnostics.invalidInstances,
+            invalidOccurrences: diagnostics.invalidOccurrences,
+            invalidClaims: diagnostics.invalidClaims,
+            invalidAudits: diagnostics.invalidAudits,
+            invalidMetrics: diagnostics.invalidMetrics,
+            totalInvalidRecords: diagnostics.totalInvalidRecords,
+          },
+        });
+      }
+
+      const recoveredClaims = await this.claimService.recoverExpiredClaims();
+      this.metrics.trackRecovery(snapshot.instances.length + recoveredClaims);
+      await this.refreshOperationalMetrics();
+      await this.writeAudit({
+        scheduleId: "system",
+        eventType: "RECOVERY_PERFORMED",
+        actorId: SYSTEM_ACTOR,
+        message: "Scheduling recovery completed",
+        details: {
+          restoredInstances: snapshot.instances.length,
+          recoveredClaims,
+          classification: diagnostics.classification,
+          totalInvalidRecords: diagnostics.totalInvalidRecords,
+        },
+      });
+    } catch (error) {
+      this.instances.clear();
+      this.indexByScheduleId.clear();
+      this.persistenceStatus = "DEGRADED";
+      this.recoveryStatus = "DEGRADED";
+      this.metrics.trackRecoveryFailure();
+
+      await this.writeAudit({
+        scheduleId: "system",
+        eventType: "RECOVERY_FAILED",
+        actorId: SYSTEM_ACTOR,
+        message: "Scheduling recovery failed; engine started in safe degraded mode",
+        details: {
+          error: error instanceof Error ? error.message : "unknown_recovery_error",
+        },
+      });
     }
-
-    this.auditWriter.restore(snapshot.audits);
-    if (snapshot.metrics) {
-      this.metrics.hydrate(snapshot.metrics);
-    }
-
-    const recoveredClaims = await this.claimService.recoverExpiredClaims();
-    this.metrics.trackRecovery(snapshot.instances.length + recoveredClaims);
-    await this.refreshOperationalMetrics();
-    await this.writeAudit({
-      scheduleId: "system",
-      eventType: "RECOVERY_PERFORMED",
-      actorId: SYSTEM_ACTOR,
-      message: "Scheduling recovery completed",
-      details: { restoredInstances: snapshot.instances.length, recoveredClaims },
-    });
   }
 
   private requireInstanceByScheduleId(scheduleId: string): ScheduleInstance {
@@ -446,11 +541,17 @@ export class SchedulingEngine {
   }
 
   private newOccurrence(instance: ScheduleInstance, dueAt: string, missed: boolean): ScheduleOccurrence {
+    const definition = this.registry.get(instance.scheduleId);
+    const time = this.calculator.classifyOccurrenceTime(definition, dueAt);
+
     return {
       occurrenceId: `${instance.instanceId}:${dueAt}`,
       instanceId: instance.instanceId,
       scheduleId: instance.scheduleId,
       dueAt,
+      logicalRunKey: time.isDstAmbiguous ? `${instance.instanceId}:${time.localRunKey}` : `${instance.instanceId}:${dueAt}`,
+      utcOffsetMinutes: time.utcOffsetMinutes ?? undefined,
+      isDstAmbiguous: time.isDstAmbiguous,
       trigger: {
         triggerType: missed ? "MISSED_RUN_CATCH_UP" : "SCHEDULED",
         evaluatedAt: this.clock.nowIso(),
@@ -463,7 +564,7 @@ export class SchedulingEngine {
     definition: ScheduleDefinition,
     instance: ScheduleInstance,
     occurrence: ScheduleOccurrence,
-  ): Promise<boolean> {
+  ): Promise<DispatchOutcome> {
     const envelope: MessageEnvelope<Record<string, unknown>> = {
       messageId: randomUUID(),
       correlationId: definition.command.correlationId ?? occurrence.occurrenceId,
@@ -494,20 +595,70 @@ export class SchedulingEngine {
       },
       metadata: {
         orderingKey: definition.scheduleId,
-        idempotencyKey: definition.command.idempotencyKey ?? occurrence.occurrenceId,
+        idempotencyKey: definition.command.idempotencyKey ?? (occurrence.logicalRunKey ?? occurrence.occurrenceId),
       },
     };
 
-    try {
-      await this.messaging.publish({
-        topic: definition.command.topic,
-        mode: "PUBLISH_SUBSCRIBE",
-        envelope,
-      });
-      return true;
-    } catch {
-      return false;
+    let attempts = 0;
+    let lastClassification: DispatchFailureClassification | undefined;
+    let lastReason = "dispatch_failed";
+
+    while (attempts < this.dispatchRetryLimit) {
+      attempts += 1;
+
+      try {
+        await this.publishWithTimeout({
+          topic: definition.command.topic,
+          mode: "PUBLISH_SUBSCRIBE",
+          envelope,
+        });
+        return { dispatched: true, attempts };
+      } catch (error) {
+        const classification = this.classifyDispatchFailure(error);
+        lastClassification = classification;
+        lastReason = classification.toLowerCase();
+
+        const retryable = classification === "TRANSPORT_UNAVAILABLE" || classification === "DISPATCH_TIMEOUT";
+        if (!retryable || attempts >= this.dispatchRetryLimit) {
+          if (retryable && attempts >= this.dispatchRetryLimit) {
+            await this.writeAudit({
+              scheduleId: instance.scheduleId,
+              instanceId: instance.instanceId,
+              occurrenceId: occurrence.occurrenceId,
+              eventType: "DISPATCH_RETRY_EXHAUSTED",
+              actorId: SYSTEM_ACTOR,
+              message: "Dispatch retries exhausted",
+              details: { attempts, classification },
+            });
+          }
+
+          return {
+            dispatched: false,
+            attempts,
+            classification,
+            reason: lastReason,
+          };
+        }
+
+        this.metrics.trackDispatchRetry();
+        await this.writeAudit({
+          scheduleId: instance.scheduleId,
+          instanceId: instance.instanceId,
+          occurrenceId: occurrence.occurrenceId,
+          eventType: "DISPATCH_RETRY",
+          actorId: SYSTEM_ACTOR,
+          message: "Retrying occurrence dispatch",
+          details: { attempts, classification },
+        });
+      }
     }
+
+    return {
+      dispatched: false,
+      attempts,
+      classification: lastClassification,
+      reason: lastReason,
+    };
   }
 
   private async applyNextRun(instance: ScheduleInstance, next: NextRun): Promise<void> {
@@ -569,7 +720,68 @@ export class SchedulingEngine {
 
   private async writeAudit(input: Omit<ScheduleAuditRecord, "recordId" | "recordedAt">): Promise<void> {
     const record = this.auditWriter.write(input);
-    await this.persistence.auditStore.append(record);
+    try {
+      await this.persistence.auditStore.append(record);
+    } catch (error) {
+      this.persistenceStatus = "DEGRADED";
+      this.metrics.trackAuditFailure();
+
+      // Keep visibility in in-memory audit stream even when durable audit append fails.
+      this.auditWriter.write({
+        scheduleId: input.scheduleId,
+        instanceId: input.instanceId,
+        occurrenceId: input.occurrenceId,
+        eventType: "AUDIT_PERSISTENCE_FAILURE",
+        actorId: SYSTEM_ACTOR,
+        message: "Failed to persist schedule audit record",
+        details: {
+          failedEventType: input.eventType,
+          error: error instanceof Error ? error.message : "unknown_audit_persistence_error",
+        },
+      });
+    }
+  }
+
+  private async lookupExistingLogicalRun(instanceId: string, logicalRunKey?: string): Promise<ScheduleOccurrence | null> {
+    if (!logicalRunKey) {
+      return null;
+    }
+
+    if (this.persistence.occurrenceStore.findByLogicalRunKey) {
+      return this.persistence.occurrenceStore.findByLogicalRunKey(instanceId, logicalRunKey);
+    }
+
+    const existing = await this.persistence.occurrenceStore.listByInstance(instanceId);
+    return existing.find((entry) => entry.logicalRunKey === logicalRunKey) ?? null;
+  }
+
+  private classifyDispatchFailure(error: unknown): DispatchFailureClassification {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    if (message.includes("timeout") || message.includes("timed out")) {
+      return "DISPATCH_TIMEOUT";
+    }
+
+    if (message.includes("unavailable") || message.includes("econn") || message.includes("network")) {
+      return "TRANSPORT_UNAVAILABLE";
+    }
+
+    return "PERMANENT_FAILURE";
+  }
+
+  private async publishWithTimeout(input: Parameters<SchedulingPublisher["publish"]>[0]): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        this.messaging.publish(input),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("dispatch_timeout")), this.dispatchTimeoutMs);
+        }),
+      ]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
   }
 
   private async ensureAuthorized(action: string, scheduleId: string, actorId: string): Promise<void> {

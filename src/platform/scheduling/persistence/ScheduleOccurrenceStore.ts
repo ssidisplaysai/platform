@@ -5,4 +5,5 @@ export interface ScheduleOccurrenceStore {
   update(occurrence: ScheduleOccurrence): Promise<void>;
   listByInstance(instanceId: string): Promise<ScheduleOccurrence[]>;
   listAll(): Promise<ScheduleOccurrence[]>;
+  findByLogicalRunKey?(instanceId: string, logicalRunKey: string): Promise<ScheduleOccurrence | null>;
 }
