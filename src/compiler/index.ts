@@ -59,6 +59,7 @@ export { CompilerRuntimeHost } from "./runtime";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./runtime";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./runtime";
 export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./runtime";
+export { ReplayRuntimeFactory, ReplayRuntimeRegistry } from "./runtime";
 export {
 	BUSINESS_GENOME_SEMANTIC_CLASSES,
 	BUSINESS_GENOME_RELATIONSHIP_CLASSES,
@@ -161,11 +162,35 @@ export type {
 	RegisteredManifestRuntime,
 	RegisteredEvidenceRuntime,
 	RegisteredEvidenceValidationRuntime,
+	RegisteredReplayRuntime,
 	ReplayContext,
 	RuntimeHealth,
 	RuntimeManifest,
 	StructuredDiagnostic,
 	ValidationStatus,
+	ReplayRuntimeCertificationTrace,
+	ReplayRuntimeCheck,
+	ReplayRuntimeCheckStatus,
+	ReplayRuntimeCreateInput,
+	ReplayRuntimeCreateOptions,
+	ReplayRuntimeFactoryConfiguration,
+	ReplayRuntimeFactoryOptions,
+	ReplayRuntimeGraph,
+	ReplayRuntimeGraphEdge,
+	ReplayRuntimeGraphEdgeRelation,
+	ReplayRuntimeGraphNode,
+	ReplayRuntimeGraphNodeType,
+	ReplayRuntimeLifecycle,
+	ReplayRuntimeLifecycleEvent,
+	ReplayRuntimeLifecycleState,
+	ReplayRuntimeLineageIntegrity,
+	ReplayRuntimeOutcome,
+	ReplayRuntimeRecord,
+	ReplayRuntimeRegistryOptions,
+	ReplayRuntimeRule as RuntimeReplayRuntimeRule,
+	ReplayRuntimeRuleResult,
+	ReplayRuntimeTrace,
+	ReplayRuntimeVersion,
 } from "./runtime";
 
 export type {

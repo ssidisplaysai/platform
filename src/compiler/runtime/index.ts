@@ -2,6 +2,7 @@ export { CompilerRuntimeHost } from "./foundation/index";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./evidence-validation/index";
 export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./manifest/index";
+export { ReplayRuntimeFactory, ReplayRuntimeRegistry } from "./replay/index";
 
 export type {
   CertificationContext,
@@ -87,3 +88,30 @@ export type {
   ManifestRuntimeVersion,
   RegisteredManifestRuntime,
 } from "./manifest/index";
+
+export type {
+  RegisteredReplayRuntime,
+  ReplayRuntimeCertificationTrace,
+  ReplayRuntimeCheck,
+  ReplayRuntimeCheckStatus,
+  ReplayRuntimeCreateInput,
+  ReplayRuntimeCreateOptions,
+  ReplayRuntimeFactoryConfiguration,
+  ReplayRuntimeFactoryOptions,
+  ReplayRuntimeGraph,
+  ReplayRuntimeGraphEdge,
+  ReplayRuntimeGraphEdgeRelation,
+  ReplayRuntimeGraphNode,
+  ReplayRuntimeGraphNodeType,
+  ReplayRuntimeLifecycle,
+  ReplayRuntimeLifecycleEvent,
+  ReplayRuntimeLifecycleState,
+  ReplayRuntimeLineageIntegrity,
+  ReplayRuntimeOutcome,
+  ReplayRuntimeRecord,
+  ReplayRuntimeRegistryOptions,
+  ReplayRuntimeRule,
+  ReplayRuntimeRuleResult,
+  ReplayRuntimeTrace,
+  ReplayRuntimeVersion,
+} from "./replay/index";

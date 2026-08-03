@@ -93,6 +93,14 @@
 | [genesis/engineering/packages/GCI-P1-0004/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0004/Coverage-Summary.md) | Coverage summary for manifest runtime implementation scope | 4 min |
 | [genesis/engineering/packages/GCI-P1-0004/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0004/Certification-Evidence.md) | Implementation-phase evidence set for future independent certification review readiness | 4 min |
 | [genesis/engineering/packages/GCI-P1-0004/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0004/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0004 | 3 min |
+| [genesis/engineering/packages/GCI-P1-0005/README.md](genesis/engineering/packages/GCI-P1-0005/README.md) | Phase 1 package identity and scope for replay runtime implementation | 3 min |
+| [genesis/engineering/packages/GCI-P1-0005/Implementation-Report.md](genesis/engineering/packages/GCI-P1-0005/Implementation-Report.md) | Replay runtime implementation details, deterministic behavior, and scope closure | 6 min |
+| [genesis/engineering/packages/GCI-P1-0005/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P1-0005/Architecture-Compliance-Report.md) | Architecture compliance validation for authorized replay-runtime-only scope | 6 min |
+| [genesis/engineering/packages/GCI-P1-0005/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P1-0005/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for replay runtime subset obligations | 5 min |
+| [genesis/engineering/packages/GCI-P1-0005/Test-Summary.md](genesis/engineering/packages/GCI-P1-0005/Test-Summary.md) | Test execution summary for deterministic replay runtime behavior and architecture boundaries | 4 min |
+| [genesis/engineering/packages/GCI-P1-0005/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0005/Coverage-Summary.md) | Coverage summary for replay runtime implementation scope | 4 min |
+| [genesis/engineering/packages/GCI-P1-0005/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0005/Certification-Evidence.md) | Implementation-phase evidence set for future independent certification review readiness | 4 min |
+| [genesis/engineering/packages/GCI-P1-0005/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0005/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0005 | 3 min |
 
 ---
 
