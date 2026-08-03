@@ -58,6 +58,7 @@ export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export { CompilerRuntimeHost } from "./runtime";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./runtime";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./runtime";
+export { IBRRuntimeFactory, IBRRuntimeRegistry } from "./runtime";
 export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./runtime";
 export { ReplayRuntimeFactory, ReplayRuntimeRegistry } from "./runtime";
 export {
@@ -148,6 +149,30 @@ export type {
 	ManifestRuntimeCreateOptions,
 	ManifestRuntimeEntry,
 	ManifestRuntimeFactoryConfiguration,
+	IBRRuntimeCertificationTrace,
+	IBRRuntimeCheck,
+	IBRRuntimeCheckStatus,
+	IBRRuntimeCreateInput,
+	IBRRuntimeCreateOptions,
+	IBRRuntimeFactoryConfiguration,
+	IBRRuntimeFactoryOptions,
+	IBRRuntimeGraph,
+	IBRRuntimeGraphEdge,
+	IBRRuntimeGraphEdgeRelation,
+	IBRRuntimeGraphNode,
+	IBRRuntimeGraphNodeType,
+	IBRRuntimeLifecycle,
+	IBRRuntimeLifecycleEvent,
+	IBRRuntimeLifecycleState,
+	IBRRuntimeLineageIntegrity,
+	IBRRuntimeOutcome,
+	IBRRuntimeRecord,
+	IBRRuntimeRegistryOptions,
+	IBRRuntimeRule,
+	IBRRuntimeRuleResult,
+	IBRRuntimeTrace,
+	IBRRuntimeVersion,
+	RegisteredIBRRuntime,
 	ManifestRuntimeFactoryOptions,
 	ManifestRuntimeLifecycleIntegrity,
 	ManifestRuntimeOutcome,

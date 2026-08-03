@@ -159,6 +159,14 @@
 | [genesis/engineering/packages/GCI-AUTH-P2-0001/Stop-Conditions.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Stop-Conditions.md) | Immediate stop triggers, governance stop triggers, and re-open procedure | 4 min |
 | [genesis/engineering/packages/GCI-AUTH-P2-0001/Risk-Assessment.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Risk-Assessment.md) | Authorization risk profile, severity assessment, and mitigation controls | 4 min |
 | [genesis/engineering/packages/GCI-AUTH-P2-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-AUTH-P2-0001/LIFECYCLE-METADATA.md) | Lifecycle and publication metadata for the IBR authorization package | 3 min |
+| [genesis/engineering/packages/GCI-P2-0001/README.md](genesis/engineering/packages/GCI-P2-0001/README.md) | Package identity, scope, and implementation-validation boundary for IBR Runtime | 3 min |
+| [genesis/engineering/packages/GCI-P2-0001/Implementation-Report.md](genesis/engineering/packages/GCI-P2-0001/Implementation-Report.md) | Delivered IBR runtime implementation details, runtime behaviors, and scope closure | 6 min |
+| [genesis/engineering/packages/GCI-P2-0001/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P2-0001/Architecture-Compliance-Report.md) | Architecture boundary validation for IBR-only runtime scope | 6 min |
+| [genesis/engineering/packages/GCI-P2-0001/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P2-0001/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for IBR implementation-validation obligations | 5 min |
+| [genesis/engineering/packages/GCI-P2-0001/Test-Summary.md](genesis/engineering/packages/GCI-P2-0001/Test-Summary.md) | Test execution summary for replay regression and IBR validation | 4 min |
+| [genesis/engineering/packages/GCI-P2-0001/Coverage-Summary.md](genesis/engineering/packages/GCI-P2-0001/Coverage-Summary.md) | Coverage summary for the IBR runtime implementation slice | 4 min |
+| [genesis/engineering/packages/GCI-P2-0001/Certification-Evidence.md](genesis/engineering/packages/GCI-P2-0001/Certification-Evidence.md) | Implementation-validation evidence set for future independent certification review | 4 min |
+| [genesis/engineering/packages/GCI-P2-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0001/LIFECYCLE-METADATA.md) | Lifecycle metadata for the IBR implementation validation package | 3 min |
 
 ---
 
