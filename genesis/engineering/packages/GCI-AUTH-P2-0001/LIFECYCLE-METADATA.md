@@ -1,0 +1,23 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GCI-AUTH-P2-0001
+- Program Identifier: GCI Phase 2
+- Package Title: IBR Runtime Authorization
+- Lifecycle State: AUTHORIZED
+- Status Value: PRE_IMPLEMENTATION
+- Lifecycle Decision Record: IBR Runtime implementation is constitutionally authorized with strict scope boundaries.
+- Approval Record: Governance authorization approved for IBR Runtime only.
+- Implementation Record: Not started
+- Certification Record: Not started
+- Merge Record: Publication candidate prepared; merge pending governance workflow
+- Tag Record: Not applicable
+- Baseline Reference: genesis/engineering/packages/GCF-1.1/Genesis-Compiler-Foundation-v1.1.md; genesis/engineering/packages/GCI-P2-0000/README.md
+- Version Reference: GCI-AUTH-P2-0001 v1
+- Package Owner: Compiler constitutional governance owner
+- Registry Entry: REGISTERED
+- Publication Status: PUBLISHED_CANDIDATE (candidate prepared; not merged)
+- Cross-Document References: README.md; Authorization-Decision.md; Authorization-Scope.md; Architecture-Boundaries.md; Allowed-Dependencies.md; Forbidden-Dependencies.md; Implementation-Rules.md; Certification-Requirements.md; Required-Test-Matrix.md; Required-Evidence.md; Engineering-Deliverables.md; Governance-Gates.md; Stop-Conditions.md; Risk-Assessment.md; LIFECYCLE-METADATA.md
+- Dependencies Reference: GCF-1.1; GCI-P2-0000; GCI-P1-0005; GCS-0001
+- Successor Reference: GCI-P2-0001 (implementation package, separately governed)
+- Last Normalized Date: 2026-08-03
+- Normalization Source: GCI-AUTH-P2-0001 governance registration and publication candidate update

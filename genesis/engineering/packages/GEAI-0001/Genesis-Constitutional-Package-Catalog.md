@@ -13,6 +13,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GCI-P1-0004 | Manifest Runtime | Phase 1 implementation package for deterministic manifest runtime records with replay/certification linkage and immutable version lineage | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GCI-0001, GCI-P1-0002A | GCI-P1-0005 |
 | GCI-P1-0005 | Replay Runtime | Phase 1 implementation package for deterministic replay records, lineage, graph construction, and traceability | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0002A, GCS-0001 | None |
 | GCI-P2-0000 | Business Semantics Master Architecture | Constitutional architecture baseline defining deterministic semantic runtime model for Phase 2 with no implementation authorization | Indexed | GCI | GCF-1.1, GCI-P1-0005, GCS-0001 | None |
+| GCI-AUTH-P2-0001 | IBR Runtime Authorization | Constitutional governance authorization package granting implementation authority for IBR Runtime only under strict boundary controls | Indexed | GCI | GCF-1.1, GCI-P2-0000, GCI-P1-0005, GCS-0001 | GCI-P2-0001 |
 | GCF-1.1 | Genesis Compiler Foundation v1.1 | Constitutional foundation release recording complete Phase 1 runtime closeout as permanent compiler runtime substrate baseline | Indexed | GCF | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0005, GCS-0001 | None |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
@@ -66,7 +67,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 ## Synchronization Attestation
 - Date: 2026-08-03
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 55 catalog identifiers and full governance parity across governed package roots; one non-catalog local folder (WS-I) remains outside constitutional package scope.
+- Result: 56 catalog identifiers and full governance parity across governed package roots; one non-catalog local folder (WS-I) remains outside constitutional package scope.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.

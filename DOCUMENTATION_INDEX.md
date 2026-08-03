@@ -144,6 +144,21 @@
 | [genesis/engineering/packages/GCI-P2-0000/Out-of-Scope-Boundaries.md](genesis/engineering/packages/GCI-P2-0000/Out-of-Scope-Boundaries.md) | Explicit non-goals and prohibited implementation domains for this package | 4 min |
 | [genesis/engineering/packages/GCI-P2-0000/Implementation-Sequencing.md](genesis/engineering/packages/GCI-P2-0000/Implementation-Sequencing.md) | Implementation sequencing policy for separately authorized downstream execution | 4 min |
 | [genesis/engineering/packages/GCI-P2-0000/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0000/LIFECYCLE-METADATA.md) | Lifecycle metadata for pre-implementation constitutional architecture baseline | 3 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/README.md](genesis/engineering/packages/GCI-AUTH-P2-0001/README.md) | Package identity and constitutional authorization boundaries for IBR Runtime | 3 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Authorization-Decision.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Authorization-Decision.md) | Formal constitutional authorization decision and non-authorization clauses | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Authorization-Scope.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Authorization-Scope.md) | Authorized IBR responsibilities, inputs, outputs, and explicit out-of-scope constraints | 5 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Architecture-Boundaries.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Architecture-Boundaries.md) | One-way boundary controls, ownership assignments, and failure behavior constraints | 5 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Allowed-Dependencies.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Allowed-Dependencies.md) | Allowed dependency/import classes and mandatory linkage/registry rules | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Forbidden-Dependencies.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Forbidden-Dependencies.md) | Explicitly forbidden runtime, infrastructure, and capability dependencies | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Implementation-Rules.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Implementation-Rules.md) | Determinism, immutability, identity, lineage, failure, and boundary implementation laws | 5 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Certification-Requirements.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Certification-Requirements.md) | Independent certification domains, linkage requirements, and certification gate policy | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Required-Test-Matrix.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Required-Test-Matrix.md) | Minimum mandatory test categories for IBR implementation and certification readiness | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Required-Evidence.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Required-Evidence.md) | Required engineering, test, certification, and governance evidence artifacts | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Engineering-Deliverables.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Engineering-Deliverables.md) | Required implementation, certification, and freeze package deliverable obligations | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Governance-Gates.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Governance-Gates.md) | Gate progression model from authorization activation through freeze readiness | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Stop-Conditions.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Stop-Conditions.md) | Immediate stop triggers, governance stop triggers, and re-open procedure | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/Risk-Assessment.md](genesis/engineering/packages/GCI-AUTH-P2-0001/Risk-Assessment.md) | Authorization risk profile, severity assessment, and mitigation controls | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-AUTH-P2-0001/LIFECYCLE-METADATA.md) | Lifecycle and publication metadata for the IBR authorization package | 3 min |
 
 ---
 
