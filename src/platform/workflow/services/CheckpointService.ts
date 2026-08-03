@@ -1,14 +1,30 @@
 import { randomUUID } from "node:crypto";
-import type { WorkflowCheckpoint, WorkflowContext, WorkflowState } from "../contracts";
+import type { WorkflowCheckpoint, WorkflowContext, WorkflowState, WorkflowVersion } from "../contracts";
 
 export class CheckpointService {
   private readonly checkpointsByInstance = new Map<string, WorkflowCheckpoint[]>();
 
-  checkpoint(input: { instanceId: string; stepId: string; state: WorkflowState; context: WorkflowContext }): WorkflowCheckpoint {
+  checkpoint(input: {
+    instanceId: string;
+    workflowVersion: WorkflowVersion;
+    workflowInstanceVersion: number;
+    stepId: string;
+    executionPositionStepId: string | null;
+    completedStepIds: string[];
+    state: WorkflowState;
+    context: WorkflowContext;
+    transitionVersion: number;
+    executionSequence: number;
+    recoveryVersion: number;
+  }): WorkflowCheckpoint {
     const checkpoint: WorkflowCheckpoint = {
       checkpointId: randomUUID(),
       instanceId: input.instanceId,
+      workflowVersion: { ...input.workflowVersion },
+      workflowInstanceVersion: input.workflowInstanceVersion,
       stepId: input.stepId,
+      executionPositionStepId: input.executionPositionStepId,
+      completedStepIds: [...input.completedStepIds],
       state: input.state,
       context: {
         tenant: input.context.tenant,
@@ -16,6 +32,9 @@ export class CheckpointService {
         initiatedBy: input.context.initiatedBy,
         variables: { ...input.context.variables },
       },
+      transitionVersion: input.transitionVersion,
+      executionSequence: input.executionSequence,
+      recoveryVersion: input.recoveryVersion,
       createdAt: new Date().toISOString(),
     };
 
@@ -41,6 +60,8 @@ export class CheckpointService {
   listAll(): WorkflowCheckpoint[] {
     return [...this.checkpointsByInstance.values()].flat().map((item) => ({
       ...item,
+      workflowVersion: { ...item.workflowVersion },
+      completedStepIds: [...item.completedStepIds],
       context: {
         tenant: item.context.tenant,
         workspace: item.context.workspace,
@@ -56,6 +77,8 @@ export class CheckpointService {
       const existing = this.checkpointsByInstance.get(checkpoint.instanceId) ?? [];
       existing.push({
         ...checkpoint,
+        workflowVersion: { ...checkpoint.workflowVersion },
+        completedStepIds: [...checkpoint.completedStepIds],
         context: {
           tenant: checkpoint.context.tenant,
           workspace: checkpoint.context.workspace,

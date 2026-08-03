@@ -661,4 +661,228 @@ describe("GWF-1001B workflow platform hardening", () => {
     expect(after.averageExecutionDurationMs).toBeGreaterThan(0);
     expect(after.averageStepDurationMs).toBeGreaterThan(0);
   });
+
+  it("recovers running instance to checkpoint execution position without replaying completed step", async () => {
+    const state = createState();
+    let startExecutions = 0;
+    let reviewExecutions = 0;
+
+    const first = createEngine({ state });
+    await first.engine.waitUntilReady();
+    await first.engine.registerWorkflow(buildDefinition({
+      steps: [
+        {
+          id: "start",
+          name: "Start",
+          action: async () => {
+            startExecutions += 1;
+            return { status: "SUCCESS" };
+          },
+          transitions: [{ id: "to-review", toStepId: "review" }],
+        },
+        {
+          id: "review",
+          name: "Review",
+          action: async () => {
+            reviewExecutions += 1;
+            return { status: "PAUSE" };
+          },
+        },
+      ],
+    }));
+
+    const created = await first.engine.createInstance({ definitionId: "workflow.orders", context: { tenant: "t", workspace: "w", variables: {} } });
+    await first.engine.execute(created.instanceId);
+
+    const persisted = state.instances.find((entry) => entry.instanceId === created.instanceId);
+    if (!persisted) {
+      throw new Error("test_setup_failed");
+    }
+
+    persisted.state = "RUNNING";
+    persisted.currentStepId = "start";
+
+    const second = createEngine({ state });
+    await second.engine.waitUntilReady();
+    const recovered = await second.engine.getInstance(created.instanceId);
+
+    expect(recovered.state).toBe("PAUSED");
+    expect(recovered.currentStepId).toBe("review");
+    expect(recovered.executedStepIds).toEqual(["start"]);
+    expect(startExecutions).toBe(1);
+    expect(reviewExecutions).toBe(1);
+  });
+
+  it("fails ambiguous recovery when running instance has missing checkpoint", async () => {
+    const state = createState();
+    const first = createEngine({ state });
+    await first.engine.waitUntilReady();
+    await first.engine.registerWorkflow(buildDefinition());
+    const created = await first.engine.createInstance({ definitionId: "workflow.orders", context: { tenant: "t", workspace: "w", variables: {} } });
+    await first.engine.execute(created.instanceId);
+
+    const persisted = state.instances.find((entry) => entry.instanceId === created.instanceId);
+    if (!persisted) {
+      throw new Error("test_setup_failed");
+    }
+
+    persisted.state = "RUNNING";
+    state.checkpoints = state.checkpoints.filter((entry) => entry.instanceId !== created.instanceId);
+
+    const second = createEngine({ state });
+    await second.engine.waitUntilReady();
+    const recovered = await second.engine.getInstance(created.instanceId);
+
+    expect(recovered.state).toBe("FAILED");
+    expect(recovered.failureReason).toContain("workflow_recovery_ambiguous");
+  });
+
+  it("fails ambiguous recovery on checkpoint pointer mismatch", async () => {
+    const state = createState();
+    const first = createEngine({ state });
+    await first.engine.waitUntilReady();
+    await first.engine.registerWorkflow(buildDefinition({
+      steps: [{ id: "start", name: "Start", action: async () => ({ status: "PAUSE" }) }],
+    }));
+
+    const created = await first.engine.createInstance({ definitionId: "workflow.orders", context: { tenant: "t", workspace: "w", variables: {} } });
+    await first.engine.execute(created.instanceId);
+
+    const persisted = state.instances.find((entry) => entry.instanceId === created.instanceId);
+    if (!persisted) {
+      throw new Error("test_setup_failed");
+    }
+
+    persisted.lastCheckpointId = "checkpoint-mismatch";
+
+    const second = createEngine({ state });
+    await second.engine.waitUntilReady();
+    const recovered = await second.engine.getInstance(created.instanceId);
+    expect(recovered.state).toBe("FAILED");
+    expect(recovered.failureReason).toContain("checkpoint_pointer_mismatch");
+  });
+
+  it("keeps deterministic recovery across multiple restart cycles", async () => {
+    const state = createState();
+    const first = createEngine({ state });
+    await first.engine.waitUntilReady();
+    await first.engine.registerWorkflow(buildDefinition({
+      steps: [{ id: "start", name: "Start", action: async () => ({ status: "PAUSE" }) }],
+    }));
+
+    const created = await first.engine.createInstance({ definitionId: "workflow.orders", context: { tenant: "t", workspace: "w", variables: {} } });
+    await first.engine.execute(created.instanceId);
+
+    const second = createEngine({ state });
+    await second.engine.waitUntilReady();
+    const secondInstance = await second.engine.getInstance(created.instanceId);
+
+    const third = createEngine({ state });
+    await third.engine.waitUntilReady();
+    const thirdInstance = await third.engine.getInstance(created.instanceId);
+
+    expect(secondInstance.currentStepId).toBe(thirdInstance.currentStepId);
+    expect(secondInstance.executedStepIds).toEqual(thirdInstance.executedStepIds);
+    expect(secondInstance.state).toBe(thirdInstance.state);
+  });
+
+  it("persists timeout state across restart", async () => {
+    const state = createState();
+    const first = createEngine({ state });
+    await first.engine.waitUntilReady();
+    await first.engine.registerWorkflow(buildDefinition({
+      steps: [
+        {
+          id: "start",
+          name: "Start",
+          retryPolicy: { maxAttempts: 1 },
+          timeout: { timeoutMs: 5 },
+          action: async () => {
+            await pause(20);
+            return { status: "SUCCESS" };
+          },
+        },
+      ],
+    }));
+
+    const created = await first.engine.createInstance({ definitionId: "workflow.orders", context: { tenant: "t", workspace: "w", variables: {} } });
+    await first.engine.execute(created.instanceId);
+
+    const second = createEngine({ state });
+    await second.engine.waitUntilReady();
+    expect(state.timeouts.length).toBeGreaterThan(0);
+  });
+
+  it("persists compensation records across restart", async () => {
+    const state = createState();
+    const first = createEngine({ state });
+    await first.engine.waitUntilReady();
+    await first.engine.registerWorkflow(buildDefinition({
+      steps: [
+        {
+          id: "start",
+          name: "Start",
+          action: async () => ({ status: "SUCCESS" }),
+          compensationAction: async () => ({ status: "SUCCESS" }),
+          transitions: [{ id: "to-fail", toStepId: "fail" }],
+        },
+        {
+          id: "fail",
+          name: "Fail",
+          action: async () => ({ status: "FAILURE", error: "fatal" }),
+        },
+      ],
+    }));
+
+    const created = await first.engine.createInstance({ definitionId: "workflow.orders", context: { tenant: "t", workspace: "w", variables: {} } });
+    await first.engine.execute(created.instanceId);
+
+    const second = createEngine({ state });
+    await second.engine.waitUntilReady();
+    expect(state.compensations.length).toBeGreaterThan(0);
+  });
+
+  it("recovers after lifecycle publish failure without duplicating committed step execution", async () => {
+    const state = createState();
+    let startExecutions = 0;
+
+    const first = createEngine({ state, publishFailure: true });
+    await first.engine.waitUntilReady();
+    await first.engine.registerWorkflow(buildDefinition({
+      steps: [
+        {
+          id: "start",
+          name: "Start",
+          action: async () => {
+            startExecutions += 1;
+            return { status: "SUCCESS" };
+          },
+          transitions: [{ id: "to-pause", toStepId: "pause" }],
+        },
+        {
+          id: "pause",
+          name: "Pause",
+          action: async () => ({ status: "PAUSE" }),
+        },
+      ],
+    }));
+
+    const created = await first.engine.createInstance({ definitionId: "workflow.orders", context: { tenant: "t", workspace: "w", variables: {} } });
+    await first.engine.execute(created.instanceId);
+
+    const persisted = state.instances.find((entry) => entry.instanceId === created.instanceId);
+    if (!persisted) {
+      throw new Error("test_setup_failed");
+    }
+
+    persisted.state = "RUNNING";
+    persisted.currentStepId = "start";
+
+    const second = createEngine({ state, publishFailure: true });
+    await second.engine.waitUntilReady();
+    const recovered = await second.engine.getInstance(created.instanceId);
+
+    expect(recovered.currentStepId).toBe("pause");
+    expect(startExecutions).toBe(1);
+  });
 });

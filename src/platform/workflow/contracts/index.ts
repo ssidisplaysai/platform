@@ -86,9 +86,16 @@ export type WorkflowStep = {
 export type WorkflowCheckpoint = {
   checkpointId: string;
   instanceId: string;
+  workflowVersion: WorkflowVersion;
+  workflowInstanceVersion: number;
   stepId: string;
+  executionPositionStepId: string | null;
+  completedStepIds: string[];
   state: WorkflowState;
   context: WorkflowContext;
+  transitionVersion: number;
+  executionSequence: number;
+  recoveryVersion: number;
   createdAt: string;
 };
 
@@ -156,6 +163,10 @@ export type WorkflowInstance = {
   definitionId: string;
   idempotencyKey: string;
   version: number;
+  transitionVersion: number;
+  executionSequence: number;
+  recoveryVersion: number;
+  lastCheckpointId?: string;
   state: WorkflowState;
   currentStepId: string | null;
   context: WorkflowContext;

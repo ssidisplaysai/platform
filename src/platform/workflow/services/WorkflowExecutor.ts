@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { WorkflowDefinition, WorkflowInstance, WorkflowState } from "../contracts";
+import type { WorkflowCheckpoint, WorkflowDefinition, WorkflowInstance, WorkflowState } from "../contracts";
 import { CheckpointService } from "./CheckpointService";
 import { CompensationService } from "./CompensationService";
 import { ContextManager } from "./ContextManager";
@@ -21,7 +21,7 @@ export class WorkflowExecutor {
     private readonly metrics: WorkflowMetricsService,
     private readonly callbacks?: {
       onExecutionRecord?: (input: { instance: WorkflowInstance; stepId: string; attempt: number }) => Promise<void>;
-      onCheckpoint?: (input: { instance: WorkflowInstance; stepId: string; state: WorkflowState }) => Promise<void>;
+      onCheckpoint?: (input: { instance: WorkflowInstance; checkpoint: WorkflowCheckpoint }) => Promise<void>;
       onRetry?: (input: { instance: WorkflowInstance; stepId: string; attempt: number; reason: string }) => Promise<void>;
       onRetryResolved?: (input: { instance: WorkflowInstance; stepId: string }) => Promise<void>;
       onTimeout?: (input: { instance: WorkflowInstance; stepId: string; timeoutMs: number }) => Promise<void>;
@@ -109,14 +109,24 @@ export class WorkflowExecutor {
             });
             this.metrics.trackAuditRecord();
 
-            this.checkpointService.checkpoint({
+            const checkpoint = this.checkpointService.checkpoint({
               instanceId: instance.instanceId,
+              workflowVersion: definition.version,
+              workflowInstanceVersion: instance.version,
               stepId: step.id,
+              executionPositionStepId: step.id,
+              completedStepIds: instance.executedStepIds,
               state: instance.state,
               context: instance.context,
+              transitionVersion: instance.transitionVersion,
+              executionSequence: instance.executionSequence + 1,
+              recoveryVersion: instance.recoveryVersion,
             });
+
+            instance.executionSequence = checkpoint.executionSequence;
+            instance.lastCheckpointId = checkpoint.checkpointId;
             this.metrics.trackCheckpoint();
-            await this.callbacks?.onCheckpoint?.({ instance, stepId: step.id, state: instance.state });
+            await this.callbacks?.onCheckpoint?.({ instance, checkpoint });
             return instance;
           }
 
@@ -141,16 +151,27 @@ export class WorkflowExecutor {
           }
 
           instance.currentStepId = nextStepId;
+          instance.transitionVersion += 1;
           instance.updatedAt = new Date().toISOString();
 
-          this.checkpointService.checkpoint({
+          const checkpoint = this.checkpointService.checkpoint({
             instanceId: instance.instanceId,
+            workflowVersion: definition.version,
+            workflowInstanceVersion: instance.version,
             stepId: step.id,
+            executionPositionStepId: nextStepId,
+            completedStepIds: instance.executedStepIds,
             state: instance.state,
             context: instance.context,
+            transitionVersion: instance.transitionVersion,
+            executionSequence: instance.executionSequence + 1,
+            recoveryVersion: instance.recoveryVersion,
           });
+
+          instance.executionSequence = checkpoint.executionSequence;
+          instance.lastCheckpointId = checkpoint.checkpointId;
           this.metrics.trackCheckpoint();
-          await this.callbacks?.onCheckpoint?.({ instance, stepId: step.id, state: instance.state });
+          await this.callbacks?.onCheckpoint?.({ instance, checkpoint });
           break;
         } catch (error) {
           const reason = error instanceof Error ? error.message : "workflow_step_failure";

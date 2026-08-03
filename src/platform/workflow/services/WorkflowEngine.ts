@@ -3,9 +3,11 @@ import type { MessageEnvelope, Publisher } from "@/platform/messaging";
 import { getGenesisMessageBus } from "@/platform/messaging";
 import { getGenesisAuthenticationService } from "@/platform/identity/services";
 import type {
+  WorkflowCheckpoint,
   WorkflowContext,
   WorkflowDefinition,
   WorkflowEventType,
+  WorkflowExecutionRecord,
   WorkflowInstance,
   WorkflowState,
 } from "../contracts";
@@ -111,13 +113,24 @@ export class WorkflowEngine {
             await this.persistence.executionHistoryStore.append(record);
           }
         },
-        onCheckpoint: async ({ instance, stepId, state }) => {
-          const checkpoint = this.checkpoints.latest(instance.instanceId);
-          if (!checkpoint || checkpoint.stepId !== stepId || checkpoint.state !== state) {
+        onCheckpoint: async ({ instance, checkpoint }) => {
+          const latest = this.checkpoints.latest(instance.instanceId);
+          if (!latest || latest.checkpointId !== checkpoint.checkpointId) {
             throw new Error("workflow_checkpoint_integrity_failure");
           }
 
-          await this.persistence.checkpointStore.append(checkpoint);
+          const isReplayPosition =
+            Boolean(checkpoint.executionPositionStepId) &&
+            checkpoint.completedStepIds.includes(checkpoint.executionPositionStepId as string);
+          if (isReplayPosition) {
+            throw new Error("workflow_checkpoint_integrity_failure");
+          }
+
+          if (checkpoint.executionSequence <= 0 || checkpoint.transitionVersion < 0) {
+            throw new Error("workflow_checkpoint_integrity_failure");
+          }
+
+          await this.persistence.checkpointStore.append(latest);
         },
         onRetry: async ({ instance, stepId, attempt, reason }) => {
           await this.persistence.retryStore.append({
@@ -188,6 +201,9 @@ export class WorkflowEngine {
       definitionId: definition.id,
       idempotencyKey: input.idempotencyKey ?? randomUUID(),
       version: 1,
+      transitionVersion: 0,
+      executionSequence: 0,
+      recoveryVersion: 0,
       state: "CREATED",
       currentStepId: definition.initialStepId,
       context: {
@@ -291,8 +307,28 @@ export class WorkflowEngine {
         throw new Error(`workflow_checkpoint_missing:${instance.instanceId}`);
       }
 
+      const ambiguity = this.recoveryAmbiguityReason(instance, checkpoint, this.executionHistory.list(instance.instanceId));
+      if (ambiguity) {
+        throw new Error(`workflow_checkpoint_ambiguous:${instance.instanceId}:${ambiguity}`);
+      }
+
+      if (!checkpoint.executionPositionStepId) {
+        throw new Error(`workflow_checkpoint_ambiguous:${instance.instanceId}:missing_execution_position`);
+      }
+
       instance.state = "CREATED";
-      instance.currentStepId = checkpoint.stepId;
+      instance.currentStepId = checkpoint.executionPositionStepId;
+      instance.context = {
+        tenant: checkpoint.context.tenant,
+        workspace: checkpoint.context.workspace,
+        initiatedBy: checkpoint.context.initiatedBy,
+        variables: { ...checkpoint.context.variables },
+      };
+      instance.executedStepIds = [...checkpoint.completedStepIds];
+      instance.transitionVersion = checkpoint.transitionVersion;
+      instance.executionSequence = checkpoint.executionSequence;
+      instance.recoveryVersion = checkpoint.recoveryVersion;
+      instance.lastCheckpointId = checkpoint.checkpointId;
       instance.updatedAt = new Date().toISOString();
       await this.writeAudit(instance, "WORKFLOW_RESUMED", "Workflow resumed");
       await this.publishLifecycleEvent(instance, "WORKFLOW_RESUMED", { stepId: instance.currentStepId ?? null });
@@ -416,7 +452,14 @@ export class WorkflowEngine {
     this.registry.restore(snapshot.definitions);
 
     const validCheckpoints = snapshot.checkpoints.filter((entry) => {
-      const valid = Boolean(entry.instanceId && entry.stepId && entry.createdAt);
+      const valid = Boolean(
+        entry.instanceId &&
+        entry.stepId &&
+        entry.createdAt &&
+        entry.workflowVersion &&
+        Array.isArray(entry.completedStepIds) &&
+        entry.executionSequence > 0,
+      );
       if (!valid) {
         this.metrics.trackContextPersistenceFailure();
       }
@@ -427,17 +470,59 @@ export class WorkflowEngine {
     this.executionHistory.restore(snapshot.executionHistory);
     this.auditWriter.restore(snapshot.audits);
 
+    const checkpointsByInstance = new Map<string, WorkflowCheckpoint>();
+    for (const checkpoint of validCheckpoints) {
+      const current = checkpointsByInstance.get(checkpoint.instanceId);
+      if (!current || checkpoint.executionSequence > current.executionSequence) {
+        checkpointsByInstance.set(checkpoint.instanceId, checkpoint);
+      }
+    }
+
     this.instances.clear();
     for (const instance of snapshot.instances) {
       const restored = this.cloneInstance({
         ...instance,
         version: instance.version ?? 1,
         idempotencyKey: instance.idempotencyKey ?? instance.instanceId,
+        transitionVersion: instance.transitionVersion ?? 0,
+        executionSequence: instance.executionSequence ?? 0,
+        recoveryVersion: instance.recoveryVersion ?? 0,
       });
+      const checkpoint = checkpointsByInstance.get(restored.instanceId) ?? null;
 
-      if (restored.state === "RUNNING") {
+      if (checkpoint) {
+        restored.context = {
+          tenant: checkpoint.context.tenant,
+          workspace: checkpoint.context.workspace,
+          initiatedBy: checkpoint.context.initiatedBy,
+          variables: { ...checkpoint.context.variables },
+        };
+        restored.executedStepIds = [...checkpoint.completedStepIds];
+        restored.currentStepId = checkpoint.executionPositionStepId;
+        restored.transitionVersion = checkpoint.transitionVersion;
+        restored.executionSequence = checkpoint.executionSequence;
+        restored.recoveryVersion = Math.max(restored.recoveryVersion, checkpoint.recoveryVersion);
+      }
+
+      const ambiguity = this.recoveryAmbiguityReason(
+        restored,
+        checkpoint,
+        snapshot.executionHistory.filter((record) => record.instanceId === restored.instanceId),
+      );
+      if (ambiguity) {
+        restored.state = "FAILED";
+        restored.failureReason = `workflow_recovery_ambiguous:${ambiguity}`;
+        restored.updatedAt = new Date().toISOString();
+        this.metrics.trackContextPersistenceFailure();
+      } else if (!restored.lastCheckpointId && checkpoint) {
+        restored.lastCheckpointId = checkpoint.checkpointId;
+      }
+
+      if (!ambiguity && restored.state === "RUNNING") {
         restored.state = "PAUSED";
         restored.failureReason = "workflow_recovered_from_running_state";
+        restored.recoveryVersion += 1;
+        restored.updatedAt = new Date().toISOString();
       }
 
       this.instances.set(restored.instanceId, restored);
@@ -449,6 +534,52 @@ export class WorkflowEngine {
 
     this.metrics.trackRecovery(snapshot.instances.length);
     await this.refreshOperationalMetrics();
+  }
+
+  private recoveryAmbiguityReason(
+    instance: WorkflowInstance,
+    checkpoint: WorkflowCheckpoint | null,
+    history: WorkflowExecutionRecord[],
+  ): string | null {
+    const requiresCheckpoint = instance.state === "RUNNING" || instance.state === "PAUSED";
+    if (requiresCheckpoint && !checkpoint) {
+      return "missing_checkpoint";
+    }
+
+    if (!checkpoint) {
+      return null;
+    }
+
+    if (instance.lastCheckpointId && instance.lastCheckpointId !== checkpoint.checkpointId) {
+      return "checkpoint_pointer_mismatch";
+    }
+
+    if (checkpoint.executionPositionStepId && checkpoint.completedStepIds.includes(checkpoint.executionPositionStepId)) {
+      return "replay_position_conflict";
+    }
+
+    const successfulSteps = history
+      .filter((record) => record.result.status === "SUCCESS")
+      .map((record) => record.stepId);
+
+    const uniqueSuccessfulSteps: string[] = [];
+    for (const stepId of successfulSteps) {
+      if (uniqueSuccessfulSteps[uniqueSuccessfulSteps.length - 1] !== stepId) {
+        uniqueSuccessfulSteps.push(stepId);
+      }
+    }
+
+    if (checkpoint.completedStepIds.length > uniqueSuccessfulSteps.length) {
+      return "history_gap";
+    }
+
+    for (let index = 0; index < checkpoint.completedStepIds.length; index += 1) {
+      if (checkpoint.completedStepIds[index] !== uniqueSuccessfulSteps[index]) {
+        return "history_mismatch";
+      }
+    }
+
+    return null;
   }
 
   private async runCommand(
@@ -523,6 +654,9 @@ export class WorkflowEngine {
             definitionId: "unknown",
             idempotencyKey: "unknown",
             version: 1,
+            transitionVersion: 0,
+            executionSequence: 0,
+            recoveryVersion: 0,
             state: "FAILED",
             currentStepId: null,
             context: { tenant: "unknown", workspace: "unknown", variables: {} },
