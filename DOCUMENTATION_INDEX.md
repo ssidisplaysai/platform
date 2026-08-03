@@ -100,7 +100,21 @@
 | [genesis/engineering/packages/GCI-P1-0005/Test-Summary.md](genesis/engineering/packages/GCI-P1-0005/Test-Summary.md) | Test execution summary for deterministic replay runtime behavior and architecture boundaries | 4 min |
 | [genesis/engineering/packages/GCI-P1-0005/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0005/Coverage-Summary.md) | Coverage summary for replay runtime implementation scope | 4 min |
 | [genesis/engineering/packages/GCI-P1-0005/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0005/Certification-Evidence.md) | Implementation-phase evidence set for future independent certification review readiness | 4 min |
+| [genesis/engineering/packages/GCI-P1-0005/GCI-P1-0005-Freeze-Report.md](genesis/engineering/packages/GCI-P1-0005/GCI-P1-0005-Freeze-Report.md) | Freeze closeout record for replay runtime integrated production baseline | 4 min |
 | [genesis/engineering/packages/GCI-P1-0005/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0005/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0005 | 3 min |
+| [genesis/engineering/packages/GCF-1.1/README.md](genesis/engineering/packages/GCF-1.1/README.md) | Constitutional foundation release package identity and scope constraints for Genesis Compiler Foundation v1.1 | 3 min |
+| [genesis/engineering/packages/GCF-1.1/Genesis-Compiler-Foundation-v1.1.md](genesis/engineering/packages/GCF-1.1/Genesis-Compiler-Foundation-v1.1.md) | Canonical constitutional declaration of Phase 1 runtime foundation completion and permanent substrate adoption | 6 min |
+| [genesis/engineering/packages/GCF-1.1/Executive-Summary.md](genesis/engineering/packages/GCF-1.1/Executive-Summary.md) | Executive statement of foundation completion and governance-only release boundaries | 4 min |
+| [genesis/engineering/packages/GCF-1.1/Architecture-Principles.md](genesis/engineering/packages/GCF-1.1/Architecture-Principles.md) | Permanent architectural laws established by Phase 1 runtime closeout | 5 min |
+| [genesis/engineering/packages/GCF-1.1/Runtime-Architecture.md](genesis/engineering/packages/GCF-1.1/Runtime-Architecture.md) | Runtime stack layering and one-way dependency direction for permanent substrate | 5 min |
+| [genesis/engineering/packages/GCF-1.1/Governance-Summary.md](genesis/engineering/packages/GCF-1.1/Governance-Summary.md) | Standard lifecycle governance workflow established through Phase 1 execution | 4 min |
+| [genesis/engineering/packages/GCF-1.1/Engineering-Standards.md](genesis/engineering/packages/GCF-1.1/Engineering-Standards.md) | Determinism, immutability, lineage, guardrail, and certification standards baseline | 5 min |
+| [genesis/engineering/packages/GCF-1.1/Frozen-Baselines.md](genesis/engineering/packages/GCF-1.1/Frozen-Baselines.md) | Production baseline register for all Phase 1 runtime integrated and frozen tags | 5 min |
+| [genesis/engineering/packages/GCF-1.1/Lessons-Learned.md](genesis/engineering/packages/GCF-1.1/Lessons-Learned.md) | Architecture and governance lessons captured from full Phase 1 execution | 4 min |
+| [genesis/engineering/packages/GCF-1.1/Phase-2-Roadmap.md](genesis/engineering/packages/GCF-1.1/Phase-2-Roadmap.md) | Ordered architectural progression record for future Phase 2 runtime domains without implementation authorization | 4 min |
+| [genesis/engineering/packages/GCF-1.1/Certification-Summary.md](genesis/engineering/packages/GCF-1.1/Certification-Summary.md) | Consolidated certification closeout summary across GCI-P1-0001 through GCI-P1-0005 | 4 min |
+| [genesis/engineering/packages/GCF-1.1/Repository-Health.md](genesis/engineering/packages/GCF-1.1/Repository-Health.md) | Repository parity, governance health, and readiness snapshot for foundation release | 4 min |
+| [genesis/engineering/packages/GCF-1.1/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCF-1.1/LIFECYCLE-METADATA.md) | Lifecycle closure metadata for constitutional foundation release completion | 3 min |
 
 ---
 
