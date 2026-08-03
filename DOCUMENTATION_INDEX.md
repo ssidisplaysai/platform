@@ -85,6 +85,14 @@
 | [genesis/engineering/packages/GCI-P1-0003/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0003/Coverage-Summary.md) | Coverage summary for evidence validation runtime implementation scope | 4 min |
 | [genesis/engineering/packages/GCI-P1-0003/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0003/Certification-Evidence.md) | Certification evidence set for GCI-P1-0003 independent review readiness | 4 min |
 | [genesis/engineering/packages/GCI-P1-0003/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0003/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0003 | 3 min |
+| [genesis/engineering/packages/GCI-P1-0004/README.md](genesis/engineering/packages/GCI-P1-0004/README.md) | Phase 1 package identity and scope for manifest runtime implementation | 3 min |
+| [genesis/engineering/packages/GCI-P1-0004/Implementation-Report.md](genesis/engineering/packages/GCI-P1-0004/Implementation-Report.md) | Manifest runtime implementation details, deterministic behavior, and scope closure | 6 min |
+| [genesis/engineering/packages/GCI-P1-0004/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P1-0004/Architecture-Compliance-Report.md) | Architecture compliance validation for authorized manifest-runtime-only scope | 6 min |
+| [genesis/engineering/packages/GCI-P1-0004/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P1-0004/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for manifest runtime subset obligations | 5 min |
+| [genesis/engineering/packages/GCI-P1-0004/Test-Summary.md](genesis/engineering/packages/GCI-P1-0004/Test-Summary.md) | Test execution summary for deterministic manifest runtime behavior and architecture boundaries | 4 min |
+| [genesis/engineering/packages/GCI-P1-0004/Coverage-Summary.md](genesis/engineering/packages/GCI-P1-0004/Coverage-Summary.md) | Coverage summary for manifest runtime implementation scope | 4 min |
+| [genesis/engineering/packages/GCI-P1-0004/Certification-Evidence.md](genesis/engineering/packages/GCI-P1-0004/Certification-Evidence.md) | Implementation-phase evidence set for future independent certification review readiness | 4 min |
+| [genesis/engineering/packages/GCI-P1-0004/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P1-0004/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P1-0004 | 3 min |
 
 ---
 

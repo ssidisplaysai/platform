@@ -58,6 +58,7 @@ export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export { CompilerRuntimeHost } from "./runtime";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./runtime";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./runtime";
+export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./runtime";
 export {
 	BUSINESS_GENOME_SEMANTIC_CLASSES,
 	BUSINESS_GENOME_RELATIONSHIP_CLASSES,
@@ -140,8 +141,24 @@ export type {
 	EvidenceValidationRuntimeRegistryOptions,
 	EvidenceValidationRuntimeRule as RuntimeEvidenceValidationRuntimeRule,
 	EvidenceValidationRuntimeRuleResult,
+	ManifestRuntimeCertificationTrace,
+	ManifestRuntimeCheck,
+	ManifestRuntimeCheckStatus,
+	ManifestRuntimeCreateOptions,
+	ManifestRuntimeEntry,
+	ManifestRuntimeFactoryConfiguration,
+	ManifestRuntimeFactoryOptions,
+	ManifestRuntimeLifecycleIntegrity,
+	ManifestRuntimeOutcome,
+	ManifestRuntimeRecord,
+	ManifestRuntimeRegistryOptions,
+	ManifestRuntimeReplayTrace,
+	ManifestRuntimeRule as RuntimeManifestRuntimeRule,
+	ManifestRuntimeRuleResult,
+	ManifestRuntimeVersion,
 	HealthCheckResult,
 	HealthStatus,
+	RegisteredManifestRuntime,
 	RegisteredEvidenceRuntime,
 	RegisteredEvidenceValidationRuntime,
 	ReplayContext,
