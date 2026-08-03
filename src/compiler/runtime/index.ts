@@ -1,4 +1,5 @@
 export { CompilerRuntimeHost } from "./foundation/index";
+export { EntityRuntimeFactory, EntityRuntimeRegistry } from "./entity/index";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./evidence-validation/index";
 export { IBRRuntimeFactory, IBRRuntimeRegistry } from "./ibr/index";
@@ -24,6 +25,34 @@ export type {
   RuntimeManifest,
   StructuredDiagnostic,
 } from "./foundation/index";
+
+export type {
+  EntityAlias,
+  EntityClass,
+  EntityConfidenceRecord,
+  EntityDuplicateLink,
+  EntityIdentityObservation,
+  EntityIdentityResolutionStatus,
+  EntityLineage,
+  EntityNameType,
+  EntityObservationStance,
+  EntityRuntimeCheck,
+  EntityRuntimeCheckStatus,
+  EntityRuntimeCreateInput,
+  EntityRuntimeCreateOptions,
+  EntityRuntimeFactoryConfiguration,
+  EntityRuntimeFactoryOptions,
+  EntityRuntimeLifecycle,
+  EntityRuntimeLifecycleEvent,
+  EntityRuntimeLifecycleState,
+  EntityRuntimeOutcome,
+  EntityRuntimeRecord,
+  EntityRuntimeRegistryOptions,
+  EntityRuntimeRule,
+  EntityRuntimeRuleResult,
+  EntityVersion,
+  RegisteredEntityRuntime,
+} from "./entity/index";
 
 export type {
   EvidenceClassification,

@@ -1,0 +1,30 @@
+export { EntityRuntimeFactory } from "./EntityRuntimeFactory";
+export { EntityRuntimeRegistry } from "./EntityRuntimeRegistry";
+
+export type {
+  EntityAlias,
+  EntityClass,
+  EntityConfidenceRecord,
+  EntityDuplicateLink,
+  EntityIdentityObservation,
+  EntityIdentityResolutionStatus,
+  EntityLineage,
+  EntityNameType,
+  EntityObservationStance,
+  EntityRuntimeCheck,
+  EntityRuntimeCheckStatus,
+  EntityRuntimeCreateInput,
+  EntityRuntimeCreateOptions,
+  EntityRuntimeFactoryConfiguration,
+  EntityRuntimeFactoryOptions,
+  EntityRuntimeLifecycle,
+  EntityRuntimeLifecycleEvent,
+  EntityRuntimeLifecycleState,
+  EntityRuntimeOutcome,
+  EntityRuntimeRecord,
+  EntityRuntimeRegistryOptions,
+  EntityRuntimeRule,
+  EntityRuntimeRuleResult,
+  EntityVersion,
+  RegisteredEntityRuntime,
+} from "./contracts";

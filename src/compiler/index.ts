@@ -56,6 +56,7 @@ export { CompilerVersionManager } from "./core/CompilerVersionManager";
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export { CompilerRuntimeHost } from "./runtime";
+export { EntityRuntimeFactory, EntityRuntimeRegistry } from "./runtime";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./runtime";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./runtime";
 export { IBRRuntimeFactory, IBRRuntimeRegistry } from "./runtime";
@@ -106,6 +107,30 @@ export type {
 	CompilerRuntimeState,
 	CompilerSession,
 	DiagnosticSeverity,
+	EntityAlias,
+	EntityClass,
+	EntityConfidenceRecord,
+	EntityDuplicateLink,
+	EntityIdentityObservation,
+	EntityIdentityResolutionStatus,
+	EntityLineage,
+	EntityNameType,
+	EntityObservationStance,
+	EntityRuntimeCheck,
+	EntityRuntimeCheckStatus,
+	EntityRuntimeCreateInput,
+	EntityRuntimeCreateOptions,
+	EntityRuntimeFactoryConfiguration,
+	EntityRuntimeFactoryOptions,
+	EntityRuntimeLifecycle,
+	EntityRuntimeLifecycleEvent,
+	EntityRuntimeLifecycleState,
+	EntityRuntimeOutcome,
+	EntityRuntimeRecord,
+	EntityRuntimeRegistryOptions,
+	EntityRuntimeRule,
+	EntityRuntimeRuleResult,
+	EntityVersion,
 	EvidenceClassification,
 	EvidenceClassificationLevel,
 	EvidenceCertificationReference,
@@ -187,6 +212,7 @@ export type {
 	RegisteredManifestRuntime,
 	RegisteredEvidenceRuntime,
 	RegisteredEvidenceValidationRuntime,
+	RegisteredEntityRuntime,
 	RegisteredReplayRuntime,
 	ReplayContext,
 	RuntimeHealth,
