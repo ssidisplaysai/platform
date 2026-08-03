@@ -115,6 +115,35 @@
 | [genesis/engineering/packages/GCF-1.1/Certification-Summary.md](genesis/engineering/packages/GCF-1.1/Certification-Summary.md) | Consolidated certification closeout summary across GCI-P1-0001 through GCI-P1-0005 | 4 min |
 | [genesis/engineering/packages/GCF-1.1/Repository-Health.md](genesis/engineering/packages/GCF-1.1/Repository-Health.md) | Repository parity, governance health, and readiness snapshot for foundation release | 4 min |
 | [genesis/engineering/packages/GCF-1.1/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCF-1.1/LIFECYCLE-METADATA.md) | Lifecycle closure metadata for constitutional foundation release completion | 3 min |
+| [genesis/engineering/packages/GCI-P2-0000/README.md](genesis/engineering/packages/GCI-P2-0000/README.md) | Phase 2 master architecture package identity and governance-only scope boundaries | 3 min |
+| [genesis/engineering/packages/GCI-P2-0000/Executive-Summary.md](genesis/engineering/packages/GCI-P2-0000/Executive-Summary.md) | Executive architecture summary for deterministic business semantics foundation | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Business-Semantics-Vision.md](genesis/engineering/packages/GCI-P2-0000/Business-Semantics-Vision.md) | Long-horizon vision for compiling business understanding into canonical genome state | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Architectural-Principles.md](genesis/engineering/packages/GCI-P2-0000/Architectural-Principles.md) | Permanent constitutional principles governing Phase 2 semantic architecture | 6 min |
+| [genesis/engineering/packages/GCI-P2-0000/Runtime-Dependency-Model.md](genesis/engineering/packages/GCI-P2-0000/Runtime-Dependency-Model.md) | One-way runtime dependency model from replay to business genome assembly | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Business-Semantic-Lifecycle.md](genesis/engineering/packages/GCI-P2-0000/Business-Semantic-Lifecycle.md) | Semantic lifecycle stages from observation interpretation through genome publication | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Canonical-Domain-Model.md](genesis/engineering/packages/GCI-P2-0000/Canonical-Domain-Model.md) | Canonical glossary and domain definitions for Phase 2 business semantics | 6 min |
+| [genesis/engineering/packages/GCI-P2-0000/Runtime-Responsibilities.md](genesis/engineering/packages/GCI-P2-0000/Runtime-Responsibilities.md) | Responsibilities, contracts, invariants, and forbidden scopes for Phase 2 runtimes | 7 min |
+| [genesis/engineering/packages/GCI-P2-0000/Identity-Model.md](genesis/engineering/packages/GCI-P2-0000/Identity-Model.md) | Deterministic canonical identity architecture for semantic objects | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Entity-Model.md](genesis/engineering/packages/GCI-P2-0000/Entity-Model.md) | Canonical entity class model and invariant definitions | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Relationship-Model.md](genesis/engineering/packages/GCI-P2-0000/Relationship-Model.md) | Directional, versioned, replayable relationship model architecture | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Rule-Model.md](genesis/engineering/packages/GCI-P2-0000/Rule-Model.md) | Deterministic business rule model and policy evaluation constraints | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Provenance-Model.md](genesis/engineering/packages/GCI-P2-0000/Provenance-Model.md) | Provenance architecture for origin, custody, and transformation traceability | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Ownership-Model.md](genesis/engineering/packages/GCI-P2-0000/Ownership-Model.md) | Ownership and responsibility accountability architecture | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Causality-Model.md](genesis/engineering/packages/GCI-P2-0000/Causality-Model.md) | Deterministic causality modeling architecture for semantic state transitions | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Confidence-and-Trust-Model.md](genesis/engineering/packages/GCI-P2-0000/Confidence-and-Trust-Model.md) | Confidence and trust scoring model for semantic claims | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Versioning-Strategy.md](genesis/engineering/packages/GCI-P2-0000/Versioning-Strategy.md) | Immutable semantic versioning and supersedence strategy | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Conflict-Resolution-Strategy.md](genesis/engineering/packages/GCI-P2-0000/Conflict-Resolution-Strategy.md) | Deterministic conflict classification and resolution framework | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Lineage-Strategy.md](genesis/engineering/packages/GCI-P2-0000/Lineage-Strategy.md) | Lineage closure strategy across all semantic artifacts | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Semantic-Graph-Model.md](genesis/engineering/packages/GCI-P2-0000/Semantic-Graph-Model.md) | Canonical semantic graph architecture for business meaning representation | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Business-Genome-Assembly-Model.md](genesis/engineering/packages/GCI-P2-0000/Business-Genome-Assembly-Model.md) | Deterministic assembly architecture for canonical Business Genome publication | 6 min |
+| [genesis/engineering/packages/GCI-P2-0000/Dependency-Matrix.md](genesis/engineering/packages/GCI-P2-0000/Dependency-Matrix.md) | Allowed and forbidden dependency matrix for Phase 2 runtime layering | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Governance-Rules.md](genesis/engineering/packages/GCI-P2-0000/Governance-Rules.md) | Constitutional governance rules and operational constraints for Phase 2 architecture | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Certification-Strategy.md](genesis/engineering/packages/GCI-P2-0000/Certification-Strategy.md) | Independent certification strategy and validation domains for future Phase 2 runtimes | 5 min |
+| [genesis/engineering/packages/GCI-P2-0000/Phase-2-Roadmap.md](genesis/engineering/packages/GCI-P2-0000/Phase-2-Roadmap.md) | Architectural progression roadmap without implementation authorization | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Risk-Assessment.md](genesis/engineering/packages/GCI-P2-0000/Risk-Assessment.md) | Architectural and governance risk profile with mitigation controls | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Out-of-Scope-Boundaries.md](genesis/engineering/packages/GCI-P2-0000/Out-of-Scope-Boundaries.md) | Explicit non-goals and prohibited implementation domains for this package | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/Implementation-Sequencing.md](genesis/engineering/packages/GCI-P2-0000/Implementation-Sequencing.md) | Implementation sequencing policy for separately authorized downstream execution | 4 min |
+| [genesis/engineering/packages/GCI-P2-0000/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0000/LIFECYCLE-METADATA.md) | Lifecycle metadata for pre-implementation constitutional architecture baseline | 3 min |
 
 ---
 
