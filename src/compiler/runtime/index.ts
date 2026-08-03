@@ -1,6 +1,7 @@
 export { CompilerRuntimeHost } from "./foundation/index";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./evidence-validation/index";
+export { IBRRuntimeFactory, IBRRuntimeRegistry } from "./ibr/index";
 export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./manifest/index";
 export { ReplayRuntimeFactory, ReplayRuntimeRegistry } from "./replay/index";
 
@@ -69,6 +70,33 @@ export type {
   EvidenceValidationRuntimeRuleResult,
   RegisteredEvidenceValidationRuntime,
 } from "./evidence-validation/index";
+
+export type {
+  IBRRuntimeCertificationTrace,
+  IBRRuntimeCheck,
+  IBRRuntimeCheckStatus,
+  IBRRuntimeCreateInput,
+  IBRRuntimeCreateOptions,
+  IBRRuntimeFactoryConfiguration,
+  IBRRuntimeFactoryOptions,
+  IBRRuntimeGraph,
+  IBRRuntimeGraphEdge,
+  IBRRuntimeGraphEdgeRelation,
+  IBRRuntimeGraphNode,
+  IBRRuntimeGraphNodeType,
+  IBRRuntimeLifecycle,
+  IBRRuntimeLifecycleEvent,
+  IBRRuntimeLifecycleState,
+  IBRRuntimeLineageIntegrity,
+  IBRRuntimeOutcome,
+  IBRRuntimeRecord,
+  IBRRuntimeRegistryOptions,
+  IBRRuntimeRule,
+  IBRRuntimeRuleResult,
+  IBRRuntimeTrace,
+  IBRRuntimeVersion,
+  RegisteredIBRRuntime,
+} from "./ibr/index";
 
 export type {
   ManifestRuntimeCertificationTrace,
