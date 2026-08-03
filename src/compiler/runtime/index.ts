@@ -1,6 +1,7 @@
 export { CompilerRuntimeHost } from "./foundation/index";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./evidence-validation/index";
+export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./manifest/index";
 
 export type {
   CertificationContext,
@@ -67,3 +68,22 @@ export type {
   EvidenceValidationRuntimeRuleResult,
   RegisteredEvidenceValidationRuntime,
 } from "./evidence-validation/index";
+
+export type {
+  ManifestRuntimeCertificationTrace,
+  ManifestRuntimeCheck,
+  ManifestRuntimeCheckStatus,
+  ManifestRuntimeCreateOptions,
+  ManifestRuntimeEntry,
+  ManifestRuntimeFactoryConfiguration,
+  ManifestRuntimeFactoryOptions,
+  ManifestRuntimeLifecycleIntegrity,
+  ManifestRuntimeOutcome,
+  ManifestRuntimeRecord,
+  ManifestRuntimeRegistryOptions,
+  ManifestRuntimeReplayTrace,
+  ManifestRuntimeRule,
+  ManifestRuntimeRuleResult,
+  ManifestRuntimeVersion,
+  RegisteredManifestRuntime,
+} from "./manifest/index";
