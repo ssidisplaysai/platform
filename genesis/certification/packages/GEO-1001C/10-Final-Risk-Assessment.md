@@ -1,0 +1,73 @@
+# 10 Final Risk Assessment
+
+## Risk Register
+- hierarchy corruption
+  - severity: High
+  - likelihood: Low
+  - impact: High
+  - controls: deterministic cycle/loop validation before persistence; fail-closed recovery validation
+  - residual risk: Low
+  - certification effect: Acceptable
+- duplicate organization identity
+  - severity: High
+  - likelihood: Low
+  - impact: High
+  - controls: duplicate ID rejection on registration; fail-closed duplicate persisted-state checks
+  - residual risk: Low
+  - certification effect: Acceptable
+- tenant boundary violation
+  - severity: High
+  - likelihood: Low
+  - impact: High
+  - controls: tenant reference validation; cross-tenant hierarchy/relationship rejection; recovery validation
+  - residual risk: Low
+  - certification effect: Acceptable
+- cross-tenant relationship leakage
+  - severity: High
+  - likelihood: Low
+  - impact: High
+  - controls: same-tenant boundary enforcement in relationship creation and recovery validation
+  - residual risk: Low
+  - certification effect: Acceptable
+- persistence corruption
+  - severity: Medium
+  - likelihood: Medium
+  - impact: High
+  - controls: fail-closed integrity checks at runtime load
+  - residual risk: Medium
+  - certification effect: Acceptable with operational controls
+- partial write
+  - severity: Medium
+  - likelihood: Medium
+  - impact: Medium
+  - controls: serialized write lock in process; operational backup/restore discipline
+  - residual risk: Medium
+  - certification effect: Acceptable with operational controls
+- recovery ambiguity
+  - severity: Medium
+  - likelihood: Low
+  - impact: Medium
+  - controls: deterministic hierarchy normalization and explicit throw paths on invalid state
+  - residual risk: Low
+  - certification effect: Acceptable
+- hierarchy depth growth
+  - severity: Medium
+  - likelihood: Medium
+  - impact: Medium
+  - controls: deterministic pathing and continuous metrics/health observability
+  - residual risk: Medium
+  - certification effect: Acceptable with monitoring
+- concurrent mutation
+  - severity: Medium
+  - likelihood: Low
+  - impact: High
+  - controls: single-process locking only
+  - residual risk: Medium
+  - certification effect: Acceptable for single-process baseline; not certified for unsupported multi-writer file-store topology
+- file-backed deployment limits
+  - severity: Medium
+  - likelihood: Medium
+  - impact: Medium
+  - controls: explicit operational constraints and documented prerequisites
+  - residual risk: Medium
+  - certification effect: Acceptable for current baseline
