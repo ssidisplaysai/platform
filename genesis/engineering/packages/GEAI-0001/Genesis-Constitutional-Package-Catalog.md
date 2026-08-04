@@ -23,6 +23,7 @@ This catalog indexes package-root identifiers and retained governance reference 
 | GCI-P2-0001 | IBR Runtime | Phase 2 implementation package for immutable IBR observations and deterministic lineage preservation | Indexed | GCI | GCI-P2-0000, GCI-AUTH-P2-0001, GCI-P1-0005, GCS-0001 | GCI-P2-0002 |
 | GCI-P2-0002 | Entity Runtime | Phase 2 implementation package for deterministic canonical entity identity and immutable entity records | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-AUTH-P2-0002, GCS-0001, GEAI-0001 | GCI-P2-0003 |
 | GCI-P2-0003 | Relationship Runtime | Phase 2 implementation package for deterministic canonical relationship identity, classification, linkage preservation, immutable records, and registry behavior | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCS-0001 | None |
+| GCI-P2-0004 | Business Rule Runtime | Phase 2 implementation package for deterministic canonical business rule identity, immutable evaluation, and deterministic rule registry behavior | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCI-P2-0003, GCI-AUTH-P2-0004, GCS-0001, GEAI-0001 | None |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
 | GLW-0002 | GLW Capability Expansion Planning | LED Warehouse capability expansion planning package | Indexed | GLW | GPO-0002 | None |
@@ -84,7 +85,7 @@ This catalog indexes package-root identifiers and retained governance reference 
 ## Synchronization Attestation
 - Date: 2026-08-03
 - Method: Local package-root inventory under genesis/engineering/packages and GRN-0002 taxonomy classification were used as source-of-truth for catalog entries.
-- Result: 74 catalog identifiers total, 64 package-root identifiers, 10 non-package governance identifiers, zero package-root parity mismatches.
+- Result: 75 catalog identifiers total, 65 package-root identifiers, 10 non-package governance identifiers, zero package-root parity mismatches.
 
 ## Taxonomy Note
 Rows for GCI-0001, GCI-P1-0002A, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, and WS-IIIE are retained governance references and excluded from package-root parity.

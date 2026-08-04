@@ -56,6 +56,7 @@ export { CompilerVersionManager } from "./core/CompilerVersionManager";
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export { CompilerRuntimeHost } from "./runtime";
+export { BusinessRuleRuntimeFactory, BusinessRuleRuntimeRegistry } from "./runtime";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./runtime";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./runtime";
 export { RelationshipRuntimeFactory, RelationshipRuntimeRegistry } from "./runtime";
@@ -104,6 +105,35 @@ export type {
 	CompilerRuntimeState,
 	CompilerSession,
 	DiagnosticSeverity,
+	BusinessRuleCalculation,
+	BusinessRuleCalculationOperation,
+	BusinessRuleCondition,
+	BusinessRuleConditionResult,
+	BusinessRuleDerivedFact,
+	BusinessRuleDomain,
+	BusinessRuleEvaluationInput,
+	BusinessRuleEvaluationOutcome,
+	BusinessRuleEvaluationStatus,
+	BusinessRuleEvidenceLink,
+	BusinessRuleIdentity,
+	BusinessRuleLifecycle,
+	BusinessRuleLifecycleEvent,
+	BusinessRuleLifecycleState,
+	BusinessRuleLineage,
+	BusinessRuleOperator,
+	BusinessRuleProvenanceLink,
+	BusinessRuleReplayLink,
+	BusinessRuleRuntimeCreateInput,
+	BusinessRuleRuntimeFactoryConfiguration,
+	BusinessRuleRuntimeFactoryOptions,
+	BusinessRuleRuntimeObject,
+	BusinessRuleRuntimeRegistryOptions,
+	BusinessRuleRuntimeVersionChangeInput,
+	BusinessRuleValidationResult,
+	BusinessRuleValidator,
+	BusinessRuleValidatorResult,
+	RegisteredBusinessRuleRuntime,
+	EvidenceObservationStance,
 	EvidenceClassification,
 	EvidenceClassificationLevel,
 	EvidenceCertificationReference,
