@@ -1,18 +1,26 @@
 # Genesis Constitutional Package Catalog
 
 ## Catalog Scope
-This catalog indexes all package roots currently present under genesis/engineering/packages in this repository baseline. It is intentionally exhaustive for local package-root governance parity.
+This catalog indexes package-root identifiers and retained governance reference identifiers currently present under genesis/engineering/packages in this repository baseline. Package-root parity is computed taxonomy-aware under GRN-0002.
 
 ## Indexed Package Catalog
 | Identifier | Title | Purpose | Status | Governing Program | Dependencies | Successor Packages |
 |---|---|---|---|---|---|---|
 | GAR-0003 | Genesis Constitutional Assessment | Executive readiness assessment baseline package | Indexed | GAR | GEAI-0001 | GRP-0001 |
 | GCI-0001 | Genesis Compiler Implementation Program | Canonical constitutional registration for compiler implementation program identity, normative references, and phase chain | Indexed | GCI | GEAI-0001, GCS-0001 | GCI-P1-0001 |
+| GCF-1.1 | Genesis Compiler Foundation v1.1 | Governance closeout and permanent runtime substrate baseline for future compiler phases | Indexed | GCF | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0005, GCS-0001 | None |
+| GCI-AUTH-P2-0001 | IBR Runtime Authorization | Constitutional governance authorization for IBR Runtime implementation only | Indexed | GCI | GCF-1.1, GCI-P2-0000, GCI-P1-0005, GCS-0001 | GCI-P2-0001 |
 | GCI-AUTH-P2-0002 | Entity Runtime Authorization | Constitutional authorization for later Entity Runtime implementation, governing scope, dependencies, evidence, and readiness gates | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0002 |
+| GCI-AUTH-P2-0003 | Relationship Runtime Authorization | Constitutional authorization for later Relationship Runtime implementation and boundary enforcement | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCI-P1-0005, GCS-0001, GEAI-0001 | GCI-P2-0003 |
 | GCI-P1-0001 | Compiler Runtime Foundation | Phase 1 implementation package for runtime host foundation, lifecycle, health, and bootstrap contexts | Indexed | GCI | GCI-0001, GCS-0001, WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, WS-IIIE | GCI-P1-0002 |
 | GCI-P1-0002 | Evidence Runtime Foundation | Phase 1 implementation package for immutable deterministic evidence runtime contracts, lifecycle/version controls, and registry services | Indexed | GCI | GCI-P1-0001, GCS-0001 | GCI-P1-0003 |
 | GCI-P1-0002A | Governance Traceability and Runtime Precontracts | Documentation-only governance package closing Phase 1 traceability recommendations and defining future runtime precontract boundaries | Indexed | GCI | GCI-P1-0002, GCI-0001, GCS-0001 | GCI-P1-0003 |
 | GCI-P1-0003 | Evidence Validation Runtime | Phase 1 implementation package for deterministic validation of immutable evidence runtime objects with replay/certification trace preservation | Indexed | GCI | GCI-0001, GCS-0001, GCI-P1-0001, GCI-P1-0002, GCI-P1-0002A | GCI-P1-0004 |
+| GCI-P1-0004 | Manifest Runtime | Phase 1 implementation package for deterministic manifest runtime contracts, factory, and registry | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001 | GCI-P1-0005 |
+| GCI-P1-0005 | Replay Runtime | Phase 1 implementation package for deterministic replay runtime contracts, factory, and registry | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0002A, GCS-0001 | None |
+| GCI-P2-0000 | Business Semantics Master Architecture | Constitutional architecture for Phase 2 semantics and downstream runtime sequencing | Indexed | GCI | GCF-1.1, GCI-P1-0005, GCS-0001 | None |
+| GCI-P2-0001 | IBR Runtime | Phase 2 implementation package for immutable IBR observations and deterministic lineage preservation | Indexed | GCI | GCI-P2-0000, GCI-AUTH-P2-0001, GCI-P1-0005, GCS-0001 | GCI-P2-0002 |
+| GCI-P2-0002 | Entity Runtime | Phase 2 implementation package for deterministic canonical entity identity and immutable entity records | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-AUTH-P2-0002, GCS-0001, GEAI-0001 | GCI-P2-0003 |
 | GCI-P2-0003 | Relationship Runtime | Phase 2 implementation package for deterministic canonical relationship identity, classification, linkage preservation, immutable records, and registry behavior | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCS-0001 | None |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
@@ -53,6 +61,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GRC-0001 | Genesis Release Candidate Assessment | Release candidate precondition and readiness assessment package | Indexed | GRC | GRO-0005 | GCD-0003 |
 | GRH-0000 | Genesis Release History Constitutional Institution | Constitutional institution governing production release history chronology | Indexed | GRH | GCD-0003 | GRH-0001 |
 | GRH-0001 | Genesis Release History Record v0.1.0 | Inaugural constitutional production release-history record | Indexed | GRH | GRH-0000 | GRH-0002 |
+| GRN-0002 | Package and Catalog Parity Normalization | Governance remediation package for taxonomy-aware package/catalog parity normalization | Indexed | GRN | GCI-AUTH-P2-0003, GCI-P2-0003, GEAI-0001 | None |
 | GRO-0001 | Genesis Release Operations Report | Operational execution and convergence readiness report package | Indexed | GRO | GRP-0001 | GRO-0003 |
 | GRO-0003 | Genesis Governed Convergence Execution Report | Governed convergence execution stage 1 package | Indexed | GRO | GRO-0001 | GRO-0004 |
 | GRO-0004 | Genesis Governed Convergence Execution Report GRO-0004 | Governed convergence execution stage 2 package | Indexed | GRO | GRO-0003 | GRO-0005 |
@@ -73,8 +82,11 @@ This catalog indexes all package roots currently present under genesis/engineeri
 
 ## Synchronization Attestation
 - Date: 2026-08-03
-- Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 64 catalog identifiers, 64 local package roots, zero parity mismatches.
+- Method: Local package-root inventory under genesis/engineering/packages and GRN-0002 taxonomy classification were used as source-of-truth for catalog entries.
+- Result: 73 catalog identifiers total, 63 package-root identifiers, 10 non-package governance identifiers, zero package-root parity mismatches.
+
+## Taxonomy Note
+Rows for GCI-0001, GCI-P1-0002A, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, and WS-IIIE are retained governance references and excluded from package-root parity.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.
