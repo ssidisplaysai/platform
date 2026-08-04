@@ -1,0 +1,22 @@
+# LIFECYCLE METADATA
+
+- Package Identifier: GRN-0002
+- Program Identifier: GRN
+- Package Title: Package and Catalog Parity Normalization
+- Lifecycle State: GOVERNANCE_REMEDIATION_COMPLETE
+- Status Value: TAXONOMY_NORMALIZED
+- Lifecycle Decision Record: Package/catalog parity has been normalized by artifact taxonomy without altering runtime source or tests.
+- Approval Record: Governance-only correction authorized under repository normalization workflow.
+- Implementation Record: Taxonomy docs, inventory rules, catalog corrections, and documentation index coverage delivered.
+- Certification Record: Not applicable; this package records governance normalization only.
+- Merge Record: Not applicable; no runtime merge performed.
+- Tag Record: Not applicable.
+- Baseline Reference: origin/main at 904773c6c312c196136980aec96a7aa758767d66
+- Version Reference: GRN-0002 v1.0
+- Package Owner: Repository governance owner
+- Registry Entry: genesis/engineering/packages/GEAI-0001/Genesis-Constitutional-Package-Catalog.md row for GRN-0002
+- Cross-Document References: README.md; Package-Catalog-Taxonomy-Standard.md; Authoritative-Package-Root-Inventory.md; Catalog-Identifier-Classification-Matrix.md; Missing-Registration-Resolution.md; Non-Package-Identifier-Classification.md; GCI-P1-0002A-Governance-Decision.md; Parity-Calculation-Rules.md; Normalization-Validation-Report.md
+- Dependencies Reference: GCF-1.1; GEAI-0001; GCI-AUTH-P2-0003; GCI-P1-0002A; GCS-0001
+- Successor Reference: None
+- Last Normalized Date: 2026-08-03
+- Normalization Source: authoritative package/catalog taxonomy reconciliation

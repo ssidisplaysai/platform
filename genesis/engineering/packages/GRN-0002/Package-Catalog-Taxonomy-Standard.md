@@ -1,0 +1,22 @@
+# Package Catalog Taxonomy Standard
+
+## Taxonomy Goals
+The parity model must distinguish canonical package roots from governance references that share catalog presence but do not represent package-root directories.
+
+## Artifact Classes
+- PACKAGE_ROOT: a canonical package-root directory under genesis/engineering/packages with a corresponding package registry row.
+- SPECIFICATION_ARTIFACT: a specification or standard document that is tracked for governance but is not itself a package root.
+- REGISTRY_TOKEN: a catalog or governance identifier used as a reference token rather than a package root.
+- WORKSTREAM_REFERENCE: a workstream pointer or sequencing reference that remains governance-only.
+- REFERENCE_STUB: a placeholder reference package used for discoverability and taxonomy continuity.
+- GOVERNANCE_ONLY_NON_ROOT: a governance package or documentation artifact that must remain in the catalog but is not counted as a package root.
+- UNRESOLVED: an identifier whose canonical representation is not yet proven.
+
+## Parity Rule
+Package parity MUST compare only PACKAGE_ROOT identifiers from the catalog against actual canonical package roots on disk.
+
+## Exclusions
+Registry tokens, reference stubs, governance-only non-root artifacts, and specifications MUST NOT be counted as orphan package registrations.
+
+## Normalization Rule
+If a catalog identifier is not a PACKAGE_ROOT, it remains valid governance evidence but is excluded from package-root parity.

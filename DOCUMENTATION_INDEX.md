@@ -104,6 +104,29 @@
 | [genesis/engineering/packages/GCI-P2-0003/Coverage-Summary.md](genesis/engineering/packages/GCI-P2-0003/Coverage-Summary.md) | Coverage summary for relationship runtime implementation scope | 4 min |
 | [genesis/engineering/packages/GCI-P2-0003/Certification-Evidence.md](genesis/engineering/packages/GCI-P2-0003/Certification-Evidence.md) | Implementation validation evidence set prepared for future independent review | 4 min |
 | [genesis/engineering/packages/GCI-P2-0003/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0003/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P2-0003 implementation validation state | 3 min |
+| [genesis/engineering/packages/GCF-1.1/README.md](genesis/engineering/packages/GCF-1.1/README.md) | Phase 1 constitutional foundation release and governance closeout | 3 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0001/README.md](genesis/engineering/packages/GCI-AUTH-P2-0001/README.md) | IBR runtime authorization package and scope boundary reference | 3 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0003/README.md](genesis/engineering/packages/GCI-AUTH-P2-0003/README.md) | Relationship runtime authorization package and scope boundary reference | 3 min |
+| [genesis/engineering/packages/GCI-P1-0004/README.md](genesis/engineering/packages/GCI-P1-0004/README.md) | Manifest runtime implementation package | 3 min |
+| [genesis/engineering/packages/GCI-P1-0005/README.md](genesis/engineering/packages/GCI-P1-0005/README.md) | Replay runtime implementation package | 3 min |
+| [genesis/engineering/packages/GCI-P2-0000/README.md](genesis/engineering/packages/GCI-P2-0000/README.md) | Phase 2 business semantics master architecture package | 3 min |
+| [genesis/engineering/packages/GCI-P2-0001/README.md](genesis/engineering/packages/GCI-P2-0001/README.md) | IBR runtime implementation package | 3 min |
+| [genesis/engineering/packages/GCI-P2-0002/README.md](genesis/engineering/packages/GCI-P2-0002/README.md) | Entity runtime implementation package | 3 min |
+
+## Governance Normalization
+
+| Document | Purpose | Read Time |
+|----------|---------|-----------|
+| [genesis/engineering/packages/GRN-0002/README.md](genesis/engineering/packages/GRN-0002/README.md) | Package and catalog parity normalization governance package | 3 min |
+| [genesis/engineering/packages/GRN-0002/Package-Catalog-Taxonomy-Standard.md](genesis/engineering/packages/GRN-0002/Package-Catalog-Taxonomy-Standard.md) | Taxonomy standard for parity-aware package/catalog classification | 5 min |
+| [genesis/engineering/packages/GRN-0002/Authoritative-Package-Root-Inventory.md](genesis/engineering/packages/GRN-0002/Authoritative-Package-Root-Inventory.md) | Canonical package-root inventory used for parity normalization | 5 min |
+| [genesis/engineering/packages/GRN-0002/Catalog-Identifier-Classification-Matrix.md](genesis/engineering/packages/GRN-0002/Catalog-Identifier-Classification-Matrix.md) | Classification matrix for missing and non-package identifiers | 6 min |
+| [genesis/engineering/packages/GRN-0002/Missing-Registration-Resolution.md](genesis/engineering/packages/GRN-0002/Missing-Registration-Resolution.md) | Resolution record for the eight valid package roots missing catalog entries | 4 min |
+| [genesis/engineering/packages/GRN-0002/Non-Package-Identifier-Classification.md](genesis/engineering/packages/GRN-0002/Non-Package-Identifier-Classification.md) | Taxonomy mapping for registry tokens and reference stubs | 4 min |
+| [genesis/engineering/packages/GRN-0002/GCI-P1-0002A-Governance-Decision.md](genesis/engineering/packages/GRN-0002/GCI-P1-0002A-Governance-Decision.md) | Canonical governance decision for GCI-P1-0002A | 4 min |
+| [genesis/engineering/packages/GRN-0002/Parity-Calculation-Rules.md](genesis/engineering/packages/GRN-0002/Parity-Calculation-Rules.md) | Taxonomy-aware parity calculation rules | 4 min |
+| [genesis/engineering/packages/GRN-0002/Normalization-Validation-Report.md](genesis/engineering/packages/GRN-0002/Normalization-Validation-Report.md) | Validation report for normalized parity results and drift checks | 4 min |
+| [genesis/engineering/packages/GRN-0002/LIFECYCLE-METADATA.md](genesis/engineering/packages/GRN-0002/LIFECYCLE-METADATA.md) | Lifecycle metadata for governance parity normalization | 3 min |
 | [genesis/engineering/packages/WS-II/README.md](genesis/engineering/packages/WS-II/README.md) | WS-II constitutional reference stub for in-repository discoverability | 3 min |
 | [genesis/engineering/packages/WS-III/README.md](genesis/engineering/packages/WS-III/README.md) | WS-III constitutional reference stub for in-repository discoverability | 3 min |
 | [genesis/engineering/packages/WS-IIIA/README.md](genesis/engineering/packages/WS-IIIA/README.md) | WS-IIIA constitutional reference stub for in-repository discoverability | 3 min |
