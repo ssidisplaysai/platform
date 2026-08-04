@@ -24,7 +24,7 @@ export type ToolRegistration = AIToolDefinition & {
 
 export class ToolRegistry {
   private readonly tools = new Map<string, ToolRegistration>();
-  private readonly auditTrail: AIAuditRecord[] = [];
+  private readonly auditRecords: AIAuditRecord[] = [];
 
   register(tool: ToolRegistration): void {
     this.tools.set(tool.toolId, tool);
@@ -50,7 +50,7 @@ export class ToolRegistry {
         retryable: false,
         completedAt,
       };
-      this.auditTrail.push(this.buildAudit(request, result, "TOOL_REJECTED", "unknown tool"));
+      this.auditRecords.push(this.buildAudit(request, result, "TOOL_REJECTED", "unknown tool"));
       return result;
     }
 
@@ -62,7 +62,7 @@ export class ToolRegistry {
         retryable: false,
         completedAt,
       };
-      this.auditTrail.push(this.buildAudit(request, result, "TOOL_REJECTED", "insufficient permissions"));
+      this.auditRecords.push(this.buildAudit(request, result, "TOOL_REJECTED", "insufficient permissions"));
       return result;
     }
 
@@ -83,7 +83,7 @@ export class ToolRegistry {
         retryable: false,
         completedAt,
       };
-      this.auditTrail.push(this.buildAudit(request, result, "TOOL_EXECUTED", "tool executed"));
+      this.auditRecords.push(this.buildAudit(request, result, "TOOL_EXECUTED", "tool executed"));
       return result;
     } catch (error) {
       const result: AIToolExecutionResult = {
@@ -93,13 +93,13 @@ export class ToolRegistry {
         retryable: false,
         completedAt,
       };
-      this.auditTrail.push(this.buildAudit(request, result, "TOOL_REJECTED", result.reason ?? "tool execution failed"));
+      this.auditRecords.push(this.buildAudit(request, result, "TOOL_REJECTED", result.reason ?? "tool execution failed"));
       return result;
     }
   }
 
   auditTrail(): AIAuditRecord[] {
-    return this.auditTrail.map((record) => structuredClone(record));
+    return this.auditRecords.map((record) => structuredClone(record));
   }
 
   private buildAudit(request: AIToolExecutionRequest, result: AIToolExecutionResult, eventType: "TOOL_EXECUTED" | "TOOL_REJECTED", message: string): AIAuditRecord {

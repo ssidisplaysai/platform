@@ -13,7 +13,7 @@ function interpolate(template: string, variables: Record<string, string>): strin
 
 export class PromptRegistry {
   private readonly prompts = new Map<string, AIPromptDefinition>();
-  private readonly auditTrail: AIAuditRecord[] = [];
+  private readonly auditRecords: AIAuditRecord[] = [];
 
   register(prompt: AIPromptDefinition): void {
     this.prompts.set(prompt.promptId, structuredClone(prompt));
@@ -66,7 +66,7 @@ export class PromptRegistry {
     const renderedPrompt = lineage.map((prompt) => interpolate(prompt.template, variables)).join("\n");
     const renderedAt = new Date().toISOString();
 
-    this.auditTrail.push({
+    this.auditRecords.push({
       recordId: `aprompt_${context.executionId}`,
       eventType: "PROMPT_RENDERED",
       executionId: context.executionId,
@@ -94,6 +94,6 @@ export class PromptRegistry {
   }
 
   auditTrail(): AIAuditRecord[] {
-    return this.auditTrail.map((record) => structuredClone(record));
+    return this.auditRecords.map((record) => structuredClone(record));
   }
 }

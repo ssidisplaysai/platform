@@ -132,6 +132,7 @@ export class AIExecutionEngine {
     const render = this.prompts.render(promptDefinition.promptId, variables, {
       tenant: input.context.tenant,
       workspace: input.context.workspace,
+      executionId,
       conversationId: input.context.conversationId,
       sessionId: input.context.sessionId,
       actorId: input.approvedBy ?? input.context.approvedBy,
