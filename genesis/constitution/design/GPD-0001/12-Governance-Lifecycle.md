@@ -1,44 +1,46 @@
 # 12 Governance Lifecycle
 
-Required constitutional governance sequence:
+Authoritative reference:
 
-Constitution
+- Constitutional interpretation and lifecycle authority model: GCD-0003.
 
-↓
+Authority versus execution distinction:
 
-Vision
+- Constitutional authority layers define standards and constraints.
+- Execution lifecycle defines chronological platform gates.
 
-↓
+Authority hierarchy for this standard:
 
-Platform Design Review
+1. Genesis Constitution
+2. GCV-0001 Constitutional Vision
+3. GPD-0001 Platform Design Standard
+4. GEP-0001 Engineering Process Standard
+5. Constitutional decisions, including GCD-0003
 
-↓
+Canonical platform execution lifecycle:
 
-Engineering
+1. Constitutional framing
+2. Platform Design Review
+3. Design condition resolution, where required
+4. Final design approval
+5. Engineering blueprint
+6. Engineering implementation under GEP-0001
+7. Independent certification
+8. Engineering hardening and certification condition closure, where required
+9. Final certification
+10. Platform release
+11. Enterprise adoption
+12. Mission Control observation
 
-↓
+Conditional stage policy:
 
-Independent Certification
+- Condition-resolution stages are mandatory only when conditions are issued.
+- When no conditions are issued at a gate, progression continues without a condition-closure stage.
 
-↓
+Standards-layer clarification:
 
-Condition Resolution
-
-↓
-
-Final Certification
-
-↓
-
-Release
-
-↓
-
-Enterprise Adoption
-
-↓
-
-Mission Control Observation
+- Platform Design Standard and Engineering Process Standard govern multiple stages.
+- They are authority layers, not implementation activities.
 
 Governance mandate:
 

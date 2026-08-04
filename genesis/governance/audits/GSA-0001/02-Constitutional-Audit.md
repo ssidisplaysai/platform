@@ -30,3 +30,7 @@ Interpretation:
 
 - Constitutional hierarchy intent remains coherent.
 - Lifecycle sequence authority must be normalized into one canonical sequence before implementation authorization for new runtime platform engineering.
+
+Historical resolution reference:
+
+- GSA-R001 established GCD-0003 and reconciled lifecycle authority wording in GPD-0001 and GFP-0001.

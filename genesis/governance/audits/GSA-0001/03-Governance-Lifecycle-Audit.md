@@ -29,3 +29,7 @@ Lifecycle audit result:
 Reason:
 
 - Repository lifecycle evidence is broadly coherent, but constitutional lifecycle wording is not yet perfectly unified across all constitutional sources.
+
+Historical resolution reference:
+
+- GSA-R001 and GCD-0003 subsequently resolved lifecycle authority inconsistency and established authority-versus-execution interpretation.

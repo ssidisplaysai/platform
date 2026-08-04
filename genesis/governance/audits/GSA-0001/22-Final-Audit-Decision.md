@@ -25,3 +25,7 @@ Additional non-blocking improvements:
 Authorization status:
 
 - Runtime implementation is not authorized by this audit outcome.
+
+Historical resolution reference:
+
+- Blocking finding GSA-F001 was subsequently remediated under GSA-R001 via constitutional decision GCD-0003 and lifecycle artifact reconciliation.

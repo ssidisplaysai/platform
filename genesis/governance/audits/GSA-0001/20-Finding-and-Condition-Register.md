@@ -26,6 +26,11 @@ Findings:
 - blocking: YES
 - recommended_work_order_owner: Governance Architecture Board
 
+Historical resolution reference:
+
+- Remediation work order GSA-R001 established constitutional decision GCD-0003 and reconciled both affected artifacts.
+- GSA-F001 closure status is recorded in GSA-R001 condition-closure decision artifact.
+
 2. finding_id: GSA-F002
 - title: Legacy package metadata convention drift
 - affected_capability: Repository governance quality
