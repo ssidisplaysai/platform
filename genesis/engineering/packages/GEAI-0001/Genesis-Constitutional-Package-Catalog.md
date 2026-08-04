@@ -15,6 +15,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GCI-P2-0000 | Business Semantics Master Architecture | Constitutional architecture baseline defining deterministic semantic runtime model for Phase 2 with no implementation authorization | Indexed | GCI | GCF-1.1, GCI-P1-0005, GCS-0001 | None |
 | GCI-AUTH-P2-0001 | IBR Runtime Authorization | Constitutional governance authorization package granting implementation authority for IBR Runtime only under strict boundary controls | Indexed | GCI | GCF-1.1, GCI-P2-0000, GCI-P1-0005, GCS-0001 | GCI-P2-0001 |
 | GCI-AUTH-P2-0002 | Entity Runtime Authorization | Constitutional authorization for deterministic Entity Runtime implementation scope with strict dependency, boundary, and governance gate controls | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0002 |
+| GCI-AUTH-P2-0003 | Relationship Runtime Authorization | Constitutional authorization for deterministic Relationship Runtime implementation scope with strict dependency, boundary, and governance gate controls | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCI-P1-0005, GCS-0001, GEAI-0001 | GCI-P2-0003 |
 | GCI-P2-0001 | IBR Runtime | Phase 2 implementation package for deterministic observation-only IBR runtime with manifest, replay, validation, and evidence linkage | Indexed | GCI | GCI-P2-0000, GCI-AUTH-P2-0001, GCI-P1-0005, GCS-0001 | None |
 | GCI-P2-0002 | Entity Runtime | Phase 2 implementation package for deterministic canonical entity identity runtime with immutable lineage, contradiction preservation, and identity-state controls | Indexed | GCI | GCI-P2-0000, GCI-AUTH-P2-0002, GCI-P2-0001, GCI-P1-0005, GCS-0001 | None |
 | GCF-1.1 | Genesis Compiler Foundation v1.1 | Constitutional foundation release recording complete Phase 1 runtime closeout as permanent compiler runtime substrate baseline | Indexed | GCF | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0005, GCS-0001 | None |
@@ -70,7 +71,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 ## Synchronization Attestation
 - Date: 2026-08-03
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 57 catalog identifiers and full governance parity across governed package roots; one non-catalog local folder (WS-I) remains outside constitutional package scope.
+- Result: 61 package roots, 61 catalog identifiers, duplicates 0, missing 0, orphans 0.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.

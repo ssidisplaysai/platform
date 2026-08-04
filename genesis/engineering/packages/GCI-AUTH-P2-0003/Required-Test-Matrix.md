@@ -1,0 +1,31 @@
+# Required Test Matrix
+
+The later implementation package must include focused tests for:
+- deterministic relationship identity;
+- identical-input reproducibility;
+- canonical ordering;
+- immutable outputs;
+- relationship classification behavior;
+- directionality behavior;
+- cardinality behavior;
+- confidence preservation behavior;
+- provenance and lineage preservation;
+- replay linkage integrity;
+- entity linkage integrity;
+- contradictory observation handling;
+- insufficient evidence handling;
+- unresolved relationship status;
+- version lineage;
+- supersedence;
+- retirement;
+- registry registration;
+- duplicate registration;
+- registry size stability;
+- deterministic list ordering;
+- retrieval;
+- deletion;
+- validator failure behavior;
+- architecture boundary enforcement;
+- Replay regression;
+- IBR regression;
+- Entity regression.
