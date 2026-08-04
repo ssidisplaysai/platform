@@ -36,6 +36,211 @@ function canTransition(from: OrganizationStatus, to: OrganizationStatus): boolea
   return map[from].includes(to);
 }
 
+function tenantBoundaryKey(organization: Organization): string {
+  if (organization.type === "TENANT") {
+    return organization.organizationId;
+  }
+
+  return organization.tenantId ?? "__GLOBAL__";
+}
+
+function assertSameTenantBoundary(
+  left: Organization,
+  right: Organization,
+  context: "hierarchy" | "relationship",
+): void {
+  const leftBoundary = tenantBoundaryKey(left);
+  const rightBoundary = tenantBoundaryKey(right);
+
+  if (leftBoundary !== rightBoundary) {
+    throw new Error(
+      `cross-tenant ${context} rejected: ${left.organizationId} (${leftBoundary}) -> ${right.organizationId} (${rightBoundary})`,
+    );
+  }
+}
+
+function validateTenantReference(
+  organization: Organization,
+  organizationsById: Map<OrganizationId, Organization>,
+): void {
+  if (organization.type === "TENANT") {
+    if (organization.tenantId && organization.tenantId !== organization.organizationId) {
+      throw new Error(
+        `invalid tenant reference: tenant organization ${organization.organizationId} must reference itself`,
+      );
+    }
+    return;
+  }
+
+  if (!organization.tenantId) {
+    return;
+  }
+
+  const tenant = organizationsById.get(organization.tenantId);
+  if (!tenant) {
+    throw new Error(`tenant not found: ${organization.tenantId}`);
+  }
+
+  if (tenant.type !== "TENANT") {
+    throw new Error(`tenant reference is not a tenant organization: ${organization.tenantId}`);
+  }
+}
+
+function buildParentMap(nodes: HierarchyNode[]): Map<OrganizationId, OrganizationId> {
+  const parentByOrg = new Map<OrganizationId, OrganizationId>();
+
+  for (const node of nodes) {
+    if (!node.parentOrganizationId) {
+      continue;
+    }
+
+    parentByOrg.set(node.organizationId, node.parentOrganizationId);
+  }
+
+  return parentByOrg;
+}
+
+function computePath(
+  organizationId: OrganizationId,
+  parentByOrg: Map<OrganizationId, OrganizationId>,
+): OrganizationId[] {
+  const path: OrganizationId[] = [organizationId];
+  const visited = new Set<OrganizationId>(path);
+  let current = organizationId;
+
+  while (true) {
+    const parent = parentByOrg.get(current);
+    if (!parent) {
+      break;
+    }
+
+    if (visited.has(parent)) {
+      throw new Error(`recursive ancestor loop detected for organization ${organizationId}`);
+    }
+
+    path.push(parent);
+    visited.add(parent);
+    current = parent;
+  }
+
+  return path.reverse();
+}
+
+function assertHierarchyIntegrity(
+  nodes: HierarchyNode[],
+  organizationsById: Map<OrganizationId, Organization>,
+): void {
+  const organizationIds = new Set<OrganizationId>();
+
+  for (const node of nodes) {
+    if (organizationIds.has(node.organizationId)) {
+      throw new Error(`duplicate hierarchy node organizationId: ${node.organizationId}`);
+    }
+    organizationIds.add(node.organizationId);
+
+    if (!organizationsById.has(node.organizationId)) {
+      throw new Error(`hierarchy organization not found: ${node.organizationId}`);
+    }
+
+    if (!node.parentOrganizationId) {
+      continue;
+    }
+
+    if (node.parentOrganizationId === node.organizationId) {
+      throw new Error(`self-parent hierarchy rejected: ${node.organizationId}`);
+    }
+
+    const parentOrganization = organizationsById.get(node.parentOrganizationId);
+    if (!parentOrganization) {
+      throw new Error(`parent organization not found: ${node.parentOrganizationId}`);
+    }
+
+    const childOrganization = organizationsById.get(node.organizationId);
+    if (!childOrganization) {
+      throw new Error(`hierarchy organization not found: ${node.organizationId}`);
+    }
+
+    assertSameTenantBoundary(childOrganization, parentOrganization, "hierarchy");
+  }
+
+  const parentByOrg = buildParentMap(nodes);
+  for (const organizationId of organizationIds) {
+    void computePath(organizationId, parentByOrg);
+  }
+}
+
+function normalizeHierarchy(
+  nodes: HierarchyNode[],
+  organizationsById: Map<OrganizationId, Organization>,
+): HierarchyNode[] {
+  assertHierarchyIntegrity(nodes, organizationsById);
+
+  const parentByOrg = buildParentMap(nodes);
+  const childrenByParent = new Map<OrganizationId, OrganizationId[]>();
+  const nodeByOrganizationId = new Map<OrganizationId, HierarchyNode>();
+
+  for (const node of nodes) {
+    nodeByOrganizationId.set(node.organizationId, node);
+    if (!node.parentOrganizationId) {
+      continue;
+    }
+
+    const children = childrenByParent.get(node.parentOrganizationId) ?? [];
+    children.push(node.organizationId);
+    childrenByParent.set(node.parentOrganizationId, children);
+  }
+
+  return [...nodeByOrganizationId.keys()]
+    .sort((left, right) => left.localeCompare(right))
+    .map((organizationId) => {
+      const original = nodeByOrganizationId.get(organizationId);
+      if (!original) {
+        throw new Error(`hierarchy organization not found: ${organizationId}`);
+      }
+
+      const path = computePath(organizationId, parentByOrg);
+
+      return {
+        ...original,
+        parentOrganizationId: parentByOrg.get(organizationId),
+        childOrganizationIds: [...(childrenByParent.get(organizationId) ?? [])].sort((left, right) => left.localeCompare(right)),
+        depth: path.length - 1,
+        path,
+      };
+    });
+}
+
+function validatePersistedStateOrThrow(state: OrganizationPersistedState): void {
+  const organizationsById = new Map<OrganizationId, Organization>();
+
+  for (const organization of state.organizations) {
+    if (organizationsById.has(organization.organizationId)) {
+      throw new Error(`duplicate organization id in persisted state: ${organization.organizationId}`);
+    }
+    organizationsById.set(organization.organizationId, organization);
+  }
+
+  for (const organization of state.organizations) {
+    validateTenantReference(organization, organizationsById);
+  }
+
+  assertHierarchyIntegrity(state.hierarchy, organizationsById);
+
+  for (const relationship of state.relationships) {
+    const fromOrganization = organizationsById.get(relationship.fromOrganizationId);
+    if (!fromOrganization) {
+      throw new Error(`relationship source organization not found: ${relationship.fromOrganizationId}`);
+    }
+
+    const toOrganization = organizationsById.get(relationship.toOrganizationId);
+    if (!toOrganization) {
+      throw new Error(`relationship target organization not found: ${relationship.toOrganizationId}`);
+    }
+
+    assertSameTenantBoundary(fromOrganization, toOrganization, "relationship");
+  }
+}
+
 export class OrganizationRegistry {
   private state: OrganizationPersistedState = createDefaultPersistedState();
 
@@ -47,6 +252,8 @@ export class OrganizationRegistry {
 
   async load(): Promise<void> {
     this.state = await this.persistence.load();
+    validatePersistedStateOrThrow(this.state);
+    this.state.hierarchy = normalizeHierarchy(this.state.hierarchy, this.organizationsById());
     this.audit.replace(this.state.audits);
     this.metrics.replace(this.state.metrics);
     this.metrics.recalculateOrganizations(this.state.organizations);
@@ -83,12 +290,17 @@ export class OrganizationRegistry {
     settings?: OrganizationSettings;
   }): Promise<Organization> {
     const createdAt = nowIso();
+    const organizationId = input.organizationId ?? `org_${randomUUID()}`;
+    if (this.state.organizations.some((item) => item.organizationId === organizationId)) {
+      throw new Error(`duplicate organization id: ${organizationId}`);
+    }
+
     const organization: Organization = {
-      organizationId: input.organizationId ?? `org_${randomUUID()}`,
+      organizationId,
       type: input.type,
       name: input.name,
       displayName: input.displayName,
-      tenantId: input.tenantId,
+      tenantId: input.type === "TENANT" ? organizationId : input.tenantId,
       legalEntityCode: input.legalEntityCode,
       status: "DRAFT",
       metadata: structuredClone(input.metadata ?? {}),
@@ -101,6 +313,10 @@ export class OrganizationRegistry {
         transitions: [],
       },
     };
+
+    const organizationsById = this.organizationsById();
+    organizationsById.set(organization.organizationId, organization);
+    validateTenantReference(organization, organizationsById);
 
     this.state.organizations.push(organization);
     this.metrics.recalculateOrganizations(this.state.organizations);
@@ -202,6 +418,10 @@ export class OrganizationRegistry {
     this.metrics.setRelationshipCount(this.state.relationships.length);
   }
 
+  private organizationsById(): Map<OrganizationId, Organization> {
+    return new Map(this.state.organizations.map((organization) => [organization.organizationId, organization]));
+  }
+
   private requireOrganizationRef(organizationId: OrganizationId): Organization {
     const found = this.state.organizations.find((item) => item.organizationId === organizationId);
     if (!found) {
@@ -223,34 +443,36 @@ export class OrganizationHierarchyService {
     parentOrganizationId?: OrganizationId;
     actorId: string;
   }): Promise<HierarchyNode> {
-    if (!this.registry.getOrganization(input.organizationId)) {
+    const organization = this.registry.getOrganization(input.organizationId);
+    if (!organization) {
       throw new Error(`organization not found: ${input.organizationId}`);
     }
 
-    if (input.parentOrganizationId && !this.registry.getOrganization(input.parentOrganizationId)) {
+    if (input.parentOrganizationId === input.organizationId) {
+      throw new Error(`self-parent hierarchy rejected: ${input.organizationId}`);
+    }
+
+    const parentOrganization = input.parentOrganizationId
+      ? this.registry.getOrganization(input.parentOrganizationId)
+      : undefined;
+
+    if (input.parentOrganizationId && !parentOrganization) {
       throw new Error(`parent organization not found: ${input.parentOrganizationId}`);
     }
 
+    if (parentOrganization) {
+      assertSameTenantBoundary(organization, parentOrganization, "hierarchy");
+    }
+
     const nodes = this.registry.hierarchyNodes();
-    const children = nodes
-      .filter((node) => node.parentOrganizationId === input.organizationId)
-      .map((node) => node.organizationId);
-
-    const parentNode = input.parentOrganizationId
-      ? nodes.find((node) => node.organizationId === input.parentOrganizationId)
-      : undefined;
-
-    const path = parentNode
-      ? [...parentNode.path, input.organizationId]
-      : [input.organizationId];
 
     const node: HierarchyNode = {
       nodeId: `orgnode_${input.organizationId}`,
       organizationId: input.organizationId,
       parentOrganizationId: input.parentOrganizationId,
-      childOrganizationIds: children,
-      depth: path.length - 1,
-      path,
+      childOrganizationIds: [],
+      depth: 0,
+      path: [input.organizationId],
       updatedAt: nowIso(),
     };
 
@@ -261,27 +483,32 @@ export class OrganizationHierarchyService {
       nodes.push(node);
     }
 
-    if (input.parentOrganizationId) {
-      const parentIdx = nodes.findIndex((item) => item.organizationId === input.parentOrganizationId);
-      if (parentIdx >= 0 && !nodes[parentIdx].childOrganizationIds.includes(input.organizationId)) {
-        nodes[parentIdx].childOrganizationIds.push(input.organizationId);
-        nodes[parentIdx].updatedAt = nowIso();
-      }
-    }
+    const organizationsById = new Map(
+      this.registry.listOrganizations().map((item) => [item.organizationId, item] as const),
+    );
+    const normalizedNodes = normalizeHierarchy(nodes, organizationsById).map((item) => ({
+      ...item,
+      updatedAt: item.organizationId === input.organizationId ? nowIso() : item.updatedAt,
+    }));
 
-    this.registry.setHierarchyNodes(nodes);
+    this.registry.setHierarchyNodes(normalizedNodes);
     await this.registry.save();
+
+    const createdNode = normalizedNodes.find((item) => item.organizationId === input.organizationId);
+    if (!createdNode) {
+      throw new Error(`hierarchy organization not found: ${input.organizationId}`);
+    }
 
     this.audit.append({
       eventType: "ORGANIZATION_HIERARCHY_UPDATED",
       organizationId: input.organizationId,
       actorId: input.actorId,
       message: "organization hierarchy node upserted",
-      details: { parentOrganizationId: input.parentOrganizationId, depth: node.depth },
+      details: { parentOrganizationId: input.parentOrganizationId, depth: createdNode.depth },
     });
     this.metrics.increment("auditRecordCount", 1);
 
-    return structuredClone(node);
+    return structuredClone(createdNode);
   }
 
   list(): HierarchyNode[] {
@@ -323,12 +550,17 @@ export class OrganizationRelationshipService {
     actorId: string;
     metadata?: OrganizationMetadata;
   }): Promise<OrganizationRelationship> {
-    if (!this.registry.getOrganization(input.fromOrganizationId)) {
+    const fromOrganization = this.registry.getOrganization(input.fromOrganizationId);
+    if (!fromOrganization) {
       throw new Error(`organization not found: ${input.fromOrganizationId}`);
     }
-    if (!this.registry.getOrganization(input.toOrganizationId)) {
+
+    const toOrganization = this.registry.getOrganization(input.toOrganizationId);
+    if (!toOrganization) {
       throw new Error(`organization not found: ${input.toOrganizationId}`);
     }
+
+    assertSameTenantBoundary(fromOrganization, toOrganization, "relationship");
 
     const relationship: OrganizationRelationship = {
       relationshipId: `orgrel_${randomUUID()}`,
