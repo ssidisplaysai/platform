@@ -56,6 +56,7 @@ export { CompilerVersionManager } from "./core/CompilerVersionManager";
 export { DiscoveryCompilerPass } from "./core/passes/DiscoveryCompilerPass";
 export { EvidenceCompilerPass } from "./core/passes/EvidenceCompilerPass";
 export { CompilerRuntimeHost } from "./runtime";
+export { BusinessGenomeAssemblyRuntimeFactory, BusinessGenomeAssemblyRuntimeRegistry } from "./runtime";
 export { BusinessRuleRuntimeFactory, BusinessRuleRuntimeRegistry } from "./runtime";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./runtime";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./runtime";
@@ -105,6 +106,26 @@ export type {
 	CompilerRuntimeState,
 	CompilerSession,
 	DiagnosticSeverity,
+	BusinessGenomeAssemblyEvidenceLink,
+	BusinessGenomeAssemblyIdentity,
+	BusinessGenomeAssemblyLifecycle,
+	BusinessGenomeAssemblyLifecycleEvent,
+	BusinessGenomeAssemblyLifecycleState,
+	BusinessGenomeAssemblyLineage,
+	BusinessGenomeAssemblyOutput,
+	BusinessGenomeAssemblyProvenanceLink,
+	BusinessGenomeAssemblyReplayLink,
+	BusinessGenomeAssemblyRuntimeCreateInput,
+	BusinessGenomeAssemblyRuntimeFactoryConfiguration,
+	BusinessGenomeAssemblyRuntimeFactoryOptions,
+	BusinessGenomeAssemblyRuntimeRegistryOptions,
+	BusinessGenomeAssemblyRuntimeVersionChangeInput,
+	BusinessGenomeAssemblyUpstreamLinks,
+	BusinessGenomeAssemblyValidationResult,
+	BusinessGenomeAssemblyValidator,
+	BusinessGenomeAssemblyValidatorResult,
+	BusinessGenomeAssemblyVersion,
+	RegisteredBusinessGenomeAssemblyRuntime,
 	BusinessRuleCalculation,
 	BusinessRuleCalculationOperation,
 	BusinessRuleCondition,
