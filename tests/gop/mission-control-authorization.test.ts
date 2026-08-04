@@ -31,6 +31,27 @@ jest.mock("@/lib/glw/prisma", () => ({
   }),
 }));
 
+jest.mock("@/lib/glw/job-repository", () => ({
+  createPrismaGlwJobRepository: () => ({
+    findById: async () => null,
+  }),
+}));
+
+jest.mock("@/platform/gop/runtime/event-store", () => ({
+  getGenesisEventStore: () => ({
+    listEventsForJob: async () => [],
+    replayTimeline: async () => [],
+    summarizeProgress: async () => ({
+      jobId: "job-1",
+      total: 0,
+      completed: 0,
+      failed: 0,
+      queued: 0,
+    }),
+    listEventsAfterSequence: async () => [],
+  }),
+}));
+
 jest.mock("@/platform/gop/metrics-from-events", () => ({
   reduceEventsToMetrics: () => ({ jobs: 0 }),
   metricsFromDerived: () => ({ successRate: 1 }),
@@ -102,6 +123,26 @@ jest.mock("@/platform/workflow", () => ({
   }),
 }));
 
+jest.mock("@/platform/contact", () => ({
+  getGenesisContactRuntime: async () => ({
+    observability: async () => ({
+      capability: "platform.contact",
+      metadata: {
+        contractVersion: "1.0.0",
+        runtimeVersion: "1.0.0",
+        persistence: "file.contact-state.v1",
+        severityThreshold: "MEDIUM",
+      },
+      metrics: {
+        registeredContacts: 4,
+      },
+      health: {
+        status: "HEALTHY",
+      },
+    }),
+  }),
+}));
+
 import { handleGetGopMetrics } from "@/lib/gop/events-api";
 
 describe("gop mission control authorization integration", () => {
@@ -119,6 +160,9 @@ describe("gop mission control authorization integration", () => {
       workflowMetrics?: { createdInstances: number };
       workflowHealth?: { status: string };
       workflowReadiness?: { completedInstances: number };
+      contactMetadata?: { contractVersion: string };
+      contactMetrics?: { registeredContacts: number };
+      contactHealth?: { status: string };
     };
 
     expect(response.status).toBe(200);
@@ -133,5 +177,8 @@ describe("gop mission control authorization integration", () => {
     expect(payload.workflowMetrics?.createdInstances).toBe(2);
     expect(payload.workflowHealth?.status).toBe("HEALTHY");
     expect(payload.workflowReadiness?.completedInstances).toBe(1);
+    expect(payload.contactMetadata?.contractVersion).toBe("1.0.0");
+    expect(payload.contactMetrics?.registeredContacts).toBe(4);
+    expect(payload.contactHealth?.status).toBe("HEALTHY");
   });
 });
