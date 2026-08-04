@@ -12,6 +12,7 @@ This catalog indexes package-root identifiers and retained governance reference 
 | GCI-AUTH-P2-0001 | IBR Runtime Authorization | Constitutional governance authorization for IBR Runtime implementation only | Indexed | GCI | GCF-1.1, GCI-P2-0000, GCI-P1-0005, GCS-0001 | GCI-P2-0001 |
 | GCI-AUTH-P2-0002 | Entity Runtime Authorization | Constitutional authorization for later Entity Runtime implementation, governing scope, dependencies, evidence, and readiness gates | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0002 |
 | GCI-AUTH-P2-0003 | Relationship Runtime Authorization | Constitutional authorization for later Relationship Runtime implementation and boundary enforcement | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCI-P1-0005, GCS-0001, GEAI-0001 | GCI-P2-0003 |
+| GCI-AUTH-P2-0004 | Business Rule Runtime Authorization | Constitutional authorization for later Business Rule Runtime implementation, governing deterministic rule evaluation scope, dependencies, evidence, and readiness gates | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCI-P2-0003, GCI-P1-0001, GCI-P1-0002, GCI-P1-0002A, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0004 |
 | GCI-P1-0001 | Compiler Runtime Foundation | Phase 1 implementation package for runtime host foundation, lifecycle, health, and bootstrap contexts | Indexed | GCI | GCI-0001, GCS-0001, WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, WS-IIIE | GCI-P1-0002 |
 | GCI-P1-0002 | Evidence Runtime Foundation | Phase 1 implementation package for immutable deterministic evidence runtime contracts, lifecycle/version controls, and registry services | Indexed | GCI | GCI-P1-0001, GCS-0001 | GCI-P1-0003 |
 | GCI-P1-0002A | Governance Traceability and Runtime Precontracts | Documentation-only governance package closing Phase 1 traceability recommendations and defining future runtime precontract boundaries | Indexed | GCI | GCI-P1-0002, GCI-0001, GCS-0001 | GCI-P1-0003 |
@@ -83,7 +84,7 @@ This catalog indexes package-root identifiers and retained governance reference 
 ## Synchronization Attestation
 - Date: 2026-08-03
 - Method: Local package-root inventory under genesis/engineering/packages and GRN-0002 taxonomy classification were used as source-of-truth for catalog entries.
-- Result: 73 catalog identifiers total, 63 package-root identifiers, 10 non-package governance identifiers, zero package-root parity mismatches.
+- Result: 74 catalog identifiers total, 64 package-root identifiers, 10 non-package governance identifiers, zero package-root parity mismatches.
 
 ## Taxonomy Note
 Rows for GCI-0001, GCI-P1-0002A, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, and WS-IIIE are retained governance references and excluded from package-root parity.
