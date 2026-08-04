@@ -7,18 +7,13 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | Identifier | Title | Purpose | Status | Governing Program | Dependencies | Successor Packages |
 |---|---|---|---|---|---|---|
 | GAR-0003 | Genesis Constitutional Assessment | Executive readiness assessment baseline package | Indexed | GAR | GEAI-0001 | GRP-0001 |
+| GCI-0001 | Genesis Compiler Implementation Program | Canonical constitutional registration for compiler implementation program identity, normative references, and phase chain | Indexed | GCI | GEAI-0001, GCS-0001 | GCI-P1-0001 |
+| GCI-AUTH-P2-0002 | Entity Runtime Authorization | Constitutional authorization for later Entity Runtime implementation, governing scope, dependencies, evidence, and readiness gates | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0002 |
 | GCI-P1-0001 | Compiler Runtime Foundation | Phase 1 implementation package for runtime host foundation, lifecycle, health, and bootstrap contexts | Indexed | GCI | GCI-0001, GCS-0001, WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, WS-IIIE | GCI-P1-0002 |
 | GCI-P1-0002 | Evidence Runtime Foundation | Phase 1 implementation package for immutable deterministic evidence runtime contracts, lifecycle/version controls, and registry services | Indexed | GCI | GCI-P1-0001, GCS-0001 | GCI-P1-0003 |
+| GCI-P1-0002A | Governance Traceability and Runtime Precontracts | Documentation-only governance package closing Phase 1 traceability recommendations and defining future runtime precontract boundaries | Indexed | GCI | GCI-P1-0002, GCI-0001, GCS-0001 | GCI-P1-0003 |
 | GCI-P1-0003 | Evidence Validation Runtime | Phase 1 implementation package for deterministic validation of immutable evidence runtime objects with replay/certification trace preservation | Indexed | GCI | GCI-0001, GCS-0001, GCI-P1-0001, GCI-P1-0002, GCI-P1-0002A | GCI-P1-0004 |
-| GCI-P1-0004 | Manifest Runtime | Phase 1 implementation package for deterministic manifest runtime records with replay/certification linkage and immutable version lineage | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GCI-0001, GCI-P1-0002A | GCI-P1-0005 |
-| GCI-P1-0005 | Replay Runtime | Phase 1 implementation package for deterministic replay records, lineage, graph construction, and traceability | Indexed | GCI | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0002A, GCS-0001 | None |
-| GCI-P2-0000 | Business Semantics Master Architecture | Constitutional architecture baseline defining deterministic semantic runtime model for Phase 2 with no implementation authorization | Indexed | GCI | GCF-1.1, GCI-P1-0005, GCS-0001 | None |
-| GCI-AUTH-P2-0001 | IBR Runtime Authorization | Constitutional governance authorization package granting implementation authority for IBR Runtime only under strict boundary controls | Indexed | GCI | GCF-1.1, GCI-P2-0000, GCI-P1-0005, GCS-0001 | GCI-P2-0001 |
-| GCI-AUTH-P2-0002 | Entity Runtime Authorization | Constitutional authorization for deterministic Entity Runtime implementation scope with strict dependency, boundary, and governance gate controls | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0002 |
-| GCI-AUTH-P2-0003 | Relationship Runtime Authorization | Constitutional authorization for deterministic Relationship Runtime implementation scope with strict dependency, boundary, and governance gate controls | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCI-P1-0005, GCS-0001, GEAI-0001 | GCI-P2-0003 |
-| GCI-P2-0001 | IBR Runtime | Phase 2 implementation package for deterministic observation-only IBR runtime with manifest, replay, validation, and evidence linkage | Indexed | GCI | GCI-P2-0000, GCI-AUTH-P2-0001, GCI-P1-0005, GCS-0001 | None |
-| GCI-P2-0002 | Entity Runtime | Phase 2 implementation package for deterministic canonical entity identity runtime with immutable lineage, contradiction preservation, and identity-state controls | Indexed | GCI | GCI-P2-0000, GCI-AUTH-P2-0002, GCI-P2-0001, GCI-P1-0005, GCS-0001 | None |
-| GCF-1.1 | Genesis Compiler Foundation v1.1 | Constitutional foundation release recording complete Phase 1 runtime closeout as permanent compiler runtime substrate baseline | Indexed | GCF | GCI-P1-0001, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0005, GCS-0001 | None |
+| GCI-P2-0003 | Relationship Runtime | Phase 2 implementation package for deterministic canonical relationship identity, classification, linkage preservation, immutable records, and registry behavior | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCS-0001 | None |
 | GCDF-0001 | Commerce Document Framework | Shared commerce document framework architecture | Indexed | GCDF | GCP-0001 | None |
 | GCD-0003 | Genesis Operational Platform Established | Constitutional decision establishing production-runtime operating baseline | Indexed | GCD | GRP-0001 | GRH-0000 |
 | GLW-0002 | GLW Capability Expansion Planning | LED Warehouse capability expansion planning package | Indexed | GLW | GPO-0002 | None |
@@ -67,11 +62,19 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GPO-0001 | Genesis Program Office | Constitutional executive governance layer for Genesis Enterprise OS | Indexed | GPO | GEAI-0001, GPR-0003A, WS-I | GPO-0002 |
 | GRP-0001 | Genesis Version 1.0 Release Program | Release governance package for promotion gates and executive controls | Indexed | GRP | GAR-0003 | GRP-0001A |
 | WS-I | Business Genome Canonical Model | Constitutional canonical business model architecture for Business Genome downstream workstreams | Indexed | WS | GPR-0003A | WS-II |
+| WS-II | Evidence Ingestion Framework (Reference Stub) | Governance-only discoverability pointer to authoritative WS-II constitutional contracts | Indexed | WS | WS-I | WS-III |
+| WS-III | Knowledge Compiler (Reference Stub) | Governance-only discoverability pointer to authoritative WS-III constitutional contracts | Indexed | WS | WS-II | WS-IIIA |
+| WS-IIIA | Runtime Determinism and Replay Governance (Reference Stub) | Governance-only discoverability pointer to authoritative WS-IIIA constitutional source | Indexed | WS | WS-III | WS-IIIA-R1 |
+| WS-IIIA-R1 | Runtime Determinism and Replay Governance Revision 1 (Reference Stub) | Governance-only discoverability pointer to authoritative WS-IIIA-R1 constitutional source | Indexed | WS | WS-IIIA | WS-IIIB |
+| WS-IIIB | Runtime Governance Segment B (Reference Stub) | Governance-only discoverability pointer to authoritative WS-IIIB constitutional source | Indexed | WS | WS-IIIA-R1 | WS-IIIC |
+| WS-IIIC | Runtime Governance Segment C (Reference Stub) | Governance-only discoverability pointer to authoritative WS-IIIC constitutional source | Indexed | WS | WS-IIIB | WS-IIID |
+| WS-IIID | Runtime Governance Segment D (Reference Stub) | Governance-only discoverability pointer to authoritative WS-IIID constitutional source | Indexed | WS | WS-IIIC | WS-IIIE |
+| WS-IIIE | Runtime Governance Segment E (Reference Stub) | Governance-only discoverability pointer to authoritative WS-IIIE constitutional source | Indexed | WS | WS-IIID | GCS-0001 |
 
 ## Synchronization Attestation
 - Date: 2026-08-03
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 61 package roots, 61 catalog identifiers, duplicates 0, missing 0, orphans 0.
+- Result: 64 catalog identifiers, 64 local package roots, zero parity mismatches.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.
