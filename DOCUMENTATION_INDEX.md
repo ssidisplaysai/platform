@@ -104,17 +104,6 @@
 | [genesis/engineering/packages/GCI-P2-0003/Coverage-Summary.md](genesis/engineering/packages/GCI-P2-0003/Coverage-Summary.md) | Coverage summary for relationship runtime implementation scope | 4 min |
 | [genesis/engineering/packages/GCI-P2-0003/Certification-Evidence.md](genesis/engineering/packages/GCI-P2-0003/Certification-Evidence.md) | Implementation validation evidence set prepared for future independent review | 4 min |
 | [genesis/engineering/packages/GCI-P2-0003/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0003/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P2-0003 implementation validation state | 3 min |
-| [genesis/engineering/packages/GCI-P2-0004/README.md](genesis/engineering/packages/GCI-P2-0004/README.md) | Phase 2 package identity and scope for deterministic business rule runtime implementation | 3 min |
-| [genesis/engineering/packages/GCI-P2-0004/Implementation-Report.md](genesis/engineering/packages/GCI-P2-0004/Implementation-Report.md) | Business rule runtime implementation details, deterministic evaluation behavior, and scope closure | 6 min |
-| [genesis/engineering/packages/GCI-P2-0004/Architecture-Compliance-Report.md](genesis/engineering/packages/GCI-P2-0004/Architecture-Compliance-Report.md) | Architecture compliance validation for authorized business-rule-runtime-only scope | 6 min |
-| [genesis/engineering/packages/GCI-P2-0004/GCS-0001-Conformance-Report.md](genesis/engineering/packages/GCI-P2-0004/GCS-0001-Conformance-Report.md) | GCS-0001 conformance mapping for deterministic business rule runtime subset obligations | 5 min |
-| [genesis/engineering/packages/GCI-P2-0004/Test-Summary.md](genesis/engineering/packages/GCI-P2-0004/Test-Summary.md) | Test execution summary for deterministic business rule evaluation, lineage preservation, and guardrails | 4 min |
-| [genesis/engineering/packages/GCI-P2-0004/Coverage-Summary.md](genesis/engineering/packages/GCI-P2-0004/Coverage-Summary.md) | Coverage summary for business rule runtime implementation scope | 4 min |
-| [genesis/engineering/packages/GCI-P2-0004/Certification-Evidence.md](genesis/engineering/packages/GCI-P2-0004/Certification-Evidence.md) | Implementation validation evidence set prepared for future independent review | 4 min |
-| [genesis/engineering/packages/GCI-P2-0004/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0004/LIFECYCLE-METADATA.md) | Lifecycle and governance metadata for GCI-P2-0004 implementation validation state | 3 min |
-| [genesis/engineering/packages/GCF-1.1/README.md](genesis/engineering/packages/GCF-1.1/README.md) | Phase 1 constitutional foundation release and governance closeout | 3 min |
-| [genesis/engineering/packages/GCI-AUTH-P2-0001/README.md](genesis/engineering/packages/GCI-AUTH-P2-0001/README.md) | IBR runtime authorization package and scope boundary reference | 3 min |
-| [genesis/engineering/packages/GCI-AUTH-P2-0003/README.md](genesis/engineering/packages/GCI-AUTH-P2-0003/README.md) | Relationship runtime authorization package and scope boundary reference | 3 min |
 | [genesis/engineering/packages/GCI-AUTH-P2-0004/README.md](genesis/engineering/packages/GCI-AUTH-P2-0004/README.md) | Package identity, scope constraints, and decision intent for Business Rule Runtime authorization | 3 min |
 | [genesis/engineering/packages/GCI-AUTH-P2-0004/Authorization-Decision.md](genesis/engineering/packages/GCI-AUTH-P2-0004/Authorization-Decision.md) | Constitutional authorization decision for later Business Rule Runtime implementation | 6 min |
 | [genesis/engineering/packages/GCI-AUTH-P2-0004/Authorization-Scope.md](genesis/engineering/packages/GCI-AUTH-P2-0004/Authorization-Scope.md) | Authorized and prohibited scope definitions for deterministic Business Rule Runtime behavior | 4 min |
@@ -132,26 +121,23 @@
 | [genesis/engineering/packages/GCI-AUTH-P2-0004/Risk-Assessment.md](genesis/engineering/packages/GCI-AUTH-P2-0004/Risk-Assessment.md) | Authorization risk assessment and mitigation controls | 4 min |
 | [genesis/engineering/packages/GCI-AUTH-P2-0004/Stop-Conditions.md](genesis/engineering/packages/GCI-AUTH-P2-0004/Stop-Conditions.md) | Conditions that halt any drift beyond deterministic Business Rule Runtime scope | 4 min |
 | [genesis/engineering/packages/GCI-AUTH-P2-0004/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-AUTH-P2-0004/LIFECYCLE-METADATA.md) | Lifecycle state, dependency references, and normalization metadata for GCI-AUTH-P2-0004 | 3 min |
-| [genesis/engineering/packages/GCI-P1-0004/README.md](genesis/engineering/packages/GCI-P1-0004/README.md) | Manifest runtime implementation package | 3 min |
-| [genesis/engineering/packages/GCI-P1-0005/README.md](genesis/engineering/packages/GCI-P1-0005/README.md) | Replay runtime implementation package | 3 min |
-| [genesis/engineering/packages/GCI-P2-0000/README.md](genesis/engineering/packages/GCI-P2-0000/README.md) | Phase 2 business semantics master architecture package | 3 min |
-| [genesis/engineering/packages/GCI-P2-0001/README.md](genesis/engineering/packages/GCI-P2-0001/README.md) | IBR runtime implementation package | 3 min |
-| [genesis/engineering/packages/GCI-P2-0002/README.md](genesis/engineering/packages/GCI-P2-0002/README.md) | Entity runtime implementation package | 3 min |
-
-## Governance Normalization
-
-| Document | Purpose | Read Time |
-|----------|---------|-----------|
-| [genesis/engineering/packages/GRN-0002/README.md](genesis/engineering/packages/GRN-0002/README.md) | Package and catalog parity normalization governance package | 3 min |
-| [genesis/engineering/packages/GRN-0002/Package-Catalog-Taxonomy-Standard.md](genesis/engineering/packages/GRN-0002/Package-Catalog-Taxonomy-Standard.md) | Taxonomy standard for parity-aware package/catalog classification | 5 min |
-| [genesis/engineering/packages/GRN-0002/Authoritative-Package-Root-Inventory.md](genesis/engineering/packages/GRN-0002/Authoritative-Package-Root-Inventory.md) | Canonical package-root inventory used for parity normalization | 5 min |
-| [genesis/engineering/packages/GRN-0002/Catalog-Identifier-Classification-Matrix.md](genesis/engineering/packages/GRN-0002/Catalog-Identifier-Classification-Matrix.md) | Classification matrix for missing and non-package identifiers | 6 min |
-| [genesis/engineering/packages/GRN-0002/Missing-Registration-Resolution.md](genesis/engineering/packages/GRN-0002/Missing-Registration-Resolution.md) | Resolution record for the eight valid package roots missing catalog entries | 4 min |
-| [genesis/engineering/packages/GRN-0002/Non-Package-Identifier-Classification.md](genesis/engineering/packages/GRN-0002/Non-Package-Identifier-Classification.md) | Taxonomy mapping for registry tokens and reference stubs | 4 min |
-| [genesis/engineering/packages/GRN-0002/GCI-P1-0002A-Governance-Decision.md](genesis/engineering/packages/GRN-0002/GCI-P1-0002A-Governance-Decision.md) | Canonical governance decision for GCI-P1-0002A | 4 min |
-| [genesis/engineering/packages/GRN-0002/Parity-Calculation-Rules.md](genesis/engineering/packages/GRN-0002/Parity-Calculation-Rules.md) | Taxonomy-aware parity calculation rules | 4 min |
-| [genesis/engineering/packages/GRN-0002/Normalization-Validation-Report.md](genesis/engineering/packages/GRN-0002/Normalization-Validation-Report.md) | Validation report for normalized parity results and drift checks | 4 min |
-| [genesis/engineering/packages/GRN-0002/LIFECYCLE-METADATA.md](genesis/engineering/packages/GRN-0002/LIFECYCLE-METADATA.md) | Lifecycle metadata for governance parity normalization | 3 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/README.md](genesis/engineering/packages/GCI-AUTH-P2-0005/README.md) | Package identity, scope constraints, and decision intent for Business Genome Assembly Runtime authorization | 3 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Authorization-Decision.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Authorization-Decision.md) | Constitutional authorization decision for later Business Genome Assembly Runtime implementation | 6 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Authorization-Scope.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Authorization-Scope.md) | Authorized and prohibited scope definitions for deterministic Business Genome assembly behavior | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Architecture-Boundaries.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Architecture-Boundaries.md) | Architectural boundary definition for deterministic final-stage assembly only | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Allowed-Dependencies.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Allowed-Dependencies.md) | Permitted predecessor runtime and governance dependencies for authorization | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Forbidden-Dependencies.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Forbidden-Dependencies.md) | Prohibited AI/inference and infrastructure ownership dependencies for authorization | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Business-Genome-Assembly-Boundaries.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Business-Genome-Assembly-Boundaries.md) | Deterministic assembly input/output and authority boundaries for Business Genome construction | 5 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Canonical-Business-Genome-Rules.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Canonical-Business-Genome-Rules.md) | Canonical genome identity, versioning, lineage, and preservation rules | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Implementation-Rules.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Implementation-Rules.md) | Later implementation constraints for deterministic Business Genome Assembly Runtime behavior | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Certification-Requirements.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Certification-Requirements.md) | Required conditions for future independent certification review | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Required-Test-Matrix.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Required-Test-Matrix.md) | Future deterministic test matrix required for later implementation certification | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Required-Evidence.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Required-Evidence.md) | Required evidence set for the later implementation package | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Engineering-Deliverables.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Engineering-Deliverables.md) | Authorization deliverables and explicitly excluded implementation deliverables | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Governance-Gates.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Governance-Gates.md) | Governance review gates before implementation begins | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Risk-Assessment.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Risk-Assessment.md) | Authorization risk assessment and mitigation controls | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/Stop-Conditions.md](genesis/engineering/packages/GCI-AUTH-P2-0005/Stop-Conditions.md) | Conditions that halt any drift beyond deterministic Business Genome assembly authorization scope | 4 min |
+| [genesis/engineering/packages/GCI-AUTH-P2-0005/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-AUTH-P2-0005/LIFECYCLE-METADATA.md) | Lifecycle state, dependency references, and normalization metadata for GCI-AUTH-P2-0005 | 3 min |
 | [genesis/engineering/packages/WS-II/README.md](genesis/engineering/packages/WS-II/README.md) | WS-II constitutional reference stub for in-repository discoverability | 3 min |
 | [genesis/engineering/packages/WS-III/README.md](genesis/engineering/packages/WS-III/README.md) | WS-III constitutional reference stub for in-repository discoverability | 3 min |
 | [genesis/engineering/packages/WS-IIIA/README.md](genesis/engineering/packages/WS-IIIA/README.md) | WS-IIIA constitutional reference stub for in-repository discoverability | 3 min |
