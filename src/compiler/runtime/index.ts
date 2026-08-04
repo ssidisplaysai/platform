@@ -1,4 +1,5 @@
 export { CompilerRuntimeHost } from "./foundation/index";
+export { BusinessGenomeAssemblyRuntimeFactory, BusinessGenomeAssemblyRuntimeRegistry } from "./business-genome-assembly/index";
 export { BusinessRuleRuntimeFactory, BusinessRuleRuntimeRegistry } from "./business-rule/index";
 export { EntityRuntimeFactory, EntityRuntimeRegistry } from "./entity/index";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
@@ -7,6 +8,29 @@ export { IBRRuntimeFactory, IBRRuntimeRegistry } from "./ibr/index";
 export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./manifest/index";
 export { RelationshipRuntimeFactory, RelationshipRuntimeRegistry } from "./relationship/index";
 export { ReplayRuntimeFactory, ReplayRuntimeRegistry } from "./replay/index";
+
+export type {
+  BusinessGenomeAssemblyEvidenceLink,
+  BusinessGenomeAssemblyIdentity,
+  BusinessGenomeAssemblyLifecycle,
+  BusinessGenomeAssemblyLifecycleEvent,
+  BusinessGenomeAssemblyLifecycleState,
+  BusinessGenomeAssemblyLineage,
+  BusinessGenomeAssemblyOutput,
+  BusinessGenomeAssemblyProvenanceLink,
+  BusinessGenomeAssemblyReplayLink,
+  BusinessGenomeAssemblyRuntimeCreateInput,
+  BusinessGenomeAssemblyRuntimeFactoryConfiguration,
+  BusinessGenomeAssemblyRuntimeFactoryOptions,
+  BusinessGenomeAssemblyRuntimeRegistryOptions,
+  BusinessGenomeAssemblyRuntimeVersionChangeInput,
+  BusinessGenomeAssemblyUpstreamLinks,
+  BusinessGenomeAssemblyValidationResult,
+  BusinessGenomeAssemblyValidator,
+  BusinessGenomeAssemblyValidatorResult,
+  BusinessGenomeAssemblyVersion,
+  RegisteredBusinessGenomeAssemblyRuntime,
+} from "./business-genome-assembly/index";
 
 export type {
   BusinessRuleCalculation,

@@ -11,6 +11,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 | GCI-AUTH-P2-0002 | Entity Runtime Authorization | Constitutional authorization for later Entity Runtime implementation, governing scope, dependencies, evidence, and readiness gates | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P1-0002, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0002 |
 | GCI-AUTH-P2-0004 | Business Rule Runtime Authorization | Constitutional authorization for later Business Rule Runtime implementation, governing deterministic rule evaluation scope, dependencies, evidence, and readiness gates | Indexed | GCI | GCI-P2-0000, GCI-P2-0001, GCI-P2-0002, GCI-P2-0003, GCI-P1-0001, GCI-P1-0002, GCI-P1-0002A, GCI-P1-0003, GCS-0001, GEAI-0001 | GCI-P2-0004 |
 | GCI-AUTH-P2-0005 | Business Genome Assembly Runtime Authorization | Constitutional authorization for later deterministic Business Genome Assembly Runtime implementation, governing assembly boundaries, dependencies, evidence expectations, and readiness gates | Indexed | GCI | GCI-P2-0000, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0005, GCI-P2-0001, GCI-P2-0002, GCI-P2-0003, GCI-P2-0004, GCS-0001, GEAI-0001 | GCI-P2-0005 |
+| GCI-P2-0005 | Business Genome Assembly Runtime | Phase 2 implementation package for deterministic immutable final-stage business genome assembly output construction, linkage preservation, and governed registry behavior | Indexed | GCI | GCI-P2-0000, GCI-P1-0002, GCI-P1-0003, GCI-P1-0004, GCI-P1-0005, GCI-P2-0001, GCI-P2-0002, GCI-P2-0003, GCI-P2-0004, GCI-AUTH-P2-0005, GCS-0001 | None |
 | GCI-P1-0001 | Compiler Runtime Foundation | Phase 1 implementation package for runtime host foundation, lifecycle, health, and bootstrap contexts | Indexed | GCI | GCI-0001, GCS-0001, WS-I, WS-II, WS-III, WS-IIIA, WS-IIIA-R1, WS-IIIB, WS-IIIC, WS-IIID, WS-IIIE | GCI-P1-0002 |
 | GCI-P1-0002 | Evidence Runtime Foundation | Phase 1 implementation package for immutable deterministic evidence runtime contracts, lifecycle/version controls, and registry services | Indexed | GCI | GCI-P1-0001, GCS-0001 | GCI-P1-0003 |
 | GCI-P1-0002A | Governance Traceability and Runtime Precontracts | Documentation-only governance package closing Phase 1 traceability recommendations and defining future runtime precontract boundaries | Indexed | GCI | GCI-P1-0002, GCI-0001, GCS-0001 | GCI-P1-0003 |
@@ -76,7 +77,7 @@ This catalog indexes all package roots currently present under genesis/engineeri
 ## Synchronization Attestation
 - Date: 2026-08-03
 - Method: Local package root inventory under genesis/engineering/packages was used as source-of-truth for catalog entries.
-- Result: 65 catalog identifiers, 65 local package roots, zero parity mismatches.
+- Result: 66 catalog identifiers, 66 local package roots, zero parity mismatches.
 
 ## Catalog Integrity Rules
 1. Identifier uniqueness is mandatory.
