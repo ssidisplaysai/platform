@@ -1,10 +1,7 @@
 export { CompilerRuntimeHost } from "./foundation/index";
-export { EntityRuntimeFactory, EntityRuntimeRegistry } from "./entity/index";
 export { EvidenceRuntimeFactory, EvidenceRuntimeRegistry } from "./evidence/index";
 export { EvidenceValidationRuntimeFactory, EvidenceValidationRuntimeRegistry } from "./evidence-validation/index";
-export { IBRRuntimeFactory, IBRRuntimeRegistry } from "./ibr/index";
-export { ManifestRuntimeFactory, ManifestRuntimeRegistry } from "./manifest/index";
-export { ReplayRuntimeFactory, ReplayRuntimeRegistry } from "./replay/index";
+export { RelationshipRuntimeFactory, RelationshipRuntimeRegistry } from "./relationship/index";
 
 export type {
   CertificationContext,
@@ -25,34 +22,6 @@ export type {
   RuntimeManifest,
   StructuredDiagnostic,
 } from "./foundation/index";
-
-export type {
-  EntityAlias,
-  EntityClass,
-  EntityConfidenceRecord,
-  EntityDuplicateLink,
-  EntityIdentityObservation,
-  EntityIdentityResolutionStatus,
-  EntityLineage,
-  EntityNameType,
-  EntityObservationStance,
-  EntityRuntimeCheck,
-  EntityRuntimeCheckStatus,
-  EntityRuntimeCreateInput,
-  EntityRuntimeCreateOptions,
-  EntityRuntimeFactoryConfiguration,
-  EntityRuntimeFactoryOptions,
-  EntityRuntimeLifecycle,
-  EntityRuntimeLifecycleEvent,
-  EntityRuntimeLifecycleState,
-  EntityRuntimeOutcome,
-  EntityRuntimeRecord,
-  EntityRuntimeRegistryOptions,
-  EntityRuntimeRule,
-  EntityRuntimeRuleResult,
-  EntityVersion,
-  RegisteredEntityRuntime,
-} from "./entity/index";
 
 export type {
   EvidenceClassification,
@@ -101,74 +70,23 @@ export type {
 } from "./evidence-validation/index";
 
 export type {
-  IBRRuntimeCertificationTrace,
-  IBRRuntimeCheck,
-  IBRRuntimeCheckStatus,
-  IBRRuntimeCreateInput,
-  IBRRuntimeCreateOptions,
-  IBRRuntimeFactoryConfiguration,
-  IBRRuntimeFactoryOptions,
-  IBRRuntimeGraph,
-  IBRRuntimeGraphEdge,
-  IBRRuntimeGraphEdgeRelation,
-  IBRRuntimeGraphNode,
-  IBRRuntimeGraphNodeType,
-  IBRRuntimeLifecycle,
-  IBRRuntimeLifecycleEvent,
-  IBRRuntimeLifecycleState,
-  IBRRuntimeLineageIntegrity,
-  IBRRuntimeOutcome,
-  IBRRuntimeRecord,
-  IBRRuntimeRegistryOptions,
-  IBRRuntimeRule,
-  IBRRuntimeRuleResult,
-  IBRRuntimeTrace,
-  IBRRuntimeVersion,
-  RegisteredIBRRuntime,
-} from "./ibr/index";
-
-export type {
-  ManifestRuntimeCertificationTrace,
-  ManifestRuntimeCheck,
-  ManifestRuntimeCheckStatus,
-  ManifestRuntimeCreateOptions,
-  ManifestRuntimeEntry,
-  ManifestRuntimeFactoryConfiguration,
-  ManifestRuntimeFactoryOptions,
-  ManifestRuntimeLifecycleIntegrity,
-  ManifestRuntimeOutcome,
-  ManifestRuntimeRecord,
-  ManifestRuntimeRegistryOptions,
-  ManifestRuntimeReplayTrace,
-  ManifestRuntimeRule,
-  ManifestRuntimeRuleResult,
-  ManifestRuntimeVersion,
-  RegisteredManifestRuntime,
-} from "./manifest/index";
-
-export type {
-  RegisteredReplayRuntime,
-  ReplayRuntimeCertificationTrace,
-  ReplayRuntimeCheck,
-  ReplayRuntimeCheckStatus,
-  ReplayRuntimeCreateInput,
-  ReplayRuntimeCreateOptions,
-  ReplayRuntimeFactoryConfiguration,
-  ReplayRuntimeFactoryOptions,
-  ReplayRuntimeGraph,
-  ReplayRuntimeGraphEdge,
-  ReplayRuntimeGraphEdgeRelation,
-  ReplayRuntimeGraphNode,
-  ReplayRuntimeGraphNodeType,
-  ReplayRuntimeLifecycle,
-  ReplayRuntimeLifecycleEvent,
-  ReplayRuntimeLifecycleState,
-  ReplayRuntimeLineageIntegrity,
-  ReplayRuntimeOutcome,
-  ReplayRuntimeRecord,
-  ReplayRuntimeRegistryOptions,
-  ReplayRuntimeRule,
-  ReplayRuntimeRuleResult,
-  ReplayRuntimeTrace,
-  ReplayRuntimeVersion,
-} from "./replay/index";
+  RegisteredRelationshipRuntime,
+  RelationshipCardinality,
+  RelationshipClassification,
+  RelationshipConfidence,
+  RelationshipDirectionality,
+  RelationshipEntityLinkage,
+  RelationshipIdentity,
+  RelationshipLineageLink,
+  RelationshipProvenanceLink,
+  RelationshipReplayLink,
+  RelationshipRuntimeCreateInput,
+  RelationshipRuntimeFactoryConfiguration,
+  RelationshipRuntimeFactoryOptions,
+  RelationshipRuntimeObject,
+  RelationshipRuntimeRegistryOptions,
+  RelationshipValidationResult,
+  RelationshipValidationStatus,
+  RelationshipValidator,
+  RelationshipValidatorResult,
+} from "./relationship/index";
