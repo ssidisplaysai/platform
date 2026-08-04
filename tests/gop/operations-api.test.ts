@@ -15,6 +15,7 @@ describe("gop operations api", () => {
   it("returns an operations snapshot payload shape", async () => {
     process.env.GLW_AUTH_SECRET = "auth-secret";
     process.env.GLW_ADMIN_EMAIL = "admin@example.com";
+    process.env.GLW_ADMIN_PASSWORD = "admin-password";
 
     const originalVerify = global.Buffer.from;
     void originalVerify;

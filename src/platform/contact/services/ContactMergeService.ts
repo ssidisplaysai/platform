@@ -2,17 +2,20 @@ import { randomUUID } from "node:crypto";
 import { ContactError, type ContactActorContext, type ContactId, type MergeRecord, type TenantId } from "../contracts";
 import type { ContactRegistry } from "./ContactRegistry";
 import type { ContactAuditWriter } from "./ContactAuditWriter";
+import type { PersistenceCoordinator } from "../persistence";
+import type { ContactMetricsService } from "./ContactMetricsService";
 
 function methodKey(input: { type: string; value: string }): string {
   return `${input.type}:${input.value}`;
 }
 
 export class ContactMergeService {
-  private idempotency = new Map<string, MergeRecord>();
-
   constructor(
     private readonly registry: ContactRegistry,
     private readonly audit: ContactAuditWriter,
+    private readonly persistence: PersistenceCoordinator,
+    private readonly metrics: ContactMetricsService,
+    private readonly idempotencyTtlMs: number,
   ) {}
 
   async merge(input: {
@@ -23,9 +26,29 @@ export class ContactMergeService {
     idempotencyKey: string;
     notes?: string;
   }): Promise<MergeRecord> {
-    const existing = this.idempotency.get(input.idempotencyKey);
+    const existing = this.persistence.findMergeIdempotencyRecord({
+      idempotencyKey: input.idempotencyKey,
+      tenantId: input.tenantId,
+      sourceContactId: input.sourceContactId,
+      targetContactId: input.targetContactId,
+    });
     if (existing) {
-      return structuredClone(existing);
+      await this.persistence.incrementMergeIdempotencyRejectionCount();
+      this.metrics.replace(this.persistence.snapshot().metrics);
+      await this.audit.append({
+        eventType: "MERGE_IDEMPOTENCY_REJECTED",
+        contactId: input.sourceContactId,
+        tenantId: input.tenantId,
+        actor: input.actor,
+        message: "duplicate merge request rejected by idempotency key",
+        details: {
+          idempotencyKey: input.idempotencyKey,
+          mergeRecordId: existing.mergeRecordId,
+          sourceContactId: existing.sourceContactId,
+          targetContactId: existing.targetContactId,
+        },
+      });
+      throw new ContactError("MERGE_CONFLICT", `duplicate merge idempotency key: ${input.idempotencyKey}`, false, true, "HIGH");
     }
 
     const source = this.registry.getContact(input.sourceContactId);
@@ -107,7 +130,15 @@ export class ContactMergeService {
       },
     });
 
-    this.idempotency.set(input.idempotencyKey, mergeRecord);
+    await this.persistence.recordMergeIdempotency({
+      idempotencyKey: input.idempotencyKey,
+      tenantId: input.tenantId,
+      sourceContactId: input.sourceContactId,
+      targetContactId: input.targetContactId,
+      mergeRecordId: mergeRecord.mergeRecordId,
+      ttlMs: this.idempotencyTtlMs,
+    });
+    this.metrics.replace(this.persistence.snapshot().metrics);
 
     await this.audit.append({
       eventType: "MERGE_COMPLETED",

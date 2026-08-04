@@ -26,6 +26,7 @@ function normalize(raw: unknown): ContactPersistedState {
     audits: Array.isArray(candidate.audits) ? candidate.audits : [],
     metrics: candidate.metrics ?? createDefaultContactPersistedState().metrics,
     duplicateBacklog: Array.isArray(candidate.duplicateBacklog) ? candidate.duplicateBacklog : [],
+    mergeIdempotencyRecords: Array.isArray(candidate.mergeIdempotencyRecords) ? candidate.mergeIdempotencyRecords : [],
   };
 }
 

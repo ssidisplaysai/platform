@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
 import { getGlwSession } from "@/lib/glw/auth";
+import { CONTACT_OBSERVABILITY_ACTIONS, authorizeContactObservability } from "@/lib/gop/contact-observability-authorization";
 import { getGenesisContactRuntime } from "@/platform/contact";
 
 export async function GET(): Promise<NextResponse> {
   const session = await getGlwSession();
   if (!session) {
     return NextResponse.json({ error: "GLW session is required." }, { status: 401 });
+  }
+
+  const decision = authorizeContactObservability({
+    session,
+    action: CONTACT_OBSERVABILITY_ACTIONS.health,
+    route: "/api/gop/contact/health",
+  });
+  if (!decision.allowed) {
+    return NextResponse.json({
+      error: decision.reason,
+      reasonCode: decision.reasonCode,
+      authorizationMetrics: {
+        deniedCount: decision.deniedCount,
+      },
+    }, { status: 403 });
   }
 
   const runtime = await getGenesisContactRuntime();

@@ -180,7 +180,7 @@ describe("GCT-1001 Genesis Contact Platform foundation", () => {
     }
   });
 
-  it("merges same-tenant contacts with idempotency and rejects cross-tenant merges", async () => {
+  it("merges same-tenant contacts, rejects duplicate idempotency keys, and rejects cross-tenant merges", async () => {
     const rootDir = await mkdtemp(join(tmpdir(), "gct-1001-merge-"));
     try {
       const runtime = await createGenesisContactRuntime({ rootDir, dependencies: dependencies() });
@@ -206,15 +206,16 @@ describe("GCT-1001 Genesis Contact Platform foundation", () => {
         actor: actor(),
         idempotencyKey: "merge-1",
       });
-      const mergedB = await runtime.merge.merge({
+
+      await expect(runtime.merge.merge({
         sourceContactId: source.contactId,
         targetContactId: target.contactId,
         tenantId: "tenant-a",
         actor: actor(),
         idempotencyKey: "merge-1",
-      });
+      })).rejects.toBeInstanceOf(ContactError);
 
-      expect(mergedA.mergeRecordId).toBe(mergedB.mergeRecordId);
+      expect(mergedA.mergeRecordId.length).toBeGreaterThan(0);
       expect(runtime.registry.getContact(source.contactId)?.status).toBe("MERGED");
 
       const crossTenant = await runtime.registry.registerContact({

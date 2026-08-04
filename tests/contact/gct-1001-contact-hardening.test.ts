@@ -624,7 +624,7 @@ describe("GCT-1001 contact hardening matrix", () => {
     }
   });
 
-  it("merges contacts safely with conflict handling, idempotency, and data preservation", async () => {
+  it("merges contacts safely with conflict handling, idempotency rejection, and data preservation", async () => {
     const rootDir = await mkdtemp(join(tmpdir(), "gct-1001-merge-hardening-"));
     try {
       const { runtime } = await runtimeFor(rootDir);
@@ -680,14 +680,14 @@ describe("GCT-1001 contact hardening matrix", () => {
         actor: actor(),
         idempotencyKey: "merge-idempotent-1",
       });
-      const mergedB = await runtime.merge.merge({
+      await expect(runtime.merge.merge({
         sourceContactId: source.contactId,
         targetContactId: target.contactId,
         tenantId: "tenant-a",
         actor: actor(),
         idempotencyKey: "merge-idempotent-1",
-      });
-      expect(mergedA.mergeRecordId).toBe(mergedB.mergeRecordId);
+      })).rejects.toBeInstanceOf(ContactError);
+      expect(mergedA.mergeRecordId.length).toBeGreaterThan(0);
 
       const mergedSource = runtime.registry.getContact(source.contactId);
       const mergedTarget = runtime.registry.getContact(target.contactId);
@@ -720,6 +720,85 @@ describe("GCT-1001 contact hardening matrix", () => {
         actor: actor(),
         idempotencyKey: "merge-conflict",
       })).rejects.toBeInstanceOf(ContactError);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("persists idempotency across restart, rejects duplicate merge, and records audit and metrics evidence", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gct-1001-merge-idempotency-restart-"));
+    try {
+      const first = await runtimeFor(rootDir);
+      const source = await registerDefaultContact(first.runtime, { tenantId: "tenant-a", organizationId: "org-a" });
+      const target = await registerDefaultContact(first.runtime, { tenantId: "tenant-a", organizationId: "org-a" });
+
+      await first.runtime.methods.addMethod({
+        contactId: source.contactId,
+        tenantId: source.tenantId,
+        actor: actor(),
+        method: { type: "EMAIL", value: "source-restart@example.com", verified: true, valid: true },
+      });
+
+      const idempotencyKey = "merge-restart-key-1";
+      const merged = await first.runtime.merge.merge({
+        sourceContactId: source.contactId,
+        targetContactId: target.contactId,
+        tenantId: "tenant-a",
+        actor: actor(),
+        idempotencyKey,
+      });
+      expect(merged.mergeRecordId.length).toBeGreaterThan(0);
+
+      const restarted = await runtimeFor(rootDir);
+      await expect(restarted.runtime.merge.merge({
+        sourceContactId: source.contactId,
+        targetContactId: target.contactId,
+        tenantId: "tenant-a",
+        actor: actor(),
+        idempotencyKey,
+      })).rejects.toBeInstanceOf(ContactError);
+
+      const audit = restarted.runtime.audit.list(300);
+      expect(audit.some((item) => item.eventType === "MERGE_IDEMPOTENCY_REJECTED")).toBe(true);
+
+      const metrics = restarted.runtime.metrics.snapshot();
+      expect(metrics.mergeIdempotencyRecords).toBeGreaterThanOrEqual(1);
+      expect(metrics.mergeIdempotencyRejections).toBeGreaterThanOrEqual(1);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("cleans up expired idempotency keys and keeps deterministic lookup behavior", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gct-1001-merge-idempotency-cleanup-"));
+    try {
+      const boot = await runtimeFor(rootDir, {});
+      const statePath = join(rootDir, "contact", "contact-state.v1.json");
+      const snapshot = boot.runtime.coordinator.snapshot();
+      snapshot.mergeIdempotencyRecords.push({
+        idempotencyKey: "expired-idempotency-key",
+        tenantId: "tenant-a",
+        sourceContactId: "contact-source",
+        targetContactId: "contact-target",
+        mergeRecordId: "merge-expired",
+        createdAt: "2020-01-01T00:00:00.000Z",
+        expiresAt: "2020-01-01T00:00:01.000Z",
+      });
+      await writeFile(statePath, JSON.stringify(snapshot, null, 2), "utf8");
+
+      const restarted = await runtimeFor(rootDir);
+      const metricsAfterLoad = restarted.runtime.metrics.snapshot();
+      expect(metricsAfterLoad.mergeIdempotencyRecords).toBe(0);
+      expect(metricsAfterLoad.mergeIdempotencyExpiredCleanups).toBeGreaterThanOrEqual(1);
+
+      const cleanupCount = await restarted.runtime.coordinator.cleanupExpiredMergeIdempotencyRecords();
+      expect(cleanupCount).toBe(0);
+      expect(restarted.runtime.coordinator.findMergeIdempotencyRecord({
+        idempotencyKey: "expired-idempotency-key",
+        tenantId: "tenant-a",
+        sourceContactId: "contact-source",
+        targetContactId: "contact-target",
+      })).toBeUndefined();
     } finally {
       await rm(rootDir, { recursive: true, force: true });
     }

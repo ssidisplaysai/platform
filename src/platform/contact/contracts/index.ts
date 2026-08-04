@@ -179,6 +179,16 @@ export type MergeRecord = {
   notes?: string;
 };
 
+export type MergeIdempotencyRecord = {
+  idempotencyKey: string;
+  tenantId: TenantId;
+  sourceContactId: ContactId;
+  targetContactId: ContactId;
+  mergeRecordId: string;
+  createdAt: string;
+  expiresAt: string;
+};
+
 export type DeduplicationDecision = {
   candidateContactId: ContactId;
   score: number;
@@ -256,6 +266,9 @@ export type ContactMetrics = {
   corruptStateCount: number;
   auditFailureCount: number;
   oldestUnreviewedDuplicateAgeMinutes: number;
+  mergeIdempotencyRecords: number;
+  mergeIdempotencyRejections: number;
+  mergeIdempotencyExpiredCleanups: number;
 };
 
 export type ContactHealth = {
@@ -339,6 +352,7 @@ export type ContactPersistedState = {
   audits: ContactAuditRecord[];
   metrics: ContactMetrics;
   duplicateBacklog: Array<{ contactId: ContactId; firstDetectedAt: string }>;
+  mergeIdempotencyRecords: MergeIdempotencyRecord[];
 };
 
 export function createDefaultContactMetrics(): ContactMetrics {
@@ -362,6 +376,9 @@ export function createDefaultContactMetrics(): ContactMetrics {
     corruptStateCount: 0,
     auditFailureCount: 0,
     oldestUnreviewedDuplicateAgeMinutes: 0,
+    mergeIdempotencyRecords: 0,
+    mergeIdempotencyRejections: 0,
+    mergeIdempotencyExpiredCleanups: 0,
   };
 }
 
@@ -372,5 +389,6 @@ export function createDefaultContactPersistedState(): ContactPersistedState {
     audits: [],
     metrics: createDefaultContactMetrics(),
     duplicateBacklog: [],
+    mergeIdempotencyRecords: [],
   };
 }

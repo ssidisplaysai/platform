@@ -70,6 +70,7 @@ export type GenesisContactRuntimeOptions = {
   store?: ContactStore;
   dependencies?: ContactPlatformDependencies;
   severityThreshold?: ContactErrorSeverity;
+  mergeIdempotencyTtlMs?: number;
 };
 
 function createDefaultDependencies(): ContactPlatformDependencies {
@@ -192,7 +193,7 @@ export async function createGenesisContactRuntime(
   const eligibility = new CommunicationEligibilityService(consent, audit);
   const lifecycle = new ContactLifecycleService(registry, audit);
   const deduplication = new ContactDeduplicationService(registry, audit, coordinator);
-  const merge = new ContactMergeService(registry, audit);
+  const merge = new ContactMergeService(registry, audit, coordinator, metrics, options.mergeIdempotencyTtlMs ?? 86_400_000);
   const health = new ContactHealthService(metrics, audit, dependencies);
 
   return {
