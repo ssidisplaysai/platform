@@ -146,6 +146,7 @@
 | [genesis/engineering/packages/GCI-P2-0005/Coverage-Summary.md](genesis/engineering/packages/GCI-P2-0005/Coverage-Summary.md) | Focused runtime coverage metrics and interpretation for certification evidence | 4 min |
 | [genesis/engineering/packages/GCI-P2-0005/Certification-Evidence.md](genesis/engineering/packages/GCI-P2-0005/Certification-Evidence.md) | Independent constitutional certification evidence and decision record | 4 min |
 | [genesis/engineering/packages/GCI-P2-0005/LIFECYCLE-METADATA.md](genesis/engineering/packages/GCI-P2-0005/LIFECYCLE-METADATA.md) | Lifecycle state and dependency normalization for GCI-P2-0005 implementation package | 3 min |
+| [genesis/engineering/packages/GCI-P2-0005/GCI-P2-0005-Freeze-Report.md](genesis/engineering/packages/GCI-P2-0005/GCI-P2-0005-Freeze-Report.md) | Freeze decision, integrated tag evidence, and closeout integrity records for GCI-P2-0005 | 4 min |
 | [genesis/engineering/packages/WS-II/README.md](genesis/engineering/packages/WS-II/README.md) | WS-II constitutional reference stub for in-repository discoverability | 3 min |
 | [genesis/engineering/packages/WS-III/README.md](genesis/engineering/packages/WS-III/README.md) | WS-III constitutional reference stub for in-repository discoverability | 3 min |
 | [genesis/engineering/packages/WS-IIIA/README.md](genesis/engineering/packages/WS-IIIA/README.md) | WS-IIIA constitutional reference stub for in-repository discoverability | 3 min |
