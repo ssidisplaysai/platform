@@ -9,10 +9,11 @@ Package files:
 5. 03-Architecture-Reverification.md
 6. 04-Boundary-Reverification.md
 7. 05-Test-Reverification.md
-8. 06-Final-Risk-Assessment.md
-9. 07-Final-Certification-Decision.md
-10. GKN-1001C-Validation-Report.md
-11. GKN-1001C-Completion-Record.md
+8. 06-Playbook-Conformance.md
+9. 07-Final-Risk-Assessment.md
+10. 08-Final-Certification-Decision.md
+11. GKN-1001C-Validation-Report.md
+12. GKN-1001C-Completion-Record.md
 
 Authority baseline:
 

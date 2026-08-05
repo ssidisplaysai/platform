@@ -22,6 +22,10 @@ Baseline commit verification:
 - c4e635473820f52166dc9dc8249371f356c9436e
 - Present and equals current pre-certification HEAD.
 
-6. Workspace baseline state
+6. Playbook baseline
+- GPG-0001 package present at genesis/playbooks/GPG-0001.
+- Playbook rename commit present and ancestor of current HEAD.
+
+7. Workspace baseline state
 - Tracked files clean prior to GKN-1001C package authoring.
 - Runtime data remains untracked and excluded.
