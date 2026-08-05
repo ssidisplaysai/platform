@@ -1,6 +1,4 @@
-import { randomUUID } from "node:crypto";
-import { assertLifecycleTransitionAllowed } from "../domain";
-import {
+﻿import {
   ProductError,
   type AssetReference,
   type AttributeDefinition,
@@ -9,7 +7,6 @@ import {
   type Configuration,
   type DocumentReference,
   type KnowledgeReference,
-  type LifecycleState,
   type OptionDefinition,
   type OrganizationReference,
   type PricingDefinition,
@@ -24,14 +21,15 @@ import {
 } from "../contracts";
 import type { PersistenceCoordinator } from "../persistence";
 import type { ProductAuditService } from "./ProductAuditService";
-
-function nowIso(): string {
-  return new Date().toISOString();
-}
-
-function normalizeKey(input: string): string {
-  return input.trim().toLowerCase();
-}
+import { ProductBomDefinitionService } from "./ProductBomDefinitionService";
+import { ProductBundleKitService } from "./ProductBundleKitService";
+import { ProductCatalogService } from "./ProductCatalogService";
+import { ProductConfigurationService } from "./ProductConfigurationService";
+import { ProductPricingDefinitionService } from "./ProductPricingDefinitionService";
+import { ProductQueryService } from "./ProductQueryService";
+import { ProductReferenceRegistryService } from "./ProductReferenceRegistryService";
+import { ProductRelationshipService } from "./ProductRelationshipService";
+import { ProductVariantService } from "./ProductVariantService";
 
 export type ProductFoundationEntityKind =
   | "Product"
@@ -53,108 +51,66 @@ export type ProductFoundationEntityKind =
   | "OrganizationReference";
 
 export class ProductRegistryService {
+  readonly catalog: ProductCatalogService;
+  readonly variant: ProductVariantService;
+  readonly configuration: ProductConfigurationService;
+  readonly pricingDefinition: ProductPricingDefinitionService;
+  readonly bomDefinition: ProductBomDefinitionService;
+  readonly relationship: ProductRelationshipService;
+  readonly bundleKit: ProductBundleKitService;
+  readonly references: ProductReferenceRegistryService;
+  readonly query: ProductQueryService;
+
   constructor(
     private readonly persistence: PersistenceCoordinator,
     private readonly audit: ProductAuditService,
-  ) {}
+  ) {
+    this.catalog = new ProductCatalogService(this.persistence, this.audit);
+    this.variant = new ProductVariantService(this.persistence, this.audit);
+    this.configuration = new ProductConfigurationService(this.persistence, this.audit);
+    this.pricingDefinition = new ProductPricingDefinitionService(this.persistence, this.audit);
+    this.bomDefinition = new ProductBomDefinitionService(this.persistence, this.audit);
+    this.relationship = new ProductRelationshipService(this.persistence, this.audit);
+    this.bundleKit = new ProductBundleKitService(this.persistence, this.audit);
+    this.references = new ProductReferenceRegistryService(this.persistence, this.audit);
+    this.query = new ProductQueryService(this.persistence);
+  }
 
   listProducts(tenantId?: string): Product[] {
-    return this.persistence
-      .snapshot()
-      .products.filter((item) => (tenantId ? item.tenantId === tenantId : true))
-      .map((item) => structuredClone(item));
+    return this.query.listProducts(tenantId);
   }
 
   async registerProduct(input: {
     tenantId: string;
-    sku: string;
+    productId: string;
+    productCode: string;
+    versionIdentifier: string;
     displayName: string;
+    lifecycleState: Product["lifecycleState"];
+    metadata: Product["metadata"];
     productFamilyId: string;
     categoryId: string;
     actor: ProductActorContext;
   }): Promise<Product> {
-    if (!input.tenantId || !input.sku || !input.displayName || !input.productFamilyId || !input.categoryId) {
-      throw new ProductError("PRODUCT_INVALID", "missing required product registration fields", false, true, "HIGH");
-    }
-
-    const at = nowIso();
-    const normalizedSku = normalizeKey(input.sku);
-    const product: Product = {
-      productId: `product_${randomUUID()}`,
-      tenantId: input.tenantId,
-      sku: normalizedSku,
-      displayName: input.displayName.trim(),
-      productFamilyId: input.productFamilyId,
-      categoryId: input.categoryId,
-      lifecycleState: "DRAFT",
-      attributes: [],
-      createdAt: at,
-      createdBy: input.actor.actorId,
-      updatedAt: at,
-      updatedBy: input.actor.actorId,
-    };
-
-    await this.persistence.mutate((state) => {
-      const exists = state.products.some((item) => item.tenantId === product.tenantId && item.sku === product.sku);
-      if (exists) {
-        throw new ProductError("PRODUCT_DUPLICATE", `duplicate sku in tenant scope: ${product.sku}`, false, true, "HIGH");
-      }
-      state.products.push(product);
-    });
-
-    await this.audit.append({
-      eventType: "PRODUCT_REGISTERED",
-      tenantId: product.tenantId,
-      productId: product.productId,
-      actor: input.actor,
-      message: `product ${product.productId} registered`,
-      details: { sku: product.sku },
-    });
-
-    return this.requireProduct(product.productId);
+    return this.catalog.createProduct(input);
   }
 
   async transitionProductLifecycle(input: {
     tenantId: string;
     productId: string;
-    lifecycleState: LifecycleState;
-    expectedCurrentVersion: number;
+    lifecycleState: Product["lifecycleState"];
+    expectedVersionIdentifier: string;
     actor: ProductActorContext;
+    reason?: string;
   }): Promise<Product> {
-    await this.persistence.mutate((state) => {
-      const product = state.products.find((item) => item.productId === input.productId);
-      if (!product) {
-        throw new ProductError("PRODUCT_NOT_FOUND", `product not found: ${input.productId}`, false, true, "MEDIUM");
-      }
-      if (product.tenantId !== input.tenantId) {
-        throw new ProductError("TENANT_MISMATCH", `tenant mismatch for product ${input.productId}`, false, true, "HIGH");
-      }
-
-      const latestVersion = state.productVersions
-        .filter((item) => item.productId === product.productId)
-        .reduce((max, current) => (current.versionNumber > max ? current.versionNumber : max), 0);
-
-      if (latestVersion !== input.expectedCurrentVersion) {
-        state.metrics.versionConflictCount += 1;
-        throw new ProductError("VERSION_CONFLICT", `expected version ${input.expectedCurrentVersion} but found ${latestVersion}`, false, true, "HIGH");
-      }
-
-      assertLifecycleTransitionAllowed(product.lifecycleState, input.lifecycleState);
-      product.lifecycleState = input.lifecycleState;
-      product.updatedAt = nowIso();
-      product.updatedBy = input.actor.actorId;
-    });
-
-    await this.audit.append({
-      eventType: "PRODUCT_LIFECYCLE_TRANSITIONED",
+    return this.catalog.transitionLifecycle({
       tenantId: input.tenantId,
       productId: input.productId,
+      nextLifecycleState: input.lifecycleState,
+      expectedVersionIdentifier: input.expectedVersionIdentifier,
       actor: input.actor,
-      message: `product lifecycle transitioned to ${input.lifecycleState}`,
-      details: { lifecycleState: input.lifecycleState },
+      reason: input.reason,
     });
-
-    return this.requireProduct(input.productId);
   }
 
   async registerFoundationEntities(input: {
@@ -196,19 +152,57 @@ export class ProductRegistryService {
       state.categories.push(...(input.entities.categories ?? []));
       state.attributeDefinitions.push(...(input.entities.attributeDefinitions ?? []));
       state.optionDefinitions.push(...(input.entities.optionDefinitions ?? []));
-      state.variants.push(...(input.entities.variants ?? []));
-      state.configurations.push(...(input.entities.configurations ?? []));
-      state.productRelationships.push(...(input.entities.productRelationships ?? []));
-      state.productBundles.push(...(input.entities.productBundles ?? []));
-      state.productKits.push(...(input.entities.productKits ?? []));
       state.productVersions.push(...(input.entities.productVersions ?? []));
-      state.pricingDefinitions.push(...(input.entities.pricingDefinitions ?? []));
-      state.billOfMaterialDefinitions.push(...(input.entities.billOfMaterialDefinitions ?? []));
-      state.assetReferences.push(...(input.entities.assetReferences ?? []));
-      state.documentReferences.push(...(input.entities.documentReferences ?? []));
-      state.knowledgeReferences.push(...(input.entities.knowledgeReferences ?? []));
-      state.organizationReferences.push(...(input.entities.organizationReferences ?? []));
     });
+
+    for (const variant of input.entities.variants ?? []) {
+      await this.variant.createVariant({ ...variant, actor: input.actor });
+    }
+
+    for (const configuration of input.entities.configurations ?? []) {
+      await this.configuration.defineConfiguration({ ...configuration, actor: input.actor });
+    }
+
+    for (const pricing of input.entities.pricingDefinitions ?? []) {
+      await this.pricingDefinition.definePricing({ ...pricing, actor: input.actor });
+    }
+
+    for (const bom of input.entities.billOfMaterialDefinitions ?? []) {
+      await this.bomDefinition.defineBom({ ...bom, actor: input.actor });
+    }
+
+    for (const relationship of input.entities.productRelationships ?? []) {
+      await this.relationship.defineRelationship({ ...relationship, actor: input.actor });
+    }
+
+    for (const bundle of input.entities.productBundles ?? []) {
+      await this.bundleKit.defineBundle({ ...bundle, actor: input.actor });
+    }
+
+    for (const kit of input.entities.productKits ?? []) {
+      await this.bundleKit.defineKit({ ...kit, actor: input.actor });
+    }
+
+    // Apply initial references directly for each product to keep service boundaries explicit.
+    const referenceGroups = [
+      ...(input.entities.assetReferences ?? []),
+      ...(input.entities.documentReferences ?? []),
+      ...(input.entities.knowledgeReferences ?? []),
+      ...(input.entities.organizationReferences ?? []),
+    ];
+
+    const groupedProductIds = [...new Set(referenceGroups.map((item) => item.productId))];
+    for (const productId of groupedProductIds) {
+      await this.references.registerReferences({
+        tenantId: input.tenantId,
+        productId,
+        actor: input.actor,
+        assetReferences: (input.entities.assetReferences ?? []).filter((item) => item.productId === productId),
+        documentReferences: (input.entities.documentReferences ?? []).filter((item) => item.productId === productId),
+        knowledgeReferences: (input.entities.knowledgeReferences ?? []).filter((item) => item.productId === productId),
+        organizationReferences: (input.entities.organizationReferences ?? []).filter((item) => item.productId === productId),
+      });
+    }
 
     await this.audit.append({
       eventType: "PRODUCT_FOUNDATION_ENTITIES_REGISTERED",
@@ -218,7 +212,7 @@ export class ProductRegistryService {
       details: {
         productFamilies: input.entities.productFamilies?.length ?? 0,
         categories: input.entities.categories?.length ?? 0,
-        attributes: input.entities.attributeDefinitions?.length ?? 0,
+        variants: input.entities.variants?.length ?? 0,
       },
     });
   }
@@ -232,62 +226,6 @@ export class ProductRegistryService {
     organizationReferences?: OrganizationReference[];
     actor: ProductActorContext;
   }): Promise<void> {
-    await this.persistence.mutate((state) => {
-      const product = state.products.find((item) => item.productId === input.productId);
-      if (!product) {
-        throw new ProductError("PRODUCT_NOT_FOUND", `product not found: ${input.productId}`, false, true, "MEDIUM");
-      }
-      if (product.tenantId !== input.tenantId) {
-        throw new ProductError("TENANT_MISMATCH", `tenant mismatch for product ${input.productId}`, false, true, "HIGH");
-      }
-
-      for (const reference of input.assetReferences ?? []) {
-        if (!reference.assetId) {
-          state.metrics.invalidReferenceCount += 1;
-          throw new ProductError("REFERENCE_INVALID", "asset reference id is required", false, true, "HIGH");
-        }
-        state.assetReferences.push(reference);
-      }
-
-      for (const reference of input.documentReferences ?? []) {
-        if (!reference.documentId) {
-          state.metrics.invalidReferenceCount += 1;
-          throw new ProductError("REFERENCE_INVALID", "document reference id is required", false, true, "HIGH");
-        }
-        state.documentReferences.push(reference);
-      }
-
-      for (const reference of input.knowledgeReferences ?? []) {
-        if (!reference.knowledgeId) {
-          state.metrics.invalidReferenceCount += 1;
-          throw new ProductError("REFERENCE_INVALID", "knowledge reference id is required", false, true, "HIGH");
-        }
-        state.knowledgeReferences.push(reference);
-      }
-
-      for (const reference of input.organizationReferences ?? []) {
-        if (!reference.organizationId) {
-          state.metrics.invalidReferenceCount += 1;
-          throw new ProductError("REFERENCE_INVALID", "organization reference id is required", false, true, "HIGH");
-        }
-        state.organizationReferences.push(reference);
-      }
-    });
-
-    await this.audit.append({
-      eventType: "PRODUCT_REFERENCES_REGISTERED",
-      tenantId: input.tenantId,
-      productId: input.productId,
-      actor: input.actor,
-      message: "product references registered",
-    });
-  }
-
-  private requireProduct(productId: string): Product {
-    const found = this.persistence.snapshot().products.find((item) => item.productId === productId);
-    if (!found) {
-      throw new ProductError("PRODUCT_NOT_FOUND", `product not found: ${productId}`, false, true, "MEDIUM");
-    }
-    return structuredClone(found);
+    return this.references.registerReferences(input);
   }
 }

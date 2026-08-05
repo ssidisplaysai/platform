@@ -6,10 +6,19 @@ import {
 } from "../integration";
 import { FileProductStore, PersistenceCoordinator, type ProductStore } from "../persistence";
 import {
+  ProductBomDefinitionService,
+  ProductBundleKitService,
+  ProductCatalogService,
+  ProductConfigurationService,
+  ProductPricingDefinitionService,
+  ProductQueryService,
+  ProductReferenceRegistryService,
+  ProductRelationshipService,
   ProductAuditService,
   ProductHealthService,
   ProductMetricsService,
   ProductRegistryService,
+  ProductVariantService,
 } from "../services";
 
 export type GenesisProductRuntime = {
@@ -20,6 +29,15 @@ export type GenesisProductRuntime = {
   metrics: ProductMetricsService;
   health: ProductHealthService;
   registry: ProductRegistryService;
+  catalog: ProductCatalogService;
+  variant: ProductVariantService;
+  configuration: ProductConfigurationService;
+  pricingDefinition: ProductPricingDefinitionService;
+  bomDefinition: ProductBomDefinitionService;
+  relationship: ProductRelationshipService;
+  bundleKit: ProductBundleKitService;
+  references: ProductReferenceRegistryService;
+  query: ProductQueryService;
   snapshot(): ProductPersistedState;
   observability(): Promise<{
     capability: "platform.product";
@@ -56,6 +74,15 @@ export async function createGenesisProductRuntime(
   const metrics = new ProductMetricsService(coordinator);
   const health = new ProductHealthService(coordinator, dependencies.providers);
   const registry = new ProductRegistryService(coordinator, audit);
+  const catalog = registry.catalog;
+  const variant = registry.variant;
+  const configuration = registry.configuration;
+  const pricingDefinition = registry.pricingDefinition;
+  const bomDefinition = registry.bomDefinition;
+  const relationship = registry.relationship;
+  const bundleKit = registry.bundleKit;
+  const references = registry.references;
+  const query = registry.query;
 
   const buildObservability = async () => ({
     capability: "platform.product" as const,
@@ -77,6 +104,15 @@ export async function createGenesisProductRuntime(
     metrics,
     health,
     registry,
+    catalog,
+    variant,
+    configuration,
+    pricingDefinition,
+    bomDefinition,
+    relationship,
+    bundleKit,
+    references,
+    query,
     snapshot() {
       return coordinator.snapshot();
     },

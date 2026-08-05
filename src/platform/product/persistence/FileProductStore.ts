@@ -17,7 +17,7 @@ function normalize(raw: unknown): ProductPersistedState {
   }
 
   const candidate = raw as Partial<ProductPersistedState>;
-  if (candidate.schemaVersion !== "1.0.0") {
+  if (candidate.schemaVersion !== "1.1.0") {
     throw new ProductError("STATE_CORRUPT", "unsupported product state schema", false, true, "CRITICAL");
   }
 
@@ -50,7 +50,7 @@ function normalize(raw: unknown): ProductPersistedState {
 
   const defaults = createDefaultProductPersistedState();
   return {
-    schemaVersion: "1.0.0",
+    schemaVersion: "1.1.0",
     products: candidate.products!,
     variants: candidate.variants!,
     productFamilies: candidate.productFamilies!,

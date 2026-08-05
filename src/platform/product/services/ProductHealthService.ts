@@ -16,7 +16,10 @@ export class ProductHealthService {
     const state = this.persistence.snapshot();
     const metrics = state.metrics;
     const providerCount = this.providers.listProviders().length;
-    const degraded = metrics.corruptStateCount > 0 || metrics.invalidReferenceCount > 0;
+    const degraded =
+      metrics.corruptStateCount > 0 ||
+      metrics.invalidReferenceCount > 0 ||
+      metrics.invariantViolationCount > 0;
 
     return {
       status: degraded ? "DEGRADED" : "HEALTHY",
@@ -38,6 +41,11 @@ export class ProductHealthService {
           name: "audit",
           status: metrics.corruptStateCount > 0 ? "WARN" : "PASS",
           detail: `corruptStateCount=${metrics.corruptStateCount}`,
+        },
+        {
+          name: "integration-ports",
+          status: providerCount > 0 ? "PASS" : "FAIL",
+          detail: `providers=${providerCount}`,
         },
       ],
     };

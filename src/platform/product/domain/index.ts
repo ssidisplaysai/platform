@@ -1,31 +1,80 @@
-import { ProductError, type LifecycleState, type ProductPersistedState } from "../contracts";
+﻿import {
+  ProductError,
+  isLifecycleState,
+  type LifecycleState,
+  type ProductPersistedState,
+} from "../contracts";
 
-const lifecycleOrder: Record<LifecycleState, number> = {
-  DRAFT: 0,
-  ACTIVE: 1,
-  DEPRECATED: 2,
-  RETIRED: 3,
+const allowedLifecycleTransitions: Record<LifecycleState, readonly LifecycleState[]> = {
+  DRAFT: ["PROPOSED", "ARCHIVED"],
+  PROPOSED: ["APPROVED", "ARCHIVED"],
+  APPROVED: ["ACTIVE", "DEPRECATED"],
+  ACTIVE: ["DEPRECATED"],
+  DEPRECATED: ["RETIRED"],
+  RETIRED: ["ARCHIVED"],
+  ARCHIVED: [],
 };
 
 export function assertLifecycleTransitionAllowed(current: LifecycleState, next: LifecycleState): void {
-  if (current === "RETIRED" && next !== "RETIRED") {
+  if (current === next) {
+    return;
+  }
+
+  const allowed = allowedLifecycleTransitions[current];
+  if (!allowed.includes(next)) {
     throw new ProductError(
       "LIFECYCLE_TRANSITION_INVALID",
-      "retired product cannot transition to another lifecycle state",
+      `lifecycle transition not allowed: ${current} -> ${next}`,
       false,
       true,
       "HIGH",
     );
   }
+}
 
-  if (lifecycleOrder[next] < lifecycleOrder[current]) {
-    throw new ProductError(
-      "LIFECYCLE_TRANSITION_INVALID",
-      `lifecycle cannot move backward: ${current} -> ${next}`,
-      false,
-      true,
-      "HIGH",
-    );
+function assertLifecycleStateValid(state: LifecycleState, context: string): void {
+  if (!isLifecycleState(state)) {
+    throw new ProductError("LIFECYCLE_STATE_INVALID", `invalid lifecycle state in ${context}`, false, true, "CRITICAL");
+  }
+}
+
+export function enforceDomainInvariants(state: ProductPersistedState): void {
+  for (const product of state.products) {
+    assertLifecycleStateValid(product.lifecycleState, `product ${product.productId}`);
+  }
+
+  for (const variant of state.variants) {
+    assertLifecycleStateValid(variant.lifecycleState, `variant ${variant.productVariantId}`);
+  }
+
+  for (const configuration of state.configurations) {
+    assertLifecycleStateValid(configuration.lifecycleState, `configuration ${configuration.configurationId}`);
+  }
+
+  for (const relationship of state.productRelationships) {
+    if (relationship.lifecycleState) {
+      assertLifecycleStateValid(relationship.lifecycleState, `relationship ${relationship.productRelationshipId}`);
+    }
+  }
+
+  for (const bundle of state.productBundles) {
+    assertLifecycleStateValid(bundle.lifecycleState, `bundle ${bundle.productBundleId}`);
+  }
+
+  for (const kit of state.productKits) {
+    assertLifecycleStateValid(kit.lifecycleState, `kit ${kit.productKitId}`);
+  }
+
+  for (const pricing of state.pricingDefinitions) {
+    assertLifecycleStateValid(pricing.lifecycleState, `pricing ${pricing.pricingDefinitionId}`);
+  }
+
+  for (const bom of state.billOfMaterialDefinitions) {
+    assertLifecycleStateValid(bom.lifecycleState, `bom ${bom.billOfMaterialDefinitionId}`);
+  }
+
+  for (const version of state.productVersions) {
+    assertLifecycleStateValid(version.lifecycleState, `product version ${version.productVersionId}`);
   }
 }
 
