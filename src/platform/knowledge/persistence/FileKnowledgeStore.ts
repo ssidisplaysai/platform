@@ -1,6 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { createDefaultKnowledgePersistedState, type KnowledgePersistedState } from "../contracts";
+import {
+  createDefaultKnowledgePersistedState,
+  KnowledgeError,
+  type KnowledgePersistedState,
+} from "../contracts";
 import type { KnowledgeStore } from "./types";
 
 type FileKnowledgeStoreOptions = {
@@ -9,19 +13,27 @@ type FileKnowledgeStoreOptions = {
 
 function normalize(raw: unknown): KnowledgePersistedState {
   if (!raw || typeof raw !== "object") {
-    return createDefaultKnowledgePersistedState();
+    throw new KnowledgeError("STATE_CORRUPT", "knowledge state must be an object", false, true, "CRITICAL");
   }
 
   const candidate = raw as Partial<KnowledgePersistedState>;
   if (candidate.schemaVersion !== "1.0.0") {
-    return createDefaultKnowledgePersistedState();
+    throw new KnowledgeError("STATE_CORRUPT", "unsupported knowledge state schema", false, true, "CRITICAL");
+  }
+
+  if (!Array.isArray(candidate.knowledge)) {
+    throw new KnowledgeError("STATE_CORRUPT", "knowledge state knowledge must be an array", false, true, "CRITICAL");
+  }
+
+  if (!Array.isArray(candidate.audits)) {
+    throw new KnowledgeError("STATE_CORRUPT", "knowledge state audits must be an array", false, true, "CRITICAL");
   }
 
   const defaults = createDefaultKnowledgePersistedState();
   return {
     schemaVersion: "1.0.0",
-    knowledge: Array.isArray(candidate.knowledge) ? candidate.knowledge : [],
-    audits: Array.isArray(candidate.audits) ? candidate.audits : [],
+    knowledge: candidate.knowledge,
+    audits: candidate.audits,
     metrics: candidate.metrics ?? defaults.metrics,
   };
 }
@@ -57,8 +69,17 @@ export class FileKnowledgeStore implements KnowledgeStore {
     return this.withLock(async () => {
       try {
         const payload = await readFile(this.filePath, "utf8");
-        return normalize(JSON.parse(payload) as unknown);
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(payload) as unknown;
+        } catch {
+          throw new KnowledgeError("STATE_CORRUPT", "knowledge state is not valid JSON", false, true, "CRITICAL");
+        }
+        return normalize(parsed);
       } catch (error) {
+        if (error instanceof KnowledgeError) {
+          throw error;
+        }
         const code = (error as NodeJS.ErrnoException | undefined)?.code;
         if (code === "ENOENT") {
           const state = createDefaultKnowledgePersistedState();
@@ -66,7 +87,7 @@ export class FileKnowledgeStore implements KnowledgeStore {
           await writeFile(this.filePath, JSON.stringify(state, null, 2), "utf8");
           return state;
         }
-        return createDefaultKnowledgePersistedState();
+        throw new KnowledgeError("RECOVERY_FAILURE", "knowledge state read failed", false, true, "CRITICAL");
       }
     });
   }

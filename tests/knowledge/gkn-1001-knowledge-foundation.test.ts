@@ -1,9 +1,10 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "@jest/globals";
 import {
   KnowledgeError,
+  createDefaultKnowledgeDependencies,
   createGenesisKnowledgeRuntime,
   type KnowledgeActorContext,
 } from "@/platform/knowledge";
@@ -121,5 +122,49 @@ describe("GKN-1001 Genesis Knowledge Platform foundation", () => {
     } finally {
       await rm(rootDir, { recursive: true, force: true });
     }
+  });
+
+  it("fails closed for corrupt persisted state and does not silently repair", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gkn-1001-corrupt-"));
+    const stateFile = join(rootDir, "knowledge", "knowledge-state.v1.json");
+
+    try {
+      await mkdir(join(rootDir, "knowledge"), { recursive: true });
+      const corruptPayload = "{\"schemaVersion\":\"2.0.0\",\"knowledge\":[]";
+      await writeFile(stateFile, corruptPayload, "utf8");
+
+      await expect(createGenesisKnowledgeRuntime({ rootDir })).rejects.toMatchObject({
+        name: "KnowledgeError",
+        code: "STATE_CORRUPT",
+        severity: "CRITICAL",
+      });
+
+      const persistedAfterFailure = await readFile(stateFile, "utf8");
+      expect(persistedAfterFailure).toBe(corruptPayload);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects provider registration conflicts deterministically without overwrite", () => {
+    const dependencies = createDefaultKnowledgeDependencies();
+    const beforeProviders = dependencies.providers.listProviders();
+    const foundationProvider = beforeProviders.find((provider) => provider.providerId === "knowledge-foundation-provider");
+
+    expect(foundationProvider).toBeDefined();
+
+    expect(() => {
+      dependencies.providers.register({
+        providerId: "knowledge-foundation-provider",
+        capability: "governance",
+        async inspectHealth() {
+          return { status: "DEGRADED", detail: "conflict" };
+        },
+      });
+    }).toThrow("knowledge provider registration conflict: knowledge-foundation-provider");
+
+    const afterProviders = dependencies.providers.listProviders();
+    expect(afterProviders.length).toBe(beforeProviders.length);
+    expect(afterProviders.find((provider) => provider.providerId === "knowledge-foundation-provider")?.capability).toBe("registry");
   });
 });
