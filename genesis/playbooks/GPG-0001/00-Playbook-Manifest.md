@@ -15,7 +15,7 @@ Files:
 11. 09-Best-Practices.md
 12. 10-Common-Failure-Patterns.md
 13. 11-Future-Platform-Guidance.md
-14. GOP-0001-Completion-Record.md
+14. GPG-0001-Completion-Record.md
 
 Authoritative references used:
 

@@ -1,8 +1,8 @@
-# GOP-0001 Genesis Enterprise Platform Delivery Playbook v1.0
+# GPG-0001 Genesis Enterprise Platform Delivery Guide v1.0
 
 Project: Genesis Enterprise Operating System
 Program: Enterprise Expansion Era
-Work Order: GOP-0001
+Work Order: GPG-0001
 Type: Operational playbook documentation
 
 Purpose:

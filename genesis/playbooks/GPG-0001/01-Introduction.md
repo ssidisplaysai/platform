@@ -2,7 +2,7 @@
 
 ## Why this playbook exists
 
-GOP-0001 captures the delivery operating model proven through the first Enterprise Expansion platform delivery (GKN-1001). The goal is repeatability: future teams should be able to deliver new platforms with consistent quality, independent evidence, and controlled scope.
+GPG-0001 captures the delivery operating model proven through the first Enterprise Expansion platform delivery (GKN-1001). The goal is repeatability: future teams should be able to deliver new platforms with consistent quality, independent evidence, and controlled scope.
 
 ## What this playbook is
 

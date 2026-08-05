@@ -2,7 +2,7 @@
 
 ## How future teams should use this playbook
 
-1. Treat GOP-0001 as the default delivery sequence unless authority directs otherwise.
+1. Treat GPG-0001 as the default delivery sequence unless authority directs otherwise.
 2. Instantiate each stage with platform-specific work orders and artifacts.
 3. Keep evidence chain immutable and independently reproducible.
 
@@ -33,5 +33,5 @@
 
 ## Versioning guidance
 
-- GOP-0001 is v1.0 based on the first proven chain.
+- GPG-0001 is v1.0 based on the first proven chain.
 - Future revisions should add proven patterns only after completed delivery cycles.
