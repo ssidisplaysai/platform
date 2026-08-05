@@ -234,6 +234,7 @@ export type ProductMetrics = {
   versionConflictCount: number;
   providerConflictCount: number;
   invariantViolationCount: number;
+  cycleRejectionCount: number;
   recoveryCount: number;
   corruptStateCount: number;
   auditEvents: number;
@@ -291,6 +292,7 @@ export function createDefaultProductMetrics(): ProductMetrics {
     versionConflictCount: 0,
     providerConflictCount: 0,
     invariantViolationCount: 0,
+    cycleRejectionCount: 0,
     recoveryCount: 0,
     corruptStateCount: 0,
     auditEvents: 0,
@@ -345,6 +347,7 @@ export type ProductErrorCode =
   | "LIFECYCLE_TRANSITION_INVALID"
   | "LIFECYCLE_STATE_INVALID"
   | "IMMUTABLE_FIELD"
+  | "INVARIANT_VIOLATION"
   | "REFERENCE_INVALID"
   | "BOUNDARY_VIOLATION"
   | "STATE_CORRUPT"

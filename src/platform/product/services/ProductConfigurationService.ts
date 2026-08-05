@@ -13,21 +13,39 @@ export class ProductConfigurationService {
       throw new ProductError("PRODUCT_INVALID", "missing required configuration fields", false, true, "HIGH");
     }
 
-    await this.persistence.mutate((state) => {
-      const productExists = state.products.some((item) => item.tenantId === input.tenantId && item.productId === input.productId);
-      if (!productExists) {
-        throw new ProductError("PRODUCT_NOT_FOUND", `configuration product not found: ${input.productId}`, false, true, "HIGH");
-      }
+    try {
+      await this.persistence.mutate((state) => {
+        const productExists = state.products.some((item) => item.tenantId === input.tenantId && item.productId === input.productId);
+        if (!productExists) {
+          throw new ProductError("PRODUCT_NOT_FOUND", `configuration product not found: ${input.productId}`, false, true, "HIGH");
+        }
 
-      const duplicate = state.configurations.some(
-        (item) => item.tenantId === input.tenantId && item.configurationId === input.configurationId,
-      );
-      if (duplicate) {
-        throw new ProductError("PRODUCT_DUPLICATE", `duplicate configuration id: ${input.configurationId}`, false, true, "HIGH");
-      }
+        const duplicate = state.configurations.some(
+          (item) => item.tenantId === input.tenantId && item.configurationId === input.configurationId,
+        );
+        if (duplicate) {
+          throw new ProductError("PRODUCT_DUPLICATE", `duplicate configuration id: ${input.configurationId}`, false, true, "HIGH");
+        }
 
-      state.configurations.push(structuredClone(input));
-    });
+        state.configurations.push(structuredClone(input));
+      });
+    } catch (error) {
+      if (error instanceof ProductError && error.code === "INVARIANT_VIOLATION") {
+        await this.persistence.recordCycleRejection();
+        await this.audit.append({
+          eventType: "PRODUCT_CONFIGURATION_REJECTED",
+          tenantId: input.tenantId,
+          productId: input.productId,
+          actor: input.actor,
+          message: "configuration rejected due to invariant violation",
+          details: {
+            configurationId: input.configurationId,
+            reason: error.message,
+          },
+        });
+      }
+      throw error;
+    }
 
     await this.audit.append({
       eventType: "PRODUCT_CONFIGURATION_DEFINED",

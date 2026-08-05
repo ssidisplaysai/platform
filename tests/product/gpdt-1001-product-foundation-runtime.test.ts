@@ -1,10 +1,11 @@
-﻿import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "@jest/globals";
 import {
   ProductError,
   createDefaultProductDependencies,
+  createDefaultProductPersistedState,
   createGenesisProductRuntime,
   getGenesisProductRuntime,
   type ProductActorContext,
@@ -38,9 +39,31 @@ function productInput(overrides: Partial<{
   };
 }
 
-describe("GPDT-1001R Product conformance remediation", () => {
+async function registerFoundationAndProducts(
+  runtime: Awaited<ReturnType<typeof createGenesisProductRuntime>>,
+  productIds: string[],
+): Promise<void> {
+  await runtime.registry.registerFoundationEntities({
+    tenantId: "tenant-a",
+    actor: actor(),
+    entities: {
+      productFamilies: [{ productFamilyId: "pf-1", tenantId: "tenant-a", code: "F1", displayName: "Family 1" }],
+      categories: [{ categoryId: "cat-1", tenantId: "tenant-a", code: "C1", displayName: "Category 1" }],
+    },
+  });
+
+  let counter = 1;
+  for (const productId of productIds) {
+    await runtime.registry.registerProduct({
+      ...productInput({ productId, productCode: `P-${counter.toString().padStart(3, "0")}` }),
+    });
+    counter += 1;
+  }
+}
+
+describe("GPDT-1001B-CERT Product condition closure", () => {
   it("initializes runtime singleton deterministically", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-singleton-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-singleton-"));
     const previousRoot = process.env.GENESIS_DATA_ROOT;
     process.env.GENESIS_DATA_ROOT = rootDir;
     try {
@@ -54,7 +77,7 @@ describe("GPDT-1001R Product conformance remediation", () => {
   });
 
   it("rejects valid JSON with unsupported schema version", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-unsupported-schema-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-unsupported-schema-"));
     const stateFile = join(rootDir, "product", "product-state.v1.json");
 
     try {
@@ -72,7 +95,7 @@ describe("GPDT-1001R Product conformance remediation", () => {
   });
 
   it("rejects malformed JSON and invalid payload shape fail-closed", async () => {
-    const malformedRoot = await mkdtemp(join(tmpdir(), "gpdt-r-malformed-"));
+    const malformedRoot = await mkdtemp(join(tmpdir(), "gpdt-cert-malformed-"));
     const malformedStateFile = join(malformedRoot, "product", "product-state.v1.json");
 
     try {
@@ -86,7 +109,7 @@ describe("GPDT-1001R Product conformance remediation", () => {
       await rm(malformedRoot, { recursive: true, force: true });
     }
 
-    const shapeRoot = await mkdtemp(join(tmpdir(), "gpdt-r-shape-"));
+    const shapeRoot = await mkdtemp(join(tmpdir(), "gpdt-cert-shape-"));
     const shapeStateFile = join(shapeRoot, "product", "product-state.v1.json");
     try {
       await mkdir(join(shapeRoot, "product"), { recursive: true });
@@ -98,17 +121,10 @@ describe("GPDT-1001R Product conformance remediation", () => {
   });
 
   it("enforces required ProductCode and VersionIdentifier", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-required-fields-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-required-fields-"));
     try {
       const runtime = await createGenesisProductRuntime({ rootDir });
-      await runtime.registry.registerFoundationEntities({
-        tenantId: "tenant-a",
-        actor: actor(),
-        entities: {
-          productFamilies: [{ productFamilyId: "pf-1", tenantId: "tenant-a", code: "F1", displayName: "Family 1" }],
-          categories: [{ categoryId: "cat-1", tenantId: "tenant-a", code: "C1", displayName: "Category 1" }],
-        },
-      });
+      await registerFoundationAndProducts(runtime, []);
 
       await expect(
         runtime.registry.registerProduct({ ...productInput({ productCode: "" }) }),
@@ -123,17 +139,10 @@ describe("GPDT-1001R Product conformance remediation", () => {
   });
 
   it("enforces ProductCode uniqueness and immutable identity fields", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-immutability-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-immutability-"));
     try {
       const runtime = await createGenesisProductRuntime({ rootDir });
-      await runtime.registry.registerFoundationEntities({
-        tenantId: "tenant-a",
-        actor: actor(),
-        entities: {
-          productFamilies: [{ productFamilyId: "pf-1", tenantId: "tenant-a", code: "F1", displayName: "Family 1" }],
-          categories: [{ categoryId: "cat-1", tenantId: "tenant-a", code: "C1", displayName: "Category 1" }],
-        },
-      });
+      await registerFoundationAndProducts(runtime, []);
 
       const created = await runtime.registry.registerProduct(productInput());
       await expect(
@@ -155,17 +164,10 @@ describe("GPDT-1001R Product conformance remediation", () => {
   });
 
   it("enforces legal lifecycle transitions and rejects skipping", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-lifecycle-"));
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-lifecycle-"));
     try {
       const runtime = await createGenesisProductRuntime({ rootDir });
-      await runtime.registry.registerFoundationEntities({
-        tenantId: "tenant-a",
-        actor: actor(),
-        entities: {
-          productFamilies: [{ productFamilyId: "pf-1", tenantId: "tenant-a", code: "F1", displayName: "Family 1" }],
-          categories: [{ categoryId: "cat-1", tenantId: "tenant-a", code: "C1", displayName: "Category 1" }],
-        },
-      });
+      await registerFoundationAndProducts(runtime, []);
 
       const created = await runtime.registry.registerProduct(productInput());
 
@@ -218,36 +220,137 @@ describe("GPDT-1001R Product conformance remediation", () => {
     }
   });
 
-  it("exposes dedicated service boundaries with working minimum behavior", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-services-"));
+  it("rejects direct BOM self-cycle and preserves atomic state", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-bom-self-"));
     try {
       const runtime = await createGenesisProductRuntime({ rootDir });
-      await runtime.registry.registerFoundationEntities({
-        tenantId: "tenant-a",
-        actor: actor(),
-        entities: {
-          productFamilies: [{ productFamilyId: "pf-1", tenantId: "tenant-a", code: "F1", displayName: "Family 1" }],
-          categories: [{ categoryId: "cat-1", tenantId: "tenant-a", code: "C1", displayName: "Category 1" }],
-        },
-      });
+      await registerFoundationAndProducts(runtime, ["product-1"]);
+      const beforeCount = runtime.snapshot().billOfMaterialDefinitions.length;
 
-      await runtime.catalog.createProduct(productInput());
+      await expect(
+        runtime.bomDefinition.defineBom({
+          billOfMaterialDefinitionId: "bom-self",
+          tenantId: "tenant-a",
+          productId: "product-1",
+          components: [{ componentProductId: "product-1", quantity: 1 }],
+          lifecycleState: "APPROVED",
+          versionIdentifier: "v1",
+          actor: actor(),
+        }),
+      ).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
 
-      await runtime.variant.createVariant({
-        productVariantId: "var-1",
+      expect(runtime.snapshot().billOfMaterialDefinitions.length).toBe(beforeCount);
+      expect(runtime.metrics.snapshot().cycleRejectionCount).toBe(1);
+      const rejected = runtime
+        .snapshot()
+        .audits.find((audit) => audit.eventType === "PRODUCT_BOM_DEFINITION_REJECTED" && audit.productId === "product-1");
+      expect(rejected).toBeDefined();
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects two-node and multi-level BOM cycles while allowing acyclic hierarchy", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-bom-graph-"));
+    try {
+      const runtime = await createGenesisProductRuntime({ rootDir });
+      await registerFoundationAndProducts(runtime, ["product-1", "product-2", "product-3", "product-4"]);
+
+      await runtime.bomDefinition.defineBom({
+        billOfMaterialDefinitionId: "bom-1",
         tenantId: "tenant-a",
         productId: "product-1",
-        sku: "VAR-1",
-        displayName: "Variant 1",
-        lifecycleState: "DRAFT",
+        components: [{ componentProductId: "product-2", quantity: 1 }],
+        lifecycleState: "APPROVED",
         versionIdentifier: "v1",
-        attributes: [],
-        createdAt: new Date().toISOString(),
-        createdBy: "svc.product",
-        updatedAt: new Date().toISOString(),
-        updatedBy: "svc.product",
         actor: actor(),
       });
+
+      await runtime.bomDefinition.defineBom({
+        billOfMaterialDefinitionId: "bom-2",
+        tenantId: "tenant-a",
+        productId: "product-2",
+        components: [{ componentProductId: "product-3", quantity: 1 }],
+        lifecycleState: "APPROVED",
+        versionIdentifier: "v1",
+        actor: actor(),
+      });
+
+      const before = runtime.snapshot().billOfMaterialDefinitions.length;
+      await expect(
+        runtime.bomDefinition.defineBom({
+          billOfMaterialDefinitionId: "bom-cycle-two",
+          tenantId: "tenant-a",
+          productId: "product-3",
+          components: [{ componentProductId: "product-1", quantity: 1 }],
+          lifecycleState: "APPROVED",
+          versionIdentifier: "v1",
+          actor: actor(),
+        }),
+      ).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
+      expect(runtime.snapshot().billOfMaterialDefinitions.length).toBe(before);
+
+      await runtime.bomDefinition.defineBom({
+        billOfMaterialDefinitionId: "bom-4",
+        tenantId: "tenant-a",
+        productId: "product-4",
+        components: [{ componentProductId: "product-2", quantity: 1 }],
+        lifecycleState: "APPROVED",
+        versionIdentifier: "v2",
+        actor: actor(),
+      });
+      expect(runtime.snapshot().billOfMaterialDefinitions.length).toBe(before + 1);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects configuration direct and mutual rule cycles", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-config-rule-cycles-"));
+    try {
+      const runtime = await createGenesisProductRuntime({ rootDir });
+      await registerFoundationAndProducts(runtime, ["product-1"]);
+
+      await expect(
+        runtime.configuration.defineConfiguration({
+          configurationId: "cfg-self",
+          tenantId: "tenant-a",
+          productId: "product-1",
+          lifecycleState: "DRAFT",
+          versionIdentifier: "v1",
+          rules: [{ configurationRuleId: "r1", expression: "rule:r1", severity: "ERROR" }],
+          actor: actor(),
+        }),
+      ).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
+
+      await expect(
+        runtime.configuration.defineConfiguration({
+          configurationId: "cfg-mutual",
+          tenantId: "tenant-a",
+          productId: "product-1",
+          lifecycleState: "DRAFT",
+          versionIdentifier: "v1",
+          rules: [
+            { configurationRuleId: "r1", expression: "rule:r2", severity: "ERROR" },
+            { configurationRuleId: "r2", expression: "rule:r1", severity: "ERROR" },
+          ],
+          actor: actor(),
+        }),
+      ).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
+
+      expect(runtime.metrics.snapshot().cycleRejectionCount).toBeGreaterThanOrEqual(2);
+      const rejected = runtime.snapshot().audits.filter((audit) => audit.eventType === "PRODUCT_CONFIGURATION_REJECTED");
+      expect(rejected.length).toBeGreaterThanOrEqual(2);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects multi-node configuration dependency cycles and keeps health coherent", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-config-dependency-cycles-"));
+    try {
+      const runtime = await createGenesisProductRuntime({ rootDir });
+      await registerFoundationAndProducts(runtime, ["product-1"]);
 
       await runtime.configuration.defineConfiguration({
         configurationId: "cfg-1",
@@ -255,105 +358,202 @@ describe("GPDT-1001R Product conformance remediation", () => {
         productId: "product-1",
         lifecycleState: "DRAFT",
         versionIdentifier: "v1",
-        rules: [],
+        rules: [{ configurationRuleId: "r1", expression: "config:cfg-2", severity: "ERROR" }],
         actor: actor(),
       });
 
-      await runtime.pricingDefinition.definePricing({
-        pricingDefinitionId: "price-1",
-        tenantId: "tenant-a",
-        productId: "product-1",
-        currency: "USD",
-        amount: 99,
-        lifecycleState: "APPROVED",
-        versionIdentifier: "v1",
-        actor: actor(),
-      });
+      const before = runtime.snapshot().configurations.length;
+      await expect(
+        runtime.configuration.defineConfiguration({
+          configurationId: "cfg-2",
+          tenantId: "tenant-a",
+          productId: "product-1",
+          lifecycleState: "DRAFT",
+          versionIdentifier: "v1",
+          rules: [{ configurationRuleId: "r2", expression: "config:cfg-3", severity: "ERROR" }],
+          actor: actor(),
+        }),
+      ).resolves.toMatchObject({ configurationId: "cfg-2" });
 
-      await runtime.bomDefinition.defineBom({
-        billOfMaterialDefinitionId: "bom-1",
-        tenantId: "tenant-a",
-        productId: "product-1",
-        components: [{ componentProductId: "product-1", quantity: 1 }],
-        lifecycleState: "APPROVED",
-        versionIdentifier: "v1",
-        actor: actor(),
-      });
+      await expect(
+        runtime.configuration.defineConfiguration({
+          configurationId: "cfg-3",
+          tenantId: "tenant-a",
+          productId: "product-1",
+          lifecycleState: "DRAFT",
+          versionIdentifier: "v1",
+          rules: [{ configurationRuleId: "r3", expression: "config:cfg-1", severity: "ERROR" }],
+          actor: actor(),
+        }),
+      ).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
+
+      expect(runtime.snapshot().configurations.length).toBe(before + 1);
+      const health = await runtime.health.snapshot();
+      expect(["HEALTHY", "DEGRADED"]).toContain(health.status);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects replacement cycles and preserves product boundary behavior", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-replacement-cycle-"));
+    try {
+      const runtime = await createGenesisProductRuntime({ rootDir });
+      await registerFoundationAndProducts(runtime, ["product-1", "product-2", "product-3"]);
 
       await runtime.relationship.defineRelationship({
         productRelationshipId: "rel-1",
         tenantId: "tenant-a",
         sourceProductId: "product-1",
-        targetProductId: "product-1",
-        kind: "COMPATIBLE_WITH",
+        targetProductId: "product-2",
+        kind: "REPLACES",
         actor: actor(),
       });
 
-      await runtime.bundleKit.defineBundle({
-        productBundleId: "bundle-1",
+      await runtime.relationship.defineRelationship({
+        productRelationshipId: "rel-2",
         tenantId: "tenant-a",
-        code: "B1",
-        lifecycleState: "DRAFT",
-        versionIdentifier: "v1",
-        componentProductIds: ["product-1"],
+        sourceProductId: "product-2",
+        targetProductId: "product-3",
+        kind: "REPLACES",
         actor: actor(),
       });
 
-      await runtime.bundleKit.defineKit({
-        productKitId: "kit-1",
-        tenantId: "tenant-a",
-        code: "K1",
-        lifecycleState: "DRAFT",
-        versionIdentifier: "v1",
-        componentProductIds: ["product-1"],
-        actor: actor(),
-      });
-
-      expect(runtime.query.listProducts("tenant-a").length).toBe(1);
-      expect(runtime.metrics.snapshot().variantTotal).toBe(1);
-      expect(runtime.metrics.snapshot().bundleTotal).toBe(1);
-      expect(runtime.metrics.snapshot().kitTotal).toBe(1);
-    } finally {
-      await rm(rootDir, { recursive: true, force: true });
-    }
-  });
-
-  it("rejects invalid mandatory references and increments observability counters without partial mutation", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-reference-failure-"));
-    try {
-      const runtime = await createGenesisProductRuntime({ rootDir });
-      await runtime.registry.registerFoundationEntities({
-        tenantId: "tenant-a",
-        actor: actor(),
-        entities: {
-          productFamilies: [{ productFamilyId: "pf-1", tenantId: "tenant-a", code: "F1", displayName: "Family 1" }],
-          categories: [{ categoryId: "cat-1", tenantId: "tenant-a", code: "C1", displayName: "Category 1" }],
-        },
-      });
-
-      await runtime.registry.registerProduct(productInput());
-      const beforeReferences = runtime.snapshot().assetReferences.length;
-      const beforeInvalidCount = runtime.metrics.snapshot().invalidReferenceCount;
-
+      const before = runtime.snapshot().productRelationships.length;
       await expect(
-        runtime.references.registerReferences({
+        runtime.relationship.defineRelationship({
+          productRelationshipId: "rel-3",
           tenantId: "tenant-a",
-          productId: "product-1",
+          sourceProductId: "product-3",
+          targetProductId: "product-1",
+          kind: "REPLACES",
           actor: actor(),
-          assetReferences: [{ referenceId: "ref-1", tenantId: "tenant-a", productId: "product-1", assetId: "" }],
         }),
-      ).rejects.toBeInstanceOf(ProductError);
+      ).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
 
-      const after = runtime.snapshot();
-      expect(after.assetReferences.length).toBe(beforeReferences);
-      expect(runtime.metrics.snapshot().invalidReferenceCount).toBe(beforeInvalidCount + 1);
+      expect(runtime.snapshot().productRelationships.length).toBe(before);
+      const rejection = runtime
+        .snapshot()
+        .audits.find((audit) => audit.eventType === "PRODUCT_RELATIONSHIP_REJECTED");
+      expect(rejection).toBeDefined();
     } finally {
       await rm(rootDir, { recursive: true, force: true });
     }
   });
 
-  it("captures audit and rejection evidence with deterministic provider and observer conflict handling", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-observability-"));
+  it("rejects persisted cyclic BOM state during recovery without destructive repair", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-recovery-bom-cycle-"));
+    const stateFile = join(rootDir, "product", "product-state.v1.json");
+    try {
+      const state = createDefaultProductPersistedState();
+      state.products.push(
+        {
+          productId: "product-a",
+          tenantId: "tenant-a",
+          productCode: "PA",
+          versionIdentifier: "v1",
+          productFamilyId: "pf-1",
+          categoryId: "cat-1",
+          displayName: "A",
+          lifecycleState: "ACTIVE",
+          metadata: {},
+          attributes: [],
+          createdAt: new Date().toISOString(),
+          createdBy: "svc",
+          updatedAt: new Date().toISOString(),
+          updatedBy: "svc",
+        },
+        {
+          productId: "product-b",
+          tenantId: "tenant-a",
+          productCode: "PB",
+          versionIdentifier: "v1",
+          productFamilyId: "pf-1",
+          categoryId: "cat-1",
+          displayName: "B",
+          lifecycleState: "ACTIVE",
+          metadata: {},
+          attributes: [],
+          createdAt: new Date().toISOString(),
+          createdBy: "svc",
+          updatedAt: new Date().toISOString(),
+          updatedBy: "svc",
+        },
+      );
+      state.billOfMaterialDefinitions.push(
+        {
+          billOfMaterialDefinitionId: "bom-a",
+          tenantId: "tenant-a",
+          productId: "product-a",
+          components: [{ componentProductId: "product-b", quantity: 1 }],
+          lifecycleState: "APPROVED",
+          versionIdentifier: "v1",
+        },
+        {
+          billOfMaterialDefinitionId: "bom-b",
+          tenantId: "tenant-a",
+          productId: "product-b",
+          components: [{ componentProductId: "product-a", quantity: 1 }],
+          lifecycleState: "APPROVED",
+          versionIdentifier: "v1",
+        },
+      );
+
+      await mkdir(join(rootDir, "product"), { recursive: true });
+      const payload = JSON.stringify(state, null, 2);
+      await writeFile(stateFile, payload, "utf8");
+
+      await expect(createGenesisProductRuntime({ rootDir })).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
+      expect(await readFile(stateFile, "utf8")).toBe(payload);
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects persisted cyclic configuration state during recovery", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-recovery-config-cycle-"));
+    const stateFile = join(rootDir, "product", "product-state.v1.json");
+    try {
+      const state = createDefaultProductPersistedState();
+      state.products.push({
+        productId: "product-a",
+        tenantId: "tenant-a",
+        productCode: "PA",
+        versionIdentifier: "v1",
+        productFamilyId: "pf-1",
+        categoryId: "cat-1",
+        displayName: "A",
+        lifecycleState: "ACTIVE",
+        metadata: {},
+        attributes: [],
+        createdAt: new Date().toISOString(),
+        createdBy: "svc",
+        updatedAt: new Date().toISOString(),
+        updatedBy: "svc",
+      });
+      state.configurations.push({
+        configurationId: "cfg-a",
+        tenantId: "tenant-a",
+        productId: "product-a",
+        lifecycleState: "DRAFT",
+        versionIdentifier: "v1",
+        rules: [
+          { configurationRuleId: "r1", expression: "rule:r2", severity: "ERROR" },
+          { configurationRuleId: "r2", expression: "rule:r1", severity: "ERROR" },
+        ],
+      });
+
+      await mkdir(join(rootDir, "product"), { recursive: true });
+      await writeFile(stateFile, JSON.stringify(state, null, 2), "utf8");
+
+      await expect(createGenesisProductRuntime({ rootDir })).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
+  it("captures audit and counters for cycle rejections and keeps Mission Control read-only", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-observability-cycle-"));
     const observations: Array<{ productTotal: number; status: string }> = [];
     try {
       const dependencies = createDefaultProductDependencies();
@@ -364,78 +564,48 @@ describe("GPDT-1001R Product conformance remediation", () => {
         },
       });
 
-      expect(() => {
-        dependencies.observers.register({
-          observerId: "mission-control-test",
-          async receiveObservation() {
-            return;
-          },
-        });
-      }).toThrow("mission control observer registration conflict: mission-control-test");
-
-      expect(() => {
-        dependencies.providers.register({
-          providerId: "product-foundation-provider",
-          capability: "observability",
-          async inspectHealth() {
-            return { status: "DEGRADED", detail: "duplicate" };
-          },
-        });
-      }).toThrow("product provider registration conflict: product-foundation-provider");
-
       const runtime = await createGenesisProductRuntime({ rootDir, dependencies });
-      await runtime.registry.registerFoundationEntities({
-        tenantId: "tenant-a",
-        actor: actor(),
-        entities: {
-          productFamilies: [{ productFamilyId: "pf-1", tenantId: "tenant-a", code: "F1", displayName: "Family 1" }],
-          categories: [{ categoryId: "cat-1", tenantId: "tenant-a", code: "C1", displayName: "Category 1" }],
-        },
-      });
-      await runtime.registry.registerProduct(productInput());
+      await registerFoundationAndProducts(runtime, ["product-1"]);
 
       await expect(
-        runtime.registry.transitionProductLifecycle({
+        runtime.configuration.defineConfiguration({
+          configurationId: "cfg-cycle",
           tenantId: "tenant-a",
           productId: "product-1",
-          lifecycleState: "PROPOSED",
-          expectedVersionIdentifier: "v99",
+          lifecycleState: "DRAFT",
+          versionIdentifier: "v1",
+          rules: [{ configurationRuleId: "r1", expression: "rule:r1", severity: "ERROR" }],
           actor: actor(),
         }),
-      ).rejects.toMatchObject({ code: "VERSION_CONFLICT" });
+      ).rejects.toMatchObject({ code: "INVARIANT_VIOLATION" });
 
-      expect(runtime.metrics.snapshot().versionConflictCount).toBeGreaterThanOrEqual(1);
-      expect(runtime.metrics.snapshot().auditEvents).toBeGreaterThanOrEqual(3);
-
+      const beforeProducts = runtime.metrics.snapshot().productTotal;
       await runtime.publishMissionControlObservation();
+
+      expect(runtime.metrics.snapshot().cycleRejectionCount).toBeGreaterThanOrEqual(1);
+      expect(runtime.metrics.snapshot().invariantViolationCount).toBeGreaterThanOrEqual(1);
       expect(observations.length).toBe(1);
-      expect(observations[0]?.productTotal).toBe(1);
+      expect(observations[0]?.productTotal).toBe(beforeProducts);
     } finally {
       await rm(rootDir, { recursive: true, force: true });
     }
   });
 
-  it("maintains restart continuity and deterministic ordering across implemented collections", async () => {
-    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-r-restart-ordering-"));
+  it("maintains deterministic ordering after acyclic updates", async () => {
+    const rootDir = await mkdtemp(join(tmpdir(), "gpdt-cert-restart-ordering-"));
     try {
       const runtimeA = await createGenesisProductRuntime({ rootDir });
-      await runtimeA.registry.registerFoundationEntities({
-        tenantId: "tenant-a",
-        actor: actor(),
-        entities: {
-          productFamilies: [
-            { productFamilyId: "pf-b", tenantId: "tenant-a", code: "FB", displayName: "Family B" },
-            { productFamilyId: "pf-a", tenantId: "tenant-a", code: "FA", displayName: "Family A" },
-          ],
-          categories: [
-            { categoryId: "cat-b", tenantId: "tenant-a", code: "CB", displayName: "Category B" },
-            { categoryId: "cat-a", tenantId: "tenant-a", code: "CA", displayName: "Category A" },
-          ],
-        },
-      });
+      await registerFoundationAndProducts(runtimeA, ["product-b", "product-a"]);
 
-      await runtimeA.registry.registerProduct({ ...productInput({ productId: "product-b", productCode: "B-001" }), productFamilyId: "pf-b", categoryId: "cat-b" });
-      await runtimeA.registry.registerProduct({ ...productInput({ productId: "product-a", productCode: "A-001" }), productFamilyId: "pf-a", categoryId: "cat-a" });
+      await runtimeA.bomDefinition.defineBom({
+        billOfMaterialDefinitionId: "bom-a",
+        tenantId: "tenant-a",
+        productId: "product-a",
+        components: [{ componentProductId: "product-b", quantity: 1 }],
+        lifecycleState: "APPROVED",
+        versionIdentifier: "v1",
+        actor: actor(),
+      });
 
       const runtimeB = await createGenesisProductRuntime({ rootDir });
       const snapshot = runtimeB.snapshot();

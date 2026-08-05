@@ -194,6 +194,13 @@ export class PersistenceCoordinator {
     });
   }
 
+  async recordCycleRejection(): Promise<void> {
+    await this.mutate((state) => {
+      state.metrics.cycleRejectionCount += 1;
+      state.metrics.invariantViolationCount += 1;
+    });
+  }
+
   async recordProviderConflict(): Promise<void> {
     await this.mutate((state) => {
       state.metrics.providerConflictCount += 1;

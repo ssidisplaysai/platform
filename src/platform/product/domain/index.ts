@@ -4,6 +4,11 @@
   type LifecycleState,
   type ProductPersistedState,
 } from "../contracts";
+import {
+  assertBomGraphAcyclic,
+  assertConfigurationGraphsAcyclic,
+  assertReplacementGraphAcyclic,
+} from "./cycleValidation";
 
 const allowedLifecycleTransitions: Record<LifecycleState, readonly LifecycleState[]> = {
   DRAFT: ["PROPOSED", "ARCHIVED"],
@@ -76,6 +81,10 @@ export function enforceDomainInvariants(state: ProductPersistedState): void {
   for (const version of state.productVersions) {
     assertLifecycleStateValid(version.lifecycleState, `product version ${version.productVersionId}`);
   }
+
+  assertBomGraphAcyclic(state);
+  assertConfigurationGraphsAcyclic(state);
+  assertReplacementGraphAcyclic(state);
 }
 
 export function enforceDeterministicOrdering(state: ProductPersistedState): void {
@@ -100,3 +109,5 @@ export function enforceDeterministicOrdering(state: ProductPersistedState): void
   state.organizationReferences.sort((a, b) => a.referenceId.localeCompare(b.referenceId));
   state.audits.sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
 }
+
+export * from "./cycleValidation";

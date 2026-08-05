@@ -13,27 +13,45 @@ export class ProductRelationshipService {
       throw new ProductError("PRODUCT_INVALID", "missing required relationship fields", false, true, "HIGH");
     }
 
-    await this.persistence.mutate((state) => {
-      const sourceExists = state.products.some(
-        (item) => item.tenantId === input.tenantId && item.productId === input.sourceProductId,
-      );
-      const targetExists = state.products.some(
-        (item) => item.tenantId === input.tenantId && item.productId === input.targetProductId,
-      );
+    try {
+      await this.persistence.mutate((state) => {
+        const sourceExists = state.products.some(
+          (item) => item.tenantId === input.tenantId && item.productId === input.sourceProductId,
+        );
+        const targetExists = state.products.some(
+          (item) => item.tenantId === input.tenantId && item.productId === input.targetProductId,
+        );
 
-      if (!sourceExists || !targetExists) {
-        throw new ProductError("PRODUCT_NOT_FOUND", "relationship source or target not found", false, true, "HIGH");
+        if (!sourceExists || !targetExists) {
+          throw new ProductError("PRODUCT_NOT_FOUND", "relationship source or target not found", false, true, "HIGH");
+        }
+
+        const duplicate = state.productRelationships.some(
+          (item) => item.tenantId === input.tenantId && item.productRelationshipId === input.productRelationshipId,
+        );
+        if (duplicate) {
+          throw new ProductError("PRODUCT_DUPLICATE", `duplicate relationship id: ${input.productRelationshipId}`, false, true, "HIGH");
+        }
+
+        state.productRelationships.push(structuredClone(input));
+      });
+    } catch (error) {
+      if (error instanceof ProductError && error.code === "INVARIANT_VIOLATION") {
+        await this.persistence.recordCycleRejection();
+        await this.audit.append({
+          eventType: "PRODUCT_RELATIONSHIP_REJECTED",
+          tenantId: input.tenantId,
+          productId: input.sourceProductId,
+          actor: input.actor,
+          message: "relationship rejected due to invariant violation",
+          details: {
+            productRelationshipId: input.productRelationshipId,
+            reason: error.message,
+          },
+        });
       }
-
-      const duplicate = state.productRelationships.some(
-        (item) => item.tenantId === input.tenantId && item.productRelationshipId === input.productRelationshipId,
-      );
-      if (duplicate) {
-        throw new ProductError("PRODUCT_DUPLICATE", `duplicate relationship id: ${input.productRelationshipId}`, false, true, "HIGH");
-      }
-
-      state.productRelationships.push(structuredClone(input));
-    });
+      throw error;
+    }
 
     await this.audit.append({
       eventType: "PRODUCT_RELATIONSHIP_DEFINED",
