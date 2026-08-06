@@ -21,8 +21,15 @@ export class PersistenceCoordinator<TPayload> {
     await this.options.store.save(this.state);
   }
 
+  private ensureLoaded(): PersistedEnvelope<TPayload> {
+    if (!this.state) {
+      throw new Error("persistence state not loaded");
+    }
+    return this.state;
+  }
+
   snapshot(): PersistedEnvelope<TPayload> {
-    return structuredClone(this.state);
+    return structuredClone(this.ensureLoaded());
   }
 
   async mutate(mutator: (payload: TPayload) => void): Promise<void> {

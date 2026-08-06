@@ -1,8 +1,23 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
+  assertArray,
+  assertObject,
+  assertRequiredString,
+  assertVersion,
+  AuditService,
+  compareSemverVersions,
   createInMemoryStore,
   createSchemaValidator,
+  FileStore,
+  HealthService,
   InvariantEngine,
   LifecycleManager,
+  MetricsService,
+  normalizeIdentifier,
+  normalizeJson,
+  normalizeWhitespace,
   ObservationPublisher,
   ObserverRegistry,
   PersistenceCoordinator,
@@ -104,6 +119,107 @@ describe("GSP-1001 shared framework", () => {
     expect(coordinator.snapshot().payload.count).toBe(5);
   });
 
+  test("persistence coordinator fails closed before load", async () => {
+    type Payload = { count: number };
+    const initial = { schemaVersion: "1.0.0" as const, payload: { count: 1 } };
+    const coordinator = new PersistenceCoordinator<Payload>({
+      store: createInMemoryStore(initial),
+      validator: createSchemaValidator<Payload>("1.0.0"),
+      recovery: new RecoveryCoordinator<Payload>(() => initial),
+    });
+
+    expect(() => coordinator.snapshot()).toThrow("persistence state not loaded");
+    await expect(
+      coordinator.mutate((payload) => {
+        payload.count += 1;
+      }),
+    ).rejects.toThrow("persistence state not loaded");
+  });
+
+  test("persistence coordinator rejects unsupported schema version", async () => {
+    type Payload = { count: number };
+    const initial = { schemaVersion: "2.0.0" as const, payload: { count: 1 } };
+    const coordinator = new PersistenceCoordinator<Payload>({
+      store: createInMemoryStore(initial),
+      validator: createSchemaValidator<Payload>("1.0.0"),
+      recovery: new RecoveryCoordinator<Payload>(() => ({ schemaVersion: "1.0.0", payload: { count: 0 } })),
+    });
+
+    await expect(coordinator.load()).rejects.toThrow("unsupported schema version");
+  });
+
+  test("persistence coordinator surfaces recovery failure", async () => {
+    type Payload = { count: number };
+    const initial = { schemaVersion: "1.0.0" as const, payload: { count: 1 } };
+    const coordinator = new PersistenceCoordinator<Payload>({
+      store: createInMemoryStore(initial),
+      validator: createSchemaValidator<Payload>("1.0.0"),
+      recovery: new RecoveryCoordinator<Payload>(() => initial, () => {
+        throw new Error("recovery failed");
+      }),
+    });
+
+    await expect(coordinator.load()).rejects.toThrow("recovery failed");
+  });
+
+  test("persistence load flow is deterministic", async () => {
+    type Payload = { count: number };
+    const events: string[] = [];
+    const initial = { schemaVersion: "1.0.0" as const, payload: { count: 1 } };
+    const store = {
+      async load() {
+        events.push("load");
+        return structuredClone(initial);
+      },
+      async save() {
+        events.push("save");
+      },
+    };
+
+    const validator = {
+      validateOrThrow() {
+        events.push("validate");
+      },
+    };
+
+    const recovery = new RecoveryCoordinator<Payload>(() => initial, (state) => {
+      events.push("recover");
+      return state;
+    });
+
+    const coordinator = new PersistenceCoordinator<Payload>({ store, validator, recovery });
+    await coordinator.load();
+    expect(events).toEqual(["load", "recover", "validate", "save"]);
+  });
+
+  test("file store rejects malformed JSON", async () => {
+    type Payload = { count: number };
+    const rootDir = await mkdtemp(join(tmpdir(), "gsp-1001-file-store-"));
+    const namespace = "shared";
+    const fileName = "state.json";
+    const filePath = join(rootDir, namespace, fileName);
+
+    try {
+      await mkdir(join(rootDir, namespace), { recursive: true });
+      await writeFile(filePath, "{bad-json", "utf8");
+      const store = new FileStore<Payload>({
+        rootDir,
+        namespace,
+        fileName,
+        createDefaultState() {
+          return { schemaVersion: "1.0.0", payload: { count: 0 } };
+        },
+        normalize(raw) {
+          return raw as { schemaVersion: "1.0.0"; payload: Payload };
+        },
+      });
+
+      await expect(store.load()).rejects.toThrow("persisted state is not valid JSON");
+    } finally {
+      await rm(rootDir, { recursive: true, force: true });
+    }
+  });
+
   test("invariant engine aggregates deterministic validation failures", async () => {
     const engine = new InvariantEngine<{ code: string; version: string }>();
     engine.register({
@@ -144,5 +260,150 @@ describe("GSP-1001 shared framework", () => {
     await publisher.publish({ value: 10 });
 
     expect(received).toEqual([10, 11]);
+  });
+
+  test("observer registry rejects duplicate observers", async () => {
+    const registry = new ObserverRegistry<{ value: number }>();
+    registry.register({
+      observerId: "obs-a",
+      async receiveObservation() {},
+    });
+
+    expect(() =>
+      registry.register({
+        observerId: "obs-a",
+        async receiveObservation() {},
+      }),
+    ).toThrow("observer registration conflict");
+  });
+
+  test("observation publisher isolates observer failures and reports publish failure", async () => {
+    const registry = new ObserverRegistry<{ value: number }>();
+    const received: string[] = [];
+
+    registry.register({
+      observerId: "obs-a",
+      async receiveObservation() {
+        received.push("obs-a");
+        throw new Error("observer failed");
+      },
+    });
+
+    registry.register({
+      observerId: "obs-b",
+      async receiveObservation() {
+        received.push("obs-b");
+      },
+    });
+
+    const publisher = new ObservationPublisher(registry);
+    await expect(publisher.publish({ value: 1 })).rejects.toThrow("observation publish failed");
+    expect(received).toEqual(["obs-a", "obs-b"]);
+  });
+
+  test("observation publisher does not expose mutable payload reference", async () => {
+    const registry = new ObserverRegistry<{ value: number }>();
+    registry.register({
+      observerId: "obs-a",
+      async receiveObservation(observation) {
+        observation.value = 99;
+      },
+    });
+
+    const publisher = new ObservationPublisher(registry);
+    const payload = { value: 1 };
+    await publisher.publish(payload);
+    expect(payload.value).toBe(1);
+  });
+
+  test("health service reports deterministic ordering and status", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-08-05T00:00:00.000Z"));
+    const health = new HealthService();
+    health.register("b", async () => ({ name: "b", status: "WARN", detail: "warn" }));
+    health.register("a", async () => ({ name: "a", status: "PASS", detail: "ok" }));
+
+    const snapshot = await health.snapshot();
+    expect(snapshot.generatedAt).toBe("2026-08-05T00:00:00.000Z");
+    expect(snapshot.status).toBe("DEGRADED");
+    expect(snapshot.checks.map((check) => check.name)).toEqual(["a", "b"]);
+    jest.useRealTimers();
+  });
+
+  test("metrics service counters are stable and snapshot is isolated", async () => {
+    const metrics = new MetricsService();
+    metrics.increment("events");
+    metrics.increment("events", 2);
+    metrics.set("errors", 5);
+
+    const snapshot = metrics.snapshot();
+    expect(snapshot).toEqual({ events: 3, errors: 5 });
+
+    snapshot.events = 100;
+    expect(metrics.snapshot().events).toBe(3);
+  });
+
+  test("audit service timestamps are stable and list is immutable", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-08-05T01:00:00.000Z"));
+    const audit = new AuditService();
+    audit.append({
+      eventType: "TEST_EVENT",
+      actor: { actorId: "tester", occurredAt: "2026-08-05T01:00:00.000Z" },
+      message: "created",
+    });
+
+    const entries = audit.list();
+    expect(entries).toHaveLength(1);
+    expect(entries[0].recordedAt).toBe("2026-08-05T01:00:00.000Z");
+    expect(entries[0].auditId.startsWith("shared_audit_")).toBe(true);
+
+    entries[0].message = "mutated";
+    expect(audit.list()[0].message).toBe("created");
+    jest.useRealTimers();
+  });
+
+  test("version utility validates and compares semantic versions deterministically", async () => {
+    expect(compareSemverVersions("1.2.0", "1.2.1")).toBeLessThan(0);
+    expect(compareSemverVersions("2.0.0", "1.9.9")).toBeGreaterThan(0);
+    expect(compareSemverVersions("1.0.0-alpha", "1.0.0")).toBeLessThan(0);
+    expect(compareSemverVersions("1.0.0-alpha.1", "1.0.0-alpha.beta")).toBeLessThan(0);
+    expect(compareSemverVersions("1.0.0-beta.2", "1.0.0-beta.11")).toBeLessThan(0);
+    expect(compareSemverVersions("1.0.0-rc.1", "1.0.0")).toBeLessThan(0);
+    expect(compareSemverVersions("1.0.0", "1.0.0")).toBe(0);
+
+    expect(() => assertVersion("1.2.3-alpha", "runtime")).not.toThrow();
+    expect(() => assertVersion("1.2", "runtime")).toThrow("invalid runtime version");
+    expect(() => compareSemverVersions("1.0", "1.0.0")).toThrow("invalid semantic version comparison");
+  });
+
+  test("normalization helpers are deterministic and explicit about lossy transforms", async () => {
+    expect(normalizeIdentifier("  AbC-123  ")).toBe("abc-123");
+    expect(normalizeWhitespace(" a\n  b\t c ")).toBe("a b c");
+    expect(normalizeJson({ value: 1, nested: { x: true } })).toEqual({ value: 1, nested: { x: true } });
+  });
+
+  test("invariant engine preserves deterministic ordering with duplicate rule ids", async () => {
+    const engine = new InvariantEngine<{ value: string }>();
+    engine.register({
+      ruleId: "dup",
+      validate() {
+        return ["first"];
+      },
+    });
+    engine.register({
+      ruleId: "dup",
+      validate() {
+        return ["second"];
+      },
+    });
+
+    expect(engine.evaluate({ value: "x" })).toEqual(["first", "second"]);
+  });
+
+  test("common validators fail explicitly on negative paths", async () => {
+    expect(() => assertRequiredString("", "name")).toThrow("required string missing: name");
+    expect(() => assertRequiredString(1, "name")).toThrow("required string missing: name");
+    expect(() => assertArray({}, "items")).toThrow("required array missing: items");
+    expect(() => assertObject([], "item")).toThrow("required object missing: item");
+    expect(() => assertObject(null, "item")).toThrow("required object missing: item");
   });
 });
