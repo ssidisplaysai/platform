@@ -1,3 +1,5 @@
+import { compareDeterministicStrings } from "./deterministic";
+
 type ParsedSemver = {
   major: number;
   minor: number;
@@ -43,7 +45,7 @@ function comparePrereleaseIdentifier(left: string, right: string): number {
     return 1;
   }
 
-  return left.localeCompare(right);
+  return compareDeterministicStrings(left, right);
 }
 
 export function compareSemverVersions(left: string, right: string): number {

@@ -1,3 +1,5 @@
+import { compareDeterministicStrings } from "../utilities";
+
 export type InvariantRule<TValue> = {
   ruleId: string;
   validate(value: TValue): string[];
@@ -19,7 +21,7 @@ export class InvariantEngine<TValue> {
 
   evaluate(value: TValue): string[] {
     const failures: string[] = [];
-    for (const rule of [...this.rules].sort((left, right) => left.ruleId.localeCompare(right.ruleId))) {
+    for (const rule of [...this.rules].sort((left, right) => compareDeterministicStrings(left.ruleId, right.ruleId))) {
       failures.push(...rule.validate(value));
     }
     return failures;

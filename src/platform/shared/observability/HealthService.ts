@@ -1,4 +1,5 @@
 import type { HealthCheck, HealthReport, HealthStatus } from "../contracts";
+import { compareDeterministicStrings } from "../utilities";
 
 type HealthCheckProvider = {
   checkId: string;
@@ -14,7 +15,7 @@ export class HealthService {
 
   async snapshot(): Promise<HealthReport> {
     const checks: HealthCheck[] = [];
-    for (const provider of [...this.providers].sort((left, right) => left.checkId.localeCompare(right.checkId))) {
+    for (const provider of [...this.providers].sort((left, right) => compareDeterministicStrings(left.checkId, right.checkId))) {
       checks.push(await provider.run());
     }
 

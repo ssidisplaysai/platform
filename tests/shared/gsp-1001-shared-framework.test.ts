@@ -7,7 +7,11 @@ import {
   assertRequiredString,
   assertVersion,
   AuditService,
+  compareDeterministicStrings,
   compareSemverVersions,
+  deterministicPairs,
+  deterministicSort,
+  deterministicUnique,
   createInMemoryStore,
   createSchemaValidator,
   FileStore,
@@ -405,5 +409,203 @@ describe("GSP-1001 shared framework", () => {
     expect(() => assertArray({}, "items")).toThrow("required array missing: items");
     expect(() => assertObject([], "item")).toThrow("required object missing: item");
     expect(() => assertObject(null, "item")).toThrow("required object missing: item");
+  });
+
+  test("deterministic comparator is locale-independent and stable", async () => {
+    expect(compareDeterministicStrings("a", "a")).toBe(0);
+    expect(compareDeterministicStrings("A", "a")).toBeLessThan(0);
+    expect(compareDeterministicStrings("a", "b")).toBeLessThan(0);
+    expect(compareDeterministicStrings("z", "aa")).toBeGreaterThan(0);
+    expect(compareDeterministicStrings("v10", "v2")).toBeLessThan(0);
+    expect(compareDeterministicStrings("delta", "\u00e9clair")).toBeLessThan(0);
+
+    const values = ["v2", "v10", "Alpha", "alpha", "\u00e9clair", "delta"];
+    const first = deterministicUnique(values);
+    const second = deterministicUnique(values);
+    expect(second).toEqual(first);
+    expect(values).toEqual(["v2", "v10", "Alpha", "alpha", "\u00e9clair", "delta"]);
+  });
+
+  test("deterministic utilities preserve caller-owned arrays and produce stable ordering", async () => {
+    const names = ["b", "A", "a", "10", "2"];
+    const sorted = deterministicSort(names, (value) => value);
+    expect(sorted).toEqual(["10", "2", "A", "a", "b"]);
+    expect(names).toEqual(["b", "A", "a", "10", "2"]);
+
+    const unique = deterministicUnique(["b", "A", "b", "2", "10"]);
+    expect(unique).toEqual(["10", "2", "A", "b"]);
+
+    const pairs = deterministicPairs({ b: 2, A: 1, a: 3 });
+    expect(pairs).toEqual([
+      ["A", 1],
+      ["a", 3],
+      ["b", 2],
+    ]);
+  });
+
+  test("lifecycle manager stop runs reverse deterministic order", async () => {
+    const lifecycle = new LifecycleManager();
+    const order: string[] = [];
+
+    lifecycle.onStart("a", async () => {
+      order.push("start-a");
+    });
+    lifecycle.onStop("a", async () => {
+      order.push("stop-a");
+    });
+    lifecycle.onStop("c", async () => {
+      order.push("stop-c");
+    });
+    lifecycle.onStop("b", async () => {
+      order.push("stop-b");
+    });
+
+    await lifecycle.start();
+    await lifecycle.stop();
+
+    expect(order).toEqual(["start-a", "stop-c", "stop-b", "stop-a"]);
+    expect(lifecycle.getState()).toBe("STOPPED");
+  });
+
+  test("lifecycle manager stop before start is rejected with explicit transition error", async () => {
+    const lifecycle = new LifecycleManager();
+
+    await expect(lifecycle.stop()).rejects.toMatchObject({
+      name: "LifecycleStopError",
+      code: "INVALID_LIFECYCLE_TRANSITION",
+    });
+    expect(lifecycle.getState()).toBe("CREATED");
+  });
+
+  test("lifecycle manager repeated stop is deterministic no-op", async () => {
+    const lifecycle = new LifecycleManager();
+    let stops = 0;
+
+    lifecycle.onStart("ready", async () => {});
+    lifecycle.onStop("cleanup", async () => {
+      stops += 1;
+    });
+
+    await lifecycle.start();
+    await lifecycle.stop();
+    await lifecycle.stop();
+
+    expect(stops).toBe(1);
+    expect(lifecycle.getState()).toBe("STOPPED");
+  });
+
+  test("lifecycle manager stop failure does not skip remaining cleanup", async () => {
+    const lifecycle = new LifecycleManager();
+    const events: string[] = [];
+
+    lifecycle.onStart("ready", async () => {});
+    lifecycle.onStop("a", async () => {
+      events.push("a");
+    });
+    lifecycle.onStop("c", async () => {
+      events.push("c");
+      throw new Error("failed-c");
+    });
+    lifecycle.onStop("b", async () => {
+      events.push("b");
+    });
+
+    await lifecycle.start();
+    await expect(lifecycle.stop()).rejects.toMatchObject({
+      name: "LifecycleStopError",
+      code: "COMPONENT_STOP_FAILURE",
+      failures: [{ stepId: "c", reason: "failed-c" }],
+    });
+
+    expect(events).toEqual(["c", "b", "a"]);
+    expect(lifecycle.getState()).toBe("FAILED");
+  });
+
+  test("lifecycle manager aggregates multiple stop failures deterministically", async () => {
+    const lifecycle = new LifecycleManager();
+
+    lifecycle.onStart("ready", async () => {});
+    lifecycle.onStop("a", async () => {
+      throw new Error("failed-a");
+    });
+    lifecycle.onStop("c", async () => {
+      throw new Error("failed-c");
+    });
+    lifecycle.onStop("b", async () => {});
+
+    await lifecycle.start();
+
+    await expect(lifecycle.stop()).rejects.toMatchObject({
+      name: "LifecycleStopError",
+      code: "MULTIPLE_COMPONENT_STOP_FAILURES",
+      failures: [
+        { stepId: "c", reason: "failed-c" },
+        { stepId: "a", reason: "failed-a" },
+      ],
+    });
+    expect(lifecycle.getState()).toBe("FAILED");
+  });
+
+  test("lifecycle manager supports clean restart after successful stop", async () => {
+    const lifecycle = new LifecycleManager();
+    let starts = 0;
+    let stops = 0;
+
+    lifecycle.onStart("ready", async () => {
+      starts += 1;
+    });
+    lifecycle.onStop("cleanup", async () => {
+      stops += 1;
+    });
+
+    await lifecycle.start();
+    await lifecycle.stop();
+    await lifecycle.start();
+
+    expect(starts).toBe(2);
+    expect(stops).toBe(1);
+    expect(lifecycle.getState()).toBe("RUNNING");
+  });
+
+  test("normalization json handling is deterministic and explicit for supported and unsupported values", async () => {
+    const input = {
+      b: 2,
+      a: 1,
+      nested: { y: true, x: false },
+      list: [1, "x", { ok: true }],
+    };
+    const copy = structuredClone(input);
+    const normalized = normalizeJson(input);
+
+    expect(normalized).toEqual(input);
+    expect(input).toEqual(copy);
+    expect(Object.keys(normalized)).toEqual(["b", "a", "nested", "list"]);
+    expect(Object.keys(normalized.nested)).toEqual(["y", "x"]);
+
+    const lossy = normalizeJson({
+      keep: 1,
+      removeUndefined: undefined,
+      removeFunction: () => "x",
+      removeSymbol: Symbol("sym"),
+      map: new Map([["a", 1]]),
+      set: new Set([1]),
+      date: new Date("2026-08-05T00:00:00.000Z"),
+    } as unknown as Record<string, unknown>);
+
+    expect(lossy).toEqual({
+      keep: 1,
+      map: {},
+      set: {},
+      date: "2026-08-05T00:00:00.000Z",
+    });
+    expect("removeUndefined" in lossy).toBe(false);
+    expect("removeFunction" in lossy).toBe(false);
+    expect("removeSymbol" in lossy).toBe(false);
+
+    expect(() => normalizeJson({ value: 1n })).toThrow();
+
+    const circular: Record<string, unknown> = { value: 1 };
+    circular.self = circular;
+    expect(() => normalizeJson(circular)).toThrow();
   });
 });
