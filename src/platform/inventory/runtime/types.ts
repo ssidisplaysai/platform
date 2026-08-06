@@ -46,7 +46,14 @@ export type InventoryRuntimeServiceRegistration = Readonly<{
     | "inventory.runtime.clock-provider"
     | "inventory.runtime.identifier-provider"
     | "inventory.runtime.audit-sink"
-    | "inventory.runtime.observation-sink";
+    | "inventory.runtime.observation-sink"
+    | "inventory.service.inventory-item"
+    | "inventory.service.warehouse"
+    | "inventory.service.storage-location"
+    | "inventory.service.bin"
+    | "inventory.service.inventory-balance"
+    | "inventory.service.foundation-query"
+    | "inventory.service.reference-validator-registry";
   description: string;
   value: unknown;
 }>;

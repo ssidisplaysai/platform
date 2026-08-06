@@ -81,6 +81,16 @@ export function createExpectedVersion(value: number): ExpectedVersion {
   return value as ExpectedVersion;
 }
 
+export function assertExpectedVersionMatches(currentVersion: number, expectedVersion: ExpectedVersion): void {
+  if (currentVersion !== expectedVersion) {
+    throw new InventoryDomainError(
+      "STALE_EXPECTED_VERSION",
+      `stale expected version: expected ${expectedVersion}, current ${currentVersion}`,
+      false,
+    );
+  }
+}
+
 export function createVersionIdentifier(value: string): VersionIdentifier {
   assertRequiredString(value, "versionIdentifier");
   if (!isSemverVersion(value)) {

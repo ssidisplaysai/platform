@@ -34,6 +34,11 @@ export type ConcurrencyToken = Branded<string, "ConcurrencyToken">;
 export type IdempotencyKey = Branded<string, "IdempotencyKey">;
 export type ExpectedVersion = Branded<number, "ExpectedVersion">;
 
+export type InventoryMetadataValue = string | number | boolean | null;
+export type InventoryMetadata = Readonly<Record<string, InventoryMetadataValue>>;
+export type InventoryLocationType = "RECEIVING" | "STORAGE" | "PICKING" | "STAGING" | "QUARANTINE" | "TRANSFER" | "VIRTUAL";
+export type InventoryBalanceStatus = "ACTIVE" | "INACTIVE" | "QUARANTINED";
+
 export type InventoryLifecycleState =
   | "DRAFT"
   | "ACTIVE"
@@ -100,9 +105,22 @@ export type InventoryFailureClassification =
   | "INVALID_COMMAND"
   | "INVALID_QUANTITY"
   | "INVALID_REFERENCE"
+  | "INVALID_WAREHOUSE"
+  | "INVALID_BIN_PARENT"
+  | "INVALID_LOCATION_PARENT"
+  | "INVALID_DIMENSIONAL_KEY"
   | "CONCURRENCY_CONFLICT"
+  | "STALE_EXPECTED_VERSION"
+  | "MISSING_REQUIRED_VALIDATOR"
   | "DUPLICATE_IDEMPOTENCY_KEY"
   | "DUPLICATE_MOVEMENT"
+  | "DUPLICATE_INVENTORY_ITEM"
+  | "DUPLICATE_PRODUCT_REFERENCE"
+  | "INVALID_PRODUCT_REFERENCE"
+  | "DUPLICATE_WAREHOUSE_CODE"
+  | "DUPLICATE_LOCATION_CODE"
+  | "DUPLICATE_BIN_CODE"
+  | "DUPLICATE_BALANCE"
   | "INSUFFICIENT_AVAILABILITY"
   | "RESERVATION_CONFLICT"
   | "ALLOCATION_CONFLICT"
@@ -173,6 +191,8 @@ export type InventoryItemContract = Readonly<{
   productVariantReferenceId?: ProductVariantReferenceId;
   lifecycleState: InventoryLifecycleState;
   unitOfMeasure: string;
+  metadata: InventoryMetadata;
+  version: number;
   publishedIdentifier: Branded<string, "InventoryItemPublishedIdentifier">;
   versionIdentifier: VersionIdentifier;
 }>;
@@ -184,6 +204,7 @@ export type InventoryBalanceContract = Readonly<{
   warehouseId: WarehouseId;
   storageLocationId?: StorageLocationId;
   binId?: BinId;
+  status: InventoryBalanceStatus;
   lotId?: LotId;
   serialNumberId?: SerialNumberId;
   onHandQuantity: number;
@@ -191,6 +212,9 @@ export type InventoryBalanceContract = Readonly<{
   allocatedQuantity: number;
   nonAllocatableHoldQuantity: number;
   availableQuantity: number;
+  metadata: InventoryMetadata;
+  dimensionalKey: string;
+  version: number;
   versionIdentifier: VersionIdentifier;
   concurrencyToken: ConcurrencyToken;
 }>;
@@ -200,6 +224,8 @@ export type WarehouseContract = Readonly<{
   tenantId: TenantId;
   warehouseCode: string;
   status: WarehouseStatus;
+  metadata: InventoryMetadata;
+  version: number;
   publishedIdentifier: Branded<string, "WarehousePublishedIdentifier">;
   versionIdentifier: VersionIdentifier;
 }>;
@@ -209,8 +235,11 @@ export type StorageLocationContract = Readonly<{
   warehouseId: WarehouseId;
   tenantId: TenantId;
   locationCode: string;
+  locationType: InventoryLocationType;
   status: LocationStatus;
   parentLocationId?: StorageLocationId;
+  metadata: InventoryMetadata;
+  version: number;
   publishedIdentifier: Branded<string, "StorageLocationPublishedIdentifier">;
   versionIdentifier: VersionIdentifier;
 }>;
@@ -221,6 +250,8 @@ export type BinContract = Readonly<{
   tenantId: TenantId;
   binCode: string;
   status: LocationStatus;
+  metadata: InventoryMetadata;
+  version: number;
   publishedIdentifier: Branded<string, "BinPublishedIdentifier">;
   versionIdentifier: VersionIdentifier;
 }>;
