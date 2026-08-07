@@ -32,7 +32,7 @@ export class InventoryFileStore {
     await this.ensureDirectories();
     await mkdir(dirname(filePath), { recursive: true });
     const backupPath = `${filePath}.bak`;
-    const tempPath = `${filePath}.${process.pid}.${Date.now().toString(36)}.${Math.random().toString(36).slice(2)}.tmp`;
+    const createTempPath = (): string => `${filePath}.${process.pid}.${Date.now().toString(36)}.${Math.random().toString(36).slice(2)}.tmp`;
 
     try {
       await rm(backupPath, { force: true });
@@ -49,11 +49,34 @@ export class InventoryFileStore {
       }
     }
 
+    let tempPath = createTempPath();
     try {
       await writeFile(tempPath, content, "utf8");
       await rename(tempPath, filePath);
       await rm(backupPath, { force: true });
     } catch (error) {
+      const code = (error as NodeJS.ErrnoException | undefined)?.code;
+      if (code === "ENOENT") {
+        await rm(tempPath, { force: true });
+        await this.ensureDirectories();
+        await mkdir(dirname(filePath), { recursive: true });
+        tempPath = createTempPath();
+        try {
+          await writeFile(tempPath, content, "utf8");
+          await rename(tempPath, filePath);
+          await rm(backupPath, { force: true });
+          return;
+        } catch (retryError) {
+          await rm(tempPath, { force: true });
+          try {
+            await copyFile(backupPath, filePath);
+          } catch {
+            /* best effort restore */
+          }
+          throw retryError;
+        }
+      }
+
       await rm(tempPath, { force: true });
       try {
         await copyFile(backupPath, filePath);
