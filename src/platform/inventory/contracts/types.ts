@@ -72,18 +72,20 @@ export type InventoryLedgerEntryType = "SOURCE" | "DESTINATION" | "ADJUSTMENT" |
 export type ReservationStatus =
   | "PENDING"
   | "ACTIVE"
-  | "PARTIALLY_CONSUMED"
-  | "FULFILLED"
+  | "PARTIALLY_RELEASED"
+  | "RELEASED"
   | "EXPIRED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "FULFILLED";
 
 export type AllocationStatus =
-  | "PROPOSED"
-  | "COMMITTED"
-  | "PARTIALLY_CONSUMED"
-  | "FULFILLED"
+  | "PENDING"
+  | "ACTIVE"
+  | "PARTIALLY_RELEASED"
   | "RELEASED"
-  | "CANCELLED";
+  | "CANCELLED"
+  | "FULFILLED"
+  ;
 
 export type WarehouseStatus = "ACTIVE" | "INACTIVE" | "ARCHIVED";
 
@@ -108,7 +110,11 @@ export type SerialStatus =
 
 export type InventoryFailureClassification =
   | "INVALID_COMMAND"
+  | "INVALID_RESERVATION_COMMAND"
+  | "INVALID_ALLOCATION_COMMAND"
   | "INVALID_QUANTITY"
+  | "INVALID_RELEASE_QUANTITY"
+  | "INVALID_CONVERSION_QUANTITY"
   | "INVALID_REFERENCE"
   | "INVALID_MOVEMENT_COMMAND"
   | "INVALID_MOVEMENT_TYPE"
@@ -117,8 +123,13 @@ export type InventoryFailureClassification =
   | "INVALID_LOCATION_PARENT"
   | "INVALID_DIMENSIONAL_KEY"
   | "INVALID_BALANCE"
+  | "INVALID_RESERVATION"
+  | "INVALID_ALLOCATION"
   | "CONCURRENCY_CONFLICT"
   | "STALE_EXPECTED_VERSION"
+  | "STALE_RESERVATION_VERSION"
+  | "STALE_ALLOCATION_VERSION"
+  | "STALE_BALANCE_VERSION"
   | "MISSING_REQUIRED_VALIDATOR"
   | "DUPLICATE_IDEMPOTENCY_KEY"
   | "CONFLICTING_IDEMPOTENCY_PAYLOAD"
@@ -132,15 +143,24 @@ export type InventoryFailureClassification =
   | "DUPLICATE_LOCATION_CODE"
   | "DUPLICATE_BIN_CODE"
   | "DUPLICATE_BALANCE"
+  | "DUPLICATE_RESERVATION_ID"
+  | "DUPLICATE_ALLOCATION_ID"
   | "INVENTORY_ITEM_MISMATCH"
   | "PROHIBITED_SELF_MOVEMENT"
   | "INSUFFICIENT_QUANTITY"
+  | "INSUFFICIENT_RESERVABLE_QUANTITY"
+  | "INSUFFICIENT_ALLOCATABLE_QUANTITY"
+  | "OVER_RESERVATION"
+  | "OVER_ALLOCATION"
   | "LEDGER_INTEGRITY_VIOLATION"
   | "APPEND_ONLY_VIOLATION"
   | "ATOMICITY_FAILURE"
   | "INSUFFICIENT_AVAILABILITY"
   | "RESERVATION_CONFLICT"
   | "ALLOCATION_CONFLICT"
+  | "EXPIRED_RESERVATION"
+  | "TERMINAL_RESERVATION_MUTATION"
+  | "TERMINAL_ALLOCATION_MUTATION"
   | "INVALID_LOCATION"
   | "INVALID_LOT"
   | "INVALID_SERIAL"
@@ -275,15 +295,20 @@ export type BinContract = Readonly<{
 
 export type ReservationContract = Readonly<{
   reservationId: ReservationId;
+  inventoryBalanceId: InventoryBalanceId;
   inventoryItemId: InventoryItemId;
   tenantId: TenantId;
   status: ReservationStatus;
-  quantity: number;
+  requestedQuantity: number;
+  reservedQuantity: number;
   remainingQuantity: number;
   warehouseId?: WarehouseId;
   storageLocationId?: StorageLocationId;
-  lotId?: LotId;
-  serialNumberId?: SerialNumberId;
+  externalRequestReference?: string;
+  idempotencyKey: IdempotencyKey;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
   expiresAt?: string;
   commandMetadata: CommandMetadata;
   auditMetadata: AuditMetadata;
@@ -291,16 +316,21 @@ export type ReservationContract = Readonly<{
 
 export type AllocationContract = Readonly<{
   allocationId: AllocationId;
+  inventoryBalanceId: InventoryBalanceId;
   reservationId?: ReservationId;
   inventoryItemId: InventoryItemId;
   tenantId: TenantId;
   status: AllocationStatus;
-  quantity: number;
+  allocatedQuantity: number;
   remainingQuantity: number;
   warehouseId?: WarehouseId;
   storageLocationId?: StorageLocationId;
-  lotId?: LotId;
-  serialNumberId?: SerialNumberId;
+  binId?: BinId;
+  externalRequestReference?: string;
+  idempotencyKey: IdempotencyKey;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
   commandMetadata: CommandMetadata;
   auditMetadata: AuditMetadata;
 }>;

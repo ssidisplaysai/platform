@@ -26,13 +26,15 @@ function assertNonNegative(value: number, label: string): void {
 export function calculateAvailableQuantity(
   onHandQuantity: number,
   reservedQuantity: number,
+  allocatedQuantity: number,
   nonAllocatableHoldQuantity: number,
 ): number {
   assertFiniteNumber(onHandQuantity, "onHandQuantity");
   assertFiniteNumber(reservedQuantity, "reservedQuantity");
+  assertFiniteNumber(allocatedQuantity, "allocatedQuantity");
   assertFiniteNumber(nonAllocatableHoldQuantity, "nonAllocatableHoldQuantity");
 
-  const available = onHandQuantity - reservedQuantity - nonAllocatableHoldQuantity;
+  const available = onHandQuantity - reservedQuantity - allocatedQuantity - nonAllocatableHoldQuantity;
   if (available < 0) {
     throw new InventoryDomainError("INSUFFICIENT_AVAILABILITY", "available quantity would be negative", false);
   }
@@ -55,15 +57,16 @@ export function createQuantityModel(input: {
     throw new InventoryDomainError("INVALID_QUANTITY", "allocated quantity cannot exceed on-hand quantity", false);
   }
 
+  if (input.reservedQuantity + input.allocatedQuantity > input.onHandQuantity) {
+    throw new InventoryDomainError("INVALID_QUANTITY", "reserved plus allocated quantity cannot exceed on-hand quantity", false);
+  }
+
   const availableQuantity = calculateAvailableQuantity(
     input.onHandQuantity,
     input.reservedQuantity,
+    input.allocatedQuantity,
     nonAllocatableHoldQuantity,
   );
-
-  if (input.reservedQuantity > availableQuantity) {
-    throw new InventoryDomainError("INVALID_QUANTITY", "reserved quantity cannot exceed available quantity", false);
-  }
 
   return {
     onHandQuantity: input.onHandQuantity,

@@ -21,21 +21,22 @@ export const inventoryLifecycleTransitions: TransitionTable<InventoryLifecycleSt
 };
 
 export const reservationStatusTransitions: TransitionTable<ReservationStatus> = {
-  PENDING: ["ACTIVE", "CANCELLED"],
-  ACTIVE: ["PARTIALLY_CONSUMED", "FULFILLED", "EXPIRED", "CANCELLED"],
-  PARTIALLY_CONSUMED: ["FULFILLED", "EXPIRED", "CANCELLED"],
+  PENDING: ["ACTIVE", "CANCELLED", "EXPIRED"],
+  ACTIVE: ["PARTIALLY_RELEASED", "RELEASED", "FULFILLED", "EXPIRED", "CANCELLED"],
+  PARTIALLY_RELEASED: ["ACTIVE", "RELEASED", "FULFILLED", "EXPIRED", "CANCELLED"],
+  RELEASED: [],
   FULFILLED: [],
   EXPIRED: [],
   CANCELLED: [],
 };
 
 export const allocationStatusTransitions: TransitionTable<AllocationStatus> = {
-  PROPOSED: ["COMMITTED", "CANCELLED"],
-  COMMITTED: ["PARTIALLY_CONSUMED", "FULFILLED", "RELEASED", "CANCELLED"],
-  PARTIALLY_CONSUMED: ["FULFILLED", "RELEASED", "CANCELLED"],
-  FULFILLED: [],
+  PENDING: ["ACTIVE", "CANCELLED"],
+  ACTIVE: ["PARTIALLY_RELEASED", "RELEASED", "FULFILLED", "CANCELLED"],
+  PARTIALLY_RELEASED: ["ACTIVE", "RELEASED", "FULFILLED", "CANCELLED"],
   RELEASED: [],
   CANCELLED: [],
+  FULFILLED: [],
 };
 
 export const warehouseStatusTransitions: TransitionTable<WarehouseStatus> = {

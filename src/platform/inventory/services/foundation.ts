@@ -1107,6 +1107,106 @@ export class InventoryBalanceService {
     return this.applyDecrease(balance, input);
   }
 
+  applyReserve(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    assertExpectedVersionMatches(balance.version, input.expectedVersion);
+    if (input.quantity <= 0 || !Number.isFinite(input.quantity)) {
+      throw new InventoryDomainError("INVALID_QUANTITY", "reserve quantity must be positive", false);
+    }
+    if (balance.availableQuantity < input.quantity) {
+      throw new InventoryDomainError("INSUFFICIENT_RESERVABLE_QUANTITY", "insufficient reservable quantity", false);
+    }
+    const nextQuantities = createQuantityModel({
+      onHandQuantity: balance.onHandQuantity,
+      reservedQuantity: balance.reservedQuantity + input.quantity,
+      allocatedQuantity: balance.allocatedQuantity,
+      nonAllocatableHoldQuantity: balance.nonAllocatableHoldQuantity,
+    });
+    return this.toUpdatedBalance(balance, nextQuantities);
+  }
+
+  applyReleaseReserved(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    assertExpectedVersionMatches(balance.version, input.expectedVersion);
+    if (input.quantity <= 0 || !Number.isFinite(input.quantity)) {
+      throw new InventoryDomainError("INVALID_RELEASE_QUANTITY", "release reserved quantity must be positive", false);
+    }
+    if (balance.reservedQuantity < input.quantity) {
+      throw new InventoryDomainError("INVALID_RELEASE_QUANTITY", "release reserved quantity exceeds reserved quantity", false);
+    }
+    const nextQuantities = createQuantityModel({
+      onHandQuantity: balance.onHandQuantity,
+      reservedQuantity: balance.reservedQuantity - input.quantity,
+      allocatedQuantity: balance.allocatedQuantity,
+      nonAllocatableHoldQuantity: balance.nonAllocatableHoldQuantity,
+    });
+    return this.toUpdatedBalance(balance, nextQuantities);
+  }
+
+  applyAllocate(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    assertExpectedVersionMatches(balance.version, input.expectedVersion);
+    if (input.quantity <= 0 || !Number.isFinite(input.quantity)) {
+      throw new InventoryDomainError("INVALID_QUANTITY", "allocate quantity must be positive", false);
+    }
+    if (balance.availableQuantity < input.quantity) {
+      throw new InventoryDomainError("INSUFFICIENT_ALLOCATABLE_QUANTITY", "insufficient allocatable quantity", false);
+    }
+    const nextQuantities = createQuantityModel({
+      onHandQuantity: balance.onHandQuantity,
+      reservedQuantity: balance.reservedQuantity,
+      allocatedQuantity: balance.allocatedQuantity + input.quantity,
+      nonAllocatableHoldQuantity: balance.nonAllocatableHoldQuantity,
+    });
+    return this.toUpdatedBalance(balance, nextQuantities);
+  }
+
+  applyReleaseAllocated(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    assertExpectedVersionMatches(balance.version, input.expectedVersion);
+    if (input.quantity <= 0 || !Number.isFinite(input.quantity)) {
+      throw new InventoryDomainError("INVALID_RELEASE_QUANTITY", "release allocated quantity must be positive", false);
+    }
+    if (balance.allocatedQuantity < input.quantity) {
+      throw new InventoryDomainError("INVALID_RELEASE_QUANTITY", "release allocated quantity exceeds allocated quantity", false);
+    }
+    const nextQuantities = createQuantityModel({
+      onHandQuantity: balance.onHandQuantity,
+      reservedQuantity: balance.reservedQuantity,
+      allocatedQuantity: balance.allocatedQuantity - input.quantity,
+      nonAllocatableHoldQuantity: balance.nonAllocatableHoldQuantity,
+    });
+    return this.toUpdatedBalance(balance, nextQuantities);
+  }
+
+  applyConvertReservedToAllocated(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    assertExpectedVersionMatches(balance.version, input.expectedVersion);
+    if (input.quantity <= 0 || !Number.isFinite(input.quantity)) {
+      throw new InventoryDomainError("INVALID_CONVERSION_QUANTITY", "conversion quantity must be positive", false);
+    }
+    if (balance.reservedQuantity < input.quantity) {
+      throw new InventoryDomainError("INVALID_CONVERSION_QUANTITY", "conversion quantity exceeds reserved quantity", false);
+    }
+    const nextQuantities = createQuantityModel({
+      onHandQuantity: balance.onHandQuantity,
+      reservedQuantity: balance.reservedQuantity - input.quantity,
+      allocatedQuantity: balance.allocatedQuantity + input.quantity,
+      nonAllocatableHoldQuantity: balance.nonAllocatableHoldQuantity,
+    });
+    return this.toUpdatedBalance(balance, nextQuantities);
+  }
+
   private toUpdatedBalance(
     balance: InventoryBalanceContract,
     nextQuantities: ReturnType<typeof createQuantityModel>,

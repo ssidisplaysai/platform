@@ -30,7 +30,7 @@ describe("GIDT-1001-S1 Inventory domain foundation", () => {
   });
 
   it("enforces quantity invariants and available quantity calculation", () => {
-    const available = calculateAvailableQuantity(12, 4, 3);
+    const available = calculateAvailableQuantity(12, 4, 3, 0);
     expect(available).toBe(5);
 
     const quantity = createQuantityModel({
@@ -45,10 +45,10 @@ describe("GIDT-1001-S1 Inventory domain foundation", () => {
       createQuantityModel({
         onHandQuantity: 5,
         reservedQuantity: 4,
-        allocatedQuantity: 1,
+        allocatedQuantity: 2,
         nonAllocatableHoldQuantity: 0,
       }),
-    ).toThrow("reserved quantity cannot exceed available quantity");
+    ).toThrow("reserved plus allocated quantity cannot exceed on-hand quantity");
   });
 
   it("enforces unique identifiers and unique product references", () => {
@@ -148,12 +148,12 @@ describe("GIDT-1001-S1 Inventory domain foundation", () => {
   });
 
   it("validates lifecycle transitions deterministically", () => {
-    assertValidTransition(allocationStatusTransitions, "PROPOSED", "COMMITTED", "ALLOCATION_CONFLICT");
+    assertValidTransition(allocationStatusTransitions, "PENDING", "ACTIVE", "ALLOCATION_CONFLICT");
     expect(() =>
-      assertValidTransition(allocationStatusTransitions, "FULFILLED", "COMMITTED", "ALLOCATION_CONFLICT"),
+      assertValidTransition(allocationStatusTransitions, "FULFILLED", "ACTIVE", "ALLOCATION_CONFLICT"),
     ).toThrow("invalid lifecycle transition");
 
-    const deterministic = deterministicTransitionStates(allocationStatusTransitions, "COMMITTED");
+    const deterministic = deterministicTransitionStates(allocationStatusTransitions, "ACTIVE");
     const sorted = [...deterministic].sort(compareInventoryKeys);
     expect(deterministic).toEqual(sorted);
   });

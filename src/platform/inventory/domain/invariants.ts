@@ -25,13 +25,14 @@ export function assertQuantityInvariant(quantity: QuantityModel): void {
     throw new InventoryDomainError("INVALID_QUANTITY", "allocated quantity cannot exceed on-hand quantity", false);
   }
 
-  if (quantity.reservedQuantity > quantity.availableQuantity) {
-    throw new InventoryDomainError("INVALID_QUANTITY", "reserved quantity cannot exceed available quantity", false);
+  if (quantity.reservedQuantity + quantity.allocatedQuantity > quantity.onHandQuantity) {
+    throw new InventoryDomainError("INVALID_QUANTITY", "reserved plus allocated quantity cannot exceed on-hand quantity", false);
   }
 
   const recalculatedAvailable = calculateAvailableQuantity(
     quantity.onHandQuantity,
     quantity.reservedQuantity,
+    quantity.allocatedQuantity,
     quantity.nonAllocatableHoldQuantity,
   );
   if (recalculatedAvailable !== quantity.availableQuantity) {
@@ -147,7 +148,7 @@ export function assertNoDuplicateIdempotencyKeys(
 }
 
 export function assertReservationStatus(status: string): asserts status is ReservationStatus {
-  const allowed: ReservationStatus[] = ["PENDING", "ACTIVE", "PARTIALLY_CONSUMED", "FULFILLED", "EXPIRED", "CANCELLED"];
+  const allowed: ReservationStatus[] = ["PENDING", "ACTIVE", "PARTIALLY_RELEASED", "RELEASED", "EXPIRED", "CANCELLED", "FULFILLED"];
   if (!allowed.includes(status as ReservationStatus)) {
     throw new InventoryDomainError("RESERVATION_CONFLICT", `invalid reservation status: ${status}`, false);
   }
