@@ -335,7 +335,7 @@ function buildRuntime(options: InventoryRuntimeOptions): InventoryRuntime {
         host.registerProvider(provider);
       }
       for (const hook of providerHooks) {
-        hook(context);
+        await hook(context);
       }
       const next = cloneState(host.getState());
       next.providerIds = host.providers.listProviders().map((provider) => provider.providerId);
@@ -362,7 +362,7 @@ function buildRuntime(options: InventoryRuntimeOptions): InventoryRuntime {
         host.registerService(service);
       }
       for (const hook of serviceHooks) {
-        hook(context);
+        await hook(context);
       }
       const next = cloneState(host.getState());
       next.serviceIds = host.services.list().map((service) => service.serviceId);

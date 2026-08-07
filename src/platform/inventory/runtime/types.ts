@@ -73,7 +73,8 @@ export type InventoryRuntimeServiceRegistration = Readonly<{
     | "inventory.service.metrics"
     | "inventory.service.health"
     | "inventory.service.observation-publisher"
-    | "inventory.service.observability-query";
+    | "inventory.service.observability-query"
+    | "inventory.service.persistence";
   description: string;
   value: unknown;
 }>;
@@ -88,8 +89,8 @@ export type InventoryRuntimeContext = Readonly<{
   registerReferenceValidatorRegistrationPoint(point: InventoryReferenceValidatorRegistrationPoint): void;
 }>;
 
-export type InventoryProviderRegistrationHook = (context: InventoryRuntimeContext) => void;
-export type InventoryServiceRegistrationHook = (context: InventoryRuntimeContext) => void;
+export type InventoryProviderRegistrationHook = (context: InventoryRuntimeContext) => void | Promise<void>;
+export type InventoryServiceRegistrationHook = (context: InventoryRuntimeContext) => void | Promise<void>;
 export type InventoryLifecycleAdapter = {
   adapterId: string;
   register(context: InventoryRuntimeContext): void;

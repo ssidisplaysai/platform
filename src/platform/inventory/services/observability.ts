@@ -516,6 +516,18 @@ export class InventoryMetricsService {
     const expired = tenantIds.flatMap((id) => this.slice6.expirationService.listExpired(id));
 
     const referenceMetrics = this.referenceService.getMetrics();
+    const referenceAuditEvents = this.audit.listInventoryAuditEvents().filter((event) => event.category === "REFERENCE");
+    const derivedReferenceMetrics = {
+      referenceValidationCount: referenceAuditEvents.filter((event) => event.record.eventType.includes("validation")).length,
+      referenceValidationFailureCount: referenceAuditEvents.filter(
+        (event) => readBooleanDetail(event.record, "success") === false || event.record.eventType.includes("rejected"),
+      ).length,
+      mandatoryReferenceFailureCount: referenceAuditEvents.filter((event) => (event.rejectionClassification ?? "").includes("MANDATORY")).length,
+      optionalReferenceFailureCount: referenceAuditEvents.filter((event) => (event.rejectionClassification ?? "").includes("OPTIONAL")).length,
+      missingValidatorCount: referenceAuditEvents.filter((event) => event.record.eventType.includes("missing-validator")).length,
+      tenantMismatchCount: referenceAuditEvents.filter((event) => (event.rejectionClassification ?? "").includes("TENANT")).length,
+      staleReferenceCount: referenceAuditEvents.filter((event) => (event.rejectionClassification ?? "").includes("STALE")).length,
+    };
     const balanceTotals = this.sumBalances(balances);
 
     const runtimeState = this.runtimeStateProvider();
@@ -548,7 +560,8 @@ export class InventoryMetricsService {
       quarantinedStockCount: balances.filter((balance) => balance.nonAllocatableHoldQuantity > 0).length,
       concurrencyConflictCount: staleVersionCount,
       idempotencyRejectionCount: idempotencyConflictCount,
-      failedReferenceCount: referenceMetrics.referenceValidationFailureCount,
+      failedReferenceCount:
+        referenceMetrics.referenceValidationFailureCount || derivedReferenceMetrics.referenceValidationFailureCount,
       inventoryItemCount: items.length,
       activeInventoryItemCount: items.filter((item) => item.lifecycleState === "ACTIVE").length,
       warehouseCount: warehouses.length,
@@ -581,13 +594,16 @@ export class InventoryMetricsService {
       expiredLotCount: lots.filter((lot) => lot.status === "EXPIRED").length,
       expiredSerialCount: serials.filter((serial) => serial.status === "RETIRED").length,
       nearExpiryCount: nearExpiry.length,
-      referenceValidationCount: referenceMetrics.referenceValidationCount,
-      referenceValidationFailureCount: referenceMetrics.referenceValidationFailureCount,
-      mandatoryReferenceFailureCount: referenceMetrics.mandatoryReferenceFailureCount,
-      optionalReferenceFailureCount: referenceMetrics.optionalReferenceFailureCount,
-      missingValidatorCount: referenceMetrics.missingValidatorCount,
-      tenantMismatchCount: referenceMetrics.tenantMismatchCount,
-      staleReferenceCount: referenceMetrics.staleReferenceCount,
+      referenceValidationCount: referenceMetrics.referenceValidationCount || derivedReferenceMetrics.referenceValidationCount,
+      referenceValidationFailureCount:
+        referenceMetrics.referenceValidationFailureCount || derivedReferenceMetrics.referenceValidationFailureCount,
+      mandatoryReferenceFailureCount:
+        referenceMetrics.mandatoryReferenceFailureCount || derivedReferenceMetrics.mandatoryReferenceFailureCount,
+      optionalReferenceFailureCount:
+        referenceMetrics.optionalReferenceFailureCount || derivedReferenceMetrics.optionalReferenceFailureCount,
+      missingValidatorCount: referenceMetrics.missingValidatorCount || derivedReferenceMetrics.missingValidatorCount,
+      tenantMismatchCount: referenceMetrics.tenantMismatchCount || derivedReferenceMetrics.tenantMismatchCount,
+      staleReferenceCount: referenceMetrics.staleReferenceCount || derivedReferenceMetrics.staleReferenceCount,
       startupFailureCount,
       shutdownFailureCount,
       integrationFailureCount,
