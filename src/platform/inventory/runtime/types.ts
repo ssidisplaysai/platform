@@ -53,7 +53,11 @@ export type InventoryRuntimeServiceRegistration = Readonly<{
     | "inventory.service.bin"
     | "inventory.service.inventory-balance"
     | "inventory.service.foundation-query"
-    | "inventory.service.reference-validator-registry";
+    | "inventory.service.reference-validator-registry"
+    | "inventory.service.inventory-movement"
+    | "inventory.service.inventory-adjustment"
+    | "inventory.service.inventory-ledger"
+    | "inventory.service.movement-query";
   description: string;
   value: unknown;
 }>;

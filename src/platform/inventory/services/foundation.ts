@@ -160,6 +160,10 @@ function nextVersion(currentVersion?: number): number {
   return currentVersion === undefined ? 1 : currentVersion + 1;
 }
 
+function toBalanceConcurrencyToken(inventoryBalanceId: InventoryBalanceId, version: number) {
+  return createConcurrencyToken(`inventory-balance:${inventoryBalanceId}:v${version}`);
+}
+
 function toVersionIdentifier(version: number) {
   return createVersionIdentifier(`1.0.${version}`);
 }
@@ -972,7 +976,7 @@ export class InventoryBalanceService {
       dimensionalKey,
       version,
       versionIdentifier: toVersionIdentifier(version),
-      concurrencyToken: createConcurrencyToken(`inventory-balance:${input.inventoryBalanceId}:v${version}`),
+      concurrencyToken: toBalanceConcurrencyToken(input.inventoryBalanceId, version),
     };
     this.state.balances.set(key([input.tenantId, input.inventoryBalanceId]), record);
     await this.audit.record("inventory.balance.initialize.accepted", "inventory balance initialized", input.commandMetadata, {
@@ -1021,6 +1025,105 @@ export class InventoryBalanceService {
 
   getAvailability(tenantId: TenantId, inventoryBalanceId: InventoryBalanceId): number | undefined {
     return this.getInventoryBalance(tenantId, inventoryBalanceId)?.availableQuantity;
+  }
+
+  requireBalance(tenantId: TenantId, inventoryBalanceId: InventoryBalanceId): InventoryBalanceContract {
+    const found = this.state.balances.get(key([tenantId, inventoryBalanceId]));
+    if (!found) {
+      throw new InventoryDomainError("INVALID_BALANCE", "inventory balance not found", false);
+    }
+    return structuredClone(found);
+  }
+
+  replaceBalances(updatedBalances: readonly InventoryBalanceContract[]): void {
+    for (const balance of updatedBalances) {
+      this.state.balances.set(key([balance.tenantId, balance.inventoryBalanceId]), structuredClone(balance));
+    }
+  }
+
+  applyIncrease(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    assertExpectedVersionMatches(balance.version, input.expectedVersion);
+    const nextQuantities = createQuantityModel({
+      onHandQuantity: balance.onHandQuantity + input.quantity,
+      reservedQuantity: balance.reservedQuantity,
+      allocatedQuantity: balance.allocatedQuantity,
+      nonAllocatableHoldQuantity: balance.nonAllocatableHoldQuantity,
+    });
+    return this.toUpdatedBalance(balance, nextQuantities);
+  }
+
+  applyDecrease(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    assertExpectedVersionMatches(balance.version, input.expectedVersion);
+    if (balance.onHandQuantity < input.quantity) {
+      throw new InventoryDomainError("INSUFFICIENT_QUANTITY", "insufficient quantity for decrease", false);
+    }
+    const nextQuantities = createQuantityModel({
+      onHandQuantity: balance.onHandQuantity - input.quantity,
+      reservedQuantity: balance.reservedQuantity,
+      allocatedQuantity: balance.allocatedQuantity,
+      nonAllocatableHoldQuantity: balance.nonAllocatableHoldQuantity,
+    });
+    return this.toUpdatedBalance(balance, nextQuantities);
+  }
+
+  applyTransferOut(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    return this.applyDecrease(balance, input);
+  }
+
+  applyTransferIn(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    return this.applyIncrease(balance, input);
+  }
+
+  applyQuarantine(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    return this.applyTransferOut(balance, input);
+  }
+
+  applyReleaseFromQuarantine(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    return this.applyTransferIn(balance, input);
+  }
+
+  applyWriteOff(balance: InventoryBalanceContract, input: {
+    expectedVersion: ExpectedVersion;
+    quantity: number;
+  }): InventoryBalanceContract {
+    return this.applyDecrease(balance, input);
+  }
+
+  private toUpdatedBalance(
+    balance: InventoryBalanceContract,
+    nextQuantities: ReturnType<typeof createQuantityModel>,
+  ): InventoryBalanceContract {
+    assertQuantityInvariant(nextQuantities);
+    const version = nextVersion(balance.version);
+    return {
+      ...balance,
+      onHandQuantity: nextQuantities.onHandQuantity,
+      reservedQuantity: nextQuantities.reservedQuantity,
+      allocatedQuantity: nextQuantities.allocatedQuantity,
+      nonAllocatableHoldQuantity: nextQuantities.nonAllocatableHoldQuantity,
+      availableQuantity: nextQuantities.availableQuantity,
+      version,
+      versionIdentifier: toVersionIdentifier(version),
+      concurrencyToken: toBalanceConcurrencyToken(balance.inventoryBalanceId, version),
+    };
   }
 
   async updateInventoryBalanceMetadata(input: {

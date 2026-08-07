@@ -59,10 +59,15 @@ export type MovementType =
   | "ADJUST_INCREASE"
   | "ADJUST_DECREASE"
   | "RECONCILE"
+  | "INTERNAL_MOVE"
   | "QUARANTINE"
   | "RELEASE_FROM_QUARANTINE"
   | "EXPIRE"
+  | "WRITE_OFF"
   | "DISPOSE";
+
+export type InventoryMovementReason = string;
+export type InventoryLedgerEntryType = "SOURCE" | "DESTINATION" | "ADJUSTMENT" | "WRITE_OFF" | "QUARANTINE" | "RELEASE";
 
 export type ReservationStatus =
   | "PENDING"
@@ -105,15 +110,21 @@ export type InventoryFailureClassification =
   | "INVALID_COMMAND"
   | "INVALID_QUANTITY"
   | "INVALID_REFERENCE"
+  | "INVALID_MOVEMENT_COMMAND"
+  | "INVALID_MOVEMENT_TYPE"
   | "INVALID_WAREHOUSE"
   | "INVALID_BIN_PARENT"
   | "INVALID_LOCATION_PARENT"
   | "INVALID_DIMENSIONAL_KEY"
+  | "INVALID_BALANCE"
   | "CONCURRENCY_CONFLICT"
   | "STALE_EXPECTED_VERSION"
   | "MISSING_REQUIRED_VALIDATOR"
   | "DUPLICATE_IDEMPOTENCY_KEY"
+  | "CONFLICTING_IDEMPOTENCY_PAYLOAD"
   | "DUPLICATE_MOVEMENT"
+  | "DUPLICATE_MOVEMENT_ID"
+  | "DUPLICATE_LEDGER_ID"
   | "DUPLICATE_INVENTORY_ITEM"
   | "DUPLICATE_PRODUCT_REFERENCE"
   | "INVALID_PRODUCT_REFERENCE"
@@ -121,6 +132,12 @@ export type InventoryFailureClassification =
   | "DUPLICATE_LOCATION_CODE"
   | "DUPLICATE_BIN_CODE"
   | "DUPLICATE_BALANCE"
+  | "INVENTORY_ITEM_MISMATCH"
+  | "PROHIBITED_SELF_MOVEMENT"
+  | "INSUFFICIENT_QUANTITY"
+  | "LEDGER_INTEGRITY_VIOLATION"
+  | "APPEND_ONLY_VIOLATION"
+  | "ATOMICITY_FAILURE"
   | "INSUFFICIENT_AVAILABILITY"
   | "RESERVATION_CONFLICT"
   | "ALLOCATION_CONFLICT"
@@ -292,16 +309,25 @@ export type MovementContract = Readonly<{
   movementId: MovementId;
   tenantId: TenantId;
   movementType: MovementType;
+  reason: InventoryMovementReason;
   inventoryItemId: InventoryItemId;
   quantity: number;
+  sourceBalanceId?: InventoryBalanceId;
   sourceWarehouseId?: WarehouseId;
   sourceStorageLocationId?: StorageLocationId;
   sourceBinId?: BinId;
+  destinationBalanceId?: InventoryBalanceId;
   destinationWarehouseId?: WarehouseId;
   destinationStorageLocationId?: StorageLocationId;
   destinationBinId?: BinId;
   lotId?: LotId;
   serialNumberId?: SerialNumberId;
+  expectedSourceVersion?: ExpectedVersion;
+  expectedDestinationVersion?: ExpectedVersion;
+  resultingSourceVersion?: number;
+  resultingDestinationVersion?: number;
+  ledgerEntryIds: readonly LedgerEntryId[];
+  createdAt: string;
   commandMetadata: CommandMetadata;
   auditMetadata: AuditMetadata;
 }>;
@@ -311,9 +337,13 @@ export type LedgerEntryContract = Readonly<{
   movementId: MovementId;
   tenantId: TenantId;
   inventoryItemId: InventoryItemId;
+  affectedBalanceId: InventoryBalanceId;
+  entryType: InventoryLedgerEntryType;
   sequence: number;
+  orderingKey: string;
   occurredAt: string;
   movementType: MovementType;
+  correlationId?: CommandMetadata["correlationId"];
   quantityDelta: number;
   onHandBefore: number;
   onHandAfter: number;
@@ -321,6 +351,9 @@ export type LedgerEntryContract = Readonly<{
   reservedAfter: number;
   allocatedBefore: number;
   allocatedAfter: number;
+  availableBefore: number;
+  availableAfter: number;
+  auditEventType: string;
 }>;
 
 export type LotContract = Readonly<{

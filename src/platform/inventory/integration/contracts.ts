@@ -75,6 +75,7 @@ export type InventoryRuntimeDependencies = Readonly<{
 
 export function createDefaultInventoryRuntimeDependencies(): InventoryRuntimeDependencies {
   const healthy = async () => ({ status: "HEALTHY" as const, detail: "ok" });
+  let identifierSequence = 0;
 
   return {
     clockProvider: {
@@ -89,7 +90,8 @@ export function createDefaultInventoryRuntimeDependencies(): InventoryRuntimeDep
       providerId: "inventory.runtime.identifier.default",
       capability: "inventory.runtime.identifier",
       createIdentifier(scope: string) {
-        return `${scope}-${Date.now().toString(36)}`;
+        identifierSequence += 1;
+        return `${scope}-${Date.now().toString(36)}-${identifierSequence.toString(36)}`;
       },
       inspectHealth: healthy,
     },
