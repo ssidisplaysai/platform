@@ -99,19 +99,25 @@ export type LocationStatus =
   | "ARCHIVED";
 
 export type LotStatus = "CREATED" | "ACTIVE" | "QUARANTINED" | "EXPIRED" | "DISPOSED";
+export type LotQuantityTrackingMode = "BALANCE_SCOPED" | "LOCATION_SCOPED";
 
 export type SerialStatus =
   | "CREATED"
   | "ACTIVE"
+  | "QUARANTINED"
   | "RESERVED"
   | "ALLOCATED"
   | "SHIPPED_OR_CONSUMED"
   | "RETIRED";
 
+export type ExpirationState = "VALID" | "NEAR_EXPIRY" | "EXPIRED" | "QUARANTINED" | "RETIRED";
+
 export type InventoryFailureClassification =
   | "INVALID_COMMAND"
   | "INVALID_RESERVATION_COMMAND"
   | "INVALID_ALLOCATION_COMMAND"
+  | "INVALID_LOT_COMMAND"
+  | "INVALID_SERIAL_COMMAND"
   | "INVALID_QUANTITY"
   | "INVALID_RELEASE_QUANTITY"
   | "INVALID_CONVERSION_QUANTITY"
@@ -145,7 +151,16 @@ export type InventoryFailureClassification =
   | "DUPLICATE_BALANCE"
   | "DUPLICATE_RESERVATION_ID"
   | "DUPLICATE_ALLOCATION_ID"
+  | "DUPLICATE_LOT_ID"
+  | "DUPLICATE_LOT_CODE"
+  | "DUPLICATE_SERIAL_ID"
+  | "DUPLICATE_SERIAL_CODE"
   | "INVENTORY_ITEM_MISMATCH"
+  | "INVALID_LOT_SERIAL_ASSOCIATION"
+  | "SERIAL_ALREADY_ACTIVE_ELSEWHERE"
+  | "INVALID_EXPIRATION_DATES"
+  | "EXPIRED_ENTITY_RELEASE_PROHIBITED"
+  | "QUANTITY_INCONSISTENCY"
   | "PROHIBITED_SELF_MOVEMENT"
   | "INSUFFICIENT_QUANTITY"
   | "INSUFFICIENT_RESERVABLE_QUANTITY"
@@ -390,8 +405,22 @@ export type LotContract = Readonly<{
   lotId: LotId;
   tenantId: TenantId;
   inventoryItemId: InventoryItemId;
+  productReferenceId: ProductReferenceId;
+  productVariantReferenceId?: ProductVariantReferenceId;
   lotCode: string;
   status: LotStatus;
+  manufactureDate?: string;
+  bestBeforeDate?: string;
+  expirationDate?: string;
+  quantityTrackingMode: LotQuantityTrackingMode;
+  trackedQuantity: number;
+  warehouseId?: WarehouseId;
+  storageLocationId?: StorageLocationId;
+  inventoryBalanceId?: InventoryBalanceId;
+  version: number;
+  createdAt: string;
+  commandMetadata: CommandMetadata;
+  auditMetadata: AuditMetadata;
   publishedIdentifier: Branded<string, "LotPublishedIdentifier">;
   versionIdentifier: VersionIdentifier;
 }>;
@@ -402,7 +431,14 @@ export type SerialNumberContract = Readonly<{
   inventoryItemId: InventoryItemId;
   serialCode: string;
   status: SerialStatus;
+  inventoryBalanceId?: InventoryBalanceId;
   storageLocationId?: StorageLocationId;
+  lotId?: LotId;
+  version: number;
+  createdAt: string;
+  commandMetadata: CommandMetadata;
+  auditMetadata: AuditMetadata;
+  lastMovementReferenceId?: MovementId;
   publishedIdentifier: Branded<string, "SerialPublishedIdentifier">;
   versionIdentifier: VersionIdentifier;
 }>;
@@ -416,7 +452,11 @@ export type ExpirationRecordContract = Readonly<{
   manufactureDate?: string;
   bestBeforeDate?: string;
   expirationDate?: string;
-  isExpired: boolean;
+  state: ExpirationState;
+  evaluatedAt: string;
+  version: number;
+  commandMetadata: CommandMetadata;
+  auditMetadata: AuditMetadata;
   versionIdentifier: VersionIdentifier;
 }>;
 

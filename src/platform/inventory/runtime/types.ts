@@ -61,7 +61,13 @@ export type InventoryRuntimeServiceRegistration = Readonly<{
     | "inventory.service.reservation"
     | "inventory.service.allocation"
     | "inventory.service.reservation-query"
-    | "inventory.service.allocation-query";
+    | "inventory.service.allocation-query"
+    | "inventory.service.lot"
+    | "inventory.service.serial-number"
+    | "inventory.service.expiration"
+    | "inventory.service.lot-query"
+    | "inventory.service.serial-query"
+    | "inventory.service.expiration-query";
   description: string;
   value: unknown;
 }>;
