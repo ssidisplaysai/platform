@@ -68,7 +68,12 @@ export type InventoryRuntimeServiceRegistration = Readonly<{
     | "inventory.service.expiration"
     | "inventory.service.lot-query"
     | "inventory.service.serial-query"
-    | "inventory.service.expiration-query";
+    | "inventory.service.expiration-query"
+    | "inventory.service.audit"
+    | "inventory.service.metrics"
+    | "inventory.service.health"
+    | "inventory.service.observation-publisher"
+    | "inventory.service.observability-query";
   description: string;
   value: unknown;
 }>;

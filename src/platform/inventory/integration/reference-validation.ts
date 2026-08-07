@@ -472,7 +472,7 @@ export class InventoryReferenceService {
   }
 
   listValidatorIds(): string[] {
-    return this.productValidator ? [this.productValidator.validatorId].sort(compareDeterministicStrings) : [];
+    return this.registry.listValidatorIds();
   }
 }
 
