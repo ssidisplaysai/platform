@@ -10,6 +10,12 @@ import type {
   ManufacturingRuntimeDependencies,
   ManufacturingRuntimeObservation,
 } from "../integration";
+import {
+  ManufacturingWorkOrderService,
+  ProductionBatchService,
+  ProductionRunService,
+} from "../services";
+import { ManufacturingFoundationQueryService } from "../queries";
 import { ManufacturingRuntimeError } from "./errors";
 import type {
   ManufacturingRuntime,
@@ -645,6 +651,66 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09a.register-slice3-foundation-services", async () => {
+    appendTrace(host, "09a.register-slice3-foundation-services");
+    try {
+      const workOrders = new ManufacturingWorkOrderService({
+        clock: dependencies.clockProvider,
+        identifier: dependencies.identifierProvider,
+        audit: dependencies.auditSinkProvider,
+      });
+      const runs = new ProductionRunService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+      });
+      const batches = new ProductionBatchService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        runs,
+      });
+      const queries = new ManufacturingFoundationQueryService({
+        workOrders,
+        runs,
+        batches,
+      });
+
+      host.registerService({
+        serviceId: "manufacturing.service.work-order",
+        contract: "manufacturing.service.work-order",
+        description: "Manufacturing Work Order foundation service.",
+        value: workOrders,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.production-run",
+        contract: "manufacturing.service.production-run",
+        description: "Manufacturing Production Run foundation service.",
+        value: runs,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.production-batch",
+        contract: "manufacturing.service.production-batch",
+        description: "Manufacturing Production Batch foundation service.",
+        value: batches,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.foundation",
+        contract: "manufacturing.query.foundation",
+        description: "Read-only Manufacturing foundation query surface.",
+        value: queries,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "foundation service registration failed";
+      recordFailure(host, dependencies, "DUPLICATE_SERVICE_REGISTRATION", message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -668,6 +734,10 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.provider.audit",
       "manufacturing.provider.observation",
       "manufacturing.provider.correlation",
+      "manufacturing.service.work-order",
+      "manufacturing.service.production-run",
+      "manufacturing.service.production-batch",
+      "manufacturing.query.foundation",
     ]);
     for (const serviceId of requiredServices) {
       try {
@@ -690,10 +760,16 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       }
     }
 
-    const forbiddenBusinessServices = host
-      .services
-      .list()
-      .filter((service) => service.serviceId.startsWith("manufacturing.service."));
+    const forbiddenBusinessServices = host.services.list().filter((service) =>
+      [
+        "manufacturing.service.routing",
+        "manufacturing.service.operation",
+        "manufacturing.service.material",
+        "manufacturing.service.output",
+        "manufacturing.service.resource",
+        "manufacturing.service.persistence",
+      ].some((prefix) => service.serviceId.startsWith(prefix)),
+    );
     if (forbiddenBusinessServices.length > 0) {
       const message = `forbidden business service registrations detected: ${forbiddenBusinessServices
         .map((service) => service.serviceId)

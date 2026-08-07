@@ -67,6 +67,10 @@ export type ManufacturingRuntimeServiceRegistration = Readonly<{
     | "manufacturing.provider.audit"
     | "manufacturing.provider.observation"
     | "manufacturing.provider.correlation"
+    | "manufacturing.service.work-order"
+    | "manufacturing.service.production-run"
+    | "manufacturing.service.production-batch"
+    | "manufacturing.query.foundation"
     | "manufacturing.integration.product-port"
     | "manufacturing.integration.inventory-port"
     | "manufacturing.integration.external-reference-validator";

@@ -152,6 +152,7 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
       "07.register-bounded-product-integration-port",
       "08.register-bounded-inventory-integration-port",
       "09.register-future-external-reference-integration-points",
+      "09a.register-slice3-foundation-services",
       "10.validate-required-registrations",
       "11.start-shared-lifecycle",
       "12.establish-manufacturing-readiness",
@@ -349,12 +350,15 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
     await expect(runtime.stop()).rejects.toMatchObject({ code: "INVALID_RUNTIME_STATE" });
   });
 
-  it("does not register business services or persistence tokens", async () => {
+  it("does not register forbidden future services or persistence tokens", async () => {
     const runtime = await createManufacturingRuntime(createOptions());
     const ids = runtime.services.list().map((service) => service.serviceId);
 
-    expect(ids.some((serviceId) => serviceId.startsWith("manufacturing.service."))).toBe(false);
-    expect(ids.some((serviceId) => serviceId.includes("work-order") || serviceId.includes("routing") || serviceId.includes("material"))).toBe(false);
+    expect(ids).toContain("manufacturing.service.work-order");
+    expect(ids).toContain("manufacturing.service.production-run");
+    expect(ids).toContain("manufacturing.service.production-batch");
+    expect(ids).toContain("manufacturing.query.foundation");
+    expect(ids.some((serviceId) => serviceId.includes("routing") || serviceId.includes("operation") || serviceId.includes("material"))).toBe(false);
     expect(ids.some((serviceId) => serviceId.includes("persistence"))).toBe(false);
     expect((runtime as unknown as { persistence?: unknown }).persistence).toBeUndefined();
     await runtime.stop();
