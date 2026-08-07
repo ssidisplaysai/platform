@@ -9,6 +9,7 @@ import {
   createStaticInventoryProductReferenceValidator,
   createVersionIdentifier,
   InventoryFoundationQueryService,
+  InventoryReferenceService,
   InventoryReferenceValidatorRegistry,
   type AuditMetadata,
   type CommandMetadata,
@@ -280,6 +281,7 @@ describe("GIDT-1001-S3 Inventory foundation", () => {
         serviceRegistrationHooks: [
           createInventoryFoundationServiceRegistrationHook({
             validatorRegistry: registry,
+            referenceValidationService: new InventoryReferenceService(registry, createDefaultInventoryRuntimeDependencies()),
             queryServiceFactory: (services) => new InventoryFoundationQueryService(services),
           }),
           ({ host }) => {
@@ -457,12 +459,14 @@ describe("GIDT-1001-S3 Inventory foundation", () => {
       }),
     );
 
+    const runtimeDependencies = createDefaultInventoryRuntimeDependencies();
     const runtime = await createInventoryRuntime({
       runtimeId: "inventory-runtime-slice-3",
-      dependencies: createDefaultInventoryRuntimeDependencies(),
+      dependencies: runtimeDependencies,
       serviceRegistrationHooks: [
         createInventoryFoundationServiceRegistrationHook({
           validatorRegistry: registry,
+          referenceValidationService: new InventoryReferenceService(registry, runtimeDependencies),
           queryServiceFactory: (services) => new InventoryFoundationQueryService(services),
         }),
       ],
@@ -482,6 +486,7 @@ describe("GIDT-1001-S3 Inventory foundation", () => {
       "inventory.service.foundation-query",
       "inventory.service.inventory-balance",
       "inventory.service.inventory-item",
+      "inventory.service.reference-validation",
       "inventory.service.reference-validator-registry",
       "inventory.service.storage-location",
       "inventory.service.warehouse",

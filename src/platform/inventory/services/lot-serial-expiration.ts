@@ -1205,6 +1205,12 @@ export function createInventorySlice6ServiceRegistrationHook(options: {
         value: options.validatorRegistry,
       },
       {
+        serviceId: "inventory.service.reference-validation",
+        contract: "inventory.service.reference-validation",
+        description: "Slice 7 external reference validation service.",
+        value: services.slice5.slice4.foundation.referenceValidationService,
+      },
+      {
         serviceId: "inventory.service.reservation",
         contract: "inventory.service.reservation",
         description: "Slice 5 reservation command service.",

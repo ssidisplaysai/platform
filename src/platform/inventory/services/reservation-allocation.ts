@@ -219,6 +219,12 @@ export class ReservationService {
       this.assertInventoryItem(input.tenantId, input.inventoryItemId);
       const balance = this.slice4.foundation.inventoryBalanceService.requireBalance(input.tenantId, input.inventoryBalanceId);
       this.assertBalanceScope(balance, input.tenantId, input.inventoryItemId, input.warehouseId, input.storageLocationId);
+      await this.validateExternalRequestReference(
+        input.tenantId,
+        input.inventoryItemId,
+        input.externalRequestReference,
+        input.commandMetadata,
+      );
       assertVersion(balance.version, input.expectedBalanceVersion, "STALE_BALANCE_VERSION", "balance");
       assertPositiveQuantity(input.requestedQuantity, "INVALID_QUANTITY", "reservation quantity must be positive");
 
@@ -535,6 +541,30 @@ export class ReservationService {
     }
   }
 
+  private async validateExternalRequestReference(
+    tenantId: TenantId,
+    inventoryItemId: InventoryItemId,
+    externalRequestReference: string | undefined,
+    commandMetadata: CommandMetadata,
+  ): Promise<void> {
+    if (!externalRequestReference) {
+      return;
+    }
+
+    await this.slice4.foundation.referenceValidationService.validate(
+      {
+        referenceType: "DOCUMENT",
+        referenceId: externalRequestReference,
+        tenantId,
+        policy: "OPTIONAL",
+        metadata: {
+          inventoryItemId,
+        },
+      },
+      commandMetadata,
+    );
+  }
+
   private requireReservation(tenantId: TenantId, reservationId: ReservationId): ReservationContract {
     const found = this.state.reservations.get(reservationKey(tenantId, reservationId));
     if (!found) {
@@ -635,6 +665,12 @@ export class AllocationService {
       this.assertInventoryItem(input.tenantId, input.inventoryItemId);
       const balance = this.slice4.foundation.inventoryBalanceService.requireBalance(input.tenantId, input.inventoryBalanceId);
       this.assertBalanceScope(balance, input.tenantId, input.inventoryItemId, input.warehouseId, input.storageLocationId);
+      await this.validateExternalRequestReference(
+        input.tenantId,
+        input.inventoryItemId,
+        input.externalRequestReference,
+        input.commandMetadata,
+      );
       assertVersion(balance.version, input.expectedBalanceVersion, "STALE_BALANCE_VERSION", "balance");
       assertPositiveQuantity(input.requestedQuantity, "INVALID_QUANTITY", "allocation quantity must be positive");
 
@@ -859,6 +895,12 @@ export class AllocationService {
 
       const balance = this.slice4.foundation.inventoryBalanceService.requireBalance(input.tenantId, input.inventoryBalanceId);
       this.assertBalanceScope(balance, input.tenantId, input.inventoryItemId, input.warehouseId, input.storageLocationId);
+      await this.validateExternalRequestReference(
+        input.tenantId,
+        input.inventoryItemId,
+        input.externalRequestReference,
+        input.commandMetadata,
+      );
       assertVersion(balance.version, input.expectedBalanceVersion, "STALE_BALANCE_VERSION", "balance");
 
       const updatedBalance = this.slice4.foundation.inventoryBalanceService.applyConvertReservedToAllocated(balance, {
@@ -991,6 +1033,30 @@ export class AllocationService {
     if (status === "CANCELLED" || status === "RELEASED" || status === "FULFILLED") {
       throw new InventoryDomainError("TERMINAL_ALLOCATION_MUTATION", "allocation is in terminal state", false);
     }
+  }
+
+  private async validateExternalRequestReference(
+    tenantId: TenantId,
+    inventoryItemId: InventoryItemId,
+    externalRequestReference: string | undefined,
+    commandMetadata: CommandMetadata,
+  ): Promise<void> {
+    if (!externalRequestReference) {
+      return;
+    }
+
+    await this.slice4.foundation.referenceValidationService.validate(
+      {
+        referenceType: "DOCUMENT",
+        referenceId: externalRequestReference,
+        tenantId,
+        policy: "OPTIONAL",
+        metadata: {
+          inventoryItemId,
+        },
+      },
+      commandMetadata,
+    );
   }
 
   private requireReservation(tenantId: TenantId, reservationId: ReservationId): ReservationContract {
@@ -1150,6 +1216,12 @@ export function createInventorySlice5ServiceRegistrationHook(options: {
         contract: "inventory.service.reference-validator-registry",
         description: "Slice 3 bounded reference validator registry.",
         value: options.validatorRegistry,
+      },
+      {
+        serviceId: "inventory.service.reference-validation",
+        contract: "inventory.service.reference-validation",
+        description: "Slice 7 external reference validation service.",
+        value: services.slice4.foundation.referenceValidationService,
       },
       {
         serviceId: "inventory.service.reservation",

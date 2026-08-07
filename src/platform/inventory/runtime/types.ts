@@ -54,6 +54,7 @@ export type InventoryRuntimeServiceRegistration = Readonly<{
     | "inventory.service.inventory-balance"
     | "inventory.service.foundation-query"
     | "inventory.service.reference-validator-registry"
+    | "inventory.service.reference-validation"
     | "inventory.service.inventory-movement"
     | "inventory.service.inventory-adjustment"
     | "inventory.service.inventory-ledger"

@@ -40,9 +40,11 @@ import {
   warehouseStatusTransitions,
 } from "../domain";
 import { InventoryDomainError } from "../domain";
+import {
+  InventoryReferenceService,
+} from "../integration";
 import type {
   InventoryBinReferenceValidator,
-  InventoryProductReferenceValidator,
   InventoryReferenceValidatorRegistry,
   InventoryStorageLocationReferenceValidator,
   InventoryWarehouseReferenceValidator,
@@ -128,6 +130,7 @@ export type InventoryFoundationServices = Readonly<{
   storageLocationService: StorageLocationService;
   binService: BinService;
   inventoryBalanceService: InventoryBalanceService;
+  referenceValidationService: InventoryReferenceService;
 }>;
 
 type FoundationState = {
@@ -214,7 +217,7 @@ export class InventoryItemService {
   constructor(
     private readonly state: FoundationState,
     private readonly audit: InventoryAuditRecorder,
-    private readonly productValidatorRegistry: InventoryReferenceValidatorRegistry,
+    private readonly referenceValidationService: InventoryReferenceService,
     private readonly dependencies: InventoryRuntimeDependencies,
   ) {}
 
@@ -232,21 +235,15 @@ export class InventoryItemService {
         }
       }
 
-      let validator: InventoryProductReferenceValidator;
-      try {
-        validator = this.productValidatorRegistry.requireProductValidator();
-      } catch {
-        throw new InventoryDomainError("MISSING_REQUIRED_VALIDATOR", "product reference validator is not registered", false);
-      }
-      const validation = await validator.validate({
+      await this.referenceValidationService.validateInventoryItemProductReference(
+        {
         tenantId: input.tenantId,
         inventoryItemId: input.inventoryItemId,
         productReferenceId: input.productReferenceId,
         productVariantReferenceId: input.productVariantReferenceId,
-      });
-      if (!validation.valid) {
-        throw new InventoryDomainError("INVALID_PRODUCT_REFERENCE", validation.reason, false);
-      }
+        },
+        input.commandMetadata,
+      );
 
       const version = 1;
       const record: InventoryItemContract = {
@@ -1265,13 +1262,16 @@ export class InventoryBalanceService {
 export function createInventoryFoundationServices(options: {
   dependencies: InventoryRuntimeDependencies;
   validatorRegistry: InventoryReferenceValidatorRegistry;
+  referenceValidationService?: InventoryReferenceService;
 }): InventoryFoundationServices {
   const state = createState();
   const audit = new InventoryAuditRecorder(options.dependencies);
+  const referenceValidationService =
+    options.referenceValidationService ?? new InventoryReferenceService(options.validatorRegistry, options.dependencies);
   const warehouseService = new WarehouseService(state, audit, options.dependencies);
   const storageLocationService = new StorageLocationService(state, audit, warehouseService, options.dependencies);
   const binService = new BinService(state, audit, storageLocationService, options.dependencies);
-  const inventoryItemService = new InventoryItemService(state, audit, options.validatorRegistry, options.dependencies);
+  const inventoryItemService = new InventoryItemService(state, audit, referenceValidationService, options.dependencies);
   const inventoryBalanceService = new InventoryBalanceService(state, audit, warehouseService, storageLocationService, binService);
 
   return {
@@ -1280,17 +1280,20 @@ export function createInventoryFoundationServices(options: {
     storageLocationService,
     binService,
     inventoryBalanceService,
+    referenceValidationService,
   };
 }
 
 export function createInventoryFoundationServiceRegistrationHook(options: {
   validatorRegistry: InventoryReferenceValidatorRegistry;
+  referenceValidationService: InventoryReferenceService;
   queryServiceFactory: (services: InventoryFoundationServices) => unknown;
 }): InventoryServiceRegistrationHook {
   return (context: InventoryRuntimeContext) => {
     const services = createInventoryFoundationServices({
       dependencies: context.dependencies,
       validatorRegistry: options.validatorRegistry,
+      referenceValidationService: options.referenceValidationService,
     });
     const queryService = options.queryServiceFactory(services);
 
@@ -1324,6 +1327,12 @@ export function createInventoryFoundationServiceRegistrationHook(options: {
         contract: "inventory.service.reference-validator-registry",
         description: "Slice 3 bounded reference validator registry.",
         value: options.validatorRegistry,
+      },
+      {
+        serviceId: "inventory.service.reference-validation",
+        contract: "inventory.service.reference-validation",
+        description: "Slice 7 external reference validation service.",
+        value: services.referenceValidationService,
       },
       {
         serviceId: "inventory.service.storage-location",
