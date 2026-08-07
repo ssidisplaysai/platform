@@ -531,6 +531,49 @@ describe("GIDT-1001-S9 durable persistence and deterministic recovery", () => {
     }
   });
 
+  it("rejects missing ledger references, unreferenced extra ledger entries, and broken movement linkage during recovery", async () => {
+    const missingReferenceRoot = mkdtempSync(join(tmpdir(), "inventory-ledger-missing-reference-"));
+    const unreferencedLedgerRoot = mkdtempSync(join(tmpdir(), "inventory-ledger-unreferenced-"));
+    const brokenLinkageRoot = mkdtempSync(join(tmpdir(), "inventory-ledger-linkage-"));
+    try {
+      const missingReferenceHarness = createHarness(missingReferenceRoot);
+      const missingReferenceRuntime = await missingReferenceHarness.createRuntime();
+      const missingReferenceSeed = await seedRichInventory(missingReferenceRuntime);
+      await missingReferenceRuntime.stop();
+      const missingReferenceTenant = await readPersistedTenant(missingReferenceRoot, missingReferenceSeed.tenantId);
+      const movement = missingReferenceTenant.movement.movements[0];
+      movement.ledgerEntryIds = [...movement.ledgerEntryIds, createInventoryIdentifier("ledger-missing", "LedgerEntryId")];
+      await writePersistedTenant(missingReferenceRoot, missingReferenceSeed.tenantId, missingReferenceTenant);
+      await expect(missingReferenceHarness.createRuntime()).rejects.toThrow(/missing ledger for movement|movement\/ledger mapping mismatch/i);
+
+      const unreferencedLedgerHarness = createHarness(unreferencedLedgerRoot);
+      const unreferencedLedgerRuntime = await unreferencedLedgerHarness.createRuntime();
+      const unreferencedLedgerSeed = await seedRichInventory(unreferencedLedgerRuntime);
+      await unreferencedLedgerRuntime.stop();
+      const unreferencedLedgerTenant = await readPersistedTenant(unreferencedLedgerRoot, unreferencedLedgerSeed.tenantId);
+      const extraLedger = {
+        ...unreferencedLedgerTenant.movement.ledgerEntries[0],
+        ledgerEntryId: createInventoryIdentifier("ledger-extra", "LedgerEntryId"),
+      };
+      unreferencedLedgerTenant.movement.ledgerEntries.push(extraLedger);
+      await writePersistedTenant(unreferencedLedgerRoot, unreferencedLedgerSeed.tenantId, unreferencedLedgerTenant);
+      await expect(unreferencedLedgerHarness.createRuntime()).rejects.toThrow(/unreferenced ledger entry|movement\/ledger mapping mismatch/i);
+
+      const brokenLinkageHarness = createHarness(brokenLinkageRoot);
+      const brokenLinkageRuntime = await brokenLinkageHarness.createRuntime();
+      const brokenLinkageSeed = await seedRichInventory(brokenLinkageRuntime);
+      await brokenLinkageRuntime.stop();
+      const brokenLinkageTenant = await readPersistedTenant(brokenLinkageRoot, brokenLinkageSeed.tenantId);
+      brokenLinkageTenant.movement.ledgerEntries[0].movementId = createInventoryIdentifier("mov-missing", "MovementId");
+      await writePersistedTenant(brokenLinkageRoot, brokenLinkageSeed.tenantId, brokenLinkageTenant);
+      await expect(brokenLinkageHarness.createRuntime()).rejects.toThrow(/inconsistent movement\/ledger relationship/i);
+    } finally {
+      await rm(missingReferenceRoot, { recursive: true, force: true });
+      await rm(unreferencedLedgerRoot, { recursive: true, force: true });
+      await rm(brokenLinkageRoot, { recursive: true, force: true });
+    }
+  });
+
   it("rejects tenant mismatch, quantity corruption, containment corruption, and duplicate serial assignment on recovery", async () => {
     const tenantMismatchRoot = mkdtempSync(join(tmpdir(), "inventory-tenant-mismatch-"));
     const quantityRoot = mkdtempSync(join(tmpdir(), "inventory-quantity-"));

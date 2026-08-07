@@ -206,6 +206,37 @@ function validatePartition(partition: InventoryPersistenceTenantPartition): void
       if (!ledgerEntryIds.has(ledgerId)) throw new Error(`missing ledger for mapping: ${ledgerId}`);
     }
   }
+  const ledgerIdsReferencedByMovements = new Set<string>();
+  for (const movement of partition.movement.movements) {
+    const mappedLedgerIds = partition.movement.movementLedgerIds[key([movement.tenantId, movement.movementId])];
+    if (!mappedLedgerIds) {
+      throw new Error(`missing movement ledger mapping: ${movement.movementId}`);
+    }
+
+    for (const ledgerId of movement.ledgerEntryIds) {
+      if (!ledgerEntryIds.has(ledgerId)) {
+        throw new Error(`missing ledger for movement: ${ledgerId}`);
+      }
+      ledgerIdsReferencedByMovements.add(ledgerId);
+    }
+
+    const movementLedgerIdSet = new Set(movement.ledgerEntryIds);
+    const mappedLedgerIdSet = new Set(mappedLedgerIds);
+    if (movementLedgerIdSet.size !== mappedLedgerIdSet.size) {
+      throw new Error(`movement/ledger mapping mismatch: ${movement.movementId}`);
+    }
+    for (const ledgerId of movementLedgerIdSet) {
+      if (!mappedLedgerIdSet.has(ledgerId)) {
+        throw new Error(`movement/ledger mapping mismatch: ${movement.movementId}`);
+      }
+    }
+  }
+
+  for (const ledgerId of ledgerEntryIds) {
+    if (!ledgerIdsReferencedByMovements.has(ledgerId)) {
+      throw new Error(`unreferenced ledger entry: ${ledgerId}`);
+    }
+  }
 
   const reservationIds = new Set<string>();
   for (const reservation of partition.slice5.reservations) {

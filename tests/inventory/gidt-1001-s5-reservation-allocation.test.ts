@@ -340,6 +340,55 @@ describe("GIDT-1001-S5 reservation and allocation", () => {
     ).rejects.toMatchObject({ classification: "STALE_RESERVATION_VERSION" });
   });
 
+  it("does not create physical movement records for reservation, allocation, or conversion operations", async () => {
+    const harness = createSlice5Harness();
+    const seed = await seedFoundation(harness);
+
+    expect(harness.services.slice4.movementQueryService.listInventoryMovements(seed.tenantId)).toHaveLength(0);
+
+    const reservation = await harness.services.reservationService.createReservation({
+      reservationId: createInventoryIdentifier("res-no-physical", "ReservationId"),
+      tenantId: seed.tenantId,
+      inventoryItemId: seed.item.inventoryItemId,
+      inventoryBalanceId: seed.balance.inventoryBalanceId,
+      requestedQuantity: 6,
+      expectedBalanceVersion: createExpectedVersion(seed.balance.version),
+      commandMetadata: commandMetadata(120),
+      auditMetadata: auditMetadata(120),
+    });
+
+    const balanceAfterReservation = harness.services.slice4.foundation.inventoryBalanceService.getInventoryBalance(seed.tenantId, seed.balance.inventoryBalanceId)!;
+
+    await harness.services.allocationService.createAllocation({
+      allocationId: createInventoryIdentifier("all-no-physical", "AllocationId"),
+      tenantId: seed.tenantId,
+      inventoryItemId: seed.item.inventoryItemId,
+      inventoryBalanceId: seed.balance.inventoryBalanceId,
+      requestedQuantity: 2,
+      expectedBalanceVersion: createExpectedVersion(balanceAfterReservation.version),
+      commandMetadata: commandMetadata(121),
+      auditMetadata: auditMetadata(121),
+    });
+
+    const balanceAfterAllocation = harness.services.slice4.foundation.inventoryBalanceService.getInventoryBalance(seed.tenantId, seed.balance.inventoryBalanceId)!;
+
+    await harness.services.allocationService.convertReservationToAllocation({
+      allocationId: createInventoryIdentifier("all-no-physical-conv", "AllocationId"),
+      reservationId: reservation.reservationId,
+      tenantId: seed.tenantId,
+      inventoryItemId: seed.item.inventoryItemId,
+      inventoryBalanceId: seed.balance.inventoryBalanceId,
+      quantity: 1,
+      expectedReservationVersion: createExpectedVersion(reservation.version),
+      expectedBalanceVersion: createExpectedVersion(balanceAfterAllocation.version),
+      commandMetadata: commandMetadata(122),
+      auditMetadata: auditMetadata(122),
+    });
+
+    expect(harness.services.slice4.movementQueryService.listInventoryMovements(seed.tenantId)).toHaveLength(0);
+    expect(harness.services.slice4.movementQueryService.listLedgerEntries(seed.tenantId)).toHaveLength(0);
+  });
+
   it("enforces tenant-scoped idempotency and deterministic conflicting-payload rejection", async () => {
     const harness = createSlice5Harness();
     const seed = await seedFoundation(harness);

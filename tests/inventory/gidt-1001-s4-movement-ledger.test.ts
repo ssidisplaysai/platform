@@ -201,6 +201,50 @@ describe("GIDT-1001-S4 movement and append-only ledger", () => {
     expect(harness.services.movementQueryService.listLedgerEntries(seed.tenantId)).toHaveLength(2);
   });
 
+  it("supports compensating adjustment chains without destructive correction", async () => {
+    const harness = createSlice4Harness();
+    const seed = await seedFoundation(harness);
+
+    const first = await harness.services.adjustmentService.applyAdjustment({
+      movementId: createInventoryIdentifier("mov-comp-1", "MovementId"),
+      tenantId: seed.tenantId,
+      inventoryItemId: seed.item.inventoryItemId,
+      movementType: "ADJUST_DECREASE",
+      reason: "count-correction",
+      quantity: 2,
+      balanceId: seed.activeSource.inventoryBalanceId,
+      expectedVersion: createExpectedVersion(seed.activeSource.version),
+      commandMetadata: commandMetadata(121),
+      auditMetadata: auditMetadata(121),
+    });
+
+    const balanceAfterFirst = harness.services.foundation.inventoryBalanceService.getInventoryBalance(seed.tenantId, seed.activeSource.inventoryBalanceId)!;
+
+    const second = await harness.services.adjustmentService.applyAdjustment({
+      movementId: createInventoryIdentifier("mov-comp-2", "MovementId"),
+      tenantId: seed.tenantId,
+      inventoryItemId: seed.item.inventoryItemId,
+      movementType: "ADJUST_INCREASE",
+      reason: "compensating-correction",
+      quantity: 2,
+      balanceId: seed.activeSource.inventoryBalanceId,
+      expectedVersion: createExpectedVersion(balanceAfterFirst.version),
+      commandMetadata: commandMetadata(122),
+      auditMetadata: auditMetadata(122),
+    });
+
+    const balanceAfterSecond = harness.services.foundation.inventoryBalanceService.getInventoryBalance(seed.tenantId, seed.activeSource.inventoryBalanceId)!;
+    const movements = harness.services.movementQueryService.listInventoryMovements(seed.tenantId);
+    const ledgerEntries = harness.services.movementQueryService.listLedgerEntries(seed.tenantId);
+
+    expect(first.ledgerEntryIds).toHaveLength(1);
+    expect(second.ledgerEntryIds).toHaveLength(1);
+    expect(balanceAfterSecond.onHandQuantity).toBe(seed.activeSource.onHandQuantity);
+    expect(movements.map((entry) => entry.movementId)).toEqual(["mov-comp-1", "mov-comp-2"]);
+    expect(ledgerEntries).toHaveLength(2);
+    await expect(harness.services.movementQueryService.verifyLedgerIntegrity(seed.tenantId)).resolves.toEqual({ valid: true });
+  });
+
   it("applies a successful two-balance internal movement atomically and lists movements deterministically", async () => {
     const harness = createSlice4Harness();
     const seed = await seedFoundation(harness);
