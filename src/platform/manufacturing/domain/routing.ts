@@ -4,10 +4,16 @@ import { ManufacturingDomainError } from "./errors";
 
 type EdgeType = "STRUCTURAL" | "REWORK" | "CONDITIONAL";
 
+type RoutingEdge = Readonly<{
+  from: RoutingStepId;
+  to: RoutingStepId;
+  edgeType: EdgeType;
+}>;
+
 export type RoutingValidationResult = Readonly<{
   orderedStepIds: readonly RoutingStepId[];
-  structuralEdges: ReadonlyArray<Readonly<{ from: RoutingStepId; to: RoutingStepId; edgeType: EdgeType }>>;
-  reworkEdges: ReadonlyArray<Readonly<{ from: RoutingStepId; to: RoutingStepId; edgeType: EdgeType }>>;
+  structuralEdges: readonly RoutingEdge[];
+  reworkEdges: readonly RoutingEdge[];
 }>;
 
 function compareStep(left: RoutingStep, right: RoutingStep): number {
@@ -21,32 +27,63 @@ function assertNoDuplicateStepIds(steps: readonly RoutingStep[]): void {
   const seen = new Set<string>();
   for (const step of steps) {
     if (seen.has(step.routingStepId)) {
-      throw new ManufacturingDomainError("INVALID_ROUTING_STEP", `duplicate routing step id: ${step.routingStepId}`, false);
+      throw new ManufacturingDomainError("DUPLICATE_ROUTING_STEP_ID", `duplicate routing step id: ${step.routingStepId}`, false);
     }
     seen.add(step.routingStepId);
   }
 }
 
+function assertUniqueOperationIdentities(steps: readonly RoutingStep[]): void {
+  const operationExecutionIds = new Set<string>();
+  const operationCodes = new Set<string>();
+
+  for (const step of steps) {
+    if (step.operationExecutionId && operationExecutionIds.has(step.operationExecutionId)) {
+      throw new ManufacturingDomainError(
+        "DUPLICATE_OPERATION_EXECUTION_ID",
+        `duplicate operation execution id in routing steps: ${step.operationExecutionId}`,
+        false,
+      );
+    }
+    if (step.operationExecutionId) {
+      operationExecutionIds.add(step.operationExecutionId);
+    }
+
+    if (step.operationCode && operationCodes.has(step.operationCode)) {
+      throw new ManufacturingDomainError(
+        "DUPLICATE_OPERATION_EXECUTION_ID",
+        `duplicate operation code in routing steps: ${step.operationCode}`,
+        false,
+      );
+    }
+    if (step.operationCode) {
+      operationCodes.add(step.operationCode);
+    }
+  }
+}
+
 function assertValidReferencedStepIds(steps: readonly RoutingStep[]): void {
   const allStepIds = new Set(steps.map((step) => step.routingStepId));
+
   for (const step of steps) {
-    const allReferences = [
-      ...step.predecessorStepIds,
-      ...step.successorStepIds,
-      ...step.reworkStepIds,
-      ...step.conditionalStepIds,
-    ];
-    for (const referencedId of allReferences) {
-      if (!allStepIds.has(referencedId)) {
+    const references: Array<{ id: RoutingStepId; relation: string }> = [];
+    references.push(...step.predecessorStepIds.map((id) => ({ id, relation: "predecessor" })));
+    references.push(...step.successorStepIds.map((id) => ({ id, relation: "successor" })));
+    references.push(...step.conditionalStepIds.map((id) => ({ id, relation: "conditional" })));
+    references.push(...step.reworkStepIds.map((id) => ({ id, relation: "rework" })));
+    references.push(...(step.explicitReworkEdges ?? []).map((edge) => ({ id: edge.targetStepId, relation: "rework" })));
+
+    for (const reference of references) {
+      if (!allStepIds.has(reference.id)) {
         throw new ManufacturingDomainError(
-          "INVALID_ROUTING_STEP",
-          `routing step ${step.routingStepId} references unknown step ${referencedId}`,
+          "INVALID_ROUTING_DEPENDENCY",
+          `routing step ${step.routingStepId} references unknown ${reference.relation} step ${reference.id}`,
           false,
         );
       }
-      if (referencedId === step.routingStepId) {
+      if (reference.id === step.routingStepId) {
         throw new ManufacturingDomainError(
-          "INVALID_ROUTING_STEP",
+          "ROUTING_SELF_CYCLE",
           `routing step ${step.routingStepId} cannot self-reference`,
           false,
         );
@@ -55,18 +92,22 @@ function assertValidReferencedStepIds(steps: readonly RoutingStep[]): void {
   }
 }
 
-function structuralAdjacency(steps: readonly RoutingStep[]): Map<RoutingStepId, Set<RoutingStepId>> {
+function createStructuralAdjacency(steps: readonly RoutingStep[]): Map<RoutingStepId, Set<RoutingStepId>> {
   const adjacency = new Map<RoutingStepId, Set<RoutingStepId>>();
+
   for (const step of steps) {
-    adjacency.set(step.routingStepId, new Set(step.successorStepIds));
+    adjacency.set(step.routingStepId, new Set());
   }
 
   for (const step of steps) {
+    for (const successorId of step.successorStepIds) {
+      adjacency.get(step.routingStepId)?.add(successorId);
+    }
+    for (const conditionalId of step.conditionalStepIds) {
+      adjacency.get(step.routingStepId)?.add(conditionalId);
+    }
     for (const predecessorId of step.predecessorStepIds) {
-      const next = adjacency.get(predecessorId);
-      if (next) {
-        next.add(step.routingStepId);
-      }
+      adjacency.get(predecessorId)?.add(step.routingStepId);
     }
   }
 
@@ -80,8 +121,8 @@ function findStructuralCycle(adjacency: Map<RoutingStepId, Set<RoutingStepId>>):
 
   const dfs = (node: RoutingStepId): RoutingStepId[] | null => {
     if (visiting.has(node)) {
-      const index = path.indexOf(node);
-      return [...path.slice(index), node];
+      const startIndex = path.indexOf(node);
+      return [...path.slice(startIndex), node];
     }
     if (visited.has(node)) {
       return null;
@@ -104,8 +145,8 @@ function findStructuralCycle(adjacency: Map<RoutingStepId, Set<RoutingStepId>>):
     return null;
   };
 
-  const sortedNodes = [...adjacency.keys()].sort((left, right) => compareDeterministicStrings(left, right));
-  for (const node of sortedNodes) {
+  const nodes = [...adjacency.keys()].sort((left, right) => compareDeterministicStrings(left, right));
+  for (const node of nodes) {
     const cycle = dfs(node);
     if (cycle) {
       return cycle;
@@ -121,31 +162,30 @@ function topologicalSort(steps: readonly RoutingStep[], adjacency: Map<RoutingSt
     indegree.set(step.routingStepId, 0);
   }
 
-  for (const [, targets] of adjacency.entries()) {
+  for (const targets of adjacency.values()) {
     for (const target of targets) {
       indegree.set(target, (indegree.get(target) ?? 0) + 1);
     }
   }
 
+  const stepById = new Map(steps.map((step) => [step.routingStepId, step]));
   const queue = steps
     .filter((step) => (indegree.get(step.routingStepId) ?? 0) === 0)
     .sort(compareStep)
     .map((step) => step.routingStepId);
+
   const ordered: RoutingStepId[] = [];
 
   while (queue.length > 0) {
     const current = queue.shift()!;
     ordered.push(current);
-    const next = [...(adjacency.get(current) ?? [])].sort((left, right) => compareDeterministicStrings(left, right));
-    for (const target of next) {
-      indegree.set(target, (indegree.get(target) ?? 0) - 1);
-      if ((indegree.get(target) ?? 0) === 0) {
-        queue.push(target);
-        queue.sort((left, right) => {
-          const leftStep = steps.find((step) => step.routingStepId === left)!;
-          const rightStep = steps.find((step) => step.routingStepId === right)!;
-          return compareStep(leftStep, rightStep);
-        });
+
+    const neighbors = [...(adjacency.get(current) ?? [])].sort((left, right) => compareDeterministicStrings(left, right));
+    for (const neighbor of neighbors) {
+      indegree.set(neighbor, (indegree.get(neighbor) ?? 0) - 1);
+      if ((indegree.get(neighbor) ?? 0) === 0) {
+        queue.push(neighbor);
+        queue.sort((left, right) => compareStep(stepById.get(left)!, stepById.get(right)!));
       }
     }
   }
@@ -159,10 +199,12 @@ function topologicalSort(steps: readonly RoutingStep[], adjacency: Map<RoutingSt
 
 export function validateRoutingGraph(routing: ExecutionRouting): RoutingValidationResult {
   const steps = routing.steps;
+
   assertNoDuplicateStepIds(steps);
+  assertUniqueOperationIdentities(steps);
   assertValidReferencedStepIds(steps);
 
-  const adjacency = structuralAdjacency(steps);
+  const adjacency = createStructuralAdjacency(steps);
   const cycle = findStructuralCycle(adjacency);
   if (cycle) {
     throw new ManufacturingDomainError(
@@ -174,18 +216,26 @@ export function validateRoutingGraph(routing: ExecutionRouting): RoutingValidati
 
   const orderedStepIds = topologicalSort(steps, adjacency);
 
-  const structuralEdges: Array<{ from: RoutingStepId; to: RoutingStepId; edgeType: EdgeType }> = [];
-  const reworkEdges: Array<{ from: RoutingStepId; to: RoutingStepId; edgeType: EdgeType }> = [];
+  const structuralEdges: RoutingEdge[] = [];
+  const reworkEdges: RoutingEdge[] = [];
 
   for (const step of steps) {
-    for (const to of step.successorStepIds) {
-      structuralEdges.push({ from: step.routingStepId, to, edgeType: "STRUCTURAL" });
+    for (const successorId of step.successorStepIds) {
+      structuralEdges.push({ from: step.routingStepId, to: successorId, edgeType: "STRUCTURAL" });
     }
-    for (const to of step.conditionalStepIds) {
-      structuralEdges.push({ from: step.routingStepId, to, edgeType: "CONDITIONAL" });
+    for (const conditionalId of step.conditionalStepIds) {
+      structuralEdges.push({ from: step.routingStepId, to: conditionalId, edgeType: "CONDITIONAL" });
     }
-    for (const to of step.reworkStepIds) {
-      reworkEdges.push({ from: step.routingStepId, to, edgeType: "REWORK" });
+    const uniqueReworkTargets = new Set<RoutingStepId>();
+    for (const edge of step.explicitReworkEdges ?? []) {
+      uniqueReworkTargets.add(edge.targetStepId);
+    }
+    for (const targetStepId of step.reworkStepIds) {
+      uniqueReworkTargets.add(targetStepId);
+    }
+    for (const targetStepId of uniqueReworkTargets) {
+      const edge = { targetStepId };
+      reworkEdges.push({ from: step.routingStepId, to: edge.targetStepId, edgeType: "REWORK" });
     }
   }
 

@@ -11,11 +11,13 @@ import type {
   ManufacturingRuntimeObservation,
 } from "../integration";
 import {
+  ExecutionRoutingService,
   ManufacturingWorkOrderService,
+  OperationExecutionService,
   ProductionBatchService,
   ProductionRunService,
 } from "../services";
-import { ManufacturingFoundationQueryService } from "../queries";
+import { ManufacturingFoundationQueryService, ManufacturingRoutingQueryService } from "../queries";
 import { ManufacturingRuntimeError } from "./errors";
 import type {
   ManufacturingRuntime,
@@ -711,6 +713,55 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09b.register-slice4-routing-operation-services", async () => {
+    appendTrace(host, "09b.register-slice4-routing-operation-services");
+    try {
+      const workOrders = host.services.require("manufacturing.service.work-order").value as ManufacturingWorkOrderService;
+      const executionRouting = new ExecutionRoutingService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+      });
+      const operations = new OperationExecutionService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        routings: executionRouting,
+      });
+      const routingQueries = new ManufacturingRoutingQueryService({
+        routings: executionRouting,
+        operations,
+      });
+
+      host.registerService({
+        serviceId: "manufacturing.service.execution-routing",
+        contract: "manufacturing.service.execution-routing",
+        description: "Manufacturing execution routing service.",
+        value: executionRouting,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.operation-execution",
+        contract: "manufacturing.service.operation-execution",
+        description: "Manufacturing operation execution service.",
+        value: operations,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.routing",
+        contract: "manufacturing.query.routing",
+        description: "Read-only Manufacturing routing and operation query surface.",
+        value: routingQueries,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "slice 4 service registration failed";
+      recordFailure(host, dependencies, "DUPLICATE_SERVICE_REGISTRATION", message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -738,6 +789,9 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.service.production-run",
       "manufacturing.service.production-batch",
       "manufacturing.query.foundation",
+      "manufacturing.service.execution-routing",
+      "manufacturing.service.operation-execution",
+      "manufacturing.query.routing",
     ]);
     for (const serviceId of requiredServices) {
       try {
@@ -763,7 +817,6 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     const forbiddenBusinessServices = host.services.list().filter((service) =>
       [
         "manufacturing.service.routing",
-        "manufacturing.service.operation",
         "manufacturing.service.material",
         "manufacturing.service.output",
         "manufacturing.service.resource",

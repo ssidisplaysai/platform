@@ -119,10 +119,14 @@ export type OperationLifecycleState =
   | "IN_PROGRESS"
   | "PAUSED"
   | "BLOCKED"
+  | "REWORK_REQUIRED"
   | "COMPLETED"
+  | "SKIPPED"
   | "FAILED"
   | "CANCELLED"
   | "CLOSED";
+
+export type OperationEligibilityState = "ELIGIBLE" | "NOT_ELIGIBLE" | "DEFERRED";
 
 export type ProductionStatus = Branded<string, "ProductionStatus">;
 export type WorkInProgressStatus = Branded<string, "WorkInProgressStatus">;
@@ -285,23 +289,54 @@ export type RoutingDependencyEdge = Readonly<{
   edgeType: "STRUCTURAL" | "REWORK" | "CONDITIONAL";
 }>;
 
+export type RoutingConditionalEligibility = Readonly<{
+  state: OperationEligibilityState;
+  conditionCode?: Branded<string, "ConditionCode">;
+  conditionInput?: MetadataCollection;
+}>;
+
+export type RoutingReworkEdge = Readonly<{
+  targetStepId: RoutingStepId;
+  maxIterations: number;
+  reasonCode?: Branded<string, "ReworkReasonCode">;
+}>;
+
+export type RoutingTimingExpectation = Readonly<{
+  setupTimeMinutes?: number;
+  cycleTimeMinutes?: number;
+  expectedDurationMinutes?: number;
+}>;
+
+export type RoutingStepExecutionState = Readonly<{
+  readiness: "READY" | "BLOCKED" | "NOT_READY";
+  operationState: OperationLifecycleState;
+}>;
+
 export type RoutingStep = Readonly<{
   routingStepId: RoutingStepId;
   tenantId: TenantId;
+  operationExecutionId?: OperationExecutionId;
+  operationCode?: OperationCode;
   routingStepCode: RoutingStepCode;
   sequenceNumber: SequenceNumber;
   predecessorStepIds: readonly RoutingStepId[];
   successorStepIds: readonly RoutingStepId[];
+  conditionalEligibility?: RoutingConditionalEligibility;
+  explicitReworkEdges?: readonly RoutingReworkEdge[];
   reworkStepIds: readonly RoutingStepId[];
   conditionalStepIds: readonly RoutingStepId[];
+  requiredWorkCenterClass?: Branded<string, "WorkCenterClassCode">;
+  requiredWorkCenterRef?: WorkCenterId;
+  timingExpectation?: RoutingTimingExpectation;
+  executionState?: RoutingStepExecutionState;
 }>;
 
 export type ExecutionRouting = Readonly<{
   executionRoutingId: ExecutionRoutingId;
   tenantId: TenantId;
   workOrderId: ManufacturingWorkOrderId;
-  sourceProductVersionRef: ProductVersionReference;
-  sourceBomRef: ProductBomReference;
+  sourceProductVersionRef?: ProductVersionReference;
+  sourceBomRef?: ProductBomReference;
   sourceRoutingReference?: Branded<string, "ProductRoutingReferenceId">;
   status: ProductionStatus;
   steps: readonly RoutingStep[];
@@ -320,7 +355,10 @@ export type OperationExecution = Readonly<{
   operationExecutionId: OperationExecutionId;
   tenantId: TenantId;
   workOrderId: ManufacturingWorkOrderId;
+  executionRoutingId: ExecutionRoutingId;
   routingStepId: RoutingStepId;
+  operationCode: OperationCode;
+  eligibility: OperationEligibilityState;
   operationState: OperationLifecycleState;
   plannedQuantity: PlannedQuantity;
   completedQuantity: CompletedQuantity;
@@ -613,7 +651,20 @@ export type ManufacturingFailureClassification =
   | "DUPLICATE_PRODUCTION_BATCH_ID"
   | "DUPLICATE_BATCH_CODE"
   | "INVALID_PRODUCTION_BATCH"
-  | "TERMINAL_WORK_ORDER_MUTATION";
+  | "TERMINAL_WORK_ORDER_MUTATION"
+  | "DUPLICATE_ROUTING_ID"
+  | "DUPLICATE_ROUTING_STEP_ID"
+  | "DUPLICATE_OPERATION_EXECUTION_ID"
+  | "ROUTING_SELF_CYCLE"
+  | "INVALID_ROUTING_REFERENCE"
+  | "INVALID_ROUTING_DEPENDENCY"
+  | "INVALID_ROUTING_SEQUENCE"
+  | "OPERATION_NOT_ELIGIBLE"
+  | "INVALID_OPERATION_TRANSITION"
+  | "TERMINAL_OPERATION_MUTATION"
+  | "INVALID_REWORK_EDGE"
+  | "REWORK_LIMIT_EXCEEDED"
+  | "DUPLICATE_OPERATION_COMMAND";
 
 export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailureClassification[] = [
   "INVALID_COMMAND",
@@ -653,6 +704,19 @@ export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailur
   "DUPLICATE_BATCH_CODE",
   "INVALID_PRODUCTION_BATCH",
   "TERMINAL_WORK_ORDER_MUTATION",
+  "DUPLICATE_ROUTING_ID",
+  "DUPLICATE_ROUTING_STEP_ID",
+  "DUPLICATE_OPERATION_EXECUTION_ID",
+  "ROUTING_SELF_CYCLE",
+  "INVALID_ROUTING_REFERENCE",
+  "INVALID_ROUTING_DEPENDENCY",
+  "INVALID_ROUTING_SEQUENCE",
+  "OPERATION_NOT_ELIGIBLE",
+  "INVALID_OPERATION_TRANSITION",
+  "TERMINAL_OPERATION_MUTATION",
+  "INVALID_REWORK_EDGE",
+  "REWORK_LIMIT_EXCEEDED",
+  "DUPLICATE_OPERATION_COMMAND",
 ];
 
 export type IdempotencyCommandFamily =

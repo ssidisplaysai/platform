@@ -3,6 +3,7 @@ import type {
   CommerceOrderReference,
   CompletedQuantity,
   CorrelationIdentifier,
+  ExecutionRoutingId,
   IdempotencyKey,
   ManufacturingFailureClassification,
   ManufacturingWorkOrder,
@@ -385,16 +386,10 @@ export class ManufacturingWorkOrderService {
 
   async startWorkOrderExecution(command: WorkOrderLifecycleCommand): Promise<ManufacturingWorkOrderRecord> {
     const current = this.require(command.tenantId, command.workOrderId);
-    await this.audit(
-      "WORK_ORDER_NOT_READY",
-      "Execution start is deferred to later slices.",
-      command,
-      current.workOrder.manufacturingWorkOrderId,
-      current.workOrder.workOrderNumber,
-      current.workOrder.version,
-      current.workOrder.version,
-    );
-    throw new ManufacturingDomainError("WORK_ORDER_NOT_READY", "execution start is deferred to later slices", false);
+    if (!current.readiness.executionReady) {
+      throw new ManufacturingDomainError("WORK_ORDER_NOT_READY", "work order execution readiness is not satisfied", false);
+    }
+    return this.mutateLifecycle("WORK_ORDER_START", command, "IN_PROGRESS", async (record) => record);
   }
 
   async pauseWorkOrder(command: WorkOrderLifecycleCommand): Promise<ManufacturingWorkOrderRecord> {
@@ -528,6 +523,43 @@ export class ManufacturingWorkOrderService {
       ...current,
       runIds: [...current.runIds, runId].sort(compareDeterministicStrings),
     });
+  }
+
+  registerRoutingBinding(input: {
+    tenantId: TenantId;
+    workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"];
+    executionRoutingId: ExecutionRoutingId;
+    expectedVersion: number;
+  }): ManufacturingWorkOrderRecord {
+    const current = this.require(input.tenantId, input.workOrderId);
+    this.assertExpectedVersion(current, input.expectedVersion);
+
+    if (
+      current.workOrder.executionRoutingId &&
+      current.workOrder.executionRoutingId !== input.executionRoutingId
+    ) {
+      throw new ManufacturingDomainError("INVALID_ROUTING_REFERENCE", "work order already bound to a different routing", false);
+    }
+
+    const nextReadinessBase = {
+      productBaselineReady: current.readiness.productBaselineReady,
+      routingReady: true,
+      materialsReady: current.readiness.materialsReady,
+      resourcesReady: current.readiness.resourcesReady,
+    };
+
+    const updated: ManufacturingWorkOrderRecord = {
+      ...current,
+      workOrder: {
+        ...current.workOrder,
+        executionRoutingId: input.executionRoutingId,
+        version: current.workOrder.version + 1,
+      },
+      readiness: withExecutionReady(nextReadinessBase),
+    };
+
+    this.byId.set(input.workOrderId as string, updated);
+    return cloneRecord(updated);
   }
 
   registerBatchBinding(tenantId: TenantId, workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"], batchId: string): void {
@@ -671,7 +703,7 @@ export class ManufacturingWorkOrderService {
       DRAFT: ["PLANNED", "CANCELLED"],
       PLANNED: ["RELEASED", "CANCELLED"],
       RELEASED: ["READY", "ON_HOLD", "CANCELLED"],
-      READY: ["ON_HOLD", "CANCELLED"],
+      READY: ["IN_PROGRESS", "ON_HOLD", "CANCELLED"],
       IN_PROGRESS: ["PAUSED", "ON_HOLD", "PARTIALLY_COMPLETED", "COMPLETED", "CANCELLED"],
       PAUSED: ["IN_PROGRESS", "ON_HOLD", "CANCELLED"],
       BLOCKED: ["READY", "ON_HOLD", "CANCELLED"],

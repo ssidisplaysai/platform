@@ -22,12 +22,14 @@ export const workOrderLifecycleTransitions: TransitionTable<WorkOrderLifecycleSt
 
 export const operationLifecycleTransitions: TransitionTable<OperationLifecycleState> = {
   PENDING: ["READY"],
-  READY: ["IN_PROGRESS", "BLOCKED"],
-  IN_PROGRESS: ["PAUSED", "BLOCKED", "COMPLETED", "FAILED", "CANCELLED"],
+  READY: ["IN_PROGRESS", "BLOCKED", "SKIPPED"],
+  IN_PROGRESS: ["PAUSED", "BLOCKED", "COMPLETED", "REWORK_REQUIRED", "FAILED", "CANCELLED"],
   PAUSED: ["IN_PROGRESS", "BLOCKED", "CANCELLED"],
-  BLOCKED: ["READY", "IN_PROGRESS", "CANCELLED"],
-  COMPLETED: ["CLOSED"],
-  FAILED: ["READY", "CANCELLED"],
+  BLOCKED: ["READY", "IN_PROGRESS", "SKIPPED", "CANCELLED"],
+  REWORK_REQUIRED: ["READY", "IN_PROGRESS", "BLOCKED", "CANCELLED"],
+  COMPLETED: ["CLOSED", "REWORK_REQUIRED"],
+  SKIPPED: ["CLOSED"],
+  FAILED: ["READY", "REWORK_REQUIRED", "CANCELLED"],
   CANCELLED: ["CLOSED"],
   CLOSED: [],
 };
@@ -55,7 +57,7 @@ export function assertValidWorkOrderTransition(from: WorkOrderLifecycleState, to
 export function assertValidOperationTransition(from: OperationLifecycleState, to: OperationLifecycleState): void {
   if (!isValidTransition(operationLifecycleTransitions, from, to)) {
     throw new ManufacturingDomainError(
-      "INVALID_OPERATION_STATE",
+      "INVALID_OPERATION_TRANSITION",
       `invalid operation lifecycle transition: ${from} -> ${to}`,
       false,
     );
