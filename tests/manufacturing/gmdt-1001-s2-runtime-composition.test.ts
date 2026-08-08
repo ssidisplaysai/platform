@@ -154,6 +154,7 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
       "09.register-future-external-reference-integration-points",
       "09a.register-slice3-foundation-services",
       "09b.register-slice4-routing-operation-services",
+      "09c.register-slice5-product-material-services",
       "10.validate-required-registrations",
       "11.start-shared-lifecycle",
       "12.establish-manufacturing-readiness",
@@ -362,7 +363,10 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
     expect(ids).toContain("manufacturing.service.execution-routing");
     expect(ids).toContain("manufacturing.service.operation-execution");
     expect(ids).toContain("manufacturing.query.routing");
-    expect(ids.some((serviceId) => serviceId.includes("material") || serviceId.includes("output"))).toBe(false);
+    expect(ids).toContain("manufacturing.service.product-reference");
+    expect(ids).toContain("manufacturing.service.material-requirement");
+    expect(ids).toContain("manufacturing.query.material");
+    expect(ids.some((serviceId) => serviceId.includes("output"))).toBe(false);
     expect(ids.some((serviceId) => serviceId.includes("persistence"))).toBe(false);
     expect((runtime as unknown as { persistence?: unknown }).persistence).toBeUndefined();
     await runtime.stop();

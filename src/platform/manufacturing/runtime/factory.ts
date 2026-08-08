@@ -7,17 +7,24 @@ import {
 import type {
   ManufacturingIntegrationRegistration,
   ManufacturingIntegrationType,
+  ManufacturingProductIntegrationPort,
   ManufacturingRuntimeDependencies,
   ManufacturingRuntimeObservation,
 } from "../integration";
 import {
   ExecutionRoutingService,
+  ManufacturingProductReferenceService,
   ManufacturingWorkOrderService,
+  MaterialRequirementService,
   OperationExecutionService,
   ProductionBatchService,
   ProductionRunService,
 } from "../services";
-import { ManufacturingFoundationQueryService, ManufacturingRoutingQueryService } from "../queries";
+import {
+  ManufacturingFoundationQueryService,
+  ManufacturingMaterialQueryService,
+  ManufacturingRoutingQueryService,
+} from "../queries";
 import { ManufacturingRuntimeError } from "./errors";
 import type {
   ManufacturingRuntime,
@@ -762,6 +769,72 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09c.register-slice5-product-material-services", async () => {
+    appendTrace(host, "09c.register-slice5-product-material-services");
+    try {
+      const workOrders = host.services.require("manufacturing.service.work-order").value as ManufacturingWorkOrderService;
+      const routing = host.services.require("manufacturing.service.execution-routing").value as ExecutionRoutingService;
+      const productPort = host.services.require("manufacturing.integration.product-port").value as ManufacturingProductIntegrationPort;
+
+      const productReferences = new ManufacturingProductReferenceService({
+        clock: dependencies.clockProvider,
+        metadata: dependencies.metadataProvider,
+        audit: dependencies.auditSinkProvider,
+        productPort,
+        workOrders,
+      });
+
+      const materials = new MaterialRequirementService({
+        clock: dependencies.clockProvider,
+        identifier: dependencies.identifierProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        routings: routing,
+      });
+
+      const materialQueries = new ManufacturingMaterialQueryService({
+        materials,
+        workOrders,
+      });
+
+      host.registerService({
+        serviceId: "manufacturing.service.product-reference",
+        contract: "manufacturing.service.product-reference",
+        description: "Manufacturing product baseline validation and freeze service.",
+        value: productReferences,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.material-requirement",
+        contract: "manufacturing.service.material-requirement",
+        description: "Manufacturing deterministic material requirement derivation service.",
+        value: materials,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.material",
+        contract: "manufacturing.query.material",
+        description: "Read-only Manufacturing material requirement query surface.",
+        value: materialQueries,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      if (error instanceof ManufacturingRuntimeError) {
+        recordFailure(host, dependencies, error.code, error.message);
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : "slice 5 service registration failed";
+      const code = message.includes("manufacturing.integration.product-port")
+        ? "MISSING_REQUIRED_INTEGRATION"
+        : message.includes("service not found")
+          ? "PARTIAL_INITIALIZATION_REJECTED"
+          : "DUPLICATE_SERVICE_REGISTRATION";
+      recordFailure(host, dependencies, code, message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -792,6 +865,9 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.service.execution-routing",
       "manufacturing.service.operation-execution",
       "manufacturing.query.routing",
+      "manufacturing.service.product-reference",
+      "manufacturing.service.material-requirement",
+      "manufacturing.query.material",
     ]);
     for (const serviceId of requiredServices) {
       try {
@@ -817,7 +893,6 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     const forbiddenBusinessServices = host.services.list().filter((service) =>
       [
         "manufacturing.service.routing",
-        "manufacturing.service.material",
         "manufacturing.service.output",
         "manufacturing.service.resource",
         "manufacturing.service.persistence",

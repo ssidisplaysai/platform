@@ -19,6 +19,7 @@ export type MachineAssignmentId = Branded<string, "MachineAssignmentId">;
 export type ToolAssignmentId = Branded<string, "ToolAssignmentId">;
 export type LaborAssignmentId = Branded<string, "LaborAssignmentId">;
 export type MaterialRequirementId = Branded<string, "MaterialRequirementId">;
+export type BomLineIdentifier = Branded<string, "BomLineIdentifier">;
 export type MaterialIssueRequestId = Branded<string, "MaterialIssueRequestId">;
 export type MaterialConsumptionId = Branded<string, "MaterialConsumptionId">;
 export type ProductionOutputId = Branded<string, "ProductionOutputId">;
@@ -127,6 +128,16 @@ export type OperationLifecycleState =
   | "CLOSED";
 
 export type OperationEligibilityState = "ELIGIBLE" | "NOT_ELIGIBLE" | "DEFERRED";
+
+export type MaterialRequirementLifecycleState =
+  | "PLANNED"
+  | "READY"
+  | "PARTIALLY_ISSUED"
+  | "ISSUED"
+  | "PARTIALLY_CONSUMED"
+  | "CONSUMED"
+  | "RETURNED"
+  | "CANCELLED";
 
 export type ProductionStatus = Branded<string, "ProductionStatus">;
 export type WorkInProgressStatus = Branded<string, "WorkInProgressStatus">;
@@ -499,6 +510,45 @@ export type MaterialRequirement = Readonly<{
   version: number;
 }>;
 
+export type MaterialSubstitutionPolicy = Readonly<{
+  substitutionFamily?: Branded<string, "SubstitutionFamilyIdentifier">;
+  approvedSubstituteProductId?: ProductIdentifier;
+  approvedSubstituteInventoryItemId?: InventoryItemIdentifier;
+  reason?: Branded<string, "SubstitutionReasonCode">;
+  approvalEvidence?: MetadataCollection;
+}>;
+
+export type MaterialVariancePolicy = Readonly<{
+  allowedOveragePercent?: number;
+  allowedUnderagePercent?: number;
+  notes?: MetadataCollection;
+}>;
+
+export type MaterialRequirementExecutionRecord = Readonly<{
+  materialRequirementId: MaterialRequirementId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  bomId: ProductBomIdentifier;
+  bomVersion: VersionIdentifier;
+  bomLineId: BomLineIdentifier;
+  componentProductRef?: ProductReference;
+  inventoryItemRef?: InventoryItemReference;
+  requiredQuantity: RequiredMaterialQuantity;
+  issuedQuantity: IssuedMaterialQuantity;
+  consumedQuantity: ConsumedMaterialQuantity;
+  returnedQuantity: ReturnedMaterialQuantity;
+  scrapQuantity?: ScrapQuantity;
+  unitOfMeasure: UnitOfMeasure;
+  requiredByOperationId?: OperationExecutionId;
+  requiredByRoutingStepId?: RoutingStepId;
+  substitutionPolicy?: MaterialSubstitutionPolicy;
+  variancePolicy?: MaterialVariancePolicy;
+  status: MaterialRequirementLifecycleState;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+  version: number;
+}>;
+
 export type MaterialIssueRequest = Readonly<{
   materialIssueRequestId: MaterialIssueRequestId;
   tenantId: TenantId;
@@ -664,7 +714,22 @@ export type ManufacturingFailureClassification =
   | "TERMINAL_OPERATION_MUTATION"
   | "INVALID_REWORK_EDGE"
   | "REWORK_LIMIT_EXCEEDED"
-  | "DUPLICATE_OPERATION_COMMAND";
+  | "DUPLICATE_OPERATION_COMMAND"
+  | "PRODUCT_REFERENCE_INVALID"
+  | "PRODUCT_VARIANT_INVALID"
+  | "PRODUCT_VERSION_INVALID"
+  | "PRODUCT_BOM_INVALID"
+  | "PRODUCT_BASELINE_NOT_VALIDATED"
+  | "PRODUCT_BASELINE_ALREADY_FROZEN"
+  | "PRODUCT_BASELINE_DRIFT"
+  | "BOM_LINE_INVALID"
+  | "MATERIAL_REQUIREMENT_DERIVATION_FAILURE"
+  | "DUPLICATE_MATERIAL_REQUIREMENT"
+  | "INVALID_REQUIREMENT_QUANTITY"
+  | "INVALID_REQUIREMENT_UOM"
+  | "INVALID_REQUIREMENT_OPERATION_REFERENCE"
+  | "INVALID_SUBSTITUTION"
+  | "MATERIAL_REQUIREMENT_NOT_READY";
 
 export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailureClassification[] = [
   "INVALID_COMMAND",
@@ -717,6 +782,21 @@ export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailur
   "INVALID_REWORK_EDGE",
   "REWORK_LIMIT_EXCEEDED",
   "DUPLICATE_OPERATION_COMMAND",
+  "PRODUCT_REFERENCE_INVALID",
+  "PRODUCT_VARIANT_INVALID",
+  "PRODUCT_VERSION_INVALID",
+  "PRODUCT_BOM_INVALID",
+  "PRODUCT_BASELINE_NOT_VALIDATED",
+  "PRODUCT_BASELINE_ALREADY_FROZEN",
+  "PRODUCT_BASELINE_DRIFT",
+  "BOM_LINE_INVALID",
+  "MATERIAL_REQUIREMENT_DERIVATION_FAILURE",
+  "DUPLICATE_MATERIAL_REQUIREMENT",
+  "INVALID_REQUIREMENT_QUANTITY",
+  "INVALID_REQUIREMENT_UOM",
+  "INVALID_REQUIREMENT_OPERATION_REFERENCE",
+  "INVALID_SUBSTITUTION",
+  "MATERIAL_REQUIREMENT_NOT_READY",
 ];
 
 export type IdempotencyCommandFamily =

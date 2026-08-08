@@ -656,14 +656,16 @@ describe("GMDT-1001-S4 Routing and operation execution", () => {
     await runtime.stop();
   });
 
-  it("registers Slice 4 runtime services and keeps material/output/persistence out of scope while emitting audit evidence", async () => {
+  it("registers Slice 4 runtime services while keeping output/persistence out of scope and emitting audit evidence", async () => {
     const { runtime, audits, workOrders, routing } = await createRuntime();
     const serviceIds = runtime.services.list().map((service) => service.serviceId);
 
     expect(serviceIds).toContain("manufacturing.service.execution-routing");
     expect(serviceIds).toContain("manufacturing.service.operation-execution");
     expect(serviceIds).toContain("manufacturing.query.routing");
-    expect(serviceIds.some((id) => id.includes("material") || id.includes("output"))).toBe(false);
+    expect(serviceIds).toContain("manufacturing.service.material-requirement");
+    expect(serviceIds).toContain("manufacturing.query.material");
+    expect(serviceIds.some((id) => id.includes("output"))).toBe(false);
     expect(serviceIds.some((id) => id.includes("persistence"))).toBe(false);
 
     const workOrder = await workOrders.createWorkOrder(createBaseWorkOrder());

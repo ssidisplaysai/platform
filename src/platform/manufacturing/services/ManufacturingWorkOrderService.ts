@@ -40,8 +40,21 @@ export type WorkOrderReadinessFlags = Readonly<{
   productBaselineReady: boolean;
   routingReady: boolean;
   materialsReady: boolean;
+  requirementsReady: boolean;
+  inventoryMaterialsReady: boolean;
   resourcesReady: boolean;
   executionReady: boolean;
+}>;
+
+export type WorkOrderProductBaselineSnapshot = Readonly<{
+  productRef: ProductReference;
+  productVariantRef?: ProductVariantReference;
+  productVersionRef: ProductVersionReference;
+  productBomRef: ProductBomReference;
+  designRoutingReference?: string;
+  contractVersion: string;
+  validatedAt: string;
+  frozenAt?: string;
 }>;
 
 export type WorkOrderExecutionStateProjection = Readonly<{
@@ -69,6 +82,7 @@ export type ManufacturingWorkOrderRecord = Readonly<{
   plannedStartAt?: string;
   plannedEndAt?: string;
   productBaselineState: ProductBaselineState;
+  productBaselineSnapshot?: WorkOrderProductBaselineSnapshot;
   readiness: WorkOrderReadinessFlags;
   runIds: readonly string[];
   batchIds: readonly string[];
@@ -277,6 +291,8 @@ export class ManufacturingWorkOrderService {
       productBaselineReady: false,
       routingReady: false,
       materialsReady: false,
+      requirementsReady: false,
+      inventoryMaterialsReady: false,
       resourcesReady: false,
     });
 
@@ -340,6 +356,8 @@ export class ManufacturingWorkOrderService {
         productBaselineReady: readinessEvidence?.productBaselineReady ?? current.readiness.productBaselineReady,
         routingReady: readinessEvidence?.routingReady ?? current.readiness.routingReady,
         materialsReady: readinessEvidence?.materialsReady ?? current.readiness.materialsReady,
+        requirementsReady: current.readiness.requirementsReady,
+        inventoryMaterialsReady: current.readiness.inventoryMaterialsReady,
         resourcesReady: readinessEvidence?.resourcesReady ?? current.readiness.resourcesReady,
       };
 
@@ -545,6 +563,8 @@ export class ManufacturingWorkOrderService {
       productBaselineReady: current.readiness.productBaselineReady,
       routingReady: true,
       materialsReady: current.readiness.materialsReady,
+      requirementsReady: current.readiness.requirementsReady,
+      inventoryMaterialsReady: current.readiness.inventoryMaterialsReady,
       resourcesReady: current.readiness.resourcesReady,
     };
 
@@ -571,6 +591,100 @@ export class ManufacturingWorkOrderService {
       ...current,
       batchIds: [...current.batchIds, batchId].sort(compareDeterministicStrings),
     });
+  }
+
+  setProductBaselineState(input: {
+    tenantId: TenantId;
+    workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"];
+    expectedVersion: number;
+    baselineState: ProductBaselineState;
+    snapshot: WorkOrderProductBaselineSnapshot;
+  }): ManufacturingWorkOrderRecord {
+    const current = this.require(input.tenantId, input.workOrderId);
+    this.assertExpectedVersion(current, input.expectedVersion);
+
+    if (current.productBaselineState === "FROZEN") {
+      const existing = current.productBaselineSnapshot;
+      if (!existing) {
+        throw new ManufacturingDomainError("PRODUCT_BASELINE_ALREADY_FROZEN", "product baseline is already frozen", false);
+      }
+      const unchanged =
+        existing.productRef.productId === input.snapshot.productRef.productId &&
+        existing.productVersionRef.productVersionId === input.snapshot.productVersionRef.productVersionId &&
+        existing.productBomRef.productBomId === input.snapshot.productBomRef.productBomId &&
+        existing.productBomRef.bomVersion === input.snapshot.productBomRef.bomVersion &&
+        existing.designRoutingReference === input.snapshot.designRoutingReference;
+
+      if (!unchanged) {
+        throw new ManufacturingDomainError("PRODUCT_BASELINE_DRIFT", "frozen product baseline drift detected", false);
+      }
+      throw new ManufacturingDomainError("PRODUCT_BASELINE_ALREADY_FROZEN", "product baseline is already frozen", false);
+    }
+
+    if (input.baselineState === "FROZEN" && current.productBaselineState !== "VALIDATED") {
+      throw new ManufacturingDomainError("PRODUCT_BASELINE_NOT_VALIDATED", "product baseline must be validated before freeze", false);
+    }
+
+    const nextReadinessBase = {
+      productBaselineReady: input.baselineState === "FROZEN",
+      routingReady: current.readiness.routingReady,
+      materialsReady: current.readiness.materialsReady,
+      requirementsReady: current.readiness.requirementsReady,
+      inventoryMaterialsReady: current.readiness.inventoryMaterialsReady,
+      resourcesReady: current.readiness.resourcesReady,
+    };
+
+    const updatedSnapshot: WorkOrderProductBaselineSnapshot = {
+      ...input.snapshot,
+      frozenAt: input.baselineState === "FROZEN" ? input.snapshot.frozenAt ?? this.dependencies.clock.now() : undefined,
+    };
+
+    const updated: ManufacturingWorkOrderRecord = {
+      ...current,
+      productBaselineState: input.baselineState,
+      productBaselineSnapshot: updatedSnapshot,
+      readiness: withExecutionReady(nextReadinessBase),
+      workOrder: {
+        ...current.workOrder,
+        version: current.workOrder.version + 1,
+      },
+    };
+
+    this.byId.set(input.workOrderId as string, updated);
+    return cloneRecord(updated);
+  }
+
+  setMaterialRequirementModelReadiness(input: {
+    tenantId: TenantId;
+    workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"];
+    expectedVersion: number;
+    requirementsReady: boolean;
+    inventoryMaterialsReady?: boolean;
+  }): ManufacturingWorkOrderRecord {
+    const current = this.require(input.tenantId, input.workOrderId);
+    this.assertExpectedVersion(current, input.expectedVersion);
+
+    const inventoryMaterialsReady = input.inventoryMaterialsReady ?? current.readiness.inventoryMaterialsReady;
+    const nextReadinessBase = {
+      productBaselineReady: current.readiness.productBaselineReady,
+      routingReady: current.readiness.routingReady,
+      materialsReady: inventoryMaterialsReady,
+      requirementsReady: input.requirementsReady,
+      inventoryMaterialsReady,
+      resourcesReady: current.readiness.resourcesReady,
+    };
+
+    const updated: ManufacturingWorkOrderRecord = {
+      ...current,
+      readiness: withExecutionReady(nextReadinessBase),
+      workOrder: {
+        ...current.workOrder,
+        version: current.workOrder.version + 1,
+      },
+    };
+
+    this.byId.set(input.workOrderId as string, updated);
+    return cloneRecord(updated);
   }
 
   require(tenantId: TenantId, workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"]): ManufacturingWorkOrderRecord {
