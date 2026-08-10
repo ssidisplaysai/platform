@@ -143,7 +143,7 @@ async function createS9Runtime(options?: {
       },
       clockProvider: {
         ...baseDependencies.clockProvider,
-        now: () => new Date("2025-01-01T00:00:00.000Z"),
+        now: () => "2025-01-01T00:00:00.000Z",
       },
       auditSinkProvider: {
         ...baseDependencies.auditSinkProvider,

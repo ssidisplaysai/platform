@@ -159,6 +159,7 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
       "09e.register-slice7-production-output-result-services",
       "09f.register-slice8-resource-downtime-traceability-services",
       "09g.register-slice9-reference-validation-observability-services",
+      "09h.initialize-slice10-persistence-and-recovery",
       "10.validate-required-registrations",
       "11.start-shared-lifecycle",
       "12.establish-manufacturing-readiness",
@@ -394,7 +395,8 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
     expect(ids).toContain("manufacturing.service.health");
     expect(ids).toContain("manufacturing.service.observation-publisher");
     expect(ids).toContain("manufacturing.query.observation");
-    expect(ids.some((serviceId) => serviceId.includes("persistence"))).toBe(false);
+    expect(ids).toContain("manufacturing.service.persistence");
+    expect(ids.some((serviceId) => serviceId.includes("maintenance"))).toBe(false);
     expect((runtime as unknown as { persistence?: unknown }).persistence).toBeUndefined();
     await runtime.stop();
   });

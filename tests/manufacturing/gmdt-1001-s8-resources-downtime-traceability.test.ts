@@ -1042,7 +1042,7 @@ describe("GMDT-1001-S8 resources downtime and traceability", () => {
     expect(ids).toContain("manufacturing.query.resource");
     expect(ids).toContain("manufacturing.query.traceability");
 
-    expect(ids.some((entry) => entry.startsWith("manufacturing.service.persistence"))).toBe(false);
+    expect(ids).toContain("manufacturing.service.persistence");
     expect(ids.some((entry) => entry.startsWith("manufacturing.service.maintenance"))).toBe(false);
     expect(ids.some((entry) => entry.startsWith("manufacturing.service.quality-management"))).toBe(false);
     expect(ids.some((entry) => entry.startsWith("manufacturing.service.observability"))).toBe(false);

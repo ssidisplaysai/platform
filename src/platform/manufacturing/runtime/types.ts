@@ -13,6 +13,7 @@ import type {
   ManufacturingRuntimeDependencies,
   ManufacturingRuntimeObservation,
 } from "../integration";
+import type { ManufacturingPersistenceConfiguration } from "../persistence";
 import type { ManufacturingRuntimeErrorCode } from "./errors";
 
 export type ManufacturingRuntimePhase = "CREATED" | "INITIALIZING" | "READY" | "STOPPING" | "STOPPED" | "FAILED";
@@ -105,6 +106,7 @@ export type ManufacturingRuntimeServiceRegistration = Readonly<{
     | "manufacturing.service.audit"
     | "manufacturing.service.observation-publisher"
     | "manufacturing.query.observation"
+    | "manufacturing.service.persistence"
     | "manufacturing.integration.product-port"
     | "manufacturing.integration.inventory-port"
     | "manufacturing.integration.external-reference-validator";
@@ -142,6 +144,7 @@ export type ManufacturingRuntimeOptions = Readonly<{
     integrationId: string;
     port: ManufacturingIntegrationRegistration["port"];
   }>;
+  persistence?: ManufacturingPersistenceConfiguration;
   externalReferenceIntegrations?: readonly ManufacturingIntegrationRegistration[];
   providerRegistrationHooks?: readonly ManufacturingProviderRegistrationHook[];
   serviceRegistrationHooks?: readonly ManufacturingServiceRegistrationHook[];

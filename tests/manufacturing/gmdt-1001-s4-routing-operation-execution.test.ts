@@ -678,7 +678,7 @@ describe("GMDT-1001-S4 Routing and operation execution", () => {
     expect(serviceIds).toContain("manufacturing.service.traceability");
     expect(serviceIds).toContain("manufacturing.query.resource");
     expect(serviceIds).toContain("manufacturing.query.traceability");
-    expect(serviceIds.some((id) => id.includes("persistence"))).toBe(false);
+    expect(serviceIds).toContain("manufacturing.service.persistence");
     expect(serviceIds.some((id) => id.includes("maintenance"))).toBe(false);
     expect(serviceIds.some((id) => id.includes("quality-management"))).toBe(false);
     expect(serviceIds.some((id) => id.includes("observability"))).toBe(false);

@@ -6,6 +6,7 @@ import {
 import type { TenantId } from "../contracts";
 import { ManufacturingDomainError } from "../domain";
 import type { ManufacturingRuntimeDependencies } from "../integration";
+import type { ManufacturingPersistenceCoordinator } from "../persistence";
 import type { ManufacturingRuntimeState } from "../runtime";
 import type { ManufacturingMaterialExecutionQueryService } from "../queries/ManufacturingMaterialExecutionQueryService";
 import type { ManufacturingProductionResultQueryService } from "../queries/ManufacturingProductionResultQueryService";
@@ -42,6 +43,10 @@ export type ManufacturingHealthReasonCode =
   | "AUDIT_SINK_UNAVAILABLE"
   | "OBSERVATION_SINK_UNAVAILABLE"
   | "LIFECYCLE_STOP_FAILURE"
+  | "PERSISTENCE_NOT_INITIALIZED"
+  | "PERSISTED_STATE_CORRUPT"
+  | "UNSUPPORTED_PERSISTENCE_SCHEMA"
+  | "RECOVERY_FAILED"
   | "PERSISTENCE_NOT_IMPLEMENTED"
   | "HEALTH_INVARIANT_FAILURE"
   | "INFORMATIONAL";
@@ -67,6 +72,8 @@ export type ManufacturingHealthSubsystem =
   | "concurrency-conflict-pressure"
   | "audit-sink"
   | "observation-sink"
+  | "persistence-initialization"
+  | "persistence-schema"
   | "persistence-recovery";
 
 export type ManufacturingHealthCheck = Readonly<{
@@ -144,6 +151,17 @@ export type ManufacturingMetricsSnapshot = Readonly<{
     startupFailureCount: number;
     shutdownFailureCount: number;
     observationPublishFailureCount: number;
+    persistenceWriteCount: number;
+    persistenceWriteFailureCount: number;
+    persistenceReadCount: number;
+    persistenceReadFailureCount: number;
+    recoveryCount: number;
+    recoveryFailureCount: number;
+    schemaRejectionCount: number;
+    corruptStateRejectionCount: number;
+    tenantMismatchRecoveryCount: number;
+    projectionRebuildCount: number;
+    projectionRebuildFailureCount: number;
   }>;
 }>;
 
@@ -258,6 +276,17 @@ function createMetricClassification(): Readonly<Record<string, ManufacturingMetr
     startupFailureCount: "COUNTER",
     shutdownFailureCount: "COUNTER",
     observationPublishFailureCount: "COUNTER",
+    persistenceWriteCount: "COUNTER",
+    persistenceWriteFailureCount: "COUNTER",
+    persistenceReadCount: "COUNTER",
+    persistenceReadFailureCount: "COUNTER",
+    recoveryCount: "COUNTER",
+    recoveryFailureCount: "COUNTER",
+    schemaRejectionCount: "COUNTER",
+    corruptStateRejectionCount: "COUNTER",
+    tenantMismatchRecoveryCount: "COUNTER",
+    projectionRebuildCount: "COUNTER",
+    projectionRebuildFailureCount: "COUNTER",
   };
 }
 
@@ -294,6 +323,7 @@ export class ManufacturingMetricsService {
       resultQueries: ManufacturingProductionResultQueryService;
       resourceQueries: ManufacturingResourceQueryService;
       traceQueries: ManufacturingTraceabilityQueryService;
+      persistenceCoordinator?: ManufacturingPersistenceCoordinator;
     },
   ) {}
 
@@ -413,6 +443,7 @@ export class ManufacturingMetricsService {
       this.dependencies.resultQueries.getWorkOrderYield(order.workOrder.tenantId, order.workOrder.manufacturingWorkOrderId),
     );
     const yieldProjection = yields.length === 0 ? 0 : round(yields.reduce((sum, item) => sum + item.yieldRatio, 0) / yields.length);
+    const persistenceMetrics = this.dependencies.persistenceCoordinator?.getMetrics();
 
     return {
       generatedAt: this.dependencies.runtimeDependencies.clockProvider.now(),
@@ -478,6 +509,17 @@ export class ManufacturingMetricsService {
         startupFailureCount,
         shutdownFailureCount,
         observationPublishFailureCount: this.observationPublishFailureCount,
+        persistenceWriteCount: persistenceMetrics?.persistenceWriteCount ?? 0,
+        persistenceWriteFailureCount: persistenceMetrics?.persistenceWriteFailureCount ?? 0,
+        persistenceReadCount: persistenceMetrics?.persistenceReadCount ?? 0,
+        persistenceReadFailureCount: persistenceMetrics?.persistenceReadFailureCount ?? 0,
+        recoveryCount: persistenceMetrics?.recoveryCount ?? 0,
+        recoveryFailureCount: persistenceMetrics?.recoveryFailureCount ?? 0,
+        schemaRejectionCount: persistenceMetrics?.schemaRejectionCount ?? 0,
+        corruptStateRejectionCount: persistenceMetrics?.corruptStateRejectionCount ?? 0,
+        tenantMismatchRecoveryCount: persistenceMetrics?.tenantMismatchRecoveryCount ?? 0,
+        projectionRebuildCount: persistenceMetrics?.projectionRebuildCount ?? 0,
+        projectionRebuildFailureCount: persistenceMetrics?.projectionRebuildFailureCount ?? 0,
       },
     };
   }
@@ -499,6 +541,7 @@ export class ManufacturingHealthService {
       resourceQueries: ManufacturingResourceQueryService;
       traceQueries: ManufacturingTraceabilityQueryService;
       auditService: ManufacturingAuditService;
+      persistenceCoordinator?: ManufacturingPersistenceCoordinator;
     },
   ) {}
 
@@ -848,13 +891,70 @@ export class ManufacturingHealthService {
       ),
     );
 
+    const persistenceStatus = this.dependencies.persistenceCoordinator?.getStatus();
+    checks.push(
+      this.createCheck(
+        "persistence-initialization",
+        !persistenceStatus
+          ? "WARN"
+          : persistenceStatus.initialized && persistenceStatus.lastDurableWriteStatus !== "FAILED"
+            ? "PASS"
+            : "FAIL",
+        !persistenceStatus
+          ? "PERSISTENCE_NOT_IMPLEMENTED"
+          : persistenceStatus.initialized
+            ? "HEALTH_CHECK_OK"
+            : "PERSISTENCE_NOT_INITIALIZED",
+        !persistenceStatus
+          ? "persistence coordinator unavailable"
+          : `initialized=${persistenceStatus.initialized}; lastWrite=${persistenceStatus.lastDurableWriteStatus}`,
+        true,
+      ),
+    );
+
+    checks.push(
+      this.createCheck(
+        "persistence-schema",
+        !persistenceStatus
+          ? "WARN"
+          : persistenceStatus.schemaValid && persistenceStatus.persistedStateValid
+            ? "PASS"
+            : "FAIL",
+        !persistenceStatus
+          ? "PERSISTENCE_NOT_IMPLEMENTED"
+          : persistenceStatus.lastLoadStatus === "UNSUPPORTED_SCHEMA"
+            ? "UNSUPPORTED_PERSISTENCE_SCHEMA"
+            : persistenceStatus.lastLoadStatus === "CORRUPT"
+              ? "PERSISTED_STATE_CORRUPT"
+              : persistenceStatus.lastLoadStatus === "TENANT_MISMATCH"
+                ? "RECOVERY_FAILED"
+                : "HEALTH_CHECK_OK",
+        !persistenceStatus
+          ? "persistence schema status unavailable"
+          : `loadStatus=${persistenceStatus.lastLoadStatus}; persistedStateValid=${persistenceStatus.persistedStateValid}`,
+        true,
+      ),
+    );
+
     checks.push(
       this.createCheck(
         "persistence-recovery",
-        "WARN",
-        "PERSISTENCE_NOT_IMPLEMENTED",
-        "persistence and recovery are intentionally not implemented in this slice",
-        false,
+        !persistenceStatus
+          ? "WARN"
+          : persistenceStatus.lastRecoveryStatus === "FAILED"
+            ? "FAIL"
+            : persistenceStatus.lastRecoveryStatus === "SUCCESS"
+              ? "PASS"
+              : "WARN",
+        !persistenceStatus
+          ? "PERSISTENCE_NOT_IMPLEMENTED"
+          : persistenceStatus.lastRecoveryStatus === "FAILED"
+            ? "RECOVERY_FAILED"
+            : "HEALTH_CHECK_OK",
+        !persistenceStatus
+          ? "persistence and recovery coordinator unavailable"
+          : `recoveryStatus=${persistenceStatus.lastRecoveryStatus}; projectionRebuild=${persistenceStatus.projectionRebuildState}`,
+        true,
       ),
     );
 

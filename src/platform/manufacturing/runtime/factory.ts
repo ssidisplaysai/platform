@@ -13,6 +13,7 @@ import type {
   ManufacturingRuntimeDependencies,
   ManufacturingRuntimeObservation,
 } from "../integration";
+import { ManufacturingPersistenceCoordinator } from "../persistence";
 import { ManufacturingDomainError } from "../domain";
 import {
   DowntimeService,
@@ -306,6 +307,7 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
   };
   const observers = new ObserverRegistry<ManufacturingRuntimeObservation>();
   const integrationRegistrations = new Map<string, ManufacturingIntegrationRegistration>();
+  let persistenceCoordinator: ManufacturingPersistenceCoordinator | undefined;
 
   const context: ManufacturingRuntimeContext = {
     host,
@@ -1325,6 +1327,7 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
         resultQueries,
         resourceQueries,
         traceQueries,
+        persistenceCoordinator: undefined,
       });
 
       const health = new ManufacturingHealthService({
@@ -1341,6 +1344,7 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
         resourceQueries,
         traceQueries,
         auditService: manufacturingAuditService,
+        persistenceCoordinator: undefined,
       });
 
       const observationPublisher = new ManufacturingObservationPublisher({
@@ -1424,6 +1428,90 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09h.initialize-slice10-persistence-and-recovery", async () => {
+    appendTrace(host, "09h.initialize-slice10-persistence-and-recovery");
+    try {
+      const workOrders = host.services.require("manufacturing.service.work-order").value as ManufacturingWorkOrderService;
+      const runs = host.services.require("manufacturing.service.production-run").value as ProductionRunService;
+      const batches = host.services.require("manufacturing.service.production-batch").value as ProductionBatchService;
+      const routings = host.services.require("manufacturing.service.execution-routing").value as ExecutionRoutingService;
+      const operations = host.services.require("manufacturing.service.operation-execution").value as OperationExecutionService;
+      const productReferences = host.services.require("manufacturing.service.product-reference").value as ManufacturingProductReferenceService;
+      const materials = host.services.require("manufacturing.service.material-requirement").value as MaterialRequirementService;
+      const issues = host.services.require("manufacturing.service.material-issue").value as MaterialIssueService;
+      const consumption = host.services.require("manufacturing.service.material-consumption").value as MaterialConsumptionService;
+      const outputs = host.services.require("manufacturing.service.production-output").value as ProductionOutputService;
+      const scraps = host.services.require("manufacturing.service.scrap").value as ScrapService;
+      const reworks = host.services.require("manufacturing.service.rework").value as ReworkService;
+      const wip = host.services.require("manufacturing.service.wip").value as WipService;
+      const workCenters = host.services.require("manufacturing.service.work-center").value as WorkCenterService;
+      const productionCells = host.services.require("manufacturing.service.production-cell").value as ProductionCellService;
+      const machineAssignments = host.services.require("manufacturing.service.machine-assignment").value as MachineAssignmentService;
+      const toolAssignments = host.services.require("manufacturing.service.tool-assignment").value as ToolAssignmentService;
+      const laborAssignments = host.services.require("manufacturing.service.labor-assignment").value as LaborAssignmentService;
+      const downtime = host.services.require("manufacturing.service.downtime").value as DowntimeService;
+      const executionExceptions = host.services.require("manufacturing.service.execution-exception").value as ExecutionExceptionService;
+      const traceability = host.services.require("manufacturing.service.traceability").value as ManufacturingTraceabilityService;
+      const referenceValidation = host.services.require("manufacturing.service.reference-validation").value as ManufacturingReferenceValidationService;
+      const audit = host.services.require("manufacturing.service.audit").value as ManufacturingAuditService;
+      const metrics = host.services.require("manufacturing.service.metrics").value as ManufacturingMetricsService;
+      const health = host.services.require("manufacturing.service.health").value as ManufacturingHealthService;
+
+      persistenceCoordinator = new ManufacturingPersistenceCoordinator({
+        runtimeId,
+        persistence: options.persistence,
+        clock: dependencies.clockProvider,
+        services: {
+          workOrders,
+          runs,
+          batches,
+          routings,
+          operations,
+          productReferences,
+          materials,
+          issues,
+          consumption,
+          outputs,
+          scraps,
+          reworks,
+          wip,
+          workCenters,
+          productionCells,
+          machineAssignments,
+          toolAssignments,
+          laborAssignments,
+          downtime,
+          executionExceptions,
+          traceability,
+          audit,
+          referenceValidation,
+          metrics,
+          health,
+        },
+      });
+
+      await persistenceCoordinator.initializeAndRecover();
+      persistenceCoordinator.enableDurability();
+      (metrics as unknown as { dependencies: { persistenceCoordinator?: ManufacturingPersistenceCoordinator } }).dependencies.persistenceCoordinator = persistenceCoordinator;
+      (health as unknown as { dependencies: { persistenceCoordinator?: ManufacturingPersistenceCoordinator } }).dependencies.persistenceCoordinator = persistenceCoordinator;
+
+      host.registerService({
+        serviceId: "manufacturing.service.persistence",
+        contract: "manufacturing.service.persistence",
+        description: "Manufacturing durable persistence and recovery coordinator.",
+        value: persistenceCoordinator,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "slice 10 persistence and recovery initialization failed";
+      recordFailure(host, dependencies, "PARTIAL_INITIALIZATION_REJECTED", message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -1485,6 +1573,7 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.service.health",
       "manufacturing.service.observation-publisher",
       "manufacturing.query.observation",
+      "manufacturing.service.persistence",
     ]);
     for (const serviceId of requiredServices) {
       try {
@@ -1511,7 +1600,6 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       [
         "manufacturing.service.routing",
         "manufacturing.service.output",
-        "manufacturing.service.persistence",
         "manufacturing.service.maintenance",
         "manufacturing.service.quality-management",
         "manufacturing.service.observability",
@@ -1532,6 +1620,11 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
 
   host.lifecycle.onStop("10.dispose-manufacturing-observers", async () => {
     appendTrace(host, "shutdown:03.dispose-bounded-runtime-resources");
+  });
+
+  host.lifecycle.onStop("09.persist-manufacturing-state", async () => {
+    appendTrace(host, "shutdown:02.persist-manufacturing-state");
+    await persistenceCoordinator?.flushOnShutdown();
   });
 
   return runtime;

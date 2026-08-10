@@ -698,7 +698,7 @@ describe("GMDT-1001-S7 Production output, scrap, rework, yield, and WIP", () => 
     expect(ids).toContain("manufacturing.query.resource");
     expect(ids).toContain("manufacturing.query.traceability");
 
-    expect(ids.some((serviceId) => serviceId.includes("persistence"))).toBe(false);
+    expect(ids).toContain("manufacturing.service.persistence");
     expect(ids.some((serviceId) => serviceId.includes("maintenance"))).toBe(false);
     expect(ids.some((serviceId) => serviceId.includes("quality-management"))).toBe(false);
     expect(ids.some((serviceId) => serviceId.includes("observability"))).toBe(false);

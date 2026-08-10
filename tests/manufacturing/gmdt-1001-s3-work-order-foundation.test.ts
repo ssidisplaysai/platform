@@ -445,7 +445,7 @@ describe("GMDT-1001-S3 Work Order and core execution foundation", () => {
     expect(runtimeServiceIds).toContain("manufacturing.service.traceability");
     expect(runtimeServiceIds).toContain("manufacturing.query.resource");
     expect(runtimeServiceIds).toContain("manufacturing.query.traceability");
-    expect(runtimeServiceIds.some((id) => id.includes("persistence"))).toBe(false);
+    expect(runtimeServiceIds).toContain("manufacturing.service.persistence");
     expect(runtimeServiceIds.some((id) => id.includes("maintenance"))).toBe(false);
     expect(runtimeServiceIds.some((id) => id.includes("quality-management"))).toBe(false);
     expect(runtimeServiceIds.some((id) => id.includes("observability"))).toBe(false);

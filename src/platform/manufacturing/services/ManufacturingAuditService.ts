@@ -195,8 +195,10 @@ export class ManufacturingAuditService {
     return [...this.events.values()]
       .filter((event) => !tenantId || event.tenantId === tenantId)
       .sort((left, right) => {
-        const byTime = compareDeterministicStrings(left.record.recordedAt, right.record.recordedAt);
-        return byTime !== 0 ? byTime : compareDeterministicStrings(left.auditEventId, right.auditEventId);
+        const byTime = compareDeterministicStrings(left.record.recordedAt ?? "", right.record.recordedAt ?? "");
+        return byTime !== 0
+          ? byTime
+          : compareDeterministicStrings(left.auditEventId ?? "", right.auditEventId ?? "");
       })
       .map((event) => structuredClone(event));
   }
