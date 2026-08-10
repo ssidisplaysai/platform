@@ -89,6 +89,9 @@ export class OperationExecutionService {
   private readonly byWorkOrder = new Map<string, string[]>();
   private readonly idempotency = new Map<string, StoredIdempotency>();
   private readonly initializationIdempotency = new Map<string, readonly string[]>();
+  private readonly operationStartGuards: Array<
+    (command: OperationLifecycleCommand, current: OperationExecutionRecord) => void
+  > = [];
 
   constructor(
     private readonly dependencies: {
@@ -205,6 +208,9 @@ export class OperationExecutionService {
       this.assertEligible(current.execution.eligibility);
       this.assertPredecessorsSatisfied(current.execution.tenantId, current.execution.executionRoutingId, current.execution.routingStepId);
       this.assertLifecycle(current.execution.operationState, ["READY"]);
+      for (const guard of this.operationStartGuards) {
+        guard(command, current);
+      }
       const workOrder = this.dependencies.workOrders.require(command.tenantId, command.workOrderId);
       if (workOrder.workOrder.workOrderState !== "IN_PROGRESS") {
         throw new ManufacturingDomainError("WORK_ORDER_NOT_READY", "work order is not in execution-compatible state", false);
@@ -217,6 +223,12 @@ export class OperationExecutionService {
         },
       };
     });
+  }
+
+  registerOperationStartGuard(
+    guard: (command: OperationLifecycleCommand, current: OperationExecutionRecord) => void,
+  ): void {
+    this.operationStartGuards.push(guard);
   }
 
   async pauseOperation(command: OperationLifecycleCommand): Promise<OperationExecutionRecord> {

@@ -687,6 +687,41 @@ export class ManufacturingWorkOrderService {
     return cloneRecord(updated);
   }
 
+  setExecutionResourceReadiness(input: {
+    tenantId: TenantId;
+    workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"];
+    expectedVersion: number;
+    resourcesReady: boolean;
+  }): ManufacturingWorkOrderRecord {
+    const current = this.require(input.tenantId, input.workOrderId);
+    this.assertExpectedVersion(current, input.expectedVersion);
+
+    if (current.readiness.resourcesReady === input.resourcesReady) {
+      return cloneRecord(current);
+    }
+
+    const nextReadinessBase = {
+      productBaselineReady: current.readiness.productBaselineReady,
+      routingReady: current.readiness.routingReady,
+      materialsReady: current.readiness.materialsReady,
+      requirementsReady: current.readiness.requirementsReady,
+      inventoryMaterialsReady: current.readiness.inventoryMaterialsReady,
+      resourcesReady: input.resourcesReady,
+    };
+
+    const updated: ManufacturingWorkOrderRecord = {
+      ...current,
+      readiness: withExecutionReady(nextReadinessBase),
+      workOrder: {
+        ...current.workOrder,
+        version: current.workOrder.version + 1,
+      },
+    };
+
+    this.byId.set(input.workOrderId as string, updated);
+    return cloneRecord(updated);
+  }
+
   applyExecutionQuantities(input: {
     tenantId: TenantId;
     workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"];

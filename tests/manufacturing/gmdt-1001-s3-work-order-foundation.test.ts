@@ -434,10 +434,21 @@ describe("GMDT-1001-S3 Work Order and core execution foundation", () => {
     expect(runtimeServiceIds).toContain("manufacturing.query.material");
     expect(runtimeServiceIds).toContain("manufacturing.service.production-output");
     expect(runtimeServiceIds).toContain("manufacturing.query.production-result");
+    expect(runtimeServiceIds).toContain("manufacturing.service.work-center");
+    expect(runtimeServiceIds).toContain("manufacturing.service.production-cell");
+    expect(runtimeServiceIds).toContain("manufacturing.service.machine-assignment");
+    expect(runtimeServiceIds).toContain("manufacturing.service.tool-assignment");
+    expect(runtimeServiceIds).toContain("manufacturing.service.labor-assignment");
+    expect(runtimeServiceIds).toContain("manufacturing.service.resource-readiness");
+    expect(runtimeServiceIds).toContain("manufacturing.service.downtime");
+    expect(runtimeServiceIds).toContain("manufacturing.service.execution-exception");
+    expect(runtimeServiceIds).toContain("manufacturing.service.traceability");
+    expect(runtimeServiceIds).toContain("manufacturing.query.resource");
+    expect(runtimeServiceIds).toContain("manufacturing.query.traceability");
     expect(runtimeServiceIds.some((id) => id.includes("persistence"))).toBe(false);
-    expect(runtimeServiceIds.some((id) => id.includes("resource"))).toBe(false);
-    expect(runtimeServiceIds.some((id) => id.includes("labor"))).toBe(false);
-    expect(runtimeServiceIds.some((id) => id.includes("downtime"))).toBe(false);
+    expect(runtimeServiceIds.some((id) => id.includes("maintenance"))).toBe(false);
+    expect(runtimeServiceIds.some((id) => id.includes("quality-management"))).toBe(false);
+    expect(runtimeServiceIds.some((id) => id.includes("observability"))).toBe(false);
 
     await runtime.stop();
   });

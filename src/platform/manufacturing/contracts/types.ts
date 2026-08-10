@@ -252,37 +252,56 @@ export type ManufacturingRelationship = Readonly<{
 
 export type ProductionTraceSourceType =
   | "PRODUCT_VERSION"
+  | "PRODUCT"
+  | "PRODUCT_VARIANT"
   | "PRODUCT_BOM_VERSION"
+  | "WORK_CENTER"
+  | "PRODUCTION_CELL"
   | "WORK_ORDER"
   | "PRODUCTION_RUN"
   | "PRODUCTION_BATCH"
+  | "ROUTING"
   | "OPERATION"
   | "MATERIAL_REQUIREMENT"
+  | "MATERIAL_ISSUE"
   | "INVENTORY_RESERVATION"
   | "INVENTORY_ALLOCATION"
   | "INVENTORY_MOVEMENT"
   | "LOT"
   | "SERIAL"
   | "CONSUMPTION"
+  | "MATERIAL_CONSUMPTION"
   | "OUTPUT"
+  | "PRODUCTION_OUTPUT"
   | "SCRAP"
   | "REWORK"
   | "MACHINE"
+  | "MACHINE_ASSET"
+  | "TOOL"
+  | "TOOL_ASSET"
   | "LABOR"
+  | "LABOR_REFERENCE"
+  | "DOWNTIME"
+  | "EXECUTION_EXCEPTION"
   | "DOCUMENT"
   | "KNOWLEDGE"
   | "QUALITY_HOLD";
 
 export type ProductionTraceRecord = Readonly<{
   productionTraceId: ProductionTraceId;
+  appendSequence: number;
   tenantId: TenantId;
   correlationId: CorrelationIdentifier;
   sourceType: ProductionTraceSourceType;
   sourceId: string;
   targetType: ProductionTraceSourceType;
   targetId: string;
+  relationType: string;
+  workOrderId?: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
   occurredAt: string;
-  metadata: MetadataCollection;
+  metadata?: MetadataCollection;
+  version: number;
 }>;
 
 export type ProductionExecutionSnapshot = Readonly<{
@@ -447,8 +466,20 @@ export type WorkCenter = Readonly<{
   workCenterId: WorkCenterId;
   workCenterCode: WorkCenterCode;
   tenantId: TenantId;
+  displayName: string;
   status: ProductionStatus;
-  capacityUnits: number;
+  capacityMetadata: Readonly<{
+    capacityUnits: number;
+    machineCapacity?: number;
+    toolCapacity?: number;
+    laborCapacity?: number;
+  }>;
+  organizationRef?: OrganizationReference;
+  facilityRef?: DocumentReference;
+  productionCellIds: readonly ProductionCellId[];
+  createdAt: string;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
   version: number;
 }>;
 
@@ -456,40 +487,238 @@ export type ProductionCell = Readonly<{
   productionCellId: ProductionCellId;
   productionCellCode: ProductionCellCode;
   tenantId: TenantId;
+  displayName: string;
   workCenterId: WorkCenterId;
   status: ProductionStatus;
-  capacityUnits: number;
+  capacityMetadata: Readonly<{
+    capacityUnits: number;
+    machineCapacity?: number;
+    toolCapacity?: number;
+    laborCapacity?: number;
+  }>;
+  createdAt: string;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
   version: number;
 }>;
 
 export type MachineAssignment = Readonly<{
   machineAssignmentId: MachineAssignmentId;
   tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
   operationExecutionId: OperationExecutionId;
+  workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
   machineRef: AssetReference;
+  status: "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  plannedStartAt?: string;
+  plannedEndAt?: string;
+  actualStartAt?: string;
+  actualEndAt?: string;
   effectiveRange?: EffectiveDateRange;
   machineDuration?: MachineDuration;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
   version: number;
 }>;
 
 export type ToolAssignment = Readonly<{
   toolAssignmentId: ToolAssignmentId;
   tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
   operationExecutionId: OperationExecutionId;
+  workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
   toolRef: AssetReference;
+  status: "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  plannedStartAt?: string;
+  plannedEndAt?: string;
+  actualStartAt?: string;
+  actualEndAt?: string;
   effectiveRange?: EffectiveDateRange;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
   version: number;
 }>;
 
 export type LaborAssignment = Readonly<{
   laborAssignmentId: LaborAssignmentId;
   tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
   operationExecutionId: OperationExecutionId;
+  workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
   laborRef: PersonOrContactReference;
   roleCode: string;
+  status: "ASSIGNED" | "IN_PROGRESS" | "PAUSED" | "COMPLETED" | "CANCELLED";
+  actualStartAt?: string;
+  actualEndAt?: string;
   effectiveRange?: EffectiveDateRange;
   laborDuration?: LaborDuration;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
   version: number;
+}>;
+
+export type WorkCenterRegistrationCommand = Readonly<{
+  tenantId: TenantId;
+  workCenterId: WorkCenterId;
+  workCenterCode: WorkCenterCode;
+  displayName: string;
+  status: "ACTIVE" | "INACTIVE" | "ON_HOLD";
+  capacityMetadata: WorkCenter["capacityMetadata"];
+  organizationRef?: OrganizationReference;
+  facilityRef?: DocumentReference;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type ProductionCellRegistrationCommand = Readonly<{
+  tenantId: TenantId;
+  productionCellId: ProductionCellId;
+  productionCellCode: ProductionCellCode;
+  displayName: string;
+  workCenterId: WorkCenterId;
+  status: "ACTIVE" | "INACTIVE" | "ON_HOLD";
+  capacityMetadata: ProductionCell["capacityMetadata"];
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type MachineAssignmentCommand = Readonly<{
+  tenantId: TenantId;
+  machineAssignmentId: MachineAssignmentId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId: OperationExecutionId;
+  workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
+  machineRef: AssetReference;
+  plannedStartAt?: string;
+  plannedEndAt?: string;
+  expectedWorkOrderVersion: number;
+  expectedOperationVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type ToolAssignmentCommand = Readonly<{
+  tenantId: TenantId;
+  toolAssignmentId: ToolAssignmentId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId: OperationExecutionId;
+  workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
+  toolRef: AssetReference;
+  plannedStartAt?: string;
+  plannedEndAt?: string;
+  expectedWorkOrderVersion: number;
+  expectedOperationVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type LaborAssignmentCommand = Readonly<{
+  tenantId: TenantId;
+  laborAssignmentId: LaborAssignmentId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId: OperationExecutionId;
+  workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
+  laborRef: PersonOrContactReference;
+  roleCode: string;
+  plannedStartAt?: string;
+  plannedEndAt?: string;
+  expectedWorkOrderVersion: number;
+  expectedOperationVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type DowntimeStartCommand = Readonly<{
+  tenantId: TenantId;
+  downtimeRecordId: DowntimeRecordId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
+  workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
+  machineRef?: AssetReference;
+  startedAt: string;
+  reasonCode: string;
+  category: string;
+  expectedWorkOrderVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type DowntimeEndCommand = Readonly<{
+  tenantId: TenantId;
+  downtimeRecordId: DowntimeRecordId;
+  endedAt: string;
+  expectedVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type ExecutionExceptionCommand = Readonly<{
+  tenantId: TenantId;
+  executionExceptionId: ExecutionExceptionId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
+  category: string;
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  reason: string;
+  sourceReference?: string;
+  expectedWorkOrderVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type QualityHoldApplyCommand = Readonly<{
+  tenantId: TenantId;
+  executionExceptionId: ExecutionExceptionId;
+  qualityHoldRef: QualityHoldReference;
+  expectedVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type QualityHoldReleaseCommand = Readonly<{
+  tenantId: TenantId;
+  executionExceptionId: ExecutionExceptionId;
+  qualityHoldReferenceId: QualityHoldReference["qualityHoldReferenceId"];
+  releaseEvidence: string;
+  expectedVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type ProductionTraceAppendCommand = Readonly<{
+  tenantId: TenantId;
+  productionTraceId: ProductionTraceId;
+  sourceType: ProductionTraceSourceType;
+  sourceId: string;
+  targetType: ProductionTraceSourceType;
+  targetId: string;
+  relationType: string;
+  workOrderId?: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
+  occurredAt?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
 }>;
 
 export type MaterialRequirement = Readonly<{
@@ -881,6 +1110,30 @@ export type ProductionExecutionSummary = Readonly<{
   reconciliationRequired: boolean;
 }>;
 
+export type OperationResourceReadiness = Readonly<{
+  operationExecutionId: OperationExecutionId;
+  requiresWorkCenter: boolean;
+  requiresProductionCell: boolean;
+  requiresMachine: boolean;
+  requiresTool: boolean;
+  requiresLabor: boolean;
+  hasWorkCenter: boolean;
+  hasProductionCell: boolean;
+  hasMachine: boolean;
+  hasTool: boolean;
+  hasLabor: boolean;
+  ready: boolean;
+  blockingReasons: readonly string[];
+}>;
+
+export type ResourceReadinessProjection = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  resourcesReady: boolean;
+  executionReady: boolean;
+  operationReadiness: readonly OperationResourceReadiness[];
+}>;
+
 export type ProductionOutputRecord = Readonly<{
   productionOutputId: ProductionOutputId;
   tenantId: TenantId;
@@ -934,12 +1187,17 @@ export type DowntimeRecord = Readonly<{
   workOrderId: ManufacturingWorkOrderId;
   operationExecutionId?: OperationExecutionId;
   workCenterId?: WorkCenterId;
+  productionCellId?: ProductionCellId;
   machineRef?: AssetReference;
   startedAt: string;
   endedAt?: string;
   reasonCode: string;
   category: string;
+  status: "ACTIVE" | "CLOSED";
   duration?: DowntimeDuration;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
   version: number;
 }>;
 
@@ -950,8 +1208,15 @@ export type ExecutionException = Readonly<{
   operationExecutionId?: OperationExecutionId;
   category: string;
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  status: ProductionStatus;
-  detectedAt: string;
+  reason: string;
+  sourceReference?: string;
+  status: "OPEN" | "CLOSED";
+  qualityHoldRef?: QualityHoldReference;
+  openedAt: string;
+  closedAt?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
   version: number;
 }>;
 
@@ -1064,7 +1329,25 @@ export type ManufacturingFailureClassification =
   | "INVALID_YIELD_STATE"
   | "WIP_RECONCILIATION_FAILURE"
   | "OUTPUT_RECONCILIATION_REQUIRED"
-  | "SCRAP_RECONCILIATION_REQUIRED";
+  | "SCRAP_RECONCILIATION_REQUIRED"
+  | "DUPLICATE_WORK_CENTER"
+  | "DUPLICATE_WORK_CENTER_CODE"
+  | "INVALID_WORK_CENTER"
+  | "DUPLICATE_PRODUCTION_CELL"
+  | "INVALID_PRODUCTION_CELL"
+  | "RESOURCE_ASSIGNMENT_CONFLICT"
+  | "MACHINE_ASSIGNMENT_CONFLICT"
+  | "TOOL_ASSIGNMENT_CONFLICT"
+  | "LABOR_ASSIGNMENT_CONFLICT"
+  | "RESOURCE_NOT_READY"
+  | "INVALID_LABOR_REFERENCE"
+  | "DUPLICATE_ACTIVE_DOWNTIME"
+  | "INVALID_EXECUTION_EXCEPTION"
+  | "QUALITY_HOLD_ACTIVE"
+  | "INVALID_QUALITY_HOLD_REFERENCE"
+  | "DUPLICATE_TRACE_ID"
+  | "INVALID_TRACE_RELATION"
+  | "TRACE_TENANT_MISMATCH";
 
 export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailureClassification[] = [
   "INVALID_COMMAND",
@@ -1161,6 +1444,24 @@ export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailur
   "WIP_RECONCILIATION_FAILURE",
   "OUTPUT_RECONCILIATION_REQUIRED",
   "SCRAP_RECONCILIATION_REQUIRED",
+  "DUPLICATE_WORK_CENTER",
+  "DUPLICATE_WORK_CENTER_CODE",
+  "INVALID_WORK_CENTER",
+  "DUPLICATE_PRODUCTION_CELL",
+  "INVALID_PRODUCTION_CELL",
+  "RESOURCE_ASSIGNMENT_CONFLICT",
+  "MACHINE_ASSIGNMENT_CONFLICT",
+  "TOOL_ASSIGNMENT_CONFLICT",
+  "LABOR_ASSIGNMENT_CONFLICT",
+  "RESOURCE_NOT_READY",
+  "INVALID_LABOR_REFERENCE",
+  "DUPLICATE_ACTIVE_DOWNTIME",
+  "INVALID_EXECUTION_EXCEPTION",
+  "QUALITY_HOLD_ACTIVE",
+  "INVALID_QUALITY_HOLD_REFERENCE",
+  "DUPLICATE_TRACE_ID",
+  "INVALID_TRACE_RELATION",
+  "TRACE_TENANT_MISMATCH",
 ];
 
 export type IdempotencyCommandFamily =
@@ -1172,7 +1473,14 @@ export type IdempotencyCommandFamily =
   | "SCRAP"
   | "REWORK"
   | "ASSIGNMENT"
-  | "DOWNTIME";
+  | "DOWNTIME"
+  | "EXCEPTION"
+  | "TRACE"
+  | "WORK_CENTER"
+  | "PRODUCTION_CELL"
+  | "MACHINE_ASSIGNMENT"
+  | "TOOL_ASSIGNMENT"
+  | "LABOR_ASSIGNMENT";
 
 export type IdempotencyRecord = Readonly<{
   tenantId: TenantId;

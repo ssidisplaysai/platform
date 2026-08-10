@@ -12,10 +12,16 @@ import type {
   ManufacturingRuntimeDependencies,
   ManufacturingRuntimeObservation,
 } from "../integration";
+import { ManufacturingDomainError } from "../domain";
 import {
+  DowntimeService,
+  ExecutionExceptionService,
   ExecutionRoutingService,
+  LaborAssignmentService,
+  MachineAssignmentService,
   ManufacturingInventoryIntegrationService,
   ManufacturingProductReferenceService,
+  ManufacturingTraceabilityService,
   ManufacturingWorkOrderService,
   MaterialConsumptionService,
   MaterialIssueService,
@@ -24,9 +30,13 @@ import {
   ProductionOutputService,
   ProductionBatchService,
   ProductionRunService,
+  ProductionCellService,
+  ResourceReadinessService,
   ReworkService,
   ScrapService,
+  ToolAssignmentService,
   WipService,
+  WorkCenterService,
   YieldService,
 } from "../services";
 import {
@@ -34,7 +44,9 @@ import {
   ManufacturingMaterialExecutionQueryService,
   ManufacturingMaterialQueryService,
   ManufacturingProductionResultQueryService,
+  ManufacturingResourceQueryService,
   ManufacturingRoutingQueryService,
+  ManufacturingTraceabilityQueryService,
 } from "../queries";
 import { ManufacturingRuntimeError } from "./errors";
 import type {
@@ -1032,6 +1044,215 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09f.register-slice8-resource-downtime-traceability-services", async () => {
+    appendTrace(host, "09f.register-slice8-resource-downtime-traceability-services");
+    try {
+      const workOrders = host.services.require("manufacturing.service.work-order").value as ManufacturingWorkOrderService;
+      const operations = host.services.require("manufacturing.service.operation-execution").value as OperationExecutionService;
+      const routings = host.services.require("manufacturing.service.execution-routing").value as ExecutionRoutingService;
+
+      const workCenters = new WorkCenterService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+      });
+      const productionCells = new ProductionCellService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workCenters,
+      });
+
+      const machineAssignments = new MachineAssignmentService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+        workCenters,
+        productionCells,
+      });
+      const toolAssignments = new ToolAssignmentService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+        workCenters,
+        productionCells,
+      });
+      const laborAssignments = new LaborAssignmentService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+        workCenters,
+        productionCells,
+      });
+
+      const readiness = new ResourceReadinessService({
+        workOrders,
+        routings,
+        operations,
+        machineAssignments,
+        toolAssignments,
+        laborAssignments,
+      });
+
+      machineAssignments.setReadinessSynchronizer((tenantId, workOrderId) => {
+        readiness.synchronizeWorkOrderReadiness(tenantId, workOrderId);
+      });
+      toolAssignments.setReadinessSynchronizer((tenantId, workOrderId) => {
+        readiness.synchronizeWorkOrderReadiness(tenantId, workOrderId);
+      });
+      laborAssignments.setReadinessSynchronizer((tenantId, workOrderId) => {
+        readiness.synchronizeWorkOrderReadiness(tenantId, workOrderId);
+      });
+
+      const downtime = new DowntimeService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+      });
+
+      const exceptions = new ExecutionExceptionService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+      });
+
+      const traceability = new ManufacturingTraceabilityService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+      });
+
+      operations.registerOperationStartGuard((command, current) => {
+        const operationReadiness = readiness.getOperationReadiness(
+          command.tenantId,
+          command.workOrderId,
+          current.execution.operationExecutionId as string,
+        );
+        if (!operationReadiness?.ready) {
+          throw new ManufacturingDomainError(
+            "RESOURCE_NOT_READY",
+            `resource readiness failed for operation ${current.execution.operationExecutionId}`,
+            false,
+          );
+        }
+        if (
+          exceptions.hasActiveQualityHold(
+            command.tenantId,
+            command.workOrderId as string,
+            current.execution.operationExecutionId as string,
+          )
+        ) {
+          throw new ManufacturingDomainError(
+            "QUALITY_HOLD_ACTIVE",
+            `quality hold active for operation ${current.execution.operationExecutionId}`,
+            false,
+          );
+        }
+      });
+
+      const resourceQueries = new ManufacturingResourceQueryService({
+        workCenters,
+        productionCells,
+        machineAssignments,
+        toolAssignments,
+        laborAssignments,
+        readiness,
+        downtime,
+        exceptions,
+      });
+
+      const traceQueries = new ManufacturingTraceabilityQueryService({
+        traces: traceability,
+      });
+
+      host.registerService({
+        serviceId: "manufacturing.service.work-center",
+        contract: "manufacturing.service.work-center",
+        description: "Manufacturing work center service.",
+        value: workCenters,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.production-cell",
+        contract: "manufacturing.service.production-cell",
+        description: "Manufacturing production cell service.",
+        value: productionCells,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.machine-assignment",
+        contract: "manufacturing.service.machine-assignment",
+        description: "Manufacturing machine assignment service.",
+        value: machineAssignments,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.tool-assignment",
+        contract: "manufacturing.service.tool-assignment",
+        description: "Manufacturing tool assignment service.",
+        value: toolAssignments,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.labor-assignment",
+        contract: "manufacturing.service.labor-assignment",
+        description: "Manufacturing labor assignment service.",
+        value: laborAssignments,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.resource-readiness",
+        contract: "manufacturing.service.resource-readiness",
+        description: "Manufacturing resource readiness service.",
+        value: readiness,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.downtime",
+        contract: "manufacturing.service.downtime",
+        description: "Manufacturing downtime service.",
+        value: downtime,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.execution-exception",
+        contract: "manufacturing.service.execution-exception",
+        description: "Manufacturing execution exception service.",
+        value: exceptions,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.traceability",
+        contract: "manufacturing.service.traceability",
+        description: "Manufacturing traceability service.",
+        value: traceability,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.resource",
+        contract: "manufacturing.query.resource",
+        description: "Read-only Manufacturing resource query surface.",
+        value: resourceQueries,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.traceability",
+        contract: "manufacturing.query.traceability",
+        description: "Read-only Manufacturing traceability query surface.",
+        value: traceQueries,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      if (error instanceof ManufacturingRuntimeError) {
+        recordFailure(host, dependencies, error.code, error.message);
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : "slice 8 service registration failed";
+      const code = message.includes("service not found")
+        ? "PARTIAL_INITIALIZATION_REJECTED"
+        : "DUPLICATE_SERVICE_REGISTRATION";
+      recordFailure(host, dependencies, code, message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -1075,6 +1296,17 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.service.yield",
       "manufacturing.service.wip",
       "manufacturing.query.production-result",
+      "manufacturing.service.work-center",
+      "manufacturing.service.production-cell",
+      "manufacturing.service.machine-assignment",
+      "manufacturing.service.tool-assignment",
+      "manufacturing.service.labor-assignment",
+      "manufacturing.service.resource-readiness",
+      "manufacturing.service.downtime",
+      "manufacturing.service.execution-exception",
+      "manufacturing.service.traceability",
+      "manufacturing.query.resource",
+      "manufacturing.query.traceability",
     ]);
     for (const serviceId of requiredServices) {
       try {
@@ -1101,8 +1333,10 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       [
         "manufacturing.service.routing",
         "manufacturing.service.output",
-        "manufacturing.service.resource",
         "manufacturing.service.persistence",
+        "manufacturing.service.maintenance",
+        "manufacturing.service.quality-management",
+        "manufacturing.service.observability",
       ].some((prefix) => service.serviceId.startsWith(prefix)),
     );
     if (forbiddenBusinessServices.length > 0) {

@@ -157,6 +157,7 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
       "09c.register-slice5-product-material-services",
       "09d.register-slice6-inventory-material-execution-services",
       "09e.register-slice7-production-output-result-services",
+      "09f.register-slice8-resource-downtime-traceability-services",
       "10.validate-required-registrations",
       "11.start-shared-lifecycle",
       "12.establish-manufacturing-readiness",
@@ -374,6 +375,17 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
     expect(ids).toContain("manufacturing.service.yield");
     expect(ids).toContain("manufacturing.service.wip");
     expect(ids).toContain("manufacturing.query.production-result");
+    expect(ids).toContain("manufacturing.service.work-center");
+    expect(ids).toContain("manufacturing.service.production-cell");
+    expect(ids).toContain("manufacturing.service.machine-assignment");
+    expect(ids).toContain("manufacturing.service.tool-assignment");
+    expect(ids).toContain("manufacturing.service.labor-assignment");
+    expect(ids).toContain("manufacturing.service.resource-readiness");
+    expect(ids).toContain("manufacturing.service.downtime");
+    expect(ids).toContain("manufacturing.service.execution-exception");
+    expect(ids).toContain("manufacturing.service.traceability");
+    expect(ids).toContain("manufacturing.query.resource");
+    expect(ids).toContain("manufacturing.query.traceability");
     expect(ids.some((serviceId) => serviceId.includes("persistence"))).toBe(false);
     expect((runtime as unknown as { persistence?: unknown }).persistence).toBeUndefined();
     await runtime.stop();

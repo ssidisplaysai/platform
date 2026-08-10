@@ -667,10 +667,21 @@ describe("GMDT-1001-S4 Routing and operation execution", () => {
     expect(serviceIds).toContain("manufacturing.query.material");
     expect(serviceIds).toContain("manufacturing.service.production-output");
     expect(serviceIds).toContain("manufacturing.query.production-result");
+    expect(serviceIds).toContain("manufacturing.service.work-center");
+    expect(serviceIds).toContain("manufacturing.service.production-cell");
+    expect(serviceIds).toContain("manufacturing.service.machine-assignment");
+    expect(serviceIds).toContain("manufacturing.service.tool-assignment");
+    expect(serviceIds).toContain("manufacturing.service.labor-assignment");
+    expect(serviceIds).toContain("manufacturing.service.resource-readiness");
+    expect(serviceIds).toContain("manufacturing.service.downtime");
+    expect(serviceIds).toContain("manufacturing.service.execution-exception");
+    expect(serviceIds).toContain("manufacturing.service.traceability");
+    expect(serviceIds).toContain("manufacturing.query.resource");
+    expect(serviceIds).toContain("manufacturing.query.traceability");
     expect(serviceIds.some((id) => id.includes("persistence"))).toBe(false);
-    expect(serviceIds.some((id) => id.includes("resource"))).toBe(false);
-    expect(serviceIds.some((id) => id.includes("labor"))).toBe(false);
-    expect(serviceIds.some((id) => id.includes("downtime"))).toBe(false);
+    expect(serviceIds.some((id) => id.includes("maintenance"))).toBe(false);
+    expect(serviceIds.some((id) => id.includes("quality-management"))).toBe(false);
+    expect(serviceIds.some((id) => id.includes("observability"))).toBe(false);
 
     const workOrder = await workOrders.createWorkOrder(createBaseWorkOrder());
     await routing.createExecutionRouting(
