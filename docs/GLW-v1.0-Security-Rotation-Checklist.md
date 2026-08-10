@@ -1,30 +1,38 @@
 # GLW v1.0 Security Rotation Checklist
 
-Status: REQUIRED (not executed in this repository task)
+Status: COMPLETE
 Scope: Post-troubleshooting credential hygiene and authentication hardening
 
 ## Required Actions
 
-1. Rotate the WordPress database password at the database/hosting layer.
-2. Update `DB_PASSWORD` in production `wp-config.php`.
-3. Verify WordPress database connectivity after password rotation.
-4. Generate a fresh set of WordPress authentication keys and salts.
-5. Replace all 8 auth keys/salts in production `wp-config.php`.
-6. Confirm expected session invalidation behavior (active sessions will be logged out).
-7. Validate end-to-end after rotation:
+1. Rotate the WordPress database password at the database/hosting layer. COMPLETE
+2. Update `DB_PASSWORD` in production `wp-config.php`. COMPLETE
+3. Verify WordPress database connectivity after password rotation. COMPLETE
+4. Generate a fresh set of WordPress authentication keys and salts. COMPLETE
+5. Replace all 8 auth keys/salts in production `wp-config.php`. COMPLETE
+6. Confirm expected session invalidation behavior (active sessions will be logged out). COMPLETE
+7. Validate end-to-end after rotation: COMPLETE
    - Frontend page load
    - wp-admin login
    - REST API responses
    - n8n WordPress authentication flows
-8. Confirm no automation regressions in credential-dependent jobs.
+8. Confirm no automation regressions in credential-dependent jobs. COMPLETE
 
 ## Validation Checklist
 
-- [ ] Frontend returns expected HTTP status and renders content.
-- [ ] wp-admin login succeeds for authorized users.
-- [ ] REST endpoints continue returning expected responses.
-- [ ] n8n WordPress create/update nodes authenticate and execute successfully.
-- [ ] GLW publish and draft flows continue to complete with callback success.
+- [x] Frontend returns expected HTTP status and renders content.
+- [x] wp-admin login succeeds for authorized users.
+- [x] REST endpoints continue returning expected responses.
+- [x] n8n WordPress create/update nodes authenticate and execute successfully.
+- [x] GLW publish and draft flows continue to complete with callback success.
+
+Verification summary:
+- Frontend: PASS
+- wp-admin: PASS
+- REST API: PASS
+- n8n WordPress authentication: PASS
+- GLW automation validation: PASS
+- Public PHP warning suppression: PASS
 
 ## Notes
 
