@@ -8,3 +8,8 @@ export * from "./MaterialRequirementService";
 export * from "./ManufacturingInventoryIntegrationService";
 export * from "./MaterialIssueService";
 export * from "./MaterialConsumptionService";
+export * from "./WipService";
+export * from "./ProductionOutputService";
+export * from "./ScrapService";
+export * from "./ReworkService";
+export * from "./YieldService";

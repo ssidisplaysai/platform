@@ -705,6 +705,182 @@ export type MaterialExecutionSummary = Readonly<{
   reconciliationRequired: boolean;
 }>;
 
+export type ProductionOutputDisposition =
+  | "GOOD"
+  | "REJECTED"
+  | "SCRAP"
+  | "REWORK"
+  | "INTERMEDIATE"
+  | "FINISHED";
+
+export type ProductionOutputLifecycleState = "RECORDED" | "RECONCILIATION_REQUIRED";
+
+export type ProductionOutputCommand = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId: OperationExecutionId;
+  productRef: ProductReference;
+  productVariantRef?: ProductVariantReference;
+  productVersionRef: ProductVersionReference;
+  inventoryItemRef?: InventoryItemReference;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  disposition: ProductionOutputDisposition;
+  inventoryReceiptRequired?: boolean;
+  expectedWorkOrderVersion: number;
+  expectedOperationVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type ProductionOutputExecutionRecord = Readonly<{
+  productionOutputId: ProductionOutputId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId: OperationExecutionId;
+  productRef: ProductReference;
+  productVariantRef?: ProductVariantReference;
+  productVersionRef: ProductVersionReference;
+  inventoryItemRef?: InventoryItemReference;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  disposition: ProductionOutputDisposition;
+  inventoryReferenceId?: string;
+  inventoryMovementId?: string;
+  lotReferences?: readonly string[];
+  serialReferences?: readonly string[];
+  status: ProductionOutputLifecycleState;
+  reason?: string;
+  reasonCode?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  recordedAt: string;
+  metadata?: MetadataCollection;
+  version: number;
+}>;
+
+export type ScrapCommand = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
+  outputRef?: ProductionOutputId;
+  inventoryItemRef?: InventoryItemReference;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  reasonCode: string;
+  requestInventoryWriteOff?: boolean;
+  expectedWorkOrderVersion: number;
+  expectedOperationVersion?: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type ScrapExecutionRecord = Readonly<{
+  scrapRecordId: ScrapRecordId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
+  outputRef?: ProductionOutputId;
+  inventoryItemRef?: InventoryItemReference;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  reasonCode: string;
+  inventoryReferenceId?: string;
+  status: "RECORDED" | "RECONCILIATION_REQUIRED";
+  reason?: string;
+  reasonCodeClassification?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  recordedAt: string;
+  metadata?: MetadataCollection;
+  version: number;
+}>;
+
+export type ReworkCommand = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  sourceOperationExecutionId: OperationExecutionId;
+  targetOperationExecutionId: OperationExecutionId;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  reasonCode: string;
+  expectedSourceOperationVersion: number;
+  expectedTargetOperationVersion: number;
+  expectedWorkOrderVersion: number;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type ReworkExecutionRecord = Readonly<{
+  reworkRecordId: ReworkRecordId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  sourceOperationExecutionId: OperationExecutionId;
+  targetOperationExecutionId: OperationExecutionId;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  reasonCode: string;
+  status: "RECORDED";
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  recordedAt: string;
+  metadata?: MetadataCollection;
+  version: number;
+}>;
+
+export type YieldProjection = Readonly<{
+  tenantId: TenantId;
+  scope: "WORK_ORDER" | "OPERATION";
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
+  numerator: number;
+  denominator: number;
+  yieldRatio?: number;
+  classification: "DEFINED" | "UNDEFINED";
+  formulaVersion: "v1.good-over-processed";
+  computedAt: string;
+}>;
+
+export type WipLifecycleState = "ACTIVE" | "ON_HOLD" | "COMPLETED" | "RECONCILIATION_REQUIRED";
+
+export type WipExecutionState = Readonly<{
+  wipStateId: Branded<string, "WipExecutionStateId">;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  currentOperationExecutionId?: OperationExecutionId;
+  quantityWaiting: number;
+  quantityInProcess: number;
+  quantityCompleted: number;
+  quantityRejected: number;
+  quantityRework: number;
+  holdState: "ACTIVE" | "ON_HOLD";
+  currentWorkCenterId?: WorkCenterId;
+  status: WipLifecycleState;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+  version: number;
+}>;
+
+export type ProductionExecutionSummary = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId?: OperationExecutionId;
+  completedQuantity: number;
+  rejectedQuantity: number;
+  scrapQuantity: number;
+  reworkQuantity: number;
+  goodQuantity: number;
+  processedQuantity: number;
+  yieldRatio?: number;
+  outputCount: number;
+  scrapCount: number;
+  reworkCount: number;
+  reconciliationRequired: boolean;
+}>;
+
 export type ProductionOutputRecord = Readonly<{
   productionOutputId: ProductionOutputId;
   tenantId: TenantId;
@@ -873,7 +1049,22 @@ export type ManufacturingFailureClassification =
   | "MATERIAL_CONSUMPTION_EXCEEDS_REQUIRED"
   | "MATERIAL_ISSUE_REQUIRES_RECONCILIATION"
   | "MATERIAL_CONSUMPTION_REQUIRES_RECONCILIATION"
-  | "MATERIAL_RETURN_REQUIRES_RECONCILIATION";
+  | "MATERIAL_RETURN_REQUIRES_RECONCILIATION"
+  | "INVALID_PRODUCTION_OUTPUT"
+  | "PRODUCTION_OUTPUT_NOT_ALLOWED"
+  | "PRODUCTION_OUTPUT_QUANTITY_EXCEEDED"
+  | "INVENTORY_RECEIPT_REJECTED"
+  | "INVALID_OUTPUT_INVENTORY_REFERENCE"
+  | "DUPLICATE_PRODUCTION_OUTPUT"
+  | "INVALID_SCRAP"
+  | "SCRAP_QUANTITY_EXCEEDED"
+  | "INVENTORY_WRITEOFF_REJECTED"
+  | "INVALID_REWORK"
+  | "REWORK_NOT_ALLOWED"
+  | "INVALID_YIELD_STATE"
+  | "WIP_RECONCILIATION_FAILURE"
+  | "OUTPUT_RECONCILIATION_REQUIRED"
+  | "SCRAP_RECONCILIATION_REQUIRED";
 
 export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailureClassification[] = [
   "INVALID_COMMAND",
@@ -955,6 +1146,21 @@ export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailur
   "MATERIAL_ISSUE_REQUIRES_RECONCILIATION",
   "MATERIAL_CONSUMPTION_REQUIRES_RECONCILIATION",
   "MATERIAL_RETURN_REQUIRES_RECONCILIATION",
+  "INVALID_PRODUCTION_OUTPUT",
+  "PRODUCTION_OUTPUT_NOT_ALLOWED",
+  "PRODUCTION_OUTPUT_QUANTITY_EXCEEDED",
+  "INVENTORY_RECEIPT_REJECTED",
+  "INVALID_OUTPUT_INVENTORY_REFERENCE",
+  "DUPLICATE_PRODUCTION_OUTPUT",
+  "INVALID_SCRAP",
+  "SCRAP_QUANTITY_EXCEEDED",
+  "INVENTORY_WRITEOFF_REJECTED",
+  "INVALID_REWORK",
+  "REWORK_NOT_ALLOWED",
+  "INVALID_YIELD_STATE",
+  "WIP_RECONCILIATION_FAILURE",
+  "OUTPUT_RECONCILIATION_REQUIRED",
+  "SCRAP_RECONCILIATION_REQUIRED",
 ];
 
 export type IdempotencyCommandFamily =

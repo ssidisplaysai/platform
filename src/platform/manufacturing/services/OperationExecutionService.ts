@@ -348,6 +348,99 @@ export class OperationExecutionService {
     });
   }
 
+  applyExecutionQuantities(input: {
+    tenantId: TenantId;
+    operationExecutionId: OperationExecution["operationExecutionId"];
+    expectedVersion: number;
+    deltaCompleted?: number;
+    deltaRejected?: number;
+    deltaScrap?: number;
+    deltaRework?: number;
+    correlationId: CorrelationIdentifier;
+    idempotencyKey: IdempotencyKey;
+  }): OperationExecutionRecord {
+    const current = this.requireOperation(input.tenantId, input.operationExecutionId as string);
+    if (current.execution.version !== input.expectedVersion) {
+      throw new ManufacturingDomainError(
+        "STALE_EXPECTED_VERSION",
+        `stale expected version: expected ${input.expectedVersion}, current ${current.execution.version}`,
+        false,
+      );
+    }
+
+    const deltaCompleted = input.deltaCompleted ?? 0;
+    const deltaRejected = input.deltaRejected ?? 0;
+    const deltaScrap = input.deltaScrap ?? 0;
+    const deltaRework = input.deltaRework ?? 0;
+    for (const delta of [deltaCompleted, deltaRejected, deltaScrap, deltaRework]) {
+      if (!Number.isFinite(delta) || delta < 0) {
+        throw new ManufacturingDomainError("INVALID_QUANTITY", "quantity deltas must be non-negative finite values", false);
+      }
+    }
+
+    if (isTerminal(current.execution.operationState) && deltaCompleted + deltaRejected + deltaScrap + deltaRework > 0) {
+      throw new ManufacturingDomainError("PRODUCTION_OUTPUT_NOT_ALLOWED", "operation is terminal for quantity mutation", false);
+    }
+
+    const nextCompleted = Math.round((current.execution.completedQuantity.value + deltaCompleted) * 1_000_000) / 1_000_000;
+    const nextRejected = Math.round((current.execution.rejectedQuantity.value + deltaRejected) * 1_000_000) / 1_000_000;
+    const nextScrap = Math.round((current.execution.scrapQuantity.value + deltaScrap) * 1_000_000) / 1_000_000;
+    const nextRework = Math.round((current.execution.reworkQuantity.value + deltaRework) * 1_000_000) / 1_000_000;
+    const totalProcessed = nextCompleted + nextRejected + nextScrap;
+    if (totalProcessed > current.execution.plannedQuantity.value + 0.000001) {
+      throw new ManufacturingDomainError(
+        "PRODUCTION_OUTPUT_QUANTITY_EXCEEDED",
+        "operation processed quantity exceeds planned bounds",
+        false,
+      );
+    }
+
+    const nextState: OperationLifecycleState =
+      totalProcessed >= current.execution.plannedQuantity.value - 0.000001 ? "COMPLETED" : current.execution.operationState;
+
+    const updated: OperationExecutionRecord = {
+      ...current,
+      execution: {
+        ...current.execution,
+        completedQuantity: {
+          ...current.execution.completedQuantity,
+          value: nextCompleted,
+        },
+        rejectedQuantity: {
+          ...current.execution.rejectedQuantity,
+          value: nextRejected,
+        },
+        scrapQuantity: {
+          ...current.execution.scrapQuantity,
+          value: nextScrap,
+        },
+        reworkQuantity: {
+          ...current.execution.reworkQuantity,
+          value: nextRework,
+        },
+        operationState: nextState,
+        endedAt:
+          nextState === "COMPLETED" ? (current.execution.endedAt ?? this.dependencies.clock.now()) : current.execution.endedAt,
+        version: current.execution.version + 1,
+      },
+      history: [
+        ...current.history,
+        {
+          action: "APPLY_QUANTITIES",
+          at: this.dependencies.clock.now(),
+          priorState: current.execution.operationState,
+          nextState,
+          idempotencyKey: input.idempotencyKey,
+          correlationId: input.correlationId,
+        },
+      ],
+    };
+
+    this.byId.set(updated.execution.operationExecutionId as string, updated);
+    this.refreshDownstreamReadiness(updated.execution.tenantId, updated.execution.executionRoutingId, updated.execution.routingStepId);
+    return cloneRecord(updated);
+  }
+
   private async transitionOperation(
     commandFamily: string,
     command: OperationLifecycleCommand,

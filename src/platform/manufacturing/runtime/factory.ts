@@ -21,13 +21,19 @@ import {
   MaterialIssueService,
   MaterialRequirementService,
   OperationExecutionService,
+  ProductionOutputService,
   ProductionBatchService,
   ProductionRunService,
+  ReworkService,
+  ScrapService,
+  WipService,
+  YieldService,
 } from "../services";
 import {
   ManufacturingFoundationQueryService,
   ManufacturingMaterialExecutionQueryService,
   ManufacturingMaterialQueryService,
+  ManufacturingProductionResultQueryService,
   ManufacturingRoutingQueryService,
 } from "../queries";
 import { ManufacturingRuntimeError } from "./errors";
@@ -920,6 +926,112 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09e.register-slice7-production-output-result-services", async () => {
+    appendTrace(host, "09e.register-slice7-production-output-result-services");
+    try {
+      const workOrders = host.services.require("manufacturing.service.work-order").value as ManufacturingWorkOrderService;
+      const operations = host.services.require("manufacturing.service.operation-execution").value as OperationExecutionService;
+      const routings = host.services.require("manufacturing.service.execution-routing").value as ExecutionRoutingService;
+      const inventory = host.services.require("manufacturing.service.inventory-integration").value as ManufacturingInventoryIntegrationService;
+
+      const wip = new WipService({
+        identifier: dependencies.identifierProvider,
+      });
+      const outputs = new ProductionOutputService({
+        clock: dependencies.clockProvider,
+        identifier: dependencies.identifierProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+        inventory,
+        wip,
+      });
+      const scrap = new ScrapService({
+        clock: dependencies.clockProvider,
+        identifier: dependencies.identifierProvider,
+        audit: dependencies.auditSinkProvider,
+        inventory,
+        workOrders,
+        operations,
+        wip,
+      });
+      const rework = new ReworkService({
+        clock: dependencies.clockProvider,
+        identifier: dependencies.identifierProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        operations,
+        routings,
+        wip,
+      });
+      const yields = new YieldService({
+        outputs,
+        scraps: scrap,
+        now: () => dependencies.clockProvider.now(),
+      });
+
+      const resultQueries = new ManufacturingProductionResultQueryService({
+        outputs,
+        scraps: scrap,
+        rework,
+        yields,
+        wip,
+      });
+
+      host.registerService({
+        serviceId: "manufacturing.service.production-output",
+        contract: "manufacturing.service.production-output",
+        description: "Manufacturing production output service.",
+        value: outputs,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.scrap",
+        contract: "manufacturing.service.scrap",
+        description: "Manufacturing scrap fact service.",
+        value: scrap,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.rework",
+        contract: "manufacturing.service.rework",
+        description: "Manufacturing rework fact service.",
+        value: rework,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.yield",
+        contract: "manufacturing.service.yield",
+        description: "Manufacturing yield projection service.",
+        value: yields,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.wip",
+        contract: "manufacturing.service.wip",
+        description: "Manufacturing work-in-progress service.",
+        value: wip,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.production-result",
+        contract: "manufacturing.query.production-result",
+        description: "Read-only Manufacturing production result query surface.",
+        value: resultQueries,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      if (error instanceof ManufacturingRuntimeError) {
+        recordFailure(host, dependencies, error.code, error.message);
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : "slice 7 service registration failed";
+      const code = message.includes("service not found")
+        ? "PARTIAL_INITIALIZATION_REJECTED"
+        : "DUPLICATE_SERVICE_REGISTRATION";
+      recordFailure(host, dependencies, code, message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -957,6 +1069,12 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.service.material-issue",
       "manufacturing.service.material-consumption",
       "manufacturing.query.material-execution",
+      "manufacturing.service.production-output",
+      "manufacturing.service.scrap",
+      "manufacturing.service.rework",
+      "manufacturing.service.yield",
+      "manufacturing.service.wip",
+      "manufacturing.query.production-result",
     ]);
     for (const serviceId of requiredServices) {
       try {

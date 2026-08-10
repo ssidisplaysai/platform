@@ -122,6 +122,48 @@ export class ManufacturingInventoryIntegrationService {
     };
   }
 
+  async requestFinishedGoodsReceipt(input: {
+    tenantId: TenantId;
+    inventoryItemId: string;
+    quantity: number;
+    unitOfMeasure: UnitOfMeasure;
+  }): Promise<Readonly<{ referenceId: string; acceptedQuantity: number }>> {
+    const result = await this.dependencies.inventoryPort.requestFinishedGoodsReceipt({
+      tenantId: input.tenantId,
+      inventoryItemId: input.inventoryItemId,
+      quantity: input.quantity,
+      unitOfMeasure: input.unitOfMeasure,
+    });
+    if (!result.accepted) {
+      throw this.createError("INVENTORY_RECEIPT_REJECTED", result.reason);
+    }
+    return {
+      referenceId: result.referenceId,
+      acceptedQuantity: result.acceptedQuantity ?? input.quantity,
+    };
+  }
+
+  async requestWriteOff(input: {
+    tenantId: TenantId;
+    inventoryItemId: string;
+    quantity: number;
+    unitOfMeasure: UnitOfMeasure;
+  }): Promise<Readonly<{ referenceId: string; acceptedQuantity: number }>> {
+    const result = await this.dependencies.inventoryPort.requestWriteOff({
+      tenantId: input.tenantId,
+      inventoryItemId: input.inventoryItemId,
+      quantity: input.quantity,
+      unitOfMeasure: input.unitOfMeasure,
+    });
+    if (!result.accepted) {
+      throw this.createError("INVENTORY_WRITEOFF_REJECTED", result.reason);
+    }
+    return {
+      referenceId: result.referenceId,
+      acceptedQuantity: result.acceptedQuantity ?? input.quantity,
+    };
+  }
+
   async validateInventoryMovement(input: { tenantId: TenantId; inventoryMovementId: string }): Promise<void> {
     const validation = await this.dependencies.inventoryPort.validateInventoryMovement(input);
     if (!validation.valid) {

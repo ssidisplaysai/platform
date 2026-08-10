@@ -432,8 +432,12 @@ describe("GMDT-1001-S3 Work Order and core execution foundation", () => {
     expect(runtimeServiceIds).toContain("manufacturing.query.routing");
     expect(runtimeServiceIds).toContain("manufacturing.service.material-requirement");
     expect(runtimeServiceIds).toContain("manufacturing.query.material");
-    expect(runtimeServiceIds.some((id) => id.includes("output"))).toBe(false);
+    expect(runtimeServiceIds).toContain("manufacturing.service.production-output");
+    expect(runtimeServiceIds).toContain("manufacturing.query.production-result");
     expect(runtimeServiceIds.some((id) => id.includes("persistence"))).toBe(false);
+    expect(runtimeServiceIds.some((id) => id.includes("resource"))).toBe(false);
+    expect(runtimeServiceIds.some((id) => id.includes("labor"))).toBe(false);
+    expect(runtimeServiceIds.some((id) => id.includes("downtime"))).toBe(false);
 
     await runtime.stop();
   });

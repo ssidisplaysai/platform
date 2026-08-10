@@ -665,8 +665,12 @@ describe("GMDT-1001-S4 Routing and operation execution", () => {
     expect(serviceIds).toContain("manufacturing.query.routing");
     expect(serviceIds).toContain("manufacturing.service.material-requirement");
     expect(serviceIds).toContain("manufacturing.query.material");
-    expect(serviceIds.some((id) => id.includes("output"))).toBe(false);
+    expect(serviceIds).toContain("manufacturing.service.production-output");
+    expect(serviceIds).toContain("manufacturing.query.production-result");
     expect(serviceIds.some((id) => id.includes("persistence"))).toBe(false);
+    expect(serviceIds.some((id) => id.includes("resource"))).toBe(false);
+    expect(serviceIds.some((id) => id.includes("labor"))).toBe(false);
+    expect(serviceIds.some((id) => id.includes("downtime"))).toBe(false);
 
     const workOrder = await workOrders.createWorkOrder(createBaseWorkOrder());
     await routing.createExecutionRouting(

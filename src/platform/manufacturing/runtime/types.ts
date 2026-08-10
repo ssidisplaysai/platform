@@ -81,6 +81,12 @@ export type ManufacturingRuntimeServiceRegistration = Readonly<{
     | "manufacturing.service.material-issue"
     | "manufacturing.service.material-consumption"
     | "manufacturing.query.material-execution"
+    | "manufacturing.service.production-output"
+    | "manufacturing.service.scrap"
+    | "manufacturing.service.rework"
+    | "manufacturing.service.yield"
+    | "manufacturing.service.wip"
+    | "manufacturing.query.production-result"
     | "manufacturing.integration.product-port"
     | "manufacturing.integration.inventory-port"
     | "manufacturing.integration.external-reference-validator";

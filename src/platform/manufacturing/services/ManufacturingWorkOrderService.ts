@@ -687,6 +687,80 @@ export class ManufacturingWorkOrderService {
     return cloneRecord(updated);
   }
 
+  applyExecutionQuantities(input: {
+    tenantId: TenantId;
+    workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"];
+    expectedVersion: number;
+    deltaCompleted?: number;
+    deltaRejected?: number;
+    deltaScrap?: number;
+    deltaRework?: number;
+  }): ManufacturingWorkOrderRecord {
+    const current = this.require(input.tenantId, input.workOrderId);
+    this.assertExpectedVersion(current, input.expectedVersion);
+
+    const deltaCompleted = input.deltaCompleted ?? 0;
+    const deltaRejected = input.deltaRejected ?? 0;
+    const deltaScrap = input.deltaScrap ?? 0;
+    const deltaRework = input.deltaRework ?? 0;
+    for (const delta of [deltaCompleted, deltaRejected, deltaScrap, deltaRework]) {
+      if (!Number.isFinite(delta) || delta < 0) {
+        throw new ManufacturingDomainError("INVALID_QUANTITY", "quantity deltas must be non-negative finite values", false);
+      }
+    }
+
+    const nextCompleted = Math.round((current.workOrder.completedQuantity.value + deltaCompleted) * 1_000_000) / 1_000_000;
+    const nextRejected = Math.round((current.workOrder.rejectedQuantity.value + deltaRejected) * 1_000_000) / 1_000_000;
+    const nextScrap = Math.round((current.workOrder.scrapQuantity.value + deltaScrap) * 1_000_000) / 1_000_000;
+    const nextRework = Math.round((current.workOrder.reworkQuantity.value + deltaRework) * 1_000_000) / 1_000_000;
+
+    const processed = nextCompleted + nextRejected + nextScrap;
+    if (processed > current.workOrder.plannedQuantity.value + 0.000001) {
+      throw new ManufacturingDomainError(
+        "PRODUCTION_OUTPUT_QUANTITY_EXCEEDED",
+        "work order processed quantity exceeds planned bounds",
+        false,
+      );
+    }
+
+    const nextLifecycleState: WorkOrderLifecycleState =
+      current.workOrder.workOrderState === "IN_PROGRESS" || current.workOrder.workOrderState === "PARTIALLY_COMPLETED"
+        ? processed >= current.workOrder.plannedQuantity.value - 0.000001
+          ? "COMPLETED"
+          : processed > 0
+            ? "PARTIALLY_COMPLETED"
+            : current.workOrder.workOrderState
+        : current.workOrder.workOrderState;
+
+    const updated: ManufacturingWorkOrderRecord = {
+      ...current,
+      workOrder: {
+        ...current.workOrder,
+        completedQuantity: {
+          ...current.workOrder.completedQuantity,
+          value: nextCompleted,
+        },
+        rejectedQuantity: {
+          ...current.workOrder.rejectedQuantity,
+          value: nextRejected,
+        },
+        scrapQuantity: {
+          ...current.workOrder.scrapQuantity,
+          value: nextScrap,
+        },
+        reworkQuantity: {
+          ...current.workOrder.reworkQuantity,
+          value: nextRework,
+        },
+        workOrderState: nextLifecycleState,
+        version: current.workOrder.version + 1,
+      },
+    };
+
+    this.byId.set(input.workOrderId as string, updated);
+    return cloneRecord(updated);
+  }
+
   require(tenantId: TenantId, workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"]): ManufacturingWorkOrderRecord {
     const found = this.byId.get(workOrderId as string);
     if (!found) {
