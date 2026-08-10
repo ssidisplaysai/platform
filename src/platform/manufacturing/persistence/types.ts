@@ -78,6 +78,8 @@ export type ManufacturingRuntimePersistenceState = Readonly<{
 
 export type ManufacturingPersistenceStatus = Readonly<{
   initialized: boolean;
+  durabilityMode: "DURABLE_CONFIGURED" | "EPHEMERAL_UNCONFIGURED";
+  durablePersistenceConfigured: boolean;
   storeAvailable: boolean;
   schemaValid: boolean;
   persistedStateValid: boolean;

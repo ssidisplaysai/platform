@@ -541,6 +541,9 @@ describe("GMDT-1001 Slice 9 - reference validation, observability, mission contr
     const readiness = query.getManufacturingRuntimeReadiness();
     expect(readiness.ready).toBe(true);
     expect(readiness.phase).toBe("READY");
+    expect(readiness.durableReadiness).toBe(false);
+    expect(readiness.durabilityMode).toBe("EPHEMERAL_UNCONFIGURED");
+    expect(readiness.durablePersistenceConfigured).toBe(false);
 
     const productHealth = query.getProductIntegrationHealth();
     expect(productHealth.validatorAvailable).toBe(true);

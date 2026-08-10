@@ -246,13 +246,17 @@ export class ManufacturingPersistenceCoordinator {
   private readonly validator = createManufacturingPersistenceSchemaValidator();
   private readonly recovery: ManufacturingRecoveryCoordinator;
   private readonly store: ManufacturingFileStore;
+  private readonly durablePersistenceConfigured: boolean;
   private lastSnapshotVersion = 0;
   private applyingRecovery = false;
 
   constructor(private readonly options: ManufacturingPersistenceCoordinatorOptions) {
-    this.recovery = new ManufacturingRecoveryCoordinator(options.runtimeId);
+    this.durablePersistenceConfigured = Boolean(options.persistence?.rootDir?.trim());
+    this.recovery = new ManufacturingRecoveryCoordinator(options.runtimeId, this.durablePersistenceConfigured);
     this.store = new ManufacturingFileStore({
-      rootDir: options.persistence?.rootDir?.trim() || buildDefaultRootDir(options.runtimeId),
+      rootDir: this.durablePersistenceConfigured
+        ? options.persistence!.rootDir!.trim()
+        : buildDefaultRootDir(options.runtimeId),
     });
   }
 
@@ -266,6 +270,10 @@ export class ManufacturingPersistenceCoordinator {
 
   getMetrics(): ManufacturingPersistenceMetrics {
     return this.recovery.getMetrics();
+  }
+
+  isDurablePersistenceConfigured(): boolean {
+    return this.durablePersistenceConfigured;
   }
 
   async initializeAndRecover(): Promise<void> {
@@ -394,6 +402,16 @@ export class ManufacturingPersistenceCoordinator {
       await this.store.saveAll(normalized);
       this.lastSnapshotVersion = normalized.manifest.snapshotVersion;
       this.recovery.markWrite(true, normalized.manifest.writtenAt);
+      await this.emitAudit(
+        "manufacturing.persistence.save.succeeded",
+        "manufacturing persistence save succeeded",
+        true,
+        undefined,
+        {
+          snapshotVersion: normalized.manifest.snapshotVersion,
+          checkpointDurability: "POST_COMMIT_VOLATILE_UNTIL_NEXT_DURABLE_CHECKPOINT",
+        },
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "manufacturing persistence write failed";
       const classification = message.includes("rename") ? "PERSISTENCE_ATOMIC_REPLACE_FAILURE" : "PERSISTENCE_WRITE_FAILURE";
@@ -1054,7 +1072,13 @@ export class ManufacturingPersistenceCoordinator {
     return "RECOVERY_FAILED";
   }
 
-  private async emitAudit(eventType: string, message: string, success: boolean, resultClassification?: string): Promise<void> {
+  private async emitAudit(
+    eventType: string,
+    message: string,
+    success: boolean,
+    resultClassification?: string,
+    details?: Readonly<Record<string, unknown>>,
+  ): Promise<void> {
     try {
       await this.options.services.audit.getAuditSinkProvider().recordAudit({
         eventType,
@@ -1064,6 +1088,7 @@ export class ManufacturingPersistenceCoordinator {
           action: eventType.toUpperCase().replaceAll(".", "_"),
           success,
           resultClassification,
+          ...(details ?? {}),
         },
       });
     } catch {

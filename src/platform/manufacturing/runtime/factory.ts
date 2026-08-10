@@ -1354,6 +1354,7 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
         healthService: health,
         referenceService: referenceValidation,
         auditService: manufacturingAuditService,
+        persistenceCoordinator: undefined,
       });
 
       const observabilityQueries = new ManufacturingObservabilityQueryService({
@@ -1494,6 +1495,11 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       persistenceCoordinator.enableDurability();
       (metrics as unknown as { dependencies: { persistenceCoordinator?: ManufacturingPersistenceCoordinator } }).dependencies.persistenceCoordinator = persistenceCoordinator;
       (health as unknown as { dependencies: { persistenceCoordinator?: ManufacturingPersistenceCoordinator } }).dependencies.persistenceCoordinator = persistenceCoordinator;
+      (
+        host.services.require("manufacturing.service.observation-publisher").value as unknown as {
+          dependencies: { persistenceCoordinator?: ManufacturingPersistenceCoordinator };
+        }
+      ).dependencies.persistenceCoordinator = persistenceCoordinator;
 
       host.registerService({
         serviceId: "manufacturing.service.persistence",

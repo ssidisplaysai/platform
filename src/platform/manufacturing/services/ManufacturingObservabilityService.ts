@@ -44,6 +44,7 @@ export type ManufacturingHealthReasonCode =
   | "OBSERVATION_SINK_UNAVAILABLE"
   | "LIFECYCLE_STOP_FAILURE"
   | "PERSISTENCE_NOT_INITIALIZED"
+  | "PERSISTENCE_EPHEMERAL_MODE"
   | "PERSISTED_STATE_CORRUPT"
   | "UNSUPPORTED_PERSISTENCE_SCHEMA"
   | "RECOVERY_FAILED"
@@ -73,6 +74,7 @@ export type ManufacturingHealthSubsystem =
   | "audit-sink"
   | "observation-sink"
   | "persistence-initialization"
+  | "persistence-durability-mode"
   | "persistence-schema"
   | "persistence-recovery";
 
@@ -169,6 +171,9 @@ export type ManufacturingRuntimeReadinessProjection = Readonly<{
   runtimeId: string;
   phase: ManufacturingRuntimeState["phase"];
   ready: boolean;
+  durableReadiness: boolean;
+  durabilityMode: "DURABLE_CONFIGURED" | "EPHEMERAL_UNCONFIGURED" | "NOT_IMPLEMENTED";
+  durablePersistenceConfigured: boolean;
   providerCount: number;
   serviceCount: number;
   integrationCount: number;
@@ -290,11 +295,20 @@ function createMetricClassification(): Readonly<Record<string, ManufacturingMetr
   };
 }
 
-function createRuntimeReadinessProjection(state?: ManufacturingRuntimeState): ManufacturingRuntimeReadinessProjection {
+function createRuntimeReadinessProjection(
+  state?: ManufacturingRuntimeState,
+  persistenceCoordinator?: ManufacturingPersistenceCoordinator,
+): ManufacturingRuntimeReadinessProjection {
+  const persistenceStatus = persistenceCoordinator?.getStatus();
+  const durablePersistenceConfigured = persistenceStatus?.durablePersistenceConfigured ?? false;
+  const durabilityMode = persistenceStatus?.durabilityMode ?? "NOT_IMPLEMENTED";
   return {
     runtimeId: state?.runtimeId ?? "manufacturing-runtime-unbound",
     phase: state?.phase ?? "CREATED",
     ready: state?.ready ?? false,
+    durableReadiness: Boolean(state?.ready && durablePersistenceConfigured),
+    durabilityMode,
+    durablePersistenceConfigured,
     providerCount: state?.providerIds.length ?? 0,
     serviceCount: state?.serviceIds.length ?? 0,
     integrationCount: state?.integrationIds.length ?? 0,
@@ -914,6 +928,26 @@ export class ManufacturingHealthService {
 
     checks.push(
       this.createCheck(
+        "persistence-durability-mode",
+        !persistenceStatus
+          ? "WARN"
+          : persistenceStatus.durablePersistenceConfigured
+            ? "PASS"
+            : "WARN",
+        !persistenceStatus
+          ? "PERSISTENCE_NOT_IMPLEMENTED"
+          : persistenceStatus.durablePersistenceConfigured
+            ? "HEALTH_CHECK_OK"
+            : "PERSISTENCE_EPHEMERAL_MODE",
+        !persistenceStatus
+          ? "durability mode unavailable"
+          : `durabilityMode=${persistenceStatus.durabilityMode}; durableConfigured=${persistenceStatus.durablePersistenceConfigured}`,
+        true,
+      ),
+    );
+
+    checks.push(
+      this.createCheck(
         "persistence-schema",
         !persistenceStatus
           ? "WARN"
@@ -983,6 +1017,7 @@ export class ManufacturingObservationPublisher {
       healthService: ManufacturingHealthService;
       referenceService: ManufacturingReferenceValidationService;
       auditService: ManufacturingAuditService;
+      persistenceCoordinator?: ManufacturingPersistenceCoordinator;
     },
   ) {}
 
@@ -994,7 +1029,10 @@ export class ManufacturingObservationPublisher {
   }
 
   getRuntimeReadiness(): ManufacturingRuntimeReadinessProjection {
-    return createRuntimeReadinessProjection(this.dependencies.runtimeStateProvider());
+    return createRuntimeReadinessProjection(
+      this.dependencies.runtimeStateProvider(),
+      this.dependencies.persistenceCoordinator,
+    );
   }
 
   async buildManufacturingObservation(tenantId?: TenantId): Promise<ManufacturingMissionControlObservation> {

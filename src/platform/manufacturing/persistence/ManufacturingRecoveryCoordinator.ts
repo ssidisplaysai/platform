@@ -5,9 +5,11 @@ import type {
 } from "./types";
 import { createDefaultManufacturingPersistenceEnvelope } from "./serialization";
 
-function createDefaultStatus(): ManufacturingPersistenceStatus {
+function createDefaultStatus(durablePersistenceConfigured: boolean): ManufacturingPersistenceStatus {
   return {
     initialized: false,
+    durabilityMode: durablePersistenceConfigured ? "DURABLE_CONFIGURED" : "EPHEMERAL_UNCONFIGURED",
+    durablePersistenceConfigured,
     storeAvailable: true,
     schemaValid: true,
     persistedStateValid: true,
@@ -36,10 +38,12 @@ function createDefaultMetrics(): ManufacturingPersistenceMetrics {
 }
 
 export class ManufacturingRecoveryCoordinator {
-  private status = createDefaultStatus();
+  private status: ManufacturingPersistenceStatus;
   private metrics = createDefaultMetrics();
 
-  constructor(private readonly runtimeId: string) {}
+  constructor(private readonly runtimeId: string, durablePersistenceConfigured: boolean) {
+    this.status = createDefaultStatus(durablePersistenceConfigured);
+  }
 
   getStatus(): ManufacturingPersistenceStatus {
     return { ...this.status };
