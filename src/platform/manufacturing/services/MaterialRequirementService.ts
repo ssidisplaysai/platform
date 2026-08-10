@@ -2,6 +2,9 @@ import { compareDeterministicStrings, deterministicSort } from "../../shared";
 import type {
   CorrelationIdentifier,
   IdempotencyKey,
+  InventoryAllocationReference,
+  InventoryReservationReference,
+  MaterialExecutionSummary,
   ManufacturingFailureClassification,
   ManufacturingWorkOrder,
   MaterialRequirementExecutionRecord,
@@ -185,6 +188,8 @@ export class MaterialRequirementService {
           value: 0,
           unitOfMeasure: requiredQuantity.unitOfMeasure,
         } as MaterialRequirementExecutionRecord["returnedQuantity"],
+        reservationRefs: [],
+        allocationRefs: [],
         unitOfMeasure: requiredQuantity.unitOfMeasure,
         requiredByOperationId: operation?.operationExecutionId,
         requiredByRoutingStepId: line.requiredByRoutingStepId as MaterialRequirementExecutionRecord["requiredByRoutingStepId"],
@@ -256,6 +261,275 @@ export class MaterialRequirementService {
       .map((id) => this.byId.get(id))
       .filter((entry): entry is MaterialRequirementExecutionRecord => Boolean(entry))
       .map((entry) => structuredClone(entry));
+  }
+
+  applyReservationReference(input: {
+    tenantId: TenantId;
+    materialRequirementId: MaterialRequirementExecutionRecord["materialRequirementId"];
+    reservationId: string;
+  }): MaterialRequirementExecutionRecord {
+    const current = this.requireMaterialRequirement(input.tenantId, input.materialRequirementId);
+    const reservationRef: InventoryReservationReference = {
+      tenantId: input.tenantId,
+      inventoryReservationId: input.reservationId as InventoryReservationReference["inventoryReservationId"],
+    };
+    const reservationRefs = deterministicSort(
+      [...current.reservationRefs, reservationRef].filter(
+        (entry, index, all) =>
+          all.findIndex((candidate) => candidate.inventoryReservationId === entry.inventoryReservationId) === index,
+      ),
+      (entry) => entry.inventoryReservationId,
+    );
+    return this.replaceRequirement({
+      ...current,
+      reservationRefs,
+      version: current.version + 1,
+    });
+  }
+
+  applyAllocationReference(input: {
+    tenantId: TenantId;
+    materialRequirementId: MaterialRequirementExecutionRecord["materialRequirementId"];
+    allocationId: string;
+  }): MaterialRequirementExecutionRecord {
+    const current = this.requireMaterialRequirement(input.tenantId, input.materialRequirementId);
+    const allocationRef: InventoryAllocationReference = {
+      tenantId: input.tenantId,
+      inventoryAllocationId: input.allocationId as InventoryAllocationReference["inventoryAllocationId"],
+    };
+    const allocationRefs = deterministicSort(
+      [...current.allocationRefs, allocationRef].filter(
+        (entry, index, all) => all.findIndex((candidate) => candidate.inventoryAllocationId === entry.inventoryAllocationId) === index,
+      ),
+      (entry) => entry.inventoryAllocationId,
+    );
+    return this.replaceRequirement({
+      ...current,
+      allocationRefs,
+      version: current.version + 1,
+    });
+  }
+
+  applyIssuedQuantity(input: {
+    tenantId: TenantId;
+    materialRequirementId: MaterialRequirementExecutionRecord["materialRequirementId"];
+    quantity: number;
+    unitOfMeasure: string;
+  }): MaterialRequirementExecutionRecord {
+    const current = this.requireMaterialRequirement(input.tenantId, input.materialRequirementId);
+    if (!Number.isFinite(input.quantity) || input.quantity <= 0) {
+      throw new ManufacturingDomainError("INVALID_QUANTITY", "issued quantity must be greater than zero", false);
+    }
+    if (current.unitOfMeasure !== input.unitOfMeasure) {
+      throw new ManufacturingDomainError("INVALID_REQUIREMENT_UOM", "issued quantity unit of measure mismatch", false);
+    }
+
+    const nextIssued = Math.round((current.issuedQuantity.value + input.quantity) * 1_000_000) / 1_000_000;
+    const nextStatus = this.deriveRequirementStatus({
+      required: current.requiredQuantity.value,
+      issued: nextIssued,
+      consumed: current.consumedQuantity.value,
+      returned: current.returnedQuantity.value,
+    });
+
+    const updated = this.replaceRequirement({
+      ...current,
+      issuedQuantity: {
+        ...current.issuedQuantity,
+        value: nextIssued,
+      },
+      status: nextStatus,
+      version: current.version + 1,
+    });
+    this.refreshWorkOrderInventoryReadiness(updated.tenantId, updated.workOrderId);
+    return updated;
+  }
+
+  applyConsumedQuantity(input: {
+    tenantId: TenantId;
+    materialRequirementId: MaterialRequirementExecutionRecord["materialRequirementId"];
+    quantity: number;
+    unitOfMeasure: string;
+    allowOverConsumption?: boolean;
+  }): MaterialRequirementExecutionRecord {
+    const current = this.requireMaterialRequirement(input.tenantId, input.materialRequirementId);
+    if (!Number.isFinite(input.quantity) || input.quantity <= 0) {
+      throw new ManufacturingDomainError("INVALID_QUANTITY", "consumed quantity must be greater than zero", false);
+    }
+    if (current.unitOfMeasure !== input.unitOfMeasure) {
+      throw new ManufacturingDomainError("INVALID_REQUIREMENT_UOM", "consumed quantity unit of measure mismatch", false);
+    }
+
+    const nextConsumed = Math.round((current.consumedQuantity.value + input.quantity) * 1_000_000) / 1_000_000;
+    if (nextConsumed > current.issuedQuantity.value + 0.000001) {
+      throw new ManufacturingDomainError(
+        "MATERIAL_CONSUMPTION_EXCEEDS_ISSUED",
+        "consumption exceeds issued quantity for the requirement",
+        false,
+      );
+    }
+    if (!input.allowOverConsumption && nextConsumed > current.requiredQuantity.value + 0.000001) {
+      throw new ManufacturingDomainError(
+        "MATERIAL_CONSUMPTION_EXCEEDS_REQUIRED",
+        "consumption exceeds required quantity for the requirement",
+        false,
+      );
+    }
+
+    const nextStatus = this.deriveRequirementStatus({
+      required: current.requiredQuantity.value,
+      issued: current.issuedQuantity.value,
+      consumed: nextConsumed,
+      returned: current.returnedQuantity.value,
+    });
+
+    return this.replaceRequirement({
+      ...current,
+      consumedQuantity: {
+        ...current.consumedQuantity,
+        value: nextConsumed,
+      },
+      status: nextStatus,
+      version: current.version + 1,
+    });
+  }
+
+  applyReturnedQuantity(input: {
+    tenantId: TenantId;
+    materialRequirementId: MaterialRequirementExecutionRecord["materialRequirementId"];
+    quantity: number;
+    unitOfMeasure: string;
+  }): MaterialRequirementExecutionRecord {
+    const current = this.requireMaterialRequirement(input.tenantId, input.materialRequirementId);
+    if (!Number.isFinite(input.quantity) || input.quantity <= 0) {
+      throw new ManufacturingDomainError("INVALID_QUANTITY", "returned quantity must be greater than zero", false);
+    }
+    if (current.unitOfMeasure !== input.unitOfMeasure) {
+      throw new ManufacturingDomainError("INVALID_REQUIREMENT_UOM", "returned quantity unit of measure mismatch", false);
+    }
+
+    const nextReturned = Math.round((current.returnedQuantity.value + input.quantity) * 1_000_000) / 1_000_000;
+    if (nextReturned > current.issuedQuantity.value + 0.000001) {
+      throw new ManufacturingDomainError("INVALID_QUANTITY", "returned quantity cannot exceed issued quantity", false);
+    }
+
+    const nextStatus = this.deriveRequirementStatus({
+      required: current.requiredQuantity.value,
+      issued: current.issuedQuantity.value,
+      consumed: current.consumedQuantity.value,
+      returned: nextReturned,
+    });
+
+    const updated = this.replaceRequirement({
+      ...current,
+      returnedQuantity: {
+        ...current.returnedQuantity,
+        value: nextReturned,
+      },
+      status: nextStatus,
+      version: current.version + 1,
+    });
+    this.refreshWorkOrderInventoryReadiness(updated.tenantId, updated.workOrderId);
+    return updated;
+  }
+
+  getMaterialExecutionSummary(tenantId: TenantId, materialRequirementId: string): MaterialExecutionSummary {
+    const requirement = this.requireMaterialRequirement(tenantId, materialRequirementId);
+    const required = requirement.requiredQuantity.value;
+    const issued = requirement.issuedQuantity.value;
+    const consumed = requirement.consumedQuantity.value;
+    const returned = requirement.returnedQuantity.value;
+    const remainingToIssue = Math.max(0, Math.round((required - issued) * 1_000_000) / 1_000_000);
+    const remainingToConsume = Math.max(0, Math.round((issued - consumed) * 1_000_000) / 1_000_000);
+    const varianceQuantity = Math.round((consumed - required) * 1_000_000) / 1_000_000;
+
+    return {
+      materialRequirementId: requirement.materialRequirementId,
+      tenantId: requirement.tenantId,
+      workOrderId: requirement.workOrderId,
+      requiredQuantity: required,
+      issuedQuantity: issued,
+      consumedQuantity: consumed,
+      returnedQuantity: returned,
+      remainingToIssue,
+      remainingToConsume,
+      varianceQuantity,
+      inventoryReservationIds: deterministicSort(
+        requirement.reservationRefs.map((entry) => entry.inventoryReservationId as string),
+        (entry) => entry,
+      ),
+      inventoryAllocationIds: deterministicSort(
+        requirement.allocationRefs.map((entry) => entry.inventoryAllocationId as string),
+        (entry) => entry,
+      ),
+      issueStatus: issued <= 0 ? "NONE" : issued + 0.000001 < required ? "PARTIAL" : "COMPLETE",
+      consumptionStatus:
+        consumed <= 0
+          ? "NONE"
+          : consumed > required + 0.000001
+            ? "OVER_CONSUMED"
+            : consumed + 0.000001 < required
+              ? "PARTIAL"
+              : "COMPLETE",
+      reconciliationRequired: false,
+    };
+  }
+
+  private replaceRequirement(next: MaterialRequirementExecutionRecord): MaterialRequirementExecutionRecord {
+    this.byId.set(next.materialRequirementId as string, next);
+    return structuredClone(next);
+  }
+
+  private requireMaterialRequirement(
+    tenantId: TenantId,
+    materialRequirementId: MaterialRequirementExecutionRecord["materialRequirementId"],
+  ): MaterialRequirementExecutionRecord {
+    const found = this.byId.get(materialRequirementId as string);
+    if (!found) {
+      throw new ManufacturingDomainError("INVALID_MATERIAL_REQUIREMENT", `material requirement not found: ${materialRequirementId}`, false);
+    }
+    if (found.tenantId !== tenantId) {
+      throw new ManufacturingDomainError("TENANT_MISMATCH", "material requirement tenant mismatch", false);
+    }
+    return found;
+  }
+
+  private deriveRequirementStatus(input: {
+    required: number;
+    issued: number;
+    consumed: number;
+    returned: number;
+  }): MaterialRequirementExecutionRecord["status"] {
+    if (input.returned > 0 && input.returned + 0.000001 >= input.issued && input.consumed <= 0) {
+      return "RETURNED";
+    }
+    if (input.consumed >= input.required - 0.000001) {
+      return "CONSUMED";
+    }
+    if (input.consumed > 0) {
+      return "PARTIALLY_CONSUMED";
+    }
+    if (input.issued >= input.required - 0.000001) {
+      return "ISSUED";
+    }
+    if (input.issued > 0) {
+      return "PARTIALLY_ISSUED";
+    }
+    return "READY";
+  }
+
+  private refreshWorkOrderInventoryReadiness(tenantId: TenantId, workOrderId: ManufacturingWorkOrder["manufacturingWorkOrderId"]): void {
+    const requirements = this.listMaterialRequirements(tenantId, workOrderId as string);
+    const inventoryReady =
+      requirements.length > 0 && requirements.every((entry) => entry.issuedQuantity.value >= entry.requiredQuantity.value - 0.000001);
+    const workOrder = this.dependencies.workOrders.require(tenantId, workOrderId);
+    this.dependencies.workOrders.setMaterialRequirementModelReadiness({
+      tenantId,
+      workOrderId,
+      expectedVersion: workOrder.workOrder.version,
+      requirementsReady: workOrder.readiness.requirementsReady,
+      inventoryMaterialsReady: inventoryReady,
+    });
   }
 
   private async audit(

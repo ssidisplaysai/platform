@@ -77,6 +77,10 @@ export type ManufacturingRuntimeServiceRegistration = Readonly<{
     | "manufacturing.service.product-reference"
     | "manufacturing.service.material-requirement"
     | "manufacturing.query.material"
+    | "manufacturing.service.inventory-integration"
+    | "manufacturing.service.material-issue"
+    | "manufacturing.service.material-consumption"
+    | "manufacturing.query.material-execution"
     | "manufacturing.integration.product-port"
     | "manufacturing.integration.inventory-port"
     | "manufacturing.integration.external-reference-validator";

@@ -49,4 +49,8 @@ export class ManufacturingMaterialQueryService {
       requirementCount: requirements.length,
     };
   }
+
+  getMaterialExecutionSummary(tenantId: TenantId, materialRequirementId: string) {
+    return this.dependencies.materials.getMaterialExecutionSummary(tenantId, materialRequirementId);
+  }
 }

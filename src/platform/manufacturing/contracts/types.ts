@@ -537,6 +537,8 @@ export type MaterialRequirementExecutionRecord = Readonly<{
   issuedQuantity: IssuedMaterialQuantity;
   consumedQuantity: ConsumedMaterialQuantity;
   returnedQuantity: ReturnedMaterialQuantity;
+  reservationRefs: readonly InventoryReservationReference[];
+  allocationRefs: readonly InventoryAllocationReference[];
   scrapQuantity?: ScrapQuantity;
   unitOfMeasure: UnitOfMeasure;
   requiredByOperationId?: OperationExecutionId;
@@ -561,6 +563,46 @@ export type MaterialIssueRequest = Readonly<{
   version: number;
 }>;
 
+export type MaterialIssueLifecycleState =
+  | "REQUESTED"
+  | "PARTIALLY_ISSUED"
+  | "ISSUED"
+  | "REJECTED"
+  | "RECONCILIATION_REQUIRED";
+
+export type MaterialIssueCommand = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  materialRequirementId: MaterialRequirementId;
+  inventoryItemRef: InventoryItemReference;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  expectedRequirementVersion?: number;
+  operationExecutionId?: OperationExecutionId;
+  metadata?: MetadataCollection;
+}>;
+
+export type MaterialIssueExecutionRecord = Readonly<{
+  materialIssueRequestId: MaterialIssueRequestId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  materialRequirementId: MaterialRequirementId;
+  inventoryItemRef: InventoryItemReference;
+  requestedQuantity: number;
+  acceptedQuantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  status: MaterialIssueLifecycleState;
+  inventoryReferenceId?: string;
+  reason?: string;
+  reasonCode?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+  version: number;
+}>;
+
 export type MaterialConsumptionRecord = Readonly<{
   materialConsumptionId: MaterialConsumptionId;
   tenantId: TenantId;
@@ -573,6 +615,94 @@ export type MaterialConsumptionRecord = Readonly<{
   correlationId: CorrelationIdentifier;
   recordedAt: string;
   version: number;
+}>;
+
+export type MaterialConsumptionLifecycleState = "RECORDED" | "REJECTED" | "RECONCILIATION_REQUIRED";
+
+export type MaterialConsumptionCommand = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId: OperationExecutionId;
+  materialRequirementId: MaterialRequirementId;
+  consumedQuantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  inventoryMovementId?: string;
+  inventoryItemRef?: InventoryItemReference;
+  lotId?: string;
+  serialId?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  allowOverConsumption?: boolean;
+  metadata?: MetadataCollection;
+}>;
+
+export type MaterialConsumptionExecutionRecord = Readonly<{
+  materialConsumptionId: MaterialConsumptionId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  operationExecutionId: OperationExecutionId;
+  materialRequirementId: MaterialRequirementId;
+  consumedQuantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  inventoryMovementId?: string;
+  lotId?: string;
+  serialId?: string;
+  status: MaterialConsumptionLifecycleState;
+  reason?: string;
+  reasonCode?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+  recordedAt: string;
+  version: number;
+}>;
+
+export type MaterialReturnCommand = Readonly<{
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  materialRequirementId: MaterialRequirementId;
+  inventoryItemRef: InventoryItemReference;
+  returnQuantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+}>;
+
+export type MaterialReturnExecutionRecord = Readonly<{
+  materialIssueRequestId: MaterialIssueRequestId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  materialRequirementId: MaterialRequirementId;
+  inventoryItemRef: InventoryItemReference;
+  returnedQuantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  status: "RETURNED" | "REJECTED" | "RECONCILIATION_REQUIRED";
+  inventoryReferenceId?: string;
+  reason?: string;
+  reasonCode?: string;
+  idempotencyKey: IdempotencyKey;
+  correlationId: CorrelationIdentifier;
+  metadata?: MetadataCollection;
+  version: number;
+}>;
+
+export type MaterialExecutionSummary = Readonly<{
+  materialRequirementId: MaterialRequirementId;
+  tenantId: TenantId;
+  workOrderId: ManufacturingWorkOrderId;
+  requiredQuantity: number;
+  issuedQuantity: number;
+  consumedQuantity: number;
+  returnedQuantity: number;
+  remainingToIssue: number;
+  remainingToConsume: number;
+  varianceQuantity: number;
+  inventoryReservationIds: readonly string[];
+  inventoryAllocationIds: readonly string[];
+  issueStatus: "NONE" | "PARTIAL" | "COMPLETE";
+  consumptionStatus: "NONE" | "PARTIAL" | "COMPLETE" | "OVER_CONSUMED";
+  reconciliationRequired: boolean;
 }>;
 
 export type ProductionOutputRecord = Readonly<{
@@ -729,7 +859,21 @@ export type ManufacturingFailureClassification =
   | "INVALID_REQUIREMENT_UOM"
   | "INVALID_REQUIREMENT_OPERATION_REFERENCE"
   | "INVALID_SUBSTITUTION"
-  | "MATERIAL_REQUIREMENT_NOT_READY";
+  | "MATERIAL_REQUIREMENT_NOT_READY"
+  | "INVENTORY_AVAILABILITY_REJECTED"
+  | "INVENTORY_RESERVATION_REJECTED"
+  | "INVENTORY_ALLOCATION_REJECTED"
+  | "INVENTORY_ISSUE_REJECTED"
+  | "INVENTORY_RETURN_REJECTED"
+  | "INVENTORY_MOVEMENT_INVALID"
+  | "INVENTORY_LOT_INVALID"
+  | "INVENTORY_SERIAL_INVALID"
+  | "INSUFFICIENT_INVENTORY"
+  | "MATERIAL_CONSUMPTION_EXCEEDS_ISSUED"
+  | "MATERIAL_CONSUMPTION_EXCEEDS_REQUIRED"
+  | "MATERIAL_ISSUE_REQUIRES_RECONCILIATION"
+  | "MATERIAL_CONSUMPTION_REQUIRES_RECONCILIATION"
+  | "MATERIAL_RETURN_REQUIRES_RECONCILIATION";
 
 export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailureClassification[] = [
   "INVALID_COMMAND",
@@ -797,6 +941,20 @@ export const MANUFACTURING_FAILURE_CLASSIFICATIONS: readonly ManufacturingFailur
   "INVALID_REQUIREMENT_OPERATION_REFERENCE",
   "INVALID_SUBSTITUTION",
   "MATERIAL_REQUIREMENT_NOT_READY",
+  "INVENTORY_AVAILABILITY_REJECTED",
+  "INVENTORY_RESERVATION_REJECTED",
+  "INVENTORY_ALLOCATION_REJECTED",
+  "INVENTORY_ISSUE_REJECTED",
+  "INVENTORY_RETURN_REJECTED",
+  "INVENTORY_MOVEMENT_INVALID",
+  "INVENTORY_LOT_INVALID",
+  "INVENTORY_SERIAL_INVALID",
+  "INSUFFICIENT_INVENTORY",
+  "MATERIAL_CONSUMPTION_EXCEEDS_ISSUED",
+  "MATERIAL_CONSUMPTION_EXCEEDS_REQUIRED",
+  "MATERIAL_ISSUE_REQUIRES_RECONCILIATION",
+  "MATERIAL_CONSUMPTION_REQUIRES_RECONCILIATION",
+  "MATERIAL_RETURN_REQUIRES_RECONCILIATION",
 ];
 
 export type IdempotencyCommandFamily =

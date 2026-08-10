@@ -155,6 +155,7 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
       "09a.register-slice3-foundation-services",
       "09b.register-slice4-routing-operation-services",
       "09c.register-slice5-product-material-services",
+      "09d.register-slice6-inventory-material-execution-services",
       "10.validate-required-registrations",
       "11.start-shared-lifecycle",
       "12.establish-manufacturing-readiness",

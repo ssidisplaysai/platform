@@ -6,6 +6,7 @@ import {
 } from "../../shared";
 import type {
   ManufacturingIntegrationRegistration,
+  ManufacturingInventoryIntegrationPort,
   ManufacturingIntegrationType,
   ManufacturingProductIntegrationPort,
   ManufacturingRuntimeDependencies,
@@ -13,8 +14,11 @@ import type {
 } from "../integration";
 import {
   ExecutionRoutingService,
+  ManufacturingInventoryIntegrationService,
   ManufacturingProductReferenceService,
   ManufacturingWorkOrderService,
+  MaterialConsumptionService,
+  MaterialIssueService,
   MaterialRequirementService,
   OperationExecutionService,
   ProductionBatchService,
@@ -22,6 +26,7 @@ import {
 } from "../services";
 import {
   ManufacturingFoundationQueryService,
+  ManufacturingMaterialExecutionQueryService,
   ManufacturingMaterialQueryService,
   ManufacturingRoutingQueryService,
 } from "../queries";
@@ -835,6 +840,86 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09d.register-slice6-inventory-material-execution-services", async () => {
+    appendTrace(host, "09d.register-slice6-inventory-material-execution-services");
+    try {
+      const workOrders = host.services.require("manufacturing.service.work-order").value as ManufacturingWorkOrderService;
+      const materials = host.services.require("manufacturing.service.material-requirement").value as MaterialRequirementService;
+      const inventoryPort = host.services.require("manufacturing.integration.inventory-port")
+        .value as ManufacturingInventoryIntegrationPort;
+
+      const inventory = new ManufacturingInventoryIntegrationService({
+        inventoryPort,
+      });
+
+      const materialIssue = new MaterialIssueService({
+        clock: dependencies.clockProvider,
+        identifier: dependencies.identifierProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        materials,
+        inventory,
+      });
+
+      const materialConsumption = new MaterialConsumptionService({
+        clock: dependencies.clockProvider,
+        identifier: dependencies.identifierProvider,
+        audit: dependencies.auditSinkProvider,
+        workOrders,
+        materials,
+        inventory,
+      });
+
+      const materialExecutionQueries = new ManufacturingMaterialExecutionQueryService({
+        materials,
+        issues: materialIssue,
+        consumption: materialConsumption,
+      });
+
+      host.registerService({
+        serviceId: "manufacturing.service.inventory-integration",
+        contract: "manufacturing.service.inventory-integration",
+        description: "Manufacturing bounded inventory integration orchestration service.",
+        value: inventory,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.material-issue",
+        contract: "manufacturing.service.material-issue",
+        description: "Manufacturing material issue and return orchestration service.",
+        value: materialIssue,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.material-consumption",
+        contract: "manufacturing.service.material-consumption",
+        description: "Manufacturing material consumption execution service.",
+        value: materialConsumption,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.material-execution",
+        contract: "manufacturing.query.material-execution",
+        description: "Read-only Manufacturing material execution query surface.",
+        value: materialExecutionQueries,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      if (error instanceof ManufacturingRuntimeError) {
+        recordFailure(host, dependencies, error.code, error.message);
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : "slice 6 service registration failed";
+      const code = message.includes("manufacturing.integration.inventory-port")
+        ? "MISSING_REQUIRED_INTEGRATION"
+        : message.includes("service not found")
+          ? "PARTIAL_INITIALIZATION_REJECTED"
+          : "DUPLICATE_SERVICE_REGISTRATION";
+      recordFailure(host, dependencies, code, message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -868,6 +953,10 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.service.product-reference",
       "manufacturing.service.material-requirement",
       "manufacturing.query.material",
+      "manufacturing.service.inventory-integration",
+      "manufacturing.service.material-issue",
+      "manufacturing.service.material-consumption",
+      "manufacturing.query.material-execution",
     ]);
     for (const serviceId of requiredServices) {
       try {

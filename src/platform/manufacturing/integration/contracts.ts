@@ -55,11 +55,25 @@ export type ManufacturingCorrelationProvider = SharedProvider & {
 };
 
 export type ManufacturingIntegrationValidationResult =
-  | Readonly<{ valid: true }>
+  | Readonly<{
+      valid: true;
+      availableQuantity?: number;
+      availabilityClassification?: string;
+      eligibleScope?: string;
+      referenceVersion?: string;
+      reasonCode?: string;
+      metadata?: Record<string, unknown>;
+    }>
   | Readonly<{ valid: false; reason: string; reasonCode?: string }>;
 
 export type ManufacturingIntegrationOperationResult =
-  | Readonly<{ accepted: true; referenceId: string }>
+  | Readonly<{
+      accepted: true;
+      referenceId: string;
+      acceptedQuantity?: number;
+      status?: string;
+      metadata?: Record<string, unknown>;
+    }>
   | Readonly<{ accepted: false; reason: string; reasonCode?: string }>;
 
 export type ManufacturingProductIntegrationPort = Readonly<{
@@ -123,6 +137,11 @@ export type ManufacturingInventoryIntegrationPort = Readonly<{
   validateInventoryMovement(input: {
     tenantId: TenantId;
     inventoryMovementId: string;
+  }): Promise<ManufacturingIntegrationValidationResult>;
+  validateInventoryLot?(input: { tenantId: TenantId; lotId: string }): Promise<ManufacturingIntegrationValidationResult>;
+  validateInventorySerial?(input: {
+    tenantId: TenantId;
+    serialId: string;
   }): Promise<ManufacturingIntegrationValidationResult>;
   validateLot(input: { tenantId: TenantId; lotId: string }): Promise<ManufacturingIntegrationValidationResult>;
   validateSerial(input: { tenantId: TenantId; serialId: string }): Promise<ManufacturingIntegrationValidationResult>;

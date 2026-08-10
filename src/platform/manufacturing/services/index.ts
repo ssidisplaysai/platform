@@ -5,3 +5,6 @@ export * from "./ExecutionRoutingService";
 export * from "./OperationExecutionService";
 export * from "./ManufacturingProductReferenceService";
 export * from "./MaterialRequirementService";
+export * from "./ManufacturingInventoryIntegrationService";
+export * from "./MaterialIssueService";
+export * from "./MaterialConsumptionService";
