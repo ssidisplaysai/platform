@@ -155,6 +155,18 @@ export type ManufacturingExternalReferenceValidationPort = Readonly<{
   }): Promise<ManufacturingIntegrationValidationResult>;
 }>;
 
+export type ManufacturingExternalReferenceFamily =
+  | "ORGANIZATION"
+  | "PERSON_OR_CONTACT"
+  | "ASSET"
+  | "DOCUMENT"
+  | "KNOWLEDGE"
+  | "COMMERCE_ORDER"
+  | "FINANCE_CLASSIFICATION"
+  | "QUALITY_HOLD_REFERENCE"
+  | "INVENTORY_RESERVATION"
+  | "INVENTORY_ALLOCATION";
+
 export type ManufacturingIntegrationType = "PRODUCT" | "INVENTORY" | "EXTERNAL_REFERENCE_VALIDATOR";
 
 export type ManufacturingIntegrationPort =
@@ -166,6 +178,7 @@ export type ManufacturingIntegrationRegistration = Readonly<{
   integrationId: string;
   integrationType: ManufacturingIntegrationType;
   port: ManufacturingIntegrationPort;
+  externalReferenceFamilies?: readonly ManufacturingExternalReferenceFamily[];
   dispose?(): Promise<void> | void;
 }>;
 

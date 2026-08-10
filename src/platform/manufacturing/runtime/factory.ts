@@ -1294,6 +1294,7 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
         .map((registration) => ({
           integrationId: registration.integrationId,
           port: registration.port as ManufacturingExternalReferenceValidationPort,
+          externalReferenceFamilies: registration.externalReferenceFamilies,
         }));
 
       const referenceValidation = new ManufacturingReferenceValidationService({
@@ -1406,6 +1407,10 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       next.serviceIds = host.services.list().map((service) => service.serviceId);
       host.setState(next);
     } catch (error) {
+      if (error instanceof ManufacturingDomainError && error.classification === "DUPLICATE_REFERENCE_VALIDATOR") {
+        recordFailure(host, dependencies, "PARTIAL_INITIALIZATION_REJECTED", error.message);
+        throw error;
+      }
       if (error instanceof ManufacturingRuntimeError) {
         recordFailure(host, dependencies, error.code, error.message);
         throw error;

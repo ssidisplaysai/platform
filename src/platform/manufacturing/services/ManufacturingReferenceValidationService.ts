@@ -9,6 +9,7 @@ import { ManufacturingDomainError } from "../domain";
 import type {
   ManufacturingAuditSinkProvider,
   ManufacturingClockProvider,
+  ManufacturingExternalReferenceFamily,
   ManufacturingExternalReferenceValidationPort,
   ManufacturingInventoryIntegrationPort,
   ManufacturingProductIntegrationPort,
@@ -248,6 +249,7 @@ export class ManufacturingReferenceValidationService {
       externalValidators: readonly Readonly<{
         integrationId: string;
         port: ManufacturingExternalReferenceValidationPort;
+        externalReferenceFamilies?: readonly ManufacturingExternalReferenceFamily[];
       }>[];
     },
   ) {
@@ -427,10 +429,21 @@ export class ManufacturingReferenceValidationService {
     ];
 
     for (const registration of this.dependencies.externalValidators) {
-      for (const family of externalFamilies) {
-        if (this.validators.has(family)) {
-          continue;
+      const configuredFamilies = registration.externalReferenceFamilies;
+      const authoritativeFamilies = configuredFamilies && configuredFamilies.length > 0
+        ? deterministicSort([...new Set(configuredFamilies)], (family) => family)
+        : externalFamilies;
+
+      for (const familyCandidate of authoritativeFamilies) {
+        if (!externalFamilies.includes(familyCandidate as ManufacturingReferenceFamily)) {
+          throw new ManufacturingDomainError(
+            "REFERENCE_VALIDATION_FAILED",
+            `unsupported external validator family '${familyCandidate}' for integration '${registration.integrationId}'`,
+            false,
+          );
         }
+
+        const family = familyCandidate as ManufacturingReferenceFamily;
         this.registerValidator(family, {
           validatorId: `validator.external.${registration.integrationId}.${family}`,
           source: "external",
@@ -464,7 +477,11 @@ export class ManufacturingReferenceValidationService {
 
   registerValidator(family: ManufacturingReferenceFamily, validator: ReferenceValidator): void {
     if (this.validators.has(family)) {
-      throw new ManufacturingDomainError("MISSING_REFERENCE_VALIDATOR", `duplicate validator for ${family}`, false);
+      throw new ManufacturingDomainError(
+        "DUPLICATE_REFERENCE_VALIDATOR",
+        `duplicate validator authority for family ${family}`,
+        false,
+      );
     }
     this.validators.set(family, validator);
   }

@@ -406,6 +406,7 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
           {
             integrationId: "external-validator-b",
             integrationType: "EXTERNAL_REFERENCE_VALIDATOR",
+            externalReferenceFamilies: ["KNOWLEDGE"],
             port: {
               async validateExternalReference() {
                 return { valid: true };
@@ -415,6 +416,7 @@ describe("GMDT-1001-S2 Manufacturing runtime composition", () => {
           {
             integrationId: "external-validator-a",
             integrationType: "EXTERNAL_REFERENCE_VALIDATOR",
+            externalReferenceFamilies: ["DOCUMENT"],
             port: {
               async validateExternalReference() {
                 return { valid: true };

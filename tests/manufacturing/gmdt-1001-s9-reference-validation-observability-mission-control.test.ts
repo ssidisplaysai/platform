@@ -7,6 +7,7 @@ import {
   createRequestedQuantity,
   createUnitOfMeasure,
   type CreateManufacturingWorkOrder,
+  type ManufacturingExternalReferenceFamily,
   type ManufacturingExternalReferenceValidationPort,
   type ManufacturingIntegrationRegistration,
   type ManufacturingInventoryIntegrationPort,
@@ -15,6 +16,7 @@ import {
   type TenantId,
 } from "@/platform/manufacturing";
 import type { ManufacturingAuditEvent } from "@/platform/manufacturing/services/ManufacturingAuditService";
+import { ManufacturingReferenceValidationService } from "@/platform/manufacturing/services/ManufacturingReferenceValidationService";
 
 function asTenant(tenantId: string): TenantId {
   return tenantId as TenantId;
@@ -115,6 +117,7 @@ async function createS9Runtime(options?: {
   externalValidators?: Array<{
     integrationId: string;
     validator: ManufacturingExternalReferenceValidationPort;
+    externalReferenceFamilies?: readonly ManufacturingExternalReferenceFamily[];
   }>;
   runtimeId?: string;
 }): Promise<ManufacturingRuntime> {
@@ -123,6 +126,7 @@ async function createS9Runtime(options?: {
     integrationId: item.integrationId,
     integrationType: "EXTERNAL_REFERENCE_VALIDATOR",
     port: item.validator,
+    externalReferenceFamilies: item.externalReferenceFamilies,
   }));
 
   return createManufacturingRuntime({
@@ -164,7 +168,222 @@ function lastAuditEvent(runtime: ManufacturingRuntime): ManufacturingAuditEvent 
   return entries[entries.length - 1];
 }
 
+function createReferenceValidationServiceForAuthorityTests(): ManufacturingReferenceValidationService {
+  const dependencies = createDefaultManufacturingRuntimeDependencies();
+  return new ManufacturingReferenceValidationService({
+    clock: dependencies.clockProvider,
+    audit: dependencies.auditSinkProvider,
+    productPort: createProductPort(),
+    inventoryPort: createInventoryPort(),
+    externalValidators: [],
+  });
+}
+
 describe("GMDT-1001 Slice 9 - reference validation, observability, mission control", () => {
+  it("accepts one external validator registration for an authoritative family", async () => {
+    const runtime = await createS9Runtime({
+      externalValidators: [
+        {
+          integrationId: "external-document-authority",
+          externalReferenceFamilies: ["DOCUMENT"],
+          validator: {
+            async validateExternalReference() {
+              return { valid: true, reasonCode: "DOC_OK" };
+            },
+          },
+        },
+      ],
+    });
+
+    const service = runtime.services.require("manufacturing.service.reference-validation").value;
+    const result = await service.validateReference({
+      tenantId: asTenant("tenant-alpha"),
+      family: "DOCUMENT",
+      referenceId: "doc-001",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.reasonCode).toBe("REFERENCE_VALID");
+
+    await runtime.stop();
+  });
+
+  it("starts successfully with multiple distinct external validator family authorities", async () => {
+    const runtime = await createS9Runtime({
+      externalValidators: [
+        {
+          integrationId: "external-document",
+          externalReferenceFamilies: ["DOCUMENT"],
+          validator: {
+            async validateExternalReference() {
+              return { valid: false, reasonCode: "DOC_UNAVAILABLE", reason: "document source offline" };
+            },
+          },
+        },
+        {
+          integrationId: "external-knowledge",
+          externalReferenceFamilies: ["KNOWLEDGE"],
+          validator: {
+            async validateExternalReference() {
+              return { valid: false, reasonCode: "KNOWLEDGE_UNAVAILABLE", reason: "knowledge source offline" };
+            },
+          },
+        },
+        {
+          integrationId: "external-asset",
+          externalReferenceFamilies: ["ASSET"],
+          validator: {
+            async validateExternalReference() {
+              return { valid: false, reasonCode: "ASSET_UNAVAILABLE", reason: "asset source offline" };
+            },
+          },
+        },
+      ],
+    });
+
+    const service = runtime.services.require("manufacturing.service.reference-validation").value;
+
+    const document = await service.validateReference({
+      tenantId: asTenant("tenant-alpha"),
+      family: "DOCUMENT",
+      referenceId: "doc-001",
+    });
+    const knowledge = await service.validateReference({
+      tenantId: asTenant("tenant-alpha"),
+      family: "KNOWLEDGE",
+      referenceId: "know-001",
+    });
+    const asset = await service.validateReference({
+      tenantId: asTenant("tenant-alpha"),
+      family: "ASSET",
+      referenceId: "asset-001",
+    });
+
+    expect(document.reasonCode).toBe("DOC_UNAVAILABLE");
+    expect(knowledge.reasonCode).toBe("KNOWLEDGE_UNAVAILABLE");
+    expect(asset.reasonCode).toBe("ASSET_UNAVAILABLE");
+
+    await runtime.stop();
+  });
+
+  it("fails runtime startup closed when duplicate authoritative external family is registered", async () => {
+    await expect(
+      createS9Runtime({
+        externalValidators: [
+          {
+            integrationId: "external-document-a",
+            externalReferenceFamilies: ["DOCUMENT"],
+            validator: {
+              async validateExternalReference() {
+                return { valid: true };
+              },
+            },
+          },
+          {
+            integrationId: "external-document-b",
+            externalReferenceFamilies: ["DOCUMENT"],
+            validator: {
+              async validateExternalReference() {
+                return { valid: true };
+              },
+            },
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "PARTIAL_INITIALIZATION_REJECTED" });
+  });
+
+  it("rejects duplicate same-family registration and preserves original authoritative validator", async () => {
+    const service = createReferenceValidationServiceForAuthorityTests();
+    const primary = {
+      validatorId: "validator.document.primary",
+      source: "external" as const,
+      validate: async () => ({
+        status: "UNAVAILABLE" as const,
+        tenantCompatible: true,
+        reasonCode: "DOC_PRIMARY",
+      }),
+    };
+    const conflicting = {
+      validatorId: "validator.document.conflicting",
+      source: "external" as const,
+      validate: async () => ({
+        status: "UNAVAILABLE" as const,
+        tenantCompatible: true,
+        reasonCode: "DOC_CONFLICTING",
+      }),
+    };
+
+    service.registerValidator("DOCUMENT", primary);
+    expect(() => service.registerValidator("DOCUMENT", conflicting)).toThrow("duplicate validator authority for family DOCUMENT");
+
+    const result = await service.validateReference({
+      tenantId: asTenant("tenant-alpha"),
+      family: "DOCUMENT",
+      referenceId: "doc-keep-authority",
+    });
+    expect(result.reasonCode).toBe("DOC_PRIMARY");
+    expect(result.validatorId).toBe("validator.document.primary");
+  });
+
+  it("rejects duplicate same-family registration in either order without silent authority overwrite", async () => {
+    const first = createReferenceValidationServiceForAuthorityTests();
+    first.registerValidator("DOCUMENT", {
+      validatorId: "validator.document.a",
+      source: "external",
+      validate: async () => ({
+        status: "UNAVAILABLE",
+        tenantCompatible: true,
+        reasonCode: "DOC_A",
+      }),
+    });
+    expect(() =>
+      first.registerValidator("DOCUMENT", {
+        validatorId: "validator.document.b",
+        source: "external",
+        validate: async () => ({
+          status: "UNAVAILABLE",
+          tenantCompatible: true,
+          reasonCode: "DOC_B",
+        }),
+      }),
+    ).toThrow("duplicate validator authority for family DOCUMENT");
+    const firstResult = await first.validateReference({
+      tenantId: asTenant("tenant-alpha"),
+      family: "DOCUMENT",
+      referenceId: "doc-a",
+    });
+    expect(firstResult.validatorId).toBe("validator.document.a");
+
+    const second = createReferenceValidationServiceForAuthorityTests();
+    second.registerValidator("DOCUMENT", {
+      validatorId: "validator.document.b",
+      source: "external",
+      validate: async () => ({
+        status: "UNAVAILABLE",
+        tenantCompatible: true,
+        reasonCode: "DOC_B",
+      }),
+    });
+    expect(() =>
+      second.registerValidator("DOCUMENT", {
+        validatorId: "validator.document.a",
+        source: "external",
+        validate: async () => ({
+          status: "UNAVAILABLE",
+          tenantCompatible: true,
+          reasonCode: "DOC_A",
+        }),
+      }),
+    ).toThrow("duplicate validator authority for family DOCUMENT");
+    const secondResult = await second.validateReference({
+      tenantId: asTenant("tenant-alpha"),
+      family: "DOCUMENT",
+      referenceId: "doc-b",
+    });
+    expect(secondResult.validatorId).toBe("validator.document.b");
+  });
+
   it("registers 09g services and exposes read-only observability query", async () => {
     const runtime = await createS9Runtime();
 
