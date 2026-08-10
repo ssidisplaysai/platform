@@ -18,12 +18,16 @@ import {
 import {
   createGlwJobInput,
   createGlwJobRecord,
+  deriveCitySlugFromCity,
   parsePageGenerationFormData,
   validatePageGenerationRequest,
 } from "@/lib/glw/jobs";
-import { createGlwN8nTransport } from "@/lib/glw/n8n";
+import { createGlwN8nExecutionService, createGlwN8nTransport } from "@/lib/glw/n8n";
+import * as orchestrationRuntime from "@/platform/gop/runtime/orchestration-runtime";
+import { createInMemoryGenesisEventStore } from "@/platform/gop/event-store";
 import {
   handleCreatePageGenerationJob,
+  handleGetN8nExecutionDiagnostics,
   handleJobCallback,
   handleRetryJob,
 } from "@/lib/glw/page-generation-api";
@@ -57,6 +61,14 @@ function buildRequest(body: unknown, headers?: HeadersInit): Request {
 function buildValidPageRequest(overrides?: Record<string, unknown>) {
   return {
     siteId: "led-display-warehouse",
+    workspaceId: "glw-led-display-warehouse",
+    pageType: "city_service",
+    productTopic: "LED wall rental",
+    state: "California",
+    city: "Los Angeles",
+    citySlug: "los-angeles",
+    hierarchicalSlug: "california/los-angeles/led-wall-rental",
+    additionalInstructions: "Focus on same-day deployment for venue operators.",
     title: "LED Wall Rental Package",
     targetSlug: "led-wall-rental-package",
     primaryKeyword: "led wall rental",
@@ -74,6 +86,10 @@ function buildValidPageRequest(overrides?: Record<string, unknown>) {
 beforeEach(() => {
   process.env = { ...originalEnv };
   setRequiredEnv();
+  jest.spyOn(orchestrationRuntime, "getGenesisOrchestrationRuntime").mockReturnValue({
+    createGlwExecutionForJob: () => undefined,
+    syncGlwExecutionState: () => undefined,
+  } as unknown as ReturnType<typeof orchestrationRuntime.getGenesisOrchestrationRuntime>);
 });
 
 afterEach(() => {
@@ -85,6 +101,14 @@ describe("GLW page generation validation", () => {
   it("rejects incomplete page requests", () => {
     const result = validatePageGenerationRequest({
       siteId: "led-display-warehouse",
+      workspaceId: "",
+      pageType: "city_service",
+      productTopic: "",
+      state: "",
+      city: "",
+      citySlug: "",
+      hierarchicalSlug: "",
+      additionalInstructions: "",
       title: "",
       targetSlug: "",
       category: "",
@@ -103,12 +127,43 @@ describe("GLW page generation validation", () => {
       expect(result.errors.targetSlug).toBeDefined();
       expect(result.errors.category).toBeDefined();
       expect(result.errors.primaryKeyword).toBeDefined();
+      expect(result.errors.citySlug).toBeDefined();
     }
+  });
+
+  it("derives city_slug from city when omitted", () => {
+    const result = validatePageGenerationRequest(buildValidPageRequest({ citySlug: "" }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.citySlug).toBe("los-angeles");
+    }
+  });
+
+  it("rejects city pages when city_slug cannot be derived", () => {
+    const result = validatePageGenerationRequest(buildValidPageRequest({ city: "", citySlug: "" }));
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.citySlug).toContain("required");
+    }
+  });
+
+  it("slugifies city values consistently", () => {
+    expect(deriveCitySlugFromCity("New York City")).toBe("new-york-city");
   });
 
   it("parses form data into a validated request", () => {
     const formData = new FormData();
     formData.set("siteId", "led-display-warehouse");
+    formData.set("workspaceId", "glw-led-display-warehouse");
+    formData.set("pageType", "city_service");
+    formData.set("productTopic", "LED Wall Rental");
+    formData.set("state", "California");
+    formData.set("city", "Los Angeles");
+    formData.set("citySlug", "");
+    formData.set("hierarchicalSlug", "california/los-angeles/led-wall-rental");
+    formData.set("additionalInstructions", "Highlight rapid setup windows.");
     formData.set("title", "LED Wall Rental Package");
     formData.set("targetSlug", "led-wall-rental-package");
     formData.set("category", "Rentals");
@@ -126,6 +181,7 @@ describe("GLW page generation validation", () => {
     if (result.ok) {
       expect(result.value.siteId).toBe("led-display-warehouse");
       expect(result.value.status).toBe("draft");
+      expect(result.value.citySlug).toBe("los-angeles");
     }
   });
 });
@@ -140,6 +196,7 @@ describe("GLW API auth and creation", () => {
     const response = await handleCreatePageGenerationJob(buildRequest({}), {
       repository,
       workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      eventStore: createInMemoryGenesisEventStore(),
       appUrl: "http://localhost:3000",
       sessionLoader: createSessionLoader(false),
     });
@@ -163,6 +220,7 @@ describe("GLW API auth and creation", () => {
     const response = await handleCreatePageGenerationJob(buildRequest(buildValidPageRequest()), {
       repository,
       workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      eventStore: createInMemoryGenesisEventStore(),
       appUrl: "http://localhost:3000",
       sessionLoader: createSessionLoader(true),
     });
@@ -171,7 +229,7 @@ describe("GLW API auth and creation", () => {
 
     const payload = await response.json() as { job: { status: string; result: { wordpressUrl: string } | null } };
     expect(payload.job.status).toBe("COMPLETE");
-    expect(payload.job.result?.wordpressUrl).toBe("https://example.com/led-wall-rental-package");
+    expect(payload.job.result?.wordpressUrl).toBe("https://example.com/wp-admin/post.php?post=123&action=edit");
     expect(workflow.invokePageGeneration).toHaveBeenCalledTimes(1);
   });
 
@@ -186,8 +244,23 @@ describe("GLW API auth and creation", () => {
     await expect(transport.invokePageGeneration({
       jobId: "glw_test_job",
       type: "page_generation",
+      workspaceId: "glw-led-display-warehouse",
+      workspace_id: "glw-led-display-warehouse",
       site: { id: "led-display-warehouse", name: "LED Display Warehouse" },
       page: {
+        workspaceId: "glw-led-display-warehouse",
+        pageType: "city_service",
+        page_type: "city_service",
+        productTopic: "LED Wall Rental",
+        product_topic: "LED Wall Rental",
+        state: "California",
+        city: "Los Angeles",
+        citySlug: "los-angeles",
+        city_slug: "los-angeles",
+        hierarchicalSlug: "california/los-angeles/led-wall-rental",
+        hierarchical_slug: "california/los-angeles/led-wall-rental",
+        additionalInstructions: "Use regional references",
+        additional_instructions: "Use regional references",
         title: "LED Wall Rental Package",
         targetSlug: "led-wall-rental-package",
         primaryKeyword: "LED wall rental",
@@ -206,6 +279,8 @@ describe("GLW API auth and creation", () => {
       },
       seoSettings: {
         targetSlug: "led-wall-rental-package",
+        citySlug: "los-angeles",
+        city_slug: "los-angeles",
         primaryKeyword: "LED wall rental",
         secondaryKeywords: ["event led wall", "mobile led display"],
         category: "Rentals",
@@ -217,6 +292,16 @@ describe("GLW API auth and creation", () => {
       imageSettings: {
         generateFeaturedImage: true,
         style: "editorial",
+      },
+      workflowContext: {
+        workspaceId: "glw-led-display-warehouse",
+        pageType: "city_service",
+        productTopic: "LED Wall Rental",
+        state: "California",
+        city: "Los Angeles",
+        citySlug: "los-angeles",
+        hierarchicalSlug: "california/los-angeles/led-wall-rental",
+        additionalInstructions: "Use regional references",
       },
     })).rejects.toThrow(/returned 500/);
 
@@ -230,6 +315,7 @@ describe("GLW API auth and creation", () => {
     const response = await handleCreatePageGenerationJob(buildRequest(buildValidPageRequest()), {
       repository,
       workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      eventStore: createInMemoryGenesisEventStore(),
       appUrl: "http://localhost:3000",
       sessionLoader: createSessionLoader(true),
     });
@@ -253,6 +339,202 @@ describe("GLW API auth and creation", () => {
     });
 
     expect(response.status).toBe(401);
+  });
+
+  it("returns unavailable diagnostics when n8n status lookup cannot be completed", async () => {
+    const startedJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "STARTING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "Observability Test",
+      input: createGlwJobInput(buildValidPageRequest({ title: "Observability Test" }), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "46992",
+        status: "RUNNING",
+        title: "Observability Test",
+      },
+      error: null,
+      externalExecutionId: "46992",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+
+    const repository = createInMemoryGlwJobRepository([startedJob]);
+    const n8nExecutionService = {
+      getExecutionDiagnostics: jest.fn(async () => ({
+        available: false as const,
+        reason: "n8n API key was rejected.",
+        deepLinkUrl: "https://ssiai.app.n8n.cloud/execution/46992",
+        upstreamStatus: 401,
+        upstreamContentType: "application/json",
+        upstreamMessage: "Unauthorized",
+      })),
+      getExecutionUrl: jest.fn(() => "https://ssiai.app.n8n.cloud/execution/46992"),
+    };
+
+    const response = await handleGetN8nExecutionDiagnostics(
+      new Request("http://localhost/api/glw/jobs/obs/execution", { method: "GET" }),
+      startedJob.id,
+      {
+        repository,
+        n8nExecutionService: n8nExecutionService as never,
+        sessionLoader: createSessionLoader(true),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json() as {
+      status: string;
+      message: string;
+      reason?: string;
+      upstreamStatus?: number;
+      upstreamContentType?: string | null;
+      upstreamMessage?: string | null;
+      openUrl?: string | null;
+    };
+    expect(payload.status).toBe("unavailable");
+    expect(payload.message).toBe("Execution accepted but status unavailable.");
+    expect(payload.reason).toBe("n8n API key was rejected.");
+    expect(payload.upstreamStatus).toBe(401);
+    expect(payload.upstreamContentType).toBe("application/json");
+    expect(payload.upstreamMessage).toBe("Unauthorized");
+    expect(payload.openUrl).toBe("https://ssiai.app.n8n.cloud/execution/46992");
+  });
+
+  it("returns available diagnostics when n8n execution data is retrievable", async () => {
+    const startedJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "STARTING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "Observability Available",
+      input: createGlwJobInput(buildValidPageRequest({ title: "Observability Available" }), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "46992",
+        status: "RUNNING",
+        title: "Observability Available",
+      },
+      error: null,
+      externalExecutionId: "46992",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+
+    const repository = createInMemoryGlwJobRepository([startedJob]);
+    const n8nExecutionService = {
+      getExecutionDiagnostics: jest.fn(async () => ({
+        available: true as const,
+        diagnostics: {
+          executionId: "46992",
+          executionState: "RUNNING",
+          currentNode: "n_generate_content",
+          lastCompletedNode: "n_intake",
+          startedAt: "2026-07-29T18:00:00.000Z",
+          lastUpdatedAt: "2026-07-29T18:01:00.000Z",
+          durationMs: 60000,
+          error: null,
+          terminal: false,
+          deepLinkUrl: "https://ssiai.app.n8n.cloud/execution/46992",
+        },
+      })),
+      getExecutionUrl: jest.fn(() => "https://ssiai.app.n8n.cloud/execution/46992"),
+    };
+
+    const response = await handleGetN8nExecutionDiagnostics(
+      new Request("http://localhost/api/glw/jobs/obs/execution", { method: "GET" }),
+      startedJob.id,
+      {
+        repository,
+        n8nExecutionService: n8nExecutionService as never,
+        sessionLoader: createSessionLoader(true),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json() as { status: string; execution?: { currentNode?: string; lastCompletedNode?: string; executionState?: string } | null };
+    expect(payload.status).toBe("available");
+    expect(payload.execution?.executionState).toBe("RUNNING");
+    expect(payload.execution?.currentNode).toBe("n_generate_content");
+    expect(payload.execution?.lastCompletedNode).toBe("n_intake");
+  });
+});
+
+describe("GLW n8n execution diagnostics transport", () => {
+  it("uses the n8n execution API endpoint with API key auth and classifies 401", async () => {
+    process.env.GLW_N8N_PAGE_WEBHOOK_URL = "https://ssiai.app.n8n.cloud/webhook/glw-page";
+
+    const fetchSpy = jest.fn(async (_url: string, init?: RequestInit) => {
+      expect(init?.method).toBe("GET");
+      const headers = init?.headers as Record<string, string>;
+      expect(headers["X-N8N-API-KEY"]).toBe("test-key");
+      expect(headers.Accept).toBe("application/json");
+      return new Response(JSON.stringify({ message: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as unknown as typeof fetch;
+
+    const service = createGlwN8nExecutionService({
+      fetchImpl: fetchSpy,
+      apiKey: "test-key",
+    });
+
+    const result = await service.getExecutionDiagnostics("46992");
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "https://ssiai.app.n8n.cloud/api/v1/executions/46992?includeData=true",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(result.available).toBe(false);
+    if (!result.available) {
+      expect(result.reason).toBe("n8n API key was rejected.");
+      expect(result.upstreamStatus).toBe(401);
+      expect(result.upstreamContentType).toBe("application/json");
+      expect(result.upstreamMessage).toBe("Unauthorized");
+      expect(result.deepLinkUrl).toBe("https://ssiai.app.n8n.cloud/execution/46992");
+    }
+  });
+
+  it("classifies non-JSON upstream responses as non-API", async () => {
+    process.env.GLW_N8N_PAGE_WEBHOOK_URL = "https://ssiai.app.n8n.cloud/webhook/glw-page";
+
+    const service = createGlwN8nExecutionService({
+      fetchImpl: (async () => new Response("<html>login</html>", {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      })) as unknown as typeof fetch,
+      apiKey: "test-key",
+    });
+
+    const result = await service.getExecutionDiagnostics("46992");
+    expect(result.available).toBe(false);
+    if (!result.available) {
+      expect(result.reason).toBe("n8n returned a non-API response; verify the API base URL and path.");
+      expect(result.upstreamStatus).toBe(200);
+      expect(result.upstreamContentType).toBe("text/html");
+      expect(result.upstreamMessage).toContain("login");
+    }
+  });
+
+  it("summarizes unexpected JSON response structures", async () => {
+    process.env.GLW_N8N_PAGE_WEBHOOK_URL = "https://ssiai.app.n8n.cloud/webhook/glw-page";
+
+    const service = createGlwN8nExecutionService({
+      fetchImpl: (async () => new Response(JSON.stringify({ foo: "bar" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as unknown as typeof fetch,
+      apiKey: "test-key",
+    });
+
+    const result = await service.getExecutionDiagnostics("46992");
+    expect(result.available).toBe(false);
+    if (!result.available) {
+      expect(result.reason).toBe("Unexpected JSON response from n8n execution API.");
+      expect(result.upstreamStatus).toBe(200);
+      expect(result.upstreamContentType).toBe("application/json");
+      expect(result.upstreamMessage).toContain("json:object(keys=foo)");
+    }
   });
 });
 
@@ -296,7 +578,7 @@ describe("GLW callback and retry behavior", () => {
 
     expect(first.status).toBe("COMPLETE");
     expect(second.status).toBe("COMPLETE");
-    expect(second.result?.wordpressUrl).toBe("https://example.com/led-wall-rental-package");
+    expect(second.result?.wordpressUrl).toBe("https://example.com/wp-admin/post.php?post=123&action=edit");
   });
 
   it("rejects invalid callback status transitions", async () => {
@@ -334,6 +616,61 @@ describe("GLW callback and retry behavior", () => {
         createInMemoryGlwJobRepository([completeJob]),
       ),
     ).rejects.toThrow(/Invalid GLW job status transition/);
+  });
+
+  it("accepts FAILED_QA callbacks and persists deterministic QA details", async () => {
+    const runningJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "RUNNING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+      input: createGlwJobInput({
+        ...buildValidPageRequest({
+          title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        }),
+      }, "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "exec_qa",
+        status: "RUNNING",
+        title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+      },
+      error: null,
+      externalExecutionId: "exec_qa",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+
+    const updated = await applyGlwJobCallback({
+      jobId: runningJob.id,
+      executionId: "exec_qa",
+      status: "FAILED_QA",
+      title: runningJob.title,
+      wordpressPageId: 456,
+      wordpressPostId: 456,
+      wordpressUrl: "https://example.com/led-wall-rental-package",
+      wordpressStatus: "qa_failed",
+      disposition: "FAILED_QA",
+      qaChecks: {
+        pageExists: "PASS",
+        body: "FAIL",
+        duplicateCheck: "PASS",
+      },
+      qaFailureReasons: {
+        body: "Body contains placeholder token {{city}}.",
+      },
+      error: {
+        code: "FAILED_QA",
+        step: "Pre-Publish QA Gate",
+        message: "Pre-publish QA gate failed.",
+      },
+    }, createInMemoryGlwJobRepository([runningJob]));
+
+    expect(updated.status).toBe("FAILED_QA");
+    expect(updated.result?.disposition).toBe("FAILED_QA");
+    expect(updated.result?.wordpressStatus).toBe("qa_failed");
+    expect(updated.result?.qaChecks?.body).toBe("FAIL");
+    expect(updated.result?.qaFailureReasons?.body).toContain("placeholder");
   });
 
   it("allows retry only for failed jobs", async () => {
@@ -376,6 +713,43 @@ describe("GLW callback and retry behavior", () => {
       workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
       appUrl: "http://localhost:3000",
     })).rejects.toThrow(/not found/);
+  });
+
+  it("allows retry for QA-failed jobs", async () => {
+    const failedQaJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "FAILED_QA",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+      input: createGlwJobInput({
+        ...buildValidPageRequest({
+          title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        }),
+      }, "http://localhost/api/glw/jobs/callback"),
+      result: null,
+      error: { message: "QA gate failed", code: "FAILED_QA" },
+      externalExecutionId: "exec_failed_qa",
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+    });
+
+    const repository = createInMemoryGlwJobRepository([failedQaJob]);
+    const workflow = {
+      invokePageGeneration: jest.fn(async () => ({
+        kind: "accepted" as const,
+        executionId: "exec_retry_qa",
+        status: "accepted" as const,
+      })),
+    };
+
+    const retried = await retryGlwPageGenerationJob(failedQaJob.id, {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      appUrl: "http://localhost:3000",
+    });
+
+    expect(retried.job.status).toBe("STARTING");
   });
 
   it("rejects retrying a completed job", async () => {
@@ -427,6 +801,14 @@ describe("GLW callback and retry behavior", () => {
 
     const result = await submitGlwPageGenerationJob({
       siteId: "led-display-warehouse",
+      workspaceId: "glw-led-display-warehouse",
+      pageType: "city_service",
+      productTopic: "Projection screen rental",
+      state: "Illinois",
+      city: "Chicago",
+      citySlug: "chicago",
+      hierarchicalSlug: "illinois/chicago/projection-screen-rental",
+      additionalInstructions: "Position copy for corporate events.",
       title: "Projection Screen Chicago - Rentals in Chicago, IL",
       targetSlug: "projection-screen-chicago",
       secondaryKeywords: ["projection screen rental", "led projection screen"],
@@ -445,6 +827,28 @@ describe("GLW callback and retry behavior", () => {
 
     expect(result.job.status).toBe("COMPLETE");
     expect(result.job.result?.wordpressUrl).toBe("https://example.com/projection-screen-chicago");
+  });
+
+  it("generates callback URL from GLW_APP_URL host", async () => {
+    const repository = createInMemoryGlwJobRepository();
+    const workflow = {
+      invokePageGeneration: jest.fn(async () => ({
+        kind: "accepted" as const,
+        executionId: "exec_callback",
+        status: "accepted" as const,
+      })),
+    };
+
+    await submitGlwPageGenerationJob(buildValidPageRequest(), {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      appUrl: "https://fighters-mistress-executives-symposium.trycloudflare.com",
+    });
+
+    expect(workflow.invokePageGeneration).toHaveBeenCalledTimes(1);
+    const payload = workflow.invokePageGeneration.mock.calls[0][0] as { callbackUrl?: string; page?: { city_slug?: string } };
+    expect(payload.callbackUrl).toBe("https://fighters-mistress-executives-symposium.trycloudflare.com/api/glw/jobs/callback");
+    expect(payload.page?.city_slug).toBe("los-angeles");
   });
 
   it("rejects callback payloads with unsupported statuses", async () => {

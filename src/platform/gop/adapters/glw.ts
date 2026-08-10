@@ -15,7 +15,7 @@ export function mapGlwJobTypeToGenesisJobType(jobType: GenesisApplicationJobType
 }
 
 export function mapGlwJobStatusToGenesisJobStatus(status: GenesisApplicationJobStatus): GenesisJobStatus {
-  return status;
+  return status === "FAILED_QA" ? "FAILED" : status;
 }
 
 export function toGenesisJob(job: GenesisApplicationJobRecord): GenesisJob<GenesisJobType, GenesisApplicationJobRecord["input"], GenesisApplicationJobRecord["result"]> {

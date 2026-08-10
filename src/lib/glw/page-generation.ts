@@ -6,14 +6,18 @@ import {
   GlwJobError,
   GlwJobRecord,
   GlwJobRepository,
+  normalizeGlwQaChecks,
+  normalizeGlwQaFailureReasons,
   GlwPageGenerationRequest,
   GlwPageGenerationCallbackPayload,
+  normalizeGlwWordpressUrlForDisplay,
   normalizeGlwJobError,
 } from "./jobs";
 import { GlwN8nResponse, GlwN8nTransport } from "./n8n";
 import type { GenesisEventStore } from "@/platform/gop/event-store";
 import { backfillGlwJobEvents, emitGlwJobLifecycleEvent } from "@/platform/gop/adapters/glw-events";
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
+import type { GenesisJobStatus } from "@/platform/gop/contracts";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -27,11 +31,17 @@ function buildResultFromResponse(response: GlwN8nResponse): GlwJobRecord["result
   if (response.kind === "complete") {
     return {
       executionId: response.executionId,
+      n8nExecutionId: response.executionId,
       status: "COMPLETE",
       title: response.title,
       wordpressPageId: response.wordpressPageId ?? response.wordpressPostId,
       wordpressUrl: response.wordpressUrl,
       wordpressPostId: response.wordpressPostId,
+      wordpressStatus: response.wordpressStatus,
+      requestedPublishingMode: response.requestedPublishingMode,
+      disposition: response.disposition,
+      qaChecks: normalizeGlwQaChecks(response.qaChecks),
+      qaFailureReasons: normalizeGlwQaFailureReasons(response.qaFailureReasons),
       featuredImageUrl: response.featuredImageUrl,
       executionTimeMs: response.executionTimeMs,
     };
@@ -50,6 +60,10 @@ function buildResultFromResponse(response: GlwN8nResponse): GlwJobRecord["result
 
 function statusFromAcceptedResponse(response: Extract<GlwN8nResponse, { kind: "accepted" }>): GlwJobRecord["status"] {
   return response.status === "running" ? "RUNNING" : "STARTING";
+}
+
+function toOrchestrationStatus(status: GlwJobRecord["status"]): GenesisJobStatus {
+  return status === "FAILED_QA" ? "FAILED" : status;
 }
 
 export type GlwPageGenerationDependencies = {
@@ -114,22 +128,44 @@ export async function submitGlwPageGenerationJob(
   });
   orchestration.syncGlwExecutionState({
     jobId: startingJob.id,
-    status: startingJob.status,
+    status: toOrchestrationStatus(startingJob.status),
   });
 
   try {
     const response = await dependencies.workflow.invokePageGeneration({
       jobId: startingJob.id,
       type: "page_generation",
+      workspaceId: startingJob.input.page.workspaceId,
+      workspace_id: startingJob.input.page.workspaceId,
       site: {
         id: startingJob.input.site.id,
         name: startingJob.input.site.name,
       },
-      page: startingJob.input.page,
+      page: {
+        ...startingJob.input.page,
+        page_type: startingJob.input.page.pageType,
+        product_topic: startingJob.input.page.productTopic,
+        city_slug: startingJob.input.page.citySlug,
+        hierarchical_slug: startingJob.input.page.hierarchicalSlug,
+        additional_instructions: startingJob.input.page.additionalInstructions,
+      },
       promptData: startingJob.input.promptData,
-      seoSettings: startingJob.input.seoSettings,
+      seoSettings: {
+        ...startingJob.input.seoSettings,
+        city_slug: startingJob.input.seoSettings.citySlug,
+      },
       publishingSettings: startingJob.input.publishingSettings,
       imageSettings: startingJob.input.imageSettings,
+      workflowContext: {
+        workspaceId: startingJob.input.page.workspaceId,
+        pageType: startingJob.input.page.pageType,
+        productTopic: startingJob.input.page.productTopic,
+        state: startingJob.input.page.state,
+        city: startingJob.input.page.city,
+        citySlug: startingJob.input.page.citySlug,
+        hierarchicalSlug: startingJob.input.page.hierarchicalSlug,
+        additionalInstructions: startingJob.input.page.additionalInstructions,
+      },
       callbackUrl,
       authToken: process.env.GLW_N8N_WEBHOOK_SECRET,
     });
@@ -151,7 +187,7 @@ export async function submitGlwPageGenerationJob(
       });
       orchestration.syncGlwExecutionState({
         jobId: failedJob.id,
-        status: failedJob.status,
+        status: toOrchestrationStatus(failedJob.status),
         correlationId: failedJob.externalExecutionId,
         errorMessage: failedJob.error?.message,
       });
@@ -164,10 +200,27 @@ export async function submitGlwPageGenerationJob(
     }
 
     if (response.kind === "complete") {
+      const completionResult = buildResultFromResponse(response);
+      const normalizedWordpressUrl = completionResult
+        ? normalizeGlwWordpressUrlForDisplay({
+            wordpressUrl: completionResult.wordpressUrl,
+            wordpressStatus: completionResult.wordpressStatus,
+            requestedPublishingMode: completionResult.requestedPublishingMode ?? startingJob.input.page.status,
+            wordpressPageId: completionResult.wordpressPageId ?? completionResult.wordpressPostId,
+            hierarchicalSlug: startingJob.input.page.hierarchicalSlug,
+          })
+        : null;
       const completedJob = await dependencies.repository.update(startingJob.id, {
         status: "COMPLETE",
         completedAt: now().toISOString(),
-        result: buildResultFromResponse(response),
+        result: completionResult
+          ? {
+              ...completionResult,
+              wordpressUrl: normalizedWordpressUrl ?? completionResult.wordpressUrl,
+              requestedPublishingMode: startingJob.input.page.status,
+              wordpressStatus: completionResult.wordpressStatus ?? startingJob.input.page.status,
+            }
+          : completionResult,
         error: null,
         externalExecutionId: response.executionId,
       });
@@ -180,7 +233,7 @@ export async function submitGlwPageGenerationJob(
       });
       orchestration.syncGlwExecutionState({
         jobId: completedJob.id,
-        status: completedJob.status,
+        status: toOrchestrationStatus(completedJob.status),
         correlationId: completedJob.externalExecutionId,
         result: completedJob.result as Record<string, unknown> | null,
       });
@@ -193,7 +246,15 @@ export async function submitGlwPageGenerationJob(
 
     const runningJob = await dependencies.repository.update(startingJob.id, {
       status: statusFromAcceptedResponse(response),
-      result: buildResultFromResponse(response),
+      result: (() => {
+        const runningResult = buildResultFromResponse(response);
+        return runningResult
+          ? {
+              ...runningResult,
+              requestedPublishingMode: startingJob.input.page.status,
+            }
+          : runningResult;
+      })(),
       error: null,
       externalExecutionId: response.executionId,
     });
@@ -206,7 +267,7 @@ export async function submitGlwPageGenerationJob(
     });
     orchestration.syncGlwExecutionState({
       jobId: runningJob.id,
-      status: runningJob.status,
+      status: toOrchestrationStatus(runningJob.status),
       correlationId: runningJob.externalExecutionId,
       result: runningJob.result as Record<string, unknown> | null,
     });
@@ -240,7 +301,7 @@ export async function submitGlwPageGenerationJob(
     });
     orchestration.syncGlwExecutionState({
       jobId: failedJob.id,
-      status: failedJob.status,
+      status: toOrchestrationStatus(failedJob.status),
       correlationId: failedJob.externalExecutionId,
       errorMessage: failedJob.error?.message,
     });
@@ -263,7 +324,7 @@ export async function retryGlwPageGenerationJob(
     throw new Error(`GLW job not found: ${jobId}`);
   }
 
-  if (existingJob.status !== "FAILED") {
+  if (existingJob.status !== "FAILED" && existingJob.status !== "FAILED_QA") {
     throw new Error("Only failed GLW jobs can be retried.");
   }
 
@@ -276,6 +337,14 @@ export async function retryGlwPageGenerationJob(
   return submitGlwPageGenerationJob(
     {
       siteId: existingJob.input.site.id,
+      workspaceId: existingJob.input.page.workspaceId,
+      pageType: existingJob.input.page.pageType,
+      productTopic: existingJob.input.page.productTopic,
+      state: existingJob.input.page.state,
+      city: existingJob.input.page.city,
+      citySlug: existingJob.input.page.citySlug,
+      hierarchicalSlug: existingJob.input.page.hierarchicalSlug,
+      additionalInstructions: existingJob.input.page.additionalInstructions,
       title: existingJob.input.page.title,
       targetSlug: existingJob.input.page.targetSlug,
       primaryKeyword: existingJob.input.page.primaryKeyword,
@@ -315,16 +384,33 @@ export async function applyGlwJobCallback(
   const normalizedTitle = payload.title ?? existingJob.title;
   const normalizedWordpressIdentifier = payload.wordpressPageId ?? payload.wordpressPostId;
   const normalizedWordpressPostId = payload.wordpressPostId ?? normalizedWordpressIdentifier;
+  const normalizedRequestedPublishingMode = payload.requestedPublishingMode ?? existingJob.input.page.status;
+  const normalizedWordpressStatus = payload.wordpressStatus ?? normalizedRequestedPublishingMode;
+  const normalizedWordpressUrl = normalizeGlwWordpressUrlForDisplay({
+    wordpressUrl: payload.wordpressUrl ?? existingJob.result?.wordpressUrl,
+    wordpressStatus: normalizedWordpressStatus,
+    requestedPublishingMode: normalizedRequestedPublishingMode,
+    wordpressPageId: normalizedWordpressIdentifier,
+    hierarchicalSlug: existingJob.input.page.hierarchicalSlug,
+  });
+  const normalizedQaChecks = normalizeGlwQaChecks(payload.qaChecks);
+  const normalizedQaFailureReasons = normalizeGlwQaFailureReasons(payload.qaFailureReasons);
 
   const sameExecution = existingJob.externalExecutionId === payload.executionId;
   const sameStatus = existingJob.status === payload.status;
   const sameResult =
     existingJob.result?.executionId === payload.executionId &&
+    existingJob.result?.n8nExecutionId === payload.executionId &&
     existingJob.result?.status === payload.status &&
     existingJob.result?.title === normalizedTitle &&
     existingJob.result?.wordpressPageId === normalizedWordpressIdentifier &&
-    existingJob.result?.wordpressUrl === payload.wordpressUrl &&
+    existingJob.result?.wordpressUrl === (normalizedWordpressUrl ?? undefined) &&
     existingJob.result?.wordpressPostId === normalizedWordpressPostId &&
+    existingJob.result?.wordpressStatus === normalizedWordpressStatus &&
+    existingJob.result?.requestedPublishingMode === normalizedRequestedPublishingMode &&
+    existingJob.result?.disposition === payload.disposition &&
+    JSON.stringify(existingJob.result?.qaChecks ?? null) === JSON.stringify(normalizedQaChecks ?? null) &&
+    JSON.stringify(existingJob.result?.qaFailureReasons ?? null) === JSON.stringify(normalizedQaFailureReasons ?? null) &&
     existingJob.result?.featuredImageUrl === payload.featuredImageUrl &&
     existingJob.result?.executionTimeMs === payload.executionTimeMs;
   const sameError =
@@ -359,11 +445,17 @@ export async function applyGlwJobCallback(
       completedAt: existingJob.completedAt ?? nowIso(),
       result: {
         executionId: payload.executionId,
+        n8nExecutionId: payload.executionId,
         status: "COMPLETE",
         title: normalizedTitle,
         wordpressPageId: wordpressIdentifier,
-        wordpressUrl: payload.wordpressUrl,
+        wordpressUrl: normalizedWordpressUrl ?? payload.wordpressUrl,
         wordpressPostId: normalizedWordpressPostId,
+        wordpressStatus: normalizedWordpressStatus,
+        requestedPublishingMode: normalizedRequestedPublishingMode,
+        disposition: payload.disposition,
+        qaChecks: normalizedQaChecks,
+        qaFailureReasons: normalizedQaFailureReasons,
         featuredImageUrl: payload.featuredImageUrl,
         executionTimeMs: payload.executionTimeMs,
       },
@@ -379,8 +471,54 @@ export async function applyGlwJobCallback(
     });
     orchestration.syncGlwExecutionState({
       jobId: updated.id,
-      status: updated.status,
+      status: toOrchestrationStatus(updated.status),
       correlationId: payload.executionId,
+      result: updated.result as Record<string, unknown> | null,
+    });
+    return updated;
+  }
+
+  if (payload.status === "FAILED_QA") {
+    const updated = await repository.update(existingJob.id, {
+      status: "FAILED_QA",
+      title: normalizedTitle,
+      externalExecutionId: payload.executionId,
+      completedAt: existingJob.completedAt ?? nowIso(),
+      result: {
+        executionId: payload.executionId,
+        n8nExecutionId: payload.executionId,
+        status: "FAILED_QA",
+        title: normalizedTitle,
+        wordpressPageId: normalizedWordpressIdentifier,
+        wordpressUrl: normalizedWordpressUrl ?? payload.wordpressUrl,
+        wordpressPostId: normalizedWordpressPostId,
+        wordpressStatus: normalizedWordpressStatus,
+        requestedPublishingMode: normalizedRequestedPublishingMode,
+        disposition: payload.disposition ?? "FAILED_QA",
+        qaChecks: normalizedQaChecks,
+        qaFailureReasons: normalizedQaFailureReasons,
+        featuredImageUrl: payload.featuredImageUrl,
+        executionTimeMs: payload.executionTimeMs,
+      },
+      error: payload.error ?? {
+        code: "FAILED_QA",
+        step: "Pre-Publish QA Gate",
+        message: "Pre-publish QA gate failed.",
+      },
+    });
+    await emitGlwJobLifecycleEvent(eventStore ?? null, updated, {
+      type: "FAILED",
+      label: "QA Failed",
+      stage: "qa_gate",
+      message: updated.error?.message ?? "Pre-publish QA gate failed.",
+      idempotencyKey: `${updated.id}:FAILED_QA:${updated.updatedAt}`,
+      correlationId: payload.executionId,
+    });
+    orchestration.syncGlwExecutionState({
+      jobId: updated.id,
+      status: toOrchestrationStatus(updated.status),
+      correlationId: payload.executionId,
+      errorMessage: updated.error?.message,
       result: updated.result as Record<string, unknown> | null,
     });
     return updated;
@@ -408,7 +546,7 @@ export async function applyGlwJobCallback(
     });
     orchestration.syncGlwExecutionState({
       jobId: updated.id,
-      status: updated.status,
+      status: toOrchestrationStatus(updated.status),
       correlationId: payload.executionId,
       errorMessage: updated.error?.message,
       result: updated.result as Record<string, unknown> | null,
@@ -425,6 +563,8 @@ export async function applyGlwJobCallback(
       executionId: payload.executionId,
       status: payload.status,
       title: normalizedTitle,
+      qaChecks: normalizedQaChecks,
+      qaFailureReasons: normalizedQaFailureReasons,
     },
     error: null,
   });
@@ -438,7 +578,7 @@ export async function applyGlwJobCallback(
   });
   orchestration.syncGlwExecutionState({
     jobId: updated.id,
-    status: updated.status,
+    status: toOrchestrationStatus(updated.status),
     correlationId: payload.executionId,
     result: updated.result as Record<string, unknown> | null,
   });

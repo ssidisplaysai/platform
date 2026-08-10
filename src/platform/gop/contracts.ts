@@ -723,6 +723,7 @@ export type GenesisApplicationJobStatus =
   | "UPLOADING_IMAGE"
   | "PUBLISHING"
   | "COMPLETE"
+  | "FAILED_QA"
   | "FAILED";
 
 export type GenesisApplicationPageJobInput = {

@@ -1,6 +1,10 @@
 import type { GenesisApplicationJobRecord, GenesisJob, GenesisJobEvent } from "../contracts";
 import type { GenesisPersistedEvent } from "../event-store";
 
+function toGenesisInspectorStatus(status: GenesisApplicationJobRecord["status"]): GenesisJob["status"] {
+  return status === "FAILED_QA" ? "FAILED" : status;
+}
+
 const statusTimeline = [
   { status: "QUEUED", label: "Queued" },
   { status: "STARTING", label: "Starting" },
@@ -10,6 +14,7 @@ const statusTimeline = [
   { status: "UPLOADING_IMAGE", label: "Uploading Image" },
   { status: "PUBLISHING", label: "Publishing" },
   { status: "COMPLETE", label: "Complete" },
+  { status: "FAILED_QA", label: "QA Failed" },
   { status: "FAILED", label: "Failed" },
 ] as const;
 
@@ -27,7 +32,7 @@ function buildTimelineEvents(job: GenesisApplicationJobRecord): GenesisJobEvent[
     type: entry.status,
     label: entry.label,
     stage: entry.label.toLowerCase().replaceAll(" ", "_"),
-    status: job.status,
+    status: toGenesisInspectorStatus(job.status),
     message: entry.label,
     source: "glw.projected-timeline",
     occurredAt: job.updatedAt,
@@ -71,7 +76,7 @@ export function mapGlwJobToInspectorJob(job: GenesisApplicationJobRecord, persis
     type: job.type,
     applicationId: "glw",
     moduleId: "glw.core",
-    status: job.status,
+    status: toGenesisInspectorStatus(job.status),
     priority: "NORMAL",
     input: job.input,
     result: job.result,

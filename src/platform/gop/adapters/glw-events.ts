@@ -3,7 +3,7 @@ import type { GenesisEventAppendInput, GenesisEventStore } from "../event-store"
 import type { GenesisJobStatus } from "../contracts";
 
 function mapStatus(status: GenesisApplicationJobStatus): GenesisJobStatus {
-  return status;
+  return status === "FAILED_QA" ? "FAILED" : status;
 }
 
 function stageForStatus(status: GenesisApplicationJobStatus): string {
@@ -26,6 +26,8 @@ function stageForStatus(status: GenesisApplicationJobStatus): string {
       return "completed";
     case "FAILED":
       return "failed";
+    case "FAILED_QA":
+      return "qa_gate";
     default:
       return "running";
   }
@@ -45,6 +47,7 @@ function eventTypeForStatus(status: GenesisApplicationJobStatus): string {
       return "STAGE_CHANGED";
     case "COMPLETE":
       return "SUCCEEDED";
+    case "FAILED_QA":
     case "FAILED":
       return "FAILED";
     default:

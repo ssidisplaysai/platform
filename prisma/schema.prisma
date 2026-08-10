@@ -20,6 +20,7 @@ enum GlwJobStatus {
   UPLOADING_IMAGE
   PUBLISHING
   COMPLETE
+  FAILED_QA
   FAILED
 }
 
