@@ -496,6 +496,24 @@ export class ManufacturingWorkOrderService {
     return cloneRecord(found);
   }
 
+  peekWorkOrderIdentity(workOrderId: string):
+    | Readonly<{
+        tenantId: TenantId;
+        workOrderState: WorkOrderLifecycleState;
+        version: number;
+      }>
+    | undefined {
+    const found = this.byId.get(workOrderId);
+    if (!found) {
+      return undefined;
+    }
+    return {
+      tenantId: found.workOrder.tenantId,
+      workOrderState: found.workOrder.workOrderState,
+      version: found.workOrder.version,
+    };
+  }
+
   listWorkOrders(tenantId: TenantId): ManufacturingWorkOrderRecord[] {
     const values = [...this.byId.values()].filter((item) => item.workOrder.tenantId === tenantId);
     return deterministicSort(values, (item) => `${item.workOrder.workOrderNumber}:${item.workOrder.manufacturingWorkOrderId}`).map((item) =>

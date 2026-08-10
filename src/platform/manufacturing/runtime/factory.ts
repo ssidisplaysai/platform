@@ -5,6 +5,7 @@ import {
   compareDeterministicStrings,
 } from "../../shared";
 import type {
+  ManufacturingExternalReferenceValidationPort,
   ManufacturingIntegrationRegistration,
   ManufacturingInventoryIntegrationPort,
   ManufacturingIntegrationType,
@@ -20,8 +21,14 @@ import {
   LaborAssignmentService,
   MachineAssignmentService,
   ManufacturingInventoryIntegrationService,
+  ManufacturingAuditService,
+  ManufacturingHealthService,
+  ManufacturingMetricsService,
+  ManufacturingObservationPublisher,
   ManufacturingProductReferenceService,
+  ManufacturingReferenceValidationService,
   ManufacturingTraceabilityService,
+  ManufacturingWorkOrderReferenceValidator,
   ManufacturingWorkOrderService,
   MaterialConsumptionService,
   MaterialIssueService,
@@ -43,6 +50,7 @@ import {
   ManufacturingFoundationQueryService,
   ManufacturingMaterialExecutionQueryService,
   ManufacturingMaterialQueryService,
+  ManufacturingObservabilityQueryService,
   ManufacturingProductionResultQueryService,
   ManufacturingResourceQueryService,
   ManufacturingRoutingQueryService,
@@ -287,7 +295,15 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     initialState: createInitialState(runtimeId),
   });
 
-  const dependencies = options.dependencies;
+  const baseDependencies = options.dependencies;
+  const manufacturingAuditService = new ManufacturingAuditService({
+    clock: baseDependencies.clockProvider,
+    upstreamAuditSink: baseDependencies.auditSinkProvider,
+  });
+  const dependencies: ManufacturingRuntimeDependencies = {
+    ...baseDependencies,
+    auditSinkProvider: manufacturingAuditService.getAuditSinkProvider(),
+  };
   const observers = new ObserverRegistry<ManufacturingRuntimeObservation>();
   const integrationRegistrations = new Map<string, ManufacturingIntegrationRegistration>();
 
@@ -1253,6 +1269,156 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
     }
   });
 
+  host.lifecycle.onBeforeStart("09g.register-slice9-reference-validation-observability-services", async () => {
+    appendTrace(host, "09g.register-slice9-reference-validation-observability-services");
+    try {
+      const workOrders = host.services.require("manufacturing.service.work-order").value as ManufacturingWorkOrderService;
+      const routings = host.services.require("manufacturing.service.execution-routing").value as ExecutionRoutingService;
+      const operations = host.services.require("manufacturing.service.operation-execution").value as OperationExecutionService;
+      const materials = host.services.require("manufacturing.service.material-requirement").value as MaterialRequirementService;
+      const issues = host.services.require("manufacturing.service.material-issue").value as MaterialIssueService;
+      const consumption = host.services.require("manufacturing.service.material-consumption").value as MaterialConsumptionService;
+      const materialExecutionQueries = host.services.require("manufacturing.query.material-execution")
+        .value as ManufacturingMaterialExecutionQueryService;
+      const resultQueries = host.services.require("manufacturing.query.production-result")
+        .value as ManufacturingProductionResultQueryService;
+      const resourceQueries = host.services.require("manufacturing.query.resource").value as ManufacturingResourceQueryService;
+      const traceQueries = host.services.require("manufacturing.query.traceability")
+        .value as ManufacturingTraceabilityQueryService;
+      const productPort = host.services.require("manufacturing.integration.product-port").value as ManufacturingProductIntegrationPort;
+      const inventoryPort = host.services.require("manufacturing.integration.inventory-port").value as ManufacturingInventoryIntegrationPort;
+
+      const externalValidators = [...integrationRegistrations.values()]
+        .filter((registration) => registration.integrationType === "EXTERNAL_REFERENCE_VALIDATOR")
+        .sort((left, right) => compareDeterministicStrings(left.integrationId, right.integrationId))
+        .map((registration) => ({
+          integrationId: registration.integrationId,
+          port: registration.port as ManufacturingExternalReferenceValidationPort,
+        }));
+
+      const referenceValidation = new ManufacturingReferenceValidationService({
+        clock: dependencies.clockProvider,
+        audit: dependencies.auditSinkProvider,
+        productPort,
+        inventoryPort,
+        externalValidators,
+      });
+
+      const workOrderReferenceValidator = new ManufacturingWorkOrderReferenceValidator({
+        metadata: dependencies.metadataProvider,
+        workOrders,
+      });
+
+      const metrics = new ManufacturingMetricsService({
+        runtimeDependencies: dependencies,
+        runtimeStateProvider: () => host.getState(),
+        auditService: manufacturingAuditService,
+        referenceService: referenceValidation,
+        workOrders,
+        routings,
+        operations,
+        materials,
+        issues,
+        consumption,
+        materialExecutionQueries,
+        resultQueries,
+        resourceQueries,
+        traceQueries,
+      });
+
+      const health = new ManufacturingHealthService({
+        runtimeDependencies: dependencies,
+        runtimeStateProvider: () => host.getState(),
+        metricsService: metrics,
+        referenceService: referenceValidation,
+        workOrders,
+        routings,
+        operations,
+        materials,
+        materialExecutionQueries,
+        resultQueries,
+        resourceQueries,
+        traceQueries,
+        auditService: manufacturingAuditService,
+      });
+
+      const observationPublisher = new ManufacturingObservationPublisher({
+        runtimeDependencies: dependencies,
+        runtimeStateProvider: () => host.getState(),
+        metricsService: metrics,
+        healthService: health,
+        referenceService: referenceValidation,
+        auditService: manufacturingAuditService,
+      });
+
+      const observabilityQueries = new ManufacturingObservabilityQueryService({
+        healthService: health,
+        metricsService: metrics,
+        auditService: manufacturingAuditService,
+        referenceService: referenceValidation,
+        observationPublisher,
+      });
+
+      host.registerService({
+        serviceId: "manufacturing.service.reference-validation",
+        contract: "manufacturing.service.reference-validation",
+        description: "Centralized Manufacturing external reference validation service.",
+        value: referenceValidation,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.work-order-reference-validator",
+        contract: "manufacturing.service.work-order-reference-validator",
+        description: "Bounded Manufacturing Work Order reference validator surface.",
+        value: workOrderReferenceValidator,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.audit",
+        contract: "manufacturing.service.audit",
+        description: "Centralized Manufacturing audit aggregation service.",
+        value: manufacturingAuditService,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.metrics",
+        contract: "manufacturing.service.metrics",
+        description: "Manufacturing centralized metrics projection service.",
+        value: metrics,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.health",
+        contract: "manufacturing.service.health",
+        description: "Manufacturing runtime and domain health projection service.",
+        value: health,
+      });
+      host.registerService({
+        serviceId: "manufacturing.service.observation-publisher",
+        contract: "manufacturing.service.observation-publisher",
+        description: "Manufacturing Mission Control observation publisher service.",
+        value: observationPublisher,
+      });
+      host.registerService({
+        serviceId: "manufacturing.query.observation",
+        contract: "manufacturing.query.observation",
+        description: "Read-only Manufacturing observability query surface.",
+        value: observabilityQueries,
+      });
+
+      const next = cloneState(host.getState());
+      next.serviceIds = host.services.list().map((service) => service.serviceId);
+      host.setState(next);
+    } catch (error) {
+      if (error instanceof ManufacturingRuntimeError) {
+        recordFailure(host, dependencies, error.code, error.message);
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : "slice 9 service registration failed";
+      const code = message.includes("service not found")
+        ? "PARTIAL_INITIALIZATION_REJECTED"
+        : "DUPLICATE_SERVICE_REGISTRATION";
+      recordFailure(host, dependencies, code, message);
+      throw error;
+    }
+  });
+
   host.lifecycle.onBeforeStart("10.validate-required-registrations", async () => {
     appendTrace(host, "10.validate-required-registrations");
     const providerCapabilities = new Set(host.providers.listProviders().map((provider) => provider.capability));
@@ -1307,6 +1473,13 @@ function buildRuntime(options: ManufacturingRuntimeOptions): ManufacturingRuntim
       "manufacturing.service.traceability",
       "manufacturing.query.resource",
       "manufacturing.query.traceability",
+      "manufacturing.service.reference-validation",
+      "manufacturing.service.work-order-reference-validator",
+      "manufacturing.service.audit",
+      "manufacturing.service.metrics",
+      "manufacturing.service.health",
+      "manufacturing.service.observation-publisher",
+      "manufacturing.query.observation",
     ]);
     for (const serviceId of requiredServices) {
       try {

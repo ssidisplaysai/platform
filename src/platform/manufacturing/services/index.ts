@@ -22,3 +22,7 @@ export * from "./ResourceReadinessService";
 export * from "./DowntimeService";
 export * from "./ExecutionExceptionService";
 export * from "./ManufacturingTraceabilityService";
+export * from "./ManufacturingReferenceValidationService";
+export * from "./ManufacturingWorkOrderReferenceValidator";
+export * from "./ManufacturingAuditService";
+export * from "./ManufacturingObservabilityService";
