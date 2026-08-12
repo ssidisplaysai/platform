@@ -1,0 +1,39 @@
+{
+  "schemaIdentifier": "ggl-0001/capability-registry",
+  "schemaVersion": "1.0.0",
+  "programFamily": "Business Genome Capability Registry",
+  "capabilities": [
+    {
+      "id": "BGP-0001",
+      "name": "Canonical Business Object Model",
+      "status": "FOUNDATION_COMPLETE",
+      "authority": "GECP-0001",
+      "baseline": ["GAF-0001"],
+      "next": ["BGP-0002"]
+    },
+    {
+      "id": "BGP-0002",
+      "name": "Evidence Model and Source Architecture",
+      "status": "FOUNDATION",
+      "authority": "GECP-0001",
+      "baseline": ["GAF-0001", "BGP-0001"],
+      "next": ["BGP-0003"]
+    },
+    {
+      "id": "BGP-0003",
+      "name": "Enterprise Knowledge Graph and Semantic Relationship Architecture",
+      "status": "FOUNDATION",
+      "authority": "GECP-0001",
+      "baseline": ["GAF-0001", "BGP-0001", "BGP-0002"],
+      "next": []
+    },
+    {
+      "id": "BGF-0001",
+      "name": "Business Genome Foundation Freeze and Certification",
+      "status": "FROZEN",
+      "authority": "GECP-0001",
+      "baseline": ["GAF-0001", "BGP-0001", "BGP-0002", "BGP-0003"],
+      "next": ["BGP-0004"]
+    }
+  ]
+}

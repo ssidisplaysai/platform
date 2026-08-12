@@ -1,0 +1,79 @@
+{
+  "schemaIdentifier": "gpm-0001/executive-dashboard",
+  "schemaVersion": "1.0.0",
+  "programHealth": "GREEN",
+  "architectureHealth": "GREEN",
+  "implementationProgress": "ACTIVE",
+  "certificationStatus": "GREEN",
+  "riskStatus": "GREEN",
+  "releaseStatus": "GREEN",
+  "programStatus": {
+    "platformEngineeringProgram": "COMPLETE",
+    "enterpriseCapabilityProgram": "ACTIVE",
+    "programCharter": "GECP-0001",
+    "firstCapabilityProgram": {
+      "programId": "BGP-0001",
+      "status": "ACTIVE",
+      "foundationPackageStatus": "FOUNDATION_COMPLETE"
+    },
+    "secondCapabilityProgram": {
+      "programId": "BGP-0002",
+      "status": "ACTIVE",
+      "foundationPackageStatus": "FOUNDATION"
+    },
+    "thirdCapabilityProgram": {
+      "programId": "BGP-0003",
+      "status": "ACTIVE",
+      "foundationPackageStatus": "FOUNDATION"
+    }
+  },
+  "implementationPackageStatus": {
+    "gacp_0002a": "COMPLETE",
+    "gacp_0003": "CLOSED",
+    "gacp_0004": "COMPLETE",
+    "publicBootstrapApi": "IMPLEMENTED",
+    "bootstrapLifecycleState": "VALIDATED",
+    "registryConvergenceAuthorityPath": "IMPLEMENTED"
+  },
+  "authorityStatus": {
+    "gacd_0001": "CERTIFIED",
+    "gacd_0002": "CERTIFIED",
+    "gacd_0003": "CERTIFIED",
+    "gacd_0004": "CERTIFIED",
+    "gacd_0005": "CERTIFIED",
+    "gacd_0006": "CERTIFIED"
+  },
+  "architectureScorecard": {
+    "applicationToImplementationDebt": {
+      "before": 105,
+      "after": 104,
+      "netReduction": 1
+    },
+    "protectedLayoutSeamEdges": {
+      "before": 4,
+      "after": 3,
+      "netReduction": 1
+    },
+    "newDependencyPolicyViolations": 0,
+    "runtimeAuthorityChanges": 0
+  },
+  "programMetrics": {
+    "certifiedConstitutionalAuthorities": 6,
+    "completedEngineeringConvergencePackages": 3,
+    "architectureProgramsClosed": 1,
+    "dependencyDirectionPreserved": true,
+    "runtimeAuthorityPreserved": true,
+    "registryAuthorityPreserved": true,
+    "bootstrapAuthorityPreserved": true,
+    "kernelAuthorityCertified": true,
+    "architecturalRegressionIntroduced": false
+  },
+  "dependencyHealth": "GREEN",
+  "actions": [
+    "Execute GECP-0001 capability work under GAF-0001 and certified authority set",
+    "Maintain BGP-0001 as canonical business object authority package for follow-on implementation programs",
+    "Establish BGP-0002 as evidence authority package for provenance, confidence, conflict, and traceability",
+    "Establish BGP-0003 as semantic relationship authority package for governed enterprise knowledge graph semantics",
+    "Deliver workstreams: Business Genome ingestion design, Enterprise Agents, Marketing Intelligence, Operations Intelligence, Manufacturing Intelligence, Financial Intelligence, Enterprise Automation, Enterprise Applications, Knowledge Services, Decision Support"
+  ]
+}

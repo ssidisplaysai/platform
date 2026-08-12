@@ -1,0 +1,38 @@
+{
+  "pluginStatus": 401,
+  "pluginSample": {
+    "code": "invalid_email",
+    "message": "<strong>Error:</strong> Unknown email address. Check again or try your username.",
+    "data": {
+      "status": 401
+    }
+  },
+  "settingsStatus": 401,
+  "settingsKeys": [
+    "code",
+    "message",
+    "data"
+  ],
+  "debugRelated": {},
+  "draftStatus": 200,
+  "draftYoastKeys": [
+    "meta",
+    "yoast_head",
+    "yoast_head_json",
+    "yoast_title",
+    "yoast_meta",
+    "yoast_json_ld"
+  ],
+  "draftLink": "https://leddisplaywarehouse.com/?page_id=19308",
+  "draftRendered": "<h1>Direct View LED Video Walls in qa-freeze-draft-1786385591277</h1>\n<figure class=\"page-hero-image\"><img decoding=\"async\" src=\"http://leddisplaywarehouse.com/wp-content/uploads/2026/08/direct-view-l",
+  "publishStatus": 200,
+  "publishYoastKeys": [
+    "meta",
+    "yoast_head",
+    "yoast_head_json",
+    "yoast_title",
+    "yoast_meta",
+    "yoast_json_ld"
+  ],
+  "publishLink": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/austin/"
+}

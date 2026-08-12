@@ -36,6 +36,937 @@
       "consumers": ["implementation-packages", "certification-packages", "audit-packages"],
       "successors": [],
       "supersessionPolicy": "explicit-transition-rules"
+    },
+    {
+      "id": "GCD-0003",
+      "path": "genesis/governance/decisions/gcd-0003/GCD-0003-Genesis-Application-Boundary-Model.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GACD-0005-Registry-Authority-Decision.md",
+        "GACD-0006-Kernel-Authority-Decision.md",
+        "GGS-0008-Constitutional-Lifecycle-Specification.md",
+        "GGS-0009-Constitutional-Authority-Specification.md",
+        "GGS-0010-Constitutional-Dependency-Specification.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Decision-Model.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md"
+      ],
+      "consumers": [
+        "application-boundary-governance",
+        "enterprise-navigation-governance",
+        "registry-authority-governance",
+        "enterprise-observability-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "publication-lifecycle"],
+      "implementationConsumers": ["future-enterprise-application-registry-implementations"],
+      "certificationConsumers": ["future-application-boundary-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["application-boundary-decision-lineage"]
+    },
+    {
+      "id": "GCD-0004",
+      "path": "genesis/governance/decisions/gcd-0004/GCD-0004-Enterprise-Application-Registry-Constitutional-Authority.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/decisions/gcd-0003/GCD-0003-Genesis-Application-Boundary-Model.md",
+        "GACD-0005-Registry-Authority-Decision.md",
+        "GACD-0006-Kernel-Authority-Decision.md",
+        "GGS-0008-Constitutional-Lifecycle-Specification.md",
+        "GGS-0009-Constitutional-Authority-Specification.md",
+        "GGS-0010-Constitutional-Dependency-Specification.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Decision-Model.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md"
+      ],
+      "consumers": [
+        "enterprise-application-registry-governance",
+        "enterprise-navigation-governance",
+        "application-lifecycle-governance",
+        "enterprise-observability-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "publication-lifecycle"],
+      "implementationConsumers": ["future-enterprise-application-registry-services"],
+      "certificationConsumers": ["future-registry-authority-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["enterprise-application-registry-authority-lineage"]
+    },
+    {
+      "id": "GCD-0005",
+      "path": "genesis/governance/decisions/gcd-0005/GCD-0005-Enterprise-Health-and-Capability-Contract.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/decisions/gcd-0003/GCD-0003-Genesis-Application-Boundary-Model.md",
+        "genesis/governance/decisions/gcd-0004/GCD-0004-Enterprise-Application-Registry-Constitutional-Authority.md",
+        "genesis/governance/decisions/gcd-0004/EAR-0001-Enterprise-Application-Registry-Specification.md",
+        "GACD-0005-Registry-Authority-Decision.md",
+        "GACD-0006-Kernel-Authority-Decision.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Decision-Model.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md"
+      ],
+      "consumers": [
+        "enterprise-observability-governance",
+        "enterprise-compatibility-governance",
+        "application-lifecycle-governance",
+        "executive-dashboard-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "publication-lifecycle"],
+      "implementationConsumers": ["future-enterprise-health-contract-services"],
+      "certificationConsumers": ["future-health-contract-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["enterprise-health-capability-contract-lineage"]
+    },
+    {
+      "id": "GCF-0001",
+      "path": "genesis/governance/releases/gcf-0001/Genesis-Constitutional-Foundation-v1.0.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+        "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+        "genesis/governance/decisions/gcd-0003/GCD-0003-Genesis-Application-Boundary-Model.md",
+        "genesis/governance/decisions/gcd-0004/GCD-0004-Enterprise-Application-Registry-Constitutional-Authority.md",
+        "genesis/governance/decisions/gcd-0005/GCD-0005-Enterprise-Health-and-Capability-Contract.md",
+        "GACD-0005-Registry-Authority-Decision.md",
+        "GACD-0006-Kernel-Authority-Decision.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Decision-Model.md"
+      ],
+      "consumers": [
+        "constitutional-foundation-certification",
+        "executive-governance-reporting",
+        "baseline-governance",
+        "future-constitutional-supersession-packages"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["publication-lifecycle", "baseline-lifecycle", "certification-lifecycle"],
+      "implementationConsumers": ["governance-publication-only"],
+      "certificationConsumers": ["future-foundation-recertification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["constitutional-foundation-v1-lineage"]
+    },
+    {
+      "id": "GACD-0001",
+      "path": "GACD-0001-Runtime-Authority-Decision.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "genesis/audits/GAR-0002/evidence/dependency-direction-analysis.json"
+      ],
+      "consumers": [
+        "runtime-governance",
+        "architecture-certification",
+        "stabilization-program"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "certification-lifecycle"],
+      "implementationConsumers": ["runtime-platform"],
+      "certificationConsumers": ["future-runtime-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["runtime-authority-assessment-lineage"]
+    },
+    {
+      "id": "GACD-0002",
+      "path": "GACD-0002-Genesis-Dependency-Policy.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "genesis/audits/GAR-0002/evidence/dependency-direction-analysis.json",
+        "genesis/audits/GAR-0002/evidence/cycle-assessment.json",
+        "genesis/audits/GAR-0002/evidence/api-layering-assessment.json"
+      ],
+      "consumers": [
+        "dependency-governance",
+        "architecture-certification",
+        "stabilization-program"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "certification-lifecycle"],
+      "implementationConsumers": ["application-runtime-platform"],
+      "certificationConsumers": ["future-dependency-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["dependency-direction-assessment-lineage"]
+    },
+    {
+      "id": "GACD-0003",
+      "path": "GACD-0003-Platform-Bootstrap-API-Decision.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACI-0002A-R1-Protected-Layout-Seam-Assessment.md",
+        "GACP-0002A-Implementation-Report.md",
+        "genesis/audits/GAR-0002/evidence/dependency-direction-analysis.json"
+      ],
+      "consumers": [
+        "platform-services-governance",
+        "application-boundary-governance",
+        "stabilization-program"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "certification-lifecycle"],
+      "implementationConsumers": ["gop-platform-bootstrap-services", "glw-protected-layout"],
+      "certificationConsumers": ["future-platform-bootstrap-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["protected-layout-seam-classification-lineage"]
+    },
+    {
+      "id": "GACD-0004",
+      "path": "GACD-0004-Public-Platform-API-Policy.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md"
+      ],
+      "consumers": [
+        "platform-api-governance",
+        "application-boundary-governance",
+        "stabilization-program"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "certification-lifecycle"],
+      "implementationConsumers": ["future-platform-api-implementation-packages"],
+      "certificationConsumers": ["future-platform-api-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["platform-api-policy-lineage"]
+    },
+    {
+      "id": "GACD-0005",
+      "path": "GACD-0005-Registry-Authority-Decision.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GACI-0003-Registry-Authority-Assessment.md",
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md"
+      ],
+      "consumers": [
+        "registry-authority-governance",
+        "architecture-certification",
+        "stabilization-program"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "certification-lifecycle"],
+      "implementationConsumers": ["gacp-0004-registry-convergence"],
+      "certificationConsumers": ["future-registry-authority-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["registry-authority-decision-lineage"]
+    },
+    {
+      "id": "GACD-0006",
+      "path": "GACD-0006-Kernel-Authority-Decision.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GACI-0004-Kernel-Authority-Assessment.md",
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md",
+        "GACD-0005-Registry-Authority-Decision.md",
+        "GACP-0002A-Implementation-Report.md",
+        "GACP-0003-Implementation-Report.md",
+        "GACP-0004-Implementation-Report.md"
+      ],
+      "consumers": [
+        "kernel-authority-governance",
+        "architecture-certification",
+        "stabilization-program"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["decision-lifecycle", "certification-lifecycle"],
+      "implementationConsumers": ["gacp-0005-kernel-convergence"],
+      "certificationConsumers": ["future-kernel-authority-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["kernel-authority-decision-lineage"]
+    },
+    {
+      "id": "GAF-0001",
+      "path": "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+      "authority": "constitution",
+      "dependencies": [
+        "genesis/CONSTITUTION.md",
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md",
+        "GACI-0002A-R1-Protected-Layout-Seam-Assessment.md",
+        "GACP-0002A-Implementation-Report.md"
+      ],
+      "consumers": [
+        "stabilization-program",
+        "implementation-package-governance",
+        "architecture-certification"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "constitutionReferences": ["genesis/CONSTITUTION.md"],
+      "relatedStandards": ["GCCS", "GAFS"],
+      "relatedProcedures": ["baseline-certification-lifecycle", "decision-lifecycle"],
+      "implementationConsumers": ["all-future-stabilization-implementation-packages"],
+      "certificationConsumers": ["future-foundation-freeze-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["constitutional-foundation-freeze-lineage"]
+    },
+    {
+      "id": "GPP-0001",
+      "path": "GPP-0001-Genesis-Platform-Program-Closure.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md",
+        "GACD-0005-Registry-Authority-Decision.md",
+        "GACD-0006-Kernel-Authority-Decision.md",
+        "GACP-0002A-Implementation-Report.md",
+        "GACP-0003-Implementation-Report.md",
+        "GACP-0004-Implementation-Report.md"
+      ],
+      "consumers": [
+        "executive-reporting",
+        "program-closure-governance",
+        "enterprise-capability-program-transition"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["enterprise-capability-program"],
+      "certificationConsumers": ["future-capability-program-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["program-closure-lineage"]
+    },
+    {
+      "id": "GPP-0001-FINAL-REPORT",
+      "path": "Genesis-Platform-Engineering-Program-Final-Report.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GPP-0001-Genesis-Platform-Program-Closure.md"
+      ],
+      "consumers": [
+        "executive-reporting",
+        "program-governance-record"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["enterprise-capability-program"],
+      "certificationConsumers": ["future-capability-program-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["program-final-report-lineage"]
+    },
+    {
+      "id": "GECP-0001",
+      "path": "GECP-0001-Genesis-Enterprise-Capability-Program.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md",
+        "GACD-0005-Registry-Authority-Decision.md",
+        "GACD-0006-Kernel-Authority-Decision.md",
+        "GPP-0001-Genesis-Platform-Program-Closure.md"
+      ],
+      "consumers": [
+        "enterprise-capability-governance",
+        "executive-reporting",
+        "program-initiation"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["bgp-0001-business-genome-program", "future-capability-programs"],
+      "certificationConsumers": ["future-capability-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["enterprise-capability-program-lineage"]
+    },
+    {
+      "id": "GECP-0001-ROADMAP",
+      "path": "Genesis-Enterprise-Capability-Roadmap.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GECP-0001-Genesis-Enterprise-Capability-Program.md"
+      ],
+      "consumers": [
+        "executive-reporting",
+        "program-board",
+        "capability-sequencing"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-capability-programs"],
+      "certificationConsumers": ["future-capability-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["enterprise-capability-roadmap-lineage"]
+    },
+    {
+      "id": "GECP-0001-WORKSTREAMS",
+      "path": "Genesis-Enterprise-Capability-Workstreams.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GECP-0001-Genesis-Enterprise-Capability-Program.md",
+        "Genesis-Enterprise-Capability-Roadmap.md"
+      ],
+      "consumers": [
+        "executive-reporting",
+        "program-board",
+        "capability-delivery-planning"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["bgp-0001-business-genome-program", "future-capability-programs"],
+      "certificationConsumers": ["future-capability-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["enterprise-capability-workstream-lineage"]
+    },
+    {
+      "id": "BGP-0001",
+      "path": "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GECP-0001-Genesis-Enterprise-Capability-Program.md",
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "executive-reporting"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["business-genome-capability-delivery"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0001-initiation-lineage"]
+    },
+    {
+      "id": "BGP-0001-OBJECT-CATALOG",
+      "path": "Business-Genome-Object-Catalog.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "capability-model-consumers"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-ingestion-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0001-catalog-lineage"]
+    },
+    {
+      "id": "BGP-0001-RELATIONSHIP-MODEL",
+      "path": "Business-Genome-Relationship-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "capability-model-consumers"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-relationship-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0001-relationship-lineage"]
+    },
+    {
+      "id": "BGP-0001-CONFIDENCE-MODEL",
+      "path": "Business-Genome-Confidence-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "validation-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-validation-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0001-confidence-lineage"]
+    },
+    {
+      "id": "BGP-0001-VERSIONING-MODEL",
+      "path": "Business-Genome-Versioning-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "validation-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-versioning-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0001-versioning-lineage"]
+    },
+    {
+      "id": "BGP-0001-TRACEABILITY",
+      "path": "Business-Genome-Traceability-Matrix.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+        "Business-Genome-Object-Catalog.md",
+        "Business-Genome-Relationship-Model.md",
+        "Business-Genome-Confidence-Model.md",
+        "Business-Genome-Versioning-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "executive-reporting",
+        "validation-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-capability-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0001-traceability-lineage"]
+    },
+    {
+      "id": "BGP-0002",
+      "path": "BGP-0002-Business-Genome-Evidence-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GECP-0001-Genesis-Enterprise-Capability-Program.md",
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "executive-reporting",
+        "evidence-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-ingestion-packages", "future-business-genome-capability-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-evidence-lineage"]
+    },
+    {
+      "id": "BGP-0002-SOURCE-ARCHITECTURE",
+      "path": "Business-Genome-Source-Architecture.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "evidence-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-ingestion-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-source-lineage"]
+    },
+    {
+      "id": "BGP-0002-AUTHORITY-MODEL",
+      "path": "Business-Genome-Authority-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "evidence-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-governance-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-authority-lineage"]
+    },
+    {
+      "id": "BGP-0002-PROVENANCE-MODEL",
+      "path": "Business-Genome-Provenance-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "traceability-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-capability-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-provenance-lineage"]
+    },
+    {
+      "id": "BGP-0002-CONFLICT-RESOLUTION",
+      "path": "Business-Genome-Conflict-Resolution-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "evidence-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-governance-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-conflict-lineage"]
+    },
+    {
+      "id": "BGP-0002-EXPLAINABILITY",
+      "path": "Business-Genome-Explainability-Model.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "traceability-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-capability-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-explainability-lineage"]
+    },
+    {
+      "id": "BGP-0002-TRACEABILITY-ARCH",
+      "path": "Business-Genome-Traceability-Architecture.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "traceability-governance",
+        "executive-reporting"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-capability-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-traceability-lineage"]
+    },
+    {
+      "id": "BGP-0002-CONFIDENCE-SCORING",
+      "path": "Business-Genome-Confidence-Scoring.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "validation-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-validation-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-confidence-lineage"]
+    },
+    {
+      "id": "BGP-0002-EVIDENCE-LIFECYCLE",
+      "path": "Business-Genome-Evidence-Lifecycle.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "evidence-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-ingestion-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-lifecycle-lineage"]
+    },
+    {
+      "id": "BGP-0002-EXECUTIVE-OVERVIEW",
+      "path": "Business-Genome-Executive-Overview.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "executive-reporting",
+        "business-genome-program-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-capability-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0002-executive-lineage"]
+    },
+    {
+      "id": "BGP-0003",
+      "path": "BGP-0003-Business-Genome-Knowledge-Graph.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GECP-0001-Genesis-Enterprise-Capability-Program.md",
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "executive-reporting",
+        "graph-governance"
+      ],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-graph-lineage"]
+    },
+    {
+      "id": "BGP-0003-ONTOLOGY",
+      "path": "Business-Genome-Relationship-Ontology.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "graph-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-ontology-lineage"]
+    },
+    {
+      "id": "BGP-0003-REASONING",
+      "path": "Business-Genome-Semantic-Reasoning-Model.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "graph-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-reasoning-lineage"]
+    },
+    {
+      "id": "BGP-0003-TEMPORAL",
+      "path": "Business-Genome-Temporal-Relationship-Model.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "graph-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-temporal-lineage"]
+    },
+    {
+      "id": "BGP-0003-INFERENCE",
+      "path": "Business-Genome-Inference-Model.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "graph-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-inference-lineage"]
+    },
+    {
+      "id": "BGP-0003-GOVERNANCE",
+      "path": "Business-Genome-Graph-Governance.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "graph-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-governance-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-governance-lineage"]
+    },
+    {
+      "id": "BGP-0003-CROSS-DOMAIN",
+      "path": "Business-Genome-Cross-Domain-Relationships.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "graph-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-cross-domain-lineage"]
+    },
+    {
+      "id": "BGP-0003-LIFECYCLE",
+      "path": "Business-Genome-Relationship-Lifecycle.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "graph-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-lifecycle-lineage"]
+    },
+    {
+      "id": "BGP-0003-VALIDATION",
+      "path": "Business-Genome-Graph-Validation.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["business-genome-program-governance", "validation-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-validation-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-validation-lineage"]
+    },
+    {
+      "id": "BGP-0003-EXECUTIVE-OVERVIEW",
+      "path": "Business-Genome-Executive-Overview.md",
+      "authority": "program-governance",
+      "dependencies": ["BGP-0003-Business-Genome-Knowledge-Graph.md"],
+      "consumers": ["executive-reporting", "business-genome-program-governance"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-graph-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgp-0003-executive-lineage"]
+    },
+    {
+      "id": "BGF-0001",
+      "path": "BGF-0001-Business-Genome-Foundation-Freeze.md",
+      "authority": "program-governance",
+      "dependencies": [
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "GECP-0001-Genesis-Enterprise-Capability-Program.md",
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+        "BGP-0002-Business-Genome-Evidence-Model.md",
+        "BGP-0003-Business-Genome-Knowledge-Graph.md",
+        "Business-Genome-Foundation-v1.0.md",
+        "Business-Genome-Foundation-Baseline.md"
+      ],
+      "consumers": [
+        "business-genome-program-governance",
+        "certification-governance",
+        "engineering-roadmap-governance"
+      ],
+      "successors": ["BGP-0004"],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["future-business-genome-engineering-packages"],
+      "certificationConsumers": ["future-business-genome-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["bgf-0001-freeze-lineage"]
+    },
+    {
+      "id": "BUSINESS-GENOME-REGISTRY",
+      "path": "genesis/governance/machine/business-genome-registry.json",
+      "authority": "governance-library",
+      "dependencies": [
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": ["governance-operations", "executive-reporting"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["governance-reporting"],
+      "certificationConsumers": ["future-governance-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["business-genome-registry-lineage"]
+    },
+    {
+      "id": "CAPABILITY-REGISTRY",
+      "path": "genesis/governance/machine/capability-registry.json",
+      "authority": "governance-library",
+      "dependencies": [
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": ["governance-operations", "executive-reporting"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["governance-reporting"],
+      "certificationConsumers": ["future-governance-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["capability-registry-lineage"]
+    },
+    {
+      "id": "VALIDATION-REGISTRY",
+      "path": "genesis/governance/machine/validation-registry.json",
+      "authority": "governance-library",
+      "dependencies": [
+        "BGP-0002-Business-Genome-Evidence-Model.md"
+      ],
+      "consumers": ["governance-operations", "executive-reporting"],
+      "successors": [],
+      "supersessionPolicy": "explicit-successor-required",
+      "implementationConsumers": ["governance-reporting"],
+      "certificationConsumers": ["future-governance-certification-packages"],
+      "auditConsumers": ["GAR-family"],
+      "evidenceConsumers": ["validation-registry-lineage"]
     }
   ]
 }

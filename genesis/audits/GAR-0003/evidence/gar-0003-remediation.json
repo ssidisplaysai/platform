@@ -1,0 +1,34 @@
+{
+  "schemaIdentifier": "gar-0003/gar-0003-remediation",
+  "schemaVersion": "1.0.0",
+  "packageId": "GAR-0003",
+  "remediations": [
+    {
+      "remediationId": "GAR3-REM-001",
+      "findingId": "GAR-0003-FND-002",
+      "priority": "P2",
+      "action": "Populate releaseCommit in release-manifest and release-registry using the release tag peeled commit.",
+      "owner": "Genesis Release Authority",
+      "targetPackage": "GAR-0004-prep",
+      "successCriteria": "release machine records include immutable commit reference and validate against tag."
+    },
+    {
+      "remediationId": "GAR3-REM-002",
+      "findingId": "GAR-0003-FND-003",
+      "priority": "P2",
+      "action": "Add runtime metadata lineage evidence for representative slices (GMP/GBA/GEA).",
+      "owner": "Genesis Constitutional Assessment Authority",
+      "targetPackage": "GAR-0004",
+      "successCriteria": "CNS-2 can be evaluated with VERIFIED confidence and no conditions."
+    },
+    {
+      "remediationId": "GAR3-REM-003",
+      "findingId": "GAR-0003-FND-004",
+      "priority": "P3",
+      "action": "Bind architecture change history to RAR/ARD/ADR lineage graph for repository-wide coverage.",
+      "owner": "Architecture Review Board",
+      "targetPackage": "GAR-0004",
+      "successCriteria": "CNS-4 evaluated from INSUFFICIENT EVIDENCE to COMPLIANT or COMPLIANT WITH CONDITIONS."
+    }
+  ]
+}

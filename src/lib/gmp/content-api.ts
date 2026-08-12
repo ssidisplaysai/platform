@@ -7,6 +7,7 @@ import { createPrismaGmpPageRepository, type GmpPageRepository } from "./page-re
 import { createPrismaGmpKnowledgeRepository, type GmpKnowledgeRepository } from "./knowledge-repository";
 import { createPrismaGmpContentRepository, type GmpContentRepository } from "./content-repository";
 import { createGmpContentServices, type GmpContentServices } from "./content-services";
+import { type GmpContentDraft } from "./content-models";
 
 const DEFAULT_WORKSPACE_ID = "glw-led-display-warehouse";
 const DEFAULT_MODULE_ID = "gmp.content";
@@ -73,7 +74,11 @@ function workspaceFromUrl(url: URL): string {
   return url.searchParams.get("workspaceId") ?? DEFAULT_WORKSPACE_ID;
 }
 
-async function authorize(input: { actionId: ContentAction; workspaceId: string; route: string; dependencies?: GmpContentApiDependencies }) {
+type ContentAuthorizeResult =
+  | { error: NextResponse }
+  | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
+async function authorize(input: { actionId: ContentAction; workspaceId: string; route: string; dependencies?: GmpContentApiDependencies }): Promise<ContentAuthorizeResult> {
   const d = deps(input.dependencies);
   const session = await d.sessionLoader();
   if (!session) return { error: json({ error: "GLW session is required." }, 401) } as const;

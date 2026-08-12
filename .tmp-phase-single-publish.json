@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-08-10T22:31:56.841Z",
+  "jobId": "glw_gvwp4dio",
+  "acceptedResponse": {
+    "workflowStatus": "accepted",
+    "executionId": "65330",
+    "result": {
+      "status": "RUNNING",
+      "executionId": "65330",
+      "requestedPublishingMode": "publish"
+    },
+    "error": null
+  },
+  "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
+  "lifecycle": [
+    {
+      "at": "2026-08-10T22:30:16.623Z",
+      "status": "STARTING"
+    },
+    {
+      "at": "2026-08-10T22:31:56.839Z",
+      "status": "COMPLETE"
+    }
+  ],
+  "finalStatus": "COMPLETE",
+  "finalExecutionId": "65330",
+  "finalResult": {
+    "title": "Direct View LED Video Walls for Houston, Texas",
+    "status": "COMPLETE",
+    "executionId": "65330",
+    "wordpressUrl": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+    "wordpressPageId": 18847,
+    "wordpressPostId": 18847
+  },
+  "finalError": null,
+  "updatedAt": "2026-08-10T22:31:53.557Z"
+}

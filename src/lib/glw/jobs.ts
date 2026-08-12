@@ -13,6 +13,7 @@ export const glwJobStatuses = [
   "UPLOADING_IMAGE",
   "PUBLISHING",
   "COMPLETE",
+  "FAILED_QA",
   "FAILED",
 ] as const;
 export type GlwJobStatus = (typeof glwJobStatuses)[number];
@@ -26,13 +27,47 @@ export const glwJobStatusOrder: Record<GlwJobStatus, number> = {
   UPLOADING_IMAGE: 5,
   PUBLISHING: 6,
   COMPLETE: 7,
+  FAILED_QA: 7,
   FAILED: 7,
 };
 
 export type GlwPublishingMode = "draft" | "publish";
+export type GlwWordpressWorkflowStatus = GlwPublishingMode | "qa_failed";
+export type GlwPageType = "city_service" | "state_service" | "general_service";
+export type GlwQaCheckState = "PASS" | "FAIL" | "PENDING" | "UNKNOWN";
+export type GlwQaCheckKey =
+  | "pageExists"
+  | "hierarchy"
+  | "slug"
+  | "title"
+  | "h1"
+  | "uniquePrimaryHeading"
+  | "duplicateSectionHeadings"
+  | "duplicateSectionContent"
+  | "placeholderResourceLinks"
+  | "body"
+  | "featuredImage"
+  | "heroImage"
+  | "seo"
+  | "internalLinks"
+  | "imageAlt"
+  | "duplicateCheck";
+export type GlwQaChecks = Record<GlwQaCheckKey, GlwQaCheckState>;
+export type GlwQaFailureReasons = Partial<Record<GlwQaCheckKey, string>>;
+export type GlwResultDisposition = "CREATED" | "UPDATED" | "SKIPPED_DUPLICATE" | "FAILED_QA" | (string & {});
+
+const glwPageTypes: readonly GlwPageType[] = ["city_service", "state_service", "general_service"];
 
 export type GlwPageGenerationRequest = {
   siteId: string;
+  workspaceId: string;
+  pageType: GlwPageType;
+  productTopic: string;
+  state: string;
+  city: string;
+  citySlug: string;
+  hierarchicalSlug: string;
+  additionalInstructions: string;
   title: string;
   targetSlug: string;
   primaryKeyword: string;
@@ -52,6 +87,14 @@ export type GlwPageGenerationJobInput = {
     name: string;
   };
   page: {
+    workspaceId: string;
+    pageType: GlwPageType;
+    productTopic: string;
+    state: string;
+    city: string;
+    citySlug: string;
+    hierarchicalSlug: string;
+    additionalInstructions: string;
     title: string;
     targetSlug: string;
     primaryKeyword: string;
@@ -70,6 +113,7 @@ export type GlwPageGenerationJobInput = {
   };
   seoSettings: {
     targetSlug: string;
+    citySlug: string;
     primaryKeyword: string;
     secondaryKeywords: string[];
     category: string;
@@ -98,6 +142,12 @@ export type GlwJobResult = {
   wordpressPageId?: string | number;
   wordpressUrl?: string;
   wordpressPostId?: string | number;
+  wordpressStatus?: GlwWordpressWorkflowStatus;
+  requestedPublishingMode?: GlwPublishingMode;
+  n8nExecutionId?: string;
+  disposition?: GlwResultDisposition;
+  qaChecks?: Partial<GlwQaChecks>;
+  qaFailureReasons?: GlwQaFailureReasons;
   featuredImageUrl?: string;
   executionTimeMs?: number;
 };
@@ -133,6 +183,11 @@ export type GlwPageGenerationCallbackPayload = {
   wordpressPageId?: string | number;
   wordpressUrl?: string;
   wordpressPostId?: string | number;
+  wordpressStatus?: GlwWordpressWorkflowStatus;
+  requestedPublishingMode?: GlwPublishingMode;
+  disposition?: GlwResultDisposition;
+  qaChecks?: Partial<GlwQaChecks>;
+  qaFailureReasons?: GlwQaFailureReasons;
   featuredImageUrl?: string;
   executionTimeMs?: number;
   error?: GlwJobError;
@@ -196,14 +251,300 @@ function normalizePublishingMode(value: string | undefined): GlwPublishingMode |
   return null;
 }
 
+function normalizeQaCheckState(value: unknown): GlwQaCheckState | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toUpperCase();
+
+  if (normalized === "PASS" || normalized === "FAIL" || normalized === "PENDING" || normalized === "UNKNOWN") {
+    return normalized;
+  }
+
+  return null;
+}
+
+export const GLW_QA_CHECK_KEYS: readonly GlwQaCheckKey[] = [
+  "pageExists",
+  "hierarchy",
+  "slug",
+  "title",
+  "h1",
+  "uniquePrimaryHeading",
+  "duplicateSectionHeadings",
+  "duplicateSectionContent",
+  "placeholderResourceLinks",
+  "body",
+  "featuredImage",
+  "heroImage",
+  "seo",
+  "internalLinks",
+  "imageAlt",
+  "duplicateCheck",
+];
+
+export const GLW_QA_CONTRACT_VERSION = GLW_QA_CHECK_KEYS.length;
+export const GLW_CALLBACK_CONTRACT_VERSION = GLW_QA_CONTRACT_VERSION;
+
+export function normalizeGlwQaChecks(input: unknown): Partial<GlwQaChecks> | undefined {
+  if (typeof input !== "object" || input === null) {
+    return undefined;
+  }
+
+  const source = input as Record<string, unknown>;
+  const normalized: Partial<GlwQaChecks> = {};
+
+  for (const key of GLW_QA_CHECK_KEYS) {
+    const state = normalizeQaCheckState(source[key]);
+    if (state) {
+      normalized[key] = state;
+    }
+  }
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+export function normalizeGlwQaFailureReasons(input: unknown): GlwQaFailureReasons | undefined {
+  if (typeof input !== "object" || input === null) {
+    return undefined;
+  }
+
+  const source = input as Record<string, unknown>;
+  const normalized: GlwQaFailureReasons = {};
+
+  for (const key of GLW_QA_CHECK_KEYS) {
+    const value = source[key];
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) {
+        normalized[key] = trimmed;
+      }
+    }
+  }
+
+  return normalized;
+}
+
+export function getGlwQaChecksForDisplay(result: GlwJobResult | null): GlwQaChecks {
+  const checks: GlwQaChecks = {
+    pageExists: "UNKNOWN",
+    hierarchy: "UNKNOWN",
+    slug: "UNKNOWN",
+    title: "UNKNOWN",
+    h1: "UNKNOWN",
+    uniquePrimaryHeading: "UNKNOWN",
+    duplicateSectionHeadings: "UNKNOWN",
+    duplicateSectionContent: "UNKNOWN",
+    placeholderResourceLinks: "UNKNOWN",
+    body: "UNKNOWN",
+    featuredImage: "UNKNOWN",
+    heroImage: "UNKNOWN",
+    seo: "UNKNOWN",
+    internalLinks: "UNKNOWN",
+    imageAlt: "UNKNOWN",
+    duplicateCheck: "UNKNOWN",
+  };
+
+  const incoming = result?.qaChecks;
+  if (!incoming) {
+    return checks;
+  }
+
+  for (const key of GLW_QA_CHECK_KEYS) {
+    const state = normalizeQaCheckState(incoming[key]);
+    if (state) {
+      checks[key] = state;
+    }
+  }
+
+  return checks;
+}
+
+export function getGlwQaFailureReasonsForDisplay(result: GlwJobResult | null): GlwQaFailureReasons {
+  return normalizeGlwQaFailureReasons(result?.qaFailureReasons) ?? {};
+}
+
+export function resolveGlwPublishingStatus(job: GlwJobRecord): GlwPublishingMode | null {
+  const explicitResultStatus = normalizePublishingMode(job.result?.wordpressStatus);
+  if (explicitResultStatus) {
+    return explicitResultStatus;
+  }
+
+  if (job.status === "COMPLETE") {
+    const explicitRequestedStatus = normalizePublishingMode(job.result?.requestedPublishingMode);
+    if (explicitRequestedStatus) {
+      return explicitRequestedStatus;
+    }
+
+    return normalizePublishingMode(job.input?.page?.status);
+  }
+
+  return null;
+}
+
+function normalizeHierarchicalPath(value: string): string {
+  return value
+    .trim()
+    .split("/")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join("/")
+    .toLowerCase();
+}
+
+function normalizeWordpressPageIdentifier(value: string | number | undefined): string | null {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return String(Math.trunc(value));
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^\d+$/.test(trimmed)) {
+      return trimmed;
+    }
+  }
+
+  return null;
+}
+
+function isQueryPageUrl(url: URL): boolean {
+  return url.searchParams.has("page_id");
+}
+
+function buildCanonicalFromHierarchicalSlug(baseUrl: URL, hierarchicalSlug: string): string | null {
+  const normalizedPath = normalizeHierarchicalPath(hierarchicalSlug);
+  if (!normalizedPath) {
+    return null;
+  }
+
+  const canonical = new URL(baseUrl.origin);
+  canonical.pathname = `/${normalizedPath}/`;
+  canonical.search = "";
+  canonical.hash = "";
+  return canonical.toString();
+}
+
+function buildWordpressEditUrl(baseUrl: URL, pageId: string): string {
+  const editUrl = new URL(baseUrl.origin);
+  editUrl.pathname = "/wp-admin/post.php";
+  editUrl.searchParams.set("post", pageId);
+  editUrl.searchParams.set("action", "edit");
+  return editUrl.toString();
+}
+
+export function normalizeGlwWordpressUrlForDisplay(input: {
+  wordpressUrl?: string;
+  wordpressStatus?: GlwWordpressWorkflowStatus;
+  requestedPublishingMode?: GlwPublishingMode;
+  wordpressPageId?: string | number;
+  hierarchicalSlug?: string;
+}): string | null {
+  const rawUrl = typeof input.wordpressUrl === "string" ? input.wordpressUrl.trim() : "";
+  if (!rawUrl) {
+    return null;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    return rawUrl;
+  }
+
+  const resolvedStatus = normalizePublishingMode(input.wordpressStatus)
+    ?? normalizePublishingMode(input.requestedPublishingMode)
+    ?? null;
+  const pageId = normalizeWordpressPageIdentifier(input.wordpressPageId);
+
+  if (resolvedStatus === "draft") {
+    if (pageId) {
+      return buildWordpressEditUrl(parsed, pageId);
+    }
+    return rawUrl;
+  }
+
+  if (resolvedStatus === "publish") {
+    if (!isQueryPageUrl(parsed)) {
+      return rawUrl;
+    }
+
+    const canonical = buildCanonicalFromHierarchicalSlug(parsed, input.hierarchicalSlug ?? "");
+    return canonical ?? rawUrl;
+  }
+
+  return rawUrl;
+}
+
+export function resolveGlwPrimaryOpenUrl(job: GlwJobRecord): string | null {
+  return normalizeGlwWordpressUrlForDisplay({
+    wordpressUrl: job.result?.wordpressUrl,
+    wordpressStatus: job.result?.wordpressStatus,
+    requestedPublishingMode: job.result?.requestedPublishingMode,
+    wordpressPageId: job.result?.wordpressPageId ?? job.result?.wordpressPostId,
+    hierarchicalSlug: job.input.page.hierarchicalSlug,
+  });
+}
+
+export function resolveGlwPrimaryOpenLabel(job: GlwJobRecord): "Open Page" | "Open Draft" | null {
+  const publishingStatus = resolveGlwPublishingStatus(job);
+  if (publishingStatus === "publish") {
+    return "Open Page";
+  }
+
+  if (publishingStatus === "draft") {
+    return "Open Draft";
+  }
+
+  return null;
+}
+
+function normalizePageType(value: string | undefined): GlwPageType | null {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.trim().toLowerCase().replace(/-/g, "_");
+
+  return glwPageTypes.includes(normalized as GlwPageType)
+    ? normalized as GlwPageType
+    : null;
+}
+
+function normalizeSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export function deriveCitySlugFromCity(city: string): string {
+  return normalizeSlug(city);
+}
+
+export function pageTypeRequiresCity(pageType: GlwPageType): boolean {
+  return pageType === "city_service";
+}
+
 export function validatePageGenerationRequest(
   input: Partial<GlwPageGenerationRequest> | Record<string, unknown>,
 ): GlwValidationResult<GlwPageGenerationRequest> {
   const errors: GlwJobFieldErrors = {};
 
   const siteId = typeof input.siteId === "string" ? input.siteId.trim() : "";
+  const workspaceId = typeof input.workspaceId === "string" ? input.workspaceId.trim() : "";
+  const pageType = normalizePageType(typeof input.pageType === "string" ? input.pageType : undefined);
+  const productTopic = typeof input.productTopic === "string" ? input.productTopic.trim() : "";
+  const state = typeof input.state === "string" ? input.state.trim() : "";
+  const city = typeof input.city === "string" ? input.city.trim() : "";
+  const citySlugInput = typeof input.citySlug === "string" ? input.citySlug.trim() : "";
+  const hierarchicalSlug = typeof input.hierarchicalSlug === "string" ? input.hierarchicalSlug.trim() : "";
+  const additionalInstructions = typeof input.additionalInstructions === "string" ? input.additionalInstructions.trim() : "";
   const title = typeof input.title === "string" ? input.title.trim() : "";
-  const targetSlug = typeof input.targetSlug === "string" ? input.targetSlug.trim() : "";
+  const targetSlugInput = typeof input.targetSlug === "string" ? input.targetSlug.trim() : "";
+  const targetSlug = targetSlugInput || hierarchicalSlug;
+  const citySlug = citySlugInput || deriveCitySlugFromCity(city);
   const primaryKeyword = typeof input.primaryKeyword === "string" ? input.primaryKeyword.trim() : "";
   const secondaryKeywords = Array.isArray(input.secondaryKeywords)
     ? input.secondaryKeywords
@@ -234,6 +575,54 @@ export function validatePageGenerationRequest(
     errors.siteId = "Site is required.";
   } else if (!getGlwSite(siteId)) {
     errors.siteId = "Select a valid GLW site.";
+  }
+
+  if (!workspaceId) {
+    errors.workspaceId = "Workspace is required.";
+  }
+
+  if (!pageType) {
+    errors.pageType = "Page type is required.";
+  }
+
+  if (!productTopic) {
+    errors.productTopic = "Product or topic is required.";
+  }
+
+  if (!state) {
+    errors.state = "State is required.";
+  }
+
+  if (!hierarchicalSlug) {
+    errors.hierarchicalSlug = "Desired hierarchical slug is required.";
+  }
+
+  if (hierarchicalSlug && !/^[-a-z0-9/]+$/.test(hierarchicalSlug)) {
+    errors.hierarchicalSlug = "Hierarchical slug must use lowercase letters, numbers, hyphens, and slashes only.";
+  }
+
+  if (citySlug && !/^[-a-z0-9]+$/.test(citySlug)) {
+    errors.citySlug = "City slug must use lowercase letters, numbers, and hyphens only.";
+  }
+
+  const normalizedStateSlug = normalizeSlug(state);
+  if (state && city && normalizeSlug(city) === normalizedStateSlug) {
+    errors.city = "INVALID_CANONICAL_TARGET: City must differ from state for production targets.";
+    errors.citySlug = "INVALID_CANONICAL_TARGET: City slug must differ from the state slug for production targets.";
+  }
+
+  if (citySlug && normalizedStateSlug && citySlug === normalizedStateSlug) {
+    errors.citySlug = "INVALID_CANONICAL_TARGET: City slug must differ from the state slug for production targets.";
+  }
+
+  if (pageType && pageTypeRequiresCity(pageType)) {
+    if (!city) {
+      errors.city = "City is required for city pages.";
+    }
+
+    if (!citySlug) {
+      errors.citySlug = "City slug is required for city pages.";
+    }
   }
 
   if (!title) {
@@ -284,7 +673,9 @@ export function validatePageGenerationRequest(
     return {
       ok: false,
       errors,
-      message: "Please fix the highlighted fields and try again.",
+      message: Object.values(errors).some((value) => typeof value === "string" && value.includes("INVALID_CANONICAL_TARGET"))
+        ? "INVALID_CANONICAL_TARGET"
+        : "Please fix the highlighted fields and try again.",
     };
   }
 
@@ -292,6 +683,14 @@ export function validatePageGenerationRequest(
     ok: true,
     value: {
       siteId,
+      workspaceId,
+      pageType: pageType as GlwPageType,
+      productTopic,
+      state,
+      city,
+      citySlug,
+      hierarchicalSlug,
+      additionalInstructions,
       title,
       targetSlug,
       primaryKeyword,
@@ -309,6 +708,14 @@ export function validatePageGenerationRequest(
 export function parsePageGenerationFormData(formData: FormData): GlwValidationResult<GlwPageGenerationRequest> {
   return validatePageGenerationRequest({
     siteId: trimOptional(formData.get("siteId")) ?? "",
+    workspaceId: trimOptional(formData.get("workspaceId")) ?? "",
+    pageType: trimOptional(formData.get("pageType")) ?? "",
+    productTopic: trimOptional(formData.get("productTopic")) ?? "",
+    state: trimOptional(formData.get("state")) ?? "",
+    city: trimOptional(formData.get("city")) ?? "",
+    citySlug: trimOptional(formData.get("citySlug")) ?? "",
+    hierarchicalSlug: trimOptional(formData.get("hierarchicalSlug")) ?? "",
+    additionalInstructions: trimOptional(formData.get("additionalInstructions")) ?? "",
     title: trimOptional(formData.get("title")) ?? "",
     targetSlug: trimOptional(formData.get("targetSlug")) ?? "",
     primaryKeyword: trimOptional(formData.get("primaryKeyword")) ?? "",
@@ -347,6 +754,14 @@ export function createGlwJobInput(
       name: site.name,
     },
     page: {
+      workspaceId: request.workspaceId,
+      pageType: request.pageType,
+      productTopic: request.productTopic,
+      state: request.state,
+      city: request.city,
+      citySlug: request.citySlug,
+      hierarchicalSlug: request.hierarchicalSlug,
+      additionalInstructions: request.additionalInstructions,
       title: request.title,
       targetSlug: request.targetSlug,
       primaryKeyword: request.primaryKeyword,
@@ -365,6 +780,7 @@ export function createGlwJobInput(
     },
     seoSettings: {
       targetSlug: request.targetSlug,
+      citySlug: request.citySlug,
       primaryKeyword: request.primaryKeyword,
       secondaryKeywords: request.secondaryKeywords,
       category: request.category,
@@ -382,7 +798,7 @@ export function createGlwJobInput(
 }
 
 export function isTerminalGlwJobStatus(status: GlwJobStatus): boolean {
-  return status === "COMPLETE" || status === "FAILED";
+  return status === "COMPLETE" || status === "FAILED_QA" || status === "FAILED";
 }
 
 export function canTransitionGlwJobStatus(current: GlwJobStatus, next: GlwJobStatus): boolean {
@@ -394,11 +810,11 @@ export function canTransitionGlwJobStatus(current: GlwJobStatus, next: GlwJobSta
     return false;
   }
 
-  if (current === "FAILED") {
+  if (current === "FAILED_QA" || current === "FAILED") {
     return false;
   }
 
-  if (next === "FAILED") {
+  if (next === "FAILED_QA" || next === "FAILED") {
     return true;
   }
 
@@ -415,6 +831,19 @@ export function normalizeGlwJobStatus(value: string): GlwJobStatus | null {
   return glwJobStatuses.includes(normalized as GlwJobStatus)
     ? (normalized as GlwJobStatus)
     : null;
+}
+
+export function normalizeGlwWordpressWorkflowStatus(value: unknown): GlwWordpressWorkflowStatus | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "draft" || normalized === "publish" || normalized === "qa_failed") {
+    return normalized;
+  }
+
+  return undefined;
 }
 
 export function normalizeGlwJobError(error: unknown, fallbackStep = "workflow"): GlwJobError {
@@ -527,7 +956,7 @@ const glwTimelineStages = [
   "SEO Generated",
   "Images Generated",
   "Images Uploaded",
-  "WordPress Draft Created",
+  "Draft Created",
   "Yoast Updated",
   "Callback Received",
   "Database Updated",
@@ -556,7 +985,7 @@ function formatGlwTimestamp(timestampMs: number): string {
 }
 
 function isGlwJobTimedOut(job: GlwJobRecord, now: Date, timeoutMs: number): boolean {
-  if (job.status === "COMPLETE" || job.status === "FAILED") {
+  if (job.status === "COMPLETE" || job.status === "FAILED_QA" || job.status === "FAILED") {
     return false;
   }
 
@@ -589,6 +1018,7 @@ function statusToProgressPercent(job: GlwJobRecord, timedOut: boolean): number {
       return 86;
     case "COMPLETE":
       return 100;
+    case "FAILED_QA":
     case "FAILED":
     default:
       return 100;
@@ -617,6 +1047,8 @@ function statusToCurrentStage(job: GlwJobRecord, timedOut: boolean): string {
       return "Publishing Draft";
     case "COMPLETE":
       return "Completed";
+    case "FAILED_QA":
+      return "QA Failed";
     case "FAILED":
     default:
       return "Failed";
@@ -642,9 +1074,23 @@ function statusToWorkflowStep(job: GlwJobRecord, timedOut: boolean): string {
     case "UPLOADING_IMAGE":
       return "Uploading the generated media.";
     case "PUBLISHING":
-      return "Publishing the WordPress draft and metadata.";
+      return "Publishing the page and metadata.";
     case "COMPLETE":
-      return "Workflow completed successfully.";
+      {
+        const publishingStatus = resolveGlwPublishingStatus(job);
+
+        if (publishingStatus === "publish") {
+          return "Published";
+        }
+
+        if (publishingStatus === "draft") {
+          return "Draft Created";
+        }
+
+        return "Workflow completed successfully.";
+      }
+    case "FAILED_QA":
+      return job.error?.message ?? "Pre-publish QA gate failed.";
     case "FAILED":
     default:
       return job.error?.step ?? "Workflow failed.";
@@ -673,6 +1119,7 @@ function statusToTimelineIndex(job: GlwJobRecord, timedOut: boolean): number {
       return 8;
     case "COMPLETE":
       return glwTimelineStages.length - 1;
+    case "FAILED_QA":
     case "FAILED":
     default:
       if (job.error?.step) {
@@ -703,7 +1150,7 @@ function buildGlwTimeline(job: GlwJobRecord, now: Date, timedOut: boolean): GlwJ
 
   return glwTimelineStages.map((label, index) => {
     const timestampMs = stageCount > 1 ? startMs + stageDuration * index : startMs;
-    const timestamp = index <= activeIndex || job.status === "COMPLETE" || job.status === "FAILED" || timedOut
+    const timestamp = index <= activeIndex || job.status === "COMPLETE" || job.status === "FAILED_QA" || job.status === "FAILED" || timedOut
       ? formatGlwTimestamp(timestampMs)
       : null;
 
@@ -712,7 +1159,7 @@ function buildGlwTimeline(job: GlwJobRecord, now: Date, timedOut: boolean): GlwJ
     if (index < activeIndex) {
       state = "complete";
     } else if (index === activeIndex) {
-      state = job.status === "FAILED" || timedOut ? "failed" : index === stageCount - 1 ? "complete" : "active";
+      state = job.status === "FAILED_QA" || job.status === "FAILED" || timedOut ? "failed" : index === stageCount - 1 ? "complete" : "active";
     }
 
     return {
@@ -737,7 +1184,7 @@ export function getGlwJobOperatorSnapshot(
     currentStage: statusToCurrentStage(job, timedOut),
     currentWorkflowStep: statusToWorkflowStep(job, timedOut),
     progressPercent: statusToProgressPercent(job, timedOut),
-    estimatedRemainingText: timedOut || job.status === "COMPLETE" || job.status === "FAILED" || !job.startedAt
+    estimatedRemainingText: timedOut || job.status === "COMPLETE" || job.status === "FAILED_QA" || job.status === "FAILED" || !job.startedAt
       ? null
       : (() => {
           const elapsedMs = now.getTime() - new Date(job.startedAt).getTime();
@@ -780,7 +1227,7 @@ export function toRecentPageGenerationJobRow(job: GlwJobRecord, now = new Date()
     title: job.title,
     created: formatGlwJobCreatedTime(job),
     duration: formatGlwJobDuration(job, now),
-    actionLabel: job.status === "FAILED" ? "Retry" : job.status === "COMPLETE" ? "Open" : "View",
+    actionLabel: job.status === "FAILED" || job.status === "FAILED_QA" ? "Retry" : job.status === "COMPLETE" ? "Open" : "View",
   };
 }
 
@@ -819,7 +1266,7 @@ export function matchesGlwJobFilter(status: GlwJobStatus, filter: GlwJobFilter):
     return status === "COMPLETE";
   }
 
-  return status === "FAILED";
+  return status === "FAILED_QA" || status === "FAILED";
 }
 
 export function describeOperatorSafeError(error: unknown, fallback: string): string {

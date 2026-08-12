@@ -82,7 +82,7 @@ export function createFinanceRuntimeService(repository: FinanceRepository): Fina
 
     const pipelineValue = salesPipeline.reduce((sum, row) => sum + row.amountCents, 0);
     const inventoryValue = operationsInventory.reduce((sum, row) => sum + row.valuationAmount, 0) * 100;
-    const manufacturingCost = manufacturingCosts.reduce((sum, row) => sum + row.totalCostAmount, 0) * 100;
+    const manufacturingCost = manufacturingCosts.reduce((sum, row) => sum + row.totalManufacturingCost, 0) * 100;
     const recognizedRevenue = Math.round(pipelineValue * 0.32);
 
     const ledgerRows: FinanceGeneralLedgerEntry[] = [

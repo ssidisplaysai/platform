@@ -4,7 +4,7 @@ import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from 
 import { createActionReference } from "@/platform/gop/auth/resolver";
 import { createInMemoryToolFrameworkRepository, createPrismaToolFrameworkRepository, type ToolFrameworkRepository } from "./tool-repository";
 import { createToolRegistryService, type ToolRegistryService } from "./tool-registry-service";
-import { createExecutionCoordinator, type ExecutionCoordinator } from "./tool-execution-engine";
+import { createExecutionCoordinator, type ExecutionCoordinator, type ToolExecutionControl } from "./tool-execution-engine";
 import { createToolAuthorizationEngine } from "./tool-authorization";
 import type { ToolCategory, ToolRegistrationInput } from "./tool-models";
 
@@ -25,7 +25,7 @@ export type GeaToolApiDependencies = {
   sessionLoader?: typeof getGlwSession;
   repository?: ToolFrameworkRepository;
   registry?: ToolRegistryService;
-  execution?: ExecutionCoordinator;
+  execution?: ExecutionCoordinator & ToolExecutionControl;
 };
 
 type RequiredDeps = Required<GeaToolApiDependencies>;

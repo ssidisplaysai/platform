@@ -1,0 +1,29 @@
+{
+  "schemaIdentifier": "gia-0001/implementation-baseline",
+  "schemaVersion": "1.0.0",
+  "baselineId": "GIA-0001-BASELINE-2026-07-28",
+  "programVersion": "GPP-0003-v1.0.0",
+  "implementationBaseline": "Phase III planning freeze",
+  "planningPackage": "genesis/constitution/gpp-0003",
+  "planningSnapshot": {
+    "fileCount": 14,
+    "hashMethod": "sha256(sorted file-path and file-hash entries)",
+    "snapshotHash": "164606ec2e175ab488e525165c82d711ae0958b042205192bf63db147b3aea7b"
+  },
+  "governanceVersion": "GFR-0001-v1.0.0",
+  "governanceBaseline": "GGB-0001-v1.0.0",
+  "certificationVersion": "GCCS-0001-v1.0.0",
+  "auditVersion": "GAFS-0001-v1.0.0",
+  "repositoryState": {
+    "revision": "da84dac0e8d3d203cca94bc9af6bfd33b9dd0abb",
+    "branch": "feature/gar-0003-constitutional-assessment",
+    "worktree": "uncommitted package artifacts present"
+  },
+  "constitutionalAuthority": {
+    "releaseId": "GFR-0001",
+    "baselineId": "GGB-0001",
+    "garAssessment": "GAR-0003",
+    "phaseCloseout": "GPC-0002",
+    "phaseRoadmap": "GPP-0003"
+  }
+}

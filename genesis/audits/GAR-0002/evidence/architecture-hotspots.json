@@ -1,8 +1,8 @@
 {
   "architecturalHubs": [
     {
-      "centrality": 57,
-      "fanIn": 56,
+      "centrality": 58,
+      "fanIn": 57,
       "fanOut": 1,
       "node": "src/platform/gop/auth/resolver.ts"
     },
@@ -43,8 +43,8 @@
       "node": "src/lib/gmp/repository.ts"
     },
     {
-      "centrality": 38,
-      "fanIn": 38,
+      "centrality": 39,
+      "fanIn": 39,
       "fanOut": 0,
       "node": "src/platform/gop/contracts.ts"
     },
@@ -153,7 +153,7 @@
   ],
   "bottlenecks": [
     {
-      "fanIn": 56,
+      "fanIn": 57,
       "fanOut": 1,
       "node": "src/platform/gop/auth/resolver.ts"
     },
@@ -173,7 +173,7 @@
       "node": "src/lib/gmp/repository.ts"
     },
     {
-      "fanIn": 38,
+      "fanIn": 39,
       "fanOut": 0,
       "node": "src/platform/gop/contracts.ts"
     },
@@ -233,7 +233,7 @@
       "node": "src/compiler/evidence/EvidenceGraph.ts"
     },
     {
-      "fanIn": 20,
+      "fanIn": 18,
       "fanOut": 2,
       "node": "src/lib/glw/jobs.ts"
     },
@@ -364,7 +364,7 @@
   "generationMethod": "deterministic-topology-analysis-from-gar-0001-and-source-layout",
   "highFanInModules": [
     {
-      "fanIn": 56,
+      "fanIn": 57,
       "fanOut": 1,
       "layer": "platform-orchestration",
       "node": "src/platform/gop/auth/resolver.ts"
@@ -388,7 +388,7 @@
       "node": "src/lib/gmp/repository.ts"
     },
     {
-      "fanIn": 38,
+      "fanIn": 39,
       "fanOut": 0,
       "layer": "platform-orchestration",
       "node": "src/platform/gop/contracts.ts"
@@ -460,7 +460,7 @@
       "node": "src/compiler/evidence/EvidenceGraph.ts"
     },
     {
-      "fanIn": 20,
+      "fanIn": 18,
       "fanOut": 2,
       "layer": "runtime-services",
       "node": "src/lib/glw/jobs.ts"

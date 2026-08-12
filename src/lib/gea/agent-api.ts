@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { getGlwSession } from "@/lib/glw/auth";
 import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from "@/platform/gop/auth/runtime";
 import { createActionReference } from "@/platform/gop/auth/resolver";
-import { createInMemoryCapabilityRegistry, type CapabilityRegistry } from "./capability-registry";
-import { createInMemoryToolRegistry, type ToolRegistry } from "./tool-framework";
+import type { CapabilityRegistry } from "./capability-registry";
+import type { ToolRegistry } from "./tool-framework";
 import { createAgentRuntimeService, type AgentRuntimeService } from "./agent-runtime";
 import { createPrismaGeaRepository, createSeedAgent, type GeaRepository } from "./agent-repository";
 import { geaId, nowIso, stableChecksum, type AgentMemoryReference } from "./agent-models";
+import { createGeaRuntimeRegistryAuthority } from "./runtime-registry-authority";
 
 const DEFAULT_WORKSPACE_ID = "glw-led-display-warehouse";
 const DEFAULT_MODULE_ID = "gea.runtime";
@@ -41,8 +42,10 @@ function workspaceFromUrl(url: URL): string {
 
 function deps(input?: GeaApiDependencies): Required<GeaApiDependencies> {
   const repository = input?.repository ?? createPrismaGeaRepository();
-  const capabilityRegistry = input?.capabilityRegistry ?? createInMemoryCapabilityRegistry();
-  const toolRegistry = input?.toolRegistry ?? createInMemoryToolRegistry();
+  const { capabilityRegistry, toolRegistry } = createGeaRuntimeRegistryAuthority({
+    capabilityRegistry: input?.capabilityRegistry,
+    toolRegistry: input?.toolRegistry,
+  });
 
   return {
     sessionLoader: input?.sessionLoader ?? getGlwSession,
@@ -61,9 +64,9 @@ async function authorize(input: {
   request: Request;
   actionId: GeaAction;
   route: string;
-  dependencies?: GeaApiDependencies;
+  dependencies: Required<GeaApiDependencies>;
 }): Promise<Authorized> {
-  const d = deps(input.dependencies);
+  const d = input.dependencies;
   const workspaceId = workspaceFromUrl(new URL(input.request.url));
   const session = await d.sessionLoader();
   if (!session) {
@@ -99,7 +102,7 @@ function parseReferences(value: unknown): AgentMemoryReference[] {
   if (!Array.isArray(value)) return [];
 
   return value
-    .map((entry) => {
+    .map((entry): AgentMemoryReference | null => {
       if (!entry || typeof entry !== "object") return null;
       const ref = entry as Record<string, unknown>;
       if (typeof ref.referenceType !== "string" || typeof ref.referenceId !== "string") return null;
@@ -109,22 +112,24 @@ function parseReferences(value: unknown): AgentMemoryReference[] {
         referenceType: ref.referenceType as AgentMemoryReference["referenceType"],
         referenceId: ref.referenceId,
         referenceVersion: typeof ref.referenceVersion === "string" ? ref.referenceVersion : "v1",
-        metadata: typeof ref.metadata === "object" && ref.metadata ? ref.metadata as Record<string, unknown> : undefined,
+        ...(typeof ref.metadata === "object" && ref.metadata ? { metadata: ref.metadata as Record<string, unknown> } : {}),
       };
     })
-    .filter((entry): entry is AgentMemoryReference => Boolean(entry));
+    .filter((entry): entry is AgentMemoryReference => entry !== null);
 }
 
 export async function handleListAgents(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:view", route: "/api/gea/agents", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:view", route: "/api/gea/agents", dependencies: d });
   if ("error" in access) return access.error;
 
-  const agents = await deps(dependencies).runtimeService.listAgents(access.workspaceId);
+  const agents = await d.runtimeService.listAgents(access.workspaceId);
   return json({ agents });
 }
 
 export async function handleCreateAgent(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:execute", route: "/api/gea/agents", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:execute", route: "/api/gea/agents", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -167,15 +172,16 @@ export async function handleCreateAgent(request: Request, dependencies?: GeaApiD
     },
   });
 
-  const saved = await deps(dependencies).runtimeService.registerAgent(agent);
+  const saved = await d.runtimeService.registerAgent(agent);
   return json({ agent: saved }, 201);
 }
 
 export async function handleGetAgent(request: Request, agentId: string, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:view", route: "/api/gea/agents/[id]", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:view", route: "/api/gea/agents/[id]", dependencies: d });
   if ("error" in access) return access.error;
 
-  const agent = await deps(dependencies).runtimeService.getAgent(agentId);
+  const agent = await d.runtimeService.getAgent(agentId);
   if (!agent || agent.workspaceId !== access.workspaceId) {
     return json({ error: "Agent not found." }, 404);
   }
@@ -184,7 +190,8 @@ export async function handleGetAgent(request: Request, agentId: string, dependen
 }
 
 export async function handleCreatePlan(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:manage_context", route: "/api/gea/planning", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:manage_context", route: "/api/gea/planning", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -192,7 +199,7 @@ export async function handleCreatePlan(request: Request, dependencies?: GeaApiDe
     return json({ error: "agentId and objective are required." }, 400);
   }
 
-  const plan = await deps(dependencies).runtimeService.createPlan({
+  const plan = await d.runtimeService.createPlan({
     agentId: body.agentId,
     workspaceId: access.workspaceId,
     objective: body.objective,
@@ -204,7 +211,8 @@ export async function handleCreatePlan(request: Request, dependencies?: GeaApiDe
 }
 
 export async function handleCreateExecution(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:execute", route: "/api/gea/executions", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:execute", route: "/api/gea/executions", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -212,7 +220,7 @@ export async function handleCreateExecution(request: Request, dependencies?: Gea
     return json({ error: "agentId and planId are required." }, 400);
   }
 
-  const execution = await deps(dependencies).runtimeService.executePlan({
+  const execution = await d.runtimeService.executePlan({
     agentId: body.agentId,
     workspaceId: access.workspaceId,
     projectId: typeof body.projectId === "string" ? body.projectId : undefined,
@@ -226,26 +234,29 @@ export async function handleCreateExecution(request: Request, dependencies?: Gea
 }
 
 export async function handleListExecutions(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:view", route: "/api/gea/executions", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:view", route: "/api/gea/executions", dependencies: d });
   if ("error" in access) return access.error;
 
   const url = new URL(request.url);
   const agentId = url.searchParams.get("agentId") ?? undefined;
-  const executions = await deps(dependencies).runtimeService.listExecutions(access.workspaceId, agentId);
+  const executions = await d.runtimeService.listExecutions(access.workspaceId, agentId);
   return json({ executions });
 }
 
 export async function handleExecutionTimeline(request: Request, executionId: string, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:view_audit", route: "/api/gea/executions/[executionId]/timeline", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:view_audit", route: "/api/gea/executions/[executionId]/timeline", dependencies: d });
   if ("error" in access) return access.error;
 
-  const timeline = await deps(dependencies).runtimeService.getTimeline(executionId);
-  const audit = await deps(dependencies).runtimeService.listAudits(executionId);
+  const timeline = await d.runtimeService.getTimeline(executionId);
+  const audit = await d.runtimeService.listAudits(executionId);
   return json({ timeline, audit });
 }
 
 export async function handleReplayExecution(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:replay", route: "/api/gea/replay", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:replay", route: "/api/gea/replay", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -253,15 +264,16 @@ export async function handleReplayExecution(request: Request, dependencies?: Gea
     return json({ error: "executionId is required." }, 400);
   }
 
-  const replay = await deps(dependencies).runtimeService.replayExecution(body.executionId, access.actorId);
+  const replay = await d.runtimeService.replayExecution(body.executionId, access.actorId);
   return json({ replay }, 201);
 }
 
 export async function handleCapabilities(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:manage_capabilities", route: "/api/gea/capabilities", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:manage_capabilities", route: "/api/gea/capabilities", dependencies: d });
   if ("error" in access) return access.error;
 
-  const registry = deps(dependencies).capabilityRegistry;
+  const registry = d.capabilityRegistry;
   if (request.method === "POST") {
     const body = await request.json().catch(() => null) as Record<string, unknown> | null;
     if (!body || typeof body.capabilityKey !== "string") {
@@ -283,10 +295,11 @@ export async function handleCapabilities(request: Request, dependencies?: GeaApi
 }
 
 export async function handleTools(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:manage_tools", route: "/api/gea/tools", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:manage_tools", route: "/api/gea/tools", dependencies: d });
   if ("error" in access) return access.error;
 
-  const registry = deps(dependencies).toolRegistry;
+  const registry = d.toolRegistry;
   if (request.method === "POST") {
     const body = await request.json().catch(() => null) as Record<string, unknown> | null;
     if (!body || typeof body.toolKey !== "string" || typeof body.capabilityKey !== "string") {
@@ -308,7 +321,8 @@ export async function handleTools(request: Request, dependencies?: GeaApiDepende
 }
 
 export async function handleApprovals(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:approve_plans", route: "/api/gea/approvals", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:approve_plans", route: "/api/gea/approvals", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -317,19 +331,20 @@ export async function handleApprovals(request: Request, dependencies?: GeaApiDep
   }
 
   if (body.decision === "APPROVE") {
-    await deps(dependencies).runtimeService.approveTask(body.executionId, body.taskId, access.actorId);
+    await d.runtimeService.approveTask(body.executionId, body.taskId, access.actorId);
   } else if (body.decision === "REJECT") {
-    await deps(dependencies).runtimeService.rejectTask(body.executionId, body.taskId, access.actorId, typeof body.reason === "string" ? body.reason : "Rejected by operator.");
+    await d.runtimeService.rejectTask(body.executionId, body.taskId, access.actorId, typeof body.reason === "string" ? body.reason : "Rejected by operator.");
   } else {
     return json({ error: "decision must be APPROVE or REJECT." }, 400);
   }
 
-  const approvals = await deps(dependencies).runtimeService.listApprovals(body.executionId);
+  const approvals = await d.runtimeService.listApprovals(body.executionId);
   return json({ approvals });
 }
 
 export async function handleAudit(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:view_audit", route: "/api/gea/audit", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:view_audit", route: "/api/gea/audit", dependencies: d });
   if ("error" in access) return access.error;
 
   const executionId = new URL(request.url).searchParams.get("executionId");
@@ -337,24 +352,26 @@ export async function handleAudit(request: Request, dependencies?: GeaApiDepende
     return json({ error: "executionId is required." }, 400);
   }
 
-  const records = await deps(dependencies).runtimeService.listAudits(executionId);
-  const replays = await deps(dependencies).runtimeService.listReplays(executionId);
+  const records = await d.runtimeService.listAudits(executionId);
+  const replays = await d.runtimeService.listReplays(executionId);
   return json({ records, replays });
 }
 
 export async function handleMemoryReferences(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:view_memory", route: "/api/gea/memory", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:view_memory", route: "/api/gea/memory", dependencies: d });
   if ("error" in access) return access.error;
 
   const agentId = new URL(request.url).searchParams.get("agentId");
   if (!agentId) return json({ error: "agentId is required." }, 400);
 
-  const references = await deps(dependencies).runtimeService.listMemoryReferences(agentId);
+  const references = await d.runtimeService.listMemoryReferences(agentId);
   return json({ references });
 }
 
 export async function handleContextPreview(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:manage_context", route: "/api/gea/context/preview", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:manage_context", route: "/api/gea/context/preview", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -376,10 +393,10 @@ export async function handleContextPreview(request: Request, dependencies?: GeaA
 }
 
 export async function handleHealth(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:view_health", route: "/api/gea/health", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:view_health", route: "/api/gea/health", dependencies: d });
   if ("error" in access) return access.error;
 
-  const d = deps(dependencies);
   const agents = await d.runtimeService.listAgents(access.workspaceId);
   const executions = await d.runtimeService.listExecutions(access.workspaceId);
 
@@ -396,7 +413,8 @@ export async function handleHealth(request: Request, dependencies?: GeaApiDepend
 }
 
 export async function handleExecutionControl(request: Request, dependencies?: GeaApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:agents:execute", route: "/api/gea/executions/control", dependencies });
+  const d = deps(dependencies);
+  const access = await authorize({ request, actionId: "gea:agents:execute", route: "/api/gea/executions/control", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -404,7 +422,7 @@ export async function handleExecutionControl(request: Request, dependencies?: Ge
     return json({ error: "executionId and command are required." }, 400);
   }
 
-  const runtime = deps(dependencies).runtimeService;
+  const runtime = d.runtimeService;
 
   if (body.command === "PAUSE") {
     const execution = await runtime.pauseExecution(body.executionId, access.actorId);

@@ -8,6 +8,14 @@ import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity
 
 const GLW_MODULE_ID = "glw.core";
 
+type WorkersAuthorizeResult =
+  | { error: NextResponse }
+  | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
+type WorkerProtocolVerificationResult =
+  | { error: NextResponse }
+  | { token: NonNullable<ReturnType<typeof verifyWorkerToken>> };
+
 function unauthorizedResponse(): NextResponse {
   return NextResponse.json({ error: "GLW session is required." }, { status: 401 });
 }
@@ -29,7 +37,7 @@ function unauthorizedWorkerResponse(): NextResponse {
   return NextResponse.json({ error: "Signed worker token is required." }, { status: 401 });
 }
 
-function verifyProtocolWorker(request: Request, expectedWorkerId?: string) {
+function verifyProtocolWorker(request: Request, expectedWorkerId?: string): WorkerProtocolVerificationResult {
   const token = parseWorkerBearer(request);
   const secret = process.env.GOP_WORKER_TOKEN_SECRET;
   if (!token || !secret) {
@@ -48,7 +56,7 @@ function verifyProtocolWorker(request: Request, expectedWorkerId?: string) {
   return { token: payload } as const;
 }
 
-async function authorizeWorkerControl() {
+async function authorizeWorkerControl(): Promise<WorkersAuthorizeResult> {
   const session = await getGlwSession();
   if (!session) {
     return { error: unauthorizedResponse() } as const;

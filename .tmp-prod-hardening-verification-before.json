@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-08-10T19:17:57.847Z",
+  "draft": {
+    "status": 404,
+    "hasPhpWarning": true,
+    "containsYoastWarningPath": true
+  },
+  "publish": {
+    "status": 200,
+    "hasPhpWarning": false,
+    "containsYoastWarningPath": false
+  },
+  "canonical": {
+    "status": 200,
+    "hasPhpWarning": false,
+    "containsYoastWarningPath": false
+  },
+  "rest": {
+    "status": 200,
+    "contentType": "application/json; charset=UTF-8",
+    "hasPhpWarning": false,
+    "sample": "{\"id\":19308,\"date\":\"2026-08-10T18:18:20\",\"date_gmt\":\"2026-08-10T18:18:20\",\"guid\":{\"rendered\":\"https:\\/\\/leddisplaywarehouse.com\\/?page_id=19308\",\"raw\":\"https:\\/\\/leddisplaywarehouse.com\\/?page_id=19308\"},\"modified\":\"2026"
+  },
+  "server": {
+    "publishServer": "Apache",
+    "publishCfCache": null
+  }
+}

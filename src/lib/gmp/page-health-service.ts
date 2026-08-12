@@ -57,7 +57,7 @@ export async function buildPageHealthReport(input: {
   const brokenPlannedLinks = links.brokenTargets.length;
   const duplicateCanonicals = graph.duplicateCanonicalTargets.length;
   const missingMetadata = pages.filter((page) => !page.metadata || Object.keys(page.metadata).length === 0).length;
-  const generatedAt = [graph.generatedAt, links.generatedAt, ...pages.map((page) => page.updatedAt), ...readinessAssessments.map((assessment) => assessment?.updatedAt ?? assessment?.createdAt).filter(Boolean)].filter(Boolean).sort().at(-1) ?? new Date(0).toISOString();
+  const generatedAt = [graph.generatedAt, links.generatedAt, ...pages.map((page) => page.updatedAt), ...readinessAssessments.map((assessment) => assessment?.createdAt).filter(Boolean)].filter(Boolean).sort().at(-1) ?? new Date(0).toISOString();
   const relationshipIssues = graph.issues;
   const linkIssues = links.issues;
   const latestExecution = input.executions?.[0];

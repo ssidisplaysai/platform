@@ -1,0 +1,132 @@
+{
+  "program": "GLW-OPS-0001",
+  "mission": "Page Generation Operational Certification",
+  "date": "2026-07-29",
+  "run": {
+    "site": "LED Display Warehouse",
+    "workspace": "glw-led-display-warehouse",
+    "pageType": "city_service",
+    "productTopic": "Outdoor LED Displays",
+    "state": "California",
+    "city": "Sacramento",
+    "citySlug": "sacramento",
+    "hierarchicalSlug": "california/sacramento/outdoor-led-displays",
+    "publishingMode": "draft",
+    "additionalInstructions": "Generate production-quality SEO content.",
+    "jobId": "glw_1dg1hax8"
+  },
+  "baseline": {
+    "beforeCount": 12,
+    "beforeTopJobId": "glw_e2jtw2n9",
+    "afterCount": 13,
+    "afterTopJobId": "glw_1dg1hax8",
+    "newJobIds": [
+      "glw_1dg1hax8"
+    ]
+  },
+  "job": {
+    "id": "glw_1dg1hax8",
+    "status": "STARTING",
+    "siteId": "led-display-warehouse",
+    "title": "Outdoor LED Displays Sacramento",
+    "createdAt": "2026-07-30T02:09:36.748Z",
+    "startedAt": "2026-07-30T02:09:36.746Z",
+    "completedAt": null,
+    "externalExecutionId": "46992",
+    "result": {
+      "status": "RUNNING",
+      "executionId": "46992",
+      "wordpressUrl": null,
+      "wordpressPostId": null
+    }
+  },
+  "outboundPayloadEvidence": {
+    "callbackUrl": "https://fighters-mistress-executives-symposium.trycloudflare.com/api/glw/jobs/callback",
+    "pageType": "city_service",
+    "state": "California",
+    "city": "Sacramento",
+    "city_slug": "sacramento",
+    "hierarchicalSlug": "california/sacramento/outdoor-led-displays"
+  },
+  "n8n": {
+    "executionId": "46992",
+    "webhookOrigin": "https://ssiai.app.n8n.cloud",
+    "executionUrl": "https://ssiai.app.n8n.cloud/execution/46992",
+    "executionUrlType": "inferred",
+    "received": true
+  },
+  "gopExecution": {
+    "executionId": "gexec_glw_glw_1dg1hax8",
+    "status": "DISPATCHED",
+    "currentNodeId": "n_intake",
+    "nodeCompleted": 0,
+    "nodeTotal": 5,
+    "graphNodes": [
+      "n_intake",
+      "n_generate_content",
+      "n_generate_image",
+      "n_publish",
+      "n_notify"
+    ]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "eventType": "JOB_CREATED",
+      "stage": "request_intake",
+      "status": "QUEUED",
+      "correlationId": null,
+      "message": "GLW job record created."
+    },
+    {
+      "sequence": 2,
+      "eventType": "QUEUED",
+      "stage": "queued",
+      "status": "QUEUED",
+      "correlationId": null,
+      "message": "GLW job moved to QUEUED"
+    },
+    {
+      "sequence": 3,
+      "eventType": "STARTED",
+      "stage": "worker_start",
+      "status": "STARTING",
+      "correlationId": null,
+      "message": "Workflow execution started."
+    },
+    {
+      "sequence": 4,
+      "eventType": "STARTED",
+      "stage": "worker_start",
+      "status": "STARTING",
+      "correlationId": "46992",
+      "message": "Workflow accepted by n8n."
+    }
+  ],
+  "verification": {
+    "operatorClicksGeneratePage": "PASS",
+    "validationSucceeds": "PASS",
+    "jobPersisted": "PASS",
+    "outboundWebhookPayloadCaptured": "PASS",
+    "n8nReceivesRequest": "PASS",
+    "workflowExecutesToTerminal": "FAIL",
+    "callbackReturnsToGlw": "FAIL",
+    "jobUpdatedToCompleteOrFailed": "FAIL",
+    "wordpressDraftCreated": "FAIL",
+    "dashboardJobVisible": "PASS",
+    "dashboardTimelinePopulated": "PASS",
+    "dashboardOpenDraftActionWorks": "FAIL"
+  },
+  "validationChecklist": {
+    "oneRequestSubmitted": true,
+    "oneJobCreated": true,
+    "oneN8nExecution": true,
+    "oneCallback": false,
+    "oneCompletion": false,
+    "oneWordpressDraft": false,
+    "noDuplicateJobs": true,
+    "noManualCallbackInjection": true,
+    "noManualDatabaseEdits": true,
+    "noRetryRequired": true
+  }
+}

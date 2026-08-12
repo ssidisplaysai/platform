@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import { DataTable } from "./data-table";
@@ -10,11 +10,15 @@ import { GlwJobProgress } from "./glw-job-progress";
 import { PageContainer } from "./page-container";
 import { SectionHeader } from "./section-header";
 import {
+  deriveCitySlugFromCity,
   formatGlwJobDuration,
   getGlwJobOperatorSnapshot,
+  pageTypeRequiresCity,
+  resolveGlwPublishingStatus,
   type GlwJobRecord,
 } from "@/lib/glw/jobs";
 import { glwSites, type GlwSite } from "@/lib/glw/sites";
+import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
 type GlwPageGenerationWorkspaceProps = {
   initialJobs: GlwJobRecord[];
@@ -24,6 +28,14 @@ type GlwPageGenerationWorkspaceProps = {
 
 type GenerationFormState = {
   siteId: string;
+  workspaceId: string;
+  pageType: "city_service" | "state_service" | "general_service";
+  productTopic: string;
+  state: string;
+  city: string;
+  citySlug: string;
+  hierarchicalSlug: string;
+  additionalInstructions: string;
   title: string;
   targetSlug: string;
   primaryKeyword: string;
@@ -45,6 +57,14 @@ type JobsPayload = {
 
 const initialFormState: GenerationFormState = {
   siteId: "led-display-warehouse",
+  workspaceId: GENESIS_PRIMARY_WORKSPACE_ID,
+  pageType: "city_service",
+  productTopic: "LED Wall Rental",
+  state: "Texas",
+  city: "Austin",
+  citySlug: "austin",
+  hierarchicalSlug: "texas/austin/led-wall-rental",
+  additionalInstructions: "Emphasize fast delivery windows and include regional service proof points.",
   title: "LED Wall Rental Package",
   targetSlug: "led-wall-rental-package",
   primaryKeyword: "led wall rental",
@@ -54,13 +74,21 @@ const initialFormState: GenerationFormState = {
   audience: "Event marketing teams",
   callToAction: "Request a same-day quote",
   category: "Rentals",
-  status: "draft",
+  status: "publish",
 };
 
 function createFormData(formState: GenerationFormState): FormData {
   const formData = new FormData();
 
   formData.set("siteId", formState.siteId);
+  formData.set("workspaceId", formState.workspaceId);
+  formData.set("pageType", formState.pageType);
+  formData.set("productTopic", formState.productTopic);
+  formData.set("state", formState.state);
+  formData.set("city", formState.city);
+  formData.set("citySlug", formState.citySlug);
+  formData.set("hierarchicalSlug", formState.hierarchicalSlug);
+  formData.set("additionalInstructions", formState.additionalInstructions);
   formData.set("title", formState.title);
   formData.set("targetSlug", formState.targetSlug);
   formData.set("primaryKeyword", formState.primaryKeyword);
@@ -79,6 +107,23 @@ function validateForm(formState: GenerationFormState): FieldErrors {
   const errors: FieldErrors = {};
 
   if (!formState.siteId.trim()) errors.siteId = "Site is required.";
+  if (!formState.workspaceId.trim()) errors.workspaceId = "Workspace is required.";
+  if (!formState.productTopic.trim()) errors.productTopic = "Product or topic is required.";
+  if (!formState.state.trim()) errors.state = "State is required.";
+  if (!formState.hierarchicalSlug.trim()) errors.hierarchicalSlug = "Desired hierarchical slug is required.";
+  if (formState.hierarchicalSlug.trim() && !/^[-a-z0-9/]+$/.test(formState.hierarchicalSlug.trim())) {
+    errors.hierarchicalSlug = "Hierarchical slug must use lowercase letters, numbers, hyphens, and slashes only.";
+  }
+
+  if (pageTypeRequiresCity(formState.pageType)) {
+    if (!formState.city.trim()) errors.city = "City is required for city pages.";
+    if (!formState.citySlug.trim()) errors.citySlug = "City slug is required for city pages.";
+  }
+
+  if (formState.citySlug.trim() && !/^[-a-z0-9]+$/.test(formState.citySlug.trim())) {
+    errors.citySlug = "City slug must use lowercase letters, numbers, and hyphens only.";
+  }
+
   if (!formState.title.trim()) errors.title = "Title is required.";
   if (!formState.targetSlug.trim()) errors.targetSlug = "Target URL slug is required.";
   if (!/^[-a-z0-9]+$/.test(formState.targetSlug.trim())) errors.targetSlug = "Slug must use lowercase letters, numbers, and hyphens only.";
@@ -205,6 +250,7 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
   const [errors, setErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, startTransition] = useTransition();
+  const submitLock = useRef(false);
   const selectedJobSectionId = "glw-selected-job-details";
 
   const selectedSite = useMemo(() => glwSites.find((site) => site.id === formState.siteId) ?? glwSites[0], [formState.siteId]);
@@ -212,6 +258,14 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
   const duplicateRequestFromJob = (job: GlwJobRecord) => {
     setFormState({
       siteId: job.input.site.id,
+      workspaceId: job.input.page.workspaceId,
+      pageType: job.input.page.pageType,
+      productTopic: job.input.page.productTopic,
+      state: job.input.page.state,
+      city: job.input.page.city,
+      citySlug: job.input.page.citySlug,
+      hierarchicalSlug: job.input.page.hierarchicalSlug,
+      additionalInstructions: job.input.page.additionalInstructions,
       title: job.input.page.title,
       targetSlug: job.input.page.targetSlug,
       primaryKeyword: job.input.page.primaryKeyword,
@@ -237,7 +291,21 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
   };
 
   const createJob = async () => {
-    const nextErrors = validateForm(formState);
+    if (submitLock.current) {
+      return;
+    }
+
+    const derivedCitySlug = formState.citySlug.trim() || deriveCitySlugFromCity(formState.city);
+    const normalizedTargetSlug = formState.targetSlug.trim() || formState.hierarchicalSlug.trim().split("/").filter(Boolean).pop() || "";
+    const nextFormState = {
+      ...formState,
+      citySlug: derivedCitySlug,
+      targetSlug: normalizedTargetSlug,
+    };
+
+    setFormState(nextFormState);
+
+    const nextErrors = validateForm(nextFormState);
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -247,30 +315,41 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
     setErrors({});
     setServerError(null);
 
-    const request = createFormData(formState);
+    submitLock.current = true;
 
-    const response = await fetch("/api/glw/jobs/page", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(Object.fromEntries(request.entries())),
-    });
+    const request = createFormData(nextFormState);
 
-    const payload = await response.json().catch(() => null) as { job?: GlwJobRecord; fieldErrors?: FieldErrors; error?: string } | null;
+    try {
+      const response = await fetch("/api/glw/jobs/page", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(Object.fromEntries(request.entries())),
+      });
 
-    if (!response.ok || !payload?.job) {
-      if (payload?.fieldErrors) {
-        setErrors(payload.fieldErrors);
+      const payload = await response.json().catch(() => null) as { job?: GlwJobRecord; fieldErrors?: FieldErrors; error?: string } | null;
+
+      if (payload?.job) {
+        setJobs((current) => [payload.job as GlwJobRecord, ...current.filter((job) => job.id !== payload.job!.id)]);
+        setSelectedJob(payload.job);
+        setIsCreateMode(false);
+        router.refresh();
+        return;
       }
 
-      setServerError(payload?.error ?? "Unable to create the GLW job.");
-      return;
-    }
+      if (!response.ok) {
+        if (payload?.fieldErrors) {
+          setErrors(payload.fieldErrors);
+        }
 
-    setJobs((current) => [payload.job as GlwJobRecord, ...current.filter((job) => job.id !== payload.job!.id)]);
-    setSelectedJob(payload.job);
-    setIsCreateMode(false);
-    router.refresh();
+        setServerError(payload?.error ?? "Unable to create the GLW job.");
+        return;
+      }
+
+      setServerError("Unable to create the GLW job.");
+    } finally {
+      submitLock.current = false;
+    }
   };
 
   const handleSubmit = () => {
@@ -378,7 +457,14 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
       duration: formatGlwJobDuration(job),
       operator: getOperatorLabel(),
       workflowVersion: getWorkflowVersionLabel(job),
-      actionLabel: job.status === "FAILED" ? "Retry" : job.status === "COMPLETE" ? "Open WordPress Draft" : "View Details",
+      actionLabel:
+        job.status === "FAILED"
+          ? "Retry"
+          : job.status === "COMPLETE"
+            ? resolveGlwPublishingStatus(job) === "publish"
+              ? "Open Page"
+              : "Open Draft"
+            : "View Details",
     };
   }), [jobs]);
 
@@ -560,6 +646,71 @@ function GeneratorForm({
           onSubmit();
         }}
       >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <Label htmlFor="workspaceId">Workspace</Label>
+            <input id="workspaceId" value={formState.workspaceId} onChange={(event) => setFormState((current) => ({ ...current, workspaceId: event.target.value }))} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-red-500" />
+            {fieldError(errors, "workspaceId") ? <FieldError message={fieldError(errors, "workspaceId")!} /> : null}
+          </Field>
+
+          <Field>
+            <Label htmlFor="pageType">Page Type</Label>
+            <select id="pageType" value={formState.pageType} onChange={(event) => setFormState((current) => ({ ...current, pageType: event.target.value as GenerationFormState["pageType"] }))} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-700 focus:ring-2 focus:ring-red-500">
+              <option value="city_service">City Service</option>
+              <option value="state_service">State Service</option>
+              <option value="general_service">General Service</option>
+            </select>
+            {fieldError(errors, "pageType") ? <FieldError message={fieldError(errors, "pageType")!} /> : null}
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <Label htmlFor="productTopic">Product or Topic</Label>
+            <input id="productTopic" value={formState.productTopic} onChange={(event) => setFormState((current) => ({ ...current, productTopic: event.target.value }))} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-red-500" />
+            {fieldError(errors, "productTopic") ? <FieldError message={fieldError(errors, "productTopic")!} /> : null}
+          </Field>
+
+          <Field>
+            <Label htmlFor="state">State</Label>
+            <input id="state" value={formState.state} onChange={(event) => setFormState((current) => ({ ...current, state: event.target.value }))} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-red-500" />
+            {fieldError(errors, "state") ? <FieldError message={fieldError(errors, "state")!} /> : null}
+          </Field>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field>
+            <Label htmlFor="city">City</Label>
+            <input
+              id="city"
+              value={formState.city}
+              onChange={(event) => {
+                const nextCity = event.target.value;
+                setFormState((current) => ({
+                  ...current,
+                  city: nextCity,
+                  citySlug: current.citySlug.trim() ? current.citySlug : deriveCitySlugFromCity(nextCity),
+                }));
+              }}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-red-500"
+            />
+            {fieldError(errors, "city") ? <FieldError message={fieldError(errors, "city")!} /> : null}
+          </Field>
+
+          <Field>
+            <Label htmlFor="citySlug">City Slug</Label>
+            <input id="citySlug" value={formState.citySlug} onChange={(event) => setFormState((current) => ({ ...current, citySlug: event.target.value }))} placeholder="los-angeles" className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-red-500" />
+            <p className="text-xs text-zinc-500">Derived from city when blank. Sent to workflow as city_slug.</p>
+            {fieldError(errors, "citySlug") ? <FieldError message={fieldError(errors, "citySlug")!} /> : null}
+          </Field>
+        </div>
+
+        <Field>
+          <Label htmlFor="hierarchicalSlug">Desired Hierarchical Slug</Label>
+          <input id="hierarchicalSlug" value={formState.hierarchicalSlug} onChange={(event) => setFormState((current) => ({ ...current, hierarchicalSlug: event.target.value }))} placeholder="texas/austin/led-wall-rental" className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-red-500" />
+          {fieldError(errors, "hierarchicalSlug") ? <FieldError message={fieldError(errors, "hierarchicalSlug")!} /> : null}
+        </Field>
+
         <Field>
           <Label htmlFor="siteId">Site</Label>
           <select
@@ -638,10 +789,16 @@ function GeneratorForm({
         </Field>
 
         <Field>
+          <Label htmlFor="additionalInstructions">Additional Instructions</Label>
+          <textarea id="additionalInstructions" rows={3} value={formState.additionalInstructions} onChange={(event) => setFormState((current) => ({ ...current, additionalInstructions: event.target.value }))} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-zinc-700 focus:ring-2 focus:ring-red-500" />
+          {fieldError(errors, "additionalInstructions") ? <FieldError message={fieldError(errors, "additionalInstructions")!} /> : null}
+        </Field>
+
+        <Field>
           <Label htmlFor="status">Status</Label>
           <select id="status" value={formState.status} onChange={(event) => setFormState((current) => ({ ...current, status: event.target.value as "draft" | "publish" }))} className="w-full rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-700 focus:ring-2 focus:ring-red-500">
-            <option value="draft">Draft</option>
             <option value="publish">Publish</option>
+            <option value="draft">Draft</option>
           </select>
           {fieldError(errors, "status") ? <FieldError message={fieldError(errors, "status")!} /> : null}
         </Field>
@@ -662,6 +819,13 @@ function GeneratorForm({
         <SectionHeader eyebrow="Preview" title="Request summary" description="The operator sees the exact request that will be sent to the page workflow." />
         <div className="mt-5 space-y-3 text-sm text-zinc-300">
           <SummaryRow label="Site" value={site.name} />
+          <SummaryRow label="Workspace" value={formState.workspaceId || "Not set"} />
+          <SummaryRow label="Page type" value={formState.pageType || "Not set"} />
+          <SummaryRow label="Product or topic" value={formState.productTopic || "Not set"} />
+          <SummaryRow label="State" value={formState.state || "Not set"} />
+          <SummaryRow label="City" value={formState.city || "Not set"} />
+          <SummaryRow label="City slug" value={formState.citySlug || deriveCitySlugFromCity(formState.city) || "Not set"} />
+          <SummaryRow label="Hierarchical slug" value={formState.hierarchicalSlug || "Not set"} />
           <SummaryRow label="Title" value={formState.title || "Untitled"} />
           <SummaryRow label="Target slug" value={formState.targetSlug || "Not set"} />
           <SummaryRow label="Category" value={formState.category || "Uncategorized"} />
@@ -672,6 +836,7 @@ function GeneratorForm({
           <SummaryRow label="Audience" value={formState.audience || "Not set"} />
           <SummaryRow label="Call-to-action" value={formState.callToAction || "Not set"} />
           <SummaryRow label="Publishing status" value={formState.status} />
+          <SummaryRow label="Additional instructions" value={formState.additionalInstructions || "None"} />
         </div>
       </aside>
     </div>

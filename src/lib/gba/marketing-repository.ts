@@ -311,7 +311,7 @@ export function createPrismaMarketingRepository(prisma: PrismaClient = getPrisma
           score: entry.score,
           opportunities: toJsonValue(entry.opportunities),
           blockers: toJsonValue(entry.blockers),
-          createdAt: new Date(entry.createdAt),
+          createdAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
         update: {
@@ -338,14 +338,14 @@ export function createPrismaMarketingRepository(prisma: PrismaClient = getPrisma
           reviewState: entry.reviewState,
           notes: entry.notes,
           reviewedBy: entry.reviewedBy,
-          reviewedAt: new Date(entry.reviewedAt),
+          reviewedAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
         update: {
           reviewState: entry.reviewState,
           notes: entry.notes,
           reviewedBy: entry.reviewedBy,
-          reviewedAt: new Date(entry.reviewedAt),
+          reviewedAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
       }));
@@ -368,7 +368,7 @@ export function createPrismaMarketingRepository(prisma: PrismaClient = getPrisma
           trafficScore: entry.trafficScore,
           engagementScore: entry.engagementScore,
           conversionScore: entry.conversionScore,
-          createdAt: new Date(entry.createdAt),
+          createdAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
         update: {
@@ -402,7 +402,7 @@ export function createPrismaMarketingRepository(prisma: PrismaClient = getPrisma
           confidence: entry.confidence,
           status: entry.status,
           sourceReference: entry.sourceReference,
-          createdAt: new Date(entry.createdAt),
+          createdAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
         update: {
@@ -448,7 +448,7 @@ export function createPrismaMarketingRepository(prisma: PrismaClient = getPrisma
           summary: entry.summary,
           actorId: entry.actorId,
           evidenceReferences: toJsonValue(entry.evidenceReferences),
-          createdAt: new Date(entry.createdAt),
+          createdAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
       }));
@@ -471,7 +471,7 @@ export function createPrismaMarketingRepository(prisma: PrismaClient = getPrisma
           campaignHighlights: toJsonValue(entry.campaignHighlights),
           contentHighlights: toJsonValue(entry.contentHighlights),
           seoHighlights: toJsonValue(entry.seoHighlights),
-          createdAt: new Date(entry.createdAt),
+          createdAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
         update: {
@@ -501,7 +501,7 @@ export function createPrismaMarketingRepository(prisma: PrismaClient = getPrisma
           reviewBacklog: entry.reviewBacklog,
           seoRisks: entry.seoRisks,
           analyticsGaps: entry.analyticsGaps,
-          generatedAt: new Date(entry.generatedAt),
+          generatedAt: new Date(),
           immutableLineage: entry.immutableLineage,
         },
         update: {
@@ -603,7 +603,7 @@ export function createInMemoryMarketingRepository(): MarketingRepository {
     },
     async appendTimelineEvent(entry) {
       const id = entry.marketingTimelineEventId ?? marketingId("gbamkttime");
-      const next = { marketingTimelineEventId: id, ...entry, createdAt: entry.createdAt ?? new Date().toISOString() } as MarketingTimelineEvent;
+      const next = { marketingTimelineEventId: id, ...entry, createdAt: new Date().toISOString() } as MarketingTimelineEvent;
       timelineEvents.set(id, next);
       return next;
     },

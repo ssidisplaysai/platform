@@ -1,0 +1,44 @@
+{
+  "schemaIdentifier": "gar-0003/gar-0003-certification",
+  "schemaVersion": "1.0.0",
+  "packageId": "GAR-0003",
+  "title": "Genesis Constitutional Assessment",
+  "decision": "CERTIFIED WITH CONDITIONS",
+  "permittedDecisionStates": [
+    "CERTIFIED",
+    "CERTIFIED WITH CONDITIONS",
+    "NOT CERTIFIED",
+    "CERTIFICATION DEFERRED"
+  ],
+  "basis": {
+    "findingRefs": [
+      "GAR-0003-FND-001",
+      "GAR-0003-FND-002",
+      "GAR-0003-FND-003",
+      "GAR-0003-FND-004"
+    ],
+    "clauseEvaluationRefs": [
+      "CNS-1",
+      "CNS-2",
+      "CNS-3",
+      "CNS-4",
+      "CNS-5",
+      "CNS-AR-1"
+    ],
+    "evidenceRefs": [
+      "GAR3-EVD-001",
+      "GAR3-EVD-002",
+      "GAR3-EVD-003",
+      "GAR3-EVD-004",
+      "GAR3-EVD-005",
+      "GAR3-EVD-006",
+      "GAR3-EVD-007"
+    ]
+  },
+  "conditions": [
+    "Backfill release machine commit pointers for direct machine traceability.",
+    "Expand dynamic evidence for metadata source-of-truth and architecture lineage clauses in GAR-0004."
+  ],
+  "generatedAt": "2026-07-28T21:30:17.345Z",
+  "repositoryRevision": "da84dac0e8d3d203cca94bc9af6bfd33b9dd0abb"
+}

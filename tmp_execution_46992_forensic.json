@@ -1,0 +1,353 @@
+{
+  "execution": {
+    "id": "46992",
+    "status": "error",
+    "startedAt": "2026-07-30T02:09:37.047Z",
+    "stoppedAt": "2026-07-30T02:11:09.369Z",
+    "durationMs": 92322,
+    "finished": false,
+    "workflowId": "bIDXxyWnY22G8zJC"
+  },
+  "failNode": {
+    "node": "Send GLW Completion Callback",
+    "id": "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
+    "type": "n8n-nodes-base.httpRequest",
+    "orderTs": 1785377469361,
+    "start": 1785377469361,
+    "durMs": 8,
+    "status": "FAILED",
+    "errName": "ExpressionError",
+    "errMsg": "access to env vars denied",
+    "runIndex": 0
+  },
+  "resultError": {
+    "cause": [
+      {
+        "name": "Authorization",
+        "value": "=Bearer {{ $env.GLW_N8N_WEBHOOK_SECRET || '' }}"
+      },
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ],
+    "level": "warning",
+    "shouldReport": false,
+    "tags": {},
+    "timestamp": 1785377469365,
+    "context": {
+      "causeDetailed": "If you need access please contact the administrator to remove the environment variable ‘N8N_BLOCK_ENV_ACCESS_IN_NODE‘",
+      "runIndex": 0,
+      "itemIndex": 0,
+      "parameter": "headerParameters.parameters"
+    },
+    "functionality": "regular",
+    "name": "ExpressionError",
+    "message": "access to env vars denied",
+    "stack": "ExpressionError: access to env vars denied\n    at mapVmError (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/expression.ts:88:25)\n    at Expression.renderExpression (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/expression.ts:643:11)\n    at Expression.resolveSimpleParameterValue (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/expression.ts:611:28)\n    at WorkflowExpression.resolveSimpleParameterValue (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/workflow-expression.ts:66:26)\n    at resolveParameterValue (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/workflow-expression.ts:115:16)\n    at WorkflowExpression.getParameterValue (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/workflow-expression.ts:173:22)\n    at resolveParameterValue (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/workflow-expression.ts:99:17)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/workflow-expression.ts:155:5\n    at Array.map (<anonymous>)\n    at WorkflowExpression.getParameterValue (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-workflow@file+packages+workflow_@opentelemetry+exporter-trace-otlp-http@0.217.0_@op_8eb04c228423f055ff1597b68fd25429/node_modules/n8n-workflow/src/workflow-expression.ts:154:38)\n    at ExecuteContext._getNodeParameter (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/node-execution-context/node-execution-context.ts:521:37)\n    at ExecuteContext.getNodeParameter (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/node-execution-context/execute-context.ts:132:9)\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file+packages+nodes-base_@opentelemetry+api@1.9.0_@opentelemetry+exporte_9e31dcec10980323a9c957753d2416c7/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:279:35)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1081:31)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1381:22)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1854:38\n    at processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2546:11"
+  },
+  "predecessor": {
+    "previousNode": "GLW Callback Configured?",
+    "previousNodeOutput": 0,
+    "previousNodeRun": 0
+  },
+  "callbackUrl": "https://fighters-mistress-executives-symposium.trycloudflare.com/api/glw/jobs/callback",
+  "completionEvidence": {
+    "wordpressPageId": 12850,
+    "wordpressLink": "https://leddisplaywarehouse.com/?page_id=12850",
+    "wordpressStatus": "draft",
+    "featuredMediaId": 12853,
+    "titleRaw": "Outdoor LED Display Rentals in Sacramento",
+    "hasContentRaw": true,
+    "hasImageInContent": true,
+    "hasOgImage": true
+  },
+  "nodeOrder": [
+    {
+      "order": 1,
+      "node": "GLW Page Webhook",
+      "id": "4dbf0d71-a918-421d-8115-417c2349daa9",
+      "type": "n8n-nodes-base.webhook",
+      "status": "SUCCESS",
+      "durationMs": 1,
+      "start": 1785377377086,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 2,
+      "node": "Get row(s) in sheet",
+      "id": "a28c0614-9749-4814-9f4b-3b8d60282241",
+      "type": "n8n-nodes-base.code",
+      "status": "SUCCESS",
+      "durationMs": 1600,
+      "start": 1785377377087,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 3,
+      "node": "Message a model",
+      "id": "c4a0471b-648e-428e-b878-c8f172169e87",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "status": "SUCCESS",
+      "durationMs": 16828,
+      "start": 1785377378687,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 4,
+      "node": "Code in JavaScript",
+      "id": "b0c242df-6a35-412f-bfa8-e6033efd0c59",
+      "type": "n8n-nodes-base.code",
+      "status": "SUCCESS",
+      "durationMs": 1462,
+      "start": 1785377395516,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 5,
+      "node": "Prepare Hierarchy Fields",
+      "id": "9898b2bd-c0db-4f99-80b9-e6fb1892c38b",
+      "type": "n8n-nodes-base.code",
+      "status": "SUCCESS",
+      "durationMs": 8,
+      "start": 1785377396978,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 6,
+      "node": "Find Product Parent",
+      "id": "638b61bb-92be-45ed-aa32-11a856f35f8e",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 1758,
+      "start": 1785377396986,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 7,
+      "node": "Prepare Product Parent",
+      "id": "d7c9e872-db09-4655-9508-280fcd9f96c8",
+      "type": "n8n-nodes-base.code",
+      "status": "SUCCESS",
+      "durationMs": 6,
+      "start": 1785377398745,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 8,
+      "node": "Find State Parent",
+      "id": "45d3fab1-0fce-414f-88c7-8f842c25b069",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 1667,
+      "start": 1785377398751,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 9,
+      "node": "Prepare State Parent",
+      "id": "5fbbe0a3-de55-4bad-bb5b-1e330e4fa357",
+      "type": "n8n-nodes-base.code",
+      "status": "SUCCESS",
+      "durationMs": 7,
+      "start": 1785377400418,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 10,
+      "node": "State Parent Exists?",
+      "id": "ed11e310-6a1f-4782-a418-76ac09c4a697",
+      "type": "n8n-nodes-base.if",
+      "status": "SUCCESS",
+      "durationMs": 2,
+      "start": 1785377400425,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 11,
+      "node": "Create State Parent",
+      "id": "fa5f733d-eaa6-48d7-842f-212d21e8796f",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 2640,
+      "start": 1785377400428,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 12,
+      "node": "Prepare Created State Parent",
+      "id": "4b619794-70b1-4b4f-a519-00317318a5b2",
+      "type": "n8n-nodes-base.code",
+      "status": "SUCCESS",
+      "durationMs": 7,
+      "start": 1785377403068,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 13,
+      "node": "Validate Parent Before Publish",
+      "id": "3772633e-82bd-4e2e-86fd-8f55a28f4384",
+      "type": "n8n-nodes-base.code",
+      "status": "SUCCESS",
+      "durationMs": 5,
+      "start": 1785377403075,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 14,
+      "node": "Validation Passed?",
+      "id": "7bc724e0-37b9-4bf5-93ae-120912d09ff1",
+      "type": "n8n-nodes-base.if",
+      "status": "SUCCESS",
+      "durationMs": 2,
+      "start": 1785377403080,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 15,
+      "node": "Create a post",
+      "id": "8d341c22-6ac9-43da-8ac5-a2e0b37f6842",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 1863,
+      "start": 1785377403082,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 16,
+      "node": "Update Yoast SEO",
+      "id": "95a071c7-d5ff-4b72-befb-a1e723dd4e5a",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 1852,
+      "start": 1785377404945,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 17,
+      "node": "Prepare Image Fields",
+      "id": "a9b49340-f70e-483b-a704-1b06bce0ffac",
+      "type": "n8n-nodes-base.set",
+      "status": "SUCCESS",
+      "durationMs": 3,
+      "start": 1785377406797,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 18,
+      "node": "Limit",
+      "id": "a7208ef1-a456-49f5-a132-91460b9f13c9",
+      "type": "n8n-nodes-base.limit",
+      "status": "SUCCESS",
+      "durationMs": 1,
+      "start": 1785377406800,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 19,
+      "node": "Generate an image",
+      "id": "69a0bfcc-abe6-42bc-901f-a0c94dd55008",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "status": "SUCCESS",
+      "durationMs": 51322,
+      "start": 1785377406801,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 20,
+      "node": "Upload Image to WordPress",
+      "id": "e3acf9f1-b381-4cf8-92c4-5f6925cb3589",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 6005,
+      "start": 1785377458123,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 21,
+      "node": "Update Image Alt Text",
+      "id": "4cb4d6e6-6e78-40ec-aa42-9e893bf2c4da",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 1805,
+      "start": 1785377464128,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 22,
+      "node": "Insert Image Into Page",
+      "id": "10c90f93-d6b6-4e49-bd70-4fb6852b34cd",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 1713,
+      "start": 1785377465933,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 23,
+      "node": "Set Featured Image",
+      "id": "05b62e57-f5ee-40d9-82d3-f3e19ea3cef8",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "SUCCESS",
+      "durationMs": 1712,
+      "start": 1785377467646,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 24,
+      "node": "GLW Request?",
+      "id": "ad8d877b-9a68-4cbb-b00b-3fad1cb836d9",
+      "type": "n8n-nodes-base.if",
+      "status": "SUCCESS",
+      "durationMs": 2,
+      "start": 1785377469358,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 25,
+      "node": "GLW Callback Configured?",
+      "id": "7e0e41c0-4142-4ead-9c9d-97fce12635ba",
+      "type": "n8n-nodes-base.if",
+      "status": "SUCCESS",
+      "durationMs": 1,
+      "start": 1785377469360,
+      "errName": null,
+      "errMsg": null
+    },
+    {
+      "order": 26,
+      "node": "Send GLW Completion Callback",
+      "id": "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
+      "type": "n8n-nodes-base.httpRequest",
+      "status": "FAILED",
+      "durationMs": 8,
+      "start": 1785377469361,
+      "errName": "ExpressionError",
+      "errMsg": "access to env vars denied"
+    }
+  ]
+}

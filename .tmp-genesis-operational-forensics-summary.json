@@ -1,0 +1,20 @@
+{
+  "total": 25,
+  "bucketCounts": {
+    "F": 12,
+    "A": 13
+  },
+  "n8nAudit": {
+    "missing": 4,
+    "exists": 21
+  },
+  "callbackBreakdown": {
+    "Callback missing": 25
+  },
+  "callbackReasons": {
+    "n8n execution record missing (404/missing), so callback evidence cannot be produced.": 4,
+    "n8n execution terminal but callback node evidence is absent in runData.": 21
+  },
+  "leaseNeverCreated": 25,
+  "workersPresent": 0
+}

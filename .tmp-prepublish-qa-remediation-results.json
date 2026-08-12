@@ -1,0 +1,475 @@
+{
+  "generatedAt": "2026-08-10T17:33:32.878Z",
+  "results": [
+    {
+      "scenario": "existing-city",
+      "expected": "pass",
+      "jobId": "glw_09gt5ps8",
+      "status": "COMPLETE",
+      "disposition": null,
+      "wordpressStatus": null,
+      "pageId": 18847,
+      "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=18847",
+      "executionId": "64991",
+      "error": null,
+      "qaChecks": null,
+      "qaFailureReasons": null,
+      "executionSummary": {
+        "executionId": "64991",
+        "status": "success",
+        "lastNode": "Send GLW Completion Callback",
+        "qa": {
+          "passed": true,
+          "callbackStatus": "COMPLETE",
+          "disposition": "UPDATED",
+          "wordpressStatus": "draft",
+          "pageId": 18847,
+          "url": "https://leddisplaywarehouse.com/?page_id=18847",
+          "checks": {
+            "pageExists": "PASS",
+            "hierarchy": "PASS",
+            "slug": "PASS",
+            "title": "PASS",
+            "h1": "PASS",
+            "body": "PASS",
+            "featuredImage": "PASS",
+            "heroImage": "PASS",
+            "seo": "PASS",
+            "internalLinks": "PASS",
+            "imageAlt": "PASS",
+            "duplicateCheck": "PASS"
+          },
+          "failureReasons": {}
+        },
+        "callback": {
+          "job": {
+            "id": "glw_09gt5ps8",
+            "type": "PAGE_GENERATION",
+            "status": "COMPLETE",
+            "retryOfJobId": null,
+            "siteId": "led-display-warehouse",
+            "title": "Direct View LED Video Walls in Houston",
+            "input": {
+              "page": {
+                "city": "Houston",
+                "tone": "Professional",
+                "state": "Texas",
+                "title": "Direct View LED Video Walls in Houston",
+                "status": "draft",
+                "audience": "Internal QA",
+                "category": "Direct View LED Video Walls",
+                "citySlug": "houston",
+                "pageType": "city_service",
+                "wordCount": 1800,
+                "targetSlug": "houston",
+                "workspaceId": "glw-led-display-warehouse",
+                "callToAction": "Validation only.",
+                "productTopic": "Direct View LED Video Walls",
+                "primaryKeyword": "direct view led video walls houston",
+                "hierarchicalSlug": "direct-view-led-video-walls/texas/houston",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "existing-city"
+                ],
+                "additionalInstructions": "Deterministic pre-publish QA remediation validation for existing city."
+              },
+              "site": {
+                "id": "led-display-warehouse",
+                "name": "LED Display Warehouse"
+              },
+              "type": "page_generation",
+              "promptData": {
+                "tone": "Professional",
+                "audience": "Internal QA",
+                "callToAction": "Validation only."
+              },
+              "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
+              "seoSettings": {
+                "category": "Direct View LED Video Walls",
+                "citySlug": "houston",
+                "targetSlug": "houston",
+                "primaryKeyword": "direct view led video walls houston",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "existing-city"
+                ]
+              },
+              "imageSettings": {
+                "style": "editorial",
+                "generateFeaturedImage": true
+              },
+              "publishingSettings": {
+                "status": "draft",
+                "wordCount": 1800
+              }
+            },
+            "result": {
+              "title": "Direct View LED Video Walls in Houston",
+              "status": "COMPLETE",
+              "executionId": "64991",
+              "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=18847",
+              "wordpressPageId": 18847,
+              "wordpressPostId": 18847
+            },
+            "error": null,
+            "externalExecutionId": "64991",
+            "startedAt": "2026-08-10T17:27:28.467Z",
+            "completedAt": "2026-08-10T17:29:13.313Z",
+            "createdAt": "2026-08-10T17:27:28.757Z",
+            "updatedAt": "2026-08-10T17:29:13.313Z"
+          }
+        },
+        "contentEvidence": {
+          "bodyWordCountRendered": 1298,
+          "bodyWordCountSource": 1298,
+          "renderedLinkCount": 12,
+          "sourceLinkCount": 12,
+          "renderedLinks": [
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/exhibition-led-displays/",
+            "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/flexible-rollable-led/",
+            "https://leddisplaywarehouse.com/interactive-led-floors/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/custom-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/",
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/"
+          ],
+          "sourceLinks": [
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/exhibition-led-displays/",
+            "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/flexible-rollable-led/",
+            "https://leddisplaywarehouse.com/interactive-led-floors/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/custom-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/",
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "new-city-a",
+      "expected": "pass",
+      "jobId": "glw_6znybicz",
+      "status": "COMPLETE",
+      "disposition": null,
+      "wordpressStatus": null,
+      "pageId": 19287,
+      "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=19287",
+      "executionId": "64992",
+      "error": null,
+      "qaChecks": null,
+      "qaFailureReasons": null,
+      "executionSummary": {
+        "executionId": "64992",
+        "status": "success",
+        "lastNode": "Send GLW Completion Callback",
+        "qa": {
+          "passed": true,
+          "callbackStatus": "COMPLETE",
+          "disposition": "CREATED",
+          "wordpressStatus": "draft",
+          "pageId": 19287,
+          "url": "https://leddisplaywarehouse.com/?page_id=19287",
+          "checks": {
+            "pageExists": "PASS",
+            "hierarchy": "PASS",
+            "slug": "PASS",
+            "title": "PASS",
+            "h1": "PASS",
+            "body": "PASS",
+            "featuredImage": "PASS",
+            "heroImage": "PASS",
+            "seo": "PASS",
+            "internalLinks": "PASS",
+            "imageAlt": "PASS",
+            "duplicateCheck": "PASS"
+          },
+          "failureReasons": {}
+        },
+        "callback": {
+          "job": {
+            "id": "glw_6znybicz",
+            "type": "PAGE_GENERATION",
+            "status": "COMPLETE",
+            "retryOfJobId": null,
+            "siteId": "led-display-warehouse",
+            "title": "Direct View LED Video Walls in qa-prepublish-remed-a-1786382848466",
+            "input": {
+              "page": {
+                "city": "qa-prepublish-remed-a-1786382848466",
+                "tone": "Professional",
+                "state": "Texas",
+                "title": "Direct View LED Video Walls in qa-prepublish-remed-a-1786382848466",
+                "status": "draft",
+                "audience": "Internal QA",
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-remed-a-1786382848466",
+                "pageType": "city_service",
+                "wordCount": 1800,
+                "targetSlug": "qa-prepublish-remed-a-1786382848466",
+                "workspaceId": "glw-led-display-warehouse",
+                "callToAction": "Validation only.",
+                "productTopic": "Direct View LED Video Walls",
+                "primaryKeyword": "direct view led video walls qa-prepublish-remed-a-1786382848466",
+                "hierarchicalSlug": "direct-view-led-video-walls/texas/qa-prepublish-remed-a-1786382848466",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "new-city-a"
+                ],
+                "additionalInstructions": "Deterministic pre-publish QA remediation validation for new city A."
+              },
+              "site": {
+                "id": "led-display-warehouse",
+                "name": "LED Display Warehouse"
+              },
+              "type": "page_generation",
+              "promptData": {
+                "tone": "Professional",
+                "audience": "Internal QA",
+                "callToAction": "Validation only."
+              },
+              "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
+              "seoSettings": {
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-remed-a-1786382848466",
+                "targetSlug": "qa-prepublish-remed-a-1786382848466",
+                "primaryKeyword": "direct view led video walls qa-prepublish-remed-a-1786382848466",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "new-city-a"
+                ]
+              },
+              "imageSettings": {
+                "style": "editorial",
+                "generateFeaturedImage": true
+              },
+              "publishingSettings": {
+                "status": "draft",
+                "wordCount": 1800
+              }
+            },
+            "result": {
+              "title": "Direct View LED Video Walls in qa-prepublish-remed-a-1786382848466",
+              "status": "COMPLETE",
+              "executionId": "64992",
+              "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=19287",
+              "wordpressPageId": 19287,
+              "wordpressPostId": 19287
+            },
+            "error": null,
+            "externalExecutionId": "64992",
+            "startedAt": "2026-08-10T17:29:15.520Z",
+            "completedAt": "2026-08-10T17:31:24.467Z",
+            "createdAt": "2026-08-10T17:29:15.521Z",
+            "updatedAt": "2026-08-10T17:31:24.467Z"
+          }
+        },
+        "contentEvidence": {
+          "bodyWordCountRendered": 1299,
+          "bodyWordCountSource": 1299,
+          "renderedLinkCount": 15,
+          "sourceLinkCount": 15,
+          "renderedLinks": [
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/transparent-led-displays/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/custom-led-displays/",
+            "https://leddisplaywarehouse.com/creative-led-displays/",
+            "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/interactive-led-floors/",
+            "https://leddisplaywarehouse.com/flexible-rollable-led/",
+            "https://leddisplaywarehouse.com/contact-us/",
+            "https://leddisplaywarehouse.com/led-posters/",
+            "https://leddisplaywarehouse.com/exhibition-led-displays/",
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/"
+          ],
+          "sourceLinks": [
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/transparent-led-displays/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/custom-led-displays/",
+            "https://leddisplaywarehouse.com/creative-led-displays/",
+            "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/interactive-led-floors/",
+            "https://leddisplaywarehouse.com/flexible-rollable-led/",
+            "https://leddisplaywarehouse.com/contact-us/",
+            "https://leddisplaywarehouse.com/led-posters/",
+            "https://leddisplaywarehouse.com/exhibition-led-displays/",
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/"
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "new-city-b",
+      "expected": "pass",
+      "jobId": "glw_taydfkfi",
+      "status": "COMPLETE",
+      "disposition": null,
+      "wordpressStatus": null,
+      "pageId": 19290,
+      "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=19290",
+      "executionId": "65003",
+      "error": null,
+      "qaChecks": null,
+      "qaFailureReasons": null,
+      "executionSummary": {
+        "executionId": "65003",
+        "status": "success",
+        "lastNode": "Send GLW Completion Callback",
+        "qa": {
+          "passed": true,
+          "callbackStatus": "COMPLETE",
+          "disposition": "CREATED",
+          "wordpressStatus": "draft",
+          "pageId": 19290,
+          "url": "https://leddisplaywarehouse.com/?page_id=19290",
+          "checks": {
+            "pageExists": "PASS",
+            "hierarchy": "PASS",
+            "slug": "PASS",
+            "title": "PASS",
+            "h1": "PASS",
+            "body": "PASS",
+            "featuredImage": "PASS",
+            "heroImage": "PASS",
+            "seo": "PASS",
+            "internalLinks": "PASS",
+            "imageAlt": "PASS",
+            "duplicateCheck": "PASS"
+          },
+          "failureReasons": {}
+        },
+        "callback": {
+          "job": {
+            "id": "glw_taydfkfi",
+            "type": "PAGE_GENERATION",
+            "status": "COMPLETE",
+            "retryOfJobId": null,
+            "siteId": "led-display-warehouse",
+            "title": "Direct View LED Video Walls in qa-prepublish-remed-b-1786382848466",
+            "input": {
+              "page": {
+                "city": "qa-prepublish-remed-b-1786382848466",
+                "tone": "Professional",
+                "state": "Texas",
+                "title": "Direct View LED Video Walls in qa-prepublish-remed-b-1786382848466",
+                "status": "draft",
+                "audience": "Internal QA",
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-remed-b-1786382848466",
+                "pageType": "city_service",
+                "wordCount": 1800,
+                "targetSlug": "qa-prepublish-remed-b-1786382848466",
+                "workspaceId": "glw-led-display-warehouse",
+                "callToAction": "Validation only.",
+                "productTopic": "Direct View LED Video Walls",
+                "primaryKeyword": "direct view led video walls qa-prepublish-remed-b-1786382848466",
+                "hierarchicalSlug": "direct-view-led-video-walls/texas/qa-prepublish-remed-b-1786382848466",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "new-city-b"
+                ],
+                "additionalInstructions": "Deterministic pre-publish QA remediation validation for new city B."
+              },
+              "site": {
+                "id": "led-display-warehouse",
+                "name": "LED Display Warehouse"
+              },
+              "type": "page_generation",
+              "promptData": {
+                "tone": "Professional",
+                "audience": "Internal QA",
+                "callToAction": "Validation only."
+              },
+              "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
+              "seoSettings": {
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-remed-b-1786382848466",
+                "targetSlug": "qa-prepublish-remed-b-1786382848466",
+                "primaryKeyword": "direct view led video walls qa-prepublish-remed-b-1786382848466",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "new-city-b"
+                ]
+              },
+              "imageSettings": {
+                "style": "editorial",
+                "generateFeaturedImage": true
+              },
+              "publishingSettings": {
+                "status": "draft",
+                "wordCount": 1800
+              }
+            },
+            "result": {
+              "title": "Direct View LED Video Walls in qa-prepublish-remed-b-1786382848466",
+              "status": "COMPLETE",
+              "executionId": "65003",
+              "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=19290",
+              "wordpressPageId": 19290,
+              "wordpressPostId": 19290
+            },
+            "error": null,
+            "externalExecutionId": "65003",
+            "startedAt": "2026-08-10T17:31:26.721Z",
+            "completedAt": "2026-08-10T17:33:29.521Z",
+            "createdAt": "2026-08-10T17:31:26.722Z",
+            "updatedAt": "2026-08-10T17:33:29.521Z"
+          }
+        },
+        "contentEvidence": {
+          "bodyWordCountRendered": 1248,
+          "bodyWordCountSource": 1248,
+          "renderedLinkCount": 13,
+          "sourceLinkCount": 13,
+          "renderedLinks": [
+            "https://leddisplaywarehouse.com/",
+            "https://leddisplaywarehouse.com/creative-led-displays/",
+            "https://leddisplaywarehouse.com/exhibition-led-displays/",
+            "https://leddisplaywarehouse.com/flexible-rollable-led/",
+            "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/interactive-led-floors/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/custom-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/",
+            "https://leddisplaywarehouse.com/transparent-led-displays/",
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/"
+          ],
+          "sourceLinks": [
+            "https://leddisplaywarehouse.com/",
+            "https://leddisplaywarehouse.com/creative-led-displays/",
+            "https://leddisplaywarehouse.com/exhibition-led-displays/",
+            "https://leddisplaywarehouse.com/flexible-rollable-led/",
+            "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+            "https://leddisplaywarehouse.com/interactive-led-floors/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/custom-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/",
+            "https://leddisplaywarehouse.com/transparent-led-displays/",
+            "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+            "https://leddisplaywarehouse.com/outdoor-led-displays/",
+            "https://leddisplaywarehouse.com/contact-us/"
+          ]
+        }
+      }
+    }
+  ]
+}

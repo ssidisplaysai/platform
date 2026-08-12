@@ -3,6 +3,7 @@
     "docs/architecture/0009-workflow-engine.md",
     "eslint.config.mjs",
     "GEA-0004-Workflow-Engine.md",
+    "genesis/audits/GAR-0002/reports/diagrams/runtime-command-event-workflow-topology.mmd",
     "genesis/development/git-workflow.md",
     "jest.config.js",
     "MODULE_COMPILER_V0.3_WORKFLOW_REPORT.md",
@@ -113,8 +114,8 @@
     "src/app/api/gea/context/build",
     "src/app/api/gmp/publishing/packages/[packageId]/build"
   ],
-  "totalDirectories": 765,
-  "totalFiles": 2061,
+  "totalDirectories": 806,
+  "totalFiles": 2360,
   "tsConfigs": [
     "tsconfig.gmp-0005.json",
     "tsconfig.gmp-0005c-closure.json",

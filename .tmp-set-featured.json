@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "url": "=https://leddisplaywarehouse.com/wp-json/wp/v2/pages/{{ $('Create a post').first().json.id }}",
+  "authentication": "predefinedCredentialType",
+  "nodeCredentialType": "wordpressApi",
+  "sendBody": true,
+  "bodyParameters": {
+    "parameters": [
+      {
+        "name": "featured_media",
+        "value": "={{ $('Upload Image to WordPress').first().json.id }}"
+      }
+    ]
+  },
+  "options": {}
+}

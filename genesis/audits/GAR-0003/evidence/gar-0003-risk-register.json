@@ -1,0 +1,29 @@
+{
+  "schemaIdentifier": "gar-0003/gar-0003-risk-register",
+  "schemaVersion": "1.0.0",
+  "packageId": "GAR-0003",
+  "risks": [
+    {
+      "riskId": "GAR3-RSK-001",
+      "title": "Incomplete release commit pointer in release machine records",
+      "severity": "Medium",
+      "likelihood": "Medium",
+      "impact": "Audit trail lookup may require git/tag lookups outside release machine JSON.",
+      "evidenceRefs": [
+        "GAR3-EVD-006"
+      ],
+      "mitigation": "Backfill releaseCommit fields in controlled follow-up package."
+    },
+    {
+      "riskId": "GAR3-RSK-002",
+      "title": "Insufficient dynamic proof for metadata source-of-truth clause",
+      "severity": "Medium",
+      "likelihood": "Medium",
+      "impact": "Constitutional confidence for clause CNS-2 remains conditional.",
+      "evidenceRefs": [
+        "GAR3-EVD-003"
+      ],
+      "mitigation": "Include dynamic lineage probes and runtime assertions in GAR-0004."
+    }
+  ]
+}

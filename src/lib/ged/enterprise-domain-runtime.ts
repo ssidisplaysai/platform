@@ -2,7 +2,6 @@ import {
   buildEnterpriseCatalog,
   createEnterpriseHealthSnapshot,
   type EnterpriseDomainCatalog,
-  type EnterpriseDomainRepository,
   type EnterpriseEntityDefinition,
   type EnterpriseEntityKey,
   type EnterpriseHealthSnapshot,
@@ -11,6 +10,7 @@ import {
   type EnterpriseValidationResult,
   type EnterpriseAuditLineageRecord,
 } from "./enterprise-domain-models";
+import type { EnterpriseDomainRepository } from "./enterprise-domain-repository";
 
 async function seedCatalog(repository: EnterpriseDomainRepository, catalog: EnterpriseDomainCatalog): Promise<void> {
   for (const entity of catalog.entities) {
@@ -37,7 +37,7 @@ export type EnterpriseDomainRuntimeService = {
   listEntities: () => Promise<EnterpriseEntityDefinition[]>;
   getEntity: (entityKey: EnterpriseEntityKey) => Promise<EnterpriseEntityDefinition | null>;
   listRelationships: (entityKey?: EnterpriseEntityKey) => Promise<EnterpriseRelationshipDefinition[]>;
-  listVersionHistory: (entityKey?: EnterpriseEntityKey) => Promise<ReturnType<EnterpriseDomainRepository["listEntityVersions"]>>;
+  listVersionHistory: (entityKey?: EnterpriseEntityKey) => ReturnType<EnterpriseDomainRepository["listEntityVersions"]>;
   validateDomain: () => Promise<EnterpriseValidationResult>;
   listHealth: () => Promise<EnterpriseHealthSnapshot>;
   listAuditLineage: (entityKey?: EnterpriseEntityKey) => Promise<EnterpriseAuditLineageRecord[]>;

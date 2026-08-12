@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["females-sustainable-spouse-covering.trycloudflare.com"],
+  allowedDevOrigins: [
+    "fighters-mistress-executives-symposium.trycloudflare.com",
+  ],
 };
 
 export default nextConfig;

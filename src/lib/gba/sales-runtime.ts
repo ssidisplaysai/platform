@@ -296,7 +296,7 @@ export function createSalesRuntimeService(repository: SalesRepository): SalesRun
 
     try {
       const shipping = await operationsRuntime.listShipping(workspaceId);
-      fulfillmentConstraintCount += shipping.filter((entry) => entry.status !== "DELIVERED").length > 10 ? 1 : 0;
+      fulfillmentConstraintCount += shipping.filter((entry) => entry.status !== "COMPLETE").length > 10 ? 1 : 0;
     } catch {
       // Ignore unavailable logistics constraints.
     }

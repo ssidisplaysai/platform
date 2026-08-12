@@ -209,6 +209,62 @@
       "topLevelSubsystem": "genesis"
     },
     {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0002",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0002/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0002/reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0002/reports/diagrams",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0003",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0003/evidence",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/audits/GAR-0003/reports",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
       "depth": 1,
       "inferredOwnership": "inferred",
       "path": "genesis/compiler",
@@ -220,6 +276,70 @@
       "depth": 1,
       "inferredOwnership": "inferred",
       "path": "genesis/constitution",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gia-0001",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gia-0001/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gpc-0002",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gpc-0002/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gpm-0001",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gpm-0001/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gpp-0003",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/constitution/gpp-0003/machine",
       "skipReason": null,
       "skippedByPolicy": false,
       "topLevelSubsystem": "genesis"
@@ -260,6 +380,198 @@
       "depth": 1,
       "inferredOwnership": "inferred",
       "path": "genesis/governance",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/audit",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/audit/gafs-0001",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/audit/gafs-0001/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/baselines",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/baselines/ggb-0001",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/baselines/ggb-0001/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/certification",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/certification/gccs-0001",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/certification/gccs-0001/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/constitution",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/decision-models",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/decision-models/diagrams",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/decisions",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/decisions/gcd-0002",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/decisions/gcd-0002/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/decisions/hall",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/lifecycle",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/procedures",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/releases",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/releases/ggr-0001",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 4,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/releases/ggr-0001/machine",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/standards",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "genesis"
+    },
+    {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "genesis/governance/terminology",
       "skipReason": null,
       "skippedByPolicy": false,
       "topLevelSubsystem": "genesis"
@@ -5753,6 +6065,14 @@
       "topLevelSubsystem": "tests"
     },
     {
+      "depth": 2,
+      "inferredOwnership": "inferred",
+      "path": "tests/genesis-audit/gar-0002",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tests"
+    },
+    {
       "depth": 1,
       "inferredOwnership": "inferred",
       "path": "tests/glw",
@@ -5812,6 +6132,14 @@
       "depth": 2,
       "inferredOwnership": "inferred",
       "path": "tools/genesis-audit/schemas",
+      "skipReason": null,
+      "skippedByPolicy": false,
+      "topLevelSubsystem": "tools"
+    },
+    {
+      "depth": 3,
+      "inferredOwnership": "inferred",
+      "path": "tools/genesis-audit/schemas/gar-0002",
       "skipReason": null,
       "skippedByPolicy": false,
       "topLevelSubsystem": "tools"

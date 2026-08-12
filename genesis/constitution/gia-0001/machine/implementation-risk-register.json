@@ -1,0 +1,52 @@
+{
+  "schemaIdentifier": "gia-0001/implementation-risk-register",
+  "schemaVersion": "1.0.0",
+  "programId": "GIA-0001",
+  "risks": [
+    {
+      "riskId": "GIA-RISK-001",
+      "category": "release-governance",
+      "severity": "high",
+      "description": "releaseCommit may remain null without enforced release machine controls",
+      "evidence": "GFR-0001 release-manifest",
+      "mitigation": "enforce release commit binding",
+      "exitCriteria": "release validation checks non-null commit binding"
+    },
+    {
+      "riskId": "GIA-RISK-002",
+      "category": "constitutional-evidence",
+      "severity": "high",
+      "description": "runtime metadata lineage evidence depth remains conditional",
+      "evidence": "GAR3-REM-002",
+      "mitigation": "lineage evidence expansion package",
+      "exitCriteria": "CNS-2 VERIFIED confidence"
+    },
+    {
+      "riskId": "GIA-RISK-003",
+      "category": "architectural-traceability",
+      "severity": "medium",
+      "description": "repository-wide architecture lineage graph incomplete",
+      "evidence": "GAR3-REM-003",
+      "mitigation": "RAR/ARD/ADR graph package",
+      "exitCriteria": "CNS-4 compliant classification"
+    },
+    {
+      "riskId": "GIA-RISK-004",
+      "category": "baseline-control",
+      "severity": "medium",
+      "description": "baseline currently represented in uncommitted worktree artifacts",
+      "evidence": "git status shows untracked package directories",
+      "mitigation": "commit baseline artifacts before implementation package approvals",
+      "exitCriteria": "immutable baseline reference committed"
+    },
+    {
+      "riskId": "GIA-RISK-005",
+      "category": "integration",
+      "severity": "medium",
+      "description": "kernel-runtime-automation complexity may introduce non-deterministic behavior",
+      "evidence": "Phase III complexity and risk model",
+      "mitigation": "deterministic replay and load-gated validation",
+      "exitCriteria": "Wave 1 deterministic validation pass"
+    }
+  ]
+}

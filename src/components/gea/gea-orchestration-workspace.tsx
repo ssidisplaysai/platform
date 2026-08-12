@@ -1,12 +1,11 @@
 import React from "react";
 import Link from "next/link";
-import { createInMemoryCapabilityRegistry } from "@/lib/gea/capability-registry";
 import { createSeedAgent, createInMemoryGeaRepository } from "@/lib/gea/agent-repository";
 import { createAgentRuntimeService } from "@/lib/gea/agent-runtime";
 import { geaId, nowIso } from "@/lib/gea/agent-models";
-import { createInMemoryToolRegistry } from "@/lib/gea/tool-framework";
 import { createPrismaOrchestrationRepository } from "@/lib/gea/orchestration-repository";
 import { createOrchestrationRuntimeService } from "@/lib/gea/orchestration-runtime";
+import { createGeaRuntimeRegistryAuthority } from "@/lib/gea/runtime-registry-authority";
 import type { GeaOrchestrationRoutePermissions } from "@/app/glw/(protected)/orchestrations/access";
 
 type OrchestrationWorkspaceMode =
@@ -38,8 +37,7 @@ export async function GeaOrchestrationWorkspace({ mode, permissions }: { mode: O
   const repository = createPrismaOrchestrationRepository();
 
   const geaRepository = createInMemoryGeaRepository();
-  const capabilityRegistry = createInMemoryCapabilityRegistry();
-  const toolRegistry = createInMemoryToolRegistry();
+  const { capabilityRegistry, toolRegistry } = createGeaRuntimeRegistryAuthority();
   const seedAgent = createSeedAgent({
     agentId: "gea-orchestrator-agent",
     workspaceId: "glw-led-display-warehouse",

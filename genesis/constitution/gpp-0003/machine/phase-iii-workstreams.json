@@ -1,0 +1,140 @@
+{
+  "schemaIdentifier": "gpp-0003/phase-iii-workstreams",
+  "schemaVersion": "1.0.0",
+  "programId": "GPP-0003",
+  "complexityScale": "1-5",
+  "workstreams": [
+    {
+      "workstreamId": "WS-01",
+      "name": "GAR Engine",
+      "owner": "Constitutional Assessment Authority",
+      "purpose": "Operationalize reusable constitutional audit execution",
+      "dependencies": ["WS-04", "WS-05", "WS-09"],
+      "deliverables": ["gar-runtime-profile", "gar-evidence-pipeline", "gar-operations-dashboard"],
+      "exitCriteria": ["schedulable-audit-runs", "deterministic-evidence-generation"],
+      "risks": ["evidence-drift", "metadata-lineage-gap"],
+      "sequencing": "Wave 1-2",
+      "architecturalComplexity": 4
+    },
+    {
+      "workstreamId": "WS-02",
+      "name": "Business Genome",
+      "owner": "Business Genome Authority",
+      "purpose": "Operational enterprise knowledge ingestion and canonical model publication",
+      "dependencies": ["WS-03", "WS-05", "WS-08", "WS-09"],
+      "deliverables": ["ingestion-adapters", "canonical-model-api", "publication-jobs"],
+      "exitCriteria": ["deterministic-publication", "quality-thresholds-met"],
+      "risks": ["source-variability", "semantic-conflict-bottlenecks"],
+      "sequencing": "Wave 2",
+      "architecturalComplexity": 5
+    },
+    {
+      "workstreamId": "WS-03",
+      "name": "Genesis Kernel",
+      "owner": "Platform Kernel Authority",
+      "purpose": "Harden kernel lifecycle and execution framework",
+      "dependencies": ["WS-11", "WS-09"],
+      "deliverables": ["lifecycle-profile", "integrity-policies", "recovery-runbooks"],
+      "exitCriteria": ["controlled-lifecycle-transitions", "replayable-kernel-state"],
+      "risks": ["runtime-state-coupling"],
+      "sequencing": "Wave 1",
+      "architecturalComplexity": 5
+    },
+    {
+      "workstreamId": "WS-04",
+      "name": "Enterprise Runtime",
+      "owner": "Runtime Orchestration Authority",
+      "purpose": "Industrialize runtime orchestration and execution controls",
+      "dependencies": ["WS-03", "WS-11", "WS-09"],
+      "deliverables": ["dispatch-control-plane", "replay-controls", "failover-policy"],
+      "exitCriteria": ["sustained-workload-control", "deterministic-control-paths"],
+      "risks": ["throughput-contention", "failover-inconsistency"],
+      "sequencing": "Wave 1",
+      "architecturalComplexity": 5
+    },
+    {
+      "workstreamId": "WS-05",
+      "name": "Enterprise Registries",
+      "owner": "Registry Authority",
+      "purpose": "Operationalize identity, lifecycle, and discovery registries",
+      "dependencies": ["WS-03", "WS-04"],
+      "deliverables": ["registry-service-catalog", "lifecycle-enforcement", "discovery-endpoints"],
+      "exitCriteria": ["authoritative-registry-queries", "integrity-jobs-active"],
+      "risks": ["identifier-collision", "stale-lifecycle-propagation"],
+      "sequencing": "Wave 1-2",
+      "architecturalComplexity": 4
+    },
+    {
+      "workstreamId": "WS-06",
+      "name": "Applications",
+      "owner": "Application Platform Authority",
+      "purpose": "Prepare initial production applications",
+      "dependencies": ["WS-03", "WS-04", "WS-05", "WS-07", "WS-08", "WS-11"],
+      "deliverables": ["release-candidates", "readiness-scorecards", "support-profile"],
+      "exitCriteria": ["production-readiness-pass", "support-readiness-pass"],
+      "risks": ["cross-workstream-coupling"],
+      "sequencing": "Wave 3",
+      "architecturalComplexity": 4
+    },
+    {
+      "workstreamId": "WS-07",
+      "name": "AI Agent Framework",
+      "owner": "Agent Systems Authority",
+      "purpose": "Mature business and enterprise agent operations with tooling",
+      "dependencies": ["WS-02", "WS-04", "WS-05", "WS-09"],
+      "deliverables": ["agent-operational-profile", "tool-runtime-hardening", "orchestration-integration"],
+      "exitCriteria": ["deterministic-agent-execution", "operational-control-completeness"],
+      "risks": ["multi-agent-coordination-complexity", "policy-drift"],
+      "sequencing": "Wave 2",
+      "architecturalComplexity": 5
+    },
+    {
+      "workstreamId": "WS-08",
+      "name": "Automation",
+      "owner": "Automation Authority",
+      "purpose": "Industrialize n8n orchestration, scheduling, messaging, and event processing",
+      "dependencies": ["WS-04", "WS-05", "WS-09", "WS-11"],
+      "deliverables": ["automation-control-framework", "event-pipeline-contracts", "retry-and-dlq-controls"],
+      "exitCriteria": ["resilient-automation-flows", "observable-event-processing"],
+      "risks": ["external-system-coupling", "idempotency-failures"],
+      "sequencing": "Wave 2",
+      "architecturalComplexity": 4
+    },
+    {
+      "workstreamId": "WS-09",
+      "name": "Observability",
+      "owner": "Observability Authority",
+      "purpose": "Provide metrics, diagnostics, audit telemetry, and evidence generation",
+      "dependencies": ["WS-01", "WS-03", "WS-04", "WS-07", "WS-08"],
+      "deliverables": ["telemetry-model", "slo-dashboards", "evidence-pipeline"],
+      "exitCriteria": ["actionable-telemetry", "gar-compatible-evidence-default"],
+      "risks": ["metric-inconsistency", "insufficient-evidence-granularity"],
+      "sequencing": "Wave 1-3",
+      "architecturalComplexity": 4
+    },
+    {
+      "workstreamId": "WS-10",
+      "name": "Developer Experience",
+      "owner": "Developer Platform Authority",
+      "purpose": "Provide SDKs, templates, scaffolding, and testing acceleration",
+      "dependencies": ["WS-03", "WS-04", "WS-05", "WS-11"],
+      "deliverables": ["sdk-baseline", "scaffolding-templates", "integration-test-harness"],
+      "exitCriteria": ["faster-team-onboarding", "quality-guardrail-adoption"],
+      "risks": ["tooling-fragmentation", "weak-adoption"],
+      "sequencing": "Wave 2-3",
+      "architecturalComplexity": 3
+    },
+    {
+      "workstreamId": "WS-11",
+      "name": "Deployment",
+      "owner": "Platform Reliability Authority",
+      "purpose": "Deliver production deployment and release controls",
+      "dependencies": ["WS-03", "WS-04", "WS-06", "WS-09"],
+      "deliverables": ["container-baseline", "ci-cd-pipelines", "release-operations"],
+      "exitCriteria": ["repeatable-production-deployments", "controlled-release-train"],
+      "risks": ["environment-drift", "rollback-gaps"],
+      "sequencing": "Wave 3",
+      "architecturalComplexity": 4
+    }
+  ]
+}

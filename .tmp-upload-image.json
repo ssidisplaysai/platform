@@ -1,0 +1,19 @@
+{
+  "method": "POST",
+  "url": "https://leddisplaywarehouse.com/wp-json/wp/v2/media",
+  "authentication": "predefinedCredentialType",
+  "nodeCredentialType": "wordpressApi",
+  "sendHeaders": true,
+  "headerParameters": {
+    "parameters": [
+      {
+        "name": "Content-Disposition",
+        "value": "=attachment; filename=\"{{ $('Code in JavaScript').first().json.slug || 'led-display-page' }}.png\""
+      }
+    ]
+  },
+  "sendBody": true,
+  "contentType": "binaryData",
+  "inputDataFieldName": "data",
+  "options": {}
+}

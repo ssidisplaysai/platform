@@ -1,5 +1,5 @@
 {
-  "disposition": "READY FOR GAR-0003",
+  "disposition": "NOT READY FOR GAR-0003",
   "evidenceClassification": "VERIFIED",
   "gar0001BaselineHashes": [
     {
@@ -79,8 +79,53 @@
       "hash": "6fadd0d3b0a07f0680202452f1ff706fe79ad06545add336aeff083e7bac506b"
     }
   ],
-  "gar0001HashConsistency": true,
-  "gar0001HashMismatchDetails": [],
+  "gar0001HashConsistency": false,
+  "gar0001HashMismatchDetails": [
+    {
+      "file": "directory-inventory.json",
+      "hash": "cda00f6a3b961d10e3d5e550615c16a973aca646fb33351d97c624cc35255993"
+    },
+    {
+      "file": "documentation-inventory.json",
+      "hash": "fe143945f84a1554a78baf95c8a5366766749a6e724f31d270bd905756082c8e"
+    },
+    {
+      "file": "file-inventory.json",
+      "hash": "6a4bf0f83d9f1810d7a0322bccd50c47c552430bd35aeec0d3308e33e5bd4e66"
+    },
+    {
+      "file": "governance-artifact-inventory.json",
+      "hash": "c79697feaf829192f14008ca6e3bcf3b5bfdf7b98aa6f255c0eebd26f4ad3776"
+    },
+    {
+      "file": "hygiene-inventory.json",
+      "hash": "567f83ec9734b572ba507ba7f082eff42788c854fa0bc4eb52b5165eb66efaee"
+    },
+    {
+      "file": "import-graph.json",
+      "hash": "b23ea24470988279228b9e6aab541eafeb5c5935c9acd0eb299b958a1d183f8e"
+    },
+    {
+      "file": "package-inventory.json",
+      "hash": "e10e92163d72cc2ee656ed69a9dc97c1223d23a42569ba8bc08a10d651926c88"
+    },
+    {
+      "file": "repository-manifest.json",
+      "hash": "9e3364b058c34f266c2b1ef11e079d7aa56022c63bb12ab35e52af5707349357"
+    },
+    {
+      "file": "security-surface-inventory.json",
+      "hash": "a01f7a2215e2bec053e7cf6a3c7292d2d460e1f967847987cfb33abbe25924a9"
+    },
+    {
+      "file": "source-symbol-inventory.json",
+      "hash": "6c969d6b845f5b20e5cdc19781cbf1b9da7b53d610c6568db2cb9b10cf3d0ee3"
+    },
+    {
+      "file": "test-inventory.json",
+      "hash": "a9194559cb5abd46f66eb30b8cd092e9c6195763756713b9dffb862ea26be257"
+    }
+  ],
   "gar0001HashingMethod": "git-blob-canonical-sha256",
   "gar0001SchemaValidation": {
     "results": [
@@ -182,7 +227,9 @@
     "existing baseline lint/test/build failures may remain unrelated"
   ],
   "readinessRationale": {
-    "garPackageLimitations": [],
+    "garPackageLimitations": [
+      "GAR-0001 canonical hash consistency check failed"
+    ],
     "inheritedRepositoryBaselineConditions": [
       "existing baseline lint/test/build failures may remain unrelated"
     ],
@@ -194,8 +241,8 @@
   "topologyTotals": {
     "cycleCount": 1,
     "findingCount": 4,
-    "importGraphEdges": 3530,
-    "importGraphNodes": 1306,
+    "importGraphEdges": 3541,
+    "importGraphNodes": 1312,
     "layerGraphEdges": 44,
     "layerGraphNodes": 11,
     "layers": 11,
@@ -208,9 +255,9 @@
     "deterministicOutputVerification": {
       "allEqual": true,
       "hashes": [
-        "7285f9e5f88fd73bf22adc61433235986a684348e645d2610346aa8e9fad9748",
-        "7285f9e5f88fd73bf22adc61433235986a684348e645d2610346aa8e9fad9748",
-        "7285f9e5f88fd73bf22adc61433235986a684348e645d2610346aa8e9fad9748"
+        "87679e0bc2a3b5ff4b65f0178d9799e584501f47911f3789cae734c447035fbf",
+        "87679e0bc2a3b5ff4b65f0178d9799e584501f47911f3789cae734c447035fbf",
+        "87679e0bc2a3b5ff4b65f0178d9799e584501f47911f3789cae734c447035fbf"
       ]
     },
     "findingsValidation": {
@@ -218,8 +265,8 @@
       "valid": true
     },
     "graphValidation": {
-      "importGraphEdges": 3530,
-      "importGraphNodes": 1306,
+      "importGraphEdges": 3541,
+      "importGraphNodes": 1312,
       "layerGraphEdges": 44,
       "layerGraphNodes": 11,
       "subsystemGraphEdges": 53,
@@ -228,8 +275,8 @@
     },
     "repositoryMutationCheck": {
       "mutated": false,
-      "postHash": "e79f7239dd9689e48a5b808e07501514819d2b25e7588a90fe67b5dcfada9936",
-      "preHash": "e79f7239dd9689e48a5b808e07501514819d2b25e7588a90fe67b5dcfada9936"
+      "postHash": "6ffc5a83fdd791d261fc13c7a4df4343d1d8d133de6e550f36faaf5dc6e9e50c",
+      "preHash": "6ffc5a83fdd791d261fc13c7a4df4343d1d8d133de6e550f36faaf5dc6e9e50c"
     }
   }
 }

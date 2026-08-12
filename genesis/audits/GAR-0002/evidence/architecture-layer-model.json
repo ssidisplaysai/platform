@@ -89,7 +89,7 @@
         "GAR-0001:source-symbol-inventory.json",
         "GAR-0001:import-graph.json"
       ],
-      "inboundDependencies": 415,
+      "inboundDependencies": 416,
       "includedPaths": [
         "src/app/companies/[slug]/page.tsx",
         "src/app/companies/page.tsx",
@@ -360,9 +360,9 @@
         "src/components/tables/DataTable.tsx",
         "src/components/tables/DataTableToolbar.tsx"
       ],
-      "includedSymbolCount": 1265,
+      "includedSymbolCount": 1254,
       "layer": "application-ui",
-      "outboundDependencies": 678,
+      "outboundDependencies": 670,
       "ownershipConfidence": "low",
       "purpose": "application-ui responsibilities derived from implementation path patterns and dependency evidence"
     },
@@ -813,7 +813,7 @@
         "src/platform/gop/workspaces/registry.ts",
         "src/platform/gop/workspaces/runtime.ts"
       ],
-      "includedSymbolCount": 562,
+      "includedSymbolCount": 564,
       "layer": "platform-orchestration",
       "outboundDependencies": 95,
       "ownershipConfidence": "low",
@@ -928,7 +928,7 @@
         "GAR-0001:source-symbol-inventory.json",
         "GAR-0001:import-graph.json"
       ],
-      "inboundDependencies": 134,
+      "inboundDependencies": 131,
       "includedPaths": [
         "src/lib/glw/auth.ts",
         "src/lib/glw/job-repository.ts",
@@ -942,11 +942,12 @@
         "src/lib/gop/executions-api.ts",
         "src/lib/gop/fabric-api.ts",
         "src/lib/gop/operations-api.ts",
+        "src/lib/gop/platform-bootstrap-api.ts",
         "src/lib/gop/workers-api.ts"
       ],
-      "includedSymbolCount": 443,
+      "includedSymbolCount": 456,
       "layer": "runtime-services",
-      "outboundDependencies": 60,
+      "outboundDependencies": 63,
       "ownershipConfidence": "low",
       "purpose": "runtime-services responsibilities derived from implementation path patterns and dependency evidence"
     },
@@ -1397,16 +1398,18 @@
         "GAR-0001:source-symbol-inventory.json",
         "GAR-0001:import-graph.json"
       ],
-      "inboundDependencies": 4,
+      "inboundDependencies": 6,
       "includedPaths": [
+        "tools/genesis-audit/src/gar-0002-run.mjs",
+        "tools/genesis-audit/src/gar-0002-validate.mjs",
         "tools/genesis-audit/src/run.mjs",
         "tools/genesis-audit/src/scanner.mjs",
         "tools/genesis-audit/src/schema-validator.mjs",
         "tools/genesis-audit/src/utils.mjs"
       ],
-      "includedSymbolCount": 210,
+      "includedSymbolCount": 408,
       "layer": "tooling",
-      "outboundDependencies": 14,
+      "outboundDependencies": 22,
       "ownershipConfidence": "low",
       "purpose": "tooling responsibilities derived from implementation path patterns and dependency evidence"
     },
@@ -1531,6 +1534,7 @@
         "tests/ged/ged-domain-api.test.ts",
         "tests/ged/ged-domain-model.test.ts",
         "tests/ged/ged-domain-route-forwarding.test.ts",
+        "tests/genesis-audit/gar-0002/gar-0002-smoke.test.ts",
         "tests/genesis-audit/run-smoke.test.ts",
         "tests/genesis-audit/schema-validator.test.ts",
         "tests/genesis-audit/utils.test.ts",
@@ -1564,6 +1568,7 @@
         "tests/gop/execution-durability.test.ts",
         "tests/gop/glw-adapter.test.ts",
         "tests/gop/glw-events-adapter.test.ts",
+        "tests/gop/gop-operations-center.test.tsx",
         "tests/gop/inspector-extensions.test.ts",
         "tests/gop/inspector-mapping.test.ts",
         "tests/gop/loader-context.test.ts",
@@ -1571,6 +1576,7 @@
         "tests/gop/module-bootstrap.test.ts",
         "tests/gop/operations-api.test.ts",
         "tests/gop/orchestration-runtime.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/gop/runtime-fabric.test.ts",
         "tests/gop/worker-token.test.ts",
@@ -1578,9 +1584,9 @@
         "tests/knowledge-lineage.test.ts",
         "tests/setup-jest.ts"
       ],
-      "includedSymbolCount": 2895,
+      "includedSymbolCount": 2908,
       "layer": "tests",
-      "outboundDependencies": 757,
+      "outboundDependencies": 765,
       "ownershipConfidence": "low",
       "purpose": "tests responsibilities derived from implementation path patterns and dependency evidence"
     }

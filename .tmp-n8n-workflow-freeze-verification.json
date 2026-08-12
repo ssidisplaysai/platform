@@ -1,0 +1,46 @@
+{
+  "totalWorkflows": 89,
+  "glwPathWorkflows": [
+    {
+      "id": "LLX16gIGPlx0Ep35",
+      "name": "Master SEO Page Engine v1 - DEVELOPMENT (inactive baseline copy)",
+      "active": false,
+      "hasGlwPath": true,
+      "webhookPaths": [
+        {
+          "name": "GLW Page Webhook",
+          "path": "glw-page-generation",
+          "httpMethod": "POST"
+        }
+      ]
+    },
+    {
+      "id": "bIDXxyWnY22G8zJC",
+      "name": "Master SEO Page Engine v1.0 - PRODUCTION",
+      "active": true,
+      "hasGlwPath": true,
+      "webhookPaths": [
+        {
+          "name": "GLW Page Webhook",
+          "path": "glw-page-generation",
+          "httpMethod": "POST"
+        }
+      ]
+    }
+  ],
+  "activeGlwPathWorkflows": [
+    {
+      "id": "bIDXxyWnY22G8zJC",
+      "name": "Master SEO Page Engine v1.0 - PRODUCTION",
+      "active": true,
+      "hasGlwPath": true,
+      "webhookPaths": [
+        {
+          "name": "GLW Page Webhook",
+          "path": "glw-page-generation",
+          "httpMethod": "POST"
+        }
+      ]
+    }
+  ]
+}

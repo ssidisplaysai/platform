@@ -1,0 +1,371 @@
+const normalized = $('Normalize Published City Page').first().json;
+const source = $('Prepare State Parent').first().json;
+const pageSource = $('Code in JavaScript').first().json;
+const pageResponse = $('Fetch QA Page Snapshot').first().json || {};
+const stateResponse = $('Fetch QA State Snapshot').first().json || {};
+const mediaResponse = $('Fetch QA Featured Media').first().json || {};
+const duplicateResponse = $('QA Duplicate Lookup').first().json || {};
+
+function responseStatus(response) {
+  return Number(response.statusCode || response.status || 0);
+}
+
+function responseBody(response) {
+  return response && typeof response === 'object' && response.body !== undefined ? response.body : response;
+}
+
+function stripTags(html) {
+  return String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function decodeText(value) {
+  return String(value || '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;/gi, "'")
+    .trim();
+}
+
+function normalizeSlug(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+|\/+$/g, '');
+}
+
+function extractPathFromUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return normalizeSlug(url.pathname);
+  } catch {
+    return '';
+  }
+}
+
+function countWords(value) {
+  const text = stripTags(value);
+  return text ? text.split(/\s+/).filter(Boolean).length : 0;
+}
+
+function findYoastMetaContent(meta, key, prop = 'name') {
+  if (!Array.isArray(meta)) {
+    return '';
+  }
+  const match = meta.find((entry) => entry && typeof entry === 'object' && String(entry[prop] || '').toLowerCase() === key.toLowerCase());
+  return match && typeof match.content === 'string' ? match.content.trim() : '';
+}
+
+function getFocusKeyword(page, sourceData) {
+  const pageMeta = page && typeof page.meta === 'object' && page.meta !== null ? page.meta : {};
+  const direct = typeof pageMeta._yoast_wpseo_focuskw === 'string' ? pageMeta._yoast_wpseo_focuskw.trim() : '';
+  if (direct) {
+    return direct;
+  }
+  const sourceKeyword = String(sourceData.focus_keyphrase || sourceData.primary_keyword || pageSource.focus_keyphrase || pageSource.primaryKeyword || '').trim();
+  return sourceKeyword;
+}
+
+function getRenderedTitle(page) {
+  if (page && page.title && typeof page.title === 'object') {
+    return decodeText(page.title.rendered || page.title.raw || '');
+  }
+  return '';
+}
+
+function findHeroImageAttributes(html) {
+  const heroMatch = String(html || '').match(/<figure[^>]*page-hero-image[^>]*>[\s\S]*?<img[^>]*alt=["']([^"']*)["'][^>]*src=["']([^"']+)["'][^>]*>|<figure[^>]*page-hero-image[^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["'][^>]*alt=["']([^"']*)["'][^>]*>/i);
+  if (heroMatch) {
+    const alt = heroMatch[1] || heroMatch[4] || '';
+    const src = heroMatch[2] || heroMatch[3] || '';
+    return { alt: decodeText(alt), src: String(src || '').trim(), found: true };
+  }
+
+  const imgMatch = String(html || '').match(/<img[^>]*alt=["']([^"']*)["'][^>]*src=["']([^"']+)["'][^>]*>|<img[^>]*src=["']([^"']+)["'][^>]*alt=["']([^"']*)["'][^>]*>/i);
+  if (imgMatch) {
+    const alt = imgMatch[1] || imgMatch[4] || '';
+    const src = imgMatch[2] || imgMatch[3] || '';
+    return { alt: decodeText(alt), src: String(src || '').trim(), found: true };
+  }
+
+  return { alt: '', src: '', found: false };
+}
+
+function countInternalLinks(html) {
+  const links = [];
+  const regex = /href=["']([^"']+)["']/gi;
+  let match;
+  while ((match = regex.exec(String(html || ''))) !== null) {
+    const href = String(match[1] || '').trim();
+    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+      continue;
+    }
+    if (href.startsWith('/')) {
+      links.push(href);
+      continue;
+    }
+    try {
+      const url = new URL(href);
+      if (url.hostname.toLowerCase() === 'leddisplaywarehouse.com') {
+        links.push(href);
+      }
+    } catch {
+      // ignore malformed links
+    }
+  }
+  return links.length;
+}
+
+function normalizeHeadingText(value) {
+  return stripTags(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function duplicateHeadingNames(html) {
+  const seen = new Set();
+  const duplicates = new Set();
+  const regex = /<h2\b[^>]*>([\s\S]*?)<\/h2>/gi;
+  let match;
+  while ((match = regex.exec(String(html || ''))) !== null) {
+    const normalized = normalizeHeadingText(match[1]);
+    if (!normalized) {
+      continue;
+    }
+
+    if (seen.has(normalized)) {
+      duplicates.add(normalized);
+    } else {
+      seen.add(normalized);
+    }
+  }
+
+  return Array.from(duplicates.values());
+}
+
+function duplicateParagraphCount(html) {
+  const counts = new Map();
+  const regex = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+  let match;
+  while ((match = regex.exec(String(html || ''))) !== null) {
+    const normalized = stripTags(match[1]).toLowerCase().replace(/\s+/g, ' ').trim();
+    if (normalized.length < 80) {
+      continue;
+    }
+
+    counts.set(normalized, (counts.get(normalized) || 0) + 1);
+  }
+
+  let duplicateCount = 0;
+  for (const value of counts.values()) {
+    if (value > 1) {
+      duplicateCount += value - 1;
+    }
+  }
+
+  return duplicateCount;
+}
+
+function placeholderResourceLabelCount(html) {
+  const regex = /<a\b[^>]*>\s*Related\s+resource\s+\d+\s*<\/a>/gi;
+  const matches = String(html || '').match(regex);
+  return matches ? matches.length : 0;
+}
+
+function hasPlaceholder(text) {
+  const patterns = [
+    /lorem ipsum/i,
+    /\bTODO\b/i,
+    /coming soon/i,
+    /image placeholder/i,
+    /\btest\b/i,
+    /\bsample\b/i,
+    /\{\{/,
+    /\}\}/,
+  ];
+  return patterns.some((pattern) => pattern.test(String(text || '')));
+}
+
+const checks = {
+  pageExists: 'UNKNOWN',
+  hierarchy: 'UNKNOWN',
+  slug: 'UNKNOWN',
+  title: 'UNKNOWN',
+  h1: 'UNKNOWN',
+  uniquePrimaryHeading: 'UNKNOWN',
+  duplicateSectionHeadings: 'UNKNOWN',
+  duplicateSectionContent: 'UNKNOWN',
+  placeholderResourceLinks: 'UNKNOWN',
+  body: 'UNKNOWN',
+  featuredImage: 'UNKNOWN',
+  heroImage: 'UNKNOWN',
+  seo: 'UNKNOWN',
+  internalLinks: 'UNKNOWN',
+  imageAlt: 'UNKNOWN',
+  duplicateCheck: 'UNKNOWN',
+};
+const failureReasons = {};
+
+const pageStatus = responseStatus(pageResponse);
+const stateStatus = responseStatus(stateResponse);
+const mediaStatus = responseStatus(mediaResponse);
+const duplicateStatus = responseStatus(duplicateResponse);
+const page = responseBody(pageResponse) || {};
+const statePage = responseBody(stateResponse) || {};
+const media = responseBody(mediaResponse) || {};
+const duplicateListRaw = responseBody(duplicateResponse);
+const duplicateList = Array.isArray(duplicateListRaw) ? duplicateListRaw : [];
+
+const pageId = Number(page.id || normalized.normalized_city_page_id || 0);
+const pageUrl = String(page.link || normalized.normalized_city_page_url || '').trim();
+const featuredImageUrl = String(media.source_url || $('Upload Image to WordPress').first().json.guid?.rendered || '').trim();
+const renderedTitle = getRenderedTitle(page) || String(pageSource.page_title || '').trim();
+const renderedContent = String(page.content && typeof page.content === 'object' ? page.content.rendered || page.content.raw || '' : '').trim();
+const bodyText = stripTags(renderedContent);
+const desiredHierarchicalSlug = normalizeSlug(source.desired_hierarchical_slug || pageSource.desired_hierarchical_slug || '');
+const effectiveHierarchicalSlug = normalizeSlug([
+  source.product_slug || '',
+  source.state_slug || '',
+  page.slug || source.city_slug || '',
+].filter(Boolean).join('/'));
+const h1Matches = String(renderedContent).match(/<h1\b[^>]*>[\s\S]*?<\/h1>/gi) || [];
+const h1Text = h1Matches.length === 1 ? stripTags(h1Matches[0]) : '';
+const heroImage = findHeroImageAttributes(renderedContent);
+const internalLinkCount = countInternalLinks(renderedContent);
+const duplicateHeadingList = duplicateHeadingNames(renderedContent);
+const duplicateParagraphs = duplicateParagraphCount(renderedContent);
+const placeholderResourceLinks = placeholderResourceLabelCount(renderedContent);
+const metaTitle = String(page.yoast_title || page.yoast_head_json?.title || pageSource.seo_title || '').trim();
+const metaDescription = findYoastMetaContent(page.yoast_meta, 'description') || String(page.yoast_head_json?.description || pageSource.meta_description || '').trim();
+const focusKeyword = getFocusKeyword(page, source);
+const stateParentId = Number(source.state_parent_id || 0);
+const expectedProductParentId = Number(source.product_parent_id || 0);
+const stateActualParentId = Number(statePage.parent || 0);
+const forceQaFail = /QA_FORCE_FAIL/i.test(String(source.additional_instructions || pageSource.additional_instructions || pageSource.page_title || ''));
+
+checks.pageExists = pageStatus >= 200 && pageStatus < 300 && pageId > 0 && pageUrl ? 'PASS' : 'FAIL';
+if (checks.pageExists === 'FAIL') {
+  failureReasons.pageExists = 'Missing published page snapshot. status=' + (pageStatus || 'UNKNOWN') + ' pageId=' + (pageId || 0) + ' url=' + (pageUrl || 'MISSING') + '.';
+}
+
+checks.hierarchy = checks.pageExists === 'PASS' && page.parent === stateParentId && stateStatus >= 200 && stateStatus < 300 && stateActualParentId === expectedProductParentId ? 'PASS' : 'FAIL';
+if (checks.hierarchy === 'FAIL') {
+  failureReasons.hierarchy = 'Hierarchy mismatch. cityParent=' + (page.parent || 0) + ' expectedState=' + stateParentId + '; stateParent=' + stateActualParentId + ' expectedProduct=' + expectedProductParentId + '.';
+}
+
+checks.slug = effectiveHierarchicalSlug && desiredHierarchicalSlug && effectiveHierarchicalSlug === desiredHierarchicalSlug ? 'PASS' : 'FAIL';
+if (checks.slug === 'FAIL') {
+  failureReasons.slug = 'Effective hierarchical slug ' + (effectiveHierarchicalSlug || 'MISSING') + ' does not match expected ' + (desiredHierarchicalSlug || 'MISSING') + '.';
+}
+
+checks.title = renderedTitle.length > 10 && !hasPlaceholder(renderedTitle) ? 'PASS' : 'FAIL';
+if (checks.title === 'FAIL') {
+  failureReasons.title = 'Title invalid. length=' + renderedTitle.length + '. placeholder=' + hasPlaceholder(renderedTitle) + '.';
+}
+
+checks.h1 = h1Matches.length === 1 && h1Text.length > 0 && !hasPlaceholder(h1Text) ? 'PASS' : 'FAIL';
+if (checks.h1 === 'FAIL') {
+  failureReasons.h1 = 'H1 invalid. count=' + h1Matches.length + ' textLength=' + h1Text.length + ' placeholder=' + hasPlaceholder(h1Text) + '.';
+}
+
+checks.uniquePrimaryHeading = h1Matches.length === 1 ? 'PASS' : 'FAIL';
+if (checks.uniquePrimaryHeading === 'FAIL') {
+  failureReasons.uniquePrimaryHeading = 'Expected exactly one primary heading (H1) but found ' + h1Matches.length + '.';
+}
+
+checks.duplicateSectionHeadings = duplicateHeadingList.length === 0 ? 'PASS' : 'FAIL';
+if (checks.duplicateSectionHeadings === 'FAIL') {
+  failureReasons.duplicateSectionHeadings = 'Duplicate section headings detected: ' + duplicateHeadingList.join(', ') + '.';
+}
+
+checks.duplicateSectionContent = duplicateParagraphs === 0 ? 'PASS' : 'FAIL';
+if (checks.duplicateSectionContent === 'FAIL') {
+  failureReasons.duplicateSectionContent = 'Duplicate section paragraph content detected. repeatedParagraphs=' + duplicateParagraphs + '.';
+}
+
+checks.placeholderResourceLinks = placeholderResourceLinks === 0 ? 'PASS' : 'FAIL';
+if (checks.placeholderResourceLinks === 'FAIL') {
+  failureReasons.placeholderResourceLinks = 'Placeholder related-resource labels detected. count=' + placeholderResourceLinks + '.';
+}
+
+checks.body = countWords(bodyText) >= 1200 && !hasPlaceholder(renderedContent) && !hasPlaceholder(bodyText) ? 'PASS' : 'FAIL';
+if (checks.body === 'FAIL') {
+  failureReasons.body = 'Body invalid. wordCount=' + countWords(bodyText) + ' placeholder=' + (hasPlaceholder(renderedContent) || hasPlaceholder(bodyText)) + '.';
+}
+
+checks.featuredImage = Number(page.featured_media || 0) > 0 && mediaStatus >= 200 && mediaStatus < 300 && Number(media.id || 0) > 0 ? 'PASS' : 'FAIL';
+if (checks.featuredImage === 'FAIL') {
+  failureReasons.featuredImage = 'Featured media missing. featured_media=' + (page.featured_media || 0) + ' mediaStatus=' + (mediaStatus || 'UNKNOWN') + ' mediaId=' + (media.id || 0) + '.';
+}
+
+checks.heroImage = heroImage.found ? 'PASS' : 'FAIL';
+if (checks.heroImage === 'FAIL') {
+  failureReasons.heroImage = 'No hero image found inside rendered page content.';
+}
+
+checks.seo = metaTitle.length > 0 && metaDescription.length > 0 && String(focusKeyword || '').trim().length > 0 ? 'PASS' : 'FAIL';
+if (checks.seo === 'FAIL') {
+  failureReasons.seo = 'SEO fields missing. metaTitle=' + (metaTitle ? 'yes' : 'no') + ' metaDescription=' + (metaDescription ? 'yes' : 'no') + ' focusKeyword=' + (focusKeyword ? 'yes' : 'no') + '.';
+}
+
+checks.internalLinks = internalLinkCount >= 3 ? 'PASS' : 'FAIL';
+if (checks.internalLinks === 'FAIL') {
+  failureReasons.internalLinks = 'Expected at least 3 internal links but found ' + internalLinkCount + '.';
+}
+
+checks.imageAlt = heroImage.found && heroImage.alt.length > 0 && !hasPlaceholder(heroImage.alt) ? 'PASS' : 'FAIL';
+if (checks.imageAlt === 'FAIL') {
+  failureReasons.imageAlt = 'Hero image ALT invalid. present=' + heroImage.found + ' altLength=' + heroImage.alt.length + ' placeholder=' + hasPlaceholder(heroImage.alt) + '.';
+}
+
+checks.duplicateCheck = duplicateStatus >= 200 && duplicateStatus < 300 && duplicateList.length === 1 && Number(duplicateList[0]?.id || 0) === pageId ? 'PASS' : 'FAIL';
+if (checks.duplicateCheck === 'FAIL') {
+  const duplicateIds = duplicateList.map((entry) => Number(entry?.id || 0)).filter((id) => id > 0);
+  failureReasons.duplicateCheck = 'Duplicate lookup mismatch. status=' + (duplicateStatus || 'UNKNOWN') + ' ids=' + (duplicateIds.join(',') || 'NONE') + ' expected=' + (pageId || 0) + '.';
+}
+
+if (forceQaFail) {
+  checks.body = 'FAIL';
+  failureReasons.body = 'Forced QA failure requested by input token QA_FORCE_FAIL.';
+}
+
+const qaFailed = Object.values(checks).some((value) => value === 'FAIL');
+const failureSummary = qaFailed
+  ? Object.entries(failureReasons).map(([key, value]) => key + ': ' + value).join(' | ')
+  : '';
+const qaChecksJson = JSON.stringify(checks);
+const qaFailureReasonsJson = JSON.stringify(failureReasons);
+const sheetNotes = qaFailed
+  ? 'QA FAILED. ' + failureSummary + ' qaChecks=' + qaChecksJson + ' qaFailureReasons=' + qaFailureReasonsJson
+  : 'Page published automatically. Hero image inserted below H1. Media title, alt text, and description applied. Caption intentionally left blank. QA PASS. qaChecks=' + qaChecksJson;
+
+return [{
+  json: {
+    ...source,
+    ...normalized,
+    qa_gate_passed: !qaFailed,
+    qa_callback_status: qaFailed ? 'FAILED_QA' : 'COMPLETE',
+    qa_disposition: qaFailed ? 'FAILED_QA' : (normalized.disposition || 'UPDATED'),
+    qa_wordpress_status: qaFailed ? 'qa_failed' : (normalized.normalized_city_page_status || 'draft'),
+    qa_checks: checks,
+    qa_failure_reasons: failureReasons,
+    qa_failure_summary: failureSummary || 'Pre-publish QA gate failed.',
+    qa_checks_json: qaChecksJson,
+    qa_failure_reasons_json: qaFailureReasonsJson,
+    qa_title: renderedTitle || String(pageSource.page_title || source.page_title || '').trim(),
+    qa_page_id: pageId,
+    qa_wordpress_url: pageUrl,
+    qa_featured_image_url: featuredImageUrl,
+    qa_meta_title: metaTitle,
+    qa_meta_description: metaDescription,
+    qa_focus_keyword: focusKeyword,
+    sheet_status: qaFailed ? 'QA Failed' : 'Published',
+    sheet_published_date: qaFailed ? '' : new Date().toISOString(),
+    sheet_notes: sheetNotes,
+  }
+}];

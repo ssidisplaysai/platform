@@ -1,0 +1,22 @@
+{
+  "jobId": "glw_4avl5a2j",
+  "status": "COMPLETE",
+  "wordpressPageId": 18846,
+  "wordpressUrl": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/dallas/",
+  "qaCheckCount": 12,
+  "qaChecks": {
+    "h1": "PASS",
+    "seo": "PASS",
+    "body": "PASS",
+    "slug": "PASS",
+    "title": "PASS",
+    "imageAlt": "PASS",
+    "heroImage": "PASS",
+    "hierarchy": "PASS",
+    "pageExists": "PASS",
+    "featuredImage": "PASS",
+    "internalLinks": "PASS",
+    "duplicateCheck": "PASS"
+  },
+  "qaFailureReasons": {}
+}

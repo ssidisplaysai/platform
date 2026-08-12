@@ -1,0 +1,22 @@
+{
+  "schemaIdentifier": "gpm-0001/dependency-map",
+  "schemaVersion": "1.0.0",
+  "nodes": ["GWS-01","GWS-02","GWS-03","GWS-04","GWS-05","GWS-06","GWS-07","GWS-08","GWS-09","GWS-10","GWS-11"],
+  "edges": [
+    {"from":"GWS-03","to":"GWS-04","type":"hard"},
+    {"from":"GWS-03","to":"GWS-05","type":"hard"},
+    {"from":"GWS-04","to":"GWS-01","type":"hard"},
+    {"from":"GWS-05","to":"GWS-02","type":"hard"},
+    {"from":"GWS-04","to":"GWS-07","type":"hard"},
+    {"from":"GWS-07","to":"GWS-06","type":"hard"},
+    {"from":"GWS-08","to":"GWS-06","type":"hard"},
+    {"from":"GWS-09","to":"GWS-01","type":"hard"},
+    {"from":"GWS-11","to":"GWS-06","type":"hard"}
+  ],
+  "blockedDependencies": [
+    "D-BLK-001 release metadata commit binding",
+    "D-BLK-002 lineage evidence expansion",
+    "D-BLK-003 architecture lineage graph binding"
+  ],
+  "criticalPath": ["GWS-03","GWS-04","GWS-05","GWS-09","GWS-01","GWS-11","GWS-06"]
+}

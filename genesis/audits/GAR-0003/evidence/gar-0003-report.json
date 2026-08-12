@@ -1,0 +1,64 @@
+{
+  "schemaIdentifier": "gar-0003/gar-0003-report",
+  "schemaVersion": "1.0.0",
+  "packageId": "GAR-0003",
+  "title": "Genesis Constitutional Assessment",
+  "generatedAt": "2026-07-28T21:30:17.345Z",
+  "repositoryRevision": "da84dac0e8d3d203cca94bc9af6bfd33b9dd0abb",
+  "branch": "feature/gar-0003-constitutional-assessment",
+  "releaseTag": "governance-v1.0.0",
+  "releaseTagCommit": "da84dac0e8d3d203cca94bc9af6bfd33b9dd0abb",
+  "implementationAuthority": {
+    "releaseId": "GFR-0001",
+    "baselineId": "GGB-0001",
+    "standards": [
+      "GCCS-0001",
+      "GAFS-0001"
+    ],
+    "constitutionalDecision": "GCD-0002"
+  },
+  "scope": [
+    "governance architecture",
+    "runtime",
+    "business genome",
+    "business agents",
+    "enterprise agents",
+    "applications",
+    "frameworks",
+    "services",
+    "registries",
+    "artifact lifecycle",
+    "traceability",
+    "audit readiness",
+    "certification readiness",
+    "repository organization",
+    "architectural alignment",
+    "documentation alignment",
+    "implementation alignment"
+  ],
+  "validations": {
+    "requiredArtifactsPresent": true,
+    "crossReferencesResolve": true,
+    "machineArtifactsValidate": true,
+    "authorityAcyclic": true,
+    "baselineIntegrityPasses": true,
+    "noGovernanceModifications": true,
+    "noStandardsModifications": true,
+    "noConstitutionModifications": true
+  },
+  "findingSummary": {
+    "total": 4,
+    "informational": 1,
+    "minor": 1,
+    "moderate": 2,
+    "major": 0,
+    "critical": 0
+  },
+  "clauseSummary": {
+    "COMPLIANT": 2,
+    "COMPLIANT WITH CONDITIONS": 2,
+    "INSUFFICIENT EVIDENCE": 1,
+    "NOT APPLICABLE": 1
+  },
+  "certificationDecision": "CERTIFIED WITH CONDITIONS"
+}

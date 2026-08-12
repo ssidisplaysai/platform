@@ -1,0 +1,91 @@
+{
+  "schemaIdentifier": "gpp-0003/phase-iii-risk-register",
+  "schemaVersion": "1.0.0",
+  "programId": "GPP-0003",
+  "scoringModel": {
+    "probability": "1-5",
+    "impact": "1-5",
+    "score": "probability*impact",
+    "severityBands": {
+      "low": "1-6",
+      "medium": "7-12",
+      "high": "13-19",
+      "critical": "20-25"
+    }
+  },
+  "risks": [
+    {
+      "riskId": "GPP3-RISK-001",
+      "category": "architectural",
+      "description": "Kernel-runtime integration introduces non-deterministic transition behavior",
+      "owner": "Platform Kernel Authority",
+      "probability": 4,
+      "impact": 5,
+      "score": 20,
+      "severity": "critical",
+      "mitigation": "Transition contracts, replay checks, staged load validation",
+      "trigger": "Runtime transition mismatch in replay tests"
+    },
+    {
+      "riskId": "GPP3-RISK-002",
+      "category": "delivery",
+      "description": "Cross-workstream dependency slippage delays readiness",
+      "owner": "Genesis Program Authority",
+      "probability": 4,
+      "impact": 4,
+      "score": 16,
+      "severity": "high",
+      "mitigation": "Dependency control board and critical-path monitoring",
+      "trigger": "Milestone variance greater than 10 business days"
+    },
+    {
+      "riskId": "GPP3-RISK-003",
+      "category": "operational",
+      "description": "Automation event pipelines produce duplicate or out-of-order outcomes",
+      "owner": "Automation Authority",
+      "probability": 3,
+      "impact": 5,
+      "score": 15,
+      "severity": "high",
+      "mitigation": "Idempotency keys, dead-letter controls, replay-safe handlers",
+      "trigger": "Duplicate event ratio exceeds threshold"
+    },
+    {
+      "riskId": "GPP3-RISK-004",
+      "category": "compliance",
+      "description": "Evidence telemetry insufficient for GAR-compatible assessment",
+      "owner": "Observability Authority",
+      "probability": 3,
+      "impact": 4,
+      "score": 12,
+      "severity": "medium",
+      "mitigation": "Wave 1 telemetry and GAR evidence contract integration",
+      "trigger": "Missing required fields in evidence snapshots"
+    },
+    {
+      "riskId": "GPP3-RISK-005",
+      "category": "strategic",
+      "description": "Business Genome ingestion quality inconsistent across sources",
+      "owner": "Business Genome Authority",
+      "probability": 3,
+      "impact": 5,
+      "score": 15,
+      "severity": "high",
+      "mitigation": "Source certification and conflict arbitration workflow",
+      "trigger": "Conflict rate exceeds quality threshold"
+    },
+    {
+      "riskId": "GPP3-RISK-006",
+      "category": "operational",
+      "description": "Deployment pipeline variance causes environment drift",
+      "owner": "Platform Reliability Authority",
+      "probability": 3,
+      "impact": 4,
+      "score": 12,
+      "severity": "medium",
+      "mitigation": "Immutable release artifacts and parity checks",
+      "trigger": "Drift findings in release gate validation"
+    }
+  ],
+  "acceptancePolicy": "No critical residual risk accepted without Program Authority sign-off"
+}

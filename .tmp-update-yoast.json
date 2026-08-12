@@ -1,0 +1,29 @@
+{
+  "method": "POST",
+  "url": "https://leddisplaywarehouse.com/wp-json/ssi/v1/yoast-update",
+  "authentication": "predefinedCredentialType",
+  "nodeCredentialType": "wordpressApi",
+  "sendBody": true,
+  "contentType": "multipart-form-data",
+  "bodyParameters": {
+    "parameters": [
+      {
+        "name": "post_id",
+        "value": "={{ $('Create a post').first().json.id }}"
+      },
+      {
+        "name": "metadesc",
+        "value": "=\n{{ $('Code in JavaScript').first().json.meta_description }}"
+      },
+      {
+        "name": "title",
+        "value": "={{ $('Code in JavaScript').first().json.seo_title }}"
+      },
+      {
+        "name": "focuskw",
+        "value": "={{ $('Code in JavaScript').first().json.focus_keyphrase }}"
+      }
+    ]
+  },
+  "options": {}
+}

@@ -1,0 +1,36 @@
+{
+  "schemaIdentifier": "gcd-0005/hall-update",
+  "schemaVersion": "1.0.0",
+  "hallPath": "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+  "entry": {
+    "decisionId": "GCD-0005",
+    "title": "Enterprise Health & Capability Contract",
+    "status": "CERTIFIED",
+    "lifecycleState": "Published",
+    "authority": "genesis/CONSTITUTION.md",
+    "dependencies": [
+      "GCD-0003-Genesis-Application-Boundary-Model.md",
+      "GCD-0004-Enterprise-Application-Registry-Constitutional-Authority.md",
+      "EAR-0001-Enterprise-Application-Registry-Specification.md",
+      "GACD-0005-Registry-Authority-Decision.md",
+      "GACD-0006-Kernel-Authority-Decision.md",
+      "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Decision-Model.md",
+      "genesis/governance/decisions/hall/Hall-of-Decisions.md"
+    ],
+    "supersedes": null,
+    "supersededBy": null,
+    "reviewHistory": [
+      "Architecture Review: PASS",
+      "Governance Review: PASS",
+      "Publication Review: PASS"
+    ],
+    "publicationDate": "2026-07-30",
+    "artifact": "genesis/governance/decisions/gcd-0005/GCD-0005-Enterprise-Health-and-Capability-Contract.md",
+    "metadata": {
+      "classification": "Constitutional Governance Decision",
+      "domain": "Enterprise Operating System",
+      "layer": "Governance/Architecture",
+      "owner": "Genesis Constitutional Authority"
+    }
+  }
+}

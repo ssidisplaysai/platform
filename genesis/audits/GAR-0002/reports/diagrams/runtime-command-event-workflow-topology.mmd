@@ -4,8 +4,6 @@ graph TD
   src_app_api_gop_jobs__id__events_route_ts-->src_lib_gop_events_api_ts
   src_app_api_gop_jobs__id__events_stream_route_ts-->src_lib_gop_events_api_ts
   src_app_glw__protected__queue_page_tsx-->src_components_glw_glw_queue_workspace_tsx
-  src_app_glw__protected__queue_page_tsx-->src_lib_glw_job_repository_ts
-  src_app_glw__protected__queue_page_tsx-->src_lib_glw_jobs_ts
   src_components_glw_glw_queue_workspace_tsx-->src_components_glw_data_table_tsx
   src_components_glw_glw_queue_workspace_tsx-->src_components_glw_empty_state_tsx
   src_components_glw_glw_queue_workspace_tsx-->src_components_glw_page_container_tsx
@@ -79,3 +77,5 @@ graph TD
   src_lib_gba_operations_runtime_ts-->src_lib_gba_operations_models_ts
   src_lib_gba_operations_runtime_ts-->src_lib_gba_operations_repository_ts
   src_lib_gba_operations_runtime_ts-->src_lib_gea_agent_models_ts
+  src_lib_gba_operations_runtime_ts-->src_lib_gea_agent_repository_ts
+  src_lib_gba_operations_runtime_ts-->src_lib_gea_agent_runtime_ts

@@ -1,0 +1,8 @@
+{
+  "authentication": "genericCredentialType",
+  "genericAuthType": "httpHeaderAuth",
+  "credential": {
+    "id": "TBbt7HMIkLGKvAzQ",
+    "name": "Header Auth account"
+  }
+}

@@ -35,7 +35,61 @@
     {
       "name": "business-genome-governance",
       "status": "VERIFIED",
-      "evidence": ["genesis/genome", "GKP-0001-Constitutional-Compliance.md"]
+      "evidence": [
+        "genesis/genome",
+        "GKP-0001-Constitutional-Compliance.md",
+        "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+        "Business-Genome-Object-Catalog.md",
+        "Business-Genome-Relationship-Model.md",
+        "Business-Genome-Confidence-Model.md",
+        "Business-Genome-Versioning-Model.md",
+        "Business-Genome-Traceability-Matrix.md",
+        "Business-Genome-Executive-Overview.md"
+      ]
+    },
+    {
+      "name": "business-genome-evidence-governance",
+      "status": "VERIFIED",
+      "evidence": [
+        "BGP-0002-Business-Genome-Evidence-Model.md",
+        "Business-Genome-Source-Architecture.md",
+        "Business-Genome-Authority-Model.md",
+        "Business-Genome-Provenance-Model.md",
+        "Business-Genome-Conflict-Resolution-Model.md",
+        "Business-Genome-Explainability-Model.md",
+        "Business-Genome-Traceability-Architecture.md",
+        "Business-Genome-Confidence-Scoring.md",
+        "Business-Genome-Evidence-Lifecycle.md",
+        "Business-Genome-Executive-Overview.md"
+      ]
+    },
+    {
+      "name": "business-genome-graph-governance",
+      "status": "VERIFIED",
+      "evidence": [
+        "BGP-0003-Business-Genome-Knowledge-Graph.md",
+        "Business-Genome-Relationship-Ontology.md",
+        "Business-Genome-Semantic-Reasoning-Model.md",
+        "Business-Genome-Temporal-Relationship-Model.md",
+        "Business-Genome-Inference-Model.md",
+        "Business-Genome-Graph-Governance.md",
+        "Business-Genome-Cross-Domain-Relationships.md",
+        "Business-Genome-Relationship-Lifecycle.md",
+        "Business-Genome-Graph-Validation.md",
+        "Business-Genome-Executive-Overview.md"
+      ]
+    },
+    {
+      "name": "business-genome-foundation-governance",
+      "status": "VERIFIED",
+      "evidence": [
+        "BGF-0001-Business-Genome-Foundation-Freeze.md",
+        "Business-Genome-Foundation-v1.0.md",
+        "Business-Genome-Foundation-Baseline.md",
+        "Business-Genome-Engineering-Roadmap.md",
+        "Business-Genome-Foundation-Certification.md",
+        "Business-Genome-Foundation-Executive-Summary.md"
+      ]
     },
     {
       "name": "registry-governance",

@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { getGlwSession } from "@/lib/glw/auth";
 import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from "@/platform/gop/auth/runtime";
 import { createActionReference } from "@/platform/gop/auth/resolver";
-import { createInMemoryCapabilityRegistry } from "./capability-registry";
 import { createSeedAgent, createInMemoryGeaRepository } from "./agent-repository";
 import { createAgentRuntimeService, type AgentRuntimeService } from "./agent-runtime";
 import { geaId, nowIso } from "./agent-models";
-import { createInMemoryToolRegistry } from "./tool-framework";
-import type { WorkflowStep } from "./orchestration-models";
+import type { WorkflowDefinition, WorkflowStep } from "./orchestration-models";
 import { createInMemoryOrchestrationRepository, createPrismaOrchestrationRepository, type OrchestrationRepository } from "./orchestration-repository";
 import { createOrchestrationRuntimeService, type OrchestrationRuntimeService } from "./orchestration-runtime";
+import { createGeaRuntimeRegistryAuthority } from "./runtime-registry-authority";
 
 const DEFAULT_WORKSPACE_ID = "glw-led-display-warehouse";
 const DEFAULT_ORGANIZATION_ID = "genesis";
@@ -53,8 +52,7 @@ function organizationFromUrl(url: URL): string {
 function buildDependencies(input?: GeaOrchestrationApiDependencies) {
   const repository = input?.repository ?? createPrismaOrchestrationRepository();
 
-  const capabilityRegistry = createInMemoryCapabilityRegistry();
-  const toolRegistry = createInMemoryToolRegistry();
+  const { capabilityRegistry, toolRegistry } = createGeaRuntimeRegistryAuthority();
   const geaRepository = createInMemoryGeaRepository();
   const seedAgent = createSeedAgent({
     agentId: "gea-orchestrator-agent",
@@ -91,9 +89,9 @@ async function authorize(input: {
   request: Request;
   actionId: GeaOrchestrationAction;
   route: string;
-  dependencies?: GeaOrchestrationApiDependencies;
+  dependencies: ReturnType<typeof buildDependencies>;
 }): Promise<Authorized> {
-  const deps = buildDependencies(input.dependencies);
+  const deps = input.dependencies;
   const url = new URL(input.request.url);
   const workspaceId = workspaceFromUrl(url);
   const organizationId = organizationFromUrl(url);
@@ -133,7 +131,7 @@ function parseSteps(value: unknown): WorkflowStep[] {
   if (!Array.isArray(value)) return [];
 
   return value
-    .map((entry, index) => {
+    .map((entry, index): WorkflowStep | null => {
       if (!entry || typeof entry !== "object") return null;
       const item = entry as Record<string, unknown>;
       if (typeof item.stepKey !== "string" || typeof item.title !== "string" || typeof item.agentId !== "string") return null;
@@ -171,14 +169,15 @@ function parseSteps(value: unknown): WorkflowStep[] {
         input: typeof item.input === "object" && item.input ? item.input as Record<string, unknown> : {},
       } satisfies WorkflowStep;
     })
-    .filter((entry): entry is WorkflowStep => Boolean(entry));
+    .filter((entry): entry is WorkflowStep => entry !== null);
 }
 
 export async function handleOrchestrations(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/orchestrations", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/orchestrations", dependencies: d });
   if ("error" in access) return access.error;
 
-  const runtime = buildDependencies(dependencies).runtime;
+  const runtime = d.runtime;
   const orchestrations = await runtime.listOrchestrations(access.workspaceId);
   const executions = await runtime.listExecutions(access.workspaceId);
 
@@ -186,10 +185,11 @@ export async function handleOrchestrations(request: Request, dependencies?: GeaO
 }
 
 export async function handleGetOrchestration(request: Request, orchestrationId: string, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/orchestrations/[id]", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/orchestrations/[id]", dependencies: d });
   if ("error" in access) return access.error;
 
-  const orchestration = await buildDependencies(dependencies).runtime.getOrchestration(orchestrationId);
+  const orchestration = await d.runtime.getOrchestration(orchestrationId);
   if (!orchestration || orchestration.workspaceId !== access.workspaceId) {
     return json({ error: "Orchestration not found." }, 404);
   }
@@ -198,7 +198,8 @@ export async function handleGetOrchestration(request: Request, orchestrationId: 
 }
 
 export async function handleStartOrchestration(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:execute_workflows", route: "/api/gea/orchestrations/start", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:execute_workflows", route: "/api/gea/orchestrations/start", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -206,7 +207,7 @@ export async function handleStartOrchestration(request: Request, dependencies?: 
     return json({ error: "workflowKey and steps are required." }, 400);
   }
 
-  const runtime = buildDependencies(dependencies).runtime;
+  const runtime = d.runtime;
   const compiled = await runtime.workflowCompiler.compile({
     workspaceId: access.workspaceId,
     organizationId: access.organizationId,
@@ -235,7 +236,8 @@ export async function handleStartOrchestration(request: Request, dependencies?: 
 }
 
 export async function handleCancelOrchestration(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:cancel_workflows", route: "/api/gea/orchestrations/cancel", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:cancel_workflows", route: "/api/gea/orchestrations/cancel", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -243,12 +245,13 @@ export async function handleCancelOrchestration(request: Request, dependencies?:
     return json({ error: "executionId is required." }, 400);
   }
 
-  const execution = await buildDependencies(dependencies).runtime.executionManager.cancel(body.executionId, access.actorId);
+  const execution = await d.runtime.executionManager.cancel(body.executionId, access.actorId);
   return json({ execution }, 201);
 }
 
 export async function handlePauseOrchestration(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:pause_workflows", route: "/api/gea/orchestrations/pause", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:pause_workflows", route: "/api/gea/orchestrations/pause", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -256,12 +259,13 @@ export async function handlePauseOrchestration(request: Request, dependencies?: 
     return json({ error: "executionId is required." }, 400);
   }
 
-  const execution = await buildDependencies(dependencies).runtime.executionManager.pause(body.executionId, access.actorId);
+  const execution = await d.runtime.executionManager.pause(body.executionId, access.actorId);
   return json({ execution }, 201);
 }
 
 export async function handleResumeOrchestration(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:resume_workflows", route: "/api/gea/orchestrations/resume", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:resume_workflows", route: "/api/gea/orchestrations/resume", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -269,12 +273,13 @@ export async function handleResumeOrchestration(request: Request, dependencies?:
     return json({ error: "executionId is required." }, 400);
   }
 
-  const execution = await buildDependencies(dependencies).runtime.executionManager.resume(body.executionId, access.actorId);
+  const execution = await d.runtime.executionManager.resume(body.executionId, access.actorId);
   return json({ execution }, 201);
 }
 
 export async function handleReplayOrchestration(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:replay_workflows", route: "/api/gea/orchestrations/replay", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:replay_workflows", route: "/api/gea/orchestrations/replay", dependencies: d });
   if ("error" in access) return access.error;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
@@ -282,23 +287,25 @@ export async function handleReplayOrchestration(request: Request, dependencies?:
     return json({ error: "executionId is required." }, 400);
   }
 
-  const replay = await buildDependencies(dependencies).runtime.executionManager.replay(body.executionId);
+  const replay = await d.runtime.executionManager.replay(body.executionId);
   return json({ replay }, 201);
 }
 
 export async function handleWorkflows(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/workflows", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/workflows", dependencies: d });
   if ("error" in access) return access.error;
 
-  const workflows = await buildDependencies(dependencies).runtime.listWorkflows(access.workspaceId);
+  const workflows = await d.runtime.listWorkflows(access.workspaceId);
   return json({ workflows });
 }
 
 export async function handleGetWorkflow(request: Request, workflowId: string, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/workflows/[id]", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:view_workflows", route: "/api/gea/workflows/[id]", dependencies: d });
   if ("error" in access) return access.error;
 
-  const workflow = await buildDependencies(dependencies).runtime.getWorkflow(workflowId);
+  const workflow = await d.runtime.getWorkflow(workflowId);
   if (!workflow || workflow.workspaceId !== access.workspaceId) {
     return json({ error: "Workflow not found." }, 404);
   }
@@ -307,35 +314,37 @@ export async function handleGetWorkflow(request: Request, workflowId: string, de
 }
 
 export async function handleOrchestrationHealth(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:view_health", route: "/api/gea/orchestrations/health", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:view_health", route: "/api/gea/orchestrations/health", dependencies: d });
   if ("error" in access) return access.error;
 
-  const health = await buildDependencies(dependencies).runtime.listHealth(access.workspaceId);
+  const health = await d.runtime.listHealth(access.workspaceId);
   return json({ health });
 }
 
 export async function handleOrchestrationTimeline(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:view_timeline", route: "/api/gea/orchestrations/timeline", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:view_timeline", route: "/api/gea/orchestrations/timeline", dependencies: d });
   if ("error" in access) return access.error;
 
   const executionId = new URL(request.url).searchParams.get("executionId") ?? undefined;
-  const timeline = await buildDependencies(dependencies).runtime.listTimeline(access.workspaceId, executionId);
+  const timeline = await d.runtime.listTimeline(access.workspaceId, executionId);
   return json({ timeline });
 }
 
 export async function handleOrchestrationApprovals(request: Request, dependencies?: GeaOrchestrationApiDependencies): Promise<NextResponse> {
-  const access = await authorize({ request, actionId: "gea:orchestration:approve_workflow_stages", route: "/api/gea/orchestrations/approvals", dependencies });
+  const d = buildDependencies(dependencies);
+  const access = await authorize({ request, actionId: "gea:orchestration:approve_workflow_stages", route: "/api/gea/orchestrations/approvals", dependencies: d });
   if ("error" in access) return access.error;
 
   const executionId = new URL(request.url).searchParams.get("executionId") ?? undefined;
-  const approvals = await buildDependencies(dependencies).runtime.listApprovals(access.workspaceId, executionId);
+  const approvals = await d.runtime.listApprovals(access.workspaceId, executionId);
   return json({ approvals });
 }
 
 export function createInMemoryOrchestrationApiDependencies(): GeaOrchestrationApiDependencies {
   const repository = createInMemoryOrchestrationRepository();
-  const capabilityRegistry = createInMemoryCapabilityRegistry();
-  const toolRegistry = createInMemoryToolRegistry();
+  const { capabilityRegistry, toolRegistry } = createGeaRuntimeRegistryAuthority();
   const geaRepository = createInMemoryGeaRepository();
 
   const seedAgent = createSeedAgent({

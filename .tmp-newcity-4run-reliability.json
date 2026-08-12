@@ -1,0 +1,116 @@
+{
+  "generatedAt": "2026-08-08T00:25:24.493Z",
+  "newCityBefore": {
+    "productId": 124,
+    "stateId": 2563,
+    "items": []
+  },
+  "newCity": "qa-dup-rel-1786148724495-0",
+  "newCityRuns": [
+    {
+      "executionId": "60775",
+      "status": "success",
+      "find": {
+        "xWpTotal": "0",
+        "bodyCount": 0
+      },
+      "lookup": {
+        "city_page_found": false,
+        "existing_city_page_id": 0
+      },
+      "createExecuted": true,
+      "updateExecuted": false,
+      "createResult": {
+        "id": 19071,
+        "slug": "qa-dup-rel-1786148724495-0",
+        "status": "draft",
+        "parent": 2563
+      },
+      "updateResult": null,
+      "normalized": {
+        "id": 19071,
+        "disposition": "CREATED"
+      }
+    },
+    {
+      "executionId": "60777",
+      "status": "success",
+      "find": {
+        "xWpTotal": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 19071
+      },
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 19071,
+        "slug": "qa-dup-rel-1786148724495-0",
+        "status": "draft",
+        "parent": 2563
+      },
+      "normalized": {
+        "id": 19071,
+        "disposition": "UPDATED"
+      }
+    },
+    {
+      "executionId": "60779",
+      "status": "success",
+      "find": {
+        "xWpTotal": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 19071
+      },
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 19071,
+        "slug": "qa-dup-rel-1786148724495-0",
+        "status": "draft",
+        "parent": 2563
+      },
+      "normalized": {
+        "id": 19071,
+        "disposition": "UPDATED"
+      }
+    },
+    {
+      "executionId": "60786",
+      "status": "success",
+      "find": {
+        "xWpTotal": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 19071
+      },
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 19071,
+        "slug": "qa-dup-rel-1786148724495-0",
+        "status": "draft",
+        "parent": 2563
+      },
+      "normalized": {
+        "id": 19071,
+        "disposition": "UPDATED"
+      }
+    }
+  ],
+  "newCityAfter": {
+    "productId": 124,
+    "stateId": 2563,
+    "items": []
+  }
+}

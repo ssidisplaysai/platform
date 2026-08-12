@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getGlwSession } from "@/lib/glw/auth";
 import { buildGenesisSubjectFromSession, getGenesisAuthorizationResolver } from "@/platform/gop/auth/runtime";
 import { createActionReference } from "@/platform/gop/auth/resolver";
-import { type GmpProject, createPrismaGmpRepository, type GmpRepository } from "./repository";
+import { createPrismaGmpRepository, type GmpRepository } from "./repository";
+import { type GmpProject } from "./models";
 import {
   parseKnowledgeDomain,
   parseKnowledgeSourceType,
@@ -60,12 +61,16 @@ function workspaceFromUrl(url: URL): string {
   return url.searchParams.get("workspaceId") ?? DEFAULT_WORKSPACE_ID;
 }
 
+type KnowledgeAuthorizeResult =
+  | { error: NextResponse }
+  | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
 async function authorize(input: {
   actionId: KnowledgeAction;
   workspaceId: string;
   route: string;
   dependencies?: GmpKnowledgeApiDependencies;
-}) {
+}): Promise<KnowledgeAuthorizeResult> {
   const d = deps(input.dependencies);
   const session = await d.sessionLoader();
   if (!session) {

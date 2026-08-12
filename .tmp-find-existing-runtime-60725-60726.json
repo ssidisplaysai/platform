@@ -1,0 +1,558 @@
+[
+  {
+    "executionId": "60725",
+    "status": "success",
+    "prepared": {
+      "city_slug": "houston",
+      "state_parent_id": 2563,
+      "publishing_mode": "draft",
+      "state_parent_slug": "texas"
+    },
+    "findExistingNodeRunMeta": {
+      "executionStatus": "success",
+      "executionTime": 1944,
+      "source": [
+        {
+          "previousNode": "Validation Passed?",
+          "previousNodeOutput": 0,
+          "previousNodeRun": 0
+        }
+      ]
+    },
+    "findExistingRawOutput": {
+      "body": [
+        {
+          "id": 18847,
+          "date": "2026-08-07T19:50:45",
+          "date_gmt": "2026-08-07T19:50:45",
+          "guid": {
+            "rendered": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/"
+          },
+          "modified": "2026-08-07T19:51:49",
+          "modified_gmt": "2026-08-07T19:51:49",
+          "slug": "houston",
+          "status": "publish",
+          "type": "page",
+          "link": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+          "title": {
+            "rendered": "LED Wall Rental Solutions in Houston, Texas"
+          },
+          "content": {
+            "rendered": "<h1>LED Wall Rental Package</h1>\n<figure class=\"page-hero-image\"><img decoding=\"async\" src=\"http://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png\" alt=\"LED wall rental display in Houston TX convention center\" loading=\"lazy\" /></figure>\n<p>Host your next Houston event with unrivaled visual impact by choosing LEDDisplayWarehouse.com’s <strong>LED wall rental</strong> services. Whether you’re planning a corporate conference, engaging a congregation, or powering up a trade show, our commercial-grade LED wall solutions deliver unmatched clarity and creativity to any venue in Texas. Explore a full range of indoor and outdoor LED products, flexible rental packages, and trusted expertise for success at every scale. To see options beyond traditional video walls, visit our <a href=\"https://leddisplaywarehouse.com/direct-view-led-video-walls/\">Direct View LED Video Walls</a> category.</p>\n<h2>Why Choose LED Wall Rental in Houston?</h2>\n<p>Houston’s busy event landscape—from sprawling retail spaces and innovative corporate meetings to dynamic entertainment, worship services, and large-scale sports—demands displays that stand out. LED wall rentals provide spectacular visuals with vivid color, exceptional brightness, and versatile configurations you can tailor for every location:</p>\n<ul>\n<li><strong>Corporate events &#038; conferences</strong></li>\n<li>Houses of worship seeking immersive worship visuals</li>\n<li>Trade shows &#038; exhibitions looking to attract crowds</li>\n<li>Concerts, sporting venues, and festivals for live video feeds</li>\n<li>Retail launches, pop-up shops, and museums</li>\n<li>University graduations &#038; public outreach campaigns</li>\n</ul>\n<h2>Houston LED Display Advantages</h2>\n<ul>\n<li><strong>Stunning image quality</strong> — high-resolution pixel pitches for sharp content</li>\n<li><strong>Flexible sizing</strong> — modular setups fit venues from boardrooms to stadiums</li>\n<li><strong>Quick setup and removal</strong> — minimal downtime, perfect for short-term events</li>\n<li><strong>Indoor and outdoor functionality</strong> — designed to handle Houston’s climate</li>\n<li><strong>Cost-effective packages</strong> — avoid long-term investment while enjoying top-tier technology</li>\n</ul>\n<h2>Houston LED Wall Rental Packages vs. Other Display Rentals</h2>\n<table>\n<thead>\n<tr>\n<th>Feature</th>\n<th>LED Wall Rental</th>\n<th>Projector Rental</th>\n<th>LCD Video Wall Rental</th>\n</tr>\n</thead>\n<tbody>\n<tr>\n<td>Brightness</td>\n<td>High, suitable for all lighting</td>\n<td>Lower, needs dark room</td>\n<td>Medium</td>\n</tr>\n<tr>\n<td>Seamless Visuals</td>\n<td>True seamless</td>\n<td>Bezel-free but may blur</td>\n<td>Visible bezels</td>\n</tr>\n<tr>\n<td>Setup Time</td>\n<td>Fast &#038; modular</td>\n<td>Medium</td>\n<td>Time-consuming</td>\n</tr>\n<tr>\n<td>Outdoor Use</td>\n<td>Available</td>\n<td>Limited</td>\n<td>Indoor only</td>\n</tr>\n<tr>\n<td>Image Quality</td>\n<td>Excellent (HD/UHD)</td>\n<td>Varies</td>\n<td>Good (HD)</td>\n</tr>\n<tr>\n<td>Flexibility of Size/Design</td>\n<td>Highly versatile</td>\n<td>Limited</td>\n<td>Stacked only</td>\n</tr>\n<tr>\n<td>Cost Efficiency</td>\n<td>High value for impact</td>\n<td>Low per day; lower impact</td>\n<td>Moderate</td>\n</tr>\n</tbody>\n</table>\n<p>Want even more versatility? Review <a href=\"https://leddisplaywarehouse.com/creative-led-displays/\">creative LED options</a> and <a href=\"https://leddisplaywarehouse.com/interactive-led-floors/\">interactive LED floors</a> for show-stopping installations.</p>\n<h2>Popular Houston LED Use Cases</h2>\n<ul>\n<li><strong>Trade Shows &#038; Exhibitions</strong>: Draw a crowd at Houston’s George R. Brown Convention Center with dynamic visuals. Try our <a href=\"https://leddisplaywarehouse.com/exhibition-led-displays/\">exhibition LED solutions</a> for bespoke stands.</li>\n<li><strong>Church Gatherings</strong>: Enhance worship with LED screens in sanctuaries and auditoriums, ensuring everyone experiences the message clearly.</li>\n<li><strong>Stadiums &#038; Arenas</strong>: Broadcast live feeds, sponsorships, and instant replays in places like NRG Stadium with our <a href=\"https://leddisplaywarehouse.com/outdoor-led-displays/\">outdoor LED displays</a>.</li>\n<li><strong>Retail Locations</strong>: Use LED displays to launch new products, drive engagement, and display digital signage.</li>\n<li><strong>Corporate Training</strong>: Modernize boardrooms and meeting spaces for productive collaboration with our <a href=\"https://leddisplaywarehouse.com/smd-all-in-one-led-displays/\">all-in-one LED displays</a>.</li>\n</ul>\n<h2>What’s Included in Every Houston LED Wall Rental?</h2>\n<ul>\n<li>High-quality LED panels—indoor/outdoor rated as needed</li>\n<li>Supporting trusses, frames, and hardware</li>\n<li>Media processors/controllers for seamless playback</li>\n<li>Delivery, installation, and removal at your event site</li>\n<li>On-site technical support and remote troubleshooting</li>\n<li>Optional add-ons: <a href=\"https://leddisplaywarehouse.com/led-posters/\">LED posters</a>, creative configurations, or interactive elements</li>\n</ul>\n<h2>Common Mistakes When Renting LED Walls in Houston</h2>\n<ul>\n<li><strong>Underestimating venue requirements</strong> — Always check ceiling heights and power availability</li>\n<li><strong>Ignoring ambient lighting</strong> — Select proper pixel pitch and brightness tailored to Houston’s conditions</li>\n<li><strong>Incomplete technical support</strong> — Partner with a provider (like LEDDisplayWarehouse.com) who offers on-site assistance</li>\n<li><strong>Last-minute bookings</strong> — Reserve your LED wall early to secure preferred sizes/dates</li>\n<li><strong>Choosing the wrong product</strong> — Explore all solutions, including <a href=\"https://leddisplaywarehouse.com/flexible-rollable-led/\">flexible and rollable LEDs</a> for unique needs</li>\n</ul>\n<h2>Future Trends in LED Wall Displays for Houston Events</h2>\n<ul>\n<li><strong>MicroLED and MiniLED advancements</strong> — See brighter, more efficient displays in ever-thinner panels</li>\n<li>Seamless <strong>COB all-in-one displays</strong> for rapid deployments and easier integration (see <a href=\"https://leddisplaywarehouse.com/cob-all-in-one-led-displays/\">COB options</a>)</li>\n<li>Increased use of <strong>interactive LED technologies</strong> for engagement</li>\n<li>Eco-friendly manufacturing and lower power consumption</li>\n<li>Integration with new event technologies—discover more on platforms like <a href=\"https://www.avixa.org\" target=\"_blank\" rel=\"noopener\">AVIXA</a> and <a href=\"https://www.smpte.org\" target=\"_blank\" rel=\"noopener\">SMPTE</a></li>\n</ul>\n<p>Stay updated with industry breakthroughs at <a href=\"https://www.displaydaily.com\" target=\"_blank\" rel=\"noopener\">Display Daily</a> or <a href=\"https://www.digitalsignagetoday.com\" target=\"_blank\" rel=\"noopener\">Digital Signage Today</a>.</p>\n<h2>Frequently Asked Questions</h2>\n<dl>\n<dt>How do I determine the right LED wall size for my Houston event?</dt>\n<dd>Our specialists evaluate your venue, audience size, and content type—custom solutions ensure perfect visibility every time.</dd>\n<dt>Can I use LED wall rentals outdoors in Houston?</dt>\n<dd>Absolutely. We offer weather-resistant outdoor LED displays, ideal for Houston’s unpredictable climate.</dd>\n<dt>What’s the difference between LED wall rental and LCD video wall rental?</dt>\n<dd>LED walls provide seamless visuals, brighter images, and more versatile configurations compared to LCD video walls.</dd>\n<dt>Do you offer technical support during events?</dt>\n<dd>Yes, we include on-site technical support and remote troubleshooting with every rental.</dd>\n<dt>Are flexible or creative LED display shapes available for rentals?</dt>\n<dd>Yes, we have flexible, curved, and creative configuration options. Explore details at our <a href=\"https://leddisplaywarehouse.com/custom-led-displays/\">custom LED displays page</a>.</dd>\n</dl>\n<h2>Request Your Houston LED Wall Rental Today</h2>\n<p>Step up your Houston event or venue with a visually stunning LED wall. Our team at LEDDisplayWarehouse.com is ready to deliver, install, and support the perfect display solution—no matter your industry or project size. Want to explore all options or start a quote? <a href=\"https://leddisplaywarehouse.com/contact-us/\">Contact us</a> now for expert consultation and fast service in Houston, Texas. For creative or specialty displays, discover our <a href=\"https://leddisplaywarehouse.com/creative-led-displays/\">creative LED solutions</a>. Your Houston audience deserves the best—choose the experience leader in LED display rentals.</p>\n",
+            "protected": false
+          },
+          "excerpt": {
+            "rendered": "<p>Rent high-impact LED walls in Houston for unmatched brightness, clarity, and versatility at your next event or venue. Flexible packages and expert service included.</p>\n",
+            "protected": false
+          },
+          "author": 3,
+          "featured_media": 18848,
+          "parent": 2563,
+          "menu_order": 0,
+          "comment_status": "closed",
+          "ping_status": "closed",
+          "template": "",
+          "meta": {
+            "_yoast_wpseo_focuskw": "led wall rental",
+            "_yoast_wpseo_title": "LED Wall Rental in Houston TX | Event & Venue Display Rental",
+            "_yoast_wpseo_metadesc": "LED wall rental for Houston, Texas events and venues. Get indoor & outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.",
+            "footnotes": ""
+          },
+          "class_list": [
+            "post-18847",
+            "page",
+            "type-page",
+            "status-publish",
+            "has-post-thumbnail",
+            "hentry"
+          ],
+          "yoast_head": "<!-- This site is optimized with the Yoast SEO plugin v28.2 - https://yoast.com/product/yoast-seo-wordpress/ -->\n<title>LED Wall Rental in Houston TX | Event &amp; Venue Display Rental</title>\n<meta name=\"description\" content=\"LED wall rental for Houston, Texas events and venues. Get indoor &amp; outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.\" />\n<meta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" />\n<link rel=\"canonical\" href=\"https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/\" />\n<meta property=\"og:locale\" content=\"en_US\" />\n<meta property=\"og:type\" content=\"article\" />\n<meta property=\"og:title\" content=\"LED Wall Rental in Houston TX | Event &amp; Venue Display Rental\" />\n<meta property=\"og:description\" content=\"LED wall rental for Houston, Texas events and venues. Get indoor &amp; outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.\" />\n<meta property=\"og:url\" content=\"https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/\" />\n<meta property=\"og:site_name\" content=\"LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions\" />\n<meta property=\"article:modified_time\" content=\"2026-08-07T19:51:49+00:00\" />\n<meta property=\"og:image\" content=\"http://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png\" />\n<meta name=\"twitter:card\" content=\"summary_large_image\" />\n<meta name=\"twitter:label1\" content=\"Est. reading time\" />\n\t<meta name=\"twitter:data1\" content=\"4 minutes\" />\n<script type=\"application/ld+json\" class=\"yoast-schema-graph\">{\"@context\":\"https:\\/\\/schema.org\",\"@graph\":[{\"@type\":\"WebPage\",\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/\",\"url\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/\",\"name\":\"LED Wall Rental in Houston TX | Event & Venue Display Rental\",\"isPartOf\":{\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/#website\"},\"primaryImageOfPage\":{\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/#primaryimage\"},\"image\":{\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/#primaryimage\"},\"thumbnailUrl\":\"https:\\/\\/leddisplaywarehouse.com\\/wp-content\\/uploads\\/2026\\/08\\/texasaustinled-wall-rental-2.png\",\"datePublished\":\"2026-08-07T19:50:45+00:00\",\"dateModified\":\"2026-08-07T19:51:49+00:00\",\"description\":\"LED wall rental for Houston, Texas events and venues. Get indoor & outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.\",\"breadcrumb\":{\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/#breadcrumb\"},\"inLanguage\":\"en\",\"potentialAction\":[{\"@type\":\"ReadAction\",\"target\":[\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/\"]}]},{\"@type\":\"ImageObject\",\"inLanguage\":\"en\",\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/#primaryimage\",\"url\":\"https:\\/\\/leddisplaywarehouse.com\\/wp-content\\/uploads\\/2026\\/08\\/texasaustinled-wall-rental-2.png\",\"contentUrl\":\"https:\\/\\/leddisplaywarehouse.com\\/wp-content\\/uploads\\/2026\\/08\\/texasaustinled-wall-rental-2.png\",\"width\":1536,\"height\":1024,\"caption\":\"LED wall rental display in Houston TX convention center\"},{\"@type\":\"BreadcrumbList\",\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/houston\\/#breadcrumb\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Home\",\"item\":\"https:\\/\\/leddisplaywarehouse.com\\/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Direct View LED Video Walls\",\"item\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/\"},{\"@type\":\"ListItem\",\"position\":3,\"name\":\"Texas LED Video Walls\",\"item\":\"https:\\/\\/leddisplaywarehouse.com\\/direct-view-led-video-walls\\/texas\\/\"},{\"@type\":\"ListItem\",\"position\":4,\"name\":\"LED Wall Rental Solutions in Houston, Texas\"}]},{\"@type\":\"WebSite\",\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/#website\",\"url\":\"https:\\/\\/leddisplaywarehouse.com\\/\",\"name\":\"LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions\",\"description\":\"Premium LED Displays. Expert Solutions. Nationwide Delivery.\",\"publisher\":{\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/#organization\"},\"potentialAction\":[{\"@type\":\"SearchAction\",\"target\":{\"@type\":\"EntryPoint\",\"urlTemplate\":\"https:\\/\\/leddisplaywarehouse.com\\/?s={search_term_string}\"},\"query-input\":{\"@type\":\"PropertyValueSpecification\",\"valueRequired\":true,\"valueName\":\"search_term_string\"}}],\"inLanguage\":\"en\"},{\"@type\":\"Organization\",\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/#organization\",\"name\":\"LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions\",\"url\":\"https:\\/\\/leddisplaywarehouse.com\\/\",\"logo\":{\"@type\":\"ImageObject\",\"inLanguage\":\"en\",\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/#\\/schema\\/logo\\/image\\/\",\"url\":\"https:\\/\\/leddisplaywarehouse.com\\/wp-content\\/uploads\\/2025\\/03\\/SSI-LED-Displays-Website-Logo.png\",\"contentUrl\":\"https:\\/\\/leddisplaywarehouse.com\\/wp-content\\/uploads\\/2025\\/03\\/SSI-LED-Displays-Website-Logo.png\",\"width\":2162,\"height\":621,\"caption\":\"LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions\"},\"image\":{\"@id\":\"https:\\/\\/leddisplaywarehouse.com\\/#\\/schema\\/logo\\/image\\/\"}}]}</script>\n<!-- / Yoast SEO plugin. -->",
+          "yoast_head_json": {
+            "title": "LED Wall Rental in Houston TX | Event & Venue Display Rental",
+            "description": "LED wall rental for Houston, Texas events and venues. Get indoor & outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.",
+            "robots": {
+              "index": "index",
+              "follow": "follow",
+              "max-snippet": "max-snippet:-1",
+              "max-image-preview": "max-image-preview:large",
+              "max-video-preview": "max-video-preview:-1"
+            },
+            "canonical": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+            "og_locale": "en_US",
+            "og_type": "article",
+            "og_title": "LED Wall Rental in Houston TX | Event & Venue Display Rental",
+            "og_description": "LED wall rental for Houston, Texas events and venues. Get indoor & outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.",
+            "og_url": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+            "og_site_name": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions",
+            "article_modified_time": "2026-08-07T19:51:49+00:00",
+            "og_image": [
+              {
+                "url": "http://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png",
+                "type": "",
+                "width": "",
+                "height": ""
+              }
+            ],
+            "twitter_card": "summary_large_image",
+            "twitter_misc": {
+              "Est. reading time": "4 minutes"
+            },
+            "schema": {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebPage",
+                  "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+                  "url": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+                  "name": "LED Wall Rental in Houston TX | Event & Venue Display Rental",
+                  "isPartOf": {
+                    "@id": "https://leddisplaywarehouse.com/#website"
+                  },
+                  "primaryImageOfPage": {
+                    "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#primaryimage"
+                  },
+                  "image": {
+                    "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#primaryimage"
+                  },
+                  "thumbnailUrl": "https://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png",
+                  "datePublished": "2026-08-07T19:50:45+00:00",
+                  "dateModified": "2026-08-07T19:51:49+00:00",
+                  "description": "LED wall rental for Houston, Texas events and venues. Get indoor & outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.",
+                  "breadcrumb": {
+                    "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#breadcrumb"
+                  },
+                  "inLanguage": "en",
+                  "potentialAction": [
+                    {
+                      "@type": "ReadAction",
+                      "target": [
+                        "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "@type": "ImageObject",
+                  "inLanguage": "en",
+                  "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#primaryimage",
+                  "url": "https://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png",
+                  "contentUrl": "https://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png",
+                  "width": 1536,
+                  "height": 1024,
+                  "caption": "LED wall rental display in Houston TX convention center"
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#breadcrumb",
+                  "itemListElement": [
+                    {
+                      "@type": "ListItem",
+                      "position": 1,
+                      "name": "Home",
+                      "item": "https://leddisplaywarehouse.com/"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 2,
+                      "name": "Direct View LED Video Walls",
+                      "item": "https://leddisplaywarehouse.com/direct-view-led-video-walls/"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 3,
+                      "name": "Texas LED Video Walls",
+                      "item": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 4,
+                      "name": "LED Wall Rental Solutions in Houston, Texas"
+                    }
+                  ]
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://leddisplaywarehouse.com/#website",
+                  "url": "https://leddisplaywarehouse.com/",
+                  "name": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions",
+                  "description": "Premium LED Displays. Expert Solutions. Nationwide Delivery.",
+                  "publisher": {
+                    "@id": "https://leddisplaywarehouse.com/#organization"
+                  },
+                  "potentialAction": [
+                    {
+                      "@type": "SearchAction",
+                      "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://leddisplaywarehouse.com/?s={search_term_string}"
+                      },
+                      "query-input": {
+                        "@type": "PropertyValueSpecification",
+                        "valueRequired": true,
+                        "valueName": "search_term_string"
+                      }
+                    }
+                  ],
+                  "inLanguage": "en"
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://leddisplaywarehouse.com/#organization",
+                  "name": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions",
+                  "url": "https://leddisplaywarehouse.com/",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "inLanguage": "en",
+                    "@id": "https://leddisplaywarehouse.com/#/schema/logo/image/",
+                    "url": "https://leddisplaywarehouse.com/wp-content/uploads/2025/03/SSI-LED-Displays-Website-Logo.png",
+                    "contentUrl": "https://leddisplaywarehouse.com/wp-content/uploads/2025/03/SSI-LED-Displays-Website-Logo.png",
+                    "width": 2162,
+                    "height": 621,
+                    "caption": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions"
+                  },
+                  "image": {
+                    "@id": "https://leddisplaywarehouse.com/#/schema/logo/image/"
+                  }
+                }
+              ]
+            }
+          },
+          "yoast_title": "LED Wall Rental in Houston TX | Event &amp; Venue Display Rental",
+          "yoast_meta": [
+            {
+              "name": "description",
+              "content": "LED wall rental for Houston, Texas events and venues. Get indoor &amp; outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com."
+            },
+            {
+              "name": "robots",
+              "content": "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+            },
+            {
+              "property": "og:locale",
+              "content": "en_US"
+            },
+            {
+              "property": "og:type",
+              "content": "article"
+            },
+            {
+              "property": "og:title",
+              "content": "LED Wall Rental in Houston TX | Event &amp; Venue Display Rental"
+            },
+            {
+              "property": "og:description",
+              "content": "LED wall rental for Houston, Texas events and venues. Get indoor &amp; outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com."
+            },
+            {
+              "property": "og:url",
+              "content": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/"
+            },
+            {
+              "property": "og:site_name",
+              "content": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions"
+            },
+            {
+              "property": "article:modified_time",
+              "content": "2026-08-07T19:51:49+00:00"
+            },
+            {
+              "property": "og:image",
+              "content": "http://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png"
+            },
+            {
+              "name": "twitter:card",
+              "content": "summary_large_image"
+            },
+            {
+              "name": "twitter:label1",
+              "content": "Est. reading time"
+            },
+            {
+              "name": "twitter:data1",
+              "content": "4 minutes"
+            },
+            {
+              "name": "robots",
+              "content": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+            }
+          ],
+          "yoast_json_ld": [
+            {
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "WebPage",
+                  "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+                  "url": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+                  "name": "LED Wall Rental in Houston TX | Event & Venue Display Rental",
+                  "isPartOf": {
+                    "@id": "https://leddisplaywarehouse.com/#website"
+                  },
+                  "primaryImageOfPage": {
+                    "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#primaryimage"
+                  },
+                  "image": {
+                    "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#primaryimage"
+                  },
+                  "thumbnailUrl": "https://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png",
+                  "datePublished": "2026-08-07T19:50:45+00:00",
+                  "dateModified": "2026-08-07T19:51:49+00:00",
+                  "description": "LED wall rental for Houston, Texas events and venues. Get indoor & outdoor displays, expert setup, and flexible rental solutions from LEDDisplayWarehouse.com.",
+                  "breadcrumb": {
+                    "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#breadcrumb"
+                  },
+                  "inLanguage": "en",
+                  "potentialAction": [
+                    {
+                      "@type": "ReadAction",
+                      "target": [
+                        "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "@type": "ImageObject",
+                  "inLanguage": "en",
+                  "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#primaryimage",
+                  "url": "https://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png",
+                  "contentUrl": "https://leddisplaywarehouse.com/wp-content/uploads/2026/08/texasaustinled-wall-rental-2.png",
+                  "width": 1536,
+                  "height": 1024,
+                  "caption": "LED wall rental display in Houston TX convention center"
+                },
+                {
+                  "@type": "BreadcrumbList",
+                  "@id": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/#breadcrumb",
+                  "itemListElement": [
+                    {
+                      "@type": "ListItem",
+                      "position": 1,
+                      "name": "Home",
+                      "item": "https://leddisplaywarehouse.com/"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 2,
+                      "name": "Direct View LED Video Walls",
+                      "item": "https://leddisplaywarehouse.com/direct-view-led-video-walls/"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 3,
+                      "name": "Texas LED Video Walls",
+                      "item": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/"
+                    },
+                    {
+                      "@type": "ListItem",
+                      "position": 4,
+                      "name": "LED Wall Rental Solutions in Houston, Texas"
+                    }
+                  ]
+                },
+                {
+                  "@type": "WebSite",
+                  "@id": "https://leddisplaywarehouse.com/#website",
+                  "url": "https://leddisplaywarehouse.com/",
+                  "name": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions",
+                  "description": "Premium LED Displays. Expert Solutions. Nationwide Delivery.",
+                  "publisher": {
+                    "@id": "https://leddisplaywarehouse.com/#organization"
+                  },
+                  "potentialAction": [
+                    {
+                      "@type": "SearchAction",
+                      "target": {
+                        "@type": "EntryPoint",
+                        "urlTemplate": "https://leddisplaywarehouse.com/?s={search_term_string}"
+                      },
+                      "query-input": {
+                        "@type": "PropertyValueSpecification",
+                        "valueRequired": true,
+                        "valueName": "search_term_string"
+                      }
+                    }
+                  ],
+                  "inLanguage": "en"
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://leddisplaywarehouse.com/#organization",
+                  "name": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions",
+                  "url": "https://leddisplaywarehouse.com/",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "inLanguage": "en",
+                    "@id": "https://leddisplaywarehouse.com/#/schema/logo/image/",
+                    "url": "https://leddisplaywarehouse.com/wp-content/uploads/2025/03/SSI-LED-Displays-Website-Logo.png",
+                    "contentUrl": "https://leddisplaywarehouse.com/wp-content/uploads/2025/03/SSI-LED-Displays-Website-Logo.png",
+                    "width": 2162,
+                    "height": 621,
+                    "caption": "LED Display Warehouse | LED Video Walls, Digital Signage &amp; Display Solutions"
+                  },
+                  "image": {
+                    "@id": "https://leddisplaywarehouse.com/#/schema/logo/image/"
+                  }
+                }
+              ]
+            }
+          ],
+          "_links": {
+            "self": [
+              {
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/pages/18847",
+                "targetHints": {
+                  "allow": [
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "PATCH",
+                    "DELETE"
+                  ]
+                }
+              }
+            ],
+            "collection": [
+              {
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/pages"
+              }
+            ],
+            "about": [
+              {
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/types/page"
+              }
+            ],
+            "author": [
+              {
+                "embeddable": true,
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/users/3"
+              }
+            ],
+            "replies": [
+              {
+                "embeddable": true,
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/comments?post=18847"
+              }
+            ],
+            "version-history": [
+              {
+                "count": 1,
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/pages/18847/revisions"
+              }
+            ],
+            "predecessor-version": [
+              {
+                "id": 18850,
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/pages/18847/revisions/18850"
+              }
+            ],
+            "up": [
+              {
+                "embeddable": true,
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/pages/2563"
+              }
+            ],
+            "wp:featuredmedia": [
+              {
+                "embeddable": true,
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/media/18848"
+              }
+            ],
+            "wp:attachment": [
+              {
+                "href": "https://leddisplaywarehouse.com/wp-json/wp/v2/media?parent=18847"
+              }
+            ],
+            "curies": [
+              {
+                "name": "wp",
+                "href": "https://api.w.org/{rel}",
+                "templated": true
+              }
+            ]
+          }
+        }
+      ],
+      "headers": {
+        "date": "Fri, 07 Aug 2026 23:55:51 GMT",
+        "server": "Apache",
+        "x-powered-by": "PHP/8.3.31",
+        "cf-edge-cache": "cache,platform=wordpress",
+        "x-robots-tag": "noindex",
+        "link": "<https://leddisplaywarehouse.com/wp-json/>; rel=\"https://api.w.org/\"",
+        "x-content-type-options": "nosniff",
+        "access-control-expose-headers": "X-WP-Total, X-WP-TotalPages, Link",
+        "access-control-allow-headers": "Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type",
+        "x-wp-total": "1",
+        "x-wp-totalpages": "1",
+        "allow": "GET, POST",
+        "expires": "Wed, 11 Jan 1984 05:00:00 GMT",
+        "cache-control": "no-cache, must-revalidate, max-age=0, no-store, private",
+        "upgrade": "h2,h2c",
+        "connection": "Upgrade, close",
+        "transfer-encoding": "chunked",
+        "content-type": "application/json; charset=UTF-8"
+      },
+      "statusCode": 200,
+      "statusMessage": "OK"
+    },
+    "normalized": {
+      "city_page_found": true,
+      "existing_city_page_id": 18847,
+      "existing_city_page_status": "publish",
+      "existing_city_page_url": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/"
+    }
+  },
+  {
+    "executionId": "60726",
+    "status": "success",
+    "prepared": {
+      "city_slug": "houston",
+      "state_parent_id": 2563,
+      "publishing_mode": "draft",
+      "state_parent_slug": "texas"
+    },
+    "findExistingNodeRunMeta": {
+      "executionStatus": "success",
+      "executionTime": 1915,
+      "source": [
+        {
+          "previousNode": "Validation Passed?",
+          "previousNodeOutput": 0,
+          "previousNodeRun": 0
+        }
+      ]
+    },
+    "findExistingRawOutput": {
+      "body": [],
+      "headers": {
+        "date": "Fri, 07 Aug 2026 23:57:27 GMT",
+        "server": "Apache",
+        "x-powered-by": "PHP/8.3.31",
+        "cf-edge-cache": "cache,platform=wordpress",
+        "x-robots-tag": "noindex",
+        "link": "<https://leddisplaywarehouse.com/wp-json/>; rel=\"https://api.w.org/\"",
+        "x-content-type-options": "nosniff",
+        "access-control-expose-headers": "X-WP-Total, X-WP-TotalPages, Link",
+        "access-control-allow-headers": "Authorization, X-WP-Nonce, Content-Disposition, Content-MD5, Content-Type",
+        "x-wp-total": "0",
+        "x-wp-totalpages": "0",
+        "allow": "GET, POST",
+        "expires": "Wed, 11 Jan 1984 05:00:00 GMT",
+        "cache-control": "no-cache, must-revalidate, max-age=0, no-store, private",
+        "upgrade": "h2,h2c",
+        "connection": "Upgrade, close",
+        "transfer-encoding": "chunked",
+        "content-type": "application/json; charset=UTF-8"
+      },
+      "statusCode": 200,
+      "statusMessage": "OK"
+    },
+    "normalized": {
+      "city_page_found": false,
+      "existing_city_page_id": 0,
+      "existing_city_page_status": "",
+      "existing_city_page_url": ""
+    }
+  }
+]

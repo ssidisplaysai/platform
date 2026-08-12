@@ -1,0 +1,43 @@
+{
+  "schemaIdentifier": "ggl-0001/business-genome-registry",
+  "schemaVersion": "1.0.0",
+  "programFamily": "Business Genome Program",
+  "packages": [
+    {
+      "id": "BGP-0001",
+      "path": "BGP-0001-Business-Genome-Canonical-Object-Model.md",
+      "status": "FOUNDATION_COMPLETE",
+      "mode": "ARCHITECTURE + DOMAIN MODEL",
+      "baseline": ["GAF-0001", "GECP-0001"],
+      "successors": ["BGP-0002"],
+      "evidence": ["Business-Genome-Object-Catalog.md", "Business-Genome-Relationship-Model.md"]
+    },
+    {
+      "id": "BGP-0002",
+      "path": "BGP-0002-Business-Genome-Evidence-Model.md",
+      "status": "FOUNDATION",
+      "mode": "ARCHITECTURE + GOVERNANCE",
+      "baseline": ["GAF-0001", "GECP-0001", "BGP-0001"],
+      "successors": ["BGP-0003"],
+      "evidence": ["Business-Genome-Source-Architecture.md", "Business-Genome-Provenance-Model.md", "Business-Genome-Traceability-Architecture.md"]
+    },
+    {
+      "id": "BGP-0003",
+      "path": "BGP-0003-Business-Genome-Knowledge-Graph.md",
+      "status": "FOUNDATION",
+      "mode": "ARCHITECTURE + SEMANTIC MODEL",
+      "baseline": ["GAF-0001", "GECP-0001", "BGP-0001", "BGP-0002"],
+      "successors": [],
+      "evidence": ["Business-Genome-Relationship-Ontology.md", "Business-Genome-Graph-Governance.md", "Business-Genome-Graph-Validation.md"]
+    },
+    {
+      "id": "BGF-0001",
+      "path": "BGF-0001-Business-Genome-Foundation-Freeze.md",
+      "status": "FROZEN",
+      "mode": "FOUNDATION FREEZE + CERTIFICATION",
+      "baseline": ["GAF-0001", "GECP-0001", "BGP-0001", "BGP-0002", "BGP-0003"],
+      "successors": ["BGP-0004"],
+      "evidence": ["Business-Genome-Foundation-v1.0.md", "Business-Genome-Foundation-Baseline.md", "Business-Genome-Foundation-Certification.md", "Business-Genome-Foundation-Executive-Summary.md", "Business-Genome-Engineering-Roadmap.md"]
+    }
+  ]
+}

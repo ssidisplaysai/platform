@@ -1,3 +1,3 @@
 # 07 Source Symbol Inventory
 
-VERIFIED: Total symbols extracted = 17514.
+VERIFIED: Total symbols extracted = 17729.

@@ -7,7 +7,7 @@ import { getGenesisEventStore } from "@/platform/gop/runtime/event-store";
 import { type GmpProject, type GmpSite } from "./models";
 import { createPrismaGmpRepository, type GmpRepository } from "./repository";
 import { createPrismaGmpKnowledgeRepository, type GmpKnowledgeRepository } from "./knowledge-repository";
-import { buildPage, validatePageBriefInput, validatePageCreateInput, type GmpPageBrief, type GmpContentPlan, type GmpPageSection } from "./page-models";
+import { buildPage, gmpPageArtifactStatuses, validatePageBriefInput, validatePageCreateInput, type GmpContentPlan, type GmpPageArtifactStatus, type GmpPageBrief, type GmpPageLifecycleState, type GmpPageSection } from "./page-models";
 import { createPrismaGmpPageRepository, type GmpPageRepository } from "./page-repository";
 import { createGmpPageServices, type GmpPageServices } from "./page-services";
 import { buildPageHealthReport } from "./page-health-service";
@@ -80,12 +80,38 @@ function workspaceFromUrl(url: URL): string {
   return url.searchParams.get("workspaceId") ?? DEFAULT_WORKSPACE_ID;
 }
 
+function parsePageLifecycleState(value: unknown): GmpPageLifecycleState | undefined {
+  if (value === "DRAFT" || value === "IN_REVIEW" || value === "APPROVED" || value === "ARCHIVED") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function parsePageArtifactStatus(value: unknown): GmpPageArtifactStatus | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  for (const status of gmpPageArtifactStatuses) {
+    if (status === value) {
+      return status;
+    }
+  }
+
+  return undefined;
+}
+
+type PageAuthorizeResult =
+  | { error: NextResponse }
+  | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
 async function authorize(input: {
   actionId: PageAction;
   workspaceId: string;
   route: string;
   dependencies?: GmpPageApiDependencies;
-}) {
+}): Promise<PageAuthorizeResult> {
   const d = deps(input.dependencies);
   const session = await d.sessionLoader();
   if (!session) {
@@ -198,7 +224,7 @@ function createScanExecution(projectId: string, operationType: ScanOperationType
     executionType: "gmp_page_operation",
     workspaceId: DEFAULT_WORKSPACE_ID,
     moduleId: DEFAULT_MODULE_ID,
-    jobType: "PAGE_HEALTH_SCAN",
+    jobType: "PAGE_GENERATION",
     executionClass: "AUTOMATED",
     priority: "NORMAL",
     input: { projectId, operationType, pageId },
@@ -214,7 +240,7 @@ function createScanExecution(projectId: string, operationType: ScanOperationType
 
   return {
     executionId: execution.executionId,
-    createdAt: execution.createdAt,
+    createdAt: execution.timing.createdAt,
     operationType,
   };
 }
@@ -232,7 +258,7 @@ async function collectRecentScanExecutions(workspaceId: string, projectId: strin
       executionId: execution.executionId,
       status: execution.status,
       operationType: typeof execution.input?.operationType === "string" ? execution.input.operationType : undefined,
-      createdAt: execution.createdAt,
+      createdAt: execution.timing.createdAt,
       projectId,
       pageId: typeof execution.input?.pageId === "string" ? execution.input.pageId : undefined,
     }));
@@ -326,7 +352,7 @@ export async function handleUpdatePage(request: Request, pageId: string, depende
     purpose: typeof input.purpose === "string" ? input.purpose : undefined,
     primaryObjective: typeof input.primaryObjective === "string" ? input.primaryObjective : undefined,
     secondaryObjectives: Array.isArray(input.secondaryObjectives) ? input.secondaryObjectives.map(String) : undefined,
-    lifecycleState: typeof input.lifecycleState === "string" ? input.lifecycleState : undefined,
+    lifecycleState: parsePageLifecycleState(input.lifecycleState),
     contentState: typeof input.contentState === "string" ? input.contentState : undefined,
     seoState: typeof input.seoState === "string" ? input.seoState : undefined,
     metadata: typeof input.metadata === "object" && input.metadata !== null ? input.metadata as Record<string, unknown> : undefined,
@@ -401,7 +427,7 @@ export async function handleUpdatePageBrief(request: Request, briefId: string, d
 
   const patch = {
     ...body,
-    status: typeof body.status === "string" ? body.status : undefined,
+    status: parsePageArtifactStatus(body.status),
     approvedAt: typeof body.approvedAt === "string" ? body.approvedAt : undefined,
     approvedBy: typeof body.approvedBy === "string" ? body.approvedBy : undefined,
     metadata: typeof body.metadata === "object" && body.metadata !== null ? body.metadata as Record<string, unknown> : undefined,
@@ -410,8 +436,6 @@ export async function handleUpdatePageBrief(request: Request, briefId: string, d
   if (brief.status === "APPROVED" && body.supersede === true) {
     const nextBrief = await d.pageRepository.createBrief({
       ...brief,
-      briefId: undefined as never,
-      briefVersion: brief.briefVersion + 1,
       status: "DRAFT",
       approvedAt: null,
       approvedBy: null,
@@ -530,7 +554,7 @@ export async function handleUpdateContentPlan(request: Request, planId: string, 
   });
 
   const updated = await d.pageRepository.updateContentPlan(planId, {
-    status: typeof body.status === "string" ? body.status : undefined,
+    status: parsePageArtifactStatus(body.status),
     planningModelVersion: typeof body.planningModelVersion === "string" ? body.planningModelVersion : undefined,
     readingLevel: typeof body.readingLevel === "string" ? body.readingLevel : undefined,
     approvedAt: typeof body.approvedAt === "string" ? body.approvedAt : undefined,

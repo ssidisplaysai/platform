@@ -1,0 +1,6 @@
+{
+  "workflowId": "bIDXxyWnY22G8zJC",
+  "node": "Find Existing City Page",
+  "oldUrl": "=https://leddisplaywarehouse.com/wp-json/wp/v2/pages?slug={{ $('Prepare State Parent').first().json.city_slug }}&parent={{ $('Prepare State Parent').first().json.state_parent_id }}&per_page=1&status=any&context=edit",
+  "newUrl": "=https://leddisplaywarehouse.com/wp-json/wp/v2/pages?slug={{ $('Prepare State Parent').first().json.city_slug }}&parent={{ $('Prepare State Parent').first().json.state_parent_id }}&per_page=1&status=any&context=edit"
+}

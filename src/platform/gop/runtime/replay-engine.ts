@@ -37,9 +37,10 @@ export function replayExecutionFromSnapshotAndEvents(input: {
   untilSequence?: number;
 }): GenesisExecution {
   const start = input.snapshot?.state ?? input.baseExecution;
-  const events = input.untilSequence === undefined
+  const untilSequence = input.untilSequence;
+  const events = untilSequence === undefined
     ? input.events
-    : input.events.filter((event) => event.sequence <= input.untilSequence);
+    : input.events.filter((event) => event.sequence <= untilSequence);
 
   const sorted = [...events].sort((left, right) => left.sequence - right.sequence);
 

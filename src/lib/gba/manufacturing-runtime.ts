@@ -1,6 +1,6 @@
 import { geaId } from "@/lib/gea/agent-models";
 import { createAgentRuntimeService } from "@/lib/gea/agent-runtime";
-import { createInMemoryCapabilityRegistry } from "@/lib/gea/capability-registry";
+import { createAuthoritativeCapabilityRegistry } from "@/lib/gea/capability-registry";
 import { createContextBuilderService } from "@/lib/gea/context-framework";
 import { createPrismaMemoryRepository } from "@/lib/gea/memory-repository";
 import { createMemoryCatalog, createMemoryRegistryService, createMemoryResolver } from "@/lib/gea/memory-registry";
@@ -108,7 +108,7 @@ export function createManufacturingRuntimeService(repository: ManufacturingRepos
   ]);
   createDefaultToolExecutor();
 
-  const capabilityRegistry = createInMemoryCapabilityRegistry();
+  const capabilityRegistry = createAuthoritativeCapabilityRegistry();
   const geaRepository = createInMemoryGeaRepository();
   geaRepository.upsertAgent(createSeedAgent({
     agentId: "gba-manufacturing-agent",
@@ -143,8 +143,8 @@ export function createManufacturingRuntimeService(repository: ManufacturingRepos
       const builder = createContextBuilderService({ repository: memoryRepository, registry, resolver });
       const references = await registry.listReferences(workspaceId);
       if (references.length === 0) return undefined;
-      const catalog = createMemoryCatalog();
-      const picks = catalog.query(references, "business_genome").slice(0, 20);
+      const catalog = createMemoryCatalog(memoryRepository);
+      const picks = (await catalog.search(workspaceId, "business_genome")).slice(0, 20);
       if (picks.length === 0) return undefined;
       const result = await builder.buildContext({
         workspaceId,
@@ -634,7 +634,7 @@ export function createManufacturingRuntimeService(repository: ManufacturingRepos
     const [dashboard, healthRows, costingRows, recommendations] = await Promise.all([
       getDashboard(workspaceId, DEFAULT_ORGANIZATION_ID),
       repository.listHealth(workspaceId),
-      listCosting(workspaceId),
+      seedCostingIfEmpty(workspaceId, DEFAULT_ORGANIZATION_ID).then(() => repository.listCostRecords(workspaceId)),
       listRecommendations(workspaceId),
     ]);
     const now = gbaMfgNowIso();
@@ -725,7 +725,7 @@ export function createManufacturingRuntimeService(repository: ManufacturingRepos
     };
   }
 
-  async function listKpis(workspaceId: string) {
+  async function listKpis(workspaceId: string): Promise<Array<ManufacturingKpiDefinition & { latest?: ManufacturingKpiHistory }>> {
     const [defs, history] = await Promise.all([seedKpisIfEmpty(workspaceId, DEFAULT_ORGANIZATION_ID), repository.listKpiHistory(workspaceId)]);
     const latestById = new Map<string, ManufacturingKpiHistory>();
     for (const row of history) {

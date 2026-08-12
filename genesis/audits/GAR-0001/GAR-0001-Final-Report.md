@@ -11,21 +11,21 @@ VERIFIED: Evidence package emitted under genesis/audits/GAR-0001 for additive au
 OPINION: Placement aligns with existing repository tooling segregation and additive audit artifact precedent.
 
 ## Inventory Totals
-VERIFIED: Files scanned = 2061
-VERIFIED: Directories scanned = 765
-VERIFIED: Source files parsed = 1306
-VERIFIED: Symbols extracted = 17514
-VERIFIED: Graph nodes = 1306
-VERIFIED: Graph edges = 3530
+VERIFIED: Files scanned = 2360
+VERIFIED: Directories scanned = 806
+VERIFIED: Source files parsed = 1312
+VERIFIED: Symbols extracted = 17729
+VERIFIED: Graph nodes = 1312
+VERIFIED: Graph edges = 3541
 VERIFIED: Unresolved imports = 15
 
 ## Determinism
-VERIFIED: Run hashes = c0d5e9f95044733b66841ba4b272d5a6628a9b94708c3bee10ffca908ac99dc0, c0d5e9f95044733b66841ba4b272d5a6628a9b94708c3bee10ffca908ac99dc0, c0d5e9f95044733b66841ba4b272d5a6628a9b94708c3bee10ffca908ac99dc0
+VERIFIED: Run hashes = 1cde471e31c239e1dfd577f7c0c609bab2aac2526c047511d5639d0e340098d5, 1cde471e31c239e1dfd577f7c0c609bab2aac2526c047511d5639d0e340098d5, 1cde471e31c239e1dfd577f7c0c609bab2aac2526c047511d5639d0e340098d5
 VERIFIED: Deterministic match across 3 runs = true
 
 ## Mutation Check
-VERIFIED: Pre-scan source snapshot hash = 94d6ef13c8fa497aa584ec0fd62adc5af9e9897f089ae4a724a3bf44095c2419
-VERIFIED: Post-scan source snapshot hash = 94d6ef13c8fa497aa584ec0fd62adc5af9e9897f089ae4a724a3bf44095c2419
+VERIFIED: Pre-scan source snapshot hash = 9af912e37c8f04d02db78c5670fd32f0662e86f287f31ad589bc99c3c42d4538
+VERIFIED: Post-scan source snapshot hash = 9af912e37c8f04d02db78c5670fd32f0662e86f287f31ad589bc99c3c42d4538
 VERIFIED: Source mutation detected = false
 
 ## Validation Results

@@ -1,0 +1,36 @@
+{
+  "schemaIdentifier": "gcf-0001/foundation-publication",
+  "schemaVersion": "1.0.0",
+  "documentId": "GCF-0001",
+  "title": "Genesis Constitutional Foundation v1.0 Publication and Certification",
+  "status": "Certified",
+  "lifecycleState": "Frozen Baseline Publication",
+  "date": "2026-07-30",
+  "authority": "genesis/CONSTITUTION.md",
+  "releasePath": "genesis/governance/releases/gcf-0001",
+  "artifacts": [
+    "Genesis-Constitutional-Foundation-v1.0.md",
+    "Genesis-Constitutional-Foundation-v1.0-Executive-Summary.md",
+    "Genesis-Constitutional-Dependency-Graph.md",
+    "Genesis-Constitutional-Governance-Hierarchy.md",
+    "Genesis-Constitutional-Roadmap-vNext.md",
+    "Genesis-Constitutional-Foundation-v1.0-Certification.md"
+  ],
+  "dependencies": [
+    "genesis/CONSTITUTION.md",
+    "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+    "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+    "genesis/governance/decisions/gcd-0003/GCD-0003-Genesis-Application-Boundary-Model.md",
+    "genesis/governance/decisions/gcd-0004/GCD-0004-Enterprise-Application-Registry-Constitutional-Authority.md",
+    "genesis/governance/decisions/gcd-0005/GCD-0005-Enterprise-Health-and-Capability-Contract.md",
+    "GACD-0005-Registry-Authority-Decision.md",
+    "GACD-0006-Kernel-Authority-Decision.md"
+  ],
+  "conditions": [],
+  "closureWorkOrder": "GCF-0001A",
+  "closureEvidence": [
+    "genesis/governance/releases/gcf-0001a/Genesis-Constitutional-Conditions-Register.md",
+    "genesis/governance/releases/gcf-0001a/Genesis-Constitutional-Certification-Closure-Report.md",
+    "genesis/governance/releases/gcf-0001a/Genesis-Constitutional-Baseline-Freeze-Record-v1.0.md"
+  ]
+}

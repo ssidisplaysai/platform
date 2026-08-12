@@ -1,0 +1,126 @@
+capturedAt=2026-07-29T17:33:31.3384758-07:00
+cwd=C:\Users\rober\Documents\Stoner Platform\platform-glw
+
+## feature/gar-0003-constitutional-assessment
+ M docs/architecture/0001-genesis-architecture.md
+ M genesis/audits/GAR-0001/04-complete-repository-inventory.md
+ M genesis/audits/GAR-0001/07-source-symbol-inventory.md
+ M genesis/audits/GAR-0001/08-import-and-dependency-map.md
+ M genesis/audits/GAR-0001/18-determinism-and-replay-verification.md
+ M genesis/audits/GAR-0001/GAR-0001-Final-Report.md
+ M genesis/audits/GAR-0001/audit-run-manifest.json
+ M genesis/audits/GAR-0001/directory-inventory.json
+ M genesis/audits/GAR-0001/documentation-inventory.json
+ M genesis/audits/GAR-0001/file-inventory.json
+ M genesis/audits/GAR-0001/governance-artifact-inventory.json
+ M genesis/audits/GAR-0001/hygiene-inventory.json
+ M genesis/audits/GAR-0001/import-graph.json
+ M genesis/audits/GAR-0001/package-inventory.json
+ M genesis/audits/GAR-0001/repository-manifest.json
+ M genesis/audits/GAR-0001/security-surface-inventory.json
+ M genesis/audits/GAR-0001/source-symbol-inventory.json
+ M genesis/audits/GAR-0001/test-inventory.json
+ M genesis/audits/GAR-0002/evidence/application-topology.json
+ M genesis/audits/GAR-0002/evidence/architecture-findings.json
+ M genesis/audits/GAR-0002/evidence/architecture-hotspots.json
+ M genesis/audits/GAR-0002/evidence/architecture-layer-model.json
+ M genesis/audits/GAR-0002/evidence/compiler-topology.json
+ M genesis/audits/GAR-0002/evidence/coupling-metrics.json
+ M genesis/audits/GAR-0002/evidence/dependency-direction-analysis.json
+ M genesis/audits/GAR-0002/evidence/documentation-implementation-comparison.json
+ M genesis/audits/GAR-0002/evidence/enterprise-agent-dependency-map.json
+ M genesis/audits/GAR-0002/evidence/gar-0002-run-manifest.json
+ M genesis/audits/GAR-0002/evidence/layer-dependency-graph.json
+ M genesis/audits/GAR-0002/evidence/package-dependency-analysis.json
+ M genesis/audits/GAR-0002/evidence/runtime-topology.json
+ M genesis/audits/GAR-0002/evidence/subsystem-catalog.json
+ M genesis/audits/GAR-0002/evidence/subsystem-dependency-graph.json
+ M genesis/audits/GAR-0002/evidence/unresolved-topology-items.json
+ M genesis/audits/GAR-0002/reports/23-GAR-0003-readiness-recommendation.md
+ M genesis/audits/GAR-0002/reports/GAR-0002-Final-Report.md
+ M genesis/audits/GAR-0002/reports/diagrams/persistence-flow.mmd
+ M genesis/audits/GAR-0002/reports/diagrams/runtime-command-event-workflow-topology.mmd
+ M genesis/governance/baselines/ggb-0001/machine/baseline-registry.json
+ M genesis/governance/decisions/hall/Hall-of-Decisions.md
+ M genesis/governance/machine/artifact-inventory.json
+ M genesis/governance/machine/governance-registry.json
+ M genesis/governance/releases/ggr-0001/machine/release-validation.json
+ M genesis/governance/standards/Genesis-Standards-Registry.md
+ M src/app/glw/(protected)/operations/page.tsx
+ M src/app/glw/(protected)/page.tsx
+ M src/app/glw/(protected)/pages/page.tsx
+ M src/app/glw/(protected)/queue/page.tsx
+ M src/components/gea/gea-orchestration-workspace.tsx
+ M src/components/gea/gea-workspace.tsx
+ M src/components/gop/gop-operations-center.tsx
+ M src/lib/gba/executive-runtime.ts
+ M src/lib/gba/manufacturing-runtime.ts
+ M src/lib/gba/operations-runtime.ts
+ M src/lib/gea/agent-api.ts
+ M src/lib/gea/capability-registry.ts
+ M src/lib/gea/orchestration-api.ts
+?? BGF-0001-Business-Genome-Foundation-Freeze.md
+?? BGP-0001-Business-Genome-Canonical-Object-Model.md
+?? BGP-0002-Business-Genome-Evidence-Model.md
+?? BGP-0003-Business-Genome-Knowledge-Graph.md
+?? Business-Genome-Confidence-Model.md
+?? Business-Genome-Domain-Map.md
+?? Business-Genome-Engineering-Roadmap.md
+?? Business-Genome-Executive-Overview.md
+?? Business-Genome-Foundation-Baseline.md
+?? Business-Genome-Foundation-Certification.md
+?? Business-Genome-Foundation-Executive-Summary.md
+?? Business-Genome-Foundation-v1.0.md
+?? Business-Genome-Glossary.md
+?? Business-Genome-Object-Catalog.md
+?? Business-Genome-Object-Lifecycle.md
+?? Business-Genome-Relationship-Model.md
+?? Business-Genome-Traceability-Matrix.md
+?? Business-Genome-Versioning-Model.md
+?? GACD-0001-Runtime-Authority-Decision.md
+?? GACD-0002-Genesis-Dependency-Policy.md
+?? GACD-0003-Platform-Bootstrap-API-Decision.md
+?? GACD-0004-Public-Platform-API-Policy.md
+?? GACD-0005-Registry-Authority-Decision.md
+?? GACD-0006-Kernel-Authority-Decision.md
+?? GACI-0002A-R1-Protected-Layout-Seam-Assessment.md
+?? GACI-0003-Registry-Authority-Assessment.md
+?? GACI-0004-Kernel-Authority-Assessment.md
+?? GACP-0002A-Dependency-Matrix.md
+?? GACP-0002A-Executive-Summary.md
+?? GACP-0002A-Implementation-Report.md
+?? GACP-0002A-Manifest.md
+?? GACP-0002A-Validation-Matrix.md
+?? GACP-0003-Architecture-Impact-Assessment.md
+?? GACP-0003-Bootstrap-API-Contract.md
+?? GACP-0003-Dependency-Matrix.md
+?? GACP-0003-Files-Changed-Report.md
+?? GACP-0003-GAR-Evidence-Comparison.md
+?? GACP-0003-Implementation-Report.md
+?? GACP-0003-Manifest.md
+?? GACP-0003-Remaining-Technical-Debt.md
+?? GACP-0003-Validation-Matrix.md
+?? GACP-0004-Architecture-Impact-Assessment.md
+?? GACP-0004-Dependency-Matrix.md
+?? GACP-0004-Files-Changed-Report.md
+?? GACP-0004-GAR-Evidence-Comparison.md
+?? GACP-0004-Implementation-Report.md
+?? GACP-0004-Remaining-Technical-Debt.md
+?? GACP-0004-Validation-Matrix.md
+?? GAF-0001-Genesis-Constitutional-Foundation-Freeze.md
+?? GECP-0001-Genesis-Enterprise-Capability-Program.md
+?? GPP-0001-Genesis-Platform-Program-Closure.md
+?? Genesis-Enterprise-Capability-Roadmap.md
+?? Genesis-Enterprise-Capability-Workstreams.md
+?? Genesis-Platform-Engineering-Program-Final-Report.md
+?? genesis/audits/GAR-0003/
+?? genesis/constitution/gia-0001/
+?? genesis/constitution/gpc-0002/
+?? genesis/constitution/gpm-0001/
+?? genesis/constitution/gpp-0003/
+?? genesis/governance/machine/business-genome-registry.json
+?? genesis/governance/machine/capability-registry.json
+?? genesis/governance/machine/validation-registry.json
+?? src/lib/gea/runtime-registry-authority.ts
+?? tests/gea/gea-runtime-registry-authority.test.ts
+?? tests/gop/gop-operations-center.test.tsx

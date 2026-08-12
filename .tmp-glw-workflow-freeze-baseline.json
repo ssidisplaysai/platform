@@ -1,0 +1,14 @@
+{
+  "productionWorkflow": {
+    "id": "bIDXxyWnY22G8zJC",
+    "name": "Master SEO Page Engine v1.0 - PRODUCTION",
+    "active": true,
+    "webhookPath": "glw-page-generation"
+  },
+  "developmentWorkflow": {
+    "id": "LLX16gIGPlx0Ep35",
+    "name": "Master SEO Page Engine v1 - DEVELOPMENT (inactive baseline copy)",
+    "active": false
+  },
+  "renamedFrom": "Master SEO Page Engine v1.0 - PRODUCTION"
+}

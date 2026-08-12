@@ -1,5 +1,5 @@
 import { createDefaultToolExecutor, createInMemoryToolRegistry } from "@/lib/gea/tool-framework";
-import { createInMemoryCapabilityRegistry } from "@/lib/gea/capability-registry";
+import { createAuthoritativeCapabilityRegistry } from "@/lib/gea/capability-registry";
 import { createAgentRuntimeService } from "@/lib/gea/agent-runtime";
 import { createInMemoryGeaRepository, createSeedAgent } from "@/lib/gea/agent-repository";
 import { geaId } from "@/lib/gea/agent-models";
@@ -100,7 +100,7 @@ export function createExecutiveRuntimeService(repository: ExecutiveRepository): 
   ]);
   const toolExecutor = createDefaultToolExecutor();
 
-  const capabilityRegistry = createInMemoryCapabilityRegistry();
+  const capabilityRegistry = createAuthoritativeCapabilityRegistry();
   const geaRepository = createInMemoryGeaRepository();
   geaRepository.upsertAgent(createSeedAgent({
     agentId: "gba-executive-agent",
@@ -137,8 +137,8 @@ export function createExecutiveRuntimeService(repository: ExecutiveRepository): 
       const references = await registry.listReferences(workspaceId);
       if (references.length === 0) return undefined;
 
-      const catalog = createMemoryCatalog();
-      const evidenceRefs = catalog.query(references, "business_genome").slice(0, 20);
+      const catalog = createMemoryCatalog(memoryRepository);
+      const evidenceRefs = (await catalog.search(workspaceId, "business_genome")).slice(0, 20);
 
       if (evidenceRefs.length === 0) return undefined;
 
@@ -160,7 +160,15 @@ export function createExecutiveRuntimeService(repository: ExecutiveRepository): 
 
   async function getDashboard(workspaceId: string, organizationId: string, filters: ExecutiveScopeFilter = {}): Promise<ExecutiveDashboard> {
     const metricsTool = toolRegistry.get("genesis.analytics.snapshot");
-    await toolExecutor.execute({ invocationId: geaId("invoke"), toolKey: metricsTool?.toolKey ?? "genesis.analytics.snapshot", input: { workspaceId, filters }, actorId: "system" });
+    await toolExecutor.execute({
+      invocationId: geaId("invoke"),
+      executionId: geaId("exec"),
+      taskId: geaId("task"),
+      toolKey: metricsTool?.toolKey ?? "genesis.analytics.snapshot",
+      toolVersion: metricsTool?.toolVersion ?? "v1",
+      input: { workspaceId, filters },
+      createdAt: gbaNowIso(),
+    });
 
     const kpis = await repository.listKpis(workspaceId);
     const kpiHistory = await repository.listKpiHistory(workspaceId);
@@ -181,7 +189,7 @@ export function createExecutiveRuntimeService(repository: ExecutiveRepository): 
         unit,
         trend: latest?.trend ?? 0,
         asOf: latest?.measuredAt ?? gbaNowIso(),
-        evidenceReferences: latest ? [kpi?.kpiId ?? "", ...kpi.evidenceReferences].filter(Boolean) : evidence,
+        evidenceReferences: kpi && latest ? [kpi.kpiId, ...kpi.evidenceReferences].filter(Boolean) : evidence,
       };
     };
 
@@ -604,9 +612,12 @@ export function createExecutiveRuntimeService(repository: ExecutiveRepository): 
       const reportingTool = toolRegistry.get("genesis.reporting.generate");
       await toolExecutor.execute({
         invocationId: geaId("invoke"),
+        executionId: geaId("exec"),
+        taskId: geaId("task"),
         toolKey: reportingTool?.toolKey ?? "genesis.reporting.generate",
-        actorId: input.actorId,
+        toolVersion: reportingTool?.toolVersion ?? "v1",
         input: { dashboard: { revenue: dashboard.revenue.value, profit: dashboard.profit.value }, goals: goals.length, risks: risks.length },
+        createdAt: gbaNowIso(),
       });
 
       const contextPackageId = await ensureContext(input.workspaceId, input.organizationId);
@@ -739,9 +750,12 @@ export function createExecutiveRuntimeService(repository: ExecutiveRepository): 
       const workflowTool = toolRegistry.get("genesis.workflow.dispatch");
       await toolExecutor.execute({
         invocationId: geaId("invoke"),
+        executionId: geaId("exec"),
+        taskId: geaId("task"),
         toolKey: workflowTool?.toolKey ?? "genesis.workflow.dispatch",
-        actorId: input.actorId,
+        toolVersion: workflowTool?.toolVersion ?? "v1",
         input: { targetAgent: input.targetAgent, objective: input.objective },
+        createdAt: gbaNowIso(),
       });
 
       const orchestrationRepository = createPrismaOrchestrationRepository();

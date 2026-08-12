@@ -1,15 +1,15 @@
 {
   "counts": {
-    "application-to-implementation": 112,
+    "application-to-implementation": 104,
     "cross-domain": 31,
     "domain-outward": 28,
     "downward": 408,
     "infrastructure-inward": 2,
     "lateral": 0,
-    "same-layer": 1470,
+    "same-layer": 1472,
     "transport-to-persistence": 0,
-    "unknown": 945,
-    "upward": 534
+    "unknown": 956,
+    "upward": 540
   },
   "dependencies": [
     {
@@ -5616,25 +5616,16 @@
       "from": "src/app/glw/(protected)/layout.tsx",
       "fromLayer": "application-ui",
       "importKind": "verified static import",
+      "to": "src/lib/gop/platform-bootstrap-api.ts",
+      "toLayer": "runtime-services"
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "application-to-implementation",
+      "from": "src/app/glw/(protected)/layout.tsx",
+      "fromLayer": "application-ui",
+      "importKind": "verified static import",
       "to": "src/platform/gop/auth/runtime.ts",
-      "toLayer": "platform-orchestration"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/layout.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/platform/gop/runtime/loader.ts",
-      "toLayer": "platform-orchestration"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/layout.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/platform/gop/workspaces/runtime.ts",
       "toLayer": "platform-orchestration"
     },
     {
@@ -6601,24 +6592,6 @@
       "toLayer": "application-ui"
     },
     {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/operations/page.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/platform/gop/runtime/event-store.ts",
-      "toLayer": "platform-orchestration"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/operations/page.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/platform/gop/runtime/orchestration-runtime.ts",
-      "toLayer": "platform-orchestration"
-    },
-    {
       "boundaryConcern": false,
       "direction": "unknown",
       "from": "src/app/glw/(protected)/orchestrations/access.ts",
@@ -6844,24 +6817,6 @@
       "toLayer": "application-ui"
     },
     {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/page.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/lib/glw/job-repository.ts",
-      "toLayer": "runtime-services"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/page.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/lib/glw/jobs.ts",
-      "toLayer": "runtime-services"
-    },
-    {
       "boundaryConcern": false,
       "direction": "same-layer",
       "from": "src/app/glw/(protected)/pages/page.tsx",
@@ -6869,15 +6824,6 @@
       "importKind": "verified static import",
       "to": "src/components/glw/glw-page-generation-workspace.tsx",
       "toLayer": "application-ui"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/pages/page.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/lib/glw/job-repository.ts",
-      "toLayer": "runtime-services"
     },
     {
       "boundaryConcern": false,
@@ -8111,24 +8057,6 @@
       "importKind": "verified static import",
       "to": "src/components/glw/glw-queue-workspace.tsx",
       "toLayer": "application-ui"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/queue/page.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/lib/glw/job-repository.ts",
-      "toLayer": "runtime-services"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "application-to-implementation",
-      "from": "src/app/glw/(protected)/queue/page.tsx",
-      "fromLayer": "application-ui",
-      "importKind": "verified static import",
-      "to": "src/lib/glw/jobs.ts",
-      "toLayer": "runtime-services"
     },
     {
       "boundaryConcern": false,
@@ -19453,6 +19381,33 @@
       "toLayer": "platform-orchestration"
     },
     {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "src/lib/gop/platform-bootstrap-api.ts",
+      "fromLayer": "runtime-services",
+      "importKind": "verified static import",
+      "to": "src/platform/gop/contracts.ts",
+      "toLayer": "platform-orchestration"
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "src/lib/gop/platform-bootstrap-api.ts",
+      "fromLayer": "runtime-services",
+      "importKind": "verified static import",
+      "to": "src/platform/gop/runtime/loader.ts",
+      "toLayer": "platform-orchestration"
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "src/lib/gop/platform-bootstrap-api.ts",
+      "fromLayer": "runtime-services",
+      "importKind": "verified static import",
+      "to": "src/platform/gop/workspaces/runtime.ts",
+      "toLayer": "platform-orchestration"
+    },
+    {
       "boundaryConcern": false,
       "direction": "unknown",
       "from": "src/lib/gop/workers-api.ts",
@@ -25296,6 +25251,33 @@
     {
       "boundaryConcern": false,
       "direction": "unknown",
+      "from": "tests/genesis-audit/gar-0002/gar-0002-smoke.test.ts",
+      "fromLayer": "tests",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tests/genesis-audit/gar-0002/gar-0002-smoke.test.ts",
+      "fromLayer": "tests",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tests/genesis-audit/gar-0002/gar-0002-smoke.test.ts",
+      "fromLayer": "tests",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
       "from": "tests/genesis-audit/run-smoke.test.ts",
       "fromLayer": "tests",
       "importKind": "inferred dependency",
@@ -27096,6 +27078,24 @@
     {
       "boundaryConcern": false,
       "direction": "unknown",
+      "from": "tests/gop/gop-operations-center.test.tsx",
+      "fromLayer": "tests",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "tests/gop/gop-operations-center.test.tsx",
+      "fromLayer": "tests",
+      "importKind": "verified static import",
+      "to": "src/components/gop/gop-operations-center.tsx",
+      "toLayer": "application-ui"
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
       "from": "tests/gop/inspector-extensions.test.ts",
       "fromLayer": "tests",
       "importKind": "inferred dependency",
@@ -27249,6 +27249,33 @@
     {
       "boundaryConcern": false,
       "direction": "unknown",
+      "from": "tests/gop/platform-bootstrap-api.test.ts",
+      "fromLayer": "tests",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "tests/gop/platform-bootstrap-api.test.ts",
+      "fromLayer": "tests",
+      "importKind": "verified static import",
+      "to": "src/lib/gop/platform-bootstrap-api.ts",
+      "toLayer": "runtime-services"
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "tests/gop/platform-bootstrap-api.test.ts",
+      "fromLayer": "tests",
+      "importKind": "verified static import",
+      "to": "src/platform/gop/auth/resolver.ts",
+      "toLayer": "platform-orchestration"
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
       "from": "tests/gop/runtime-certification-failure.test.ts",
       "fromLayer": "tests",
       "importKind": "inferred dependency",
@@ -27371,6 +27398,78 @@
       "importKind": "verified static import",
       "to": "src/lib/glw/prisma.ts",
       "toLayer": "runtime-services"
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tools/genesis-audit/src/gar-0002-run.mjs",
+      "fromLayer": "tooling",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tools/genesis-audit/src/gar-0002-run.mjs",
+      "fromLayer": "tooling",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tools/genesis-audit/src/gar-0002-run.mjs",
+      "fromLayer": "tooling",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tools/genesis-audit/src/gar-0002-run.mjs",
+      "fromLayer": "tooling",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "same-layer",
+      "from": "tools/genesis-audit/src/gar-0002-run.mjs",
+      "fromLayer": "tooling",
+      "importKind": "verified static import",
+      "to": "tools/genesis-audit/src/schema-validator.mjs",
+      "toLayer": "tooling"
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "same-layer",
+      "from": "tools/genesis-audit/src/gar-0002-run.mjs",
+      "fromLayer": "tooling",
+      "importKind": "verified static import",
+      "to": "tools/genesis-audit/src/utils.mjs",
+      "toLayer": "tooling"
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tools/genesis-audit/src/gar-0002-validate.mjs",
+      "fromLayer": "tooling",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
+    },
+    {
+      "boundaryConcern": false,
+      "direction": "unknown",
+      "from": "tools/genesis-audit/src/gar-0002-validate.mjs",
+      "fromLayer": "tooling",
+      "importKind": "inferred dependency",
+      "to": null,
+      "toLayer": null
     },
     {
       "boundaryConcern": false,

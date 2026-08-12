@@ -1,0 +1,49 @@
+{
+  "schemaIdentifier": "gpp-0003/phase-iii-milestones",
+  "schemaVersion": "1.0.0",
+  "programId": "GPP-0003",
+  "milestones": [
+    {
+      "milestoneId": "M0",
+      "name": "Program Mobilization Complete",
+      "targetWindow": "2026-Q3-M1",
+      "exitCriteria": "All workstreams staffed and dependency board active"
+    },
+    {
+      "milestoneId": "M1",
+      "name": "Core Backbone Ready",
+      "targetWindow": "2026-Q3-M3",
+      "exitCriteria": "Kernel, runtime, and registries operational baseline validated"
+    },
+    {
+      "milestoneId": "M2",
+      "name": "Audit and Telemetry Backbone Ready",
+      "targetWindow": "2026-Q4-M1",
+      "exitCriteria": "GAR evidence and telemetry minimum set validated"
+    },
+    {
+      "milestoneId": "M3",
+      "name": "Enterprise Capability Integration Complete",
+      "targetWindow": "2026-Q4-M3",
+      "exitCriteria": "Genome, agents, and automation integration closure"
+    },
+    {
+      "milestoneId": "M4",
+      "name": "Developer and Delivery Platform Ready",
+      "targetWindow": "2027-Q1-M1",
+      "exitCriteria": "DX and CI/CD promotion controls operational"
+    },
+    {
+      "milestoneId": "M5",
+      "name": "Initial Application Production Readiness",
+      "targetWindow": "2027-Q1-M2",
+      "exitCriteria": "Initial applications pass production readiness checks"
+    },
+    {
+      "milestoneId": "M6",
+      "name": "Phase III Implementation Authorization",
+      "targetWindow": "2027-Q1-M3",
+      "exitCriteria": "All planning commitments complete for implementation start"
+    }
+  ]
+}

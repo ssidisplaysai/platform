@@ -1,0 +1,37 @@
+{
+  "schemaIdentifier": "gcd-0004/hall-update",
+  "schemaVersion": "1.0.0",
+  "hallPath": "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+  "entry": {
+    "decisionId": "GCD-0004",
+    "title": "Enterprise Application Registry Constitutional Authority",
+    "status": "CERTIFIED",
+    "lifecycleState": "Published",
+    "authority": "genesis/CONSTITUTION.md",
+    "dependencies": [
+      "GCD-0003-Genesis-Application-Boundary-Model.md",
+      "GACD-0005-Registry-Authority-Decision.md",
+      "GACD-0006-Kernel-Authority-Decision.md",
+      "GGS-0008-Constitutional-Lifecycle-Specification.md",
+      "GGS-0009-Constitutional-Authority-Specification.md",
+      "GGS-0010-Constitutional-Dependency-Specification.md",
+      "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Decision-Model.md",
+      "genesis/governance/decisions/hall/Hall-of-Decisions.md"
+    ],
+    "supersedes": null,
+    "supersededBy": null,
+    "reviewHistory": [
+      "Architecture Review: PASS",
+      "Governance Review: PASS",
+      "Publication Review: PASS"
+    ],
+    "publicationDate": "2026-07-30",
+    "artifact": "genesis/governance/decisions/gcd-0004/GCD-0004-Enterprise-Application-Registry-Constitutional-Authority.md",
+    "metadata": {
+      "classification": "Constitutional Governance Decision",
+      "domain": "Enterprise Operating System",
+      "layer": "Governance/Architecture",
+      "owner": "Genesis Constitutional Authority"
+    }
+  }
+}

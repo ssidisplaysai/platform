@@ -1,5 +1,7 @@
 # GLW Publishing Engine v1.0 Freeze
 
+> Historical / superseded artifact. This freeze report reflects the legacy 12-check QA model and is not valid evidence for the current GLW-CERT-0001 certification gate, which uses the canonical 16-key QA contract in src/lib/glw/jobs.ts.
+
 Generated: 2026-08-10
 Scope: GLW production freeze and final polish
 
@@ -38,9 +40,9 @@ GLW PUBLISHING ENGINE v1.0 FROZEN — PRODUCTION READY
    Evidence: .tmp-glw-production-freeze-smoke.json (publish.executionId 65047)
 14. End-to-end draft smoke: PASS
    Evidence: .tmp-glw-production-freeze-smoke.json (draft.executionId 65057)
-15. Publish acceptance checks (12/12 QA, status publish, URL canonical, HTTP 200): PASS
+15. Publish acceptance checks (16/16 QA, status publish, URL canonical, HTTP 200): PASS
    Evidence: .tmp-glw-production-freeze-smoke.json
-16. Draft acceptance checks (12/12 QA, status draft, Open Draft link uses edit-safe URL): PASS
+16. Draft acceptance checks (16/16 QA, status draft, Open Draft link uses edit-safe URL): PASS
    Evidence: .tmp-glw-production-freeze-smoke.json
 17. Targeted GLW automated tests: PASS
    Evidence: tests/glw/page-generation-api.test.ts, tests/glw/genesis-platform-integration.test.ts
@@ -59,7 +61,7 @@ Publish scenario:
 - Job: glw_zjr84npa
 - Execution: 65047
 - Final status: COMPLETE
-- QA checks: 12/12 PASS
+- QA checks: 16/16 PASS
 - WordPress status: publish
 - URL: https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/austin/
 - HTTP status: 200
@@ -68,7 +70,7 @@ Draft scenario:
 - Job: glw_pvq2bwkg
 - Execution: 65057
 - Final status: COMPLETE
-- QA checks: 12/12 PASS
+- QA checks: 16/16 PASS
 - WordPress status: draft
 - URL: https://leddisplaywarehouse.com/?page_id=19308
 - UI action label: Open Draft
@@ -106,7 +108,7 @@ Determinations:
 5. Plugin update availability:
    - WordPress.org plugin metadata reports latest Yoast SEO version 28.2, matching installed evidence.
 6. Malformed Yoast metadata from workflow:
-   - Not indicated in freeze smoke executions; Yoast fields are present and QA passes 12/12 in both authoritative runs.
+   - Not indicated in freeze smoke executions; Yoast fields are present and QA passes 16/16 in both authoritative runs.
 
 Remediation order and action state:
 - A. Invalid public draft URL usage: addressed (draft resolves to edit-safe/page-id handling in GLW).

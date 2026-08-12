@@ -1,0 +1,19 @@
+{
+  "schemaIdentifier": "gia-0001/implementation-readiness",
+  "schemaVersion": "1.0.0",
+  "programId": "GIA-0001",
+  "overallReadiness": "READY WITH CONDITIONS",
+  "workstreams": [
+    { "name": "Business Genome", "status": "READY WITH CONDITIONS", "evidence": "GPP-0003 WS-02", "conditions": ["COND-002"] },
+    { "name": "Genesis Kernel", "status": "READY WITH CONDITIONS", "evidence": "GPP-0003 WS-03", "conditions": ["COND-003"] },
+    { "name": "Enterprise Runtime", "status": "READY WITH CONDITIONS", "evidence": "GPP-0003 WS-04", "conditions": ["COND-003"] },
+    { "name": "Enterprise Registries", "status": "READY", "evidence": "GAR and GPP registry topology", "conditions": [] },
+    { "name": "GAR Engine", "status": "READY WITH CONDITIONS", "evidence": "GAR-0003 execution history", "conditions": ["COND-001", "COND-004"] },
+    { "name": "AI Agent Framework", "status": "READY", "evidence": "GEA foundations complete", "conditions": [] },
+    { "name": "Applications", "status": "READY WITH CONDITIONS", "evidence": "GPP-0003 WS-06", "conditions": ["COND-005"] },
+    { "name": "Automation", "status": "READY WITH CONDITIONS", "evidence": "n8n orchestration pathways and WS-08", "conditions": ["COND-006"] },
+    { "name": "Observability", "status": "READY WITH CONDITIONS", "evidence": "GPP-0003 WS-09 and GAR remediation", "conditions": ["COND-002", "COND-004"] },
+    { "name": "Developer Experience", "status": "READY", "evidence": "existing package/test conventions", "conditions": [] },
+    { "name": "Deployment", "status": "READY WITH CONDITIONS", "evidence": "release framework and WS-11", "conditions": ["COND-001", "COND-005"] }
+  ]
+}

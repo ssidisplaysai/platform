@@ -1,0 +1,26 @@
+{
+  "id": "60794",
+  "status": "success",
+  "city": "qa-dup-rel-1786148763196-0",
+  "find": {
+    "xWpTotal": "1",
+    "bodyCount": 1
+  },
+  "lookup": {
+    "city_page_found": true,
+    "existing_city_page_id": 19073
+  },
+  "createExecuted": false,
+  "updateExecuted": true,
+  "createResult": null,
+  "updateResult": {
+    "id": 19073,
+    "slug": "qa-dup-rel-1786148763196-0",
+    "status": "draft",
+    "parent": 2563
+  },
+  "normalized": {
+    "id": 19073,
+    "disposition": "UPDATED"
+  }
+}

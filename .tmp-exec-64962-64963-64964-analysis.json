@@ -1,0 +1,193 @@
+[
+  {
+    "executionId": "64962",
+    "jobId": "glw_mvziz99h",
+    "city": "Houston",
+    "qaPassed": false,
+    "qaStatus": "FAILED_QA",
+    "checks": {
+      "pageExists": "PASS",
+      "hierarchy": "PASS",
+      "slug": "PASS",
+      "title": "PASS",
+      "h1": "PASS",
+      "body": "FAIL",
+      "featuredImage": "PASS",
+      "heroImage": "PASS",
+      "seo": "PASS",
+      "internalLinks": "FAIL",
+      "imageAlt": "PASS",
+      "duplicateCheck": "PASS"
+    },
+    "failureReasons": {
+      "body": "Body invalid. wordCount=882 placeholder=false.",
+      "internalLinks": "Expected at least 3 internal links but found 0."
+    },
+    "body": {
+      "requiredMinWords": 1200,
+      "renderedWordCount": 882,
+      "sourceWordCount": 882,
+      "renderedPlaceholderDetected": false,
+      "sourcePlaceholderDetected": false,
+      "renderedHtmlLength": 8637,
+      "sourceHtmlLength": 8626,
+      "renderedEmpty": false,
+      "sourceEmpty": false
+    },
+    "internalLinks": {
+      "requiredMinInternalLinks": 3,
+      "renderedCount": 10,
+      "sourceCount": 10,
+      "renderedLinksDiscovered": [
+        "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+        "https://leddisplaywarehouse.com/custom-led-displays/",
+        "https://leddisplaywarehouse.com/creative-led-displays/",
+        "https://leddisplaywarehouse.com/flexible-rollable-led/",
+        "https://leddisplaywarehouse.com/interactive-led-floors/",
+        "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+        "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+        "https://leddisplaywarehouse.com/contact-us/",
+        "https://leddisplaywarehouse.com/transparent-led-displays/",
+        "https://leddisplaywarehouse.com/outdoor-led-displays/"
+      ],
+      "sourceLinksDiscovered": [
+        "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+        "https://leddisplaywarehouse.com/custom-led-displays/",
+        "https://leddisplaywarehouse.com/creative-led-displays/",
+        "https://leddisplaywarehouse.com/flexible-rollable-led/",
+        "https://leddisplaywarehouse.com/interactive-led-floors/",
+        "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+        "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+        "https://leddisplaywarehouse.com/contact-us/",
+        "https://leddisplaywarehouse.com/transparent-led-displays/",
+        "https://leddisplaywarehouse.com/outdoor-led-displays/"
+      ]
+    }
+  },
+  {
+    "executionId": "64963",
+    "jobId": "glw_wsyyugtb",
+    "city": "Houston",
+    "qaPassed": false,
+    "qaStatus": "FAILED_QA",
+    "checks": {
+      "pageExists": "PASS",
+      "hierarchy": "PASS",
+      "slug": "PASS",
+      "title": "PASS",
+      "h1": "PASS",
+      "body": "FAIL",
+      "featuredImage": "PASS",
+      "heroImage": "PASS",
+      "seo": "PASS",
+      "internalLinks": "FAIL",
+      "imageAlt": "PASS",
+      "duplicateCheck": "PASS"
+    },
+    "failureReasons": {
+      "body": "Body invalid. wordCount=733 placeholder=false.",
+      "internalLinks": "Expected at least 3 internal links but found 0."
+    },
+    "body": {
+      "requiredMinWords": 1200,
+      "renderedWordCount": 733,
+      "sourceWordCount": 733,
+      "renderedPlaceholderDetected": false,
+      "sourcePlaceholderDetected": false,
+      "renderedHtmlLength": 7159,
+      "sourceHtmlLength": 7093,
+      "renderedEmpty": false,
+      "sourceEmpty": false
+    },
+    "internalLinks": {
+      "requiredMinInternalLinks": 3,
+      "renderedCount": 9,
+      "sourceCount": 9,
+      "renderedLinksDiscovered": [
+        "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+        "https://leddisplaywarehouse.com/transparent-led-displays/",
+        "https://leddisplaywarehouse.com/outdoor-led-displays/",
+        "https://leddisplaywarehouse.com/creative-led-displays/",
+        "https://leddisplaywarehouse.com/interactive-led-floors/",
+        "https://leddisplaywarehouse.com/custom-led-displays/",
+        "https://leddisplaywarehouse.com/contact-us/",
+        "https://leddisplaywarehouse.com/exhibition-led-displays/",
+        "https://leddisplaywarehouse.com/led-posters/"
+      ],
+      "sourceLinksDiscovered": [
+        "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+        "https://leddisplaywarehouse.com/transparent-led-displays/",
+        "https://leddisplaywarehouse.com/outdoor-led-displays/",
+        "https://leddisplaywarehouse.com/creative-led-displays/",
+        "https://leddisplaywarehouse.com/interactive-led-floors/",
+        "https://leddisplaywarehouse.com/custom-led-displays/",
+        "https://leddisplaywarehouse.com/contact-us/",
+        "https://leddisplaywarehouse.com/exhibition-led-displays/",
+        "https://leddisplaywarehouse.com/led-posters/"
+      ]
+    }
+  },
+  {
+    "executionId": "64964",
+    "jobId": "glw_46470w37",
+    "city": "qa-prepublish-pass-1786381334599",
+    "qaPassed": false,
+    "qaStatus": "FAILED_QA",
+    "checks": {
+      "pageExists": "PASS",
+      "hierarchy": "PASS",
+      "slug": "PASS",
+      "title": "PASS",
+      "h1": "PASS",
+      "body": "FAIL",
+      "featuredImage": "PASS",
+      "heroImage": "PASS",
+      "seo": "PASS",
+      "internalLinks": "FAIL",
+      "imageAlt": "PASS",
+      "duplicateCheck": "PASS"
+    },
+    "failureReasons": {
+      "body": "Body invalid. wordCount=734 placeholder=false.",
+      "internalLinks": "Expected at least 3 internal links but found 0."
+    },
+    "body": {
+      "requiredMinWords": 1200,
+      "renderedWordCount": 734,
+      "sourceWordCount": 734,
+      "renderedPlaceholderDetected": false,
+      "sourcePlaceholderDetected": false,
+      "renderedHtmlLength": 7852,
+      "sourceHtmlLength": 7820,
+      "renderedEmpty": false,
+      "sourceEmpty": false
+    },
+    "internalLinks": {
+      "requiredMinInternalLinks": 3,
+      "renderedCount": 9,
+      "sourceCount": 9,
+      "renderedLinksDiscovered": [
+        "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+        "https://leddisplaywarehouse.com/outdoor-led-displays/",
+        "https://leddisplaywarehouse.com/custom-led-displays/",
+        "https://leddisplaywarehouse.com/contact-us/",
+        "https://leddisplaywarehouse.com/transparent-led-displays/",
+        "https://leddisplaywarehouse.com/creative-led-displays/",
+        "https://leddisplaywarehouse.com/",
+        "https://leddisplaywarehouse.com/interactive-led-floors/",
+        "https://leddisplaywarehouse.com/led-posters/"
+      ],
+      "sourceLinksDiscovered": [
+        "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+        "https://leddisplaywarehouse.com/outdoor-led-displays/",
+        "https://leddisplaywarehouse.com/custom-led-displays/",
+        "https://leddisplaywarehouse.com/contact-us/",
+        "https://leddisplaywarehouse.com/transparent-led-displays/",
+        "https://leddisplaywarehouse.com/creative-led-displays/",
+        "https://leddisplaywarehouse.com/",
+        "https://leddisplaywarehouse.com/interactive-led-floors/",
+        "https://leddisplaywarehouse.com/led-posters/"
+      ]
+    }
+  }
+]

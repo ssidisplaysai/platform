@@ -1,0 +1,21 @@
+{
+  "method": "POST",
+  "url": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
+  "authentication": "genericCredentialType",
+  "genericAuthType": "httpHeaderAuth",
+  "sendHeaders": true,
+  "headerParameters": {
+    "parameters": [
+      {
+        "name": "Content-Type",
+        "value": "application/json"
+      }
+    ]
+  },
+  "sendBody": true,
+  "specifyBody": "json",
+  "jsonBody": "={{ { jobId: $('Get row(s) in sheet').first().json.job_id, executionId: $execution.id, status: 'COMPLETE', title: $('Code in JavaScript').first().json.page_title, wordpressUrl: $('Set Featured Image').first().json.link, wordpressPostId: $('Create a post').first().json.id } }}",
+  "options": {
+    "timeout": 15000
+  }
+}

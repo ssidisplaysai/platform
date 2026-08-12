@@ -1,0 +1,47 @@
+[
+  {
+    "id": "60834",
+    "status": "error",
+    "lastNode": "Append GLW QA Sheet Row",
+    "error": {
+      "message": "Column names were updated after the node's setup",
+      "description": "Refresh the columns list in the 'Column to Match On' parameter. Missing columns: Website, Topic, Focus Keyphrase, Brand, Word Count, Post Title, seo Title, Slug, Meta Description, WordPress Draft URL, Notes, Row ID, Focus Keyphrase Generated, Alt Tag, Image Prompt, SEO Title, Featured Image URL, Image ID, post id,  ",
+      "node": "Append GLW QA Sheet Row"
+    },
+    "qa": {
+      "passed": false,
+      "cb": "FAILED_QA"
+    },
+    "callback": null
+  },
+  {
+    "id": "60852",
+    "status": "error",
+    "lastNode": "Append GLW QA Sheet Row",
+    "error": {
+      "message": "Column names were updated after the node's setup",
+      "description": "Refresh the columns list in the 'Column to Match On' parameter. Missing columns: Website, Topic, Focus Keyphrase, Brand, Word Count, Post Title, seo Title, Slug, Meta Description, WordPress Draft URL, Notes, Row ID, Focus Keyphrase Generated, Alt Tag, Image Prompt, SEO Title, Featured Image URL, Image ID, post id,  ",
+      "node": "Append GLW QA Sheet Row"
+    },
+    "qa": {
+      "passed": false,
+      "cb": "FAILED_QA"
+    },
+    "callback": null
+  },
+  {
+    "id": "60870",
+    "status": "error",
+    "lastNode": "Append GLW QA Sheet Row",
+    "error": {
+      "message": "Column names were updated after the node's setup",
+      "description": "Refresh the columns list in the 'Column to Match On' parameter. Missing columns: Website, Topic, Focus Keyphrase, Brand, Word Count, Post Title, seo Title, Slug, Meta Description, WordPress Draft URL, Notes, Row ID, Focus Keyphrase Generated, Alt Tag, Image Prompt, SEO Title, Featured Image URL, Image ID, post id,  ",
+      "node": "Append GLW QA Sheet Row"
+    },
+    "qa": {
+      "passed": false,
+      "cb": "FAILED_QA"
+    },
+    "callback": null
+  }
+]

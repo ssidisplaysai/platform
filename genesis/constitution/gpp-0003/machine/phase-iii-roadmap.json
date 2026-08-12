@@ -1,0 +1,63 @@
+{
+  "schemaIdentifier": "gpp-0003/phase-iii-roadmap",
+  "schemaVersion": "1.0.0",
+  "programId": "GPP-0003",
+  "waves": [
+    {
+      "waveId": "W0",
+      "name": "Mobilization and Program Control",
+      "window": "Weeks 1-3",
+      "focus": [
+        "program control activation",
+        "baseline remediation tracking",
+        "telemetry contract baseline"
+      ],
+      "gates": ["Gate A"]
+    },
+    {
+      "waveId": "W1",
+      "name": "Core Platform Operational Backbone",
+      "window": "Weeks 4-12",
+      "focus": [
+        "GAR Engine productionization",
+        "Genesis Kernel hardening",
+        "Enterprise Runtime",
+        "Enterprise Registries"
+      ],
+      "gates": ["Gate B"]
+    },
+    {
+      "waveId": "W2",
+      "name": "Enterprise Capability Expansion",
+      "window": "Weeks 13-22",
+      "focus": [
+        "Business Genome ingestion",
+        "AI Agent Framework hardening",
+        "Automation industrialization",
+        "Developer experience"
+      ],
+      "gates": ["Gate C"]
+    },
+    {
+      "waveId": "W3",
+      "name": "Productization and Scale Readiness",
+      "window": "Weeks 23-32",
+      "focus": [
+        "Applications release readiness",
+        "Deployment platform",
+        "Observability completion",
+        "implementation authorization"
+      ],
+      "gates": ["Gate D", "Gate E"]
+    }
+  ],
+  "criticalPath": [
+    "program-control-and-remediation-closure",
+    "kernel-runtime-registry-backbone",
+    "genome-agent-automation-integration",
+    "observability-evidence-convergence",
+    "application-readiness",
+    "deployment-and-release-controls"
+  ],
+  "stopCondition": "Roadmap package complete; implementation not started"
+}

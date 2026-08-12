@@ -1,0 +1,82 @@
+[
+  {
+    "id": "64992",
+    "status": "success",
+    "city": "qa-prepublish-remed-a-1786382848466",
+    "jobId": "glw_6znybicz",
+    "qaPassed": true,
+    "qaCallbackStatus": "COMPLETE",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  },
+  {
+    "id": "64991",
+    "status": "success",
+    "city": "Houston",
+    "jobId": "glw_09gt5ps8",
+    "qaPassed": true,
+    "qaCallbackStatus": "COMPLETE",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  },
+  {
+    "id": "64990",
+    "status": "success",
+    "city": "qa-prepublish-remed-b-1786382499115",
+    "jobId": "glw_t2iy9dq9",
+    "qaPassed": true,
+    "qaCallbackStatus": "COMPLETE",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  },
+  {
+    "id": "64987",
+    "status": "success",
+    "city": "qa-prepublish-remed-a-1786382499115",
+    "jobId": "glw_goffy273",
+    "qaPassed": true,
+    "qaCallbackStatus": "COMPLETE",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  },
+  {
+    "id": "64986",
+    "status": "success",
+    "city": "Houston",
+    "jobId": "glw_5a562cw4",
+    "qaPassed": true,
+    "qaCallbackStatus": "COMPLETE",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  },
+  {
+    "id": "64982",
+    "status": "success",
+    "city": "qa-prepublish-remed-b-1786382078805",
+    "jobId": "glw_9vd22h3c",
+    "qaPassed": false,
+    "qaCallbackStatus": "FAILED_QA",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  },
+  {
+    "id": "64981",
+    "status": "success",
+    "city": "qa-prepublish-remed-a-1786382078805",
+    "jobId": "glw_dp72o53c",
+    "qaPassed": false,
+    "qaCallbackStatus": "FAILED_QA",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  },
+  {
+    "id": "64971",
+    "status": "success",
+    "city": "Houston",
+    "jobId": "glw_7yohb7lj",
+    "qaPassed": false,
+    "qaCallbackStatus": "FAILED_QA",
+    "callbackStatus": null,
+    "lastNode": "Send GLW Completion Callback"
+  }
+]

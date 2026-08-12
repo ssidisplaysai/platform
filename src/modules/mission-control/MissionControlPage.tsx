@@ -1,28 +1,14 @@
-import { ExecutiveBriefing } from "./ExecutiveBriefing";
-import { CompanyHealth } from "./CompanyHealth";
-import { PriorityTasks } from "./PriorityTasks";
-import { AIRecommendations } from "./AIRecommendations";
-import { RecentActivity } from "./RecentActivity";
-import { QuickActions } from "./QuickActions";
+import { MissionControlFoundation } from "@/components/gmc/mission-control-foundation";
+import { getMissionControlService } from "@/platform/gmc";
 
-export function MissionControlPage() {
+export async function MissionControlPage() {
+  const service = await getMissionControlService();
+  const [workspace, filters] = await Promise.all([
+    service.assembleWorkspace(),
+    service.getFilters(),
+  ]);
+
   return (
-    <div className="space-y-6">
-      <ExecutiveBriefing />
-
-      <CompanyHealth />
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <PriorityTasks />
-
-        <AIRecommendations />
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <RecentActivity />
-
-        <QuickActions />
-      </div>
-    </div>
+    <MissionControlFoundation workspace={workspace} filters={filters} />
   );
 }

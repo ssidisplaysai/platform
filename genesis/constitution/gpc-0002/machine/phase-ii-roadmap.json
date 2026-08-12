@@ -1,0 +1,38 @@
+{
+  "schemaIdentifier": "gpc-0002/phase-ii-roadmap",
+  "schemaVersion": "1.0.0",
+  "nextPhasePreparation": {
+    "doNotStartNextPhase": true,
+    "gar0003OutstandingRemediations": [
+      {
+        "id": "GAR3-REM-001",
+        "priority": "P2",
+        "action": "Populate releaseCommit in release-manifest and release-registry using the release tag peeled commit."
+      },
+      {
+        "id": "GAR3-REM-002",
+        "priority": "P2",
+        "action": "Add runtime metadata lineage evidence for representative slices (GMP/GBA/GEA)."
+      },
+      {
+        "id": "GAR3-REM-003",
+        "priority": "P3",
+        "action": "Bind architecture change history to RAR/ARD/ADR lineage graph for repository-wide coverage."
+      }
+    ],
+    "automationOpportunities": [
+      "Automate releaseCommit population and validation for release machine artifacts.",
+      "Automate constitutional clause-to-evidence lineage extraction from runtime and architecture docs.",
+      "Automate phase closeout package generation from GAR outputs and baseline integrity scans."
+    ],
+    "architecturalImprovements": [
+      "Expand dynamic evidence for business metadata source-of-truth verification.",
+      "Add repository-wide RAR/ARD/ADR lineage graph for constitutional clause CNS-4 confidence uplift."
+    ],
+    "constitutionalObservations": [
+      "Current constitutional chain is executable end-to-end through governance release and GAR-0003.",
+      "Conditions are procedural and evidence-depth related, not governance-definition defects."
+    ],
+    "readinessAssessment": "READY FOR NEXT PHASE PREPARATION WITH CONDITIONS TRACKED"
+  }
+}

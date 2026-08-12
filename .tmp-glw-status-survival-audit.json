@@ -1,0 +1,53 @@
+{
+  "workflowId": "bIDXxyWnY22G8zJC",
+  "workflowName": "Master SEO Page Engine v1 - DEVELOPMENT",
+  "targetNodes": [
+    {
+      "name": "Create a post",
+      "type": "n8n-nodes-base.httpRequest",
+      "hasStatus": true,
+      "statusValue": "={{ $input.first().json.publishing_mode === 'publish' ? 'publish' : 'draft' }}"
+    },
+    {
+      "name": "Update Existing City Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "hasStatus": true,
+      "statusValue": "={{ $('Prepare State Parent').first().json.publishing_mode === 'publish' ? 'publish' : 'draft' }}"
+    },
+    {
+      "name": "Update Yoast SEO",
+      "type": "n8n-nodes-base.httpRequest",
+      "hasStatus": false,
+      "statusValue": null
+    },
+    {
+      "name": "Insert Image Into Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "hasStatus": false,
+      "statusValue": null
+    },
+    {
+      "name": "Set Featured Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "hasStatus": false,
+      "statusValue": null
+    }
+  ],
+  "nodesSendingStatus": [
+    {
+      "name": "Create a post",
+      "type": "n8n-nodes-base.httpRequest",
+      "statusValue": "={{ $input.first().json.publishing_mode === 'publish' ? 'publish' : 'draft' }}"
+    },
+    {
+      "name": "Create State Parent",
+      "type": "n8n-nodes-base.httpRequest",
+      "statusValue": "draft"
+    },
+    {
+      "name": "Update Existing City Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "statusValue": "={{ $('Prepare State Parent').first().json.publishing_mode === 'publish' ? 'publish' : 'draft' }}"
+    }
+  ]
+}

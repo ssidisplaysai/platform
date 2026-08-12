@@ -36,18 +36,6 @@
     {
       "classification": "verified static import",
       "confidence": "verified-static-flow",
-      "from": "src/app/glw/(protected)/queue/page.tsx",
-      "to": "src/lib/glw/job-repository.ts"
-    },
-    {
-      "classification": "verified static import",
-      "confidence": "verified-static-flow",
-      "from": "src/app/glw/(protected)/queue/page.tsx",
-      "to": "src/lib/glw/jobs.ts"
-    },
-    {
-      "classification": "verified static import",
-      "confidence": "verified-static-flow",
       "from": "src/components/glw/glw-queue-workspace.tsx",
       "to": "src/components/glw/data-table.tsx"
     },
@@ -1623,10 +1611,6 @@
     "runtime flow conclusions are static/inferred"
   ],
   "persistenceFlows": [
-    {
-      "consumer": "src/app/glw/(protected)/queue/page.tsx",
-      "target": "src/lib/glw/job-repository.ts"
-    },
     {
       "consumer": "src/lib/gba/customer-success-runtime.ts",
       "target": "src/lib/gba/customer-success-repository.ts"

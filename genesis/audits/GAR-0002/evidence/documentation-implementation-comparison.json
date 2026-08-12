@@ -350,6 +350,10 @@
       "document": "docs/architecture/0001-genesis-architecture.md",
       "implementationEvidence": [],
       "missingReferences": [
+        "../../GACD-0002-Genesis-Dependency-Policy.md",
+        "../../GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "../../GACD-0004-Public-Platform-API-Policy.md",
+        "../../GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
         "0014-genesis-compilation-pipeline.md",
         "0018-compiler-pass-architecture.md",
         "0027-ard-0001-business-genome-ir-final-package.md",
@@ -3478,6 +3482,235 @@
     },
     {
       "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GACD-0001-Runtime-Authority-Decision.md",
+      "implementationEvidence": [
+        "src/core/runtime/MetadataRuntime.ts",
+        "src/platform/gop/auth/runtime.ts",
+        "src/platform/gop/index.ts",
+        "src/platform/gop/runtime/execution-engine.ts",
+        "src/platform/gop/runtime/execution-repository.ts",
+        "src/platform/gop/runtime/loader.ts",
+        "src/platform/gop/runtime/orchestration-runtime.ts",
+        "src/platform/gop/runtime/orchestrator.ts",
+        "src/platform/gop/runtime/queue-manager.ts",
+        "src/platform/gop/workspaces/runtime.ts",
+        "tools/genesis/commands/boot.mjs",
+        "tools/genesis/commands/runtime.mjs",
+        "tools/genesis/compiler/pipeline/passes/RuntimeRegistrationPass.mjs",
+        "tools/genesis/runtime/RuntimeExecutionEngine.mjs",
+        "tools/genesis/tests/suites/RuntimeTests.mjs"
+      ],
+      "missingReferences": [
+        ".test.ts",
+        "module-bootstrap.ts"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "GACD-0002-Genesis-Dependency-Policy.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "ALIGNED",
+      "confidence": "medium",
+      "document": "GACD-0003-Platform-Bootstrap-API-Decision.md",
+      "implementationEvidence": [
+        "docs/architecture/0001-genesis-architecture.md",
+        "genesis/CONSTITUTION.md",
+        "genesis/constitution/gpm-0001/Genesis-Dependency-Map.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+        "genesis/governance/machine/governance-registry.json",
+        "src/platform/gop/runtime/orchestration-runtime.ts"
+      ],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "ALIGNED",
+      "confidence": "medium",
+      "document": "GACD-0004-Public-Platform-API-Policy.md",
+      "implementationEvidence": [
+        "docs/architecture/0001-genesis-architecture.md",
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+        "genesis/governance/machine/governance-registry.json",
+        "genesis/governance/standards/Genesis-Standards-Registry.md"
+      ],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GACI-0002A-R1-Protected-Layout-Seam-Assessment.md",
+      "implementationEvidence": [
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACP-0002A-Dependency-Matrix.md",
+        "GACP-0002A-Implementation-Report.md",
+        "genesis/audits/GAR-0002/evidence/dependency-direction-analysis.json",
+        "src/components/glw/glw-shell.tsx",
+        "src/lib/glw/auth.ts",
+        "src/platform/gop/auth/runtime.ts",
+        "src/platform/gop/index.ts",
+        "src/platform/gop/runtime/loader.ts",
+        "src/platform/gop/runtime/module-bootstrap.ts",
+        "src/platform/gop/runtime/orchestration-runtime.ts",
+        "src/platform/gop/workspaces/registry.ts",
+        "src/platform/gop/workspaces/runtime.ts"
+      ],
+      "missingReferences": [
+        "/layout.tsx"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GACP-0002A-Dependency-Matrix.md",
+      "implementationEvidence": [
+        "genesis/audits/GAR-0002/evidence/dependency-direction-analysis.json",
+        "src/lib/glw/job-repository.ts",
+        "src/lib/glw/jobs.ts",
+        "src/platform/gop/runtime/event-store.ts",
+        "src/platform/gop/runtime/orchestration-runtime.ts"
+      ],
+      "missingReferences": [
+        "/layout.tsx",
+        "/operations/page.tsx",
+        "/page.tsx",
+        "/pages/page.tsx",
+        "/queue/page.tsx",
+        "dependency-direction-analysis.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "GACP-0002A-Executive-Summary.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "/layout.tsx"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GACP-0002A-Implementation-Report.md",
+      "implementationEvidence": [
+        "genesis/audits/GAR-0002/evidence/dependency-direction-analysis.json",
+        "src/components/gop/gop-operations-center.tsx",
+        "tests/gop/gop-operations-center.test.tsx"
+      ],
+      "missingReferences": [
+        "/operations/page.tsx",
+        "/page.tsx",
+        "/pages/page.tsx",
+        "/queue/page.tsx",
+        "dependency-direction-analysis.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GACP-0002A-Manifest.md",
+      "implementationEvidence": [
+        "GACP-0002A-Dependency-Matrix.md",
+        "GACP-0002A-Executive-Summary.md",
+        "GACP-0002A-Implementation-Report.md",
+        "GACP-0002A-Validation-Matrix.md",
+        "src/components/gop/gop-operations-center.tsx"
+      ],
+      "missingReferences": [
+        "/operations/page.tsx",
+        "/page.tsx",
+        "/pages/page.tsx",
+        "/queue/page.tsx"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GACP-0002A-Validation-Matrix.md",
+      "implementationEvidence": [
+        "src/components/gop/gop-operations-center.tsx",
+        "tests/gop/gop-operations-center.test.tsx"
+      ],
+      "missingReferences": [
+        "/layout.tsx",
+        "/operations/page.tsx",
+        "/page.tsx",
+        "/pages/page.tsx",
+        "/queue/page.tsx",
+        "dependency-direction-analysis.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "low",
+      "document": "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md"
+      ],
+      "missingReferences": [
+        "1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GAR-0002A-Canonical-Hash-Correction.md",
+      "implementationEvidence": [
+        "genesis/audits/GAR-0002/evidence/gar-0002-run-manifest.json",
+        "tools/genesis-audit/src/gar-0002-run.mjs"
+      ],
+      "missingReferences": [
+        "directory-inventory.json",
+        "documentation-inventory.json",
+        "file-inventory.json",
+        "governance-artifact-inventory.json",
+        "hygiene-inventory.json",
+        "import-graph.json",
+        "package-inventory.json",
+        "repository-manifest.json",
+        "security-surface-inventory.json",
+        "source-symbol-inventory.json",
+        "test-inventory.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "GAR-0002A-Validation-Report.md",
+      "implementationEvidence": [
+        "./tools/genesis-audit/src/schema-validator.mjs",
+        "genesis/audits/GAR-0002/evidence/gar-0002-run-manifest.json"
+      ],
+      "missingReferences": [
+        "JSON.stringify",
+        "console.log",
+        "gar0001SchemaValidation.valid",
+        "out.valid",
+        "process.exit",
+        "validations.deterministicOutputVerification.allEqual",
+        "validations.repositoryMutationCheck.mutated"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
       "classification": "UNRESOLVED",
       "confidence": "low",
       "document": "GBA-0001-Daily-Briefings.md",
@@ -6254,6 +6487,353 @@
       "missingReferences": []
     },
     {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/00-package-manifest.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/01-execution-charter.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/02-input-baseline-and-evidence-integrity.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/03-architecture-analysis-methodology.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/04-implemented-layer-model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "architecture-layer-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/05-complete-subsystem-catalog.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "subsystem-catalog.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/06-package-and-module-dependency-map.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "package-dependency-analysis.json",
+        "subsystem-dependency-graph.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/07-dependency-direction-assessment.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "dependency-direction-analysis.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/08-circular-dependency-assessment.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "cycle-assessment.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/09-api-layering-assessment.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "api-layering-assessment.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/10-persistence-boundary-assessment.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "persistence-boundary-assessment.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/11-domain-boundary-topology.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "domain-boundary-map.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/12-business-agent-dependency-map.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "business-agent-dependency-map.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/13-enterprise-agent-dependency-map.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "enterprise-agent-dependency-map.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/14-runtime-topology-and-flows.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "runtime-topology.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/15-application-platform-topology.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "application-topology.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/16-registry-relationship-assessment.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "registry-relationship-map.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/17-compiler-and-generation-topology.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "compiler-topology.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/18-coupling-cohesion-and-hotspots.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "architecture-hotspots.json",
+        "coupling-metrics.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/19-documentation-versus-implementation.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "documentation-implementation-comparison.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/20-architectural-smells-topology-scope.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "architecture-findings.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/21-prioritized-architecture-findings.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "architecture-findings.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/22-unresolved-items-and-limitations.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "unresolved-topology-items.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/23-GAR-0003-readiness-recommendation.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/GAR-0002-Final-Report.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0002/reports/GAR-0002-README.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Clause-Evaluation.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Constitutional-Assessment.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "17.345Z",
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Constitutional-Certification.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Constitutional-Findings.md",
+      "implementationEvidence": [
+        "genesis/governance/baselines/ggb-0001/machine/baseline-authority.json",
+        "genesis/governance/machine/authority-graph.json",
+        "genesis/governance/releases/ggr-0001/machine/release-manifest.json",
+        "genesis/governance/releases/ggr-0001/machine/release-registry.json"
+      ],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "ALIGNED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Evidence-Register.md",
+      "implementationEvidence": [
+        "genesis/governance/baselines/ggb-0001/machine/baseline-integrity.json",
+        "genesis/governance/machine/authority-graph.json",
+        "genesis/governance/releases/ggr-0001/machine/release-manifest.json"
+      ],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Executive-Summary.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Release-Readiness.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Remediation-Plan.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Risk-Register.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/audits/GAR-0003/reports/GAR-0003-Traceability-Report.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+        "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-v1.0.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+        "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md"
+      ],
+      "missingReferences": []
+    },
+    {
       "architecturalConsequence": "risk of assumed boundary not implemented",
       "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
       "confidence": "medium",
@@ -6786,6 +7366,248 @@
       "missingReferences": []
     },
     {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/constitution/gia-0001/Genesis-Implementation-Authorization.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/constitution/gia-0001/Genesis-Implementation-Baseline.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "v1.0.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gia-0001/Genesis-Implementation-Decision.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gia-0001/Genesis-Implementation-Governance.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gia-0001/Genesis-Implementation-Readiness.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gia-0001/Genesis-Implementation-Risk-Register.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gia-0001/Genesis-Implementation-Workstream-Status.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/constitution/gpc-0002/Genesis-Phase-II-Closeout.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "v1.0.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpc-0002/Genesis-Phase-II-Forward-Plan.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpc-0002/Genesis-Phase-II-Lessons-Learned.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/constitution/gpc-0002/Genesis-Phase-II-Summary.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "governance-v1.0.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpc-0002/Genesis-Phase-II-Validation.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-Architecture-Review-Process.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "ALIGNED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-Dependency-Map.md",
+      "implementationEvidence": [
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "genesis/CONSTITUTION.md"
+      ],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-Executive-Dashboard.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-Implementation-Backlog.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-PMO.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-Program-Board.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-Release-Train.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpm-0001/Genesis-Risk-Register.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Architecture.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Dependencies.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Execution-Plan.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Milestones.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Program-Charter.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Risk-Assessment.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Roadmap.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/constitution/gpp-0003/Genesis-Phase-III-Workstreams.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
       "architecturalConsequence": "none-significant",
       "classification": "UNRESOLVED",
       "confidence": "low",
@@ -6874,10 +7696,884 @@
       ]
     },
     {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Baseline-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/baseline-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Determinism-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/determinism-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Finding-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/finding-model.json",
+        "machine/observation-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Authority-Model.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/Genesis-Governance-Traceability-Model.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md"
+      ],
+      "missingReferences": [
+        "../../../CONSTITUTION.md",
+        "../../Genesis-Governance-Authority-Model.md",
+        "../../Genesis-Governance-Library.md",
+        "../../Genesis-Governance-Traceability-Model.md",
+        "../../certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+        "Genesis-Audit-Baseline-Standard.md",
+        "Genesis-Audit-Determinism-Standard.md",
+        "Genesis-Audit-Finding-Model.md",
+        "Genesis-Audit-Lifecycle.md",
+        "Genesis-Audit-Mutation-Protection-Standard.md",
+        "Genesis-Audit-Quality-Assurance-Standard.md",
+        "Genesis-Audit-Reporting-Standard.md",
+        "Genesis-Audit-Traceability-Standard.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Lifecycle.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/audit-lifecycle.json",
+        "machine/lifecycle-registry.schema.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Mutation-Protection-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/validation-registry.schema.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Quality-Assurance-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/validation-registry.schema.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Reporting-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Roadmap.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/gafs-0001/Genesis-Audit-Traceability-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/audit-registry.schema.json",
+        "machine/evidence-bindings.schema.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/audit/gafs-0001/README.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md"
+      ],
+      "missingReferences": [
+        "../../../CONSTITUTION.md",
+        "../../Genesis-Governance-Library.md",
+        "../../certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+        "Genesis-Audit-Baseline-Standard.md",
+        "Genesis-Audit-Determinism-Standard.md",
+        "Genesis-Audit-Finding-Model.md",
+        "Genesis-Audit-Framework-Standard.md",
+        "Genesis-Audit-Lifecycle.md",
+        "Genesis-Audit-Mutation-Protection-Standard.md",
+        "Genesis-Audit-Quality-Assurance-Standard.md",
+        "Genesis-Audit-Reporting-Standard.md",
+        "Genesis-Audit-Roadmap.md",
+        "Genesis-Audit-Traceability-Standard.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/audit/Genesis-Audit-Family-Overview.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "../standards/Genesis-Audit-Standards.md",
+        "standards/Genesis-Audit-Standards.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/audit/Genesis-Audit-Reporting-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-Integrity-Report.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "1.0.0",
+        "baseline-ref-1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-Manifest.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Authority-Model.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/Genesis-Governance-Lifecycle.md",
+        "genesis/governance/Genesis-Governance-Taxonomy.md",
+        "genesis/governance/Genesis-Governance-Traceability-Model.md",
+        "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+        "genesis/governance/constitution/Volume-II-Constitutional-Services.md",
+        "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md"
+      ],
+      "missingReferences": [
+        "1.0.0",
+        "baseline-ref-1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-Roadmap.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-Traceability.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-v1.0.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Authority-Model.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/Genesis-Governance-Lifecycle.md",
+        "genesis/governance/Genesis-Governance-Taxonomy.md",
+        "genesis/governance/Genesis-Governance-Traceability-Model.md",
+        "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+        "genesis/governance/constitution/Volume-II-Constitutional-Services.md",
+        "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+        "genesis/governance/decisions/hall/Hall-of-Decisions.md"
+      ],
+      "missingReferences": [
+        "../../../CONSTITUTION.md",
+        "1.0.0",
+        "baseline-ref-1.0",
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "medium",
+      "document": "genesis/governance/baselines/ggb-0001/README.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "1.0.0",
+        "Genesis-Governance-Baseline-Integrity-Report.md",
+        "Genesis-Governance-Baseline-Manifest.md",
+        "Genesis-Governance-Baseline-Roadmap.md",
+        "Genesis-Governance-Baseline-Traceability.md",
+        "Genesis-Governance-Baseline-v1.0.md",
+        "machine/baseline-authority.json",
+        "machine/baseline-dependencies.json",
+        "machine/baseline-integrity.json",
+        "machine/baseline-lifecycle.json",
+        "machine/baseline-manifest.json",
+        "machine/baseline-registry.json",
+        "machine/baseline-traceability.json",
+        "machine/governance-baseline.json",
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Lifecycle.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/lifecycle-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Roadmap.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Authority-Model.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/Genesis-Governance-Taxonomy.md",
+        "genesis/governance/Genesis-Governance-Traceability-Model.md"
+      ],
+      "missingReferences": [
+        "../../../CONSTITUTION.md",
+        "../../Genesis-Governance-Authority-Model.md",
+        "../../Genesis-Governance-Library.md",
+        "../../Genesis-Governance-Taxonomy.md",
+        "../../Genesis-Governance-Traceability-Model.md",
+        "Genesis-Constitutional-Certification-Lifecycle.md",
+        "Genesis-Constitutional-Decision-Model.md",
+        "Genesis-Constitutional-Reporting-Standard.md",
+        "Genesis-Constitutional-Traceability-Standard.md",
+        "machine/certification-registry.schema.json",
+        "machine/clause-registry.schema.json",
+        "machine/compliance-states.json",
+        "machine/decision-registry.schema.json",
+        "machine/decision-states.json",
+        "machine/evidence-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Compliance-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/compliance-states.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Confidence-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/confidence-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Decision-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/decision-registry.schema.json",
+        "machine/decision-states.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Evidence-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/evidence-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Reporting-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Severity-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/severity-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Traceability-Standard.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/authority-graph.json",
+        "machine/certification-registry.schema.json",
+        "machine/traceability-graph.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/certification/gccs-0001/README.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Library.md"
+      ],
+      "missingReferences": [
+        "../../../CONSTITUTION.md",
+        "../../Genesis-Governance-Library.md",
+        "Genesis-Constitutional-Certification-Lifecycle.md",
+        "Genesis-Constitutional-Certification-Roadmap.md",
+        "Genesis-Constitutional-Certification-Standard.md",
+        "Genesis-Constitutional-Compliance-Model.md",
+        "Genesis-Constitutional-Confidence-Model.md",
+        "Genesis-Constitutional-Decision-Model.md",
+        "Genesis-Constitutional-Evidence-Model.md",
+        "Genesis-Constitutional-Reporting-Standard.md",
+        "Genesis-Constitutional-Severity-Model.md",
+        "Genesis-Constitutional-Traceability-Standard.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/certification/Genesis-Certification-Family.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/certification/Genesis-Certification-Standards.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-I-Constitution-Reference.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md"
+      ],
+      "missingReferences": [
+        "../../CONSTITUTION.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-II-Constitutional-Services.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-III-Architectural-Framework.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-IV-Artifact-Framework.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-IX-Audit-Standards.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-V-Business-Genome-Framework.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-VI-Certification-Standards.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-VII-Engineering-Standards.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-VIII-Operational-Standards.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/constitution/Volume-X-Evolution-Standards.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/decision-models/Governance-Artifact-Inventory.md",
+      "implementationEvidence": [
+        "CONTRIBUTING.md",
+        "GBA-0002A-Validation-Matrix.md",
+        "GBA-0003A-Validation-Matrix.md",
+        "GENESIS_ENGINEERING_HANDBOOK.md",
+        "GFP-0001-Platform-Certification.md",
+        "GKP-0001-Constitutional-Compliance.md",
+        "Genesis-Pre-Audit-Baseline-v1.1.md",
+        "Genesis-Pre-Audit-Baseline.md",
+        "docs/gop/gop-v1-constitutional-certification.md",
+        "docs/gop/runtime-constitution.md",
+        "docs/gop/versioning-model.md",
+        "genesis/CONSTITUTION.md"
+      ],
+      "missingReferences": [
+        "../../../.github",
+        "../../../CONTRIBUTING.md",
+        "../../../GBA-0002A-Validation-Matrix.md",
+        "../../../GBA-0003A-Validation-Matrix.md",
+        "../../../GENESIS_ENGINEERING_HANDBOOK.md",
+        "../../../GFP-0001-Platform-Certification.md",
+        "../../../GKP-0001-Constitutional-Compliance.md",
+        "../../../Genesis-Pre-Audit-Baseline-v1.1.md",
+        "../../../Genesis-Pre-Audit-Baseline.md",
+        "../../../docs/gop/gop-v1-constitutional-certification.md",
+        "../../../docs/gop/runtime-constitution.md",
+        "../../../docs/gop/versioning-model.md",
+        "../../CONSTITUTION.md",
+        "../../audits/GAR-0001/governance-artifact-inventory.json",
+        "../../audits/GAR-0001/registry-inventory.json",
+        "genesis/audits/GAR-0001/governance-artifact-inventory.json",
+        "genesis/audits/GAR-0001/registry-inventory.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/decision-models/Governance-Document-Metadata-Contract.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "../machine/cross-reference-graph.json",
+        "../machine/governance-registry.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/decisions/gcd-0002/GCD-0002-Authority-Impact.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Analysis.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Authority-Model.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/Genesis-Governance-Lifecycle.md",
+        "genesis/governance/Genesis-Governance-Taxonomy.md",
+        "genesis/governance/Genesis-Governance-Traceability-Model.md",
+        "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md"
+      ],
+      "missingReferences": [
+        "../../../CONSTITUTION.md",
+        "../../Genesis-Governance-Authority-Model.md",
+        "../../Genesis-Governance-Library.md",
+        "../../Genesis-Governance-Lifecycle.md",
+        "../../Genesis-Governance-Taxonomy.md",
+        "../../Genesis-Governance-Traceability-Model.md",
+        "../../audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+        "../../certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/decisions/gcd-0002/GCD-0002-Decision-Rationale.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/decisions/gcd-0002/GCD-0002-Governance-Adoption.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "medium",
+      "document": "genesis/governance/decisions/gcd-0002/README.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "GCD-0002-Authority-Impact.md",
+        "GCD-0002-Constitutional-Analysis.md",
+        "GCD-0002-Constitutional-Decision.md",
+        "GCD-0002-Decision-Rationale.md",
+        "GCD-0002-Governance-Adoption.md",
+        "machine/decision-metadata.json",
+        "machine/hall-of-decisions-update.json",
+        "machine/lifecycle-registration.json",
+        "machine/registry-updates.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/decisions/hall/Hall-of-Decisions.md",
+      "implementationEvidence": [
+        "GACD-0001-Runtime-Authority-Decision.md",
+        "GACD-0002-Genesis-Dependency-Policy.md",
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md",
+        "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md"
+      ],
+      "missingReferences": []
+    },
+    {
       "architecturalConsequence": "none-significant",
       "classification": "UNRESOLVED",
       "confidence": "low",
       "document": "genesis/governance/GENESIS_SCIENTIFIC_METHOD.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/Genesis-Governance-Authority-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/authority-graph.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/Genesis-Governance-Glossary.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/governance-taxonomy.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/Genesis-Governance-Library.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md"
+      ],
+      "missingReferences": [
+        "../CONSTITUTION.md",
+        "decision-models/Governance-Artifact-Inventory.md",
+        "machine/artifact-inventory.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/Genesis-Governance-Lifecycle.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/lifecycle-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/Genesis-Governance-Roadmap.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/Genesis-Governance-Taxonomy.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/governance-taxonomy.json",
+        "machine/standards.json",
+        "machine/volumes.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/Genesis-Governance-Traceability-Model.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/cross-reference-graph.json",
+        "machine/dependencies.json",
+        "machine/supersession-model.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/lifecycle/Genesis-Lifecycle-Policy.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/procedures/Genesis-Governance-Procedures.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "../Genesis-Governance-Authority-Model.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/procedures/Genesis-Procedure-Family.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/README.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md"
+      ],
+      "missingReferences": [
+        "../CONSTITUTION.md",
+        "Genesis-Governance-Authority-Model.md",
+        "Genesis-Governance-Glossary.md",
+        "Genesis-Governance-Library.md",
+        "Genesis-Governance-Lifecycle.md",
+        "Genesis-Governance-Roadmap.md",
+        "Genesis-Governance-Taxonomy.md",
+        "Genesis-Governance-Traceability-Model.md",
+        "machine/governance-registry.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/releases/ggr-0001/Genesis-Governance-Foundation-v1.0-Release.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "58.745Z",
+        "v1.0",
+        "v1.0.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "PARTIALLY ALIGNED",
+      "confidence": "medium",
+      "document": "genesis/governance/releases/ggr-0001/Genesis-Governance-Release-Manifest.md",
+      "implementationEvidence": [
+        "genesis/CONSTITUTION.md",
+        "genesis/governance/Genesis-Governance-Library.md",
+        "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+        "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-v1.0.md",
+        "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+        "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md"
+      ],
+      "missingReferences": [
+        "58.745Z",
+        "machine/release-baseline.json",
+        "machine/release-manifest.json",
+        "machine/release-registry.json",
+        "machine/release-traceability.json",
+        "machine/release-validation.json",
+        "v1.0",
+        "v1.0.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/releases/ggr-0001/Genesis-Governance-Release-Notes.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "1.0.0",
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/releases/ggr-0001/Genesis-Governance-Release-Roadmap.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "v1.0"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "low",
+      "document": "genesis/governance/releases/ggr-0001/Genesis-Governance-Release-Validation.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "machine/release-validation.json"
+      ]
+    },
+    {
+      "architecturalConsequence": "risk of assumed boundary not implemented",
+      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
+      "confidence": "medium",
+      "document": "genesis/governance/standards/Genesis-Audit-Standards.md",
+      "implementationEvidence": [],
+      "missingReferences": [
+        "../Genesis-Governance-Authority-Model.md",
+        "../Genesis-Governance-Traceability-Model.md",
+        "Genesis-Governance-Authority-Model.md",
+        "Genesis-Governance-Traceability-Model.md"
+      ]
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/standards/Genesis-Governance-Volumes.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/standards/Genesis-Standards-Registry.md",
+      "implementationEvidence": [],
+      "missingReferences": []
+    },
+    {
+      "architecturalConsequence": "none-significant",
+      "classification": "UNRESOLVED",
+      "confidence": "low",
+      "document": "genesis/governance/terminology/Genesis-Governance-Terminology.md",
       "implementationEvidence": [],
       "missingReferences": []
     },
@@ -7744,1914 +9440,6 @@
         "src/lib/gmp/page-graph-service.ts"
       ],
       "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "GKP-0001-Implementation-Report.md",
-      "implementationEvidence": [
-        "GKP-0001-Architecture-Certification.md",
-        "GKP-0001-Constitutional-Compliance.md",
-        "GKP-0001-Data-Integrity-Certification.md",
-        "GKP-0001-Documentation-Certification.md",
-        "GKP-0001-Freeze-Certificate.md",
-        "GKP-0001-Implementation-Report.md",
-        "GKP-0001-Marketing-Kernel-Platform-Certification.md",
-        "GKP-0001-Operational-Readiness.md",
-        "GKP-0001-Performance-Certification.md",
-        "GKP-0001-Registry-Certification.md",
-        "GKP-0001-Replay-Certification.md",
-        "GKP-0001-Runtime-Certification.md",
-        "GKP-0001-Security-Certification.md",
-        "REPOSITORY_OVERVIEW.md",
-        "scripts/gop-v1-cert-benchmark.mts",
-        "src/lib/gmp/page-graph-service.ts",
-        "tests/compiler/core/compiler-core-determinism.test.ts",
-        "tests/deterministic-eko.test.ts",
-        "tests/gmp/gmp-analytics-api.test.ts",
-        "tests/gmp/gmp-evidence-api.test.ts",
-        "tests/gmp/gmp-evidence-compiler-services.test.ts",
-        "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
-        "tests/gmp/gmp-recommendation-api.test.ts",
-        "tests/gmp/gmp-recommendation-services.test.ts",
-        "tests/gop/authorization-resolver.test.ts",
-        "tests/gop/execution-durability.test.ts",
-        "tests/gop/worker-token.test.ts",
-        "tsconfig.json"
-      ],
-      "missingReferences": [
-        ".template.ts"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "GKP-0001-Marketing-Kernel-Platform-Certification.md",
-      "implementationEvidence": [
-        "GKP-0001-Architecture-Certification.md",
-        "GKP-0001-Constitutional-Compliance.md",
-        "GKP-0001-Data-Integrity-Certification.md",
-        "GKP-0001-Documentation-Certification.md",
-        "GKP-0001-Freeze-Certificate.md",
-        "GKP-0001-Implementation-Report.md",
-        "GKP-0001-Marketing-Kernel-Platform-Certification.md",
-        "GKP-0001-Operational-Readiness.md",
-        "GKP-0001-Performance-Certification.md",
-        "GKP-0001-Registry-Certification.md",
-        "GKP-0001-Replay-Certification.md",
-        "GKP-0001-Runtime-Certification.md",
-        "GKP-0001-Security-Certification.md",
-        "src/lib/gmp/page-graph-service.ts"
-      ],
-      "missingReferences": [
-        ".template.ts",
-        "v1.0"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "GKP-0001-Operational-Readiness.md",
-      "implementationEvidence": [
-        "src/lib/gmp/page-graph-service.ts"
-      ],
-      "missingReferences": [
-        "7.9.0",
-        "7.9.1",
-        "v7.9.0"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "GKP-0001-Performance-Certification.md",
-      "implementationEvidence": [
-        "scripts/gop-v1-cert-benchmark.mts"
-      ],
-      "missingReferences": [
-        "0.86",
-        "0.97",
-        "10.27",
-        "10.39",
-        "1012.48",
-        "12.42",
-        "2120.06",
-        "29.74",
-        "3.81",
-        "3362.68",
-        "4.31",
-        "40.27",
-        "471.68",
-        "493.84",
-        "5.89",
-        "805.17"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "ALIGNED",
-      "confidence": "medium",
-      "document": "GKP-0001-Registry-Certification.md",
-      "implementationEvidence": [
-        "REPOSITORY_OVERVIEW.md",
-        "src/platform/gop/auth/policies.ts",
-        "src/platform/gop/module-registry.ts",
-        "src/platform/gop/workspaces/registry.ts"
-      ],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "ALIGNED",
-      "confidence": "medium",
-      "document": "GKP-0001-Replay-Certification.md",
-      "implementationEvidence": [
-        "tests/compiler/core/compiler-core-determinism.test.ts",
-        "tests/deterministic-eko.test.ts",
-        "tests/gmp/gmp-evidence-compiler-services.test.ts",
-        "tests/gmp/gmp-recommendation-services.test.ts",
-        "tests/gop/execution-durability.test.ts"
-      ],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "GKP-0001-Runtime-Certification.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "ALIGNED",
-      "confidence": "medium",
-      "document": "GKP-0001-Security-Certification.md",
-      "implementationEvidence": [
-        "tests/gmp/gmp-analytics-api.test.ts",
-        "tests/gmp/gmp-evidence-api.test.ts",
-        "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
-        "tests/gmp/gmp-recommendation-api.test.ts",
-        "tests/gop/authorization-resolver.test.ts",
-        "tests/gop/worker-token.test.ts"
-      ],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "IMPLEMENTATION_SUMMARY_M1.4.md",
-      "implementationEvidence": [
-        "docs/reports/GES-0002_M1.4_SEMANTIC_RESOLUTION_REPORT.md",
-        "src/compiler/genome/BusinessGenomeCompiler.ts",
-        "src/compiler/genome/BusinessGenomePassRegistry.ts",
-        "src/compiler/genome/diagnostics.ts",
-        "src/compiler/genome/index.ts",
-        "src/compiler/genome/passes/SemanticResolutionPass.ts",
-        "src/compiler/genome/passes/index.ts",
-        "src/compiler/genome/pipeline-types.ts",
-        "src/compiler/genome/types.ts",
-        "tests/compiler/genome/business-genome-compiler.test.ts",
-        "tests/compiler/genome/dependency-boundary.test.ts",
-        "tests/compiler/genome/evidence-correlation-pass.test.ts",
-        "tests/compiler/genome/pass-registry.test.ts",
-        "tests/compiler/genome/semantic-resolution-pass.test.ts"
-      ],
-      "missingReferences": [
-        "M1.4",
-        "M1.5",
-        "SemanticResolutionPass.ts",
-        "genome/index.ts"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "LIFECYCLE_EVENT_INTELLIGENCE_PROOF.md",
-      "implementationEvidence": [
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "2.1",
-        "2.2",
-        "3.1",
-        "3.2",
-        "3.3",
-        "35.872Z",
-        "4.1",
-        "4.2",
-        "4.3",
-        "5.1",
-        "5.2",
-        "7.1",
-        "7.2",
-        "8.1",
-        "8.2",
-        "9.1",
-        "9.2",
-        "9.3",
-        "BlueprintBuilder.mjs",
-        "Customer.md",
-        "Customer.test.ts",
-        "CustomerEvents.ts",
-        "CustomerPermissions.json",
-        "CustomerRepository.ts",
-        "CustomerSearch.ts",
-        "CustomerService.ts",
-        "CustomerValidator.ts",
-        "DocumentationRenderer.mjs",
-        "EventExpander.mjs",
-        "EventsRenderer.mjs",
-        "LifecycleExpander.mjs",
-        "ServiceRenderer.mjs",
-        "Vendor.entity.yaml",
-        "Vendor.md",
-        "Vendor.test.ts",
-        "VendorEvents.ts",
-        "VendorPermissions.json",
-        "VendorRepository.ts",
-        "VendorSearch.ts",
-        "VendorService.ts"
-      ]
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "MADISON_REAL_INTERVIEW_PROCESSING_REPORT.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        "0.18",
-        "20.8",
-        "33.6",
-        "57.2",
-        "7.7",
-        "MADISON_DISCOVERY_INTERVIEW.pdf",
-        "MADISON_DISCOVERY_INTERVIEW.txt",
-        "Madison_Real.document.json",
-        "Madison_Real.interview.json",
-        "Madison_Real.result.json"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "meta/README.md",
-      "implementationEvidence": [
-        "README.md"
-      ],
-      "missingReferences": [
-        ".meta.yaml",
-        "AI.meta.yaml",
-        "Analytics.meta.yaml",
-        "Audit.meta",
-        "Audit.meta.yaml",
-        "Automation.meta.yaml",
-        "Capability.meta",
-        "Capability.meta.yaml",
-        "Customer.entity.yaml",
-        "Entity.meta",
-        "Entity.meta.yaml",
-        "Event.meta.yaml",
-        "Field.meta",
-        "Field.meta.yaml",
-        "Lifecycle.meta",
-        "Lifecycle.meta.yaml",
-        "Notification.meta.yaml",
-        "Permission.meta.yaml",
-        "Relationship.meta.yaml",
-        "Search.meta",
-        "Search.meta.yaml",
-        "audit.meta.yaml",
-        "e.g",
-        "search.meta.yaml"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "MODULE_COMPILER_V0.1_FINAL_REPORT.md",
-      "implementationEvidence": [
-        "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
-        "tools/genesis/compiler/ir/ModuleBlueprint.mjs",
-        "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
-        "tools/genesis/compiler/renderers/ModuleAPIContractRenderer.mjs",
-        "tools/genesis/compiler/renderers/ModuleManifestRenderer.mjs",
-        "tools/genesis/compiler/renderers/ModuleNavigationContractRenderer.mjs",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "../renderers/ModuleAPIContractRenderer.mjs",
-        "../renderers/ModuleNavigationContractRenderer.mjs",
-        ".api.json",
-        ".navigation.json",
-        "//genesis.internal/schema/module-api-contract.json",
-        "//genesis.internal/schema/module-navigation-contract.json",
-        "1.0.0",
-        "1.1",
-        "1.2",
-        "1.3",
-        "1.4",
-        "1.5",
-        "1.6",
-        "1.7",
-        "11.1",
-        "13.3",
-        "2.1",
-        "2.2",
-        "2.3",
-        "4.5",
-        "9.1",
-        "ModuleAPIContractRenderer.mjs",
-        "ModuleBlueprint.mjs",
-        "ModuleBlueprintBuilder.mjs",
-        "ModuleCompiler.mjs",
-        "ModuleDocumentationContractRenderer.mjs",
-        "ModuleManifestRenderer.mjs",
-        "ModuleNavigationContractRenderer.mjs",
-        "assetManagement.api.json",
-        "assetManagement.module.json",
-        "assetManagement.navigation.json",
-        "blueprint.api",
-        "blueprint.documentation",
-        "blueprint.navigation",
-        "crm.api.json",
-        "crm.module.json",
-        "crm.navigation.json",
-        "fs.writeFileSync",
-        "inventory.api.json",
-        "inventory.module.json"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "MODULE_COMPILER_V0.2_DASHBOARD_REPORT.md",
-      "implementationEvidence": [
-        "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
-        "tools/genesis/compiler/contracts/ModuleDashboardGenerator.mjs",
-        "tools/genesis/compiler/ir/ModuleBlueprint.mjs",
-        "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
-        "tools/genesis/compiler/renderers/ModuleDashboardContractRenderer.mjs",
-        "tools/genesis/compiler/renderers/ModuleManifestRenderer.mjs",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "../renderers/ModuleDashboardContractRenderer.mjs",
-        ".dashboard.json",
-        "//genesis.internal/schema/module-dashboard-contract.json",
-        "1-11.3",
-        "1.0.0",
-        "1.1",
-        "1.2",
-        "1.3",
-        "1.4",
-        "1.5",
-        "1.6",
-        "11.1",
-        "11.2",
-        "11.3",
-        "13.3",
-        "4.5",
-        "9.1",
-        "ModuleBlueprint.mjs",
-        "ModuleBlueprintBuilder.mjs",
-        "ModuleCompiler.mjs",
-        "ModuleDashboardContractRenderer.mjs",
-        "ModuleDashboardGenerator.mjs",
-        "ModuleManifestRenderer.mjs",
-        "api.namespace",
-        "assetManagement.api.json",
-        "assetManagement.dashboard.json",
-        "assetManagement.module.json",
-        "assetManagement.navigation.json",
-        "blueprint.capabilities",
-        "blueprint.dashboard",
-        "blueprint.lifecycle",
-        "blueprint.members",
-        "blueprint.members.objects",
-        "blueprint.module.name",
-        "blueprint.module.namespace",
-        "blueprint.permissions",
-        "crm.api.json",
-        "crm.dashboard.json",
-        "crm.module.json",
-        "crm.navigation.json"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "MODULE_COMPILER_V0.3_WORKFLOW_REPORT.md",
-      "implementationEvidence": [
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        ".api.json",
-        ".dashboard.json",
-        ".module.json",
-        ".navigation.json",
-        ".registration.lifecycle.states",
-        ".workflow.json",
-        "1.0.0",
-        "11.1",
-        "11.2",
-        "11.3",
-        "23.298Z",
-        "ModuleBlueprint.mjs",
-        "ModuleBlueprint.workflow",
-        "ModuleBlueprintBuilder.mjs",
-        "ModuleCompiler.mjs",
-        "ModuleDashboardContractRenderer.mjs",
-        "ModuleManifestRenderer.mjs",
-        "ModuleWorkflowContractRenderer.mjs",
-        "ModuleWorkflowGenerator.mjs",
-        "blueprint.lifecycle.events",
-        "blueprint.members.objects",
-        "blueprint.permissions.policies",
-        "blueprint.permissions.roles",
-        "blueprint.relationships.dependencies",
-        "blueprint.workflow",
-        "e.g",
-        "lifecycle.events",
-        "lifecycle.states",
-        "module-workflow.schema.json",
-        "v0.1",
-        "v0.2",
-        "v0.3"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "MODULE_COMPILER_V0.4_AUTOMATION_REPORT.md",
-      "implementationEvidence": [
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        ".api.json",
-        ".automation.json",
-        ".dashboard.json",
-        ".module.json",
-        ".navigation.json",
-        ".registration.lifecycle.states",
-        ".workflow.json",
-        "1.0.0",
-        "11.1",
-        "11.2",
-        "11.3",
-        "12.622Z",
-        "ModuleAutomationContractRenderer.mjs",
-        "ModuleAutomationGenerator.mjs",
-        "ModuleBlueprint.automation",
-        "ModuleBlueprint.mjs",
-        "ModuleBlueprintBuilder.mjs",
-        "ModuleCompiler.mjs",
-        "ModuleManifestRenderer.mjs",
-        "blueprint.automation",
-        "blueprint.lifecycle.events",
-        "blueprint.members.objects",
-        "e.g",
-        "module-automation.schema.json",
-        "v0.1",
-        "v0.2",
-        "v0.3",
-        "v0.4"
-      ]
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "MODULE_COMPILER_V0.5_AI_AGENT_REPORT.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        ".agent.json",
-        ".api.json",
-        ".automation.json",
-        ".dashboard.json",
-        ".knowledge.json",
-        ".module.json",
-        ".navigation.json",
-        ".workflow.json",
-        "1.0.0",
-        "ModuleAIAgentContractRenderer.mjs",
-        "ModuleAIAgentGenerator.mjs",
-        "ModuleBlueprint.mjs",
-        "ModuleBlueprintBuilder.mjs",
-        "ModuleCompiler.mjs",
-        "ModuleKnowledgeContextGenerator.mjs",
-        "ModuleManifestRenderer.mjs",
-        "blueprint.aiAgent",
-        "blueprint.automation.automations",
-        "blueprint.knowledgeContext",
-        "blueprint.members.objects",
-        "blueprint.permissions",
-        "blueprint.workflow.workflows",
-        "module-ai-agent.schema.json",
-        "v0.1",
-        "v0.2",
-        "v0.3",
-        "v0.4",
-        "v0.5"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "MODULE_COMPILER_V0.md",
-      "implementationEvidence": [
-        "PHASE_11_COMPLETION.md",
-        "tools/genesis/commands/compile.mjs",
-        "tools/genesis/commands/compileModules.mjs",
-        "tools/genesis/commands/validate.mjs",
-        "tools/genesis/commands/validateModules.mjs",
-        "tools/genesis/compiler/compiler/ModuleCompiler.mjs",
-        "tools/genesis/compiler/ir/ModuleBlueprint.mjs",
-        "tools/genesis/compiler/ir/ModuleBlueprintBuilder.mjs",
-        "tools/genesis/compiler/renderers/ModuleManifestRenderer.mjs",
-        "tools/genesis/compiler/validators/ModuleManifestValidator.mjs",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        ".module.json",
-        "34.62",
-        "4.73",
-        "4.75",
-        "4.93",
-        "4.99",
-        "5.04",
-        "5.05",
-        "5.13",
-        "Customer.dtos.ts",
-        "Customer.errors.ts",
-        "Customer.md",
-        "Customer.module.json",
-        "Customer.openapi.yaml",
-        "Customer.registration.json",
-        "Customer.rest.md",
-        "Customer.schema.graphql",
-        "Customer.test.ts",
-        "CustomerEvents.ts",
-        "CustomerPermissions.json",
-        "CustomerRepository.ts",
-        "CustomerSearch.ts",
-        "CustomerService.ts",
-        "CustomerValidator.ts",
-        "compile.mjs",
-        "compileModules.mjs",
-        "compiler/ModuleCompiler.mjs",
-        "ir/ModuleBlueprint.mjs",
-        "ir/ModuleBlueprintBuilder.mjs",
-        "out/generated/modules/assetManagement/assetManagement.module.json",
-        "out/generated/modules/crm/crm.module.json",
-        "out/generated/modules/inventory/inventory.module.json",
-        "out/generated/modules/manufacturing/manufacturing.module.json",
-        "out/generated/modules/module-registry.json",
-        "out/generated/modules/projects/projects.module.json",
-        "out/generated/modules/vendorManagement/vendorManagement.module.json",
-        "out/generated/modules/workManagement/workManagement.module.json",
-        "renderers/ModuleManifestRenderer.mjs",
-        "validate.mjs",
-        "validateModules.mjs"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "MULTI_ENTITY_PROOF_PACK.md",
-      "implementationEvidence": [
-        "test/MultiEntityProofTest.mjs",
-        "tools/genesis/compiler/renderers/TestRenderer.mjs",
-        "tools/genesis/compiler/renderers/ValidatorRenderer.mjs",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "...config",
-        ".blueprint.json",
-        ".gen.json",
-        "Array.isArray",
-        "Asset.entity.yaml",
-        "BlueprintBuilder.mjs",
-        "CapabilityExpander.mjs",
-        "Customer.md",
-        "Customer.test.ts",
-        "CustomerEvents.ts",
-        "CustomerPermissions.json",
-        "CustomerRepository.ts",
-        "CustomerSearch.ts",
-        "CustomerService.ts",
-        "CustomerValidator.ts",
-        "DocumentationRenderer.mjs",
-        "EntityName.md",
-        "EntityName.test.ts",
-        "EntityName.ts",
-        "EntityNameEvents.ts",
-        "EntityNamePermissions.json",
-        "EntityNameSearch.ts",
-        "EntityNameService.ts",
-        "EntityNameValidator.ts",
-        "EventsRenderer.mjs",
-        "FieldExpander.mjs",
-        "InventoryItem.entity.yaml",
-        "LifecycleExpander.mjs",
-        "Machine.entity.yaml",
-        "PermissionsRenderer.mjs",
-        "Project.entity.yaml",
-        "RelationshipExpander.mjs",
-        "RepositoryRenderer.mjs",
-        "SearchRenderer.mjs",
-        "ServiceRenderer.mjs",
-        "TestRenderer.mjs",
-        "ValidatorRenderer.mjs",
-        "WorkOrder.entity.yaml",
-        "field.values",
-        "field.values.join"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PERMISSION_POLICY_INFRASTRUCTURE_PROOF.md",
-      "implementationEvidence": [
-        "tools/genesis/compiler/CodeGenerationEngine.mjs",
-        "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
-        "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
-        "tools/genesis/compiler/metadata-engine/PermissionExpander.mjs",
-        "tools/genesis/compiler/metadata-engine/PolicyExpander.mjs",
-        "tools/genesis/compiler/registry/RendererRegistry.mjs",
-        "tools/genesis/compiler/registry/RendererTarget.mjs",
-        "tools/genesis/compiler/renderers/PermissionsRenderer.mjs",
-        "tools/genesis/compiler/renderers/PolicyRenderer.mjs"
-      ],
-      "missingReferences": [
-        "...10",
-        "../renderers/PolicyRenderer.mjs",
-        "./metadata-engine/PermissionExpander.mjs",
-        "./metadata-engine/PolicyExpander.mjs",
-        ".policies.md",
-        "BlueprintBuilder.mjs",
-        "CodeGenerationEngine.mjs",
-        "EnterpriseObjectBlueprint.mjs",
-        "PermissionExpander.mjs",
-        "PermissionsRenderer.mjs",
-        "PolicyExpander.mjs",
-        "PolicyRenderer.mjs",
-        "RendererRegistry.mjs",
-        "RendererRegistry.renderAll",
-        "RendererTarget.mjs",
-        "blueprint.permissions",
-        "blueprint.permissions.actions",
-        "blueprint.permissions.enabled",
-        "blueprint.permissions.policies",
-        "blueprint.permissions.roleActions",
-        "blueprint.permissions.roleDefaults",
-        "blueprint.permissions.roles",
-        "blueprint.policies.all",
-        "blueprint.policies.byAction",
-        "blueprint.policies.byConditionType",
-        "blueprint.policies.byRole",
-        "rawMetadata.capabilities",
-        "rawMetadata.policies",
-        "rendererRegistry.register"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PHASE_10_COMPLETION.md",
-      "implementationEvidence": [
-        "CLAUDE.md",
-        "tools/genesis/compiler/CodeGenerationEngine.mjs",
-        "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
-        "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
-        "tools/genesis/compiler/metadata-engine/RegistrationExpander.mjs",
-        "tools/genesis/compiler/registry/RendererRegistry.mjs",
-        "tools/genesis/compiler/registry/RendererTarget.mjs",
-        "tools/genesis/compiler/renderers/RegistrationRenderer.mjs"
-      ],
-      "missingReferences": [
-        "../../CLAUDE.md",
-        ".registration.json",
-        "//genesis.internal/schema/registration-manifest.json",
-        "1.0.0",
-        "37.067Z",
-        "37.070Z",
-        "Asset.registration.json",
-        "Customer.registration.json",
-        "Customer.test.ts",
-        "CustomerRepository.ts",
-        "CustomerService.ts",
-        "InventoryItem.registration.json",
-        "Machine.registration.json",
-        "Project.registration.json",
-        "RegistrationExpander.mjs",
-        "RegistrationRenderer.mjs",
-        "Vendor.registration.json",
-        "WorkOrder.registration.json",
-        "blueprint.registration",
-        "genesis/crm/Customer/Customer.registration.json"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PHASE_11_COMPLETION.md",
-      "implementationEvidence": [
-        "CLAUDE.md",
-        "tools/genesis/compiler/CodeGenerationEngine.mjs",
-        "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
-        "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
-        "tools/genesis/compiler/metadata-engine/ModuleExpander.mjs",
-        "tools/genesis/compiler/registry/RendererRegistry.mjs",
-        "tools/genesis/compiler/registry/RendererTarget.mjs",
-        "tools/genesis/compiler/renderers/ModuleRenderer.mjs"
-      ],
-      "missingReferences": [
-        "../../CLAUDE.md",
-        ".module.json",
-        "//genesis.internal/schema/module-manifest.json",
-        "1.0.0",
-        "2.35",
-        "2.49",
-        "21.44",
-        "3.07",
-        "3.23",
-        "3.27",
-        "3.28",
-        "3.75",
-        "Asset.module.json",
-        "Customer.module.json",
-        "Customer.registration.json",
-        "Customer.test.ts",
-        "CustomerRepository.ts",
-        "CustomerService.ts",
-        "EnterpriseObjectBlueprint.module",
-        "InventoryItem.module.json",
-        "Machine.module.json",
-        "ModuleExpander.mjs",
-        "ModuleRenderer.mjs",
-        "Project.module.json",
-        "Vendor.module.json",
-        "WorkOrder.module.json",
-        "blueprint.module",
-        "genesis/crm/Customer/Customer.module.json"
-      ]
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "PHASE_7_COMPLETION.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        "BlueprintBuilder.mjs",
-        "CodeGenerationEngine.mjs",
-        "EnterpriseObjectBlueprint.mjs",
-        "RulesExpander.mjs",
-        "ValidationExpander.mjs",
-        "Validator.ts",
-        "ValidatorRenderer.mjs",
-        "blueprint.rules",
-        "blueprint.validation",
-        "compile.mjs",
-        "data.email",
-        "data.endDate",
-        "data.name",
-        "data.relationshipId",
-        "data.startDate",
-        "data.status",
-        "e.g",
-        "errors.length",
-        "errors.push",
-        "genesis.mjs",
-        "regex.test",
-        "str.length",
-        "this.isNotUnique",
-        "this.isValidEmail",
-        "validStatusValues.includes",
-        "validation.rules"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PHASE_8_COMPLETION.md",
-      "implementationEvidence": [
-        "tools/genesis/compiler/CodeGenerationEngine.mjs",
-        "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
-        "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
-        "tools/genesis/compiler/metadata-engine/APIExpander.mjs",
-        "tools/genesis/compiler/registry/RendererRegistry.mjs",
-        "tools/genesis/compiler/registry/RendererTarget.mjs",
-        "tools/genesis/compiler/renderers/DTORenderer.mjs",
-        "tools/genesis/compiler/renderers/ErrorContractRenderer.mjs",
-        "tools/genesis/compiler/renderers/GraphQLRenderer.mjs",
-        "tools/genesis/compiler/renderers/OpenAPIRenderer.mjs",
-        "tools/genesis/compiler/renderers/RESTContractRenderer.mjs"
-      ],
-      "missingReferences": [
-        "1.0.0",
-        "3.1",
-        "3.1.0",
-        "APIExpander.mjs",
-        "Customer.blueprint.json",
-        "Customer.dtos.ts",
-        "Customer.errors.ts",
-        "Customer.events.ts",
-        "Customer.md",
-        "Customer.openapi.yaml",
-        "Customer.rest.md",
-        "Customer.schema.graphql",
-        "Customer.test.ts",
-        "CustomerPermissions.json",
-        "CustomerRepository.ts",
-        "CustomerSearch.ts",
-        "CustomerService.ts",
-        "CustomerValidator.ts",
-        "DTORenderer.generateDTOs",
-        "DTORenderer.mjs",
-        "ErrorContractRenderer.generateErrorContracts",
-        "ErrorContractRenderer.mjs",
-        "GraphQLRenderer.generateGraphQL",
-        "GraphQLRenderer.mjs",
-        "OpenAPIRenderer.generateOpenAPI",
-        "OpenAPIRenderer.mjs",
-        "Project.schema.graphql",
-        "RESTContractRenderer.generateRESTContract",
-        "RESTContractRenderer.mjs",
-        "blueprint.api.errorResponses",
-        "blueprint.api.graphQL",
-        "blueprint.api.openAPI",
-        "blueprint.api.rest",
-        "blueprint.database",
-        "blueprint.fields",
-        "blueprint.relationships",
-        "e.g",
-        "example.com",
-        "rendererRegistry.register"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PHASE_9_COMPLETION.md",
-      "implementationEvidence": [
-        "CLAUDE.md",
-        "tools/genesis/compiler/CodeGenerationEngine.mjs",
-        "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
-        "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
-        "tools/genesis/compiler/metadata-engine/TestExpander.mjs",
-        "tools/genesis/compiler/renderers/TestRenderer.mjs"
-      ],
-      "missingReferences": [
-        "../../CLAUDE.md",
-        "Asset.test.ts",
-        "Customer.test.ts",
-        "CustomerRepository.ts",
-        "CustomerService.ts",
-        "InventoryItem.test.ts",
-        "Machine.test.ts",
-        "Project.test.ts",
-        "TestExpander.mjs",
-        "TestRenderer.mjs",
-        "Vendor.test.ts",
-        "WorkOrder.test.ts",
-        "blueprint.api",
-        "blueprint.fields.all",
-        "blueprint.fields.all.forEach",
-        "blueprint.fields.all.length",
-        "blueprint.fields.required",
-        "blueprint.lifecycle.states",
-        "blueprint.metadata.entity",
-        "blueprint.permissions.roles",
-        "blueprint.relationships",
-        "blueprint.relationships.all.forEach",
-        "blueprint.relationships.all.length",
-        "blueprint.repository.methods",
-        "blueprint.repository.methods.length",
-        "blueprint.repository.methods.map",
-        "blueprint.service.methods",
-        "blueprint.tests",
-        "blueprint.tests.blueprint",
-        "blueprint.tests.contracts",
-        "blueprint.tests.fields",
-        "blueprint.tests.lifecycle",
-        "blueprint.validation.constraints",
-        "f.required",
-        "field.name",
-        "field.type",
-        "m.name",
-        "rel.name",
-        "rel.type",
-        "required.forEach"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PHASE-8-COMPLETION.md",
-      "implementationEvidence": [
-        "./tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
-        "docs/PHASE-8-QUICK-REFERENCE.md",
-        "docs/architecture/0016-genesis-entity-definition-language.md",
-        "docs/architecture/0017-phase-8-completion-report.md",
-        "tools/genesis/README.md",
-        "tools/genesis/compiler/blueprints/Blueprint.mjs",
-        "tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
-        "tools/genesis/compiler/blueprints/BlueprintLoader.mjs",
-        "tools/genesis/compiler/blueprints/BlueprintValidator.mjs",
-        "tools/genesis/compiler/blueprints/README.md"
-      ],
-      "missingReferences": [
-        ".entity.yaml",
-        "8/v0.5",
-        "JSON.stringify",
-        "Node.js",
-        "blueprint.formatForConsole",
-        "blueprint.getEnabledCapabilities",
-        "blueprint.getField",
-        "blueprint.getFieldCount",
-        "blueprint.getRelationships",
-        "blueprint.getRequiredFields",
-        "blueprint.toJSON",
-        "console.log",
-        "definitions/entity/customer.entity.yaml"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PHASE-9-ARCHITECTURE.md",
-      "implementationEvidence": [
-        "README.md",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "0018-compiler-pass-architecture.md",
-        "BlueprintPass.mjs",
-        "CompilerContext.mjs",
-        "CompilerPass.mjs",
-        "CompilerPassRegistry.mjs",
-        "CompilerPassResult.mjs",
-        "CompilerPipeline.mjs",
-        "DefinitionRegistryPass.mjs",
-        "Node.js",
-        "PlanningPass.mjs",
-        "PromotionPass.mjs",
-        "RenderingPass.mjs",
-        "RuntimeRegistrationPass.mjs",
-        "ValidationPass.mjs",
-        "WritingPass.mjs",
-        "blueprintBuilder.buildBlueprint",
-        "compiler.renderArtifacts",
-        "context.addDiagnostic",
-        "context.artifacts",
-        "context.blueprint",
-        "context.definition",
-        "context.metadata.promotionResult",
-        "context.metadata.runtimeRegistration",
-        "context.plan",
-        "engine.promote",
-        "globalPassRegistry.register",
-        "pass.execute",
-        "pipeline.execute",
-        "planner.createPlan",
-        "registry.getDefinition",
-        "registry.register",
-        "runtime.registerEntity",
-        "this.config",
-        "validator.validateGeneratedSlice",
-        "writer.writeArtifacts"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "PHASE-9-COMPLETION.md",
-      "implementationEvidence": [
-        "docs/architecture/0018-compiler-pass-architecture.md",
-        "tools/genesis/README.md",
-        "tools/genesis/compiler/pipeline/CompilerContext.mjs",
-        "tools/genesis/compiler/pipeline/CompilerPass.mjs",
-        "tools/genesis/compiler/pipeline/CompilerPassRegistry.mjs",
-        "tools/genesis/compiler/pipeline/CompilerPassResult.mjs",
-        "tools/genesis/compiler/pipeline/CompilerPipeline.mjs",
-        "tools/genesis/compiler/pipeline/README.md",
-        "tools/genesis/compiler/pipeline/passes/BlueprintPass.mjs",
-        "tools/genesis/compiler/pipeline/passes/DefinitionRegistryPass.mjs",
-        "tools/genesis/compiler/pipeline/passes/PlanningPass.mjs",
-        "tools/genesis/compiler/pipeline/passes/PromotionPass.mjs",
-        "tools/genesis/compiler/pipeline/passes/RenderingPass.mjs",
-        "tools/genesis/compiler/pipeline/passes/RuntimeRegistrationPass.mjs",
-        "tools/genesis/compiler/pipeline/passes/ValidationPass.mjs",
-        "tools/genesis/compiler/pipeline/passes/WritingPass.mjs"
-      ],
-      "missingReferences": [
-        "...options",
-        "./compiler/pipeline/CompilerContext.mjs",
-        "./compiler/pipeline/CompilerPassRegistry.mjs",
-        "./compiler/pipeline/CompilerPipeline.mjs",
-        "CompilerPipeline.execute",
-        "JavaScript/Node.js",
-        "console.log",
-        "context.addDiagnostic",
-        "context.artifacts",
-        "context.blueprint",
-        "context.definition",
-        "context.diagnostics",
-        "context.entityName",
-        "context.getDiagnosticsAt",
-        "context.metadata",
-        "context.metadata.promotionResult",
-        "context.metadata.runtimeRegistration",
-        "context.options",
-        "context.options.skipValidation",
-        "context.plan",
-        "d.level",
-        "d.message",
-        "e.message",
-        "e.timestamp",
-        "errors.forEach",
-        "globalPassRegistry.get",
-        "globalPassRegistry.list",
-        "globalPassRegistry.register",
-        "i.message",
-        "infos.forEach",
-        "pass.execute",
-        "pass.validate",
-        "pipeline.execute",
-        "r.duration",
-        "r.passName",
-        "r.success",
-        "result.artifacts.length",
-        "result.context",
-        "result.context.artifacts.length",
-        "result.context.diagnostics.forEach"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "ALIGNED",
-      "confidence": "medium",
-      "document": "README.md",
-      "implementationEvidence": [
-        "CONTRIBUTING.md",
-        "GENESIS_ENGINEERING_HANDBOOK.md",
-        "REPOSITORY_OVERVIEW.md",
-        "REPOSITORY_VISION.md",
-        "SECURITY.md",
-        "docs/reports/GSS-0001_COMPLETION_REPORT.md",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "RELATIONSHIP_INTELLIGENCE_PROOF.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        ".test.ts",
-        "17.415Z",
-        "AssetRepository.ts",
-        "Events.ts",
-        "Permissions.json",
-        "ProjectRepository.ts",
-        "RelationshipExpander.expandRelationships",
-        "RelationshipExpander.mjs",
-        "Repository.ts",
-        "RepositoryRenderer.mjs",
-        "Search.ts",
-        "Service.ts",
-        "Validator.ts",
-        "VendorRepository.ts",
-        "WorkOrderRepository.ts",
-        "blueprint.relationships",
-        "blueprint.relationships.belongsTo",
-        "blueprint.relationships.hasMany",
-        "rel.target"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "REPOSITORY_OVERVIEW.md",
-      "implementationEvidence": [
-        "GBA-0002A-Freeze-Certificate.md",
-        "GBA-0002A-Operations-Agent-Certification.md",
-        "GBA-0003A-Freeze-Certificate.md",
-        "GBA-0003A-Manufacturing-Agent-Certification.md",
-        "GBA-0004-Implementation-Report.md",
-        "GBA-0005A-Freeze-Certificate.md",
-        "GBA-0005A-Sales-Agent-Certification.md",
-        "GBA-0006A-Finance-Agent-Certification.md",
-        "GBA-0006A-Freeze-Certificate.md",
-        "GBA-0007-Implementation-Report.md",
-        "GEA-0001-Implementation-Report.md",
-        "GEA-0002-Implementation-Report.md",
-        "GED-0001A-Enterprise-Domain-Certification.md",
-        "GED-0001A-Freeze-Certificate.md",
-        "GENESIS_ENGINEERING_HANDBOOK.md",
-        "GFP-0001-Platform-Certification.md",
-        "GFP-0001-Platform-Freeze-Certificate.md",
-        "GKP-0001-Freeze-Certificate.md",
-        "GKP-0001-Marketing-Kernel-Platform-Certification.md",
-        "README.md",
-        "docs/governance/REPOSITORY_GOVERNANCE_GUIDE.md"
-      ],
-      "missingReferences": [
-        "1.0",
-        "v1.0"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "REPOSITORY_VISION.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "SEARCHABLE_OBJECTS_INFRASTRUCTURE_PROOF.md",
-      "implementationEvidence": [
-        "tools/genesis/compiler/CodeGenerationEngine.mjs",
-        "tools/genesis/compiler/ir/BlueprintBuilder.mjs",
-        "tools/genesis/compiler/ir/EnterpriseObjectBlueprint.mjs",
-        "tools/genesis/compiler/metadata-engine/FieldExpander.mjs",
-        "tools/genesis/compiler/metadata-engine/IndexExpander.mjs",
-        "tools/genesis/compiler/metadata-engine/SearchExpander.mjs",
-        "tools/genesis/compiler/renderers/RepositoryRenderer.mjs",
-        "tools/genesis/compiler/renderers/SearchRenderer.mjs"
-      ],
-      "missingReferences": [
-        "./metadata-engine/IndexExpander.mjs",
-        "./metadata-engine/SearchExpander.mjs",
-        "BlueprintBuilder.mjs",
-        "CodeGenerationEngine.mjs",
-        "EnterpriseObjectBlueprint.mjs",
-        "FieldExpander.mjs",
-        "IndexExpander.mjs",
-        "Node.js",
-        "Object.keys",
-        "Object.values",
-        "RepositoryRenderer.mjs",
-        "SearchExpander.mjs",
-        "SearchRenderer.mjs",
-        "blueprint.index",
-        "blueprint.index.compositeIndexes",
-        "blueprint.index.enabled",
-        "blueprint.index.fields",
-        "blueprint.index.indexName",
-        "blueprint.index.settings",
-        "blueprint.index.strategy",
-        "blueprint.search",
-        "blueprint.search.defaultSort",
-        "blueprint.search.defaultSortOrder",
-        "blueprint.search.enabled",
-        "blueprint.search.fields",
-        "blueprint.search.fullText",
-        "blueprint.search.indexed",
-        "blueprint.search.lifecycleFilterable",
-        "blueprint.search.relationshipSearch",
-        "blueprint.search.softDeleteFilterable",
-        "capabilities.search.fields",
-        "field.searchable",
-        "fieldDef.searchable",
-        "order.toUpperCase",
-        "rawMetadata.capabilities",
-        "this.db.query",
-        "validSortFields.includes"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "ALIGNED",
-      "confidence": "low",
-      "document": "SECURITY.md",
-      "implementationEvidence": [
-        "ENGINEERING_CONTACTS.md"
-      ],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "src/core/object/README.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "src/sdk/docs/generation-pipeline.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "src/sdk/README.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/empty.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/filesystem/a.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-01.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-02.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-03.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-04.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-05.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-06.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-07.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-08.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-09.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-10.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-11.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-12.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-13.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-14.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-15.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-16.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-17.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-18.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-19.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/large-filesystem/doc-20.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tests/compiler/discovery/fixtures/sample.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "ALIGNED",
-      "confidence": "low",
-      "document": "tools/genesis-audit/README.md",
-      "implementationEvidence": [
-        "tools/genesis-audit/src/run.mjs"
-      ],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/blueprints/README.md",
-      "implementationEvidence": [
-        "./tools/genesis/compiler/blueprints/BlueprintBuilder.mjs",
-        "README.md"
-      ],
-      "missingReferences": [
-        ".entity.yaml",
-        "Blueprint.mjs",
-        "BlueprintBuilder.mjs",
-        "BlueprintLoader.mjs",
-        "BlueprintValidator.mjs",
-        "Contact.entity.yaml",
-        "Customer.entity.yaml",
-        "Organization.entity.yaml",
-        "Project.entity.yaml",
-        "Quote.entity.yaml",
-        "blueprint.capabilities",
-        "blueprint.description",
-        "blueprint.displayName",
-        "blueprint.entity",
-        "blueprint.fields",
-        "blueprint.getEnabledCapabilities",
-        "blueprint.getFieldCount",
-        "blueprint.getRelationshipCount",
-        "blueprint.lifecycle",
-        "blueprint.metadata",
-        "blueprint.pluralName",
-        "blueprint.relationships",
-        "blueprints.Customer",
-        "blueprints.Project",
-        "blueprints.Quote",
-        "cache.add",
-        "cache.get",
-        "console.log"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/compiler/README.md",
-      "implementationEvidence": [
-        "README.md",
-        "src/domain/definitions/Customer.definition.ts",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "./GenerationCompiler.mjs",
-        "CompilationContext.mjs",
-        "CompilationDiagnostic.mjs",
-        "CompilationResult.mjs",
-        "GenerationCompiler.mjs",
-        "console.log",
-        "process.cwd",
-        "result.artifacts.length",
-        "result.diagnostics.length",
-        "result.mode",
-        "result.success",
-        "v0.1"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/ir/README.md",
-      "implementationEvidence": [
-        "definitions/entity/Vendor.entity.yaml",
-        "test/BlueprintCompilationTest.mjs",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "...config",
-        "./ir/BlueprintBuilder.mjs",
-        "./ir/EnterpriseObjectBlueprint.mjs",
-        "BlueprintBuilder.mjs",
-        "BlueprintCompilationTest.mjs",
-        "CodeGenerationEngine.mjs",
-        "Customer.entity.yaml",
-        "DocumentationRenderer.mjs",
-        "E.g",
-        "EnterpriseObjectBlueprint.mjs",
-        "RepositoryRenderer.mjs",
-        "ServiceRenderer.mjs",
-        "TestRenderer.mjs",
-        "ValidatorRenderer.mjs",
-        "Vendor.entity.yaml",
-        "blueprint.capabilities",
-        "blueprint.fields.all",
-        "blueprint.metadata.entity",
-        "blueprint.relationships.all",
-        "e.g",
-        "out/generated/entities/Customer/Customer.blueprint.json",
-        "out/generated/entities/Customer/Customer.gen.json",
-        "out/generated/entities/Customer/Customer.md",
-        "out/generated/entities/Customer/CustomerRepository.ts"
-      ]
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/pipeline/README.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        "...options",
-        "../CompilerPass.mjs",
-        "./CompilerContext.mjs",
-        "./CompilerPass.mjs",
-        "./CompilerPassRegistry.mjs",
-        "./CompilerPipeline.mjs",
-        "./passes/MyPass.mjs",
-        "CompilerPassResult.failure",
-        "CompilerPassResult.success",
-        "console.error",
-        "console.log",
-        "context.addDiagnostic",
-        "context.artifacts",
-        "context.blueprint",
-        "context.definition",
-        "context.entityName",
-        "context.getDiagnosticsAt",
-        "context.plan",
-        "customRegistry.register",
-        "globalPassRegistry.register",
-        "options.myService",
-        "pass.execute",
-        "pass.validate",
-        "passResult.duration",
-        "passResult.passName",
-        "pipeline.execute",
-        "result.artifacts.length",
-        "result.context",
-        "result.context.artifacts.length",
-        "result.count",
-        "result.duration",
-        "result.failedCount",
-        "result.getDiagnosticsAt",
-        "result.passCount",
-        "result.results.forEach",
-        "result.success",
-        "this.myService",
-        "this.myService.doWork",
-        "validation.error",
-        "validation.isValid"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/planner/README.md",
-      "implementationEvidence": [
-        "README.md",
-        "src/domain/definitions/Customer.definition.ts",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "./GenerationPlanner.mjs",
-        "GenerationContext.mjs",
-        "GenerationPlan.mjs",
-        "GenerationPlanner.mjs",
-        "GenerationStep.mjs",
-        "e.g",
-        "plan1.id",
-        "plan1.steps.length",
-        "plan1.subject",
-        "plan2.id",
-        "plan2.steps.length",
-        "plan2.subject",
-        "process.cwd",
-        "v0.1"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/promotion/README.md",
-      "implementationEvidence": [
-        "README.md",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "PromotionContext.mjs",
-        "PromotionEngine.mjs",
-        "PromotionPlan.mjs",
-        "PromotionResult.mjs",
-        "PromotionValidator.mjs",
-        "RollbackManager.mjs",
-        "RuntimeRegistrar.mjs",
-        "manager.performRollback",
-        "manager.recordPromotion",
-        "v0.1"
-      ]
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/registry/README.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        "./DefinitionLoader.mjs",
-        "./DefinitionRegistry.mjs",
-        "./DefinitionResolver.mjs",
-        "metadata.extension",
-        "registry.get",
-        "registry.has",
-        "registry.list",
-        "registry.register",
-        "registry.stats"
-      ]
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "tools/genesis/compiler/writers/README.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        "./compiler/writers/ArtifactWriter.mjs",
-        "ArtifactRecord.mjs",
-        "ArtifactWriter.mjs",
-        "Node.js",
-        "WriteResult.mjs",
-        "console.log",
-        "process.cwd",
-        "result.skipped",
-        "result.written"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/EVENT-BUS.md",
-      "implementationEvidence": [
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "../runtime/EventBus.mjs",
-        "../runtime/RuntimeEventContract.mjs",
-        "21.000Z",
-        "21.010Z",
-        "EventBus.mjs",
-        "EventBusTests.mjs",
-        "RuntimeEventContract.mjs",
-        "bus.getEventHistory",
-        "bus.getStats",
-        "bus.getSubscriptionHistory",
-        "bus.initialize",
-        "bus.listEventDefinitions",
-        "bus.listSubscriptions",
-        "bus.publish",
-        "bus.subscribe",
-        "bus.unsubscribe",
-        "cmdResult.status",
-        "command.action",
-        "command.actor",
-        "command.aggregateId",
-        "command.aggregateType",
-        "command.commandId",
-        "command.commandType",
-        "commandBus.execute",
-        "commandEvent.correlationId",
-        "commandEvent.eventId",
-        "console.log",
-        "event.payload.orderId",
-        "event.validate",
-        "eventBus.getEventHistory",
-        "eventBus.publish",
-        "eventBus.subscribe",
-        "execute.mjs",
-        "result.errors",
-        "result.handlersNotified",
-        "result.isSuccess",
-        "result.status",
-        "result.warnings"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/README.md",
-      "implementationEvidence": [
-        "definitions/entity/Customer.entity.yaml",
-        "tools/genesis/compiler/pipeline/README.md",
-        "tools/genesis/compiler/planner/README.md",
-        "tools/genesis/compiler/promotion/README.md",
-        "tools/genesis/compiler/registry/README.md",
-        "tools/genesis/compiler/writers/README.md",
-        "tools/genesis/genesis.mjs",
-        "tools/genesis/validators/generated-slice/README.md"
-      ],
-      "missingReferences": [
-        "../../docs/architecture/0011-meta-model.md",
-        "../../docs/architecture/0012-core-capability-model.md",
-        "../../docs/architecture/0013-genesis-development-kit.md",
-        "../../docs/architecture/0014-genesis-compilation-pipeline.md",
-        "../../docs/architecture/0016-genesis-entity-definition-language.md",
-        "../../docs/architecture/0017-phase-8-completion-report.md",
-        "../../docs/architecture/0018-compiler-pass-architecture.md",
-        "../docs/architecture/0016-genesis-entity-definition-language.md",
-        "./compiler/pipeline/CompilerContext.mjs",
-        "./compiler/pipeline/CompilerPass.mjs",
-        "./compiler/pipeline/CompilerPassRegistry.mjs",
-        "./compiler/pipeline/CompilerPipeline.mjs",
-        ".entity.yaml",
-        ".test.ts",
-        "CustomerDefinition.ts",
-        "CustomerRepository.create",
-        "CustomerRepository.findById",
-        "CustomerRepository.ts",
-        "CustomerService.ts",
-        "Definition.ts",
-        "Documentation.md",
-        "Events.ts",
-        "Node.js",
-        "Permissions.ts",
-        "Repository.ts",
-        "Search.ts",
-        "Service.ts",
-        "Tests.ts",
-        "Validator.ts",
-        "blueprint.capabilities",
-        "blueprint.displayName",
-        "blueprint.entity",
-        "blueprint.fields",
-        "blueprint.getEnabledCapabilities",
-        "blueprint.getFieldCount",
-        "blueprint.relationships",
-        "compiler/blueprints/README.md",
-        "compiler/pipeline/README.md",
-        "compiler/planner/README.md",
-        "compiler/promotion/README.md"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "UNRESOLVED",
-      "confidence": "low",
-      "document": "tools/genesis/templates/core-object-system/README.md",
-      "implementationEvidence": [],
-      "missingReferences": []
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "tools/genesis/templates/entity/documentation.template.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        "SearchEngine.search",
-        "Service.create",
-        "Service.delete",
-        "Service.get",
-        "Service.update"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/tests/README.md",
-      "implementationEvidence": [
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "../TestSuite.mjs",
-        "Entity.meta.yaml",
-        "Field.meta.yaml",
-        "Node.js",
-        "Promise.all",
-        "genesis.mjs",
-        "result.value",
-        "suite.addTest",
-        "suite.afterAll",
-        "suite.afterEach",
-        "suite.beforeAll",
-        "suite.beforeEach",
-        "tools/genesis/tests/suites/MyTests.mjs"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "tools/genesis/validators/generated-slice/README.md",
-      "implementationEvidence": [
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        "CustomerService.ts",
-        "Definition.ts",
-        "Documentation.md",
-        "Events.ts",
-        "GeneratedSliceReport.mjs",
-        "GeneratedSliceValidator.mjs",
-        "Permissions.ts",
-        "Repository.ts",
-        "Search.ts",
-        "Service.ts",
-        "Tests.ts",
-        "Validator.ts",
-        "v0.1"
-      ]
-    },
-    {
-      "architecturalConsequence": "none-significant",
-      "classification": "PARTIALLY ALIGNED",
-      "confidence": "medium",
-      "document": "VENDOR_PROOF.md",
-      "implementationEvidence": [
-        "./tools/genesis/compiler/CodeGenerationEngine.mjs",
-        "definitions/entity/Vendor.entity.yaml",
-        "test/BlueprintCompilationTest.mjs",
-        "tools/genesis/genesis.mjs"
-      ],
-      "missingReferences": [
-        ".entity.yaml",
-        "27.2",
-        "3.7",
-        "4.4",
-        "8.3",
-        "BlueprintBuilder.mjs",
-        "CapabilityExpander.mjs",
-        "DocumentationRenderer.mjs",
-        "FieldExpander.mjs",
-        "LifecycleExpander.mjs",
-        "RelationshipExpander.mjs",
-        "RepositoryRenderer.mjs",
-        "Vendor.blueprint.json",
-        "Vendor.entity.yaml",
-        "Vendor.gen.json",
-        "Vendor.md",
-        "VendorRepository.ts",
-        "blueprint.fields.all",
-        "blueprint.fields.searchable",
-        "blueprint.metadata.entity",
-        "console.log",
-        "out/generated/entities/Customer/Customer.blueprint.json",
-        "out/generated/entities/Customer/Customer.gen.json",
-        "out/generated/entities/Customer/Customer.md",
-        "out/generated/entities/Customer/CustomerRepository.ts",
-        "out/generated/entities/Vendor/Vendor.blueprint.json",
-        "out/generated/entities/Vendor/Vendor.gen.json",
-        "out/generated/entities/Vendor/Vendor.md",
-        "out/generated/entities/Vendor/VendorRepository.ts"
-      ]
-    },
-    {
-      "architecturalConsequence": "risk of assumed boundary not implemented",
-      "classification": "DOCUMENTATION EXCEEDS IMPLEMENTATION",
-      "confidence": "medium",
-      "document": "ZACH_REAL_INTERVIEW_PROCESSING_REPORT.md",
-      "implementationEvidence": [],
-      "missingReferences": [
-        "0.19",
-        "21.2",
-        "34.8",
-        "59.1",
-        "ZACH_ANDERSON_DISCOVERY_INTERVIEW.pdf",
-        "ZACH_ANDERSON_DISCOVERY_INTERVIEW.txt",
-        "Zach_Real.document.json",
-        "Zach_Real.interview.json",
-        "Zach_Real.result.json"
-      ]
     }
   ],
   "evidenceClassification": "VERIFIED",

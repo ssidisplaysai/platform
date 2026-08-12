@@ -1,0 +1,24 @@
+{
+  "executionId": "60706",
+  "status": "error",
+  "lookup": {
+    "city_page_found": true,
+    "existing_city_page_id": 18847,
+    "city_lookup_failed": false
+  },
+  "createExecuted": true,
+  "updateExecuted": false,
+  "normalized": {
+    "id": 18988,
+    "url": "https://leddisplaywarehouse.com/?page_id=18988",
+    "disposition": "UPDATED",
+    "requested": "draft",
+    "status": "draft"
+  },
+  "callbackPayload": null,
+  "error": {
+    "message": "The resource you are requesting could not be found",
+    "description": "GLW job not found: glw-dup-val-houston-rerun-1786145839366",
+    "node": "Send GLW Completion Callback"
+  }
+}

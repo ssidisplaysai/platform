@@ -1,0 +1,27 @@
+{
+  "schemaIdentifier": "gpc-0002/phase-ii-validation",
+  "schemaVersion": "1.0.0",
+  "checks": {
+    "requiredInputsPresent": true,
+    "governanceBaselineUnchanged": true,
+    "governanceReleaseValid": true,
+    "gar0003Completed": true,
+    "gar0003ProducedCertification": true,
+    "gar0003ProducedEvidence": true,
+    "gar0003ProducedFindings": true,
+    "gar0003ProducedTraceability": true,
+    "gar0003ProducedRemediationPlan": true,
+    "noGovernanceModificationsDuringGar0003": true,
+    "repositoryIntegrityValid": true,
+    "authorityChainAcyclic": true,
+    "machineArtifactsValidate": true
+  },
+  "details": {
+    "missingRequiredInputs": [],
+    "baselineIntegrityMismatches": [],
+    "governanceParseErrors": [],
+    "governanceDiff": [],
+    "constitutionDiff": [],
+    "standardsDiff": []
+  }
+}

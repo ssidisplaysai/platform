@@ -194,7 +194,7 @@ export function createGmpPublishingServices(dependencies?: {
     }
 
     const approvedSections = sections
-      .filter((section) => section.approvalStatus === "APPROVED" && !section.currentRevisionId?.includes("superseded"))
+      .filter((section) => section.approvalStatus === "APPROVED")
       .sort((left, right) => left.position - right.position);
 
     const requiredSectionCount = plan.requiredSectionCount;
@@ -644,8 +644,8 @@ export function createGmpPublishingServices(dependencies?: {
         capabilityProfile,
         capabilityGaps: Object.entries(capabilityProfile).filter(([, supported]) => !supported).map(([key]) => key),
         credentialReferenceStatus: destination.credentialReference ? "CONFIGURED" : "MISSING",
-        credentialValidationStatus: health?.blockingIssues?.some((entry: string) => entry.includes("credential")) ? "INVALID" : "VALID",
-        remoteApiAvailability: health?.connectionHealth?.status ?? "UNKNOWN",
+        credentialValidationStatus: Array.isArray(health?.blockingIssues) && health.blockingIssues.some((entry) => typeof entry === "string" && entry.includes("credential")) ? "INVALID" : "VALID",
+        remoteApiAvailability: typeof health?.connectionHealth === "object" && health.connectionHealth !== null && "status" in health.connectionHealth && typeof health.connectionHealth.status === "string" ? health.connectionHealth.status : "UNKNOWN",
         mediaCapability: capabilityProfile.uploadMedia ?? false,
         seoCapability: capabilityProfile.setSeoMetadata ?? false,
         schedulingCapability: capabilityProfile.schedulePublication ?? false,

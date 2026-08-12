@@ -1,0 +1,18 @@
+{
+    "executionId":  "60113",
+    "status":  "error",
+    "startedAt":  "2026-08-07T14:28:45.376Z",
+    "stoppedAt":  "2026-08-07T14:28:47.813Z",
+    "durationMs":  2437,
+    "currentNode":  null,
+    "lastNodeExecuted":  "Message a model",
+    "runNodeCount":  3,
+    "firstErrorName":  "NodeApiError",
+    "firstErrorMessage":  "The service is receiving too many requests from you",
+    "firstErrorDescription":  "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+    "firstErrorHttpCode":  "429",
+    "firstErrorNodeName":  "Message a model",
+    "firstErrorNodeType":  "@n8n/n8n-nodes-langchain.openAi",
+    "firstErrorStackHead":  "NodeApiError: The service is receiving too many requests from you",
+    "shouldReport":  true
+}

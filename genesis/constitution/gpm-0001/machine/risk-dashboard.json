@@ -1,0 +1,18 @@
+{
+  "schemaIdentifier": "gpm-0001/risk-dashboard",
+  "schemaVersion": "1.0.0",
+  "summary": {
+    "high": 2,
+    "medium": 3,
+    "low": 0,
+    "overall": "AMBER"
+  },
+  "risks": [
+    {"id":"PMO-RISK-001","category":"Release Traceability","severity":"High","owner":"Release Management","status":"Open"},
+    {"id":"PMO-RISK-002","category":"Constitutional Evidence","severity":"High","owner":"Certification Authority","status":"Open"},
+    {"id":"PMO-RISK-003","category":"Architecture Traceability","severity":"Medium","owner":"Chief Architect","status":"Open"},
+    {"id":"PMO-RISK-004","category":"Baseline Control","severity":"Medium","owner":"Program Director","status":"Open"},
+    {"id":"PMO-RISK-005","category":"Integration Determinism","severity":"Medium","owner":"Quality Assurance","status":"Open"}
+  ],
+  "blockRule": "high-risk-without-mitigation-blocks-release-window-entry"
+}

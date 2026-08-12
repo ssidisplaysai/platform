@@ -295,6 +295,11 @@
           "genesis/README.md",
           "genesis/architecture/README.md",
           "genesis/compiler/README.md",
+          "genesis/governance/README.md",
+          "genesis/governance/audit/gafs-0001/README.md",
+          "genesis/governance/baselines/ggb-0001/README.md",
+          "genesis/governance/certification/gccs-0001/README.md",
+          "genesis/governance/decisions/gcd-0002/README.md",
           "genesis/language/README.md",
           "genesis/research/README.md",
           "genesis/research/evidence/README.md",
@@ -336,6 +341,20 @@
           "tools/genesis/docs/.gitkeep",
           "tools/genesis/plans/.gitkeep",
           "tools/genesis/validators/.gitkeep"
+        ]
+      },
+      {
+        "fileName": "authority-graph.json",
+        "paths": [
+          "genesis/governance/certification/gccs-0001/machine/authority-graph.json",
+          "genesis/governance/machine/authority-graph.json"
+        ]
+      },
+      {
+        "fileName": "lifecycle-model.json",
+        "paths": [
+          "genesis/governance/certification/gccs-0001/machine/lifecycle-model.json",
+          "genesis/governance/machine/lifecycle-model.json"
         ]
       },
       {
@@ -1697,6 +1716,7 @@
       "tests/ged/ged-domain-api.test.ts",
       "tests/ged/ged-domain-model.test.ts",
       "tests/ged/ged-domain-route-forwarding.test.ts",
+      "tests/genesis-audit/gar-0002/gar-0002-smoke.test.ts",
       "tests/genesis-audit/run-smoke.test.ts",
       "tests/genesis-audit/schema-validator.test.ts",
       "tests/genesis-audit/utils.test.ts",
@@ -1730,6 +1750,7 @@
       "tests/gop/execution-durability.test.ts",
       "tests/gop/glw-adapter.test.ts",
       "tests/gop/glw-events-adapter.test.ts",
+      "tests/gop/gop-operations-center.test.tsx",
       "tests/gop/inspector-extensions.test.ts",
       "tests/gop/inspector-mapping.test.ts",
       "tests/gop/loader-context.test.ts",
@@ -1737,12 +1758,15 @@
       "tests/gop/module-bootstrap.test.ts",
       "tests/gop/operations-api.test.ts",
       "tests/gop/orchestration-runtime.test.ts",
+      "tests/gop/platform-bootstrap-api.test.ts",
       "tests/gop/runtime-certification-failure.test.ts",
       "tests/gop/runtime-fabric.test.ts",
       "tests/gop/worker-token.test.ts",
       "tests/knowledge-identity.test.ts",
       "tests/knowledge-lineage.test.ts",
       "tests/setup-jest.ts",
+      "tools/genesis-audit/src/gar-0002-run.mjs",
+      "tools/genesis-audit/src/gar-0002-validate.mjs",
       "tools/genesis-audit/src/run.mjs",
       "tools/genesis/compiler/GenerationPlan.mjs",
       "tools/genesis/compiler/SimpleCodeGenerators.mjs",

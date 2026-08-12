@@ -1,9 +1,10 @@
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
 import { type GmpRepository } from "./repository";
 import { createPrismaGmpRepository } from "./repository";
-import { type GmpKnowledgeRecord, type GmpKnowledgeRepository } from "./knowledge-repository";
+import { type GmpKnowledgeRepository } from "./knowledge-repository";
 import { createPrismaGmpKnowledgeRepository } from "./knowledge-repository";
 import { createPrismaGmpPageRepository, type GmpPageRepository } from "./page-repository";
+import { type GmpKnowledgeRecord } from "./knowledge-models";
 import {
   GMP_CONTENT_ELIGIBILITY_MODEL_VERSION,
   GMP_EDITORIAL_VALIDATION_MODEL_VERSION,

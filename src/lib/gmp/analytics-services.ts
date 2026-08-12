@@ -718,7 +718,7 @@ export function createGmpAnalyticsServices(dependencies?: {
           await emitGopEvent({
             collection: working,
             eventType: finalStatus,
-            status: finalStatus === "FAILED" ? "FAILED" : "COMPLETE",
+            status: "COMPLETE",
             message: `Collection finished with status ${finalStatus}`,
             actorId,
             metadata: {

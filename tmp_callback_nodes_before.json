@@ -1,0 +1,70 @@
+﻿[
+    {
+        "parameters":  {
+                           "method":  "POST",
+                           "url":  "={{ $(\u0027Get row(s) in sheet\u0027).first().json.callback_url }}",
+                           "sendHeaders":  true,
+                           "headerParameters":  {
+                                                    "parameters":  [
+                                                                       {
+                                                                           "name":  "Content-Type",
+                                                                           "value":  "application/json"
+                                                                       }
+                                                                   ]
+                                                },
+                           "sendBody":  true,
+                           "specifyBody":  "json",
+                           "jsonBody":  "={{ { jobId: $(\u0027Get row(s) in sheet\u0027).first().json.job_id, executionId: $execution.id, status: \u0027COMPLETE\u0027, title: $(\u0027Code in JavaScript\u0027).first().json.page_title, wordpressUrl: $(\u0027Set Featured Image\u0027).first().json.link, wordpressPostId: $(\u0027Create a post\u0027).first().json.id } }}",
+                           "options":  {
+                                           "timeout":  15000
+                                       }
+                       },
+        "id":  "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
+        "name":  "Send GLW Completion Callback",
+        "type":  "n8n-nodes-base.httpRequest",
+        "typeVersion":  4.4,
+        "position":  [
+                         6816,
+                         -256
+                     ],
+        "notes":  "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation."
+    },
+    {
+        "parameters":  {
+                           "method":  "POST",
+                           "url":  "={{ $(\u0027Get row(s) in sheet\u0027).first().json.callback_url }}",
+                           "authentication":  "genericCredentialType",
+                           "genericAuthType":  "httpHeaderAuth",
+                           "sendHeaders":  true,
+                           "headerParameters":  {
+                                                    "parameters":  [
+                                                                       {
+                                                                           "name":  "Content-Type",
+                                                                           "value":  "application/json"
+                                                                       }
+                                                                   ]
+                                                },
+                           "sendBody":  true,
+                           "specifyBody":  "json",
+                           "jsonBody":  "={{ { jobId: $(\u0027Get row(s) in sheet\u0027).first().json.job_id, executionId: $execution.id, status: \u0027FAILED\u0027, error: { code: $json.validation_error_code || \u0027VALIDATION_ERROR\u0027, message: $json.validation_error_message || \u0027Validation failed.\u0027, step: $json.validation_error_node || \u0027Validate Parent Before Publish\u0027 } } }}",
+                           "options":  {
+                                           "timeout":  15000
+                                       }
+                       },
+        "id":  "14ed3412-8ee1-4faf-bc43-6e9e583671fe",
+        "name":  "Send GLW Failure Callback",
+        "type":  "n8n-nodes-base.httpRequest",
+        "typeVersion":  4.4,
+        "position":  [
+                         144,
+                         144
+                     ],
+        "credentials":  {
+                            "httpHeaderAuth":  {
+                                                   "id":  "TBbt7HMIkLGKvAzQ",
+                                                   "name":  "Header Auth account"
+                                               }
+                        },
+        "notes":  "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation."
+    }
+]

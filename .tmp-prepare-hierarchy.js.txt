@@ -1,0 +1,256 @@
+const item = $input.first().json;
+
+function slugify(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase();
+}
+
+const isGlw = String(item.source_mode || '').toLowerCase() === 'glw';
+
+/*
+ * Canonical WordPress product mappings.
+ */
+const productMap = {
+  'led video walls': 'direct-view-led-video-walls',
+  'direct view led video walls': 'direct-view-led-video-walls',
+  'direct-view led video walls': 'direct-view-led-video-walls',
+
+  'led wall rental': 'direct-view-led-video-walls',
+  'led wall rentals': 'direct-view-led-video-walls',
+  'led video wall rental': 'direct-view-led-video-walls',
+  'led video wall rentals': 'direct-view-led-video-walls',
+
+  'outdoor led displays': 'outdoor-led-displays',
+  'church led walls': 'church-led-walls',
+  'trade show led displays': 'trade-show-led-displays',
+  'transparent led displays': 'transparent-led-displays',
+  'creative led displays': 'creative-led-displays',
+  'interactive led floors': 'interactive-led-floors',
+  'led posters': 'led-posters',
+  'custom led displays': 'custom-led-displays',
+
+  'cob all-in-one led displays': 'cob-all-in-one-led-displays',
+  'cob all in one led displays': 'cob-all-in-one-led-displays',
+
+  'smd all-in-one led displays': 'smd-all-in-one-led-displays',
+  'smd all in one led displays': 'smd-all-in-one-led-displays',
+
+  'exhibition led displays': 'exhibition-led-displays',
+
+  'flexible rollable led displays': 'flexible-rollable-led',
+  'flexible and rollable led displays': 'flexible-rollable-led',
+  'flexible & rollable led': 'flexible-rollable-led',
+  'flexible and rollable led': 'flexible-rollable-led',
+
+  'led fan displays': 'led-fans',
+  'led fans': 'led-fans'
+};
+
+const slugAliasMap = {
+  'led-video-walls': 'direct-view-led-video-walls',
+  'direct-view-led-video-walls': 'direct-view-led-video-walls',
+
+  'led-wall-rental': 'direct-view-led-video-walls',
+  'led-wall-rentals': 'direct-view-led-video-walls',
+  'led-video-wall-rental': 'direct-view-led-video-walls',
+  'led-video-wall-rentals': 'direct-view-led-video-walls',
+
+  'outdoor-led-displays': 'outdoor-led-displays',
+  'church-led-walls': 'church-led-walls',
+  'trade-show-led-displays': 'trade-show-led-displays',
+  'transparent-led-displays': 'transparent-led-displays',
+  'creative-led-displays': 'creative-led-displays',
+  'interactive-led-floors': 'interactive-led-floors',
+  'led-posters': 'led-posters',
+  'custom-led-displays': 'custom-led-displays',
+  'cob-all-in-one-led-displays': 'cob-all-in-one-led-displays',
+  'smd-all-in-one-led-displays': 'smd-all-in-one-led-displays',
+  'exhibition-led-displays': 'exhibition-led-displays',
+  'flexible-rollable-led': 'flexible-rollable-led',
+  'led-fans': 'led-fans'
+};
+
+/*
+ * These are page types, NOT product categories.
+ */
+const genericPageTypes = new Set([
+  'city_service',
+  'city-service',
+  'city',
+  'state',
+  'state_service',
+  'state-service',
+  'service',
+  'location',
+  'location_service',
+  'location-service',
+  'page_generation',
+  'page-generation'
+]);
+
+/*
+ * Always trust structured geographic fields.
+ */
+const stateSlug = slugify(item.state);
+const citySlug = slugify(item.city);
+
+/*
+ * Try to resolve the canonical product.
+ */
+const productCandidates = [
+  item.product,
+  item.product_topic,
+  item.productTopic,
+  item.service,
+  item.service_name,
+  item.focus_keyword,
+  item.focus_keyphrase
+];
+
+const pageTypeValue = normalizeText(item.page_type);
+
+if (
+  pageTypeValue &&
+  !genericPageTypes.has(pageTypeValue)
+) {
+  productCandidates.push(item.page_type);
+}
+
+let productSlug = '';
+
+for (const candidate of productCandidates) {
+  const normalized = normalizeText(candidate);
+
+  if (!normalized) {
+    continue;
+  }
+
+  if (productMap[normalized]) {
+    productSlug = productMap[normalized];
+    break;
+  }
+
+  const candidateSlug = slugify(candidate);
+
+  if (slugAliasMap[candidateSlug]) {
+    productSlug = slugAliasMap[candidateSlug];
+    break;
+  }
+}
+
+/*
+ * Existing product_slug fallback.
+ */
+if (!productSlug) {
+  const existingProductSlug = slugify(item.product_slug);
+
+  if (existingProductSlug && slugAliasMap[existingProductSlug]) {
+    productSlug = slugAliasMap[existingProductSlug];
+  }
+}
+
+/*
+ * Raw slug fallback.
+ *
+ * IMPORTANT:
+ * We may recover a recognized PRODUCT slug here.
+ * We never recover state/city from item.slug.
+ */
+if (!productSlug) {
+  const rawSlug = String(item.slug || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+|\/+$/g, '');
+
+  const parts = rawSlug
+    .split('/')
+    .map((part) => slugify(part))
+    .filter(Boolean);
+
+  for (const part of parts) {
+    if (slugAliasMap[part]) {
+      productSlug = slugAliasMap[part];
+      break;
+    }
+  }
+}
+
+/*
+ * LEGACY SHEET MODE
+ *
+ * Preserve prior behavior for old sheet/schedule rows.
+ * Do not allow a legacy test row to break the entire workflow.
+ */
+if (!isGlw && !productSlug) {
+  productSlug = slugify(item.page_type || item.product || '');
+}
+
+/*
+ * GLW SAFETY GATES
+ *
+ * GLW is the production page-generation path.
+ * It must never invent malformed hierarchy.
+ */
+if (isGlw && !productSlug) {
+  throw new Error(
+    [
+      'GLW: Unable to resolve canonical product parent.',
+      `page_type="${item.page_type || ''}"`,
+      `category="${item.category || ''}"`,
+      `focus_keyword="${item.focus_keyword || ''}"`,
+      `product="${item.product || ''}"`,
+      `product_topic="${item.product_topic || item.productTopic || ''}"`
+    ].join(' ')
+  );
+}
+
+if (isGlw && !stateSlug) {
+  throw new Error(
+    `GLW: Unable to resolve state slug from state="${item.state || ''}".`
+  );
+}
+
+if (isGlw && !citySlug) {
+  throw new Error(
+    `GLW: Unable to resolve city slug from city="${item.city || ''}".`
+  );
+}
+
+/*
+ * For legacy sheet rows, preserve safe empty handling.
+ */
+const finalProductSlug = productSlug || '';
+const finalStateSlug = stateSlug || '';
+const finalCitySlug = citySlug || '';
+
+const desiredHierarchicalSlug = [
+  finalProductSlug,
+  finalStateSlug,
+  finalCitySlug
+]
+  .filter(Boolean)
+  .join('/');
+
+return [
+  {
+    json: {
+      ...item,
+
+      product_slug: finalProductSlug,
+      state_slug: finalStateSlug,
+      city_slug: finalCitySlug,
+
+      desired_hierarchical_slug: desiredHierarchicalSlug
+    }
+  }
+];

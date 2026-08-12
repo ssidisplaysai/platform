@@ -19,6 +19,16 @@
     "garImplementationChanges": false,
     "governanceOnlyRelease": true
   },
+  "programPackageValidation": {
+    "bgp0001": {
+      "packageStatus": "FOUNDATION_COMPLETE",
+      "canonicalObjectModelDefined": true,
+      "implementationCodeModified": false,
+      "runtimeBehaviorChanged": false,
+      "ingestionImplemented": false,
+      "apiImplemented": false
+    }
+  },
   "postReleaseValidation": {
     "workingTreeClean": true,
     "tagReferencesReleaseCommit": true,

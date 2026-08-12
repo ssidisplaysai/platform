@@ -242,11 +242,7 @@
       "persistenceDependencies": [],
       "platformDependencies": [
         "src/platform/gop/auth/resolver.ts",
-        "src/platform/gop/auth/runtime.ts",
-        "src/platform/gop/runtime/event-store.ts",
-        "src/platform/gop/runtime/loader.ts",
-        "src/platform/gop/runtime/orchestration-runtime.ts",
-        "src/platform/gop/workspaces/runtime.ts"
+        "src/platform/gop/auth/runtime.ts"
       ],
       "registryDependencies": [],
       "routeNamespaces": [

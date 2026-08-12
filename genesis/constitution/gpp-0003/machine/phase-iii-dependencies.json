@@ -1,0 +1,45 @@
+{
+  "schemaIdentifier": "gpp-0003/phase-iii-dependencies",
+  "schemaVersion": "1.0.0",
+  "programId": "GPP-0003",
+  "nodes": [
+    "WS-01",
+    "WS-02",
+    "WS-03",
+    "WS-04",
+    "WS-05",
+    "WS-06",
+    "WS-07",
+    "WS-08",
+    "WS-09",
+    "WS-10",
+    "WS-11"
+  ],
+  "edges": [
+    { "from": "WS-03", "to": "WS-04", "type": "hard" },
+    { "from": "WS-03", "to": "WS-05", "type": "hard" },
+    { "from": "WS-04", "to": "WS-01", "type": "hard" },
+    { "from": "WS-05", "to": "WS-02", "type": "hard" },
+    { "from": "WS-04", "to": "WS-07", "type": "hard" },
+    { "from": "WS-07", "to": "WS-06", "type": "hard" },
+    { "from": "WS-08", "to": "WS-06", "type": "hard" },
+    { "from": "WS-09", "to": "WS-01", "type": "hard" },
+    { "from": "WS-11", "to": "WS-06", "type": "hard" },
+    { "from": "WS-09", "to": "WS-11", "type": "soft" },
+    { "from": "WS-10", "to": "WS-06", "type": "soft" },
+    { "from": "WS-08", "to": "WS-02", "type": "soft" }
+  ],
+  "criticalPath": [
+    "WS-03",
+    "WS-04",
+    "WS-05",
+    "WS-07",
+    "WS-06",
+    "WS-11"
+  ],
+  "dependencyRules": [
+    "no-workstream-exit-without-upstream-exit-criteria",
+    "cross-workstream-contract-change-requires-versioning",
+    "critical-path-variance-escalates-to-program-authority"
+  ]
+}

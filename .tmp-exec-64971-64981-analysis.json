@@ -1,0 +1,118 @@
+[
+  {
+    "executionId": "64971",
+    "city": "Houston",
+    "jobId": "glw_7yohb7lj",
+    "qaChecks": {
+      "pageExists": "PASS",
+      "hierarchy": "PASS",
+      "slug": "PASS",
+      "title": "PASS",
+      "h1": "PASS",
+      "body": "PASS",
+      "featuredImage": "PASS",
+      "heroImage": "PASS",
+      "seo": "PASS",
+      "internalLinks": "FAIL",
+      "imageAlt": "PASS",
+      "duplicateCheck": "PASS"
+    },
+    "qaFailureReasons": {
+      "internalLinks": "Expected at least 3 internal links but found 0."
+    },
+    "bodyWordCountRendered": 1264,
+    "bodyWordCountSource": 1264,
+    "renderedLinkCount": 13,
+    "sourceLinkCount": 13,
+    "renderedLinks": [
+      "https://leddisplaywarehouse.com/transparent-led-displays/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/creative-led-displays/",
+      "https://leddisplaywarehouse.com/interactive-led-floors/",
+      "https://leddisplaywarehouse.com/exhibition-led-displays/",
+      "https://leddisplaywarehouse.com/custom-led-displays/",
+      "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/contact-us/",
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/contact-us/"
+    ],
+    "sourceLinks": [
+      "https://leddisplaywarehouse.com/transparent-led-displays/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/creative-led-displays/",
+      "https://leddisplaywarehouse.com/interactive-led-floors/",
+      "https://leddisplaywarehouse.com/exhibition-led-displays/",
+      "https://leddisplaywarehouse.com/custom-led-displays/",
+      "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/contact-us/",
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/contact-us/"
+    ]
+  },
+  {
+    "executionId": "64981",
+    "city": "qa-prepublish-remed-a-1786382078805",
+    "jobId": "glw_dp72o53c",
+    "qaChecks": {
+      "pageExists": "PASS",
+      "hierarchy": "PASS",
+      "slug": "PASS",
+      "title": "PASS",
+      "h1": "PASS",
+      "body": "PASS",
+      "featuredImage": "PASS",
+      "heroImage": "PASS",
+      "seo": "PASS",
+      "internalLinks": "FAIL",
+      "imageAlt": "PASS",
+      "duplicateCheck": "PASS"
+    },
+    "qaFailureReasons": {
+      "internalLinks": "Expected at least 3 internal links but found 0."
+    },
+    "bodyWordCountRendered": 1434,
+    "bodyWordCountSource": 1434,
+    "renderedLinkCount": 15,
+    "sourceLinkCount": 15,
+    "renderedLinks": [
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/transparent-led-displays/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/led-posters/",
+      "https://leddisplaywarehouse.com/custom-led-displays/",
+      "https://leddisplaywarehouse.com/exhibition-led-displays/",
+      "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/creative-led-displays/",
+      "https://leddisplaywarehouse.com/contact-us/",
+      "https://leddisplaywarehouse.com/flexible-rollable-led/",
+      "https://leddisplaywarehouse.com/interactive-led-floors/",
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/contact-us/"
+    ],
+    "sourceLinks": [
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/transparent-led-displays/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/led-posters/",
+      "https://leddisplaywarehouse.com/custom-led-displays/",
+      "https://leddisplaywarehouse.com/exhibition-led-displays/",
+      "https://leddisplaywarehouse.com/cob-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/",
+      "https://leddisplaywarehouse.com/creative-led-displays/",
+      "https://leddisplaywarehouse.com/contact-us/",
+      "https://leddisplaywarehouse.com/flexible-rollable-led/",
+      "https://leddisplaywarehouse.com/interactive-led-floors/",
+      "https://leddisplaywarehouse.com/direct-view-led-video-walls/",
+      "https://leddisplaywarehouse.com/outdoor-led-displays/",
+      "https://leddisplaywarehouse.com/contact-us/"
+    ]
+  }
+]

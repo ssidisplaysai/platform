@@ -65,12 +65,16 @@ export function createInMemoryCapabilityRegistry(seed: CapabilityDefinition[] = 
   };
 }
 
+export function createAuthoritativeCapabilityRegistry(seed?: CapabilityDefinition[]): CapabilityRegistry {
+  return createInMemoryCapabilityRegistry(seed ?? BASE_CAPABILITIES);
+}
+
 export function createCapabilityResolver(registry: CapabilityRegistry): CapabilityResolver {
   return {
     resolve(capabilityKeys) {
       return capabilityKeys
         .map((key) => registry.get(key))
-        .filter((entry): entry is CapabilityDefinition => Boolean(entry) && entry.enabled);
+        .filter((entry): entry is CapabilityDefinition => entry !== null && entry.enabled);
     },
   };
 }

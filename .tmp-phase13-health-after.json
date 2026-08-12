@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-08-10T22:12:57.793Z",
+  "summary": {
+    "totalStartingJobs": 25,
+    "running": 0,
+    "stuck": 4,
+    "abandoned": 0,
+    "unknown": 21,
+    "recoverable": 0,
+    "notRecoverable": 25,
+    "verdict": "QUEUE BLOCKED"
+  },
+  "cards": {
+    "running": 0,
+    "starting": 25,
+    "waitingCallback": 25,
+    "failed": 18,
+    "recovered": 0,
+    "orphaned": 0,
+    "workers": 0,
+    "healthyWorkers": 0,
+    "expiredLeases": 0,
+    "queueCapacity": 0,
+    "concurrencyRemaining": 0,
+    "averageRuntimeMs": 381646,
+    "oldestActiveJobHours": 393.49
+  }
+}

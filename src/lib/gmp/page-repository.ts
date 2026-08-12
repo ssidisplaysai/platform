@@ -529,7 +529,8 @@ export function createPrismaGmpPageRepository(prisma: PrismaClient = getPrismaCl
       await db.gmpPageSection.deleteMany({ where: { contentPlanId } });
       const created: GmpPageSection[] = [];
       for (const section of sections) {
-        const row = await db.gmpPageSection.create({ data: { sectionId: `gmpps_${randomUUID()}`, projectId, pageId, contentPlanId, ...section } });
+        const { projectId: _sectionProjectId, pageId: _sectionPageId, contentPlanId: _sectionContentPlanId, ...sectionData } = section;
+        const row = await db.gmpPageSection.create({ data: { sectionId: `gmpps_${randomUUID()}`, projectId, pageId, contentPlanId, ...sectionData } });
         created.push(mapSection(row));
       }
       return created.sort((a, b) => a.position - b.position);

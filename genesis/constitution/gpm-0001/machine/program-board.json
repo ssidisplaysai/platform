@@ -1,0 +1,88 @@
+{
+  "schemaIdentifier": "gpm-0001/program-board",
+  "schemaVersion": "1.0.0",
+  "packageId": "GPM-0001",
+  "programStatus": {
+    "platformEngineeringProgram": "COMPLETE",
+    "enterpriseCapabilityProgram": "ACTIVE",
+    "programCharter": "GECP-0001",
+    "firstCapabilityProgram": {
+      "programId": "BGP-0001",
+      "status": "ACTIVE",
+      "foundationPackageStatus": "FOUNDATION_COMPLETE"
+    },
+    "secondCapabilityProgram": {
+      "programId": "BGP-0002",
+      "status": "ACTIVE",
+      "foundationPackageStatus": "FOUNDATION"
+    },
+    "thirdCapabilityProgram": {
+      "programId": "BGP-0003",
+      "status": "ACTIVE",
+      "foundationPackageStatus": "FOUNDATION"
+    }
+  },
+  "roadmap": ["Wave 1", "Wave 2", "Wave 3"],
+  "milestones": ["M0", "M1", "M2", "M3", "M4", "M5", "M6"],
+  "criticalPath": [
+    "program-control-and-baseline-finalization",
+    "kernel-runtime-foundation",
+    "registry-and-dependency-control",
+    "observability-and-evidence-lineage",
+    "gar-engine-operationalization",
+    "application-readiness-and-deployment"
+  ],
+  "blockedWork": [
+    "GIA-COND-001 release metadata commit binding",
+    "GIA-COND-002 lineage evidence expansion",
+    "GIA-COND-003 architecture lineage graph",
+    "GIA-COND-004 baseline immutability commit"
+  ],
+  "completedWork": [
+    "Phase I Governance Foundation",
+    "Phase II Governance Execution",
+    "Phase III Operationalization Planning",
+    "GIA-0001 Implementation Authorization",
+    "GACP-0002A Application Boundary Convergence closure",
+    "GACP-0003 Platform Bootstrap API closure",
+    "GACP-0004 Registry Convergence closure",
+    "GPP-0001 Program Closure",
+    "GECP-0001 Program Charter Initiation",
+    "BGP-0001 Program Activation",
+    "BGP-0001 Canonical Business Object Model Foundation Package"
+    ,"BGP-0002 Evidence Model and Source Architecture Initiation"
+    ,"BGP-0003 Knowledge Graph and Semantic Relationship Architecture Initiation"
+  ],
+  "implementationPackageIndex": [
+    {
+      "packageId": "GACP-0002A",
+      "title": "Application Boundary Convergence",
+      "status": "COMPLETE",
+      "baseline": "GAF-0001",
+      "traceability": ["GACI-0002A-R1", "GACD-0002"]
+    },
+    {
+      "packageId": "GACP-0003",
+      "title": "Platform Bootstrap API",
+      "status": "CLOSED",
+      "baseline": "GAF-0001",
+      "traceability": ["GACI-0002A-R1", "GACD-0001", "GACD-0002", "GACD-0003", "GACD-0004", "GACP-0002A"]
+    },
+    {
+      "packageId": "GACP-0004",
+      "title": "Registry Convergence",
+      "status": "COMPLETE",
+      "baseline": "GAF-0001",
+      "traceability": ["GACI-0003", "GACD-0005", "GAF-0001"]
+    }
+  ],
+  "upcomingReviews": [
+    "BGP-0001 Canonical Object Model approval review",
+    "BGP-0002 Evidence Architecture approval review",
+    "BGP-0003 Knowledge Graph approval review",
+    "Enterprise Agents dependency and integration review",
+    "Capability execution telemetry and evidence review"
+  ],
+  "certificationGates": ["C0", "C1", "C2", "C3"],
+  "releaseWindows": ["RW-1", "RW-2", "RW-3"]
+}

@@ -1,0 +1,126 @@
+[
+  {
+    "id": "60703",
+    "status": "error",
+    "city": "Houston",
+    "product": "Direct View LED Video Walls",
+    "lookup": {
+      "city_page_found": true,
+      "existing_city_page_id": 18847,
+      "city_lookup_failed": false
+    },
+    "cityLookupSuccessfulOutSizes": [
+      1,
+      0
+    ],
+    "cityPageExistsOutSizes": [
+      0,
+      1
+    ],
+    "createExecuted": true,
+    "updateExecuted": false,
+    "normalized": {
+      "id": 18982,
+      "disposition": "UPDATED",
+      "url": "https://leddisplaywarehouse.com/?page_id=18982"
+    },
+    "error": {
+      "node": "Send GLW Completion Callback",
+      "message": "The resource you are requesting could not be found",
+      "description": "GLW job not found: glw-dup-val-houston-1786145470247"
+    },
+    "runNodes": [
+      "GLW Page Webhook",
+      "Get row(s) in sheet",
+      "Message a model",
+      "Code in JavaScript",
+      "Prepare Hierarchy Fields",
+      "Find Product Parent",
+      "Prepare Product Parent",
+      "Find State Parent",
+      "Prepare State Parent",
+      "State Parent Exists?",
+      "Validate Parent Before Publish",
+      "Validation Passed?",
+      "Find Existing City Page",
+      "Normalize City Lookup Result",
+      "City Lookup Successful?",
+      "City Page Exists?",
+      "Create a post",
+      "Normalize Published City Page",
+      "Update Yoast SEO",
+      "Prepare Image Fields",
+      "Limit",
+      "Generate an image",
+      "Upload Image to WordPress",
+      "Update Image Alt Text",
+      "Insert Image Into Page",
+      "Set Featured Image",
+      "GLW Request?",
+      "GLW Callback Configured?",
+      "Send GLW Completion Callback"
+    ]
+  },
+  {
+    "id": "60706",
+    "status": "error",
+    "city": "Houston",
+    "product": "Direct View LED Video Walls",
+    "lookup": {
+      "city_page_found": true,
+      "existing_city_page_id": 18847,
+      "city_lookup_failed": false
+    },
+    "cityLookupSuccessfulOutSizes": [
+      1,
+      0
+    ],
+    "cityPageExistsOutSizes": [
+      0,
+      1
+    ],
+    "createExecuted": true,
+    "updateExecuted": false,
+    "normalized": {
+      "id": 18988,
+      "disposition": "UPDATED",
+      "url": "https://leddisplaywarehouse.com/?page_id=18988"
+    },
+    "error": {
+      "node": "Send GLW Completion Callback",
+      "message": "The resource you are requesting could not be found",
+      "description": "GLW job not found: glw-dup-val-houston-rerun-1786145839366"
+    },
+    "runNodes": [
+      "GLW Page Webhook",
+      "Get row(s) in sheet",
+      "Message a model",
+      "Code in JavaScript",
+      "Prepare Hierarchy Fields",
+      "Find Product Parent",
+      "Prepare Product Parent",
+      "Find State Parent",
+      "Prepare State Parent",
+      "State Parent Exists?",
+      "Validate Parent Before Publish",
+      "Validation Passed?",
+      "Find Existing City Page",
+      "Normalize City Lookup Result",
+      "City Lookup Successful?",
+      "City Page Exists?",
+      "Create a post",
+      "Normalize Published City Page",
+      "Update Yoast SEO",
+      "Prepare Image Fields",
+      "Limit",
+      "Generate an image",
+      "Upload Image to WordPress",
+      "Update Image Alt Text",
+      "Insert Image Into Page",
+      "Set Featured Image",
+      "GLW Request?",
+      "GLW Callback Configured?",
+      "Send GLW Completion Callback"
+    ]
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "schemaIdentifier": "gpc-0002/phase-ii-traceability",
+  "schemaVersion": "1.0.0",
+  "chain": [
+    {
+      "from": "genesis/CONSTITUTION.md",
+      "to": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+      "relation": "constitutional-authority"
+    },
+    {
+      "from": "genesis/governance/decisions/gcd-0002/GCD-0002-Constitutional-Decision.md",
+      "to": "genesis/governance/Genesis-Governance-Library.md",
+      "relation": "adoption"
+    },
+    {
+      "from": "genesis/governance/Genesis-Governance-Library.md",
+      "to": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+      "relation": "governance-standard"
+    },
+    {
+      "from": "genesis/governance/Genesis-Governance-Library.md",
+      "to": "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+      "relation": "governance-standard"
+    },
+    {
+      "from": "genesis/governance/certification/gccs-0001/Genesis-Constitutional-Certification-Standard.md",
+      "to": "genesis/governance/baselines/ggb-0001/Genesis-Governance-Baseline-v1.0.md",
+      "relation": "baseline-governance-binding"
+    },
+    {
+      "from": "genesis/governance/audit/gafs-0001/Genesis-Audit-Framework-Standard.md",
+      "to": "genesis/governance/releases/ggr-0001/Genesis-Governance-Foundation-v1.0-Release.md",
+      "relation": "release-governance-binding"
+    },
+    {
+      "from": "genesis/governance/releases/ggr-0001/Genesis-Governance-Foundation-v1.0-Release.md",
+      "to": "genesis/audits/GAR-0003/reports/GAR-0003-Constitutional-Assessment.md",
+      "relation": "implementation-authority"
+    },
+    {
+      "from": "genesis/audits/GAR-0003/reports/GAR-0003-Constitutional-Assessment.md",
+      "to": "genesis/constitution/gpc-0002/Genesis-Phase-II-Closeout.md",
+      "relation": "phase-closeout-input"
+    }
+  ]
+}

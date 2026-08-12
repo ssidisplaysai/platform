@@ -1,0 +1,268 @@
+{
+  "parameters": {
+    "operation": "update",
+    "documentId": {
+      "__rl": true,
+      "value": "1dwI409L5-0BrWDvusWTuJ_kWCCDNknPEUw5-yHqavLg",
+      "mode": "list",
+      "cachedResultName": "Blog Automation Queue",
+      "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dwI409L5-0BrWDvusWTuJ_kWCCDNknPEUw5-yHqavLg/edit?usp=drivesdk"
+    },
+    "sheetName": {
+      "__rl": true,
+      "value": 1170623655,
+      "mode": "list",
+      "cachedResultName": "PSheet1",
+      "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1dwI409L5-0BrWDvusWTuJ_kWCCDNknPEUw5-yHqavLg/edit#gid=1170623655"
+    },
+    "columns": {
+      "mappingMode": "defineBelow",
+      "value": {
+        "row_number": "={{ $('Get row(s) in sheet').item.json.row_number }}",
+        "page_type": "={{ $('Code in JavaScript').item.json.page_type }}",
+        "state": "={{ $('Code in JavaScript').item.json.state }}",
+        "city": "={{ $('Code in JavaScript').item.json.city }}",
+        "focus_keyword": "={{ $('Code in JavaScript').item.json.focus_keyphrase }}",
+        "slug": "={{ $('Code in JavaScript').item.json.slug }}",
+        "page_title": "={{ $('Code in JavaScript').item.json.page_title }}",
+        "h1": "={{ $('Code in JavaScript').item.json.h1 }}",
+        "seo_title": "={{ $('Code in JavaScript').item.json.seo_title }}",
+        "meta_description": "={{ $('Code in JavaScript').item.json.meta_description }}",
+        "body_html": "={{ $('Code in JavaScript').item.json.article_html }}",
+        "image_prompt": "={{ $('Code in JavaScript').item.json.image_prompt }}",
+        "alt_text": "={{ $('Code in JavaScript').item.json.alt_tag }}",
+        "internal_links": "={{ $('Code in JavaScript').item.json.internal_links }}",
+        "status": "={{ $('Build Pre-Publish QA Result').first().json.sheet_status }}",
+        "live_url": "={{ $('Build Pre-Publish QA Result').first().json.qa_wordpress_url }}",
+        "page_id": "={{ $('Build Pre-Publish QA Result').first().json.qa_page_id }}",
+        "featured_image_url": "={{ $('Build Pre-Publish QA Result').first().json.qa_featured_image_url }}",
+        "published_date": "={{ $('Build Pre-Publish QA Result').first().json.sheet_published_date }}",
+        "notes": "={{ $('Build Pre-Publish QA Result').first().json.sheet_notes }}"
+      },
+      "matchingColumns": [
+        "row_number"
+      ],
+      "schema": [
+        {
+          "id": "Status",
+          "displayName": "Status",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Website",
+          "displayName": "Website",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Topic",
+          "displayName": "Topic",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true,
+          "removed": false
+        },
+        {
+          "id": "Focus Keyphrase",
+          "displayName": "Focus Keyphrase",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Brand",
+          "displayName": "Brand",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Word Count",
+          "displayName": "Word Count",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Post Title",
+          "displayName": "Post Title",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "seo Title",
+          "displayName": "seo Title",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Slug",
+          "displayName": "Slug",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Meta Description",
+          "displayName": "Meta Description",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "WordPress Draft URL",
+          "displayName": "WordPress Draft URL",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Notes",
+          "displayName": "Notes",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Row ID",
+          "displayName": "Row ID",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true,
+          "removed": false
+        },
+        {
+          "id": "Focus Keyphrase Generated",
+          "displayName": "Focus Keyphrase Generated",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Alt Tag",
+          "displayName": "Alt Tag",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Image Prompt",
+          "displayName": "Image Prompt",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "SEO Title",
+          "displayName": "SEO Title",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Featured Image URL",
+          "displayName": "Featured Image URL",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "Image ID",
+          "displayName": "Image ID",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "post id",
+          "displayName": "post id",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": " ",
+          "displayName": " ",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "string",
+          "canBeUsedToMatch": true
+        },
+        {
+          "id": "row_number",
+          "displayName": "row_number",
+          "required": false,
+          "defaultMatch": false,
+          "display": true,
+          "type": "number",
+          "canBeUsedToMatch": true,
+          "readOnly": true,
+          "removed": false
+        }
+      ],
+      "attemptToConvertTypes": false,
+      "convertFieldsToString": false
+    },
+    "options": {}
+  },
+  "type": "n8n-nodes-base.googleSheets",
+  "typeVersion": 4.7,
+  "position": [
+    6032,
+    0
+  ],
+  "id": "4e65711e-d5c7-4e64-ac18-b6c6a9e5dd44",
+  "name": "Update row in sheet",
+  "credentials": {
+    "googleSheetsOAuth2Api": {
+      "id": "Jz9BwZTRFH0HvGdX",
+      "name": "Google Sheets OAuth2 API"
+    }
+  }
+}

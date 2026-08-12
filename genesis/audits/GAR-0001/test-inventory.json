@@ -3944,6 +3944,28 @@
     },
     {
       "certificationLikely": false,
+      "file": "tests/genesis-audit/gar-0002/gar-0002-smoke.test.ts",
+      "framework": "unknown",
+      "hasFixtures": false,
+      "hasMocks": false,
+      "hasSnapshots": false,
+      "integrationLikely": false,
+      "performanceLikely": false,
+      "referencedSources": [
+        "child_process",
+        "fs",
+        "path"
+      ],
+      "replayLikely": false,
+      "suiteNames": [
+        "GAR-0002 smoke",
+        "generates required evidence and reports",
+        "passes GAR-0002 schema validator"
+      ],
+      "unitLikely": false
+    },
+    {
+      "certificationLikely": false,
       "file": "tests/genesis-audit/run-smoke.test.ts",
       "framework": "unknown",
       "hasFixtures": false,
@@ -4835,6 +4857,26 @@
     },
     {
       "certificationLikely": false,
+      "file": "tests/gop/gop-operations-center.test.tsx",
+      "framework": "jest",
+      "hasFixtures": false,
+      "hasMocks": false,
+      "hasSnapshots": true,
+      "integrationLikely": false,
+      "performanceLikely": false,
+      "referencedSources": [
+        "@jest/globals",
+        "@/components/gop/gop-operations-center"
+      ],
+      "replayLikely": false,
+      "suiteNames": [
+        "gop operations center",
+        "builds a safe empty snapshot bootstrap state"
+      ],
+      "unitLikely": false
+    },
+    {
+      "certificationLikely": false,
       "file": "tests/gop/inspector-extensions.test.ts",
       "framework": "jest",
       "hasFixtures": false,
@@ -4982,6 +5024,29 @@
         "tracks retries and terminal timing in execution engine",
         "builds and evaluates workflow dependency graphs",
         "supports manual approval flow"
+      ],
+      "unitLikely": false
+    },
+    {
+      "certificationLikely": false,
+      "file": "tests/gop/platform-bootstrap-api.test.ts",
+      "framework": "jest",
+      "hasFixtures": false,
+      "hasMocks": false,
+      "hasSnapshots": false,
+      "integrationLikely": false,
+      "performanceLikely": false,
+      "referencedSources": [
+        "@jest/globals",
+        "@/platform/gop/auth/resolver",
+        "@/lib/gop/platform-bootstrap-api"
+      ],
+      "replayLikely": false,
+      "suiteNames": [
+        "platform bootstrap api",
+        "initializes workspace and navigation for an authorized subject",
+        "returns uninitialized state when no authorized workspace exists",
+        "derives workspace capabilities from the selected workspace"
       ],
       "unitLikely": false
     },

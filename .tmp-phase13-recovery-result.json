@@ -1,0 +1,33 @@
+{
+  "dryRun": false,
+  "attempted": 2,
+  "recovered": 2,
+  "skippedUnsafe": 0,
+  "skippedMissing": 0,
+  "rows": [
+    {
+      "jobId": "glw_kis2m3fk",
+      "classification": "STUCK",
+      "safeToRecover": true,
+      "previousJobStatus": "STARTING",
+      "nextJobStatus": "FAILED",
+      "executionId": "gexec_glw_glw_kis2m3fk",
+      "previousExecutionStatus": "DISPATCHED",
+      "nextExecutionStatus": "FAILED",
+      "action": "RECOVERED",
+      "reason": "Phase 13 controlled safe recovery: terminal ERROR stuck in STARTING"
+    },
+    {
+      "jobId": "glw_b8yglrt4",
+      "classification": "STUCK",
+      "safeToRecover": true,
+      "previousJobStatus": "STARTING",
+      "nextJobStatus": "FAILED",
+      "executionId": "gexec_glw_glw_b8yglrt4",
+      "previousExecutionStatus": "DISPATCHED",
+      "nextExecutionStatus": "FAILED",
+      "action": "RECOVERED",
+      "reason": "Phase 13 controlled safe recovery: terminal ERROR stuck in STARTING"
+    }
+  ]
+}

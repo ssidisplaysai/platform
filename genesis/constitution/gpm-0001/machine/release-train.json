@@ -1,0 +1,20 @@
+{
+  "schemaIdentifier": "gpm-0001/release-train",
+  "schemaVersion": "1.0.0",
+  "stages": [
+    "Planning",
+    "Implementation",
+    "Architecture Review",
+    "Evidence Review",
+    "GAR Certification",
+    "Release Approval",
+    "Production Release"
+  ],
+  "releaseWindows": ["RW-1", "RW-2", "RW-3"],
+  "blockingRules": [
+    "no-release-without-architecture-review",
+    "no-release-without-evidence-review",
+    "no-release-without-gar-certification-eligibility",
+    "no-release-without-approval"
+  ]
+}

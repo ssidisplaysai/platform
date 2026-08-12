@@ -1,0 +1,410 @@
+{
+  "generatedAt": "2026-08-10T17:09:34.382Z",
+  "results": [
+    {
+      "scenario": "existing-city",
+      "expected": "pass-existing",
+      "jobId": "glw_wsyyugtb",
+      "status": "FAILED",
+      "disposition": null,
+      "wordpressStatus": null,
+      "pageId": null,
+      "wordpressUrl": null,
+      "executionId": "64963",
+      "error": {
+        "code": "FAILED_QA",
+        "step": "Pre-Publish QA Gate",
+        "message": "body: Body invalid. wordCount=733 placeholder=false. | internalLinks: Expected at least 3 internal links but found 0."
+      },
+      "qaChecks": null,
+      "qaFailureReasons": null,
+      "executionSummary": {
+        "executionId": "64963",
+        "createExecuted": false,
+        "updateExecuted": true,
+        "createResult": null,
+        "updateResult": {
+          "id": 18847,
+          "slug": "houston",
+          "status": "draft"
+        },
+        "qa": {
+          "passed": false,
+          "callbackStatus": "FAILED_QA",
+          "disposition": "FAILED_QA",
+          "wordpressStatus": "qa_failed",
+          "pageId": 18847,
+          "url": "https://leddisplaywarehouse.com/?page_id=18847",
+          "checks": {
+            "pageExists": "PASS",
+            "hierarchy": "PASS",
+            "slug": "PASS",
+            "title": "PASS",
+            "h1": "PASS",
+            "body": "FAIL",
+            "featuredImage": "PASS",
+            "heroImage": "PASS",
+            "seo": "PASS",
+            "internalLinks": "FAIL",
+            "imageAlt": "PASS",
+            "duplicateCheck": "PASS"
+          },
+          "failureReasons": {
+            "body": "Body invalid. wordCount=733 placeholder=false.",
+            "internalLinks": "Expected at least 3 internal links but found 0."
+          }
+        },
+        "callback": {
+          "job": {
+            "id": "glw_wsyyugtb",
+            "type": "PAGE_GENERATION",
+            "status": "FAILED",
+            "retryOfJobId": null,
+            "siteId": "led-display-warehouse",
+            "title": "Direct View LED Video Walls in Houston",
+            "input": {
+              "page": {
+                "city": "Houston",
+                "tone": "Professional",
+                "state": "Texas",
+                "title": "Direct View LED Video Walls in Houston",
+                "status": "draft",
+                "audience": "Internal QA",
+                "category": "Direct View LED Video Walls",
+                "citySlug": "houston",
+                "pageType": "city_service",
+                "wordCount": 1800,
+                "targetSlug": "houston",
+                "workspaceId": "glw-led-display-warehouse",
+                "callToAction": "Validation only.",
+                "productTopic": "Direct View LED Video Walls",
+                "primaryKeyword": "direct view led video walls houston",
+                "hierarchicalSlug": "direct-view-led-video-walls/texas/houston",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "existing-city"
+                ],
+                "additionalInstructions": "Deterministic pre-publish QA gate validation for existing city pass path."
+              },
+              "site": {
+                "id": "led-display-warehouse",
+                "name": "LED Display Warehouse"
+              },
+              "type": "page_generation",
+              "promptData": {
+                "tone": "Professional",
+                "audience": "Internal QA",
+                "callToAction": "Validation only."
+              },
+              "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
+              "seoSettings": {
+                "category": "Direct View LED Video Walls",
+                "citySlug": "houston",
+                "targetSlug": "houston",
+                "primaryKeyword": "direct view led video walls houston",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "existing-city"
+                ]
+              },
+              "imageSettings": {
+                "style": "editorial",
+                "generateFeaturedImage": true
+              },
+              "publishingSettings": {
+                "status": "draft",
+                "wordCount": 1800
+              }
+            },
+            "result": {
+              "status": "RUNNING",
+              "executionId": "64963",
+              "requestedPublishingMode": "draft"
+            },
+            "error": {
+              "code": "FAILED_QA",
+              "step": "Pre-Publish QA Gate",
+              "message": "body: Body invalid. wordCount=733 placeholder=false. | internalLinks: Expected at least 3 internal links but found 0."
+            },
+            "externalExecutionId": "64963",
+            "startedAt": "2026-08-10T17:02:14.601Z",
+            "completedAt": "2026-08-10T17:03:57.144Z",
+            "createdAt": "2026-08-10T17:02:15.025Z",
+            "updatedAt": "2026-08-10T17:03:57.144Z"
+          }
+        },
+        "sheet": null
+      }
+    },
+    {
+      "scenario": "new-city",
+      "expected": "pass-new",
+      "jobId": "glw_46470w37",
+      "status": "FAILED",
+      "disposition": null,
+      "wordpressStatus": null,
+      "pageId": null,
+      "wordpressUrl": null,
+      "executionId": "64964",
+      "error": {
+        "code": "FAILED_QA",
+        "step": "Pre-Publish QA Gate",
+        "message": "body: Body invalid. wordCount=734 placeholder=false. | internalLinks: Expected at least 3 internal links but found 0."
+      },
+      "qaChecks": null,
+      "qaFailureReasons": null,
+      "executionSummary": {
+        "executionId": "64964",
+        "createExecuted": true,
+        "updateExecuted": false,
+        "createResult": {
+          "id": 19260,
+          "slug": "qa-prepublish-pass-1786381334599",
+          "status": "draft"
+        },
+        "updateResult": null,
+        "qa": {
+          "passed": false,
+          "callbackStatus": "FAILED_QA",
+          "disposition": "FAILED_QA",
+          "wordpressStatus": "qa_failed",
+          "pageId": 19260,
+          "url": "https://leddisplaywarehouse.com/?page_id=19260",
+          "checks": {
+            "pageExists": "PASS",
+            "hierarchy": "PASS",
+            "slug": "PASS",
+            "title": "PASS",
+            "h1": "PASS",
+            "body": "FAIL",
+            "featuredImage": "PASS",
+            "heroImage": "PASS",
+            "seo": "PASS",
+            "internalLinks": "FAIL",
+            "imageAlt": "PASS",
+            "duplicateCheck": "PASS"
+          },
+          "failureReasons": {
+            "body": "Body invalid. wordCount=734 placeholder=false.",
+            "internalLinks": "Expected at least 3 internal links but found 0."
+          }
+        },
+        "callback": {
+          "job": {
+            "id": "glw_46470w37",
+            "type": "PAGE_GENERATION",
+            "status": "FAILED",
+            "retryOfJobId": null,
+            "siteId": "led-display-warehouse",
+            "title": "Direct View LED Video Walls in qa-prepublish-pass-1786381334599",
+            "input": {
+              "page": {
+                "city": "qa-prepublish-pass-1786381334599",
+                "tone": "Professional",
+                "state": "Texas",
+                "title": "Direct View LED Video Walls in qa-prepublish-pass-1786381334599",
+                "status": "draft",
+                "audience": "Internal QA",
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-pass-1786381334599",
+                "pageType": "city_service",
+                "wordCount": 1800,
+                "targetSlug": "qa-prepublish-pass-1786381334599",
+                "workspaceId": "glw-led-display-warehouse",
+                "callToAction": "Validation only.",
+                "productTopic": "Direct View LED Video Walls",
+                "primaryKeyword": "direct view led video walls qa-prepublish-pass-1786381334599",
+                "hierarchicalSlug": "direct-view-led-video-walls/texas/qa-prepublish-pass-1786381334599",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "new-city"
+                ],
+                "additionalInstructions": "Deterministic pre-publish QA gate validation for new city pass path."
+              },
+              "site": {
+                "id": "led-display-warehouse",
+                "name": "LED Display Warehouse"
+              },
+              "type": "page_generation",
+              "promptData": {
+                "tone": "Professional",
+                "audience": "Internal QA",
+                "callToAction": "Validation only."
+              },
+              "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
+              "seoSettings": {
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-pass-1786381334599",
+                "targetSlug": "qa-prepublish-pass-1786381334599",
+                "primaryKeyword": "direct view led video walls qa-prepublish-pass-1786381334599",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "new-city"
+                ]
+              },
+              "imageSettings": {
+                "style": "editorial",
+                "generateFeaturedImage": true
+              },
+              "publishingSettings": {
+                "status": "draft",
+                "wordCount": 1800
+              }
+            },
+            "result": {
+              "status": "RUNNING",
+              "executionId": "64964",
+              "requestedPublishingMode": "draft"
+            },
+            "error": {
+              "code": "FAILED_QA",
+              "step": "Pre-Publish QA Gate",
+              "message": "body: Body invalid. wordCount=734 placeholder=false. | internalLinks: Expected at least 3 internal links but found 0."
+            },
+            "externalExecutionId": "64964",
+            "startedAt": "2026-08-10T17:04:01.773Z",
+            "completedAt": "2026-08-10T17:06:26.477Z",
+            "createdAt": "2026-08-10T17:04:01.775Z",
+            "updatedAt": "2026-08-10T17:06:26.478Z"
+          }
+        },
+        "sheet": null
+      }
+    },
+    {
+      "scenario": "forced-failure",
+      "expected": "failed-qa",
+      "jobId": "glw_p7m453hv",
+      "status": "FAILED",
+      "disposition": null,
+      "wordpressStatus": null,
+      "pageId": null,
+      "wordpressUrl": null,
+      "executionId": "64967",
+      "error": {
+        "code": "FAILED_QA",
+        "step": "Pre-Publish QA Gate",
+        "message": "body: Forced QA failure requested by input token QA_FORCE_FAIL. | internalLinks: Expected at least 3 internal links but found 0."
+      },
+      "qaChecks": null,
+      "qaFailureReasons": null,
+      "executionSummary": {
+        "executionId": "64967",
+        "createExecuted": true,
+        "updateExecuted": false,
+        "createResult": {
+          "id": 19263,
+          "slug": "qa-prepublish-fail-1786381334600",
+          "status": "draft"
+        },
+        "updateResult": null,
+        "qa": {
+          "passed": false,
+          "callbackStatus": "FAILED_QA",
+          "disposition": "FAILED_QA",
+          "wordpressStatus": "qa_failed",
+          "pageId": 19263,
+          "url": "https://leddisplaywarehouse.com/?page_id=19263",
+          "checks": {
+            "pageExists": "PASS",
+            "hierarchy": "PASS",
+            "slug": "PASS",
+            "title": "PASS",
+            "h1": "PASS",
+            "body": "FAIL",
+            "featuredImage": "PASS",
+            "heroImage": "PASS",
+            "seo": "PASS",
+            "internalLinks": "FAIL",
+            "imageAlt": "PASS",
+            "duplicateCheck": "PASS"
+          },
+          "failureReasons": {
+            "body": "Forced QA failure requested by input token QA_FORCE_FAIL.",
+            "internalLinks": "Expected at least 3 internal links but found 0."
+          }
+        },
+        "callback": {
+          "job": {
+            "id": "glw_p7m453hv",
+            "type": "PAGE_GENERATION",
+            "status": "FAILED",
+            "retryOfJobId": null,
+            "siteId": "led-display-warehouse",
+            "title": "Direct View LED Video Walls in qa-prepublish-fail-1786381334600",
+            "input": {
+              "page": {
+                "city": "qa-prepublish-fail-1786381334600",
+                "tone": "Professional",
+                "state": "Texas",
+                "title": "Direct View LED Video Walls in qa-prepublish-fail-1786381334600",
+                "status": "draft",
+                "audience": "Internal QA",
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-fail-1786381334600",
+                "pageType": "city_service",
+                "wordCount": 1800,
+                "targetSlug": "qa-prepublish-fail-1786381334600",
+                "workspaceId": "glw-led-display-warehouse",
+                "callToAction": "Validation only.",
+                "productTopic": "Direct View LED Video Walls",
+                "primaryKeyword": "direct view led video walls qa-prepublish-fail-1786381334600",
+                "hierarchicalSlug": "direct-view-led-video-walls/texas/qa-prepublish-fail-1786381334600",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "forced-failure"
+                ],
+                "additionalInstructions": "QA_FORCE_FAIL deterministic pre-publish QA gate validation."
+              },
+              "site": {
+                "id": "led-display-warehouse",
+                "name": "LED Display Warehouse"
+              },
+              "type": "page_generation",
+              "promptData": {
+                "tone": "Professional",
+                "audience": "Internal QA",
+                "callToAction": "Validation only."
+              },
+              "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
+              "seoSettings": {
+                "category": "Direct View LED Video Walls",
+                "citySlug": "qa-prepublish-fail-1786381334600",
+                "targetSlug": "qa-prepublish-fail-1786381334600",
+                "primaryKeyword": "direct view led video walls qa-prepublish-fail-1786381334600",
+                "secondaryKeywords": [
+                  "pre-publish qa gate",
+                  "forced-failure"
+                ]
+              },
+              "imageSettings": {
+                "style": "editorial",
+                "generateFeaturedImage": true
+              },
+              "publishingSettings": {
+                "status": "draft",
+                "wordCount": 1800
+              }
+            },
+            "result": {
+              "status": "RUNNING",
+              "executionId": "64967",
+              "requestedPublishingMode": "draft"
+            },
+            "error": {
+              "code": "FAILED_QA",
+              "step": "Pre-Publish QA Gate",
+              "message": "body: Forced QA failure requested by input token QA_FORCE_FAIL. | internalLinks: Expected at least 3 internal links but found 0."
+            },
+            "externalExecutionId": "64967",
+            "startedAt": "2026-08-10T17:06:28.059Z",
+            "completedAt": "2026-08-10T17:09:32.839Z",
+            "createdAt": "2026-08-10T17:06:28.059Z",
+            "updatedAt": "2026-08-10T17:09:32.840Z"
+          }
+        },
+        "sheet": null
+      }
+    }
+  ]
+}

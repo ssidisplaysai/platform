@@ -104,12 +104,16 @@ function parseStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((entry) => String(entry)).filter((entry) => entry.trim().length > 0) : [];
 }
 
+type GmpAuthorizeResult =
+  | { error: NextResponse }
+  | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
 async function authorizeGmpAction(input: {
   actionId: "gmp:project:view" | "gmp:project:manage";
   workspaceId: string;
   dependencies?: GmpApiDependencies;
   route?: string;
-}) {
+}): Promise<GmpAuthorizeResult> {
   const { sessionLoader } = getDependencies(input.dependencies);
   const session = await sessionLoader();
   if (!session) {
@@ -601,7 +605,7 @@ export async function handleProjectDashboard(request: Request, projectId: string
         executionId: execution.executionId,
         status: execution.status,
         operationType: typeof execution.input?.operationType === "string" ? execution.input.operationType : undefined,
-        createdAt: execution.createdAt,
+        createdAt: execution.timing.createdAt,
       })),
   });
 
@@ -679,7 +683,7 @@ export async function handleProjectDashboard(request: Request, projectId: string
     averageEditorialScore: draftValidations.filter(Boolean).length === 0 ? 0 : Math.round(draftValidations.filter(Boolean).reduce((total, validation) => total + (validation?.overallScore ?? 0), 0) / draftValidations.filter(Boolean).length),
     claimValidationFailures: sectionValidations.filter((validation) => (validation?.claimClassifications ?? []).some((entry) => entry.classification === "UNSUPPORTED_CLAIM" || entry.classification === "RESTRICTED_CLAIM" || entry.classification === "PROHIBITED_CLAIM")).length,
     restrictionViolations: sectionValidations.filter((validation) => (validation?.blockingIssues ?? []).some((issue) => String(issue).startsWith("restricted_messaging:"))).length,
-    recentGenerationExecutions: contentExecutions.slice(0, 5).map((execution) => ({ executionId: execution.executionId, status: execution.status, createdAt: execution.createdAt })),
+    recentGenerationExecutions: contentExecutions.slice(0, 5).map((execution) => ({ executionId: execution.executionId, status: execution.status, createdAt: execution.timing.createdAt })),
   };
 
   const publishingGovernance = {
@@ -697,7 +701,7 @@ export async function handleProjectDashboard(request: Request, projectId: string
     destinationFailures: projectDestinations.filter((entry) => entry.connectionStatus !== "HEALTHY").length,
     recentPublications: pagePublications.slice(0, 5).map((entry) => ({ publicationRecordId: entry.publicationRecordId, externalUrl: entry.externalUrl, publishedStatus: entry.publishedStatus, createdAt: entry.createdAt })),
     recentRollbacks: projectReleases.filter((entry) => entry.releaseType === "ROLLBACK").slice(0, 5).map((entry) => ({ releaseId: entry.releaseId, status: entry.releaseStatus, createdAt: entry.createdAt })),
-    recentPublishingExecutions: publishingExecutions.slice(0, 5).map((execution) => ({ executionId: execution.executionId, status: execution.status, createdAt: execution.createdAt })),
+    recentPublishingExecutions: publishingExecutions.slice(0, 5).map((execution) => ({ executionId: execution.executionId, status: execution.status, createdAt: execution.timing.createdAt })),
   };
 
   return json({

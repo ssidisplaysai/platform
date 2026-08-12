@@ -337,8 +337,8 @@ export function GmpProjectDashboard({ projectId }: { projectId: string }) {
           missingPlans={payload.pageArchitecture.missingPlans}
           missingSections={payload.pageArchitecture.missingSections}
           averageReadiness={payload.pageArchitecture.averageReadiness}
-          relationshipHealth={payload.pageArchitecture.relationshipHealth}
-          linkHealth={payload.pageArchitecture.linkHealth}
+          relationshipHealth={payload.pageArchitecture.relationshipHealth.score}
+          linkHealth={payload.pageArchitecture.linkHealth.score}
           orphanPages={payload.pageArchitecture.orphanPages}
           duplicateCanonicals={payload.pageArchitecture.duplicateCanonicals}
           latestExecutions={payload.pageArchitecture.latestGopExecutions}

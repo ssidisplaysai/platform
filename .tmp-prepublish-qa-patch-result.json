@@ -1,0 +1,50 @@
+{
+  "workflowId": "bIDXxyWnY22G8zJC",
+  "summary": [
+    {
+      "name": "Fetch QA Page Snapshot",
+      "exists": true,
+      "type": "n8n-nodes-base.httpRequest"
+    },
+    {
+      "name": "Fetch QA State Snapshot",
+      "exists": true,
+      "type": "n8n-nodes-base.httpRequest"
+    },
+    {
+      "name": "Fetch QA Featured Media",
+      "exists": true,
+      "type": "n8n-nodes-base.httpRequest"
+    },
+    {
+      "name": "QA Duplicate Lookup",
+      "exists": true,
+      "type": "n8n-nodes-base.httpRequest"
+    },
+    {
+      "name": "Build Pre-Publish QA Result",
+      "exists": true,
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "name": "GLW Sheet Update Target?",
+      "exists": true,
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "name": "Append GLW QA Sheet Row",
+      "exists": true,
+      "type": "n8n-nodes-base.googleSheets"
+    },
+    {
+      "name": "Update row in sheet",
+      "exists": true,
+      "type": "n8n-nodes-base.googleSheets"
+    },
+    {
+      "name": "Send GLW Completion Callback",
+      "exists": true,
+      "type": "n8n-nodes-base.httpRequest"
+    }
+  ]
+}

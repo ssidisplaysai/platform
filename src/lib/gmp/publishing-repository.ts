@@ -25,8 +25,71 @@ function asJson(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
 }
 
+function asBooleanRecord(value: unknown): Record<string, boolean> | undefined {
+  const objectValue = asJson(value);
+  if (!objectValue) return undefined;
+  const entries = Object.entries(objectValue).filter(([, entryValue]) => typeof entryValue === "boolean");
+  return Object.fromEntries(entries) as Record<string, boolean>;
+}
+
 function asArray(value: unknown): Array<Record<string, unknown>> {
   return Array.isArray(value) ? value as Array<Record<string, unknown>> : [];
+}
+
+function asApprovedSections(value: unknown): GmpApprovedRevisionSet["sections"] {
+  if (!Array.isArray(value)) return [];
+  const parsed: GmpApprovedRevisionSet["sections"] = [];
+  for (const entry of value) {
+    const objectEntry = asJson(entry);
+    if (!objectEntry) continue;
+
+    const sectionContentId = objectEntry.sectionContentId;
+    const sectionContentVersion = objectEntry.sectionContentVersion;
+    const pageSectionId = objectEntry.pageSectionId;
+    const pageSectionStableKey = objectEntry.pageSectionStableKey;
+    const position = objectEntry.position;
+    const internalLinkSelections = objectEntry.internalLinkSelections;
+    const evidenceReferences = objectEntry.evidenceReferences;
+
+    if (
+      typeof sectionContentId !== "string"
+      || typeof sectionContentVersion !== "number"
+      || typeof pageSectionId !== "string"
+      || typeof pageSectionStableKey !== "string"
+      || typeof position !== "number"
+      || !Array.isArray(internalLinkSelections)
+      || !internalLinkSelections.every((item) => typeof item === "object" && item !== null && !Array.isArray(item))
+      || !Array.isArray(evidenceReferences)
+      || !evidenceReferences.every((item) => typeof item === "string")
+    ) {
+      continue;
+    }
+
+    const normalized: GmpApprovedRevisionSet["sections"][number] = {
+      sectionContentId,
+      sectionContentVersion,
+      pageSectionId,
+      pageSectionStableKey,
+      position,
+      internalLinkSelections: internalLinkSelections as Array<Record<string, unknown>>,
+      evidenceReferences: evidenceReferences as string[],
+    };
+
+    if (typeof objectEntry.heading === "string") normalized.heading = objectEntry.heading;
+    if (typeof objectEntry.bodyContent === "string") normalized.bodyContent = objectEntry.bodyContent;
+
+    const ctaContent = asJson(objectEntry.ctaContent);
+    if (ctaContent) normalized.ctaContent = ctaContent;
+
+    const mediaGuidance = asJson(objectEntry.mediaGuidance);
+    if (mediaGuidance) normalized.mediaGuidance = mediaGuidance;
+
+    const metadata = asJson(objectEntry.metadata);
+    if (metadata) normalized.metadata = metadata;
+
+    parsed.push(normalized);
+  }
+  return parsed;
 }
 
 function asStringArray(value: unknown): string[] {
@@ -44,7 +107,7 @@ function mapDestination(row: any): GmpPublishingDestination {
     environment: row.environment,
     connectionStatus: row.connectionStatus,
     credentialReference: row.credentialReference ?? undefined,
-    capabilityProfile: asJson(row.capabilityProfile) ?? {},
+    capabilityProfile: asBooleanRecord(row.capabilityProfile) ?? {},
     configuration: asJson(row.configuration),
     defaultAuthor: row.defaultAuthor ?? undefined,
     defaultStatus: row.defaultStatus ?? undefined,
@@ -70,7 +133,7 @@ function mapApprovedSet(row: any): GmpApprovedRevisionSet {
     contentDraftId: row.contentDraftId,
     contentDraftVersion: row.contentDraftVersion,
     sourceFingerprint: row.sourceFingerprint,
-    sections: asArray(row.sections),
+    sections: asApprovedSections(row.sections),
     seoMetadata: asJson(row.seoMetadata) ?? {},
     structuredDataInputs: asJson(row.structuredDataInputs) ?? {},
     approvalRecords: asArray(row.approvalRecords),

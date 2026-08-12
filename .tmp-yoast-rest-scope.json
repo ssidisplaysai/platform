@@ -1,0 +1,16 @@
+{
+  "publishRest": {
+    "status": 200,
+    "containsMarker": false,
+    "hasYoastHead": true,
+    "yoastHeadVersion": "Yoast SEO plugin v28.2"
+  },
+  "draftRest": {
+    "status": 200,
+    "containsMarker": false,
+    "hasYoastHead": true,
+    "yoastHeadVersion": "Yoast SEO plugin v28.2",
+    "link": "https://leddisplaywarehouse.com/?page_id=19308",
+    "statusField": "draft"
+  }
+}

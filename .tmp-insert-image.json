@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "url": "=https://leddisplaywarehouse.com/wp-json/wp/v2/pages/{{ $('Create a post').first().json.id }}",
+  "authentication": "predefinedCredentialType",
+  "nodeCredentialType": "wordpressApi",
+  "sendBody": true,
+  "bodyParameters": {
+    "parameters": [
+      {
+        "name": "content",
+        "value": "={{ (() => { const html = $('Code in JavaScript').first().json.article_html || ''; const url = $('Upload Image to WordPress').first().json.guid.rendered || $('Upload Image to WordPress').first().json.source_url || ''; const alt = ($('Code in JavaScript').first().json.alt_tag || '').replace(/\"/g, '&quot;'); const img = `<figure class=\"page-hero-image\"><img src=\"${url}\" alt=\"${alt}\" loading=\"lazy\" /></figure>`; if (!url) return html; if (html.includes('</h1>')) return html.replace('</h1>', `</h1>\\n${img}`); return `${img}\\n${html}`; })() }}"
+      }
+    ]
+  },
+  "options": {}
+}

@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-08-10T19:48:54.415Z",
+  "published": {
+    "status": 200,
+    "warning": false
+  },
+  "draft404": {
+    "status": 404,
+    "warning": false
+  },
+  "health": {
+    "status": 200,
+    "warning": false
+  },
+  "glwPages": {
+    "status": 200,
+    "loginLike": false
+  },
+  "glwLogin": {
+    "status": 200
+  },
+  "rest": {
+    "status": 200,
+    "contentType": "application/json; charset=UTF-8",
+    "warning": false
+  }
+}

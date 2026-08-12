@@ -7,6 +7,10 @@ import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity
 
 const GLW_MODULE_ID = "glw.core";
 
+type FabricAuthorizeResult =
+  | { error: NextResponse }
+  | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
 function unauthorizedResponse(): NextResponse {
   return NextResponse.json({ error: "GLW session is required." }, { status: 401 });
 }
@@ -15,7 +19,7 @@ function forbiddenResponse(reason: string): NextResponse {
   return NextResponse.json({ error: reason }, { status: 403 });
 }
 
-async function authorizeFabricControl() {
+async function authorizeFabricControl(): Promise<FabricAuthorizeResult> {
   const session = await getGlwSession();
   if (!session) {
     return { error: unauthorizedResponse() } as const;

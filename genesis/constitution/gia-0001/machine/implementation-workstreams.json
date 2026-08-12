@@ -1,0 +1,60 @@
+{
+  "schemaIdentifier": "gia-0001/implementation-workstreams",
+  "schemaVersion": "1.0.0",
+  "programId": "GIA-0001",
+  "statusCounts": {
+    "READY": 3,
+    "READY_WITH_CONDITIONS": 8,
+    "NOT_READY": 0
+  },
+  "conditions": [
+    {
+      "conditionId": "COND-001",
+      "description": "Release machine metadata commit binding required",
+      "affectedWorkstreams": ["Deployment", "GAR Engine"],
+      "evidence": "GFR-0001 release-manifest releaseCommit null",
+      "requiredRemediation": "enforce non-null releaseCommit and validation",
+      "exitCriteria": "release commit binding validation passes"
+    },
+    {
+      "conditionId": "COND-002",
+      "description": "Runtime metadata lineage evidence expansion",
+      "affectedWorkstreams": ["Business Genome", "Observability"],
+      "evidence": "GAR3-REM-002 open",
+      "requiredRemediation": "add representative lineage evidence for GMP/GBA/GEA",
+      "exitCriteria": "GAR checkpoint validates CNS-2 with VERIFIED confidence"
+    },
+    {
+      "conditionId": "COND-003",
+      "description": "Wave 1 deterministic kernel-runtime integration gates",
+      "affectedWorkstreams": ["Genesis Kernel", "Enterprise Runtime"],
+      "evidence": "high architectural complexity and integration coupling",
+      "requiredRemediation": "gate on replay, failure recovery, and transition integrity",
+      "exitCriteria": "Wave 1 gate pass with deterministic controls validated"
+    },
+    {
+      "conditionId": "COND-004",
+      "description": "Repository-wide architecture lineage graph completion",
+      "affectedWorkstreams": ["GAR Engine", "Observability"],
+      "evidence": "GAR3-REM-003 open",
+      "requiredRemediation": "bind RAR/ARD/ADR lineage graph",
+      "exitCriteria": "GAR checkpoint validates CNS-4 compliant classification"
+    },
+    {
+      "conditionId": "COND-005",
+      "description": "Application production releases require deployment and observability gate closure",
+      "affectedWorkstreams": ["Applications", "Deployment"],
+      "evidence": "GPP-0003 dependency critical path",
+      "requiredRemediation": "enforce pre-release gate policy",
+      "exitCriteria": "pre-release gate validation complete"
+    },
+    {
+      "conditionId": "COND-006",
+      "description": "Automation idempotency and ordering controls",
+      "affectedWorkstreams": ["Automation"],
+      "evidence": "event-processing reliability risk",
+      "requiredRemediation": "idempotency keying and ordering checks",
+      "exitCriteria": "automation control validation pass"
+    }
+  ]
+}

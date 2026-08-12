@@ -1,0 +1,152 @@
+{
+  "execution": {
+    "id": "47810",
+    "status": "error",
+    "startedAt": "2026-07-30T14:57:26.762Z",
+    "stoppedAt": "2026-07-30T14:59:01.314Z",
+    "durationMs": 94552
+  },
+  "fail": {
+    "node": "Send GLW Completion Callback",
+    "id": "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
+    "type": "n8n-nodes-base.httpRequest",
+    "start": 1785423541276,
+    "durMs": 37,
+    "status": "FAILED",
+    "err": "The connection cannot be established, this usually occurs due to an incorrect host (domain) value"
+  },
+  "lastNodeExecuted": "Send GLW Completion Callback",
+  "error": {
+    "level": "warning",
+    "shouldReport": true,
+    "tags": {},
+    "timestamp": 1785423541312,
+    "context": {
+      "itemIndex": 0,
+      "request": {
+        "body": {
+          "jobId": "glw_7w46zk8p",
+          "executionId": "47810",
+          "status": "COMPLETE",
+          "title": "Outdoor LED Display Rentals in Sacramento, CA",
+          "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=13462",
+          "wordpressPostId": 13462
+        },
+        "headers": {
+          "content-type": "application/json",
+          "**hidden**": "**hidden**",
+          "accept": "application/json,text/html,application/xhtml+xml,application/xml,text/*;q=0.9, image/*;q=0.8, */*;q=0.7"
+        },
+        "method": "POST",
+        "uri": "https://fighters-mistress-executives-symposium.trycloudflare.com/api/glw/jobs/c**hidden**back",
+        "gzip": true,
+        "rejectUnauthorized": true,
+        "followRedirect": true,
+        "resolveWithFullResponse": true,
+        "sendCredentialsOnCrossOriginRedirect": false,
+        "followAllRedirects": true,
+        "timeout": 15000,
+        "encoding": null,
+        "json": false,
+        "useStream": true
+      }
+    },
+    "functionality": "regular",
+    "name": "NodeApiError",
+    "node": {
+      "parameters": {
+        "curlImport": "",
+        "method": "POST",
+        "url": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "provideSslCertificates": false,
+        "sendQuery": false,
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { jobId: $('Get row(s) in sheet').first().json.job_id, executionId: $execution.id, status: 'COMPLETE', title: $('Code in JavaScript').first().json.page_title, wordpressUrl: $('Set Featured Image').first().json.link, wordpressPostId: $('Create a post').first().json.id } }}",
+        "options": {
+          "timeout": 15000
+        },
+        "infoMessage": ""
+      },
+      "id": "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
+      "name": "Send GLW Completion Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        6816,
+        -256
+      ],
+      "notes": "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation.",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "TBbt7HMIkLGKvAzQ",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    "messages": [
+      "getaddrinfo ENOTFOUND fighters-mistress-executives-symposium.trycloudflare.com",
+      "getaddrinfo ENOTFOUND fighters-mistress-executives-symposium.trycloudflare.com"
+    ],
+    "httpCode": "ENOTFOUND",
+    "message": "The connection cannot be established, this usually occurs due to an incorrect host (domain) value",
+    "stack": "NodeApiError: The connection cannot be established, this usually occurs due to an incorrect host (domain) value\n    at ExecuteContext.execute (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-nodes-base@file+packages+nodes-base_@opentelemetry+api@1.9.0_@opentelemetry+exporte_9e31dcec10980323a9c957753d2416c7/node_modules/n8n-nodes-base/nodes/HttpRequest/V3/HttpRequestV3.node.ts:869:16)\n    at WorkflowExecute.executeNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1081:8)\n    at WorkflowExecute.runNode (/usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1381:11)\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:1854:27\n    at /usr/local/lib/node_modules/n8n/node_modules/.pnpm/n8n-core@file+packages+core_@opentelemetry+api@1.9.0_@opentelemetry+exporter-trace-otlp_56f5a5be5f9a76dfbcdc404d6ec4dea5/node_modules/n8n-core/src/execution-engine/workflow-execute.ts:2546:11"
+  },
+  "callbackNode": {
+    "parameters": {
+      "curlImport": "",
+      "method": "POST",
+      "url": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
+      "authentication": "genericCredentialType",
+      "genericAuthType": "httpHeaderAuth",
+      "provideSslCertificates": false,
+      "sendQuery": false,
+      "sendHeaders": true,
+      "specifyHeaders": "keypair",
+      "headerParameters": {
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "sendBody": true,
+      "contentType": "json",
+      "specifyBody": "json",
+      "jsonBody": "={{ { jobId: $('Get row(s) in sheet').first().json.job_id, executionId: $execution.id, status: 'COMPLETE', title: $('Code in JavaScript').first().json.page_title, wordpressUrl: $('Set Featured Image').first().json.link, wordpressPostId: $('Create a post').first().json.id } }}",
+      "options": {
+        "timeout": 15000
+      },
+      "infoMessage": ""
+    },
+    "id": "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
+    "name": "Send GLW Completion Callback",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.4,
+    "position": [
+      6816,
+      -256
+    ],
+    "notes": "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation.",
+    "credentials": {
+      "httpHeaderAuth": {
+        "id": "TBbt7HMIkLGKvAzQ",
+        "name": "Header Auth account"
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schemaIdentifier": "gpc-0002/phase-ii-closeout",
+  "schemaVersion": "1.0.0",
+  "packageId": "GPC-0002",
+  "title": "Phase II Closeout - Governance Execution",
+  "phase": "Phase II",
+  "phaseName": "Governance Execution",
+  "status": "COMPLETE",
+  "disposition": "SUCCESSFULLY COMPLETED",
+  "certificationOutcome": {
+    "package": "GAR-0003",
+    "decision": "CERTIFIED WITH CONDITIONS"
+  },
+  "governanceFoundation": "ACTIVE",
+  "baselineId": "GGB-0001",
+  "governanceVersion": "v1.0.0",
+  "generatedAt": "2026-07-28T21:35:17.050Z",
+  "repositoryRevision": "da84dac0e8d3d203cca94bc9af6bfd33b9dd0abb",
+  "branch": "feature/gar-0003-constitutional-assessment"
+}

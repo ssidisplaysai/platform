@@ -1,7 +1,7 @@
 {
   "afferentTop": [
     {
-      "fanIn": 56,
+      "fanIn": 57,
       "fanOut": 1,
       "layer": "platform-orchestration",
       "node": "src/platform/gop/auth/resolver.ts"
@@ -25,7 +25,7 @@
       "node": "src/lib/gmp/repository.ts"
     },
     {
-      "fanIn": 38,
+      "fanIn": 39,
       "fanOut": 0,
       "layer": "platform-orchestration",
       "node": "src/platform/gop/contracts.ts"
@@ -97,7 +97,7 @@
       "node": "src/compiler/evidence/EvidenceGraph.ts"
     },
     {
-      "fanIn": 20,
+      "fanIn": 18,
       "fanOut": 2,
       "layer": "runtime-services",
       "node": "src/lib/glw/jobs.ts"
@@ -151,7 +151,7 @@
       "node": "src/lib/gmp/knowledge-api.ts"
     }
   ],
-  "edgeCount": 3530,
+  "edgeCount": 3541,
   "efferentTop": [
     {
       "fanIn": 0,
@@ -386,11 +386,11 @@
   "generationMethod": "deterministic-topology-analysis-from-gar-0001-and-source-layout",
   "highCentralityApproximation": [
     {
-      "fanIn": 56,
+      "fanIn": 57,
       "fanOut": 1,
       "layer": "platform-orchestration",
       "node": "src/platform/gop/auth/resolver.ts",
-      "score": 57
+      "score": 58
     },
     {
       "fanIn": 53,
@@ -435,11 +435,11 @@
       "score": 47
     },
     {
-      "fanIn": 38,
+      "fanIn": 39,
       "fanOut": 0,
       "layer": "platform-orchestration",
       "node": "src/platform/gop/contracts.ts",
-      "score": 38
+      "score": 39
     },
     {
       "fanIn": 34,
@@ -582,22 +582,22 @@
       "score": 22
     },
     {
-      "fanIn": 20,
-      "fanOut": 2,
-      "layer": "runtime-services",
-      "node": "src/lib/glw/jobs.ts",
-      "score": 22
-    },
-    {
       "fanIn": 5,
       "fanOut": 17,
       "layer": "platform-orchestration",
       "node": "src/platform/gop/index.ts",
       "score": 22
+    },
+    {
+      "fanIn": 17,
+      "fanOut": 4,
+      "layer": "application-ui",
+      "node": "src/app/glw/(protected)/projects/[id]/analytics/access.ts",
+      "score": 21
     }
   ],
   "limitations": [],
-  "nodeCount": 1306,
+  "nodeCount": 1312,
   "schemaIdentifier": "gar-0002/coupling-metrics",
   "schemaVersion": "1.0.0",
   "toolVersion": "1.0.0",
@@ -1086,6 +1086,33 @@
       "fromLayer": "runtime-services",
       "importKind": "verified static import",
       "to": "src/platform/gop/runtime/orchestration-runtime.ts",
+      "toLayer": "platform-orchestration"
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "src/lib/gop/platform-bootstrap-api.ts",
+      "fromLayer": "runtime-services",
+      "importKind": "verified static import",
+      "to": "src/platform/gop/contracts.ts",
+      "toLayer": "platform-orchestration"
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "src/lib/gop/platform-bootstrap-api.ts",
+      "fromLayer": "runtime-services",
+      "importKind": "verified static import",
+      "to": "src/platform/gop/runtime/loader.ts",
+      "toLayer": "platform-orchestration"
+    },
+    {
+      "boundaryConcern": true,
+      "direction": "upward",
+      "from": "src/lib/gop/platform-bootstrap-api.ts",
+      "fromLayer": "runtime-services",
+      "importKind": "verified static import",
+      "to": "src/platform/gop/workspaces/runtime.ts",
       "toLayer": "platform-orchestration"
     },
     {
@@ -5073,33 +5100,6 @@
       "fromLayer": "tests",
       "importKind": "verified static import",
       "to": "src/lib/gmp/page-repository.ts",
-      "toLayer": "domain-kernel"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "upward",
-      "from": "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
-      "fromLayer": "tests",
-      "importKind": "verified static import",
-      "to": "src/lib/gmp/publishing-api.ts",
-      "toLayer": "domain-kernel"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "upward",
-      "from": "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
-      "fromLayer": "tests",
-      "importKind": "verified static import",
-      "to": "src/lib/gmp/publishing-repository.ts",
-      "toLayer": "domain-kernel"
-    },
-    {
-      "boundaryConcern": true,
-      "direction": "upward",
-      "from": "tests/gmp/gmp-publishing-authorization-matrix.test.ts",
-      "fromLayer": "tests",
-      "importKind": "verified static import",
-      "to": "src/lib/gmp/publishing-services.ts",
       "toLayer": "domain-kernel"
     }
   ]

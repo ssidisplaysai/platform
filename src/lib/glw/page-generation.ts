@@ -6,6 +6,7 @@ import {
   GlwJobError,
   GlwJobRecord,
   GlwJobRepository,
+  validatePageGenerationRequest,
   normalizeGlwQaChecks,
   normalizeGlwQaFailureReasons,
   GlwPageGenerationRequest,
@@ -85,6 +86,11 @@ export async function submitGlwPageGenerationJob(
   dependencies: GlwPageGenerationDependencies,
   retryOfJobId?: string,
 ): Promise<GlwJobOperationResult> {
+  const validation = validatePageGenerationRequest(request);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
   const now = dependencies.now ?? (() => new Date());
   const startedAt = now().toISOString();
   const callbackUrl = buildCallbackUrl(dependencies.appUrl);

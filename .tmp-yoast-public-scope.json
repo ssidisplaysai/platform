@@ -1,0 +1,15 @@
+{
+  "draft": {
+    "status": 404,
+    "containsMarker": true,
+    "containsWarning": false,
+    "containsNotice": false,
+    "snippet": "\"https://gmpg.org/xfn/11\">\n\t<meta name='robots' content='noindex, follow' />\n<br />\n<b>Warning</b>:  Attempt to read property \"ID\" on array in <b>/home/sczawnxn1zgs/public_html/leddisplaywarehouse.com/wp-content/plugins/wp-rest-yoast-meta/frontend/class-frontend.php</b> on line <b>624</b><br />\n<br />\n<b>Warning</b>:  Attempt to read property \"ID\" on null in <b>/home/sczawnxn1zgs/public_html/leddisplaywarehouse.com/wp-content/plugins/wp-rest-yoast-meta/frontend/class-frontend"
+  },
+  "publish": {
+    "status": 200,
+    "containsMarker": false,
+    "containsWarning": false,
+    "containsNotice": false
+  }
+}

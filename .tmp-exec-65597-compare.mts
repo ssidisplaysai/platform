@@ -1,0 +1,9 @@
+const base = process.env.GLW_N8N_BASE_URL ?? process.env.GLW_N8N_PAGE_WEBHOOK_URL?.replace(/\/webhook\/.*$/, "");
+const apiKey = process.env.GLW_N8N_API_KEY;
+const executionId = "65597";
+for (const includeData of [true, false]) {
+  const url = `${base}/api/v1/executions/${executionId}${includeData ? "?includeData=true" : ""}`;
+  const response = await fetch(url, { headers: { "X-N8N-API-KEY": apiKey ?? "" } });
+  const text = await response.text();
+  console.log(JSON.stringify({ includeData, status: response.status, body: text.slice(0, 5000) }, null, 2));
+}

@@ -1,9 +1,8 @@
 import React from "react";
 import Link from "next/link";
 import { createPrismaGeaRepository } from "@/lib/gea/agent-repository";
-import { createInMemoryCapabilityRegistry } from "@/lib/gea/capability-registry";
-import { createInMemoryToolRegistry } from "@/lib/gea/tool-framework";
 import { createAgentRuntimeService } from "@/lib/gea/agent-runtime";
+import { createGeaRuntimeRegistryAuthority } from "@/lib/gea/runtime-registry-authority";
 import type { GeaRoutePermissions } from "@/app/glw/(protected)/agents/access";
 
 type GeaWorkspaceMode =
@@ -43,8 +42,7 @@ export async function GeaWorkspace({
   permissions: GeaRoutePermissions;
 }) {
   const repository = createPrismaGeaRepository();
-  const capabilityRegistry = createInMemoryCapabilityRegistry();
-  const toolRegistry = createInMemoryToolRegistry();
+  const { capabilityRegistry, toolRegistry } = createGeaRuntimeRegistryAuthority();
   const runtime = createAgentRuntimeService({ repository, capabilityRegistry, toolRegistry });
 
   const [agents, executions] = await Promise.all([

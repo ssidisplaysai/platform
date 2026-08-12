@@ -8,6 +8,7 @@ import { MetricCard } from "./metric-card";
 import { PageContainer } from "./page-container";
 import { SectionHeader } from "./section-header";
 import { StatusBadge } from "./status-badge";
+import { GlwNationalPlanningPanel } from "./glw-national-planning-panel";
 import type { GlwJobRecord } from "@/lib/glw/jobs";
 import { formatGlwJobDuration, getGlwLocationLabel } from "@/lib/glw/jobs";
 
@@ -161,6 +162,8 @@ export function GlwDashboard({ metrics, recentJobs }: GlwDashboardProps) {
           <MetricCard key={metric.label} label={metric.label} value={metric.value} detail={metric.detail} />
         ))}
       </section>
+
+      <GlwNationalPlanningPanel />
 
       <section className="grid gap-6 xl:grid-cols-[1.55fr_0.85fr]">
         <article className="rounded-2xl border border-zinc-200 bg-white shadow-sm shadow-zinc-950/[0.02]">

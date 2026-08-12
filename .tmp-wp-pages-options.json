@@ -1,0 +1,73 @@
+{
+  "status": 200,
+  "hasGetEndpoint": true,
+  "statusArg": {
+    "default": "publish",
+    "description": "Limit result set to posts assigned one or more statuses.",
+    "type": "array",
+    "items": {
+      "enum": [
+        "publish",
+        "future",
+        "draft",
+        "pending",
+        "private",
+        "trash",
+        "auto-draft",
+        "inherit",
+        "request-pending",
+        "request-confirmed",
+        "request-failed",
+        "request-completed",
+        "wc-pending",
+        "wc-processing",
+        "wc-on-hold",
+        "wc-completed",
+        "wc-cancelled",
+        "wc-refunded",
+        "wc-failed",
+        "wc-checkout-draft",
+        "leads",
+        "any"
+      ],
+      "type": "string"
+    },
+    "required": false
+  },
+  "contextArg": {
+    "description": "Scope under which the request is made; determines fields present in response.",
+    "type": "string",
+    "enum": [
+      "view",
+      "embed",
+      "edit"
+    ],
+    "default": "view",
+    "required": false
+  },
+  "slugArg": {
+    "description": "Limit result set to posts with one or more specific slugs.",
+    "type": "array",
+    "items": {
+      "type": "string"
+    },
+    "required": false
+  },
+  "parentArg": {
+    "description": "Limit result set to items with particular parent IDs.",
+    "type": "array",
+    "items": {
+      "type": "integer"
+    },
+    "default": [],
+    "required": false
+  },
+  "perPageArg": {
+    "description": "Maximum number of items to be returned in result set.",
+    "type": "integer",
+    "default": 10,
+    "minimum": 1,
+    "maximum": 100,
+    "required": false
+  }
+}

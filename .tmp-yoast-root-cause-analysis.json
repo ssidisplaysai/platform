@@ -1,0 +1,34 @@
+{
+  "yoastVersionEvidence": [
+    null,
+    null
+  ],
+  "publishExec": {
+    "id": "65047",
+    "wpStatus": "publish",
+    "url": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/austin/",
+    "yoastTitle": null,
+    "yoastMetaPresent": false,
+    "warningInYoastHead": false
+  },
+  "draftExec": {
+    "id": "65057",
+    "wpStatus": "draft",
+    "url": "https://leddisplaywarehouse.com/?page_id=19308",
+    "yoastTitle": null,
+    "yoastMetaPresent": false,
+    "warningInYoastHead": false
+  },
+  "publicFetch": {
+    "publishStatus": 200,
+    "draftStatus": 404,
+    "publishContainsWarningPath": false,
+    "draftContainsWarningPath": true,
+    "publishContainsPhpWarning": false,
+    "draftContainsPhpWarning": false
+  },
+  "notes": {
+    "wpSettingsViaRestUnauthorized": true,
+    "pluginListViaRestUnauthorized": true
+  }
+}

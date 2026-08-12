@@ -1,0 +1,24 @@
+domain,status,severity,blocker,recommendedWorkPackage,notes
+Production deployment readiness,Gap,High,Yes,WP-GPC-01,No explicit production deployment runbook/topology found.
+Infrastructure configuration,Gap,High,Yes,WP-GPC-01,No production IaC/deployment packaging artifacts detected.
+Environment management,Partial,Medium,No,WP-GPC-01,.env.example exists but no tier matrix/drift controls.
+Secrets management,Gap,High,Yes,WP-GPC-02,Secret names present but no rotation/revocation authority model documented.
+Security posture,Partial,Medium,No,WP-GPC-02,SECURITY.md exists but production hardening control baseline not consolidated.
+Authentication and authorization in production,Partial,Medium,No,WP-GPC-02,Auth/session controls exist; production identity operations process not consolidated.
+Database migration strategy,Partial,High,Yes,WP-GPC-03,Prisma migrations exist but no production migration execution runbook.
+Backup and recovery,Gap,High,Yes,WP-GPC-03,No backup/restore procedure evidence found.
+Disaster recovery,Gap,High,Yes,WP-GPC-03,No RTO/RPO, failover, or drill evidence found.
+Logging,Partial,Medium,No,WP-GPC-04,Event models present but centralized logging operations baseline not evidenced.
+Observability,Partial,Medium,No,WP-GPC-04,Health-related artifacts exist but telemetry operating model not consolidated.
+Monitoring and alerting,Gap,High,Yes,WP-GPC-04,No alert thresholds, routing, or on-call evidence package found.
+Performance baselines,Partial,Medium,No,WP-GPC-04,Performance reports/scripts exist but no singular GLW production baseline.
+Load testing readiness,Gap,Medium,No,WP-GPC-04,No load model/capacity criteria package for production go-live.
+Scalability,Gap,Medium,No,WP-GPC-04,No scaling policy/capacity envelope runbook found.
+CI/CD readiness,Partial,Medium,No,WP-GPC-05,Guardrails CI present; production CD/deploy workflow not evidenced.
+Release management,Partial,Medium,No,WP-GPC-05,Release lifecycle docs exist; GLW operational release playbook not consolidated.
+Rollback procedures,Gap,High,Yes,WP-GPC-05,No full production rollback runbook across app/db/integration boundaries.
+Operational documentation,Partial,Medium,No,WP-GPC-06,Certification docs are strong; operations playbook package incomplete.
+Runbooks,Gap,High,Yes,WP-GPC-06,Dedicated deploy/rollback/restore/incident runbook set not found.
+Incident response,Partial,High,Yes,WP-GPC-06,Security reporting policy exists; production incident command workflow missing.
+Production health verification,Partial,Medium,No,WP-GPC-04,Health surfaces exist; acceptance gate checklist not consolidated.
+Compliance with existing architectural guardrails,Partial to Strong,Medium,No,WP-GPC-07,Guardrails evidence exists; confidence reduced by dirty branch state.

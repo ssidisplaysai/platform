@@ -1,0 +1,34 @@
+{
+  "citySlug": "qa-dup-val-1786146248118",
+  "executionId": "60710",
+  "status": "error",
+  "beforeCityId": 0,
+  "afterCityId": 0,
+  "afterCityUrl": null,
+  "lookup": {
+    "city_page_found": false,
+    "existing_city_page_id": 0,
+    "city_lookup_failed": false
+  },
+  "cityLookupSuccessfulOutSizes": [
+    1,
+    0
+  ],
+  "cityPageExistsOutSizes": [
+    0,
+    1
+  ],
+  "createExecuted": true,
+  "updateExecuted": false,
+  "normalized": {
+    "id": 18994,
+    "disposition": "CREATED",
+    "url": "https://leddisplaywarehouse.com/?page_id=18994"
+  },
+  "callbackPayload": null,
+  "error": {
+    "node": "Send GLW Completion Callback",
+    "message": "The resource you are requesting could not be found",
+    "description": "GLW job not found: glw-dup-val-newcity-1786146256884"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "schemaIdentifier": "gia-0001/implementation-decision",
+  "schemaVersion": "1.0.0",
+  "programId": "GIA-0001",
+  "decision": "AUTHORIZED WITH CONDITIONS",
+  "decisionDate": "2026-07-28",
+  "basis": [
+    "governance and standards active",
+    "phase ii closeout complete",
+    "phase iii roadmap complete",
+    "authority chain acyclic",
+    "machine artifacts validated"
+  ],
+  "conditions": [
+    {
+      "conditionId": "COND-001",
+      "description": "release machine metadata commit binding",
+      "affectedWorkstream": ["Deployment", "GAR Engine"],
+      "evidence": "GFR-0001 release-manifest releaseCommit null",
+      "requiredRemediation": "enforce non-null releaseCommit",
+      "exitCriteria": "release validation passes"
+    },
+    {
+      "conditionId": "COND-002",
+      "description": "runtime metadata lineage evidence expansion",
+      "affectedWorkstream": ["Business Genome", "Observability"],
+      "evidence": "GAR3-REM-002 open",
+      "requiredRemediation": "publish lineage evidence packages",
+      "exitCriteria": "CNS-2 VERIFIED confidence"
+    },
+    {
+      "conditionId": "COND-003",
+      "description": "repository architecture lineage graph completion",
+      "affectedWorkstream": ["GAR Engine", "Observability"],
+      "evidence": "GAR3-REM-003 open",
+      "requiredRemediation": "RAR/ARD/ADR graph binding",
+      "exitCriteria": "CNS-4 compliant classification"
+    },
+    {
+      "conditionId": "COND-004",
+      "description": "commit frozen baseline artifacts before first implementation approval",
+      "affectedWorkstream": ["Program Control"],
+      "evidence": "untracked package artifacts in worktree",
+      "requiredRemediation": "commit/tag baseline package set",
+      "exitCriteria": "baseline commit reference in package manifests"
+    }
+  ],
+  "requiredFirstImplementationPackages": [
+    "GIP-0001 Program Control and Baseline Finalization",
+    "GIP-0002 Kernel and Runtime Wave 1 Foundation",
+    "GIP-0003 Registry and Dependency Control Services",
+    "GIP-0004 Observability and Evidence Lineage Expansion",
+    "GIP-0005 GAR Engine Operationalization"
+  ]
+}

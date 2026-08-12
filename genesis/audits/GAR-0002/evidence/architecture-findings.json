@@ -93,7 +93,7 @@
       "evidenceClassification": "VERIFIED",
       "findingId": "GAR2-FINDING-000004",
       "impact": "layer erosion and change amplification risk",
-      "observedCondition": "534 edges classified as upward",
+      "observedCondition": "540 edges classified as upward",
       "recommendation": "prioritize boundary contracts and inversion seams in GAR-0010 remediation",
       "recommendedPackage": "GAR-0010",
       "repositoryEvidence": [

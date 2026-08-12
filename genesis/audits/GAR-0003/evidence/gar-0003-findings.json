@@ -1,0 +1,108 @@
+{
+  "schemaIdentifier": "gar-0003/gar-0003-findings",
+  "schemaVersion": "1.0.0",
+  "packageId": "GAR-0003",
+  "findings": [
+    {
+      "findingId": "GAR-0003-FND-001",
+      "title": "Governance authority chain is implemented and acyclic",
+      "severity": "Informational",
+      "confidence": "Verified",
+      "evidenceRefs": [
+        "GAR3-EVD-001",
+        "GAR3-EVD-004",
+        "GAR3-EVD-005"
+      ],
+      "constitutionalClauseRefs": [
+        "CNS-1",
+        "CNS-3",
+        "CNS-5"
+      ],
+      "supportingStandards": [
+        "GCCS-0001",
+        "GAFS-0001"
+      ],
+      "affectedArtifacts": [
+        "genesis/governance/machine/authority-graph.json",
+        "genesis/governance/baselines/ggb-0001/machine/baseline-authority.json"
+      ],
+      "traceabilityId": "GAR3-TRC-001",
+      "recommendedRemediation": "None required.",
+      "lifecycleState": "Recorded",
+      "complianceImpact": "supports-compliance"
+    },
+    {
+      "findingId": "GAR-0003-FND-002",
+      "title": "Release machine records do not embed release commit hash",
+      "severity": "Minor",
+      "confidence": "Verified",
+      "evidenceRefs": [
+        "GAR3-EVD-006",
+        "GAR3-EVD-007"
+      ],
+      "constitutionalClauseRefs": [
+        "CNS-3"
+      ],
+      "supportingStandards": [
+        "GCCS-0001"
+      ],
+      "affectedArtifacts": [
+        "genesis/governance/releases/ggr-0001/machine/release-manifest.json",
+        "genesis/governance/releases/ggr-0001/machine/release-registry.json"
+      ],
+      "traceabilityId": "GAR3-TRC-002",
+      "recommendedRemediation": "Populate releaseCommit in release-manifest and release-registry in a future controlled update without changing governance rules.",
+      "lifecycleState": "Open",
+      "complianceImpact": "condition"
+    },
+    {
+      "findingId": "GAR-0003-FND-003",
+      "title": "Business metadata source-of-truth implementation evidence is insufficient in this package run",
+      "severity": "Moderate",
+      "confidence": "High",
+      "evidenceRefs": [
+        "GAR3-EVD-003",
+        "GAR3-EVD-007"
+      ],
+      "constitutionalClauseRefs": [
+        "CNS-2"
+      ],
+      "supportingStandards": [
+        "GCCS-0001",
+        "GAFS-0001"
+      ],
+      "affectedArtifacts": [
+        "src/lib/gmp",
+        "src/lib/gba",
+        "src/lib/gea"
+      ],
+      "traceabilityId": "GAR3-TRC-003",
+      "recommendedRemediation": "Extend GAR-0004 evidence plan with dynamic runtime assertions proving metadata lineage and source-of-truth enforcement.",
+      "lifecycleState": "Open",
+      "complianceImpact": "condition"
+    },
+    {
+      "findingId": "GAR-0003-FND-004",
+      "title": "Constitutional process lineage (RAR->ARD->ADR) is not fully evidenced for entire repository history in this run",
+      "severity": "Moderate",
+      "confidence": "Medium",
+      "evidenceRefs": [
+        "GAR3-EVD-001",
+        "GAR3-EVD-003"
+      ],
+      "constitutionalClauseRefs": [
+        "CNS-4"
+      ],
+      "supportingStandards": [
+        "GCCS-0001"
+      ],
+      "affectedArtifacts": [
+        "docs/architecture"
+      ],
+      "traceabilityId": "GAR3-TRC-004",
+      "recommendedRemediation": "Add repository-wide architecture lineage extraction and binding in GAR-0004.",
+      "lifecycleState": "Open",
+      "complianceImpact": "condition"
+    }
+  ]
+}

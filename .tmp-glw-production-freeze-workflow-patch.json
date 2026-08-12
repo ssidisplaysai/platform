@@ -1,0 +1,10 @@
+{
+  "workflowId": "bIDXxyWnY22G8zJC",
+  "workflowName": "Master SEO Page Engine v1.0 - PRODUCTION",
+  "getRowsChanged": true,
+  "normalizePageChanged": false,
+  "completionCallbackAuthAdded": true,
+  "failureCallbackAuthAdded": true,
+  "removedScheduleConnection": false,
+  "removedManualConnection": false
+}

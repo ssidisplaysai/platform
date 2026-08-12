@@ -1,4 +1,15 @@
-import type { Company } from "@/types/models/Company";
+export type CompanyStatus = "active" | "planning" | "inactive" | "archived";
+
+export type Company = {
+  id: string;
+  slug: string;
+  name: string;
+  shortName?: string;
+  description: string;
+  status: CompanyStatus;
+  accentColor?: string;
+  modules: string[];
+};
 
 export const companies: Company[] = [
   {

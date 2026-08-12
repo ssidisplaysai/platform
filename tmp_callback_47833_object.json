@@ -1,0 +1,125 @@
+{
+  "callbackTopLevelKeys": [
+    "startTime",
+    "executionIndex",
+    "source",
+    "hints",
+    "executionTime",
+    "executionStatus",
+    "data"
+  ],
+  "callbackDataKeys": [
+    "main"
+  ],
+  "callbackSourceKeys": [
+    "0"
+  ],
+  "callbackExecutionTime": 445,
+  "callbackStartTime": 1785424497815,
+  "callbackHintStatusCode": null,
+  "cbObject": {
+    "startTime": 1785424497815,
+    "executionIndex": 25,
+    "source": [
+      {
+        "previousNode": "GLW Callback Configured?",
+        "previousNodeOutput": 0,
+        "previousNodeRun": 0
+      }
+    ],
+    "hints": [],
+    "executionTime": 445,
+    "executionStatus": "success",
+    "data": {
+      "main": [
+        [
+          {
+            "json": {
+              "job": {
+                "id": "glw_ppz7fxog",
+                "type": "PAGE_GENERATION",
+                "status": "COMPLETE",
+                "retryOfJobId": null,
+                "siteId": "led-display-warehouse",
+                "title": "Outdoor LED Display Rentals in Sacramento CA",
+                "input": {
+                  "page": {
+                    "city": "Sacramento",
+                    "tone": "Confident",
+                    "state": "California",
+                    "title": "GLW Callback Stabilization Validation 1785424403147",
+                    "status": "draft",
+                    "audience": "Event marketing teams",
+                    "category": "Rentals",
+                    "citySlug": "sacramento",
+                    "pageType": "city_service",
+                    "wordCount": 1500,
+                    "targetSlug": "glw-callback-stabilization-1785424403147",
+                    "workspaceId": "glw-led-display-warehouse",
+                    "callToAction": "Request a same-day quote",
+                    "productTopic": "Outdoor LED Displays",
+                    "primaryKeyword": "outdoor led displays sacramento",
+                    "hierarchicalSlug": "glw-callback-stabilization-1785424403147",
+                    "secondaryKeywords": [
+                      "outdoor led displays",
+                      "sacramento led display rentals",
+                      "california outdoor led screens"
+                    ],
+                    "additionalInstructions": "Generate production-quality SEO content. Callback remediation validation run 1785423446543 Callback endpoint stabilization validation run 1785424403147"
+                  },
+                  "site": {
+                    "id": "led-display-warehouse",
+                    "name": "LED Display Warehouse"
+                  },
+                  "type": "page_generation",
+                  "promptData": {
+                    "tone": "Confident",
+                    "audience": "Event marketing teams",
+                    "callToAction": "Request a same-day quote"
+                  },
+                  "callbackUrl": "https://universal-indicating-finding-wear.trycloudflare.com/api/glw/jobs/callback",
+                  "seoSettings": {
+                    "category": "Rentals",
+                    "citySlug": "sacramento",
+                    "targetSlug": "glw-callback-stabilization-1785424403147",
+                    "primaryKeyword": "outdoor led displays sacramento",
+                    "secondaryKeywords": [
+                      "outdoor led displays",
+                      "sacramento led display rentals",
+                      "california outdoor led screens"
+                    ]
+                  },
+                  "imageSettings": {
+                    "style": "editorial",
+                    "generateFeaturedImage": true
+                  },
+                  "publishingSettings": {
+                    "status": "draft",
+                    "wordCount": 1500
+                  }
+                },
+                "result": {
+                  "title": "Outdoor LED Display Rentals in Sacramento CA",
+                  "status": "COMPLETE",
+                  "executionId": "47833",
+                  "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=13478",
+                  "wordpressPageId": 13478,
+                  "wordpressPostId": 13478
+                },
+                "error": null,
+                "externalExecutionId": "47833",
+                "startedAt": "2026-07-30T15:13:23.249Z",
+                "completedAt": "2026-07-30T15:14:58.554Z",
+                "createdAt": "2026-07-30T15:13:23.261Z",
+                "updatedAt": "2026-07-30T15:14:58.556Z"
+              }
+            },
+            "pairedItem": {
+              "item": 0
+            }
+          }
+        ]
+      ]
+    }
+  }
+}

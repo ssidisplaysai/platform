@@ -146,7 +146,7 @@ export function canTransitionExecutionStatus(current: GenesisExecutionStatus, ne
   }
 
   if (next === "ARCHIVED") {
-    return current === "SUCCEEDED" || current === "FAILED" || current === "CANCELLED" || current === "TIMED_OUT";
+    return false;
   }
 
   if ((current === "WAITING" || current === "BLOCKED") && (next === "RUNNING" || next === "DISPATCHED")) {

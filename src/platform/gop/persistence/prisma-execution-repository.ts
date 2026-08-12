@@ -59,7 +59,6 @@ function toExecution(row: {
     input: (row.input as Record<string, unknown>) ?? {},
     output: (row.output as Record<string, unknown> | null) ?? null,
     artifacts: (row.artifacts as GenesisExecution["artifacts"]) ?? [],
-    notifications: [],
     worker: (row.workerAssignment as GenesisExecution["worker"]) ?? null,
     correlationId: row.correlationId ?? undefined,
     causationId: row.causationId ?? undefined,

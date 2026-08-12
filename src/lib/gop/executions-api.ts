@@ -10,6 +10,10 @@ import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity
 
 const GLW_MODULE_ID = "glw.core";
 
+type ExecutionsAuthorizeResult =
+  | { error: NextResponse }
+  | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
 function unauthorizedResponse(): NextResponse {
   return NextResponse.json({ error: "GLW session is required." }, { status: 401 });
 }
@@ -35,7 +39,7 @@ function mapExecutionStatusToJobStatus(executionStatus: GenesisExecution["status
   }
 }
 
-async function authorizeOperationsRead() {
+async function authorizeOperationsRead(): Promise<ExecutionsAuthorizeResult> {
   const session = await getGlwSession();
   if (!session) {
     return { error: unauthorizedResponse() } as const;
@@ -61,7 +65,7 @@ async function authorizeOperationsRead() {
   return { subject } as const;
 }
 
-async function authorizeExecutionRead(execution: GenesisExecution) {
+async function authorizeExecutionRead(execution: GenesisExecution): Promise<ExecutionsAuthorizeResult> {
   const session = await getGlwSession();
   if (!session) {
     return { error: unauthorizedResponse() } as const;

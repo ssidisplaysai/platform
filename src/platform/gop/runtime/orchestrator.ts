@@ -744,7 +744,6 @@ export function createGenesisOrchestrationRuntime(options: { repository?: Genesi
       workers.assignWork(worker.workerId);
       const dispatched = transitionExecutionStatus(execution, "DISPATCHED", {
         worker,
-        currentState: execution.currentState ?? "dispatched",
       });
 
       persist(dispatched);

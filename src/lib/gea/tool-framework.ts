@@ -42,12 +42,14 @@ export type ToolExecutor = {
   execute: (invocation: ToolInvocation) => Promise<ToolResult>;
 };
 
-const DEFAULT_TOOLS: ToolDefinition[] = [
+const DEFAULT_TOOLS: ToolDefinition[] = (
+  [
   { toolKey: "genesis.workflow.dispatch", capabilityKey: "workflow", riskLevel: "MEDIUM" },
   { toolKey: "genesis.analytics.snapshot", capabilityKey: "analytics", riskLevel: "LOW" },
   { toolKey: "genesis.knowledge.search", capabilityKey: "knowledge", riskLevel: "LOW" },
   { toolKey: "genesis.reporting.generate", capabilityKey: "reporting", riskLevel: "LOW" },
-].map((entry) => ({
+  ] as const
+).map((entry) => ({
   toolId: geaId("geatool"),
   toolVersion: "gea-tool/v1",
   enabled: true,

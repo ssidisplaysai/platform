@@ -14,6 +14,15 @@ import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity
 const GLW_MODULE_ID = "glw.core";
 const MAX_REPLAY_EVENTS = 300;
 
+type EventsAuthorizeResult =
+  | { error: NextResponse }
+  | {
+    subject: ReturnType<typeof buildGenesisSubjectFromSession>;
+    events: Awaited<ReturnType<ReturnType<typeof getGenesisEventStore>["listEventsForJob"]>>;
+    store: ReturnType<typeof getGenesisEventStore>;
+    repository: ReturnType<typeof createPrismaGlwJobRepository>;
+  };
+
 function unauthorizedResponse(): NextResponse {
   return NextResponse.json({ error: "GLW session is required." }, { status: 401 });
 }
@@ -22,7 +31,7 @@ function forbiddenResponse(reason: string): NextResponse {
   return NextResponse.json({ error: reason }, { status: 403 });
 }
 
-async function authorizeJobRead(jobId: string) {
+async function authorizeJobRead(jobId: string): Promise<EventsAuthorizeResult> {
   const session = await getGlwSession();
   if (!session) {
     return { error: unauthorizedResponse() } as const;

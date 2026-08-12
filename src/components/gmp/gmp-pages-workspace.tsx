@@ -103,6 +103,7 @@ type PageHealthPayload = {
     inboundLinks: Record<string, string[]>;
     outboundLinks: Record<string, string[]>;
     linkHealthScore: number;
+    issues: Array<{ ruleId: string; severity: string; reason: string; suggestedResolution: string }>;
   };
   report: GmpPageHealthReport;
 };
@@ -715,7 +716,7 @@ export function GmpPagesWorkspace({
                   knowledgeRecordVersion: typeof reference.knowledgeRecordVersion === "number" ? reference.knowledgeRecordVersion : undefined,
                   required: typeof reference.required === "boolean" ? reference.required : undefined,
                   role: typeof reference.role === "string" ? reference.role : undefined,
-                  metadata: toRecord(reference.metadata),
+                  metadata: toRecord(reference.metadata) ?? undefined,
                 }))}
                 sourceReferences={(planPayload?.sourceReferences ?? []).map((reference) => ({
                   sourceId: typeof reference.sourceId === "string" ? reference.sourceId : undefined,

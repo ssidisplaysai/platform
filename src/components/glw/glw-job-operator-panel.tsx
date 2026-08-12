@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { formatGlwJobDuration, getGlwJobOperatorSnapshot, type GlwJobRecord } from "@/lib/glw/jobs";
+import { formatGlwJobDuration, getGlwJobOperatorSnapshot, resolveGlwPublishingStatus, type GlwJobRecord } from "@/lib/glw/jobs";
 import { EmptyState } from "./empty-state";
 import { GlwJobProgress } from "./glw-job-progress";
 import { GlwJobTimeline } from "./glw-job-timeline";
@@ -76,6 +76,12 @@ export function GlwJobOperatorPanel({
   const result = activeJob.result;
   const wordpressUrl = result?.wordpressUrl ?? null;
   const wordpressPreviewUrl = result?.wordpressUrl ?? null;
+  const publishingMode = resolveGlwPublishingStatus(activeJob);
+  const callbackPublishingStatus = result?.wordpressStatus ?? activeJob.input.page.status;
+  const requestedPublishingMode = result?.requestedPublishingMode ?? activeJob.input.page.status;
+  const callbackDisposition = result?.disposition ?? "--";
+  const qaCheckCount = Object.keys(result?.qaChecks ?? {}).length;
+  const openLabel = publishingMode === "publish" ? "Open Page" : "Open Draft";
   const hasFailure = activeJob.status === "FAILED" || snapshot.timedOut;
 
   return (
@@ -163,7 +169,7 @@ export function GlwJobOperatorPanel({
                 rel="noreferrer"
                 className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
-                Open WordPress Draft
+                {openLabel}
               </a>
             ) : null}
 
@@ -242,9 +248,12 @@ export function GlwJobOperatorPanel({
               <ResultRow label="Secondary Keywords" value={activeJob.input.page.secondaryKeywords.join(", ")} />
               <ResultRow label="Word Count" value={String(activeJob.input.page.wordCount)} />
               <ResultRow label="Images Generated" value={result?.featuredImageUrl ? "1" : "0"} />
-              <ResultRow label="WordPress Draft URL" value={result?.wordpressUrl ?? "--"} />
+              <ResultRow label="Page URL" value={result?.wordpressUrl ?? "--"} />
               <ResultRow label="WordPress Post ID" value={String(result?.wordpressPostId ?? result?.wordpressPageId ?? "--")} />
-              <ResultRow label="Publish Status" value={activeJob.input.page.status} />
+              <ResultRow label="Publish Status" value={callbackPublishingStatus} />
+              <ResultRow label="Requested Publishing Mode" value={requestedPublishingMode} />
+              <ResultRow label="Disposition" value={callbackDisposition} />
+              <ResultRow label="QA Checks Captured" value={String(qaCheckCount)} />
               <ResultRow label="Yoast Status" value={activeJob.status === "COMPLETE" ? "Updated" : "Pending"} />
             </>
           )}

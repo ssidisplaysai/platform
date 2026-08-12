@@ -93,9 +93,12 @@
       "consumersApproximateInbound": 115,
       "dependenciesApproximateOutbound": 484,
       "documentationReferences": [
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md",
         "GBA-0002-API-Contracts.md",
         "GBA-0002-Workspace-Routes.md",
-        "docs/architecture/0011-api-gateway.md"
+        "docs/architecture/0011-api-gateway.md",
+        "genesis/audits/GAR-0002/reports/09-api-layering-assessment.md"
       ],
       "implementationLocation": [
         "src/app/api/"
@@ -185,8 +188,10 @@
         "docs/releases/BUSINESS_GENOME_COMPILER_V1_RELEASE_CHECKLIST.md",
         "docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md",
         "docs/reports/GES-0002_M1.10_BUSINESS_GENOME_PUBLICATION_REPORT.md",
+        "genesis/audits/GAR-0002/reports/12-business-agent-dependency-map.md",
         "genesis/compiler/BGC-0001-Business-Genome-Compiler-Architecture-v1.0.md",
         "genesis/genome/BGS-0001-Business-Genome-Specification-v1.0.md",
+        "genesis/governance/constitution/Volume-V-Business-Genome-Framework.md",
         "genesis/language/business-language.md",
         "genesis/vision/business-philosophy.md"
       ],
@@ -253,9 +258,11 @@
         "docs/releases/BUSINESS_GENOME_COMPILER_V1_RELEASE_CHECKLIST.md",
         "docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md",
         "docs/reports/GES-0002_M1.10_BUSINESS_GENOME_PUBLICATION_REPORT.md",
+        "genesis/audits/GAR-0002/reports/12-business-agent-dependency-map.md",
         "genesis/compiler/BGC-0001-Business-Genome-Compiler-Architecture-v1.0.md",
         "genesis/compiler/STAGE-05_ENTERPRISE_GENOME.md",
         "genesis/genome/BGS-0001-Business-Genome-Specification-v1.0.md",
+        "genesis/governance/constitution/Volume-V-Business-Genome-Framework.md",
         "genesis/language/business-language.md",
         "genesis/vision/business-philosophy.md"
       ],
@@ -306,6 +313,7 @@
         "docs/releases/BUSINESS_GENOME_COMPILER_V1_KNOWN_LIMITATIONS.md",
         "docs/releases/BUSINESS_GENOME_COMPILER_V1_RELEASE_CHECKLIST.md",
         "docs/releases/BUSINESS_GENOME_COMPILER_V1_TEST_SUMMARY.md",
+        "genesis/audits/GAR-0002/reports/17-compiler-and-generation-topology.md",
         "genesis/compiler/BGC-0001-Business-Genome-Compiler-Architecture-v1.0.md",
         "genesis/compiler/COMPILER_CORE_ARCHITECTURE_CONFORMANCE_REPORT.md",
         "genesis/compiler/COMPILER_CORE_DOCUMENTATION.md",
@@ -500,7 +508,8 @@
         "GBA-0006A-Domain-Compatibility.md",
         "GED-0001-Enterprise-Domain-Model.md",
         "GED-0001A-Enterprise-Domain-Certification.md",
-        "docs/architecture/0004-domain-model.md"
+        "docs/architecture/0004-domain-model.md",
+        "genesis/audits/GAR-0002/reports/11-domain-boundary-topology.md"
       ],
       "implementationLocation": [
         "src/lib/ged/",
@@ -576,6 +585,7 @@
         "tests/gmp/gmp-recommendation-api.test.ts",
         "tests/gmp/gmp-recommendation-services.test.ts",
         "tests/gop/operations-api.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/knowledge-lineage.test.ts"
       ]
@@ -601,6 +611,7 @@
         "docs/architecture/0023-enterprise-learning-engine.md",
         "docs/architecture/0024-enterprise-evolution-engine.md",
         "docs/gmp/gmp-0006c-enterprise-evidence-compiler.md",
+        "genesis/audits/GAR-0002/reports/13-enterprise-agent-dependency-map.md",
         "genesis/compiler/STAGE-05_ENTERPRISE_GENOME.md",
         "genesis/research/RA-0001_ENTERPRISE_SEMANTICS.md",
         "genesis/research/RA-0002_ENTERPRISE_IDENTITY.md",
@@ -643,8 +654,8 @@
     {
       "apiExposure": 0,
       "architecturalConcerns": [],
-      "consumersApproximateInbound": 261,
-      "dependenciesApproximateOutbound": 469,
+      "consumersApproximateInbound": 256,
+      "dependenciesApproximateOutbound": 461,
       "documentationReferences": [
         "docs/glw-page-generation-setup.md"
       ],
@@ -685,6 +696,7 @@
         "tests/gop/glw-events-adapter.test.ts",
         "tests/gop/inspector-mapping.test.ts",
         "tests/gop/loader-context.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/setup-jest.ts"
       ]
     },
@@ -774,6 +786,7 @@
         "tests/gmp/gmp-recommendation-api.test.ts",
         "tests/gmp/gmp-recommendation-services.test.ts",
         "tests/gop/operations-api.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/knowledge-lineage.test.ts"
       ]
@@ -781,8 +794,8 @@
     {
       "apiExposure": 0,
       "architecturalConcerns": [],
-      "consumersApproximateInbound": 261,
-      "dependenciesApproximateOutbound": 131,
+      "consumersApproximateInbound": 263,
+      "dependenciesApproximateOutbound": 134,
       "documentationReferences": [],
       "implementationLocation": [
         "src/platform/gop/",
@@ -838,6 +851,7 @@
         "tests/gop/metrics-from-events.test.ts",
         "tests/gop/module-bootstrap.test.ts",
         "tests/gop/operations-api.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/setup-jest.ts",
         "tools/genesis/tests/suites/ApiGatewayTests.mjs",
@@ -871,10 +885,13 @@
       "consumersApproximateInbound": 240,
       "dependenciesApproximateOutbound": 95,
       "documentationReferences": [
+        "GACD-0003-Platform-Bootstrap-API-Decision.md",
+        "GACD-0004-Public-Platform-API-Policy.md",
         "GFP-0001-Platform-Certification.md",
         "GFP-0001-Platform-Freeze-Certificate.md",
         "GKP-0001-Marketing-Kernel-Platform-Certification.md",
-        "docs/standards/INDEX-Genesis-Platform-Standards.md"
+        "docs/standards/INDEX-Genesis-Platform-Standards.md",
+        "genesis/audits/GAR-0002/reports/15-application-platform-topology.md"
       ],
       "implementationLocation": [
         "src/platform/"
@@ -925,6 +942,7 @@
         "tests/gop/loader-context.test.ts",
         "tests/gop/metrics-from-events.test.ts",
         "tests/gop/module-bootstrap.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/setup-jest.ts",
         "tools/genesis/tests/suites/ApiGatewayTests.mjs",
@@ -958,7 +976,7 @@
       "apiExposure": 296,
       "architecturalConcerns": [],
       "consumersApproximateInbound": 2578,
-      "dependenciesApproximateOutbound": 2755,
+      "dependenciesApproximateOutbound": 2758,
       "documentationReferences": [],
       "implementationLocation": [
         "src/",
@@ -1141,8 +1159,8 @@
     {
       "apiExposure": 0,
       "architecturalConcerns": [],
-      "consumersApproximateInbound": 954,
-      "dependenciesApproximateOutbound": 529,
+      "consumersApproximateInbound": 951,
+      "dependenciesApproximateOutbound": 532,
       "documentationReferences": [],
       "implementationLocation": [
         "src/lib/"
@@ -1248,6 +1266,7 @@
         "tests/gop/inspector-mapping.test.ts",
         "tests/gop/loader-context.test.ts",
         "tests/gop/operations-api.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/knowledge-lineage.test.ts",
         "tests/setup-jest.ts"
@@ -1256,9 +1275,10 @@
     {
       "apiExposure": 0,
       "architecturalConcerns": [],
-      "consumersApproximateInbound": 353,
+      "consumersApproximateInbound": 348,
       "dependenciesApproximateOutbound": 119,
       "documentationReferences": [
+        "GACD-0001-Runtime-Authority-Decision.md",
         "GBA-0002A-Runtime-Certification.md",
         "GBA-0003A-Runtime-Certification.md",
         "GBA-0004A-Runtime-Certification.md",
@@ -1277,6 +1297,7 @@
         "docs/gop/gop-0006-runtime-fabric.md",
         "docs/gop/runtime-constitution.md",
         "genesis/architecture/runtime-lifecycle.md",
+        "genesis/audits/GAR-0002/reports/14-runtime-topology-and-flows.md",
         "genesis/compiler/STAGE-08_RUNTIME.md",
         "genesis/operating-system/runtime.md"
       ],
@@ -1332,6 +1353,7 @@
         "tests/gop/loader-context.test.ts",
         "tests/gop/metrics-from-events.test.ts",
         "tests/gop/module-bootstrap.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/setup-jest.ts",
         "tools/genesis/tests/suites/ApiGatewayTests.mjs",
@@ -1423,6 +1445,7 @@
         "tests/gop/metrics-from-events.test.ts",
         "tests/gop/module-bootstrap.test.ts",
         "tests/gop/operations-api.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/setup-jest.ts",
         "tools/genesis/tests/suites/ApiGatewayTests.mjs",
@@ -1458,9 +1481,11 @@
     {
       "apiExposure": 0,
       "architecturalConcerns": [],
-      "consumersApproximateInbound": 954,
-      "dependenciesApproximateOutbound": 529,
-      "documentationReferences": [],
+      "consumersApproximateInbound": 951,
+      "dependenciesApproximateOutbound": 532,
+      "documentationReferences": [
+        "genesis/governance/constitution/Volume-II-Constitutional-Services.md"
+      ],
       "implementationLocation": [
         "src/lib/"
       ],
@@ -1565,6 +1590,7 @@
         "tests/gop/inspector-mapping.test.ts",
         "tests/gop/loader-context.test.ts",
         "tests/gop/operations-api.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/knowledge-lineage.test.ts",
         "tests/setup-jest.ts"
@@ -1576,10 +1602,11 @@
         "high-effluent-coupling"
       ],
       "consumersApproximateInbound": 264,
-      "dependenciesApproximateOutbound": 943,
+      "dependenciesApproximateOutbound": 935,
       "documentationReferences": [
         "GEA-0004-Approval-Framework.md",
         "docs/architecture/0012-application-compiler.md",
+        "genesis/audits/GAR-0002/reports/15-application-platform-topology.md",
         "genesis/compiler/STAGE-04_SEMANTIC_MAPPING.md",
         "src/core/object/README.md",
         "src/sdk/README.md",
@@ -1723,7 +1750,7 @@
         "high-effluent-coupling"
       ],
       "consumersApproximateInbound": 7,
-      "dependenciesApproximateOutbound": 757,
+      "dependenciesApproximateOutbound": 765,
       "documentationReferences": [
         "tests/compiler/discovery/fixtures/empty.md",
         "tests/compiler/discovery/fixtures/filesystem/a.md",
@@ -1851,8 +1878,8 @@
     {
       "apiExposure": 0,
       "architecturalConcerns": [],
-      "consumersApproximateInbound": 292,
-      "dependenciesApproximateOutbound": 490,
+      "consumersApproximateInbound": 294,
+      "dependenciesApproximateOutbound": 498,
       "documentationReferences": [
         "tools/genesis-audit/README.md",
         "tools/genesis/EVENT-BUS.md",
@@ -1977,13 +2004,15 @@
     {
       "apiExposure": 0,
       "architecturalConcerns": [],
-      "consumersApproximateInbound": 1242,
-      "dependenciesApproximateOutbound": 1005,
+      "consumersApproximateInbound": 1239,
+      "dependenciesApproximateOutbound": 1008,
       "documentationReferences": [
         "COMPILER_CORE_VALIDATION.md",
         "DISCOVERY_STAGE_1_COMPLETE_VALIDATION.md",
         "DISCOVERY_STAGE_1_VALIDATION.md",
         "DISCOVERY_STAGE_1_VALIDATION_SUMMARY.md",
+        "GACP-0002A-Validation-Matrix.md",
+        "GAR-0002A-Validation-Report.md",
         "GBA-0001-Validation-Matrix.md",
         "GBA-0002-Validation-Matrix.md",
         "GBA-0002A-Validation-Matrix.md",
@@ -2008,7 +2037,9 @@
         "docs/architecture/0030-afr-0002-architecture-freeze-validation.md",
         "docs/architecture/0031-err-0002-engineering-readiness-validation.md",
         "docs/reports/GES-0002_M1.9_CONSISTENCY_VALIDATION_REPORT.md",
-        "evidence-output/Unknown/EVIDENCE_IR_STAGE_2_VALIDATION.md"
+        "evidence-output/Unknown/EVIDENCE_IR_STAGE_2_VALIDATION.md",
+        "genesis/constitution/gpc-0002/Genesis-Phase-II-Validation.md",
+        "genesis/governance/releases/ggr-0001/Genesis-Governance-Release-Validation.md"
       ],
       "implementationLocation": [
         "src/lib/",
@@ -2203,6 +2234,7 @@
         "tests/gop/loader-context.test.ts",
         "tests/gop/metrics-from-events.test.ts",
         "tests/gop/module-bootstrap.test.ts",
+        "tests/gop/platform-bootstrap-api.test.ts",
         "tests/gop/runtime-certification-failure.test.ts",
         "tests/setup-jest.ts",
         "tools/genesis/tests/suites/ApiGatewayTests.mjs",

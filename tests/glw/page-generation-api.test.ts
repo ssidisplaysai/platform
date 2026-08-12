@@ -31,6 +31,7 @@ import {
   handleJobCallback,
   handleRetryJob,
 } from "@/lib/glw/page-generation-api";
+import { POST as handleCallbackRoute } from "@/app/api/glw/jobs/callback/route";
 
 const originalEnv = { ...process.env };
 
@@ -233,6 +234,42 @@ describe("GLW API auth and creation", () => {
     expect(workflow.invokePageGeneration).toHaveBeenCalledTimes(1);
   });
 
+  it("persists the full callback contract through normalization and API readback", async () => {
+    const repository = createInMemoryGlwJobRepository();
+    const workflow = {
+      invokePageGeneration: jest.fn(async () => ({
+        kind: "complete" as const,
+        executionId: "exec_callback_contract",
+        status: "complete" as const,
+        title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+        wordpressUrl: "https://example.com/led-wall-rental-package",
+        wordpressPostId: 123,
+      })),
+    };
+
+    const response = await handleCreatePageGenerationJob(buildRequest(buildValidPageRequest()), {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      eventStore: createInMemoryGenesisEventStore(),
+      appUrl: "http://localhost:3000",
+      sessionLoader: createSessionLoader(true),
+    });
+
+    expect(response.status).toBe(201);
+
+    const payload = await response.json() as { job: { id: string } };
+    const completedJob = await repository.findById(payload.job.id);
+
+    expect(completedJob?.result).toMatchObject({
+      executionId: "exec_callback_contract",
+      wordpressPageId: 123,
+      wordpressPostId: 123,
+      wordpressUrl: "https://example.com/wp-admin/post.php?post=123&action=edit",
+      wordpressStatus: "draft",
+      requestedPublishingMode: "draft",
+    });
+  });
+
   it("surfaces n8n non-2xx failures", async () => {
     process.env.GLW_N8N_PAGE_WEBHOOK_URL = "https://example.test/webhook";
     process.env.GLW_N8N_WEBHOOK_SECRET = "callback-secret";
@@ -326,6 +363,32 @@ describe("GLW API auth and creation", () => {
     expect(payload.job.error?.message).toContain("Webhook failed");
   });
 
+  it("rejects invalid canonical targets before dispatch", async () => {
+    const repository = createInMemoryGlwJobRepository();
+    const workflow = {
+      invokePageGeneration: jest.fn(),
+    };
+
+    await expect(submitGlwPageGenerationJob(buildValidPageRequest({
+      pageType: "state_service",
+      city: "Texas",
+      citySlug: "tx",
+      hierarchicalSlug: "direct_view_led_video_walls/tx",
+      targetSlug: "tx",
+      title: "Direct View LED Video Walls in Texas",
+      productTopic: "direct view led video walls",
+      state: "Texas",
+      primaryKeyword: "direct view led video walls texas",
+      secondaryKeywords: ["direct view led video walls", "Texas"],
+    }), {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      appUrl: "http://localhost:3000",
+    })).rejects.toThrow(/INVALID_CANONICAL_TARGET/);
+
+    expect(workflow.invokePageGeneration).not.toHaveBeenCalled();
+  });
+
   it("returns an unauthorized response for callbacks without auth", async () => {
     const repository = createInMemoryGlwJobRepository();
 
@@ -339,6 +402,171 @@ describe("GLW API auth and creation", () => {
     });
 
     expect(response.status).toBe(401);
+  });
+
+  it("routes callback requests through the configured webhook secret", async () => {
+    const handleJobCallbackSpy = jest.spyOn(await import("@/lib/glw/page-generation-api"), "handleJobCallback").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }),
+    );
+
+    const request = new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer callback-secret",
+      },
+      body: JSON.stringify({ jobId: "job-1", executionId: "exec-1", status: "RUNNING" }),
+    });
+
+    await handleCallbackRoute(request);
+
+    expect(handleJobCallbackSpy).toHaveBeenCalledTimes(1);
+    expect(handleJobCallbackSpy).toHaveBeenCalledWith(request, {
+      webhookSecret: "callback-secret",
+    });
+  });
+
+  it("normalizes callback aliases and preserves QA fields in response", async () => {
+    const runningJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "RUNNING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "Phase 13 Callback Contract",
+      input: createGlwJobInput(buildValidPageRequest({
+        title: "Phase 13 Callback Contract",
+        status: "publish",
+      }), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "exec_contract",
+        status: "RUNNING",
+        title: "Phase 13 Callback Contract",
+      },
+      error: null,
+      externalExecutionId: "exec_contract",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+
+    const repository = createInMemoryGlwJobRepository([runningJob]);
+    const response = await handleJobCallback(new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer callback-secret",
+      },
+      body: JSON.stringify({
+        jobId: runningJob.id,
+        executionId: "exec_contract",
+        status: "COMPLETE",
+        title: "Phase 13 Callback Contract",
+        wordpress_page_id: 18847,
+        wordpress_post_id: 18847,
+        wordpress_url: "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/houston/",
+        wordpress_status: "publish",
+        requested_publishing_mode: "publish",
+        qa_disposition: "updated",
+        qa_checks_json: JSON.stringify({
+          pageExists: "PASS",
+          hierarchy: "PASS",
+          slug: "PASS",
+          title: "PASS",
+          h1: "PASS",
+          uniquePrimaryHeading: "PASS",
+          duplicateSectionHeadings: "PASS",
+          duplicateSectionContent: "PASS",
+          placeholderResourceLinks: "PASS",
+          body: "PASS",
+          featuredImage: "PASS",
+          heroImage: "PASS",
+          seo: "PASS",
+          internalLinks: "PASS",
+          imageAlt: "PASS",
+          duplicateCheck: "PASS",
+        }),
+        qa_failure_reasons_json: JSON.stringify({
+          hierarchy: "Hierarchy already exists and matched canonical path.",
+          duplicateSectionHeadings: "No duplicate section headings detected.",
+        }),
+      }),
+    }), {
+      repository,
+      webhookSecret: "callback-secret",
+    });
+
+    expect(response.status).toBe(200);
+    const payload = await response.json() as { job: { result: Record<string, unknown> | null } };
+    expect(payload.job.result).not.toBeNull();
+    expect(payload.job.result?.wordpressPostId).toBe(18847);
+    expect(payload.job.result?.wordpressPageId).toBe(18847);
+    expect(payload.job.result?.wordpressStatus).toBe("publish");
+    expect(payload.job.result?.requestedPublishingMode).toBe("publish");
+    expect(payload.job.result?.disposition).toBe("UPDATED");
+    expect((payload.job.result?.qaChecks as Record<string, unknown> | undefined)?.hierarchy).toBe("PASS");
+    expect((payload.job.result?.qaChecks as Record<string, unknown> | undefined)?.uniquePrimaryHeading).toBe("PASS");
+    expect((payload.job.result?.qaChecks as Record<string, unknown> | undefined)?.duplicateSectionHeadings).toBe("PASS");
+    expect((payload.job.result?.qaChecks as Record<string, unknown> | undefined)?.duplicateSectionContent).toBe("PASS");
+    expect((payload.job.result?.qaChecks as Record<string, unknown> | undefined)?.placeholderResourceLinks).toBe("PASS");
+    expect((payload.job.result?.qaFailureReasons as Record<string, unknown> | undefined)?.hierarchy).toContain("canonical path");
+    expect((payload.job.result?.qaFailureReasons as Record<string, unknown> | undefined)?.duplicateSectionHeadings).toContain("No duplicate section headings");
+  });
+
+  it("rejects callback payloads when QA contract version does not match runtime", async () => {
+    const runningJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "RUNNING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "Phase 13 Contract Rejection",
+      input: createGlwJobInput(buildValidPageRequest({
+        title: "Phase 13 Contract Rejection",
+        status: "publish",
+      }), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "exec_contract_mismatch",
+        status: "RUNNING",
+        title: "Phase 13 Contract Rejection",
+      },
+      error: null,
+      externalExecutionId: "exec_contract_mismatch",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+
+    const repository = createInMemoryGlwJobRepository([runningJob]);
+    const response = await handleJobCallback(new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer callback-secret",
+      },
+      body: JSON.stringify({
+        jobId: runningJob.id,
+        executionId: "exec_contract_mismatch",
+        status: "COMPLETE",
+        title: "Phase 13 Contract Rejection",
+        qa_checks_json: JSON.stringify({
+          pageExists: "PASS",
+          hierarchy: "PASS",
+          slug: "PASS",
+        }),
+      }),
+    }), {
+      repository,
+      webhookSecret: "callback-secret",
+    });
+
+    expect(response.status).toBe(409);
+    const payload = await response.json() as {
+      code?: string;
+      expectedQaContractVersion?: number;
+      receivedQaContractVersion?: number;
+      missingQaCheckKeys?: string[];
+    };
+    expect(payload.code).toBe("QA_CONTRACT_VERSION_MISMATCH");
+    expect(payload.expectedQaContractVersion).toBe(16);
+    expect(payload.receivedQaContractVersion).toBe(3);
+    expect(payload.missingQaCheckKeys).toEqual(expect.arrayContaining(["h1", "body", "duplicateCheck"]));
   });
 
   it("returns unavailable diagnostics when n8n status lookup cannot be completed", async () => {
@@ -654,10 +882,18 @@ describe("GLW callback and retry behavior", () => {
       qaChecks: {
         pageExists: "PASS",
         body: "FAIL",
+        uniquePrimaryHeading: "FAIL",
+        duplicateSectionHeadings: "FAIL",
+        duplicateSectionContent: "FAIL",
+        placeholderResourceLinks: "FAIL",
         duplicateCheck: "PASS",
       },
       qaFailureReasons: {
         body: "Body contains placeholder token {{city}}.",
+        uniquePrimaryHeading: "Multiple H1 tags found in rendered content.",
+        duplicateSectionHeadings: "Duplicate H2 heading found: Planning a Reliable Project.",
+        duplicateSectionContent: "Repeated section body content detected.",
+        placeholderResourceLinks: "Related resource placeholder labels are not allowed.",
       },
       error: {
         code: "FAILED_QA",
@@ -670,7 +906,15 @@ describe("GLW callback and retry behavior", () => {
     expect(updated.result?.disposition).toBe("FAILED_QA");
     expect(updated.result?.wordpressStatus).toBe("qa_failed");
     expect(updated.result?.qaChecks?.body).toBe("FAIL");
+    expect(updated.result?.qaChecks?.uniquePrimaryHeading).toBe("FAIL");
+    expect(updated.result?.qaChecks?.duplicateSectionHeadings).toBe("FAIL");
+    expect(updated.result?.qaChecks?.duplicateSectionContent).toBe("FAIL");
+    expect(updated.result?.qaChecks?.placeholderResourceLinks).toBe("FAIL");
     expect(updated.result?.qaFailureReasons?.body).toContain("placeholder");
+    expect(updated.result?.qaFailureReasons?.uniquePrimaryHeading).toContain("Multiple H1");
+    expect(updated.result?.qaFailureReasons?.duplicateSectionHeadings).toContain("Duplicate H2");
+    expect(updated.result?.qaFailureReasons?.duplicateSectionContent).toContain("Repeated section body content");
+    expect(updated.result?.qaFailureReasons?.placeholderResourceLinks).toContain("placeholder labels");
   });
 
   it("allows retry only for failed jobs", async () => {

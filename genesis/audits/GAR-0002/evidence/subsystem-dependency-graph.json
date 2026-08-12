@@ -106,7 +106,7 @@
       "to": "glw"
     },
     {
-      "count": 24,
+      "count": 27,
       "from": "messaging",
       "to": "platform"
     },
@@ -161,7 +161,7 @@
       "to": "platform"
     },
     {
-      "count": 246,
+      "count": 248,
       "from": "registries",
       "to": "registries"
     },
@@ -186,17 +186,17 @@
       "to": "enterprise-agents"
     },
     {
-      "count": 32,
+      "count": 27,
       "from": "src-app",
       "to": "glw"
     },
     {
-      "count": 20,
+      "count": 21,
       "from": "src-app",
       "to": "messaging"
     },
     {
-      "count": 37,
+      "count": 33,
       "from": "src-app",
       "to": "platform"
     },
@@ -241,17 +241,17 @@
       "to": "knowledge"
     },
     {
-      "count": 1,
+      "count": 2,
       "from": "tests",
       "to": "messaging"
     },
     {
-      "count": 35,
+      "count": 36,
       "from": "tests",
       "to": "platform"
     },
     {
-      "count": 25,
+      "count": 26,
       "from": "tests",
       "to": "registries"
     },

@@ -1,5 +1,5 @@
 import { createDefaultToolExecutor, createInMemoryToolRegistry } from "@/lib/gea/tool-framework";
-import { createInMemoryCapabilityRegistry } from "@/lib/gea/capability-registry";
+import { createAuthoritativeCapabilityRegistry } from "@/lib/gea/capability-registry";
 import { createAgentRuntimeService } from "@/lib/gea/agent-runtime";
 import { createInMemoryGeaRepository, createSeedAgent } from "@/lib/gea/agent-repository";
 import { geaId } from "@/lib/gea/agent-models";
@@ -109,7 +109,7 @@ export function createOperationsRuntimeService(repository: OperationsRepository)
   ]);
   createDefaultToolExecutor();
 
-  const capabilityRegistry = createInMemoryCapabilityRegistry();
+  const capabilityRegistry = createAuthoritativeCapabilityRegistry();
   const geaRepository = createInMemoryGeaRepository();
   geaRepository.upsertAgent(createSeedAgent({
     agentId: "gba-operations-agent",
@@ -146,8 +146,8 @@ export function createOperationsRuntimeService(repository: OperationsRepository)
       const references = await registry.listReferences(workspaceId);
       if (references.length === 0) return undefined;
 
-      const catalog = createMemoryCatalog();
-      const evidenceRefs = catalog.query(references, "business_genome").slice(0, 20);
+      const catalog = createMemoryCatalog(memoryRepository);
+      const evidenceRefs = (await catalog.search(workspaceId, "business_genome")).slice(0, 20);
       if (evidenceRefs.length === 0) return undefined;
 
       const built = await builder.buildContext({

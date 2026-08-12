@@ -1,0 +1,26 @@
+{
+  "executionId": "65043",
+  "getRows": {
+    "source_mode": "glw",
+    "publishing_mode": "publish",
+    "callback_url": "https://app.ssiai.app/api/glw/jobs/callback",
+    "city": "qa-freeze-draft-1786385106835",
+    "raw_status": "Ready"
+  },
+  "prepareStateParent": {
+    "publishing_mode": "publish",
+    "city_slug": "qa-freeze-draft-1786385106835"
+  },
+  "createPostStatusParam": "publish",
+  "updateExistingStatusParam": null,
+  "normalizePublished": {
+    "requested_publishing_mode": "publish",
+    "normalized_city_page_status": "publish",
+    "normalized_city_page_url": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/qa-freeze-draft-1786385106835/"
+  },
+  "qa": {
+    "callback_status": "COMPLETE",
+    "wordpress_status": "publish",
+    "wordpress_url": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/qa-freeze-draft-1786385106835/"
+  }
+}

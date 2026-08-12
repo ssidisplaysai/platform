@@ -522,6 +522,7 @@
     "MODULE_COMPILER_V0.3_WORKFLOW_REPORT.md",
     "docs/architecture/0009-workflow-engine.md",
     "docs/architecture/0018-enterprise-planning-engine.md",
+    "genesis/audits/GAR-0002/reports/diagrams/runtime-command-event-workflow-topology.mmd",
     "genesis/development/git-workflow.md",
     "src/components/gea/gea-memory-workspace.tsx",
     "src/components/gea/gea-orchestration-workspace.tsx",

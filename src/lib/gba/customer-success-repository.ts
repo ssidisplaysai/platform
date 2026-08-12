@@ -20,6 +20,16 @@ function toJson(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
 }
 
+const customerSuccessOnboardingStatuses = ["NOT_STARTED", "IN_PROGRESS", "AT_RISK", "READY_FOR_GO_LIVE", "COMPLETE"] as const;
+
+function toCustomerSuccessOnboardingStatus(value: string): CustomerSuccessOnboardingRecord["status"] {
+  if ((customerSuccessOnboardingStatuses as readonly string[]).includes(value)) {
+    return value as CustomerSuccessOnboardingRecord["status"];
+  }
+
+  throw new Error(`Invalid customer success onboarding status: ${value}`);
+}
+
 export type CustomerSuccessRepository = {
   listOnboarding: (workspaceId: string) => Promise<CustomerSuccessOnboardingRecord[]>;
   upsertOnboarding: (record: CustomerSuccessOnboardingRecord) => Promise<CustomerSuccessOnboardingRecord>;
@@ -101,7 +111,7 @@ export function createPrismaCustomerSuccessRepository(prisma: PrismaClient = get
   return {
     async listOnboarding(workspaceId) {
       const rows = await prisma.gbaCustomerSuccessOnboarding.findMany({ where: { workspaceId }, orderBy: { updatedAt: "desc" } });
-      return rows.map((row) => ({ ...row, updatedAt: row.updatedAt.toISOString(), implementationMilestones: (row.implementationMilestones as string[]) ?? [] }));
+      return rows.map((row) => ({ ...row, status: toCustomerSuccessOnboardingStatus(row.status), updatedAt: row.updatedAt.toISOString(), implementationMilestones: (row.implementationMilestones as string[]) ?? [] }));
     },
     async upsertOnboarding(record) {
       await prisma.gbaCustomerSuccessOnboarding.upsert({ where: { customerSuccessOnboardingId: record.customerSuccessOnboardingId }, create: { ...record, implementationMilestones: toJson(record.implementationMilestones), updatedAt: new Date(record.updatedAt) }, update: { customerId: record.customerId, customerName: record.customerName, status: record.status, implementationMilestones: toJson(record.implementationMilestones), trainingProgressPercent: record.trainingProgressPercent, documentationCompletionPercent: record.documentationCompletionPercent, goLiveReadinessPercent: record.goLiveReadinessPercent, adoptionCheckpointPercent: record.adoptionCheckpointPercent, ownerId: record.ownerId, updatedAt: new Date(record.updatedAt), immutableLineage: record.immutableLineage } });

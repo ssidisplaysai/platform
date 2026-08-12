@@ -1,0 +1,84 @@
+{
+  "schemaIdentifier": "gar-0003/gar-0003-clause-evaluation",
+  "schemaVersion": "1.0.0",
+  "packageId": "GAR-0003",
+  "clauses": [
+    {
+      "clauseId": "CNS-1",
+      "clauseText": "Architecture precedes implementation.",
+      "determination": "COMPLIANT",
+      "evidenceRefs": [
+        "GAR3-EVD-001",
+        "GAR3-EVD-004"
+      ],
+      "findingRefs": [
+        "GAR-0003-FND-001"
+      ],
+      "rationale": "Governance authority hierarchy and baseline architecture artifacts are present and coherent."
+    },
+    {
+      "clauseId": "CNS-2",
+      "clauseText": "Business metadata is the source of truth.",
+      "determination": "COMPLIANT WITH CONDITIONS",
+      "evidenceRefs": [
+        "GAR3-EVD-003",
+        "GAR3-EVD-007"
+      ],
+      "findingRefs": [
+        "GAR-0003-FND-003"
+      ],
+      "rationale": "Static evidence is available; dynamic enforcement evidence is incomplete in this package run."
+    },
+    {
+      "clauseId": "CNS-3",
+      "clauseText": "Determinism, governance, and auditability are mandatory.",
+      "determination": "COMPLIANT WITH CONDITIONS",
+      "evidenceRefs": [
+        "GAR3-EVD-002",
+        "GAR3-EVD-003",
+        "GAR3-EVD-005",
+        "GAR3-EVD-006"
+      ],
+      "findingRefs": [
+        "GAR-0003-FND-001",
+        "GAR-0003-FND-002"
+      ],
+      "rationale": "Deterministic and traceable governance baseline evidence is strong; release commit fields in release machine metadata remain unset."
+    },
+    {
+      "clauseId": "CNS-4",
+      "clauseText": "Architectural changes require formal RAR -> ARD -> ADR process.",
+      "determination": "INSUFFICIENT EVIDENCE",
+      "evidenceRefs": [
+        "GAR3-EVD-001"
+      ],
+      "findingRefs": [
+        "GAR-0003-FND-004"
+      ],
+      "rationale": "This run did not perform full historical lineage audit for all architectural changes."
+    },
+    {
+      "clauseId": "CNS-5",
+      "clauseText": "Canonical model boundaries must not be violated.",
+      "determination": "COMPLIANT",
+      "evidenceRefs": [
+        "GAR3-EVD-004",
+        "GAR3-EVD-005"
+      ],
+      "findingRefs": [
+        "GAR-0003-FND-001"
+      ],
+      "rationale": "Governance authority and baseline model boundaries are intact and acyclic."
+    },
+    {
+      "clauseId": "CNS-AR-1",
+      "clauseText": "Constitutional changes require Architecture Review Board approval and an associated ADR.",
+      "determination": "NOT APPLICABLE",
+      "evidenceRefs": [
+        "GAR3-EVD-007"
+      ],
+      "findingRefs": [],
+      "rationale": "No constitutional document mutation occurred in this package."
+    }
+  ]
+}

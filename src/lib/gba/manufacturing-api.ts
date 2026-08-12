@@ -104,10 +104,10 @@ export async function handleManufacturingDashboard(request: Request, dependencie
   const url = new URL(request.url);
   const dashboard = await runtimeFromDeps(dependencies).getDashboard(access.workspaceId, access.organizationId, {
     facility: url.searchParams.get("facility") ?? undefined,
-    line: url.searchParams.get("line") ?? undefined,
+    workCenter: url.searchParams.get("line") ?? undefined,
     shift: url.searchParams.get("shift") ?? undefined,
     period: url.searchParams.get("period") ?? undefined,
-    sku: url.searchParams.get("sku") ?? undefined,
+    productFamily: url.searchParams.get("sku") ?? undefined,
   });
 
   return json({ dashboard });

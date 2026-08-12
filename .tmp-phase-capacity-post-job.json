@@ -1,0 +1,15 @@
+{
+  "generatedAt": "2026-08-10T22:32:34.365Z",
+  "siteId": "led-display-warehouse",
+  "maxConcurrentJobs": 2,
+  "activeCount": 0,
+  "concurrencyRemaining": 2,
+  "dailyRemaining": 1,
+  "hourlyRemaining": 3,
+  "budget": 1,
+  "statusCounts": {
+    "COMPLETE": 24,
+    "FAILED": 18,
+    "STARTING": 25
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "workflowId": "bIDXxyWnY22G8zJC",
+  "changedNode": "City Page Exists?",
+  "before": {
+    "conditions": {
+      "options": {
+        "caseSensitive": true,
+        "leftValue": "",
+        "typeValidation": "strict",
+        "version": 3
+      },
+      "conditions": [
+        {
+          "leftValue": "={{ $json.city_page_found === true }}",
+          "operator": {
+            "type": "boolean",
+            "operation": "true",
+            "singleValue": true
+          }
+        }
+      ],
+      "combinator": "and"
+    },
+    "options": {}
+  },
+  "after": {
+    "conditions": {
+      "options": {
+        "caseSensitive": true,
+        "leftValue": "",
+        "typeValidation": "strict",
+        "version": 3
+      },
+      "conditions": [
+        {
+          "leftValue": "={{ $json.city_page_found === true }}",
+          "operator": {
+            "type": "boolean",
+            "operation": "true",
+            "singleValue": true
+          }
+        }
+      ],
+      "combinator": "and"
+    },
+    "options": {}
+  }
+}

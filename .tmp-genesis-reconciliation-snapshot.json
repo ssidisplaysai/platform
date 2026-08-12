@@ -1,0 +1,36 @@
+{
+  "generatedAt": "2026-08-11T02:26:14.534Z",
+  "workspaceId": "glw-led-display-warehouse",
+  "raw": {
+    "starting": 12,
+    "running": 0,
+    "recoverable": 8,
+    "unknown": 0,
+    "workers": 0,
+    "leases": 0,
+    "capacity": 0,
+    "concurrency": 0,
+    "callbacksPending": 12,
+    "executionStates": {
+      "unknown": 12
+    }
+  },
+  "productionVisible": {
+    "starting": 12,
+    "running": 0,
+    "recoverable": 8,
+    "unknown": 0,
+    "workers": 0,
+    "leases": 0,
+    "capacity": 0,
+    "concurrency": 0,
+    "callbacksPending": 12,
+    "bucketCounts": {
+      "STUCK": 12
+    },
+    "queueHealth": 36,
+    "readiness": 0
+  },
+  "fIds": [],
+  "aIds": []
+}

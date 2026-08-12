@@ -1,0 +1,24 @@
+{
+  "workflowId": "bIDXxyWnY22G8zJC",
+  "patched": true,
+  "nodesPresent": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "validationTrueBranch": [
+    "Find Existing City Page"
+  ],
+  "createNext": [
+    "Normalize Published City Page"
+  ],
+  "updateNext": [
+    "Normalize Published City Page"
+  ],
+  "normalizeNext": [
+    "Update Yoast SEO"
+  ]
+}

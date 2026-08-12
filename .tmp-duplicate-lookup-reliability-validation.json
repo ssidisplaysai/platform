@@ -1,0 +1,385 @@
+{
+  "lookupNode": {
+    "workflowId": "bIDXxyWnY22G8zJC",
+    "nodeName": "Find Existing City Page",
+    "nodeType": "n8n-nodes-base.httpRequest",
+    "parameters": {
+      "method": "GET",
+      "url": "=https://leddisplaywarehouse.com/wp-json/wp/v2/pages?slug={{ $('Prepare State Parent').first().json.city_slug }}&parent={{ $('Prepare State Parent').first().json.state_parent_id }}&per_page=1",
+      "authentication": "predefinedCredentialType",
+      "nodeCredentialType": "wordpressApi",
+      "sendBody": false,
+      "options": {
+        "response": {
+          "response": {
+            "fullResponse": true,
+            "neverError": true,
+            "responseFormat": "json"
+          }
+        }
+      }
+    },
+    "credentials": [
+      "wordpressApi"
+    ]
+  },
+  "houstonBefore": {
+    "productId": 124,
+    "stateId": 2563,
+    "items": []
+  },
+  "houstonRuns": [
+    {
+      "executionId": "60766",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "1",
+        "xWpTotalPages": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 18847,
+        "existing_city_page_status": "draft",
+        "existing_city_page_slug": "houston"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        1,
+        0
+      ],
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 18847,
+        "status": "draft",
+        "slug": "houston",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=18847"
+      },
+      "normalized": {
+        "id": 18847,
+        "url": "https://leddisplaywarehouse.com/?page_id=18847",
+        "status": "draft",
+        "disposition": "UPDATED"
+      },
+      "error": null
+    },
+    {
+      "executionId": "60770",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "1",
+        "xWpTotalPages": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 18847,
+        "existing_city_page_status": "draft",
+        "existing_city_page_slug": "houston"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        1,
+        0
+      ],
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 18847,
+        "status": "draft",
+        "slug": "houston",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=18847"
+      },
+      "normalized": {
+        "id": 18847,
+        "url": "https://leddisplaywarehouse.com/?page_id=18847",
+        "status": "draft",
+        "disposition": "UPDATED"
+      },
+      "error": null
+    },
+    {
+      "executionId": "60771",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "1",
+        "xWpTotalPages": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 18847,
+        "existing_city_page_status": "draft",
+        "existing_city_page_slug": "houston"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        1,
+        0
+      ],
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 18847,
+        "status": "draft",
+        "slug": "houston",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=18847"
+      },
+      "normalized": {
+        "id": 18847,
+        "url": "https://leddisplaywarehouse.com/?page_id=18847",
+        "status": "draft",
+        "disposition": "UPDATED"
+      },
+      "error": null
+    },
+    {
+      "executionId": "60772",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "1",
+        "xWpTotalPages": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 18847,
+        "existing_city_page_status": "draft",
+        "existing_city_page_slug": "houston"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        1,
+        0
+      ],
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 18847,
+        "status": "draft",
+        "slug": "houston",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=18847"
+      },
+      "normalized": {
+        "id": 18847,
+        "url": "https://leddisplaywarehouse.com/?page_id=18847",
+        "status": "draft",
+        "disposition": "UPDATED"
+      },
+      "error": null
+    }
+  ],
+  "houstonAfter": {
+    "productId": 124,
+    "stateId": 2563,
+    "items": []
+  },
+  "newCityBefore": {
+    "productId": 124,
+    "stateId": 2563,
+    "items": []
+  },
+  "newCity": "qa-dup-rel-1786148763196-0",
+  "newCityRuns": [
+    {
+      "executionId": "60776",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "0",
+        "xWpTotalPages": "0",
+        "bodyCount": 0
+      },
+      "lookup": {
+        "city_page_found": false,
+        "existing_city_page_id": 0,
+        "existing_city_page_status": "",
+        "existing_city_page_slug": "qa-dup-rel-1786148763196-0"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        0,
+        1
+      ],
+      "createExecuted": true,
+      "updateExecuted": false,
+      "createResult": {
+        "id": 19073,
+        "status": "draft",
+        "slug": "qa-dup-rel-1786148763196-0",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=19073"
+      },
+      "updateResult": null,
+      "normalized": {
+        "id": 19073,
+        "url": "https://leddisplaywarehouse.com/?page_id=19073",
+        "status": "draft",
+        "disposition": "CREATED"
+      },
+      "error": null
+    },
+    {
+      "executionId": "60778",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "1",
+        "xWpTotalPages": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 19073,
+        "existing_city_page_status": "draft",
+        "existing_city_page_slug": "qa-dup-rel-1786148763196-0"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        1,
+        0
+      ],
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 19073,
+        "status": "draft",
+        "slug": "qa-dup-rel-1786148763196-0",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=19073"
+      },
+      "normalized": {
+        "id": 19073,
+        "url": "https://leddisplaywarehouse.com/?page_id=19073",
+        "status": "draft",
+        "disposition": "UPDATED"
+      },
+      "error": null
+    },
+    {
+      "executionId": "60780",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "1",
+        "xWpTotalPages": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 19073,
+        "existing_city_page_status": "draft",
+        "existing_city_page_slug": "qa-dup-rel-1786148763196-0"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        1,
+        0
+      ],
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 19073,
+        "status": "draft",
+        "slug": "qa-dup-rel-1786148763196-0",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=19073"
+      },
+      "normalized": {
+        "id": 19073,
+        "url": "https://leddisplaywarehouse.com/?page_id=19073",
+        "status": "draft",
+        "disposition": "UPDATED"
+      },
+      "error": null
+    },
+    {
+      "executionId": "60789",
+      "status": "success",
+      "findExisting": {
+        "statusCode": 200,
+        "xWpTotal": "1",
+        "xWpTotalPages": "1",
+        "bodyCount": 1
+      },
+      "lookup": {
+        "city_page_found": true,
+        "existing_city_page_id": 19073,
+        "existing_city_page_status": "draft",
+        "existing_city_page_slug": "qa-dup-rel-1786148763196-0"
+      },
+      "cityLookupSuccessfulOutSizes": [
+        1,
+        0
+      ],
+      "cityPageExistsOutSizes": [
+        1,
+        0
+      ],
+      "createExecuted": false,
+      "updateExecuted": true,
+      "createResult": null,
+      "updateResult": {
+        "id": 19073,
+        "status": "draft",
+        "slug": "qa-dup-rel-1786148763196-0",
+        "parent": 2563,
+        "link": "https://leddisplaywarehouse.com/?page_id=19073"
+      },
+      "normalized": {
+        "id": 19073,
+        "url": "https://leddisplaywarehouse.com/?page_id=19073",
+        "status": "draft",
+        "disposition": "UPDATED"
+      },
+      "error": null
+    }
+  ],
+  "newCityAfter": {
+    "productId": 124,
+    "stateId": 2563,
+    "items": []
+  },
+  "crossProductHouston": {
+    "productId": 417,
+    "stateId": 2568,
+    "items": []
+  },
+  "generatedAt": "2026-08-08T00:31:58.747Z"
+}

@@ -14,6 +14,32 @@
         "supersedesBaselineId": null,
         "successorBaselineId": null
       }
+    },
+    {
+      "baselineId": "GAF-0001",
+      "version": "1.0",
+      "title": "Genesis Constitutional Foundation",
+      "status": "Frozen",
+      "authoritySource": "genesis/CONSTITUTION.md",
+      "location": "GAF-0001-Genesis-Constitutional-Foundation-Freeze.md",
+      "supersession": {
+        "status": "active",
+        "supersedesBaselineId": null,
+        "successorBaselineId": null
+      }
+    },
+    {
+      "baselineId": "GCF-0001",
+      "version": "1.0.0",
+      "title": "Genesis Constitutional Foundation v1.0 Publication and Certification",
+      "status": "Certified",
+      "authoritySource": "genesis/CONSTITUTION.md",
+      "location": "genesis/governance/releases/gcf-0001",
+      "supersession": {
+        "status": "active",
+        "supersedesBaselineId": "GAF-0001",
+        "successorBaselineId": null
+      }
     }
   ]
 }

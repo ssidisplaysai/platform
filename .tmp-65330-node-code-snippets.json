@@ -1,0 +1,324 @@
+{
+  "prepare": {
+    "name": "Prepare Hierarchy Fields",
+    "hits": [
+      {
+        "line": 102,
+        "text": " * Always trust structured geographic fields."
+      },
+      {
+        "line": 103,
+        "text": " */"
+      },
+      {
+        "line": 104,
+        "text": "const stateSlug = slugify(item.state);"
+      },
+      {
+        "line": 105,
+        "text": "const citySlug = slugify(item.city);"
+      },
+      {
+        "line": 106,
+        "text": ""
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 103,
+        "text": " */"
+      },
+      {
+        "line": 104,
+        "text": "const stateSlug = slugify(item.state);"
+      },
+      {
+        "line": 105,
+        "text": "const citySlug = slugify(item.city);"
+      },
+      {
+        "line": 106,
+        "text": ""
+      },
+      {
+        "line": 107,
+        "text": "/*"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 118,
+        "text": "];"
+      },
+      {
+        "line": 119,
+        "text": ""
+      },
+      {
+        "line": 120,
+        "text": "const pageTypeValue = normalizeText(item.page_type);"
+      },
+      {
+        "line": 121,
+        "text": ""
+      },
+      {
+        "line": 122,
+        "text": "if ("
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 221,
+        "text": "}"
+      },
+      {
+        "line": 222,
+        "text": ""
+      },
+      {
+        "line": 223,
+        "text": "if (isGlw && !citySlug) {"
+      },
+      {
+        "line": 224,
+        "text": "  throw new Error("
+      },
+      {
+        "line": 225,
+        "text": "    `GLW: Unable to resolve city slug from city=\"${item.city || ''}\".`"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 234,
+        "text": "const finalCitySlug = citySlug || '';"
+      },
+      {
+        "line": 235,
+        "text": ""
+      },
+      {
+        "line": 236,
+        "text": "const desiredHierarchicalSlug = ["
+      },
+      {
+        "line": 237,
+        "text": "  finalProductSlug,"
+      },
+      {
+        "line": 238,
+        "text": "  finalStateSlug,"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 247,
+        "text": "      ...item,"
+      },
+      {
+        "line": 248,
+        "text": ""
+      },
+      {
+        "line": 249,
+        "text": "      product_slug: finalProductSlug,"
+      },
+      {
+        "line": 250,
+        "text": "      state_slug: finalStateSlug,"
+      },
+      {
+        "line": 251,
+        "text": "      city_slug: finalCitySlug,"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 248,
+        "text": ""
+      },
+      {
+        "line": 249,
+        "text": "      product_slug: finalProductSlug,"
+      },
+      {
+        "line": 250,
+        "text": "      state_slug: finalStateSlug,"
+      },
+      {
+        "line": 251,
+        "text": "      city_slug: finalCitySlug,"
+      },
+      {
+        "line": 252,
+        "text": ""
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 249,
+        "text": "      product_slug: finalProductSlug,"
+      },
+      {
+        "line": 250,
+        "text": "      state_slug: finalStateSlug,"
+      },
+      {
+        "line": 251,
+        "text": "      city_slug: finalCitySlug,"
+      },
+      {
+        "line": 252,
+        "text": ""
+      },
+      {
+        "line": 253,
+        "text": "      desired_hierarchical_slug: desiredHierarchicalSlug"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      }
+    ]
+  },
+  "getRows": {
+    "name": "Get row(s) in sheet",
+    "hits": [
+      {
+        "line": 158,
+        "text": ");"
+      },
+      {
+        "line": 159,
+        "text": ""
+      },
+      {
+        "line": 160,
+        "text": "const citySlug = slugify("
+      },
+      {
+        "line": 161,
+        "text": "  page.citySlug ||"
+      },
+      {
+        "line": 162,
+        "text": "  seoSettings.citySlug ||"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 166,
+        "text": ");"
+      },
+      {
+        "line": 167,
+        "text": ""
+      },
+      {
+        "line": 168,
+        "text": "const hierarchicalSlug = String("
+      },
+      {
+        "line": 169,
+        "text": "  page.hierarchicalSlug ||"
+      },
+      {
+        "line": 170,
+        "text": "  page.hierarchical_slug ||"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 174,
+        "text": ").trim();"
+      },
+      {
+        "line": 175,
+        "text": ""
+      },
+      {
+        "line": 176,
+        "text": "const slugParts = hierarchicalSlug"
+      },
+      {
+        "line": 177,
+        "text": "  ? hierarchicalSlug"
+      },
+      {
+        "line": 178,
+        "text": "      .split('/')"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 238,
+        "text": "      category,"
+      },
+      {
+        "line": 239,
+        "text": "      state,"
+      },
+      {
+        "line": 240,
+        "text": "      city,"
+      },
+      {
+        "line": 241,
+        "text": "      focus_keyword: focusKeyword,"
+      },
+      {
+        "line": 242,
+        "text": ""
+      },
+      {
+        "line": -1,
+        "text": "---"
+      },
+      {
+        "line": 241,
+        "text": "      focus_keyword: focusKeyword,"
+      },
+      {
+        "line": 242,
+        "text": ""
+      },
+      {
+        "line": 243,
+        "text": "      slug: slugParts.join('/'),"
+      },
+      {
+        "line": 244,
+        "text": ""
+      },
+      {
+        "line": 245,
+        "text": "      page_title: requestedTitle,"
+      },
+      {
+        "line": -1,
+        "text": "---"
+      }
+    ]
+  }
+}

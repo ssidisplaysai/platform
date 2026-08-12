@@ -1,0 +1,38 @@
+{
+  "generatedAt": "2026-08-11T04:22:59.361Z",
+  "jobId": "glw_4avl5a2j",
+  "executionId": "65711",
+  "finalStatus": "COMPLETE",
+  "finalDisposition": "UPDATED",
+  "finalWordpressStatus": "publish",
+  "qaPageId": 18846,
+  "qaWordpressUrl": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/dallas/",
+  "qaChecks": {
+    "pageExists": "PASS",
+    "hierarchy": "PASS",
+    "slug": "PASS",
+    "title": "PASS",
+    "h1": "PASS",
+    "uniquePrimaryHeading": "PASS",
+    "duplicateSectionHeadings": "PASS",
+    "duplicateSectionContent": "PASS",
+    "placeholderResourceLinks": "PASS",
+    "body": "PASS",
+    "featuredImage": "PASS",
+    "heroImage": "PASS",
+    "seo": "PASS",
+    "internalLinks": "PASS",
+    "imageAlt": "PASS",
+    "duplicateCheck": "PASS"
+  },
+  "qaFailureReasons": {},
+  "callbackStatus": null,
+  "callbackQaStatus": null,
+  "renderedEvidence": {
+    "httpStatus": 200,
+    "visiblePrimaryHeadingCount": 1,
+    "duplicateSectionHeadingCount": 0,
+    "placeholderResourceLabelCount": 0,
+    "renderedWordCount": 1301
+  }
+}

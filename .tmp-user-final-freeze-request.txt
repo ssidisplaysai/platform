@@ -1,0 +1,389 @@
+PROJECT: GLW v1.0 FINAL FREEZE + SECURITY CLOSEOUT
+
+STATUS
+
+The GLW Publishing Engine v1.0 is functionally production-ready.
+
+Confirmed working:
+
+- GLW default publish mode
+- Draft option retained
+- n8n fallback to publish
+- Product > State > City hierarchy
+- duplicate protection
+- idempotent reruns
+- create/update convergence
+- 12-check QA gate
+- Yoast metadata updates
+- featured image
+- hero image insertion
+- callback completion
+- Open Page / Open Draft behavior
+- published canonical URLs
+- draft edit-safe handling
+- public PHP warnings eliminated
+
+Authoritative smoke evidence:
+
+Publish execution:
+65047
+COMPLETE
+QA 12/12 PASS
+wordpressStatus = publish
+HTTP 200 canonical URL
+
+Draft execution:
+65057
+COMPLETE
+QA 12/12 PASS
+wordpressStatus = draft
+
+Additional successful publish execution:
+65019
+
+Freeze commit already created:
+
+7b5ffce424e0879b802bfc02814ebcdeb6c7e8d8
+
+Freeze tag already created locally:
+
+glw-production-v1.0
+
+The final environment warning blocker has now been fixed manually in production hosting.
+
+Production PHP state now effectively has:
+
+display_errors = Off
+log_errors = On
+
+WordPress config also contains:
+
+define( 'WP_DEBUG', false );
+define( 'WP_DEBUG_DISPLAY', false );
+@ini_set( 'display_errors', '0' );
+@ini_set( 'log_errors', '1' );
+
+Draft/404 verification:
+
+https://leddisplaywarehouse.com/?page_id=19290
+
+now shows normal WordPress 404 behavior with NO public PHP warnings.
+
+==================================================
+OBJECTIVE
+==================================================
+
+Close the GLW v1.0 freeze properly.
+
+Do NOT add features.
+
+Do NOT redesign anything.
+
+Do NOT refactor unrelated code.
+
+Do NOT modify the production n8n workflow unless required for freeze integrity.
+
+This task is administrative, source-control, documentation, and security closeout.
+
+==================================================
+STEP 1 — UPDATE FREEZE DOCUMENTATION
+==================================================
+
+Update:
+
+GLW-Publishing-Engine-v1.0-Freeze.md
+
+Add the final environment closure:
+
+- PHP display_errors disabled
+- PHP log_errors enabled
+- WP_DEBUG false
+- WP_DEBUG_DISPLAY false
+- draft/404 no longer exposes warnings
+- published page remains HTTP 200
+- REST behavior unchanged
+
+Record:
+
+Environment hardening status = PASS
+
+Update final verdict to:
+
+GLW PUBLISHING ENGINE v1.0 FROZEN — PRODUCTION READY
+
+Do not include secrets.
+
+==================================================
+STEP 2 — VERIFY COMMIT STATE
+==================================================
+
+Confirm current HEAD and freeze commit.
+
+Expected freeze commit:
+
+7b5ffce424e0879b802bfc02814ebcdeb6c7e8d8
+
+Check:
+
+git status
+git rev-parse HEAD
+git show --stat 7b5ffce424e0879b802bfc02814ebcdeb6c7e8d8
+
+If documentation changed after the original freeze commit:
+
+create ONE small follow-up commit containing ONLY the final environment-closeout documentation.
+
+Suggested message:
+
+GLW v1.0 production environment closeout
+
+Do not stage unrelated dirty-tree files.
+
+Never use:
+
+git add .
+git add -A
+
+Stage explicit files only.
+
+==================================================
+STEP 3 — VERIFY TAG
+==================================================
+
+Confirm:
+
+glw-production-v1.0
+
+exists.
+
+Check:
+
+git rev-list -n 1 glw-production-v1.0
+
+If a small documentation-only closeout commit was required after the original tag:
+
+DO NOT silently move an existing published tag.
+
+If tag has not yet been pushed, it may be safely moved to the final closeout commit only after reporting what is being changed.
+
+If tag already points to the intended final validated commit:
+leave it unchanged.
+
+Report exact tag target.
+
+==================================================
+STEP 4 — PUSH FREEZE CHECKPOINT
+==================================================
+
+Push the validated branch and tag.
+
+Previously prepared branch:
+
+feature/gar-0003-constitutional-assessment
+
+Commands conceptually:
+
+git push origin feature/gar-0003-constitutional-assessment
+git push origin glw-production-v1.0
+
+Before pushing:
+
+verify staged/committed scope is clean and contains no unrelated work.
+
+After push:
+
+verify remote branch alignment
+verify remote tag exists
+verify tag points to intended commit
+
+Report:
+
+branch
+commit SHA
+tag SHA/target
+push result
+
+==================================================
+STEP 5 — PRODUCTION WORKFLOW FREEZE
+==================================================
+
+Verify the active n8n production workflow.
+
+Record:
+
+workflow name
+workflow ID
+active status
+
+Expected production baseline is the validated GLW page engine.
+
+Ensure:
+
+- production workflow is active
+- development workflow remains separate/inactive or otherwise safely isolated
+- no duplicate active webhook exists
+- no stale test workflow shares production webhook path
+
+Do NOT change validated workflow logic.
+
+==================================================
+STEP 6 — FINAL RUNTIME SMOKE
+==================================================
+
+Run read-only final probes.
+
+Published canonical page:
+must return HTTP 200
+must not show PHP warnings
+
+Draft/404 test:
+may return 404
+must not show PHP warnings
+
+GLW health:
+must return 200
+
+GLW pages:
+must load/authenticate normally
+
+Do not trigger a new expensive generation unless necessary.
+
+==================================================
+STEP 7 — SECURITY ROTATION PLAN
+==================================================
+
+IMPORTANT:
+
+Sensitive WordPress configuration values were exposed during troubleshooting.
+
+Do NOT print or reproduce any secret values.
+
+Create a security remediation checklist only.
+
+Required actions:
+
+1. Rotate WordPress database password.
+2. Update DB_PASSWORD in wp-config.php.
+3. Verify WordPress connects successfully after rotation.
+4. Regenerate all WordPress authentication keys/salts.
+5. Replace all 8 keys/salts in wp-config.php.
+6. Expect active WordPress sessions to be invalidated.
+7. Test:
+   - frontend
+   - wp-admin login
+   - REST API
+   - n8n WordPress authentication
+8. Verify no credential-dependent automation breaks.
+
+Do NOT rotate credentials automatically unless valid production access and explicit authorization exist.
+
+If access is available and authorization is clear:
+perform rotation carefully and validate.
+
+Otherwise:
+produce exact step-by-step instructions and stop.
+
+==================================================
+STEP 8 — RECOVERY CHECKPOINT
+==================================================
+
+Confirm the following recovery assets exist:
+
+- repository freeze commit
+- glw-production-v1.0 tag
+- n8n production workflow export
+- freeze document
+- test cleanup candidate report
+- WordPress backup method
+- database backup method
+- uploads backup method
+- Cloudflare routing documentation
+- startup/runtime documentation
+
+Do not store secrets in repository documentation.
+
+==================================================
+STEP 9 — FREEZE RULE
+==================================================
+
+After this task completes:
+
+The GLW v1.0 production engine is FROZEN.
+
+No future production changes directly against this baseline.
+
+All future work must follow:
+
+Development
+-> validation
+-> smoke test
+-> versioned promotion
+-> production
+
+Future enhancements belong in v1.1 or later.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return exactly:
+
+Freeze documentation:
+PASS / FAIL
+Path:
+
+Environment hardening:
+PASS / FAIL
+
+Published page probe:
+PASS / FAIL
+
+Draft/404 warning probe:
+PASS / FAIL
+
+GLW health:
+PASS / FAIL
+
+Production workflow:
+Name:
+ID:
+Active:
+
+Development workflow:
+Name:
+ID:
+Active:
+
+Freeze commit:
+SHA:
+
+Closeout commit:
+SHA / NOT REQUIRED
+
+Tag:
+Name: glw-production-v1.0
+Target SHA:
+Remote verified: YES / NO
+
+Branch push:
+PASS / FAIL
+
+Tag push:
+PASS / FAIL
+
+Recovery assets:
+PASS / FAIL
+
+Security rotation:
+REQUIRED / COMPLETE
+Actions remaining:
+
+Remaining blockers:
+
+Final verdict:
+
+GLW PUBLISHING ENGINE v1.0 FROZEN — PRODUCTION READY
+
+or
+
+NOT READY — DO NOT FREEZE

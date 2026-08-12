@@ -116,7 +116,6 @@ export function createMarketingRuntimeService(repository: MarketingRepository): 
       score: 82,
       opportunities: ["Improve search snippets for campaign pages", "Expand strategic pillar content"],
       blockers: ["No canonical campaign taxonomy yet"],
-      createdAt: new Date().toISOString(),
       immutableLineage: stableMarketingChecksum({ projectId, siteId, type: "seo" }),
     });
 
@@ -130,14 +129,13 @@ export function createMarketingRuntimeService(repository: MarketingRepository): 
           projectId,
           siteId,
           category: recommendation.category,
-          title: recommendation.title,
+          title: recommendation.recommendedAction,
           summary: recommendation.explanation,
           recommendedAction: recommendation.recommendedAction,
           priority: recommendation.priority,
           confidence: recommendation.confidence,
           status: "NEW",
           sourceReference: recommendation.recommendationId,
-          createdAt: recommendation.createdAt,
           immutableLineage: stableMarketingChecksum({ recommendationId: recommendation.recommendationId }),
         });
       }
@@ -154,7 +152,6 @@ export function createMarketingRuntimeService(repository: MarketingRepository): 
       reviewState: "PASS",
       notes: "Brand voice and governance are aligned to the certified GMP kernel inputs.",
       reviewedBy: "system",
-      reviewedAt: new Date().toISOString(),
       immutableLineage: stableMarketingChecksum({ projectId, siteId, type: "brand_governance" }),
     });
   }
@@ -263,7 +260,7 @@ export function createMarketingRuntimeService(repository: MarketingRepository): 
     },
 
     async createCampaignPlan(input) {
-      const plan = createMarketingCampaignPlan(input);
+      const plan = createMarketingCampaignPlan({ ...input, createdBy: input.actorId });
       await repository.createCampaignPlan(plan);
       await repository.appendCampaignPlanHistory({
         marketingCampaignPlanHistoryId: marketingId("gbamkthist"),
@@ -343,14 +340,13 @@ export function createMarketingRuntimeService(repository: MarketingRepository): 
             projectId,
             siteId: recommendation.siteId,
             category: recommendation.category,
-            title: recommendation.title,
+            title: recommendation.recommendedAction,
             summary: recommendation.explanation,
             recommendedAction: recommendation.recommendedAction,
             priority: recommendation.priority,
             confidence: recommendation.confidence,
             status: "NEW",
             sourceReference: recommendation.recommendationId,
-            createdAt: recommendation.createdAt,
             immutableLineage: stableMarketingChecksum({ recommendationId: recommendation.recommendationId }),
           });
         }
@@ -407,7 +403,6 @@ export function createMarketingRuntimeService(repository: MarketingRepository): 
         campaignHighlights: { activeCampaigns: (await repository.listCampaignPlans(projectId)).length },
         contentHighlights: { strategyStatus: strategy?.status ?? "DRAFT", pillars: strategy?.pillarTopics ?? [] },
         seoHighlights: { score: seo?.score ?? 0, opportunities: seo?.opportunities ?? [] },
-        createdAt: new Date().toISOString(),
         immutableLineage: stableMarketingChecksum({ projectId, type: "executive_report" }),
       });
       return [report];
@@ -428,7 +423,6 @@ export function createMarketingRuntimeService(repository: MarketingRepository): 
         reviewBacklog: recommendations.filter((entry) => entry.status === "NEW").length,
         seoRisks: seo.flatMap((entry) => entry.blockers).length,
         analyticsGaps: 0,
-        generatedAt: new Date().toISOString(),
         immutableLineage: stableMarketingChecksum({ projectId, type: "health" }),
       });
       return [health];

@@ -1,0 +1,92 @@
+{
+  "executionId": "47899",
+  "status": "success",
+  "startedAt": "2026-07-30T16:14:31.313Z",
+  "stoppedAt": "2026-07-30T16:16:09.690Z",
+  "lastNodeExecuted": "Send GLW Completion Callback",
+  "callbackNodeStatus": "SUCCESS",
+  "callbackNodeError": null,
+  "callbackPayloadJob": {
+    "id": "glw_qdivgdmj",
+    "type": "PAGE_GENERATION",
+    "status": "COMPLETE",
+    "retryOfJobId": null,
+    "siteId": "led-display-warehouse",
+    "title": "Outdoor LED Displays Rentals in Sacramento, CA",
+    "input": {
+      "page": {
+        "city": "Sacramento",
+        "tone": "Confident",
+        "state": "California",
+        "title": "GLW INFRA 0001 Validation 1785428071015",
+        "status": "draft",
+        "audience": "Event marketing teams",
+        "category": "Rentals",
+        "citySlug": "sacramento",
+        "pageType": "city_service",
+        "wordCount": 1500,
+        "targetSlug": "glw-infra-0001-1785428071015",
+        "workspaceId": "glw-led-display-warehouse",
+        "callToAction": "Request a same-day quote",
+        "productTopic": "Outdoor LED Displays",
+        "primaryKeyword": "outdoor led displays sacramento",
+        "hierarchicalSlug": "glw-infra-0001-1785428071015",
+        "secondaryKeywords": [
+          "outdoor led displays",
+          "sacramento led display rentals",
+          "california outdoor led screens"
+        ],
+        "additionalInstructions": "Permanent named tunnel validation run 1785428071015"
+      },
+      "site": {
+        "id": "led-display-warehouse",
+        "name": "LED Display Warehouse"
+      },
+      "type": "page_generation",
+      "promptData": {
+        "tone": "Confident",
+        "audience": "Event marketing teams",
+        "callToAction": "Request a same-day quote"
+      },
+      "callbackUrl": "https://glw-dev.ssiai.app/api/glw/jobs/callback",
+      "seoSettings": {
+        "category": "Rentals",
+        "citySlug": "sacramento",
+        "targetSlug": "glw-infra-0001-1785428071015",
+        "primaryKeyword": "outdoor led displays sacramento",
+        "secondaryKeywords": [
+          "outdoor led displays",
+          "sacramento led display rentals",
+          "california outdoor led screens"
+        ]
+      },
+      "imageSettings": {
+        "style": "editorial",
+        "generateFeaturedImage": true
+      },
+      "publishingSettings": {
+        "status": "draft",
+        "wordCount": 1500
+      }
+    },
+    "result": {
+      "title": "Outdoor LED Displays Rentals in Sacramento, CA",
+      "status": "COMPLETE",
+      "executionId": "47899",
+      "wordpressUrl": "https://leddisplaywarehouse.com/?page_id=13530",
+      "wordpressPageId": 13530,
+      "wordpressPostId": 13530
+    },
+    "error": null,
+    "externalExecutionId": "47899",
+    "startedAt": "2026-07-30T16:14:31.110Z",
+    "completedAt": "2026-07-30T16:16:09.945Z",
+    "createdAt": "2026-07-30T16:14:31.121Z",
+    "updatedAt": "2026-07-30T16:16:09.947Z"
+  },
+  "wordpress": {
+    "url": "https://leddisplaywarehouse.com/?page_id=13530",
+    "pageId": 13530,
+    "postId": 13530
+  }
+}
