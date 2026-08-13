@@ -15,6 +15,24 @@ import type { BgeRepository } from "./repository";
 
 type BgeObject = BgeCanonicalObject | BgeEvidenceRecord;
 type BgePrismaClient = PrismaClient | Prisma.TransactionClient;
+type BgePrismaModelDelegate<T> = {
+  findFirst: (args: any) => Promise<T | null>;
+  findUnique: (args: any) => Promise<T | null>;
+  findUniqueOrThrow: (args: any) => Promise<T>;
+  upsert: (args: any) => Promise<T>;
+  update: (args: any) => Promise<T>;
+};
+type BgePrismaClientWithDelegates = BgePrismaClient & {
+  bgeCanonicalObject: BgePrismaModelDelegate<any>;
+  bgeCanonicalObjectVersion: BgePrismaModelDelegate<any>;
+  bgeCanonicalProposal: BgePrismaModelDelegate<any>;
+  bgeCanonicalApproval: BgePrismaModelDelegate<any>;
+  bgeCanonicalRelationship: BgePrismaModelDelegate<any>;
+};
+
+function asBgePrismaClient(prisma: BgePrismaClient): BgePrismaClientWithDelegates {
+  return prisma as BgePrismaClientWithDelegates;
+}
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue {
   return value as Prisma.InputJsonValue;
@@ -240,7 +258,9 @@ async function findEvidenceRowByField(prisma: BgePrismaClient, field: "evidence_
   return rows[0] ?? null;
 }
 
-export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaClient()): BgeRepository {
+export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaClient() as BgePrismaClient): BgeRepository {
+  const client = asBgePrismaClient(prisma);
+
   return {
     async createEvidence(evidence) {
       return evidence;
@@ -252,7 +272,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async getObjectById(objectId, tenantId) {
-      const row = await prisma.bgeCanonicalObject.findFirst({
+      const row = await client.bgeCanonicalObject.findFirst({
         where: {
           objectId,
           tenantId: tenantId ?? undefined,
@@ -273,7 +293,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async saveCanonicalObject(object) {
-      await prisma.bgeCanonicalObject.upsert({
+      await client.bgeCanonicalObject.upsert({
         where: { objectId: object.object_id },
         update: {
           tenantId: object.tenant_id,
@@ -296,7 +316,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
       });
 
       for (const version of object.versions) {
-        await prisma.bgeCanonicalObjectVersion.upsert({
+        await client.bgeCanonicalObjectVersion.upsert({
           where: { versionId: version.version_id },
           update: {
             tenantId: object.tenant_id,
@@ -328,7 +348,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
         });
       }
 
-      const persisted = await prisma.bgeCanonicalObject.findUniqueOrThrow({
+      const persisted = await client.bgeCanonicalObject.findUniqueOrThrow({
         where: { objectId: object.object_id },
         include: {
           versions: {
@@ -341,7 +361,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async createProposal(proposal) {
-      const persisted = await prisma.bgeCanonicalProposal.upsert({
+      const persisted = await client.bgeCanonicalProposal.upsert({
         where: {
           tenantId_idempotencyKey: {
             tenantId: proposal.tenant_id,
@@ -376,7 +396,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async findProposalByIdempotencyKey(tenantId, idempotencyKey) {
-      const row = await prisma.bgeCanonicalProposal.findUnique({
+      const row = await client.bgeCanonicalProposal.findUnique({
         where: {
           tenantId_idempotencyKey: {
             tenantId,
@@ -388,7 +408,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async getProposalById(proposalId, tenantId) {
-      const row = await prisma.bgeCanonicalProposal.findFirst({
+      const row = await client.bgeCanonicalProposal.findFirst({
         where: {
           proposalId,
           tenantId: tenantId ?? undefined,
@@ -398,7 +418,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async saveProposal(proposal) {
-      const row = await prisma.bgeCanonicalProposal.update({
+      const row = await client.bgeCanonicalProposal.update({
         where: { proposalId: proposal.proposal_id },
         data: {
           status: proposal.status,
@@ -414,7 +434,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async createApproval(approval) {
-      const row = await prisma.bgeCanonicalApproval.upsert({
+      const row = await client.bgeCanonicalApproval.upsert({
         where: {
           tenantId_idempotencyKey: {
             tenantId: approval.tenant_id,
@@ -448,7 +468,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async findApprovalByIdempotencyKey(tenantId, idempotencyKey) {
-      const row = await prisma.bgeCanonicalApproval.findUnique({
+      const row = await client.bgeCanonicalApproval.findUnique({
         where: {
           tenantId_idempotencyKey: {
             tenantId,
@@ -460,7 +480,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async createRelationship(relationship) {
-      const row = await prisma.bgeCanonicalRelationship.upsert({
+      const row = await client.bgeCanonicalRelationship.upsert({
         where: {
           tenantId_idempotencyKey: {
             tenantId: relationship.tenant_id,
@@ -490,7 +510,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async findRelationshipByIdempotencyKey(tenantId, idempotencyKey) {
-      const row = await prisma.bgeCanonicalRelationship.findUnique({
+      const row = await client.bgeCanonicalRelationship.findUnique({
         where: {
           tenantId_idempotencyKey: {
             tenantId,
@@ -502,7 +522,7 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async getRelationshipById(relationshipId, tenantId) {
-      const row = await prisma.bgeCanonicalRelationship.findFirst({
+      const row = await client.bgeCanonicalRelationship.findFirst({
         where: {
           relationshipId,
           tenantId: tenantId ?? undefined,
@@ -555,9 +575,10 @@ export function createPrismaBgeRepository(prisma: BgePrismaClient = getPrismaCli
     },
 
     async withTransaction<T>(operation: (repository: BgeRepository) => Promise<T>): Promise<T> {
-      return prisma.$transaction(async (transaction) => {
-        await transaction.$executeRawUnsafe('SET CONSTRAINTS "BgeCanonicalObject_currentVersionId_fkey" DEFERRED');
-        return operation(createPrismaBgeRepository(transaction));
+      return client.$transaction(async (transaction) => {
+        const txClient = asBgePrismaClient(transaction);
+        await txClient.$executeRawUnsafe('SET CONSTRAINTS "BgeCanonicalObject_currentVersionId_fkey" DEFERRED');
+        return operation(createPrismaBgeRepository(txClient));
       });
     },
   };
