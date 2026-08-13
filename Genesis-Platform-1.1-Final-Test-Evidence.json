@@ -1,0 +1,102 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-08-13T04:18:00Z",
+  "program": "Genesis Platform 1.1 Final Certification Review",
+  "decision": "PASS",
+  "environment": {
+    "base_url": "http://127.0.0.1:4010",
+    "workspace_id": "glw-led-display-warehouse",
+    "tenant_primary": "tenant_alpha",
+    "tenant_secondary": "tenant_beta",
+    "auth_method": "real GLW session cookie signed with GLW_AUTH_SECRET"
+  },
+  "restart_evidence": {
+    "production_rebuilt": true,
+    "pre_restart_harness_repaired": true,
+    "post_restart_reads": {
+      "company": 200,
+      "product": 200,
+      "relationship": 200,
+      "foreign_company": 404,
+      "foreign_timeline": 200
+    },
+    "canonical_ids": {
+      "evidence_id": "bgev_GD30B3M0MG14J0DBABSK0QE0W7",
+      "company_object_id": "bgobj_53K72G558THJYH4D4BH9GTC0H9",
+      "product_object_id": "bgobj_WG1KSSZ9QPXZYRV2RA36DPJG43",
+      "relationship_id": "bgrel_FM697KB54CFRKDRZ83N22F3QNS"
+    },
+    "timeline": {
+      "alpha_event_count": 11,
+      "beta_event_count": 0,
+      "alpha_event_types": [
+        "BG.EVENT.PROPOSED",
+        "BG.EVENT.APPROVED",
+        "BG.EVENT.VERSION_CREATED",
+        "BG.EVENT.CREATED",
+        "BG.EVENT.PROPOSED",
+        "BG.EVENT.APPROVED",
+        "BG.EVENT.VERSION_CREATED",
+        "BG.EVENT.UPDATED",
+        "BG.EVENT.PROPOSED",
+        "BG.EVENT.APPROVED",
+        "BG.EVENT.RELATED"
+      ]
+    }
+  },
+  "migration_integrity": {
+    "prisma_validate": "PASS",
+    "prisma_generate": "PASS",
+    "prisma_migrate_deploy": "PASS",
+    "prisma_migrate_status": "PASS"
+  },
+  "focused_tests": {
+    "tests/bge/bge-convergence.test.ts": "PASS",
+    "tests/bge/bge-api.test.ts": "PASS",
+    "tests/bge/bge-repository-composition.test.ts": "PASS",
+    "tests/bge/bge-prisma-repository.test.ts": "PASS"
+  },
+  "test_harness_repair": {
+    "scope": "tests/bge/bge-prisma-repository.test.ts only",
+    "production_persistence_code_changed": false,
+    "schema_changed": false,
+    "migrations_changed": false,
+    "change": "Added $executeRawUnsafe: async () => 0 to fake Prisma transaction object"
+  },
+  "focused_commands": {
+    "single_suite": {
+      "command": "npm test -- bge-prisma-repository.test.ts --runInBand",
+      "result": "PASS"
+    },
+    "focused_bge_suite": {
+      "command": "npm test -- bge-convergence.test.ts bge-api.test.ts bge-prisma-repository.test.ts bge-repository-composition.test.ts --runInBand",
+      "result": "PASS"
+    }
+  },
+  "ownership_review": {
+    "bge": [
+      "Canonical Objects",
+      "Object Versions",
+      "Relationships",
+      "Proposals",
+      "Approvals"
+    ],
+    "ged": [
+      "Evidence",
+      "Evidence Lifecycle"
+    ],
+    "gop": [
+      "Authorization",
+      "Events",
+      "Audit",
+      "Mission Control Projection"
+    ],
+    "gmp": [
+      "Knowledge",
+      "Confidence",
+      "Normalization",
+      "Retrieval"
+    ]
+  },
+  "final_decision": "PASS"
+}

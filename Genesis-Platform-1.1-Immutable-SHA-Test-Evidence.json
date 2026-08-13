@@ -1,0 +1,67 @@
+{
+  "platform": "Genesis Platform 1.1",
+  "certified_commit_sha": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+  "certified_branch": "release/genesis-platform-1.1",
+  "certification_timestamp": "2026-08-13T00:00:00Z",
+  "sha_verified": true,
+  "release_sha_modified": false,
+  "runtime_sha_match": true,
+  "final_decision": "PASS",
+  "attempt_history": [
+    {
+      "attempt": 1,
+      "status": "FAIL",
+      "phase": "ENVIRONMENT_LOAD",
+      "gate": "ENVIRONMENT",
+      "exact_error": "PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL.",
+      "root_cause": ".env was not automatically loaded in the certification process context.",
+      "preserved_for_audit": true
+    },
+    {
+      "attempt": 2,
+      "status": "PASS",
+      "phase": "ENVIRONMENT_RETRY",
+      "gate": "ENVIRONMENT",
+      "root_environment_issue": "DOTENV_NOT_AUTOMATICALLY_LOADED",
+      "remediation": "Use a single documented bootstrap/wrapper that loads .env before Prisma/runtime startup and validates required variables.",
+      "loaded_variables": [
+        "DATABASE_URL",
+        "GLW_APP_URL",
+        "GLW_N8N_PAGE_WEBHOOK_URL",
+        "GLW_N8N_BASE_URL",
+        "GLW_N8N_API_KEY"
+      ]
+    }
+  ],
+  "canonical_runtime_command": "node node_modules/next/dist/bin/next start --hostname 0.0.0.0 --port 3001",
+  "canonical_runtime_port": 3001,
+  "canonical_health_endpoint": "/api/glw/health",
+  "canonical_version_endpoint": "/api/glw/version",
+  "canonical_callback_path": "/api/glw/jobs/callback",
+  "prisma_version": "7.9.0",
+  "prisma_validate": "PASS",
+  "prisma_migrate_status": "CURRENT",
+  "tests_result": "PASS",
+  "build_result": "PASS",
+  "secret_gate_result": "PASS",
+  "live_durability_result": "PASS",
+  "tenant_isolation_result": "PASS",
+  "idempotency_result": "PASS",
+  "append_only_history_result": "PASS",
+  "event_timeline_result": "PASS",
+  "ownership_result": "PASS",
+  "release_tag_created": false,
+  "tag_ref": "genesis-platform-v1.1.0",
+  "tag_sha_verified": "NOT_APPLICABLE",
+  "observed_outputs": {
+    "git_branch_show_current": "release/genesis-platform-1.1",
+    "git_rev_parse_head": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+    "live_health_git_commit": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+    "live_version_git_commit": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+    "npx_prisma_version": "7.9.0",
+    "npx_prisma_validate": "PASS",
+    "npx_prisma_migrate_status": "CURRENT"
+  },
+  "root_cause_classification": "ENVIRONMENT",
+  "notes": "The immutable candidate is intact and on the release branch. The historical failed attempt was caused by the environment not being loaded before Prisma startup. The later retry on the same SHA succeeded after the documented .env bootstrap was applied, and the release remains unchanged."
+}

@@ -1,0 +1,28 @@
+{
+  "sha": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+  "branch": "release/genesis-platform-1.1",
+  "sha_verified": true,
+  "release_sha_modified": false,
+  "expected_env_source": ".env in repository root",
+  "expected_load_method": "repository-proven environment loader or equivalent process-level environment injection before Prisma CLI",
+  "current_process_has_database_url": true,
+  "database_url_entry_present": true,
+  "database_url_file_format": "VALID",
+  "required_vars": {
+    "DATABASE_URL": "LOADED",
+    "GLW_APP_URL": "LOADED",
+    "GLW_N8N_PAGE_WEBHOOK_URL": "LOADED",
+    "GLW_N8N_BASE_URL": "LOADED",
+    "GLW_N8N_API_KEY": "LOADED"
+  },
+  "prisma_version": "7.9.0",
+  "prisma_validate": "PASS",
+  "migrations": "CURRENT",
+  "root_environment_issue": "DOTENV_NOT_AUTOMATICALLY_LOADED",
+  "recommendation": "Use a single documented bootstrap/wrapper that loads .env into the process before invoking Prisma or the runtime, and validate required environment keys before certification begins.",
+  "certification_retry": "READY_TO_RETRY",
+  "evidence_files": [
+    "prisma.config.ts",
+    "scripts/deploy-glw.ps1"
+  ]
+}

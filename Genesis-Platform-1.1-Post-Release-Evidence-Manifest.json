@@ -1,0 +1,147 @@
+{
+  "manifest_version": 1,
+  "branch": "docs/platform-1.1-release-evidence",
+  "base_tag": "genesis-platform-v1.1.0",
+  "base_sha": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+  "classification_summary": {
+    "PRESERVE_RELEASE_EVIDENCE": [
+      "release certification",
+      "release provenance",
+      "final certification status",
+      "environment restore proof",
+      "secret gate proof",
+      "root cause and recovery evidence"
+    ],
+    "DISPOSABLE_FORENSIC": [
+      ".tmp-* runtime probes",
+      "debug helper scripts",
+      "temporary JSON audit dumps",
+      "one-off investigation scratch files"
+    ],
+    "LOCAL_ONLY": [
+      "runtime logs",
+      "local test output",
+      "machine-specific diagnostic artifacts"
+    ],
+    "SOURCE_CHANGE": [
+      "tracked source modifications in the release branch"
+    ],
+    "UNKNOWN": [
+      "artifacts not required for audit or rollback analysis"
+    ]
+  },
+  "artifacts": [
+    {
+      "path": "Genesis-Platform-1.1-Final-Release-Baseline.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Authoritative frozen release baseline summarizing the certified tag, SHA, pass criteria, and final release state.",
+      "release_relation": "certified_release",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Immutable-SHA-Certification.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Captures the immutable-SHA certification decision, root cause of the environment failure, and the exact proof that the same release candidate remained valid.",
+      "release_relation": "certification_history",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Environment-Restoration.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Documents the DOTENV_NOT_AUTOMATICALLY_LOADED root cause and the validated environment restore path without exposing credentials.",
+      "release_relation": "environment_restore",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Release-Secret-Certification.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Provides the approved secret gate record for the exact committed SHA and explicitly excludes untracked forensic noise.",
+      "release_relation": "security_certification",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Certification-Matrix-Reconciliation.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Final release-matrix decision record proving the candidate was READY_FOR_TAG and remained immutable.",
+      "release_relation": "release_gate",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Final-Certification.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Summarizes the final successful certification state and the release decision trail.",
+      "release_relation": "final_certification",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Final-Certification-Failure-Investigation.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Retains the failed certification investigation and the exact blocker that was later resolved without changing the release SHA.",
+      "release_relation": "rollback_analysis",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Baseline-Reconstruction.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Documents how the certified baseline was reconstructed and verified after environment drift.",
+      "release_relation": "baseline_reconstruction",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Durability-Certification.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Preserves the durability and operational proof that underpins the release decision.",
+      "release_relation": "production_certification",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Restart-Certification.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Retains restart and operational continuity proof relevant to recovery and rollback analysis.",
+      "release_relation": "recovery_evidence",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Release-Certificate.md",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Release approval record tying the certified tag to the final pass matrix and known exceptions.",
+      "release_relation": "release_certificate",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Certification-Matrix-Reconciliation.json",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Structured release gate matrix used to reconcile the final pass condition and release readiness.",
+      "release_relation": "release_gate",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Environment-Restoration-Evidence.json",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Structured proof of environment loading and required variable restoration, useful for future incident review.",
+      "release_relation": "environment_restore",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Immutable-SHA-Test-Evidence.json",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Structured test and SHA verification evidence proving the same immutable candidate remained valid.",
+      "release_relation": "certification_history",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Release-Secret-Evidence.json",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Structured evidence that the exact committed release candidate contained no confirmed secret exposures.",
+      "release_relation": "security_certification",
+      "contains_secret": false
+    },
+    {
+      "path": "Genesis-Platform-1.1-Final-Test-Evidence.json",
+      "classification": "PRESERVE_RELEASE_EVIDENCE",
+      "reason": "Structured final operational and validation evidence that supports the certified release record.",
+      "release_relation": "final_certification",
+      "contains_secret": false
+    }
+  ]
+}

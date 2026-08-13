@@ -1,0 +1,50 @@
+{
+  "platform": "Genesis Platform 1.1",
+  "branch": "release/genesis-platform-1.1",
+  "sha": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+  "release_sha_modified": "NO",
+  "live_runtime_sha_match": "YES",
+  "root_environment_issue": "DOTENV_NOT_AUTOMATICALLY_LOADED",
+  "remediation": "Use a single documented bootstrap/wrapper that loads .env before Prisma/runtime startup and validates required variables.",
+  "attempt_history": [
+    {
+      "attempt": 1,
+      "status": "FAIL",
+      "gate": "ENVIRONMENT",
+      "exact_error": "PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL."
+    },
+    {
+      "attempt": 2,
+      "status": "PASS",
+      "gate": "ENVIRONMENT",
+      "loaded_variables": [
+        "DATABASE_URL",
+        "GLW_APP_URL",
+        "GLW_N8N_PAGE_WEBHOOK_URL",
+        "GLW_N8N_BASE_URL",
+        "GLW_N8N_API_KEY"
+      ]
+    }
+  ],
+  "matrix": {
+    "SHA_IDENTITY": "PASS",
+    "ENVIRONMENT": "PASS",
+    "PRISMA": "PASS",
+    "MIGRATIONS": "PASS",
+    "TESTS": "PASS",
+    "BUILD": "PASS",
+    "SECRET_GATE": "PASS",
+    "LIVE_RUNTIME_SHA": "PASS",
+    "LIVE_DURABILITY": "PASS",
+    "TENANT_ISOLATION": "PASS",
+    "IDEMPOTENCY": "PASS",
+    "APPEND_ONLY_HISTORY": "PASS",
+    "EVENT_TIMELINE": "PASS",
+    "OWNERSHIP": "PASS"
+  },
+  "final_gate": "READY_FOR_TAG",
+  "tag_created": false,
+  "tag_name": "genesis-platform-v1.1.0",
+  "tag_creation_deferred": true,
+  "frozen_sha": "0bef398501a37096408c0c1c38043e3f8a72dfd3"
+}
