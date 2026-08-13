@@ -1,0 +1,62 @@
+{
+  "manifest_version": "1.0",
+  "timestamp_utc": "2026-08-13T00:00:00Z",
+  "historical_tag": "genesis-platform-v1.1.0",
+  "historical_sha": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+  "recovery_worktree": {
+    "path": "C:/Users/rober/Documents/Stoner Platform/platform-glw",
+    "branch": "release/genesis-platform-1.1",
+    "head": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+    "dirty_state": true,
+    "status_summary": "tracked modified files plus multiple untracked BGE, certification, and forensic artifacts"
+  },
+  "gmp_export_repair_present": {
+    "normalizeBusinessGenomePayload": true,
+    "deriveBgeConfidenceFromEvidenceSignals": true,
+    "canonical_export_surface_consumed_by_bge": true,
+    "result": "YES"
+  },
+  "prisma_transaction_test_repair_present": {
+    "executeRawUnsafe_present": true,
+    "real_or_fake_transaction_surface_contains_required_method": true,
+    "result": "YES"
+  },
+  "dependency_closure": {
+    "complete": true,
+    "required_from_worktree": [
+      "src/lib/gmp/bge-knowledge-authority.ts",
+      "src/lib/gmp/evidence-services.ts",
+      "src/lib/ged/enterprise-evidence-service.ts",
+      "src/platform/gop/bge-authorization.ts",
+      "src/platform/gop/bge-event-authority.ts",
+      "src/platform/gop/bge-mission-control-projector.ts"
+    ],
+    "missing_paths": []
+  },
+  "secret_scan": {
+    "status": "PASS",
+    "confirmed_secrets": 0,
+    "excluded_paths": [
+      ".env",
+      ".tmp*",
+      "logs/**",
+      "platform-gid",
+      "scripts/certify-glw.ps1",
+      "scripts/deploy-glw.ps1",
+      "scripts/glw-certify-data.mts"
+    ]
+  },
+  "recovery_status": {
+    "branch_name": "recovery/genesis-platform-1.1.1-bge",
+    "base_sha": "0bef398501a37096408c0c1c38043e3f8a72dfd3",
+    "snapshot_status": "PRESERVED_ONLY",
+    "release_status": "NOT_CERTIFIED"
+  },
+  "validation_state": {
+    "manifest_complete": true,
+    "dependency_closure_complete": true,
+    "secret_scan_pass": true,
+    "snapshot_preserved": true,
+    "repair_not_attempted": true
+  }
+}
