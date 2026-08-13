@@ -1,0 +1,65 @@
+{
+  "historical_certification": {
+    "status": "PASS",
+    "timestamp": "2026-08-12T22:03:01Z",
+    "sha": "UNKNOWN",
+    "branch": "UNKNOWN",
+    "tag": "NOT_PROVEN"
+  },
+  "source_verification": {
+    "bge_prisma_repository_test_harness": "PRESENT",
+    "required_execute_raw_unsafe_behavior": "PRESENT",
+    "production_repository_transaction_call": "PRESENT",
+    "bge_persistence_implementation": "PRESENT",
+    "object_version_lifecycle_repair": "PRESENT",
+    "canonical_runtime_composition": "PRESENT",
+    "gop_event_authority_integration": "PRESENT",
+    "ged_evidence_lifecycle_integration": "PRESENT",
+    "gmp_knowledge_delegation": "PRESENT",
+    "gop_mission_control_projection_integration": "PRESENT"
+  },
+  "database": {
+    "env_file_valid": true,
+    "powershell_import_valid": true,
+    "prisma_version": "7.9.0",
+    "schema_validation": "PASS",
+    "migrations_found": 32,
+    "pending_migration_count": 0,
+    "migration_status": "Database schema is up to date!"
+  },
+  "runtime": {
+    "canonical_3001_command": "node node_modules/next/dist/bin/next start --hostname 0.0.0.0 --port 3001",
+    "canonical_3002_command": "UNPROVEN_FROM_REPO",
+    "cloudflare_mapping": {
+      "glw-dev.ssiai.app": "http://localhost:3002",
+      "app.ssiai.app": "http://localhost:3001"
+    }
+  },
+  "tests": {
+    "command": "npm test -- bge-convergence.test.ts bge-api.test.ts bge-prisma-repository.test.ts bge-repository-composition.test.ts --runInBand",
+    "status": "FAIL",
+    "suite_count": 4,
+    "suite_pass": 1,
+    "suite_fail": 3,
+    "test_count": 7,
+    "test_pass": 3,
+    "test_fail": 4,
+    "failure_summary": [
+      "normalizeBusinessGenomePayload is not a function",
+      "deriveBgeConfidenceFromEvidenceSignals is not a function",
+      "build fails on missing GMP evidence service exports"
+    ]
+  },
+  "build": {
+    "command": "npm run build",
+    "status": "FAIL",
+    "error": "Export deriveBgeConfidenceFromEvidenceSignals doesn't exist in target module; Export normalizeBusinessGenomePayload doesn't exist in target module"
+  },
+  "release_candidate": {
+    "status": "BLOCKED",
+    "sha": "BLOCKED",
+    "branch": "BLOCKED",
+    "tag": "NOT_CREATED",
+    "reason": "Source is not green; required focused suite and build fail before certification can proceed."
+  }
+}

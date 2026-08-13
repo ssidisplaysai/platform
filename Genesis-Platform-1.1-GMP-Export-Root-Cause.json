@@ -1,0 +1,46 @@
+{
+  "test_first_failure": {
+    "file": "src/lib/gmp/bge-knowledge-authority.ts",
+    "line": 36,
+    "symbol": "normalizeBusinessGenomePayload",
+    "importing_file": "src/lib/gmp/bge-knowledge-authority.ts",
+    "import_path": "./evidence-services",
+    "expected_export_file": "src/lib/gmp/evidence-services.ts",
+    "diagnostic": "TypeError: (0 , evidence_services_1.normalizeBusinessGenomePayload) is not a function",
+    "error_text": "TypeError: (0 , evidence_services_1.normalizeBusinessGenomePayload) is not a function"
+  },
+  "build_first_failure": {
+    "file": "src/lib/gmp/bge-knowledge-authority.ts",
+    "line": 2,
+    "symbol": "deriveBgeConfidenceFromEvidenceSignals",
+    "importing_file": "src/lib/gmp/bge-knowledge-authority.ts",
+    "import_path": "./evidence-services",
+    "expected_export_file": "src/lib/gmp/evidence-services.ts",
+    "diagnostic": "Export deriveBgeConfidenceFromEvidenceSignals doesn't exist in target module",
+    "error_text": "Export deriveBgeConfidenceFromEvidenceSignals doesn't exist in target module; Export normalizeBusinessGenomePayload doesn't exist in target module"
+  },
+  "affected_symbols": [
+    {
+      "symbol": "normalizeBusinessGenomePayload",
+      "importing_file": "src/lib/gmp/bge-knowledge-authority.ts",
+      "import_path": "./evidence-services",
+      "expected_export_file": "src/lib/gmp/evidence-services.ts",
+      "actual_export_status": "MISSING"
+    },
+    {
+      "symbol": "deriveBgeConfidenceFromEvidenceSignals",
+      "importing_file": "src/lib/gmp/bge-knowledge-authority.ts",
+      "import_path": "./evidence-services",
+      "expected_export_file": "src/lib/gmp/evidence-services.ts",
+      "actual_export_status": "MISSING"
+    }
+  ],
+  "broken_export_edge": "src/lib/gmp/bge-knowledge-authority.ts -> ./evidence-services -> missing public GMP adapter exports",
+  "root_cause_classification": "A. correct BGE consumption of GMP with a broken GMP export",
+  "production_impact": "The BGE evidence creation and normalization path cannot initialize because GMP cannot provide the canonical normalization and confidence functions expected by the BGE knowledge authority adapter.",
+  "blast_radius": "MULTIPLE_CAPABILITIES",
+  "last_known_good_commit": null,
+  "regression_commit": null,
+  "minimum_repair": "Restore the missing canonical GMP public exports required by the BGE adapter contract without duplicating logic in BGE or bypassing the GMP ownership boundary.",
+  "expected_after_repair": "PASS_CANDIDATE"
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "path": "Genesis-Platform-1.1-Release-Manifest.json",
+    "action": "include",
+    "classification": "RELEASE_CERTIFICATION",
+    "reason": "Authoritative manifest for the Genesis Platform 1.1 release candidate and the exact files allowed into the release commit."
+  },
+  {
+    "path": "src/lib/gmp/evidence-services.ts",
+    "action": "modify",
+    "classification": "RELEASE_SOURCE",
+    "reason": "Restores the canonical GMP public export contract required by the BGE knowledge authority and preserves GMP ownership of normalization and confidence logic."
+  },
+  {
+    "path": "src/lib/gmp/bge-knowledge-authority.ts",
+    "action": "retain",
+    "classification": "RELEASE_SOURCE",
+    "reason": "Maintains the canonical BGE-to-GMP authority seam expected by the runtime and tests."
+  },
+  {
+    "path": "src/lib/ged/enterprise-evidence-service.ts",
+    "action": "retain",
+    "classification": "RELEASE_SOURCE",
+    "reason": "Encodes the intentional single-source BGE confidence contract used by evidence capture: sourceAgreement = 1 for a single evidence record."
+  },
+  {
+    "path": "src/platform/gop/bge-event-authority.ts",
+    "action": "retain",
+    "classification": "RELEASE_SOURCE",
+    "reason": "Preserves the BGE event pipeline that derives mission-control confidence from the knowledge authority contract."
+  },
+  {
+    "path": "src/platform/gop/bge-mission-control-projector.ts",
+    "action": "retain",
+    "classification": "RELEASE_SOURCE",
+    "reason": "Preserves the projection contract that records the event confidence score used by the release gate."
+  },
+  {
+    "path": "tests/bge/bge-convergence.test.ts",
+    "action": "verify",
+    "classification": "RELEASE_TEST",
+    "reason": "Primary BGE regression guard for evidence, proposal, approval, relationship, timeline, and confidence propagation."
+  },
+  {
+    "path": "tests/bge/bge-api.test.ts",
+    "action": "verify",
+    "classification": "RELEASE_TEST",
+    "reason": "Covers the BGE API contract and runtime integration path exercised by the release gate."
+  },
+  {
+    "path": "tests/bge/bge-prisma-repository.test.ts",
+    "action": "verify",
+    "classification": "RELEASE_TEST",
+    "reason": "Protects the canonical Prisma repository behavior used by the certified BGE runtime."
+  },
+  {
+    "path": "tests/bge/bge-repository-composition.test.ts",
+    "action": "verify",
+    "classification": "RELEASE_TEST",
+    "reason": "Protects repository composition and orchestration assumptions used by the release baseline."
+  },
+  {
+    "path": "Genesis-Platform-1.1-GMP-Export-Investigation.md",
+    "action": "include",
+    "classification": "RELEASE_CERTIFICATION",
+    "reason": "Documents the proven root cause and evidence trail for the public GMP export regression."
+  },
+  {
+    "path": "Genesis-Platform-1.1-GMP-Export-Root-Cause.json",
+    "action": "include",
+    "classification": "RELEASE_CERTIFICATION",
+    "reason": "Machine-readable evidence for the exact GMP/BGE contract break and repair."
+  },
+  {
+    "path": "Genesis-Platform-1.1-Reproducible-Certification.md",
+    "action": "include",
+    "classification": "RELEASE_CERTIFICATION",
+    "reason": "Captures the reproducible certification narrative and proof points for the Platform 1.1 baseline."
+  },
+  {
+    "path": "Genesis-Platform-1.1-Reproducible-Test-Evidence.json",
+    "action": "include",
+    "classification": "RELEASE_CERTIFICATION",
+    "reason": "Stores the execution evidence for the required release tests and build validation."
+  },
+  {
+    "path": "Genesis-Platform-1.1-Release-Baseline-Recovery.md",
+    "action": "include",
+    "classification": "RELEASE_CERTIFICATION",
+    "reason": "Captures the recovery and baseline status used to restore the verified Platform 1.1 implementation."
+  },
+  {
+    "path": ".tmp-durability-pre-restart.json",
+    "action": "delete",
+    "classification": "APPROVED_SANITATION",
+    "reason": "Disposable forensic durability artifact; intentionally excluded from the release candidate and not part of the certified baseline."
+  },
+  {
+    "path": ".tmp-durability-pre-restart.ps1",
+    "action": "delete",
+    "classification": "APPROVED_SANITATION",
+    "reason": "Disposable runtime artifact associated with pre-restart diagnostics and excluded from release-controlled files."
+  },
+  {
+    "path": ".tmp-genesis-audit-artifact-classification.json",
+    "action": "delete",
+    "classification": "APPROVED_SANITATION",
+    "reason": "Temporary audit artifact generated during investigation; not part of the certified Platform 1.1 release."
+  }
+]

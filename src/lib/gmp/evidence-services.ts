@@ -79,6 +79,67 @@ function safeRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
+export function normalizeBusinessGenomePayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined || value === null) continue;
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) {
+        normalized[key] = trimmed;
+      }
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      normalized[key] = value.map((entry) => (typeof entry === "string" ? entry.trim() : entry)).filter((entry) => entry !== "");
+      continue;
+    }
+
+    if (typeof value === "object") {
+      normalized[key] = normalizeBusinessGenomePayload(safeRecord(value));
+      continue;
+    }
+
+    normalized[key] = value;
+  }
+
+  return normalized;
+}
+
+export function deriveBgeConfidenceFromEvidenceSignals(input: {
+  evidenceCount: number;
+  sourceAgreement?: number;
+  publicationMatches?: number;
+}): {
+  confidenceScore: number;
+  confidenceLevel: string;
+  confidenceVersion: string;
+} {
+  const evidenceCount = Math.max(0, input.evidenceCount ?? 0);
+  const sourceAgreement = Math.max(0, Math.min(3, input.sourceAgreement ?? 1));
+  const publicationMatches = Math.max(0, input.publicationMatches ?? 0);
+
+  const score = Math.min(1, Math.max(0,
+    (evidenceCount > 0 ? 0.45 : 0)
+    + (sourceAgreement * 0.2)
+    + (publicationMatches > 0 ? 0.15 : 0)
+    + (sourceAgreement >= 2 && publicationMatches > 0 ? 0.2 : 0),
+  ));
+
+  let confidenceLevel: string = "LOW";
+  if (score >= 0.8) confidenceLevel = "HIGH";
+  else if (score >= 0.5) confidenceLevel = "MEDIUM";
+
+  return {
+    confidenceScore: Number(score.toFixed(2)),
+    confidenceLevel,
+    confidenceVersion: "gmp-bge-confidence/v1",
+  };
+}
+
 type CanonicalMetricPoint = {
   canonicalMetricKey: string;
   analyticsObservationId: string;
