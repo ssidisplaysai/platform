@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { getPrismaClient } from "@/lib/glw/prisma";
 import { createGlwN8nExecutionService } from "@/lib/glw/n8n";
+import { logRecoveryTrace } from "@/lib/gop/recovery-trace";
 import { classifyRecoveryCandidate } from "./classifier";
 import type {
   JobRecoveryAuditResult,
@@ -11,6 +12,8 @@ import type {
   JobRecoveryExecuteResult,
   JobRecoveryExecutionProbe,
   JobRecoveryHealthCards,
+  ManualAdjudicationInput,
+  ManualAdjudicationResult,
 } from "./types";
 
 const DEFAULT_WORKSPACE_ID = "glw-led-display-warehouse";
@@ -406,7 +409,7 @@ async function buildAuditRows(prisma: PrismaClient): Promise<JobRecoveryAuditRow
 }
 
 function assertRecoveryWriteAllowed(input: JobRecoveryExecuteInput): void {
-  const dryRun = input.dryRun ?? false;
+  const dryRun = input.dryRun ?? true;
   if (dryRun) {
     return;
   }
@@ -419,6 +422,7 @@ function assertRecoveryWriteAllowed(input: JobRecoveryExecuteInput): void {
 export type JobRecoveryService = {
   runAudit: () => Promise<JobRecoveryAuditResult>;
   executeRecovery: (input: JobRecoveryExecuteInput) => Promise<JobRecoveryExecuteResult>;
+  adjudicateManualReview: (input: ManualAdjudicationInput) => Promise<ManualAdjudicationResult>;
 };
 
 export function createJobRecoveryService(prisma: PrismaClient = getPrismaClient()): JobRecoveryService {
@@ -439,6 +443,23 @@ export function createJobRecoveryService(prisma: PrismaClient = getPrismaClient(
 
     async executeRecovery(input) {
       const dryRun = input.dryRun ?? true;
+      const traceId = input.traceId ?? `recovery_trace_${Math.random().toString(16).slice(2)}`;
+      logRecoveryTrace(traceId, "SERVICE_INPUT_DRYRUN", input.dryRun, {
+        boundary: "SERVICE_INPUT_DRYRUN",
+        authenticated: true,
+        approvalTokenPresent: Boolean(input.approvalToken),
+        writeAuthorizationEntered: false,
+        approvalGateEntered: false,
+        persistenceBranchEntered: false,
+      });
+      logRecoveryTrace(traceId, "SERVICE_RESOLVED_DRYRUN", dryRun, {
+        boundary: "SERVICE_RESOLVED_DRYRUN",
+        authenticated: true,
+        approvalTokenPresent: Boolean(input.approvalToken),
+        writeAuthorizationEntered: false,
+        approvalGateEntered: false,
+        persistenceBranchEntered: false,
+      });
       assertRecoveryWriteAllowed(input);
 
       const audit = await this.runAudit();
@@ -487,6 +508,14 @@ export function createJobRecoveryService(prisma: PrismaClient = getPrismaClient(
         });
 
         if (!dryRun) {
+          logRecoveryTrace(traceId, "PERSISTENCE_BRANCH_ENTERED", dryRun, {
+            boundary: "PERSISTENCE_BRANCH_ENTERED",
+            authenticated: true,
+            approvalTokenPresent: Boolean(input.approvalToken),
+            writeAuthorizationEntered: !dryRun,
+            approvalGateEntered: Boolean(input.approvalToken),
+            persistenceBranchEntered: true,
+          });
           await prisma.glwJob.update({
             where: { id: row.jobId },
             data: {
@@ -574,13 +603,211 @@ export function createJobRecoveryService(prisma: PrismaClient = getPrismaClient(
         skippedMissing = selectedIds.filter((jobId) => !existingIds.has(jobId)).length;
       }
 
-      return {
+      const result = {
         dryRun,
         attempted,
         recovered,
         skippedUnsafe,
         skippedMissing,
         rows,
+      };
+
+      logRecoveryTrace(traceId, "RESULT_DRYRUN", result.dryRun, {
+        boundary: "RESULT_DRYRUN",
+        authenticated: true,
+        approvalTokenPresent: Boolean(input.approvalToken),
+        writeAuthorizationEntered: !dryRun,
+        approvalGateEntered: Boolean(input.approvalToken),
+        persistenceBranchEntered: !dryRun,
+      });
+
+      return result;
+    },
+
+    async adjudicateManualReview(input) {
+      const sanitizedReason = input.reason?.trim();
+      if (!sanitizedReason) {
+        throw new Error("A non-empty reason is required for manual adjudication.");
+      }
+
+      if (input.decision !== "MARK_FAILED") {
+        throw new Error("Unsupported manual adjudication decision. Only MARK_FAILED is valid for orphaned STARTING jobs.");
+      }
+
+      const job = await prisma.glwJob.findUnique({
+        where: { id: input.jobId },
+      });
+
+      if (!job) {
+        throw new Error(`GLW job not found: ${input.jobId}`);
+      }
+
+      if (job.status !== "STARTING") {
+        throw new Error(`Only STARTING jobs can be manually adjudicated. Current status: ${job.status}`);
+      }
+
+      const workspaceId = input.workspaceId ?? DEFAULT_WORKSPACE_ID;
+      if (workspaceId !== DEFAULT_WORKSPACE_ID) {
+        throw new Error("Cross-workspace manual adjudication is not allowed.");
+      }
+
+      const execution = await prisma.gopExecution.findFirst({
+        where: {
+          OR: [
+            { jobId: job.id },
+            ...(job.externalExecutionId ? [{ executionId: job.externalExecutionId }] : []),
+          ],
+        },
+        include: {
+          leases: {
+            orderBy: { leaseStartAt: "desc" },
+            take: 1,
+          },
+        },
+      });
+
+      const latestLease = execution?.leases[0] ?? null;
+      const latestWorker = latestLease
+        ? await prisma.gopWorker.findUnique({ where: { workerId: latestLease.workerId } })
+        : null;
+      const now = Date.now();
+      const leaseExpired = latestLease ? latestLease.leaseExpiresAt.getTime() < now : null;
+      const heartbeatStopped = latestWorker
+        ? (now - latestWorker.heartbeatAt.getTime()) > Math.max((latestWorker.heartbeatIntervalMs ?? 30_000) * 3, 120_000)
+        : (latestLease ? latestLease.heartbeatDeadlineAt.getTime() < now : null);
+      const executionProbe = await lookupExecutionProbe(job.externalExecutionId ?? null);
+      const classification = classifyRecoveryCandidate({
+        execution: executionProbe,
+        signals: { leaseExpired, heartbeatStopped },
+      });
+
+      if (classification.decision !== "MANUAL_REVIEW" && classification.recommendedJobStatus !== "MANUAL_INVESTIGATION") {
+        throw new Error(`Job ${job.id} is not eligible for manual adjudication. Current classification: ${classification.classification} (${classification.decision}).`);
+      }
+
+      const existingEvent = await prisma.gopJobEvent.findFirst({
+        where: {
+          jobId: job.id,
+          idempotencyKey: input.idempotencyKey,
+        },
+      });
+
+      if (existingEvent) {
+        return {
+          jobId: job.id,
+          previousStatus: job.status,
+          newStatus: existingEvent.status ?? "FAILED",
+          decision: input.decision,
+          adjudicatedBy: existingEvent.actorId ?? input.actorId,
+          adjudicatedAt: existingEvent.occurredAt.toISOString(),
+          reason: existingEvent.message ?? sanitizedReason,
+          reasonCode: "MANUAL_REVIEW_IDEMPOTENT",
+          auditId: null,
+          eventId: existingEvent.eventId,
+        };
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        const currentJob = await tx.glwJob.findUnique({ where: { id: input.jobId } });
+        if (!currentJob || currentJob.status !== "STARTING") {
+          throw new Error(`Job ${input.jobId} is no longer eligible for manual adjudication.`);
+        }
+
+        const lastEvent = await tx.gopJobEvent.findFirst({
+          where: { jobId: input.jobId },
+          orderBy: { sequence: "desc" },
+        });
+        const nextSequence = (lastEvent?.sequence ?? 0) + 1;
+
+        const updatedJob = await tx.glwJob.update({
+          where: { id: input.jobId },
+          data: {
+            status: "FAILED",
+            completedAt: new Date(),
+            error: {
+              manualAdjudication: true,
+              decision: input.decision,
+              reason: sanitizedReason,
+              adjudicatedBy: input.actorId,
+              previousStatus: currentJob.status,
+              classification: classification.classification,
+            },
+          },
+        });
+
+        const event = await tx.gopJobEvent.create({
+          data: {
+            eventId: `gje_${randomUUID()}`,
+            jobId: input.jobId,
+            moduleId: input.moduleId ?? "glw.core",
+            jobType: job.type,
+            eventType: "MANUAL_ADJUDICATION",
+            stage: "manual_review",
+            status: "FAILED",
+            message: sanitizedReason,
+            source: "GOP_MANUAL_ADJUDICATION",
+            occurredAt: new Date(),
+            sequence: nextSequence,
+            durationMs: 0,
+            metadata: {
+              decision: input.decision,
+              operatorId: input.actorId,
+              classification: classification.classification,
+              safeToRecover: classification.safeToRecover,
+              idempotencyKey: input.idempotencyKey,
+              workspaceId,
+            },
+            actorId: input.actorId,
+            actorName: input.actorId,
+            correlationId: job.externalExecutionId ?? null,
+            causationId: job.id,
+            idempotencyKey: input.idempotencyKey,
+          },
+        });
+
+        const auditRecord = await tx.gopRecoveryRecord.create({
+          data: {
+            workspaceId,
+            moduleId: input.moduleId ?? "glw.core",
+            jobId: input.jobId,
+            executionId: job.externalExecutionId ?? null,
+            previousJobStatus: currentJob.status,
+            newJobStatus: "FAILED",
+            previousExecutionStatus: execution?.status ?? null,
+            newExecutionStatus: "FAILED",
+            reason: sanitizedReason,
+            recoveredBy: input.actorId,
+            dryRun: false,
+            safeRecovery: false,
+            metadata: {
+              decision: input.decision,
+              classification: classification.classification,
+              operatorId: input.actorId,
+              idempotencyKey: input.idempotencyKey,
+              workspaceId,
+              reasonCode: "MANUAL_REVIEW_FAILED",
+            },
+          },
+        });
+
+        return {
+          updatedJob,
+          event,
+          auditRecord,
+        };
+      });
+
+      return {
+        jobId: input.jobId,
+        previousStatus: job.status,
+        newStatus: "FAILED",
+        decision: input.decision,
+        adjudicatedBy: input.actorId,
+        adjudicatedAt: new Date().toISOString(),
+        reason: sanitizedReason,
+        reasonCode: "MANUAL_REVIEW_FAILED",
+        auditId: result.auditRecord.id,
+        eventId: result.event.eventId,
       };
     },
   };

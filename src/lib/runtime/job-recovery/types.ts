@@ -96,6 +96,32 @@ export type JobRecoveryExecuteInput = {
   reason?: string;
   approvalToken?: string;
   dryRun?: boolean;
+  traceId?: string;
+};
+
+export type ManualAdjudicationDecision = "MARK_FAILED";
+
+export type ManualAdjudicationInput = {
+  actorId: string;
+  jobId: string;
+  decision: ManualAdjudicationDecision;
+  reason: string;
+  idempotencyKey: string;
+  workspaceId?: string;
+  moduleId?: string;
+};
+
+export type ManualAdjudicationResult = {
+  jobId: string;
+  previousStatus: string;
+  newStatus: string;
+  decision: ManualAdjudicationDecision;
+  adjudicatedBy: string;
+  adjudicatedAt: string;
+  reason: string;
+  reasonCode: string;
+  auditId: string | null;
+  eventId: string | null;
 };
 
 export type JobRecoveryExecuteResult = {
