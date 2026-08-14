@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach, jest } from "@jest/globals";
+import { NextResponse } from "next/server";
 
 jest.mock("server-only", () => ({}), { virtual: true });
 jest.mock("next/headers", () => ({
@@ -26,16 +27,19 @@ import {
 } from "@/lib/glw/jobs";
 import { createGlwN8nExecutionService, createGlwN8nTransport } from "@/lib/glw/n8n";
 import * as orchestrationRuntime from "@/platform/gop/runtime/orchestration-runtime";
+import { issueWorkerToken } from "@/platform/gop/runtime/worker-token";
 import { createInMemoryGenesisEventStore } from "@/platform/gop/event-store";
 import {
   handleCreatePageGenerationJob,
   handleGetJob,
   handleGetN8nExecutionDiagnostics,
   handleJobCallback,
+  handleRunTimeoutReconciliation,
   handleRetryJob,
   listPageGenerationJobs,
 } from "@/lib/glw/page-generation-api";
 import { POST as handleCallbackRoute } from "@/app/api/glw/jobs/callback/route";
+import { POST as handleReconcileTimeoutsRoute } from "@/app/api/glw/jobs/reconcile-timeouts/route";
 
 const originalEnv = { ...process.env };
 
@@ -90,6 +94,7 @@ function buildValidPageRequest(overrides?: Record<string, unknown>) {
 
 beforeEach(() => {
   process.env = { ...originalEnv };
+  delete process.env.DATABASE_URL;
   setRequiredEnv();
   jest.spyOn(orchestrationRuntime, "getGenesisOrchestrationRuntime").mockReturnValue({
     createGlwExecutionForJob: () => undefined,
@@ -1395,5 +1400,148 @@ describe("GLW callback and retry behavior", () => {
     expect(snapshot.displayStatus).toBe("FAILED");
     expect(snapshot.progressPercent).toBe(100);
     expect(snapshot.currentStage).toBe("Failed");
+  });
+});
+
+describe("GLW proactive timeout reconciliation auth", () => {
+  it("rejects timeout reconciliation without signed worker token", async () => {
+    const response = await handleRunTimeoutReconciliation(
+      new Request("http://localhost/api/glw/jobs/reconcile-timeouts", {
+        method: "POST",
+      }),
+      {
+        repository: createInMemoryGlwJobRepository(),
+        workerTokenSecret: "test-worker-secret",
+      },
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("accepts timeout reconciliation with a valid signed worker token", async () => {
+    const staleStart = new Date(Date.now() - GLW_JOB_TIMEOUT_MS - 60_000).toISOString();
+    const staleJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "RUNNING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "Proactive stale job",
+      input: createGlwJobInput(buildValidPageRequest({ title: "Proactive stale job" }), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "exec_proactive",
+        status: "RUNNING",
+        title: "Proactive stale job",
+      },
+      error: null,
+      externalExecutionId: "exec_proactive",
+      startedAt: staleStart,
+      completedAt: null,
+    });
+
+    const repository = createInMemoryGlwJobRepository([staleJob]);
+    const workerTokenSecret = "test-worker-secret";
+    const workerId = "glw-timeout-reconciler";
+    const token = issueWorkerToken({
+      workerId,
+      tokenId: "token-1",
+      secret: workerTokenSecret,
+      ttlMs: 60_000,
+    });
+
+    const response = await handleRunTimeoutReconciliation(
+      new Request("http://localhost/api/glw/jobs/reconcile-timeouts?limit=10", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+      {
+        repository,
+        workerTokenSecret,
+        timeoutReconciliationWorkerId: workerId,
+      },
+    );
+
+    expect(response.status).toBe(200);
+    const payload = await response.json() as {
+      reconciliation: {
+        reconciled: number;
+      };
+    };
+    expect(payload.reconciliation.reconciled).toBe(1);
+
+    const updated = await repository.findById(staleJob.id);
+    expect(updated?.status).toBe("FAILED");
+  });
+
+  it("rejects timeout reconciliation with an invalid signed worker token", async () => {
+    const response = await handleRunTimeoutReconciliation(
+      new Request("http://localhost/api/glw/jobs/reconcile-timeouts", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer invalid-token",
+        },
+      }),
+      {
+        repository: createInMemoryGlwJobRepository(),
+        workerTokenSecret: "test-worker-secret",
+      },
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects timeout reconciliation when workerId does not match policy", async () => {
+    const workerTokenSecret = "test-worker-secret";
+    const token = issueWorkerToken({
+      workerId: "different-worker",
+      tokenId: "token-mismatch",
+      secret: workerTokenSecret,
+      ttlMs: 60_000,
+    });
+
+    const response = await handleRunTimeoutReconciliation(
+      new Request("http://localhost/api/glw/jobs/reconcile-timeouts", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+      {
+        repository: createInMemoryGlwJobRepository(),
+        workerTokenSecret,
+        timeoutReconciliationWorkerId: "glw-timeout-reconciler",
+      },
+    );
+
+    expect(response.status).toBe(403);
+  });
+
+  it("routes timeout reconciliation requests through the API route", async () => {
+    const handleRunTimeoutReconciliationSpy = jest
+      .spyOn(await import("@/lib/glw/page-generation-api"), "handleRunTimeoutReconciliation")
+      .mockResolvedValue(NextResponse.json({ ok: true }));
+
+    const token = issueWorkerToken({
+      workerId: "glw-timeout-reconciler",
+      tokenId: "token-route",
+      secret: "route-worker-secret",
+      ttlMs: 60_000,
+    });
+
+    process.env.GOP_WORKER_TOKEN_SECRET = "route-worker-secret";
+    process.env.GLW_TIMEOUT_RECONCILIATION_WORKER_ID = "glw-timeout-reconciler";
+
+    const request = new Request("http://localhost/api/glw/jobs/reconcile-timeouts?limit=5", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    await handleReconcileTimeoutsRoute(request);
+
+    expect(handleRunTimeoutReconciliationSpy).toHaveBeenCalledTimes(1);
+    expect(handleRunTimeoutReconciliationSpy).toHaveBeenCalledWith(request);
   });
 });

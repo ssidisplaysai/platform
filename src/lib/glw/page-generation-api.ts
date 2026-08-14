@@ -3,6 +3,11 @@ import { timingSafeEqual } from "crypto";
 import { getGlwSession } from "./auth";
 import { createPrismaGlwJobRepository } from "./job-repository";
 import {
+  reconcileGlwTimedOutJob,
+  reconcileGlwTimedOutJobs,
+  runGlwTimeoutReconciliation,
+} from "./timeout-reconciliation";
+import {
   applyGlwJobCallback,
   retryGlwPageGenerationJob,
   submitGlwPageGenerationJob,
@@ -11,14 +16,11 @@ import {
   GLW_QA_CHECK_KEYS,
   GLW_QA_CONTRACT_VERSION,
   GLW_CALLBACK_CONTRACT_VERSION,
-  GLW_JOB_TIMEOUT_MS,
   validatePageGenerationRequest,
   GlwPageGenerationRequest,
   GlwPageGenerationCallbackPayload,
   GlwJobRecord,
   describeOperatorSafeError,
-  isGlwJobTimedOut,
-  isTerminalGlwJobStatus,
   matchesGlwJobFilter,
   normalizeGlwQaChecks,
   normalizeGlwQaFailureReasons,
@@ -29,6 +31,7 @@ import {
 import { createGlwN8nExecutionService, createGlwN8nTransport } from "./n8n";
 import { getGenesisEventStore } from "@/platform/gop/runtime/event-store";
 import type { GenesisEventStore } from "@/platform/gop/event-store";
+import { verifyWorkerToken } from "@/platform/gop/runtime/worker-token";
 
 export type GlwApiDependencies = {
   repository?: ReturnType<typeof createPrismaGlwJobRepository>;
@@ -37,6 +40,8 @@ export type GlwApiDependencies = {
   eventStore?: GenesisEventStore | null;
   appUrl?: string;
   webhookSecret?: string;
+  workerTokenSecret?: string;
+  timeoutReconciliationWorkerId?: string;
   sessionLoader?: typeof getGlwSession;
 };
 
@@ -48,6 +53,10 @@ function getDependencies(dependencies?: GlwApiDependencies) {
     eventStore: dependencies?.eventStore ?? (process.env.DATABASE_URL ? getGenesisEventStore() : null),
     appUrl: dependencies?.appUrl ?? process.env.GLW_APP_URL ?? "http://localhost:3000",
     webhookSecret: dependencies?.webhookSecret ?? process.env.GLW_N8N_WEBHOOK_SECRET ?? "",
+    workerTokenSecret: dependencies?.workerTokenSecret ?? process.env.GOP_WORKER_TOKEN_SECRET ?? "",
+    timeoutReconciliationWorkerId: dependencies?.timeoutReconciliationWorkerId
+      ?? process.env.GLW_TIMEOUT_RECONCILIATION_WORKER_ID
+      ?? "glw-timeout-reconciler",
     sessionLoader: dependencies?.sessionLoader ?? getGlwSession,
   };
 }
@@ -55,6 +64,15 @@ function getDependencies(dependencies?: GlwApiDependencies) {
 async function requireGlwSession(dependencies?: GlwApiDependencies): Promise<boolean> {
   const { sessionLoader } = getDependencies(dependencies);
   return Boolean(await sessionLoader());
+}
+
+function parseWorkerBearer(request: Request): string | null {
+  const auth = request.headers.get("authorization") ?? "";
+  if (!auth.startsWith("Bearer ")) {
+    return null;
+  }
+
+  return auth.slice("Bearer ".length).trim();
 }
 
 function jsonResponse(body: unknown, status = 200): NextResponse {
@@ -71,34 +89,6 @@ function notFoundResponse(message = "GLW job not found."): NextResponse {
 
 function conflictResponse(message: string, job?: GlwJobRecord): NextResponse {
   return jsonResponse(job ? { error: message, job } : { error: message }, 409);
-}
-
-async function reconcileTimedOutJob(
-  job: GlwJobRecord,
-  repository: ReturnType<typeof createPrismaGlwJobRepository>,
-  now = new Date(),
-): Promise<GlwJobRecord> {
-  if (isTerminalGlwJobStatus(job.status) || !isGlwJobTimedOut(job, now, GLW_JOB_TIMEOUT_MS)) {
-    return job;
-  }
-
-  return repository.update(job.id, {
-    status: "FAILED",
-    completedAt: job.completedAt ?? now.toISOString(),
-    result: job.result,
-    error: job.error ?? {
-      code: "TIMED_OUT",
-      step: "workflow",
-      message: "GLW job timed out while waiting for workflow completion callback.",
-    },
-  });
-}
-
-async function reconcileTimedOutJobs(
-  jobs: GlwJobRecord[],
-  repository: ReturnType<typeof createPrismaGlwJobRepository>,
-): Promise<GlwJobRecord[]> {
-  return Promise.all(jobs.map((job) => reconcileTimedOutJob(job, repository)));
 }
 
 function validationResponse(message: string, errors: Record<string, string | undefined>): NextResponse {
@@ -279,7 +269,16 @@ export async function handleGetJob(
     return notFoundResponse();
   }
 
-  const reconciledJob = await reconcileTimedOutJob(job, repository);
+  const reconciliation = await reconcileGlwTimedOutJob(job, repository);
+  const reconciledJob = await repository.findById(job.id);
+  if (!reconciledJob) {
+    return notFoundResponse();
+  }
+
+  if (reconciliation.action === "ERROR") {
+    return jsonResponse({ error: "Timeout reconciliation failed for this GLW job." }, 500);
+  }
+
   return jsonResponse({ job: reconciledJob });
 }
 
@@ -356,7 +355,15 @@ export async function handleRetryJob(
     return notFoundResponse();
   }
 
-  const reconciledJob = await reconcileTimedOutJob(currentJob, repository);
+  const reconcileResult = await reconcileGlwTimedOutJob(currentJob, repository);
+  if (reconcileResult.action === "ERROR") {
+    return jsonResponse({ error: "Timeout reconciliation failed for this GLW job." }, 500);
+  }
+
+  const reconciledJob = await repository.findById(currentJob.id);
+  if (!reconciledJob) {
+    return notFoundResponse();
+  }
 
   if (reconciledJob.status !== "FAILED" && reconciledJob.status !== "FAILED_QA") {
     return conflictResponse("Only failed GLW jobs can be retried.", reconciledJob);
@@ -521,6 +528,48 @@ export async function handleRetryCallback(
   return handleJobCallback(request, dependencies);
 }
 
+export async function handleRunTimeoutReconciliation(
+  request: Request,
+  dependencies?: GlwApiDependencies,
+): Promise<NextResponse> {
+  const {
+    repository,
+    workerTokenSecret,
+    timeoutReconciliationWorkerId,
+  } = getDependencies(dependencies);
+
+  const bearer = parseWorkerBearer(request);
+  if (!bearer || !workerTokenSecret) {
+    return jsonResponse({ error: "Signed worker token is required." }, 401);
+  }
+
+  const payload = verifyWorkerToken(bearer, workerTokenSecret);
+  if (!payload) {
+    return jsonResponse({ error: "Signed worker token is required." }, 401);
+  }
+
+  if (timeoutReconciliationWorkerId && payload.workerId !== timeoutReconciliationWorkerId) {
+    return jsonResponse({ error: "workerId does not match reconciliation worker policy." }, 403);
+  }
+
+  const url = new URL(request.url);
+  const limit = Math.min(1000, Math.max(1, Number(url.searchParams.get("limit") ?? "200") || 200));
+
+  const reconciliation = await runGlwTimeoutReconciliation({
+    repository,
+    limit,
+  });
+
+  return jsonResponse({
+    reconciliation,
+    worker: {
+      workerId: payload.workerId,
+      tokenId: payload.tokenId,
+      protocolVersion: payload.protocolVersion,
+    },
+  });
+}
+
 export async function listPageGenerationJobs(
   request: Request,
   dependencies?: GlwApiDependencies,
@@ -538,7 +587,7 @@ export async function listPageGenerationJobs(
     : "all";
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") ?? "100") || 100));
 
-  const jobs = await reconcileTimedOutJobs(await repository.findPageGenerationJobs(limit), repository);
+  const jobs = await reconcileGlwTimedOutJobs(await repository.findPageGenerationJobs(limit), repository);
   const filtered = jobs.filter((job) => {
     if (!matchesGlwJobFilter(job.status, filter)) {
       return false;
@@ -575,7 +624,7 @@ export async function getPageGenerationDashboard(
   const { repository } = getDependencies(dependencies);
   const url = new URL(request.url);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "20") || 20));
-  const jobs = await reconcileTimedOutJobs(await repository.findPageGenerationJobs(500), repository);
+  const jobs = await reconcileGlwTimedOutJobs(await repository.findPageGenerationJobs(500), repository);
   const recent = jobs.slice(0, limit);
 
   const completedDurations = jobs

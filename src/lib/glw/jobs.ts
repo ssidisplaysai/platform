@@ -18,6 +18,16 @@ export const glwJobStatuses = [
 ] as const;
 export type GlwJobStatus = (typeof glwJobStatuses)[number];
 
+export const glwNonTerminalJobStatuses: readonly GlwJobStatus[] = [
+  "QUEUED",
+  "STARTING",
+  "RUNNING",
+  "GENERATING_CONTENT",
+  "GENERATING_IMAGE",
+  "UPLOADING_IMAGE",
+  "PUBLISHING",
+];
+
 export const glwJobStatusOrder: Record<GlwJobStatus, number> = {
   QUEUED: 0,
   STARTING: 1,
@@ -197,9 +207,11 @@ export type GlwPageGenerationCallbackPayload = {
 export type GlwJobRepository = {
   create(data: GlwJobRecord): Promise<GlwJobRecord>;
   update(id: string, changes: Partial<GlwJobRecord>): Promise<GlwJobRecord>;
+  updateIfCurrentStatusIn(id: string, statuses: readonly GlwJobStatus[], changes: Partial<GlwJobRecord>): Promise<GlwJobRecord | null>;
   findById(id: string): Promise<GlwJobRecord | null>;
   findRecentPageGenerationJobs(limit: number): Promise<GlwJobRecord[]>;
   findPageGenerationJobs(limit: number): Promise<GlwJobRecord[]>;
+  findPageGenerationJobsByStatuses(statuses: readonly GlwJobStatus[], limit: number): Promise<GlwJobRecord[]>;
   findLatestRetryForJob(jobId: string): Promise<GlwJobRecord | null>;
 };
 

@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { getPrismaClient } from "./prisma";
 import {
   GlwJobRecord,
+  GlwJobStatus,
   GlwJobRepository,
   parseGlwJobRecord,
   toJsonValue,
@@ -57,6 +58,40 @@ export function createPrismaGlwJobRepository(prisma = getPrismaClient()): GlwJob
       return toRecord(updated);
     },
 
+    async updateIfCurrentStatusIn(id: string, statuses: readonly GlwJobStatus[], changes: Partial<GlwJobRecord>): Promise<GlwJobRecord | null> {
+      if (statuses.length === 0) {
+        return this.findById(id);
+      }
+
+      const updateResult = await prisma.glwJob.updateMany({
+        where: {
+          id,
+          status: {
+            in: [...statuses],
+          },
+        },
+        data: {
+          type: changes.type,
+          status: changes.status,
+          retryOfJobId: changes.retryOfJobId,
+          siteId: changes.siteId,
+          title: changes.title,
+          input: changes.input ? toJsonValue(changes.input) : undefined,
+          result: changes.result ? toJsonValue(changes.result) : changes.result === null ? Prisma.JsonNull : undefined,
+          error: changes.error ? toJsonValue(changes.error) : changes.error === null ? Prisma.JsonNull : undefined,
+          externalExecutionId: changes.externalExecutionId,
+          startedAt: changes.startedAt === undefined ? undefined : changes.startedAt ? new Date(changes.startedAt) : null,
+          completedAt: changes.completedAt === undefined ? undefined : changes.completedAt ? new Date(changes.completedAt) : null,
+        },
+      });
+
+      if (updateResult.count === 0) {
+        return this.findById(id);
+      }
+
+      return this.findById(id);
+    },
+
     async findById(id: string): Promise<GlwJobRecord | null> {
       const job = await prisma.glwJob.findUnique({ where: { id } });
 
@@ -76,6 +111,25 @@ export function createPrismaGlwJobRepository(prisma = getPrismaClient()): GlwJob
     async findPageGenerationJobs(limit: number): Promise<GlwJobRecord[]> {
       const jobs = await prisma.glwJob.findMany({
         where: { type: "PAGE_GENERATION" },
+        orderBy: [{ createdAt: "desc" }],
+        take: limit,
+      });
+
+      return jobs.map(toRecord);
+    },
+
+    async findPageGenerationJobsByStatuses(statuses: readonly GlwJobStatus[], limit: number): Promise<GlwJobRecord[]> {
+      if (statuses.length === 0) {
+        return [];
+      }
+
+      const jobs = await prisma.glwJob.findMany({
+        where: {
+          type: "PAGE_GENERATION",
+          status: {
+            in: [...statuses],
+          },
+        },
         orderBy: [{ createdAt: "desc" }],
         take: limit,
       });
@@ -127,6 +181,20 @@ export function createInMemoryGlwJobRepository(initialJobs: GlwJobRecord[] = [])
       return updated;
     },
 
+    async updateIfCurrentStatusIn(id: string, statuses: readonly GlwJobStatus[], changes: Partial<GlwJobRecord>): Promise<GlwJobRecord | null> {
+      const current = jobs.get(id);
+
+      if (!current) {
+        return null;
+      }
+
+      if (!statuses.includes(current.status)) {
+        return current;
+      }
+
+      return this.update(id, changes);
+    },
+
     async findById(id: string): Promise<GlwJobRecord | null> {
       return jobs.get(id) ?? null;
     },
@@ -141,6 +209,17 @@ export function createInMemoryGlwJobRepository(initialJobs: GlwJobRecord[] = [])
     async findPageGenerationJobs(limit: number): Promise<GlwJobRecord[]> {
       return [...jobs.values()]
         .filter((job) => job.type === "PAGE_GENERATION")
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        .slice(0, limit);
+    },
+
+    async findPageGenerationJobsByStatuses(statuses: readonly GlwJobStatus[], limit: number): Promise<GlwJobRecord[]> {
+      if (statuses.length === 0) {
+        return [];
+      }
+
+      return [...jobs.values()]
+        .filter((job) => job.type === "PAGE_GENERATION" && statuses.includes(job.status))
         .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
         .slice(0, limit);
     },
