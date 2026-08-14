@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import Link from "next/link";
+import React, { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DataTable } from "./data-table";
 import { EmptyState } from "./empty-state";
 import { GlwJobPanel } from "./glw-job-panel";
@@ -24,7 +25,18 @@ type GlwPageGenerationWorkspaceProps = {
   initialJobs: GlwJobRecord[];
   initialSelectedJob: GlwJobRecord | null;
   initialSiteId?: string;
+  initialCreateMode?: boolean;
 };
+
+export const GLW_PAGES_GENERATE_HREF = "/glw/pages?create=1";
+
+export function isCreateModeQueryEnabled(createParam: string | null): boolean {
+  return createParam === "1";
+}
+
+export function resolveIsCreateMode(options: { createParam: string | null; initialCreateMode: boolean }): boolean {
+  return isCreateModeQueryEnabled(options.createParam) || options.initialCreateMode;
+}
 
 type GenerationFormState = {
   siteId: string;
@@ -238,11 +250,16 @@ function StatusChip({ displayStatus }: { displayStatus: string }) {
   );
 }
 
-export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, initialSiteId }: GlwPageGenerationWorkspaceProps) {
+export function GlwPageGenerationWorkspace({
+  initialJobs,
+  initialSelectedJob,
+  initialSiteId,
+  initialCreateMode = false,
+}: GlwPageGenerationWorkspaceProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<GlwJobRecord[]>(initialJobs);
   const [selectedJob, setSelectedJob] = useState<GlwJobRecord | null>(initialSelectedJob ?? getLatestRunningJob(initialJobs));
-  const [isCreateMode, setIsCreateMode] = useState(false);
   const [formState, setFormState] = useState<GenerationFormState>({
     ...initialFormState,
     siteId: initialSiteId ?? initialFormState.siteId,
@@ -252,6 +269,10 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
   const [isSubmitting, startTransition] = useTransition();
   const submitLock = useRef(false);
   const selectedJobSectionId = "glw-selected-job-details";
+  const isCreateMode = resolveIsCreateMode({
+    createParam: searchParams.get("create"),
+    initialCreateMode,
+  });
 
   const selectedSite = useMemo(() => glwSites.find((site) => site.id === formState.siteId) ?? glwSites[0], [formState.siteId]);
 
@@ -280,14 +301,18 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
     setServerError(null);
     setErrors({});
     setSelectedJob(job);
-    setIsCreateMode(true);
+    router.replace(GLW_PAGES_GENERATE_HREF, { scroll: false });
   };
 
   const openGenerator = () => {
     setServerError(null);
     setErrors({});
     setSelectedJob(null);
-    setIsCreateMode(true);
+    router.replace(GLW_PAGES_GENERATE_HREF, { scroll: false });
+  };
+
+  const closeGenerator = () => {
+    router.replace("/glw/pages", { scroll: false });
   };
 
   const createJob = async () => {
@@ -332,7 +357,7 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
       if (payload?.job) {
         setJobs((current) => [payload.job as GlwJobRecord, ...current.filter((job) => job.id !== payload.job!.id)]);
         setSelectedJob(payload.job);
-        setIsCreateMode(false);
+        closeGenerator();
         router.refresh();
         return;
       }
@@ -475,13 +500,12 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
         title="Pages"
         description="Generate production pages, track workflow execution, and keep operators inside a live Genesis workspace."
         actions={
-          <button
-            type="button"
-            onClick={openGenerator}
+          <Link
+            href={GLW_PAGES_GENERATE_HREF}
             className="rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-zinc-950 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
           >
             Generate Page
-          </button>
+          </Link>
         }
       />
 
@@ -494,7 +518,7 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
             </div>
             <button
               type="button"
-              onClick={() => setIsCreateMode(false)}
+              onClick={closeGenerator}
               className="rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm font-medium text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-800 hover:text-white"
             >
               Close
@@ -507,7 +531,7 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
             errors={errors}
             serverError={serverError}
             isSubmitting={isSubmitting}
-            onClose={() => setIsCreateMode(false)}
+            onClose={closeGenerator}
             onSubmit={handleSubmit}
             site={selectedSite}
           />
@@ -533,7 +557,7 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
             const matching = jobs.find((job) => job.id === row.id);
             if (matching) {
               setSelectedJob(matching);
-              setIsCreateMode(false);
+              closeGenerator();
               document.getElementById(selectedJobSectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });
             }
           }}
@@ -585,7 +609,7 @@ export function GlwPageGenerationWorkspace({ initialJobs, initialSelectedJob, in
                   aria-label={`Open job ${row.id}`}
                   onClick={async (event) => {
                     event.stopPropagation();
-                    setIsCreateMode(false);
+                    closeGenerator();
                     const refreshed = await refreshJob(row.id);
                     setSelectedJob(refreshed);
                     document.getElementById(selectedJobSectionId)?.scrollIntoView({ behavior: "smooth", block: "start" });

@@ -57,6 +57,7 @@ export type GlwQaFailureReasons = Partial<Record<GlwQaCheckKey, string>>;
 export type GlwResultDisposition = "CREATED" | "UPDATED" | "SKIPPED_DUPLICATE" | "FAILED_QA" | (string & {});
 
 const glwPageTypes: readonly GlwPageType[] = ["city_service", "state_service", "general_service"];
+const CANONICAL_GLW_SITE_ID = "led-display-warehouse";
 
 export type GlwPageGenerationRequest = {
   siteId: string;
@@ -741,10 +742,10 @@ export function createGlwJobInput(
   request: GlwPageGenerationRequest,
   callbackUrl?: string,
 ): GlwPageGenerationJobInput {
-  const site = getGlwSite(request.siteId);
+  const site = getGlwSite(CANONICAL_GLW_SITE_ID);
 
   if (!site) {
-    throw new Error(`Unknown GLW site: ${request.siteId}`);
+    throw new Error(`Unknown GLW site: ${CANONICAL_GLW_SITE_ID}`);
   }
 
   return {

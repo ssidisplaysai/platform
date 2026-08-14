@@ -234,6 +234,106 @@ describe("GLW API auth and creation", () => {
     expect(workflow.invokePageGeneration).toHaveBeenCalledTimes(1);
   });
 
+  it("sends canonical GLW site identity while preserving workflow workspace identity", async () => {
+    const repository = createInMemoryGlwJobRepository();
+    const workflow = {
+      invokePageGeneration: jest.fn(async () => ({
+        kind: "accepted" as const,
+        executionId: "exec_canonical_site",
+        status: "accepted" as const,
+      })),
+    };
+
+    const firstRequest = buildValidPageRequest({
+      siteId: "sphere-rental-dallas",
+      workspaceId: "glw-sphere-rental-dallas",
+      city: "Dallas",
+      citySlug: "dallas",
+      hierarchicalSlug: "texas/dallas/led-wall-rental",
+      targetSlug: "led-wall-rental-dallas",
+      title: "LED Wall Rental Package - Dallas",
+      state: "Texas",
+    });
+    const firstResult = await submitGlwPageGenerationJob(firstRequest, {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      appUrl: "http://localhost:3000",
+    });
+
+    const secondRequest = buildValidPageRequest({
+      siteId: "projection-screen-chicago",
+      workspaceId: "glw-projection-screen-chicago",
+      city: "Chicago",
+      citySlug: "chicago",
+      hierarchicalSlug: "illinois/chicago/projection-screen-rental",
+      targetSlug: "projection-screen-rental-chicago",
+      title: "Projection Screen Rental - Chicago",
+      state: "Illinois",
+    });
+    const secondResult = await submitGlwPageGenerationJob(secondRequest, {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      appUrl: "http://localhost:3000",
+    });
+
+    expect(workflow.invokePageGeneration).toHaveBeenCalledTimes(2);
+
+    const firstPayload = workflow.invokePageGeneration.mock.calls[0][0] as {
+      site: { id: string; name: string };
+      workspaceId: string;
+      workflowContext: { workspaceId: string };
+    };
+    const secondPayload = workflow.invokePageGeneration.mock.calls[1][0] as {
+      site: { id: string; name: string };
+      workspaceId: string;
+      workflowContext: { workspaceId: string };
+    };
+
+    expect(firstPayload.site).toEqual({ id: "led-display-warehouse", name: "LED Display Warehouse" });
+    expect(secondPayload.site).toEqual({ id: "led-display-warehouse", name: "LED Display Warehouse" });
+
+    expect(firstPayload.jobId).toBe(firstResult.job.id);
+    expect(secondPayload.jobId).toBe(secondResult.job.id);
+
+    expect(firstPayload.callbackUrl).toBe("http://localhost:3000/api/glw/jobs/callback");
+    expect(secondPayload.callbackUrl).toBe("http://localhost:3000/api/glw/jobs/callback");
+
+    expect(firstPayload.workspaceId).toBe("glw-sphere-rental-dallas");
+    expect(firstPayload.workflowContext.workspaceId).toBe("glw-sphere-rental-dallas");
+    expect(secondPayload.workspaceId).toBe("glw-projection-screen-chicago");
+    expect(secondPayload.workflowContext.workspaceId).toBe("glw-projection-screen-chicago");
+
+    expect(firstPayload.page.page_type).toBe(firstRequest.pageType);
+    expect(firstPayload.page.product_topic).toBe(firstRequest.productTopic);
+    expect(firstPayload.page.state).toBe(firstRequest.state);
+    expect(firstPayload.page.city).toBe(firstRequest.city);
+    expect(firstPayload.page.citySlug).toBe(firstRequest.citySlug);
+    expect(firstPayload.page.city_slug).toBe(firstRequest.citySlug);
+    expect(firstPayload.page.hierarchicalSlug).toBe(firstRequest.hierarchicalSlug);
+    expect(firstPayload.page.hierarchical_slug).toBe(firstRequest.hierarchicalSlug);
+
+    expect(firstPayload.workflowContext.pageType).toBe(firstRequest.pageType);
+    expect(firstPayload.workflowContext.productTopic).toBe(firstRequest.productTopic);
+    expect(firstPayload.workflowContext.state).toBe(firstRequest.state);
+    expect(firstPayload.workflowContext.city).toBe(firstRequest.city);
+    expect(firstPayload.workflowContext.citySlug).toBe(firstRequest.citySlug);
+    expect(firstPayload.workflowContext.hierarchicalSlug).toBe(firstRequest.hierarchicalSlug);
+
+    expect(firstPayload.seoSettings).toMatchObject({
+      targetSlug: firstRequest.targetSlug,
+      citySlug: firstRequest.citySlug,
+      city_slug: firstRequest.citySlug,
+      primaryKeyword: firstRequest.primaryKeyword,
+      secondaryKeywords: firstRequest.secondaryKeywords,
+      category: firstRequest.category,
+    });
+
+    expect(firstPayload.publishingSettings).toMatchObject({
+      status: firstRequest.status,
+      wordCount: firstRequest.wordCount,
+    });
+  });
+
   it("persists the full callback contract through normalization and API readback", async () => {
     const repository = createInMemoryGlwJobRepository();
     const workflow = {

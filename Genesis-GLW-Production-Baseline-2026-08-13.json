@@ -1,0 +1,114 @@
+{
+  "status": "KNOWN_GOOD",
+  "date": "2026-08-13",
+  "git_branch": "recovery/genesis-platform-1.1.1-bge",
+  "git_commit_before_closeout": "f0d00bd6fddb895d5817182a6d394566895a57a1",
+  "git_commit": null,
+  "tests": {
+    "command": "npm test -- tests/glw/generate-page-ui.test.tsx tests/glw/page-generation-api.test.ts",
+    "result": "PASS",
+    "suites_passed": 2,
+    "suites_total": 2,
+    "tests_passed": 33,
+    "tests_total": 33
+  },
+  "typescript": {
+    "command": "npx tsc --noEmit",
+    "result": "PASS",
+    "exit": 0
+  },
+  "build": {
+    "command": "npm run build",
+    "result": "PASS",
+    "framework": "Next.js 16.2.10"
+  },
+  "glw": {
+    "payload_contract": {
+      "site": {
+        "id": "led-display-warehouse",
+        "name": "LED Display Warehouse"
+      },
+      "workspace_identity": [
+        "workspaceId",
+        "workflowContext.workspaceId"
+      ],
+      "preserved_fields": [
+        "workflowContext",
+        "workspaceId",
+        "page_type",
+        "product_topic",
+        "state",
+        "city",
+        "citySlug",
+        "hierarchicalSlug",
+        "seoSettings",
+        "publishingSettings",
+        "callbackUrl",
+        "jobId"
+      ]
+    },
+    "generate_page_entrypoint": "/glw/pages?create=1",
+    "health_endpoint": {
+      "url": "http://localhost:3001/api/glw/health",
+      "status": 200,
+      "build_id": "B6aYI8KxBS5to2Kafka5v",
+      "git_commit_reported": "f0d00bd6fddb895d5817182a6d394566895a57a1",
+      "status_state": "WARNING",
+      "readiness": "READY",
+      "liveness": "LIVE",
+      "source": "SIMULATED"
+    },
+    "version_endpoint": {
+      "url": "http://localhost:3001/api/glw/version",
+      "status": 200,
+      "qa_contract_version": 16,
+      "callback_contract_version": 16,
+      "schema_version": "glw-job-schema-v1",
+      "publishing_engine_version": "glw-publishing-engine-v1.0"
+    }
+  },
+  "n8n": {
+    "workflow_modified_during_closeout": false,
+    "workflow_identity_version": "UNAVAILABLE_DURING_CLOSEOUT"
+  },
+  "cloudflare": {
+    "expected_routing": {
+      "glw-dev.ssiai.app": "localhost:3001",
+      "app.ssiai.app": "localhost:3001"
+    },
+    "modified_during_closeout": false
+  },
+  "image_pipeline": {
+    "generation": {
+      "model": "gpt-image-1-mini",
+      "quality": "medium",
+      "resolution": "1536x1024"
+    },
+    "optimization": {
+      "target": "approximately 1200x800",
+      "format": "jpeg",
+      "quality": 85
+    },
+    "upload": {
+      "content_type": "image/jpeg",
+      "filename_extension": ".jpg"
+    },
+    "hero_presentation": {
+      "max_width": "760px",
+      "centered": true,
+      "width": "100%",
+      "height": "auto",
+      "border_radius": "8px",
+      "margin_top": "approximately 20px",
+      "margin_bottom": "approximately 28px"
+    }
+  },
+  "known_issues": [
+    "Health payload status.state reports WARNING despite readiness/liveness READY/LIVE.",
+    "Health record source reports SIMULATED metadata."
+  ],
+  "deferred_items": [
+    "Unrelated modified/untracked repository artifacts were intentionally left untouched during focused GLW closeout.",
+    "No upstream is configured for recovery/genesis-platform-1.1.1-bge; push target requires explicit branch handling."
+  ]
+}
