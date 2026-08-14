@@ -1,0 +1,111 @@
+{
+  "date": "2026-08-14",
+  "smoke_verdict": "PASS",
+  "branch": "work/glw-operational-hardening",
+  "source_head": "a7f33499f80e39eff7f306b3f74d38a94c88093a",
+  "baseline": {
+    "tag": "glw-production-baseline-2026-08-13",
+    "commit": "5468037337df1859acf4a7da430f00442addf7ae",
+    "tag_intact": true
+  },
+  "preflight": {
+    "origin": "https://github.com/ssidisplaysai/platform.git",
+    "preserved_stashes_intact": true
+  },
+  "ui_smoke": {
+    "glw_pages": {
+      "result": "PASS",
+      "authenticated": true,
+      "first_navigation_chunk_error": false,
+      "workspace_rendered": true,
+      "job_submission_performed": false,
+      "production_dispatch": false
+    },
+    "glw_pages_create": {
+      "result": "PASS",
+      "authenticated": true,
+      "first_navigation_chunk_error": false,
+      "create_interface_opened": true,
+      "url_state_derived": true,
+      "job_submission_performed": false,
+      "production_dispatch": false
+    },
+    "return_to_pages": {
+      "result": "PASS",
+      "normal_pages_rendered": true,
+      "create_mode_forced_open": false
+    }
+  },
+  "health": {
+    "result": "PASS",
+    "http_status": 200,
+    "state": "HEALTHY",
+    "readiness": "READY",
+    "liveness": "LIVE",
+    "source": "INTEGRATION",
+    "declared_capabilities": [
+      "catalog",
+      "order-management",
+      "page-generation"
+    ],
+    "available_capabilities": [
+      "catalog",
+      "order-management",
+      "page-generation"
+    ],
+    "unavailable_capabilities": [],
+    "page_generation_capability": {
+      "availability": "AVAILABLE"
+    },
+    "compatibility": {
+      "compatible": true,
+      "issues": []
+    },
+    "version": {
+      "build_id": "ZzgCGgIGmbQZdPCou2B7T",
+      "git_commit": "a7f33499f80e39eff7f306b3f74d38a94c88093a",
+      "schema_version": "glw-job-schema-v1",
+      "qa_contract_version": 16,
+      "callback_contract_version": 16,
+      "planner_version": "genesis-planner-v1",
+      "publishing_engine_version": "glw-publishing-engine-v1.0"
+    }
+  },
+  "callback_smoke": {
+    "mechanism": "existing local/test regression mechanism",
+    "valid_completion_callback": "PASS",
+    "duplicate_callback_idempotency": "PASS",
+    "execution_id_mismatch_rejection": "PASS",
+    "invalid_auth_rejection": "PASS",
+    "failure_callback": "PASS"
+  },
+  "timeout_reconciliation": {
+    "result": "PASS",
+    "local_test_reconciliation_verified": true
+  },
+  "regression_rerun_performed_in_this_gate": true,
+  "required_validation": {
+    "focused_tests": "PASS",
+    "focused_suites_passed": 4,
+    "focused_suites_total": 4,
+    "focused_tests_passed": 40,
+    "focused_tests_total": 40,
+    "typescript": "PASS",
+    "build": "PASS"
+  },
+  "safety": {
+    "production_n8n_jobs_dispatched": false,
+    "wordpress_production_mutation": false,
+    "n8n_modified": false,
+    "cloudflare_modified": false,
+    "preserved_stashes_intact": true
+  },
+  "remote": {
+    "pushed": false,
+    "remote_branch": "work/glw-operational-hardening",
+    "upstream_configured": false,
+    "local_remote_head_aligned": null
+  },
+  "blocking_defects": [],
+  "final_certification": "GLW OPERATIONAL HARDENING - READY FOR REMOTE PUSH"
+}
