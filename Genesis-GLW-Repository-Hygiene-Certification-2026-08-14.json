@@ -1,0 +1,96 @@
+{
+  "status": "LOCKED",
+  "date": "2026-08-14",
+  "baseline": {
+    "branch": "recovery/genesis-platform-1.1.1-bge",
+    "commit": "5468037337df1859acf4a7da430f00442addf7ae",
+    "tag": "glw-production-baseline-2026-08-13",
+    "tag_resolves_to": "5468037337df1859acf4a7da430f00442addf7ae"
+  },
+  "inventory": {
+    "classification_counts": {
+      "A": 0,
+      "B": 165,
+      "C": 8,
+      "D": 246,
+      "E": 4
+    },
+    "tracked_modified_count_in_preserved_set": 8,
+    "untracked_count_in_preserved_set": 158,
+    "tmp_count_in_preserved_set": 246,
+    "tracked_modified_files": [
+      "Genesis-Platform-v1.2-Certification-Report.md",
+      "Genesis-Platform-v1.2-Certification-Telemetry.json",
+      "QueueCleanlinessReport.md",
+      "scripts/certify-glw.ps1",
+      "scripts/deploy-glw.ps1",
+      "scripts/glw-certify-data.mts",
+      "src/lib/gop/recovery-api.ts",
+      "src/platform/gop/auth/policies.ts"
+    ]
+  },
+  "hygiene_actions": {
+    "removed_disposable_artifacts": {
+      "pattern": [".tmp*", ".tmp/"],
+      "removed_count": 285
+    },
+    "preservation": {
+      "mechanism": "git stash",
+      "entries": [
+        "hygiene-preserve-unknown-untracked-2026-08-14",
+        "hygiene-preserve-reconciliation-untracked-2026-08-14",
+        "hygiene-preserve-platform-gid-work-2026-08-14",
+        "hygiene-preserve-unrelated-work-2026-08-14"
+      ]
+    }
+  },
+  "git": {
+    "remote": "origin https://github.com/ssidisplaysai/platform.git",
+    "upstream_configured": false,
+    "existing_remote_head_for_branch": false,
+    "push_performed": false
+  },
+  "verification": {
+    "focused_tests": {
+      "command": "npm test -- tests/glw/generate-page-ui.test.tsx tests/glw/page-generation-api.test.ts",
+      "result": "PASS",
+      "suites_passed": 2,
+      "suites_total": 2,
+      "tests_passed": 33,
+      "tests_total": 33
+    },
+    "typescript": {
+      "command": "npx tsc --noEmit",
+      "result": "PASS",
+      "exit": 0
+    },
+    "build": {
+      "command": "npm run build",
+      "result": "PASS"
+    },
+    "runtime_surfaces": {
+      "glw_pages": {
+        "url": "http://localhost:3001/glw/pages",
+        "status": 200,
+        "notes": "Protected route resolved to login without session."
+      },
+      "glw_pages_create": {
+        "url": "http://localhost:3001/glw/pages?create=1",
+        "status": 200,
+        "notes": "Protected route resolved to login without session."
+      },
+      "glw_health": {
+        "url": "http://localhost:3001/api/glw/health",
+        "status": 200,
+        "git_commit": "5468037337df1859acf4a7da430f00442addf7ae"
+      }
+    }
+  },
+  "constraints": {
+    "glw_functional_changes_made": false,
+    "n8n_modified": false,
+    "cloudflare_modified": false,
+    "production_jobs_dispatched": false
+  },
+  "final_certification": "GLW PRODUCTION BASELINE — LOCKED"
+}
