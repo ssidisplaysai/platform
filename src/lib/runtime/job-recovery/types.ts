@@ -9,6 +9,7 @@ export type JobRecoveryExecutionProbe = {
   executionExists: boolean | null;
   executionTerminal: boolean | null;
   executionState: string | null;
+  executionIdentityVerified?: boolean | null;
   reason?: string;
 };
 

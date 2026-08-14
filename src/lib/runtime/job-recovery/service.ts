@@ -73,45 +73,64 @@ async function lookupExecutionProbe(executionId: string | null): Promise<JobReco
       executionExists: null,
       executionTerminal: null,
       executionState: null,
+      executionIdentityVerified: null,
       reason: "No external execution ID.",
+    };
+  }
+
+  const normalized = executionId.trim();
+  const isNativeExecutionId = /^\d+$/.test(normalized);
+
+  if (!isNativeExecutionId) {
+    return {
+      executionId: normalized,
+      executionExists: null,
+      executionTerminal: null,
+      executionState: "UNKNOWN",
+      executionIdentityVerified: false,
+      reason: "The recorded execution identifier is not a native n8n execution ID.",
     };
   }
 
   try {
     const n8n = createGlwN8nExecutionService();
-    const lookup = await n8n.getExecutionDiagnostics(executionId);
+    const lookup = await n8n.getExecutionDiagnostics(normalized);
     if (lookup.available) {
       return {
-        executionId,
+        executionId: normalized,
         executionExists: true,
         executionTerminal: lookup.diagnostics.terminal,
         executionState: lookup.diagnostics.executionState,
+        executionIdentityVerified: true,
       };
     }
 
     if (lookup.upstreamStatus === 404) {
       return {
-        executionId,
+        executionId: normalized,
         executionExists: false,
         executionTerminal: null,
         executionState: "MISSING",
+        executionIdentityVerified: true,
         reason: lookup.reason,
       };
     }
 
     return {
-      executionId,
+      executionId: normalized,
       executionExists: null,
       executionTerminal: null,
       executionState: "UNKNOWN",
+      executionIdentityVerified: true,
       reason: lookup.reason,
     };
   } catch (error) {
     return {
-      executionId,
+      executionId: normalized,
       executionExists: null,
       executionTerminal: null,
       executionState: "UNKNOWN",
+      executionIdentityVerified: true,
       reason: error instanceof Error ? error.message : "Execution diagnostics failed.",
     };
   }

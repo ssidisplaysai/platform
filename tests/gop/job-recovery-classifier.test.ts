@@ -103,6 +103,7 @@ describe("job recovery classifier", () => {
         executionExists: null,
         executionTerminal: null,
         executionState: null,
+        executionIdentityVerified: null,
       },
       signals: {
         leaseExpired: null,
@@ -111,6 +112,49 @@ describe("job recovery classifier", () => {
     });
 
     expect(result.classification).toBe("UNKNOWN");
+    expect(result.safeToRecover).toBe(false);
+  });
+
+  it("treats correlation-only execution ids as unverified external evidence", () => {
+    const result = classifyRecoveryCandidate({
+      execution: {
+        executionId: "correlation-69861",
+        executionExists: null,
+        executionTerminal: null,
+        executionState: "UNKNOWN",
+        executionIdentityVerified: false,
+        reason: "Execution ID is not a native n8n execution identifier.",
+      },
+      signals: {
+        leaseExpired: true,
+        heartbeatStopped: true,
+      },
+    });
+
+    expect(result.classification).toBe("UNKNOWN");
+    expect(result.decision).toBe("MANUAL_REVIEW");
+    expect(result.safeToRecover).toBe(false);
+    expect(result.recommendedJobStatus).toBe("MANUAL_INVESTIGATION");
+  });
+
+  it("requires external identity verification before missing execution can be treated as abandoned", () => {
+    const result = classifyRecoveryCandidate({
+      execution: {
+        executionId: "99999",
+        executionExists: false,
+        executionTerminal: null,
+        executionState: "MISSING",
+        executionIdentityVerified: false,
+        reason: "n8n API could not validate this execution identifier.",
+      },
+      signals: {
+        leaseExpired: true,
+        heartbeatStopped: true,
+      },
+    });
+
+    expect(result.classification).toBe("UNKNOWN");
+    expect(result.decision).toBe("MANUAL_REVIEW");
     expect(result.safeToRecover).toBe(false);
   });
 });
