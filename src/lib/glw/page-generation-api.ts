@@ -11,11 +11,14 @@ import {
   GLW_QA_CHECK_KEYS,
   GLW_QA_CONTRACT_VERSION,
   GLW_CALLBACK_CONTRACT_VERSION,
+  GLW_JOB_TIMEOUT_MS,
   validatePageGenerationRequest,
   GlwPageGenerationRequest,
   GlwPageGenerationCallbackPayload,
   GlwJobRecord,
   describeOperatorSafeError,
+  isGlwJobTimedOut,
+  isTerminalGlwJobStatus,
   matchesGlwJobFilter,
   normalizeGlwQaChecks,
   normalizeGlwQaFailureReasons,
@@ -68,6 +71,34 @@ function notFoundResponse(message = "GLW job not found."): NextResponse {
 
 function conflictResponse(message: string, job?: GlwJobRecord): NextResponse {
   return jsonResponse(job ? { error: message, job } : { error: message }, 409);
+}
+
+async function reconcileTimedOutJob(
+  job: GlwJobRecord,
+  repository: ReturnType<typeof createPrismaGlwJobRepository>,
+  now = new Date(),
+): Promise<GlwJobRecord> {
+  if (isTerminalGlwJobStatus(job.status) || !isGlwJobTimedOut(job, now, GLW_JOB_TIMEOUT_MS)) {
+    return job;
+  }
+
+  return repository.update(job.id, {
+    status: "FAILED",
+    completedAt: job.completedAt ?? now.toISOString(),
+    result: job.result,
+    error: job.error ?? {
+      code: "TIMED_OUT",
+      step: "workflow",
+      message: "GLW job timed out while waiting for workflow completion callback.",
+    },
+  });
+}
+
+async function reconcileTimedOutJobs(
+  jobs: GlwJobRecord[],
+  repository: ReturnType<typeof createPrismaGlwJobRepository>,
+): Promise<GlwJobRecord[]> {
+  return Promise.all(jobs.map((job) => reconcileTimedOutJob(job, repository)));
 }
 
 function validationResponse(message: string, errors: Record<string, string | undefined>): NextResponse {
@@ -248,7 +279,8 @@ export async function handleGetJob(
     return notFoundResponse();
   }
 
-  return jsonResponse({ job });
+  const reconciledJob = await reconcileTimedOutJob(job, repository);
+  return jsonResponse({ job: reconciledJob });
 }
 
 export async function handleGetN8nExecutionDiagnostics(
@@ -324,8 +356,10 @@ export async function handleRetryJob(
     return notFoundResponse();
   }
 
-  if (currentJob.status !== "FAILED") {
-    return conflictResponse("Only failed GLW jobs can be retried.", currentJob);
+  const reconciledJob = await reconcileTimedOutJob(currentJob, repository);
+
+  if (reconciledJob.status !== "FAILED" && reconciledJob.status !== "FAILED_QA") {
+    return conflictResponse("Only failed GLW jobs can be retried.", reconciledJob);
   }
 
   try {
@@ -504,7 +538,7 @@ export async function listPageGenerationJobs(
     : "all";
   const limit = Math.min(200, Math.max(1, Number(url.searchParams.get("limit") ?? "100") || 100));
 
-  const jobs = await repository.findPageGenerationJobs(limit);
+  const jobs = await reconcileTimedOutJobs(await repository.findPageGenerationJobs(limit), repository);
   const filtered = jobs.filter((job) => {
     if (!matchesGlwJobFilter(job.status, filter)) {
       return false;
@@ -541,7 +575,7 @@ export async function getPageGenerationDashboard(
   const { repository } = getDependencies(dependencies);
   const url = new URL(request.url);
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "20") || 20));
-  const jobs = await repository.findPageGenerationJobs(500);
+  const jobs = await reconcileTimedOutJobs(await repository.findPageGenerationJobs(500), repository);
   const recent = jobs.slice(0, limit);
 
   const completedDurations = jobs

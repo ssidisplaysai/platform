@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { handleCapabilityStatus } from "@/lib/ehc/health-api";
+import { handleGlwCapabilityStatus } from "@/lib/glw/runtime-health-api";
 
 export async function GET(): Promise<NextResponse> {
-  return handleCapabilityStatus("glw");
+  return handleGlwCapabilityStatus();
 }

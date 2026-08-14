@@ -1,0 +1,126 @@
+{
+  "date": "2026-08-14",
+  "baseline": {
+    "recovery_branch": "recovery/genesis-platform-1.1.1-bge",
+    "remote_branch": "origin/recovery/genesis-platform-1.1.1-bge",
+    "baseline_commit": "5468037337df1859acf4a7da430f00442addf7ae",
+    "baseline_tag": "glw-production-baseline-2026-08-13",
+    "starting_head": "40f1dfb8232a30ff477fe2d4de6e74d7468f338b",
+    "working_branch": "work/glw-operational-hardening"
+  },
+  "scope": {
+    "glw_functional_scope_changed": true,
+    "canonical_payload_contract_changed": false,
+    "n8n_modified": false,
+    "cloudflare_modified": false,
+    "production_jobs_dispatched": false,
+    "broad_refactor": false
+  },
+  "health_capability": {
+    "root_cause": "GLW health and capability routes were serving EHC simulation-backed cached records instead of evaluating live GLW runtime dependency state.",
+    "files": [
+      "src/lib/glw/runtime-health-api.ts",
+      "src/app/api/glw/capabilities/route.ts",
+      "src/platform/ehc/runtime.ts",
+      "src/platform/ehc/service.ts",
+      "src/platform/ear/seed.ts"
+    ],
+    "before_observed": {
+      "http_status": 200,
+      "source": "SIMULATED",
+      "status_state": "WARNING",
+      "readiness": "READY",
+      "liveness": "LIVE",
+      "page_generation_availability": "UNAVAILABLE"
+    },
+    "after_observed": {
+      "source": "INTEGRATION",
+      "healthy_runtime": {
+        "status_state": "HEALTHY",
+        "readiness": "READY",
+        "liveness": "LIVE",
+        "page_generation_availability": "AVAILABLE"
+      },
+      "missing_callback_secret_runtime": {
+        "status_state": "WARNING",
+        "readiness": "NOT_READY",
+        "liveness": "LIVE",
+        "page_generation_availability": "UNAVAILABLE"
+      }
+    }
+  },
+  "job_lifecycle": {
+    "root_cause": "Stale non-terminal jobs were only inferred as timed out in UI helpers and dispatch-capacity logic, but persisted job records were not reconciled to terminal failure on normal API reads.",
+    "files": [
+      "src/lib/glw/jobs.ts",
+      "src/lib/glw/page-generation-api.ts",
+      "src/lib/glw/page-generation.ts",
+      "src/lib/glw/publishing-plan-api.ts"
+    ],
+    "canonical_source_of_truth": "Persisted GLW job record",
+    "status_writers": [
+      "submitGlwPageGenerationJob",
+      "applyGlwJobCallback",
+      "reconcileTimedOutJob"
+    ],
+    "terminal_regression_blocked": true,
+    "duplicate_callbacks_idempotent": true,
+    "wrong_execution_correlation_rejected": true
+  },
+  "callback_integrity": {
+    "auth_contract": "Static environment-backed Bearer token via GLW_N8N_WEBHOOK_SECRET",
+    "callback_replay_safe": true,
+    "duplicate_callbacks_idempotent": true,
+    "job_correlation_requires_execution_match": true,
+    "n8n_change_required": false
+  },
+  "ui_sync": {
+    "root_cause": "UI polling reflected persisted records correctly; stale persisted non-terminal states were the underlying defect.",
+    "files": [
+      "src/components/glw/glw-page-generation-workspace.tsx",
+      "src/components/glw/glw-job-panel.tsx",
+      "src/lib/glw/jobs.ts",
+      "src/lib/glw/page-generation-api.ts"
+    ],
+    "stale_state_reconciliation_added": true
+  },
+  "files_changed": [
+    "src/app/api/glw/capabilities/route.ts",
+    "src/lib/glw/jobs.ts",
+    "src/lib/glw/page-generation-api.ts",
+    "src/lib/glw/runtime-health-api.ts",
+    "tests/glw/job-operator-snapshot.test.ts",
+    "tests/glw/page-generation-api.test.ts",
+    "tests/glw/runtime-health.test.ts"
+  ],
+  "tests": {
+    "focused_command": "npm test -- tests/glw/generate-page-ui.test.tsx tests/glw/page-generation-api.test.ts tests/glw/runtime-health.test.ts tests/glw/job-operator-snapshot.test.ts",
+    "focused_result": "PASS",
+    "suites_passed": 4,
+    "suites_total": 4,
+    "tests_passed": 40,
+    "tests_total": 40,
+    "typescript_command": "npx tsc --noEmit",
+    "typescript_result": "PASS",
+    "build_command": "npm run build",
+    "build_result": "PASS"
+  },
+  "stashes": {
+    "preserved_stashes_altered": false,
+    "new_preservation_stashes": [
+      "operational-hardening-preserve-unexpected-2026-08-14",
+      "operational-hardening-preserve-unexpected-round2-2026-08-14"
+    ]
+  },
+  "documentation": [
+    "Genesis-GLW-Operational-Hardening-Audit-2026-08-14.md",
+    "Genesis-GLW-Operational-Hardening-Audit-2026-08-14.json"
+  ],
+  "deferred_items": [
+    "General EHC bootstrap still uses simulation for non-GLW applications.",
+    "Timeout reconciliation is read-triggered rather than background-scheduled.",
+    "Checked-in n8n credential hygiene remains a separate explicit production task if workflow artifacts still contain hardcoded Authorization values.",
+    "Optional deterministic local smoke harness remains unimplemented."
+  ],
+  "recommended_next_action": "Promote this work branch through review as a focused operational-hardening patch, then perform one authenticated non-production smoke pass against /glw/pages and the callback path before any merge or push to a protected remote branch."
+}

@@ -985,7 +985,7 @@ function formatGlwTimestamp(timestampMs: number): string {
   });
 }
 
-function isGlwJobTimedOut(job: GlwJobRecord, now: Date, timeoutMs: number): boolean {
+export function isGlwJobTimedOut(job: GlwJobRecord, now: Date, timeoutMs: number): boolean {
   if (job.status === "COMPLETE" || job.status === "FAILED_QA" || job.status === "FAILED") {
     return false;
   }

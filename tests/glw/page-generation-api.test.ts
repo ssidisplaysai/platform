@@ -19,6 +19,8 @@ import {
   createGlwJobInput,
   createGlwJobRecord,
   deriveCitySlugFromCity,
+  getGlwJobOperatorSnapshot,
+  GLW_JOB_TIMEOUT_MS,
   parsePageGenerationFormData,
   validatePageGenerationRequest,
 } from "@/lib/glw/jobs";
@@ -27,9 +29,11 @@ import * as orchestrationRuntime from "@/platform/gop/runtime/orchestration-runt
 import { createInMemoryGenesisEventStore } from "@/platform/gop/event-store";
 import {
   handleCreatePageGenerationJob,
+  handleGetJob,
   handleGetN8nExecutionDiagnostics,
   handleJobCallback,
   handleRetryJob,
+  listPageGenerationJobs,
 } from "@/lib/glw/page-generation-api";
 import { POST as handleCallbackRoute } from "@/app/api/glw/jobs/callback/route";
 
@@ -1017,6 +1021,76 @@ describe("GLW callback and retry behavior", () => {
     expect(updated.result?.qaFailureReasons?.placeholderResourceLinks).toContain("placeholder labels");
   });
 
+  it("accepts FAILED callbacks and preserves a deterministic terminal failure", async () => {
+    const runningJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "RUNNING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+      input: createGlwJobInput(buildValidPageRequest(), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "exec_failure",
+        status: "RUNNING",
+        title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+      },
+      error: null,
+      externalExecutionId: "exec_failure",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+
+    const updated = await applyGlwJobCallback({
+      jobId: runningJob.id,
+      executionId: "exec_failure",
+      status: "FAILED",
+      error: {
+        code: "N8N_FAILURE",
+        step: "publish",
+        message: "n8n reported a terminal publish failure.",
+      },
+    }, createInMemoryGlwJobRepository([runningJob]));
+
+    expect(updated.status).toBe("FAILED");
+    expect(updated.completedAt).not.toBeNull();
+    expect(updated.error).toMatchObject({
+      code: "N8N_FAILURE",
+      step: "publish",
+      message: "n8n reported a terminal publish failure.",
+    });
+  });
+
+  it("rejects callbacks that do not match the tracked execution id", async () => {
+    const runningJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "RUNNING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+      input: createGlwJobInput(buildValidPageRequest(), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "exec_tracked",
+        status: "RUNNING",
+        title: "LED Wall Rental Package - Rentals in Los Angeles, CA",
+      },
+      error: null,
+      externalExecutionId: "exec_tracked",
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+
+    await expect(applyGlwJobCallback({
+      jobId: runningJob.id,
+      executionId: "exec_other",
+      status: "FAILED",
+      error: {
+        code: "N8N_FAILURE",
+        step: "callback",
+        message: "Unexpected execution id.",
+      },
+    }, createInMemoryGlwJobRepository([runningJob]))).rejects.toThrow(/execution identifier does not match/);
+  });
+
   it("allows retry only for failed jobs", async () => {
     const failedJob = createGlwJobRecord({
       type: "PAGE_GENERATION",
@@ -1271,5 +1345,55 @@ describe("GLW callback and retry behavior", () => {
     expect(response.status).toBe(409);
     const payload = await response.json() as { error?: string };
     expect(payload.error).toContain("still in progress");
+  });
+
+  it("reconciles stale in-progress jobs to terminal FAILED state on API reads", async () => {
+    const staleStart = new Date(Date.now() - GLW_JOB_TIMEOUT_MS - 60_000).toISOString();
+    const staleJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "STARTING",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "Stale Starting Job",
+      input: createGlwJobInput(buildValidPageRequest({ title: "Stale Starting Job" }), "http://localhost/api/glw/jobs/callback"),
+      result: {
+        executionId: "exec_stale",
+        status: "STARTING",
+        title: "Stale Starting Job",
+      },
+      error: null,
+      externalExecutionId: "exec_stale",
+      startedAt: staleStart,
+      completedAt: null,
+    });
+
+    const repository = createInMemoryGlwJobRepository([staleJob]);
+
+    const listResponse = await listPageGenerationJobs(new Request("http://localhost/api/glw/jobs?filter=all&limit=10"), {
+      repository,
+      sessionLoader: createSessionLoader(true),
+    });
+    expect(listResponse.status).toBe(200);
+
+    const listPayload = await listResponse.json() as { jobs: Array<{ id: string; status: string; error?: { code?: string } | null }> };
+    expect(listPayload.jobs[0]).toMatchObject({
+      id: staleJob.id,
+      status: "FAILED",
+      error: { code: "TIMED_OUT" },
+    });
+
+    const getResponse = await handleGetJob(new Request(`http://localhost/api/glw/jobs/${staleJob.id}`), staleJob.id, {
+      repository,
+      sessionLoader: createSessionLoader(true),
+    });
+    expect(getResponse.status).toBe(200);
+
+    const getPayload = await getResponse.json() as { job: ReturnType<typeof createGlwJobRecord> };
+    expect(getPayload.job.status).toBe("FAILED");
+
+    const snapshot = getGlwJobOperatorSnapshot(getPayload.job);
+    expect(snapshot.displayStatus).toBe("FAILED");
+    expect(snapshot.progressPercent).toBe(100);
+    expect(snapshot.currentStage).toBe("Failed");
   });
 });
