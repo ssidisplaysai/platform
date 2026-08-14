@@ -1,0 +1,120 @@
+{
+  "certification": {
+    "name": "Genesis GLW Background Timeout Reconciliation",
+    "date": "2026-08-14",
+    "branch": "work/glw-background-timeout-reconciliation",
+    "certifiedParent": "c94f877ec201999942b257b55f8c2b6d5420b8cf",
+    "protectedBaselineTag": {
+      "name": "glw-production-baseline-2026-08-13",
+      "commit": "5468037337df1859acf4a7da430f00442addf7ae",
+      "intact": true
+    },
+    "implementation": {
+      "timeoutPolicySource": [
+        "src/lib/glw/jobs.ts"
+      ],
+      "canonicalReconciliationService": {
+        "file": "src/lib/glw/timeout-reconciliation.ts",
+        "singleJob": "reconcileGlwTimedOutJob",
+        "batch": "reconcileGlwTimedOutJobs",
+        "proactive": "runGlwTimeoutReconciliation"
+      },
+      "boundedCandidateScan": {
+        "repositoryMethod": "findPageGenerationJobsByStatuses",
+        "limitBounded": true
+      },
+      "counters": [
+        "startedAt",
+        "completedAt",
+        "scanned",
+        "eligible",
+        "reconciled",
+        "skipped",
+        "alreadyTerminal",
+        "errors",
+        "items"
+      ],
+      "conditionalMutation": {
+        "method": "updateIfCurrentStatusIn",
+        "raceSafe": true
+      },
+      "repositoryImplementations": {
+        "prisma": "src/lib/glw/job-repository.ts",
+        "inMemory": "src/lib/glw/job-repository.ts"
+      },
+      "sharedNonTerminalStatuses": "glwNonTerminalJobStatuses",
+      "readPathReuse": [
+        "handleGetJob",
+        "handleRetryJob",
+        "listPageGenerationJobs",
+        "getPageGenerationDashboard"
+      ],
+      "proactiveRoute": {
+        "handler": "handleRunTimeoutReconciliation",
+        "route": "src/app/api/glw/jobs/reconcile-timeouts/route.ts"
+      }
+    },
+    "securityModel": {
+      "anonymousWriteAllowed": false,
+      "signedWorkerTokenRequired": true,
+      "workerIdEnforced": true,
+      "invalidTokenStatus": 401,
+      "invalidWorkerIdStatus": 403,
+      "n8nWebhookSecretRepurposed": false,
+      "plaintextMaintenanceSecretAdded": false
+    },
+    "raceSemantics": {
+      "freshStarting": "protected_non_terminal",
+      "freshRunning": "protected_non_terminal",
+      "staleStarting": "reconciled_failed_timeout",
+      "staleRunning": "reconciled_failed_timeout",
+      "alreadyComplete": "terminal_unchanged",
+      "alreadyFailedTerminal": "terminal_unchanged",
+      "repeatedReconciliation": "idempotent",
+      "overlappingReconciliation": "conditional_update_prevents_stale_overwrite",
+      "completionCallbackVsReconciliation": "terminal_invariants_preserved",
+      "failureCallbackVsReconciliation": "terminal_invariants_preserved",
+      "lateCallbackAfterTimeout": "canonical_transition_rules_apply",
+      "retryDispatchEligibility": "existing_retry_guards_preserved"
+    },
+    "triage": {
+      "classification": "TEST_STATE_CONTAMINATION",
+      "cause": "Ambient DATABASE_URL enabled optional event-store path during in-memory callback test",
+      "symptom": "HTTP 409 from callback catch mapping after PostgreSQL auth failure",
+      "resolution": "Clear DATABASE_URL at unit-test boundary in page-generation-api tests"
+    },
+    "validation": {
+      "timeoutAndApiSuites": {
+        "pass": true,
+        "suites": "2/2",
+        "tests": "42/42"
+      },
+      "focusedGlwSuites": {
+        "pass": true,
+        "suites": "5/5",
+        "tests": "49/49"
+      },
+      "typescript": {
+        "pass": true,
+        "command": "npx tsc --noEmit"
+      },
+      "build": {
+        "pass": true,
+        "command": "npm run build"
+      }
+    },
+    "productionSafety": {
+      "productionJobsDispatched": false,
+      "wordpressMutated": false,
+      "n8nModified": false,
+      "cloudflareModified": false,
+      "certifiedHardeningBranchModified": false,
+      "protectedBaselineTagModified": false
+    },
+    "operationalDistinction": {
+      "reconciliationCapabilityCertified": true,
+      "productionSchedulerActivated": false,
+      "deferredActivationItem": "Configure approved production scheduler to invoke secured reconciliation route on recurring cadence"
+    }
+  }
+}
