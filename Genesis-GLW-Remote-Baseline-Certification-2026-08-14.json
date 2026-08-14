@@ -1,0 +1,59 @@
+{
+  "status": "LOCKED",
+  "date": "2026-08-14",
+  "branch": {
+    "local": "recovery/genesis-platform-1.1.1-bge",
+    "remote": "origin/recovery/genesis-platform-1.1.1-bge",
+    "upstream_configured": true,
+    "origin": "https://github.com/ssidisplaysai/platform.git",
+    "local_head": "3ce6a4c4889dc83d0023951c3c166938ea005305",
+    "remote_head": "3ce6a4c4889dc83d0023951c3c166938ea005305",
+    "remote_divergence_detected": false,
+    "new_remote_branch_created": true
+  },
+  "baseline": {
+    "commit": "5468037337df1859acf4a7da430f00442addf7ae",
+    "tag": "glw-production-baseline-2026-08-13",
+    "local_tag_resolves_to": "5468037337df1859acf4a7da430f00442addf7ae",
+    "remote_tag_resolves_to_baseline_commit": true
+  },
+  "working_tree": {
+    "status": "CLEAN",
+    "cleanliness_method": "non-destructive stash preservation",
+    "new_preservation_stash": "remote-cert-preserve-unexpected-2026-08-14",
+    "preserved_stashes_intact": true
+  },
+  "verification": {
+    "focused_tests": {
+      "command": "npm test -- tests/glw/generate-page-ui.test.tsx tests/glw/page-generation-api.test.ts",
+      "result": "PASS",
+      "suites_passed": 2,
+      "suites_total": 2,
+      "tests_passed": 33,
+      "tests_total": 33
+    },
+    "typescript": {
+      "command": "npx tsc --noEmit",
+      "result": "PASS"
+    },
+    "build": {
+      "command": "npm run build",
+      "result": "PASS"
+    }
+  },
+  "constraints": {
+    "glw_functional_changes": false,
+    "n8n_modified": false,
+    "cloudflare_modified": false,
+    "production_jobs_dispatched": false
+  },
+  "artifacts": [
+    "Genesis-GLW-Remote-Baseline-Certification-2026-08-14.md",
+    "Genesis-GLW-Remote-Baseline-Certification-2026-08-14.json"
+  ],
+  "rollback": {
+    "tag": "glw-production-baseline-2026-08-13",
+    "commit": "5468037337df1859acf4a7da430f00442addf7ae"
+  },
+  "final_certification": "GLW REMOTE BASELINE - LOCKED"
+}
