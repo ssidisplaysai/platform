@@ -414,6 +414,7 @@ async function buildAuditRows(prisma: PrismaClient): Promise<JobRecoveryAuditRow
       worker: worker ? `${worker.workerId} (${worker.health})` : null,
       retryCount: gopExecution?.retryCount ?? 0,
       executionExists: executionProbe.executionExists,
+      executionIdentityVerified: executionProbe.executionIdentityVerified ?? null,
       executionTerminal: executionProbe.executionTerminal,
       executionState: executionProbe.executionState,
       classification: classification.classification,

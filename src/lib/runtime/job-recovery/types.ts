@@ -46,6 +46,7 @@ export type JobRecoveryAuditRow = {
   worker: string | null;
   retryCount: number;
   executionExists: boolean | null;
+  executionIdentityVerified: boolean | null;
   executionTerminal: boolean | null;
   executionState: string | null;
   classification: JobRecoveryClassification;
