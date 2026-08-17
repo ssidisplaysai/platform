@@ -7,7 +7,13 @@ import {
   toJsonValue,
 } from "./jobs";
 
-type PrismaGlwJobRecord = Awaited<ReturnType<PrismaClient["glwJob"]["create"]>>;
+type PrismaGlwJobRecord = Awaited<ReturnType<PrismaClient["glwJob"]["create"]>> & {
+  operationKey?: string | null;
+  businessStatus?: GlwJobRecord["businessStatus"];
+  callbackDeliveryStatus?: GlwJobRecord["callbackDeliveryStatus"];
+  terminalReceiptId?: string | null;
+  publicationKey?: string | null;
+};
 
 function toRecord(value: PrismaGlwJobRecord): GlwJobRecord {
   return parseGlwJobRecord(value);

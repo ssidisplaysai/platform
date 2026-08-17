@@ -18,6 +18,12 @@ export const glwJobStatuses = [
 ] as const;
 export type GlwJobStatus = (typeof glwJobStatuses)[number];
 
+export const glwBusinessStatuses = ["UNKNOWN", "IN_PROGRESS", "COMPLETE", "FAILED", "FAILED_QA"] as const;
+export type GlwBusinessStatus = (typeof glwBusinessStatuses)[number];
+
+export const glwCallbackDeliveryStatuses = ["NOT_READY", "PENDING", "RETRYING", "ACKNOWLEDGED", "DEAD_LETTER"] as const;
+export type GlwCallbackDeliveryStatus = (typeof glwCallbackDeliveryStatuses)[number];
+
 export const glwJobStatusOrder: Record<GlwJobStatus, number> = {
   QUEUED: 0,
   STARTING: 1,
@@ -164,6 +170,11 @@ export type GlwJobRecord = {
   result: GlwJobResult | null;
   error: GlwJobError | null;
   externalExecutionId: string | null;
+  operationKey: string | null;
+  businessStatus: GlwBusinessStatus | null;
+  callbackDeliveryStatus: GlwCallbackDeliveryStatus | null;
+  terminalReceiptId: string | null;
+  publicationKey: string | null;
   startedAt: string | null;
   completedAt: string | null;
   createdAt: string;
@@ -213,6 +224,11 @@ export type GlwJobCreateInput = {
   result: GlwJobResult | null;
   error: GlwJobError | null;
   externalExecutionId: string | null;
+  operationKey?: string | null;
+  businessStatus?: GlwBusinessStatus | null;
+  callbackDeliveryStatus?: GlwCallbackDeliveryStatus | null;
+  terminalReceiptId?: string | null;
+  publicationKey?: string | null;
   startedAt: string | null;
   completedAt: string | null;
 };
@@ -227,6 +243,11 @@ export function createGlwJobRecord(input: GlwJobCreateInput): GlwJobRecord {
     result: input.result ?? null,
     error: input.error ?? null,
     externalExecutionId: input.externalExecutionId ?? null,
+    operationKey: input.operationKey ?? null,
+    businessStatus: input.businessStatus ?? null,
+    callbackDeliveryStatus: input.callbackDeliveryStatus ?? null,
+    terminalReceiptId: input.terminalReceiptId ?? null,
+    publicationKey: input.publicationKey ?? null,
     startedAt: input.startedAt ?? null,
     completedAt: input.completedAt ?? null,
     createdAt: now,
@@ -888,6 +909,11 @@ export function parseGlwJobRecord(record: {
   result: Prisma.JsonValue | null;
   error: Prisma.JsonValue | null;
   externalExecutionId: string | null;
+  operationKey?: string | null;
+  businessStatus?: GlwBusinessStatus | null;
+  callbackDeliveryStatus?: GlwCallbackDeliveryStatus | null;
+  terminalReceiptId?: string | null;
+  publicationKey?: string | null;
   startedAt: Date | null;
   completedAt: Date | null;
   createdAt: Date;
@@ -904,6 +930,11 @@ export function parseGlwJobRecord(record: {
     result: record.result ? (record.result as GlwJobResult) : null,
     error: record.error ? (record.error as GlwJobError) : null,
     externalExecutionId: record.externalExecutionId,
+    operationKey: record.operationKey ?? null,
+    businessStatus: record.businessStatus ?? null,
+    callbackDeliveryStatus: record.callbackDeliveryStatus ?? null,
+    terminalReceiptId: record.terminalReceiptId ?? null,
+    publicationKey: record.publicationKey ?? null,
     startedAt: record.startedAt?.toISOString() ?? null,
     completedAt: record.completedAt?.toISOString() ?? null,
     createdAt: record.createdAt.toISOString(),

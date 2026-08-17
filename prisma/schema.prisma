@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -22,6 +23,30 @@ enum GlwJobStatus {
   COMPLETE
   FAILED_QA
   FAILED
+}
+
+enum GlwBusinessStatus {
+  UNKNOWN
+  IN_PROGRESS
+  COMPLETE
+  FAILED
+  FAILED_QA
+}
+
+enum GlwCallbackDeliveryStatus {
+  NOT_READY
+  PENDING
+  RETRYING
+  ACKNOWLEDGED
+  DEAD_LETTER
+}
+
+enum GlwCallbackReceiptOutcome {
+  RECEIVED
+  APPLIED
+  ALREADY_APPLIED
+  CONFLICT
+  REJECTED
 }
 
 enum GlwDailyPublishPlanStatus {
@@ -53,25 +78,58 @@ enum GlwDailyPublishCandidateApprovalStatus {
 }
 
 model GlwJob {
-  id                  String       @id @default(cuid())
-  type                GlwJobType
-  status              GlwJobStatus
-  retryOfJobId        String?
-  siteId              String
-  title               String
-  input               Json
-  result              Json?
-  error               Json?
-  externalExecutionId String?
-  startedAt           DateTime?
-  completedAt         DateTime?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  id                     String                     @id @default(cuid())
+  type                   GlwJobType
+  status                 GlwJobStatus
+  retryOfJobId           String?
+  siteId                 String
+  title                  String
+  input                  Json
+  result                 Json?
+  error                  Json?
+  externalExecutionId    String?
+  operationKey           String?                    @unique
+  businessStatus         GlwBusinessStatus?
+  callbackDeliveryStatus GlwCallbackDeliveryStatus?
+  terminalReceiptId      String?
+  publicationKey         String?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
 
   @@index([type, createdAt(sort: Desc)])
   @@index([siteId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([retryOfJobId])
+  @@index([businessStatus, updatedAt(sort: Desc)])
+  @@index([callbackDeliveryStatus, updatedAt(sort: Desc)])
+  @@index([publicationKey])
+}
+
+model GlwCallbackReceipt {
+  receiptId          String                    @id @default(cuid())
+  idempotencyKey     String                    @unique
+  terminalScopeKey   String                    @unique
+  operationKey       String
+  jobId              String
+  externalExecutionId String
+  callbackType       String
+  terminalStatus     String
+  payloadSha256      String
+  payloadJson        Json
+  outcome            GlwCallbackReceiptOutcome
+  receivedAt         DateTime                  @default(now())
+  appliedAt          DateTime?
+  responseStatus     Int?
+  conflictReason     String?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+
+  @@index([jobId, receivedAt(sort: Desc)])
+  @@index([operationKey, receivedAt(sort: Desc)])
+  @@index([externalExecutionId, receivedAt(sort: Desc)])
+  @@index([outcome, receivedAt(sort: Desc)])
 }
 
 model GlwDailyPublishPlan {
@@ -165,6 +223,7 @@ model GopJobEvent {
   @@index([eventType, occurredAt(sort: Desc)])
   @@index([status, occurredAt(sort: Desc)])
   @@index([idempotencyKey])
+  @@unique([jobId, idempotencyKey], map: "GopJobEvent_jobId_idempotencyKey_unique_when_not_null", where: raw("\"idempotencyKey\" IS NOT NULL"))
 }
 
 model GopExecution {
