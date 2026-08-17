@@ -67,6 +67,16 @@ function toOrchestrationStatus(status: GlwJobRecord["status"]): GenesisJobStatus
   return status === "FAILED_QA" ? "FAILED" : status;
 }
 
+export function refreshGlwCallbackProjection(job: GlwJobRecord, correlationId: string): void {
+  getGenesisOrchestrationRuntime().syncGlwExecutionState({
+    jobId: job.id,
+    status: toOrchestrationStatus(job.status),
+    correlationId,
+    errorMessage: job.error?.message,
+    result: job.result as Record<string, unknown> | null,
+  });
+}
+
 export type GlwPageGenerationDependencies = {
   repository: GlwJobRepository;
   workflow: GlwN8nTransport;

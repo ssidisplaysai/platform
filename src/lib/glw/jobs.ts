@@ -191,6 +191,12 @@ export type GlwPageGenerationCallbackPayload = {
   jobId: string;
   executionId: string;
   status: GlwJobStatus;
+  callbackVersion?: "2";
+  operationKey?: string;
+  idempotencyKey?: string;
+  terminalScopeKey?: string;
+  callbackType?: "PAGE_GENERATION_TERMINAL";
+  payloadSha256?: string;
   title?: string;
   wordpressPageId?: string | number;
   wordpressUrl?: string;

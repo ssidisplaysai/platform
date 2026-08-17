@@ -10,6 +10,7 @@ jest.mock("next/headers", () => ({
 }), { virtual: true });
 
 import { createInMemoryGlwJobRepository } from "@/lib/glw/job-repository";
+import { GlwCallbackTransactionUnavailableError } from "@/lib/glw/callback-transaction";
 import {
   applyGlwJobCallback,
   submitGlwPageGenerationJob,
@@ -506,6 +507,93 @@ describe("GLW API auth and creation", () => {
     });
 
     expect(response.status).toBe(401);
+  });
+
+  it("returns structured APPLIED and normalizes v2 identity for the durable receiver", async () => {
+    const job = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "FAILED",
+      retryOfJobId: null,
+      siteId: "test-site",
+      title: "Durable callback",
+      input: createGlwJobInput(buildValidPageRequest(), "http://localhost/api/glw/jobs/callback"),
+      result: null,
+      error: { message: "failed" },
+      externalExecutionId: "execution-1",
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+    });
+    const callbackTransaction = jest.fn(async () => ({ outcome: "APPLIED" as const, receiptId: "receipt-1", job }));
+    const response = await handleJobCallback(new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer callback-secret" },
+      body: JSON.stringify({
+        jobId: job.id,
+        executionId: "execution-1",
+        status: "FAILED",
+        error: { message: "failed" },
+        callbackVersion: "2",
+        operationKey: " operation-1 ",
+        callbackType: "PAGE_GENERATION_TERMINAL",
+        idempotencyKey: " idempotency-1 ",
+        terminalScopeKey: " terminal-1 ",
+        payloadSha256: "ABCDEF",
+      }),
+    }), {
+      repository: createInMemoryGlwJobRepository(),
+      webhookSecret: "callback-secret",
+      durableCallbackReceiverEnabled: true,
+      callbackTransaction,
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ outcome: "APPLIED", receiptId: "receipt-1" });
+    expect(callbackTransaction).toHaveBeenCalledWith(expect.objectContaining({
+      operationKey: "operation-1",
+      idempotencyKey: "idempotency-1",
+      terminalScopeKey: "terminal-1",
+      payloadSha256: "abcdef",
+    }));
+  });
+
+  it("returns structured 409 for a durable callback conflict", async () => {
+    const callbackTransaction = jest.fn(async () => ({ outcome: "TERMINAL_CONFLICT" as const, receiptId: "receipt-1", message: "scope claimed" }));
+    const response = await handleJobCallback(new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer callback-secret" },
+      body: JSON.stringify({ jobId: "job-1", executionId: "execution-1", status: "FAILED", error: { message: "failed" } }),
+    }), { repository: createInMemoryGlwJobRepository(), webhookSecret: "callback-secret", durableCallbackReceiverEnabled: true, callbackTransaction });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ outcome: "TERMINAL_CONFLICT", receiptId: "receipt-1" });
+  });
+
+  it("returns structured retryable 503 for an unavailable callback database", async () => {
+    const callbackTransaction = jest.fn(async () => {
+      throw new GlwCallbackTransactionUnavailableError("DATABASE_UNAVAILABLE");
+    });
+    const response = await handleJobCallback(new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer callback-secret" },
+      body: JSON.stringify({ jobId: "job-1", executionId: "execution-1", status: "FAILED", error: { message: "failed" } }),
+    }), { repository: createInMemoryGlwJobRepository(), webhookSecret: "callback-secret", durableCallbackReceiverEnabled: true, callbackTransaction });
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ outcome: "RETRYABLE_FAILURE", code: "DATABASE_UNAVAILABLE" });
+  });
+
+  it("rejects an unsupported identity envelope before invoking the durable transaction", async () => {
+    const callbackTransaction = jest.fn();
+    const response = await handleJobCallback(new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer callback-secret" },
+      body: JSON.stringify({
+        jobId: "job-1",
+        executionId: "execution-1",
+        status: "FAILED",
+        error: { message: "failed" },
+        callbackVersion: "3",
+      }),
+    }), { repository: createInMemoryGlwJobRepository(), webhookSecret: "callback-secret", durableCallbackReceiverEnabled: true, callbackTransaction });
+    expect(response.status).toBe(400);
+    expect(callbackTransaction).not.toHaveBeenCalled();
   });
 
   it("routes callback requests through the configured webhook secret", async () => {
@@ -1289,6 +1377,32 @@ describe("GLW callback and retry behavior", () => {
     });
 
     expect(response.status).toBe(400);
+  });
+
+  it("rejects a stale nonterminal callback after the job is terminal", async () => {
+    const terminalJob = createGlwJobRecord({
+      type: "PAGE_GENERATION",
+      status: "COMPLETE",
+      retryOfJobId: null,
+      siteId: "led-display-warehouse",
+      title: "Terminal callback guard",
+      input: createGlwJobInput(buildValidPageRequest(), "http://localhost/api/glw/jobs/callback"),
+      result: { executionId: "exec-terminal", status: "COMPLETE", title: "Terminal callback guard" },
+      error: null,
+      externalExecutionId: "exec-terminal",
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+    });
+    const response = await handleJobCallback(new Request("http://localhost/api/glw/jobs/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer callback-secret" },
+      body: JSON.stringify({ jobId: terminalJob.id, executionId: "exec-terminal", status: "RUNNING" }),
+    }), {
+      repository: createInMemoryGlwJobRepository([terminalJob]),
+      eventStore: null,
+      webhookSecret: "callback-secret",
+    });
+    expect(response.status).toBe(409);
   });
 
   it("blocks retry when a previous retry is still active", async () => {

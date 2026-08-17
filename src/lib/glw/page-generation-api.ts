@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { getGlwSession } from "./auth";
+import { GlwCallbackIdentityError } from "./callback-idempotency";
+import {
+  applyDurableGlwTerminalCallback,
+  GlwCallbackTransactionUnavailableError,
+} from "./callback-transaction";
 import { createPrismaGlwJobRepository } from "./job-repository";
 import {
   applyGlwJobCallback,
+  refreshGlwCallbackProjection,
   retryGlwPageGenerationJob,
   submitGlwPageGenerationJob,
 } from "./page-generation";
@@ -38,6 +44,8 @@ export type GlwApiDependencies = {
   appUrl?: string;
   webhookSecret?: string;
   sessionLoader?: typeof getGlwSession;
+  durableCallbackReceiverEnabled?: boolean;
+  callbackTransaction?: typeof applyDurableGlwTerminalCallback;
 };
 
 function getDependencies(dependencies?: GlwApiDependencies) {
@@ -49,6 +57,9 @@ function getDependencies(dependencies?: GlwApiDependencies) {
     appUrl: dependencies?.appUrl ?? process.env.GLW_APP_URL ?? "http://localhost:3000",
     webhookSecret: dependencies?.webhookSecret ?? process.env.GLW_N8N_WEBHOOK_SECRET ?? "",
     sessionLoader: dependencies?.sessionLoader ?? getGlwSession,
+    durableCallbackReceiverEnabled: dependencies?.durableCallbackReceiverEnabled
+      ?? (!dependencies?.repository && process.env.GLW_CALLBACK_DURABLE_RECEIVER_ENABLED === "true"),
+    callbackTransaction: dependencies?.callbackTransaction ?? applyDurableGlwTerminalCallback,
   };
 }
 
@@ -387,7 +398,13 @@ export async function handleJobCallback(
   request: Request,
   dependencies?: GlwApiDependencies,
 ): Promise<NextResponse> {
-  const { repository, eventStore, webhookSecret } = getDependencies(dependencies);
+  const {
+    repository,
+    eventStore,
+    webhookSecret,
+    durableCallbackReceiverEnabled,
+    callbackTransaction,
+  } = getDependencies(dependencies);
 
   if (!callbackAuthValid(request, webhookSecret)) {
     return unauthorizedResponse();
@@ -400,6 +417,19 @@ export async function handleJobCallback(
   }
 
   const callbackBody = body as Partial<GlwPageGenerationCallbackPayload> & Record<string, unknown>;
+
+  const identityFieldNames = ["callbackVersion", "operationKey", "idempotencyKey", "terminalScopeKey", "callbackType", "payloadSha256"];
+  const hasIdentityEnvelope = identityFieldNames.some((field) => Object.prototype.hasOwnProperty.call(callbackBody, field));
+  if (hasIdentityEnvelope && (
+    callbackBody.callbackVersion !== "2"
+    || typeof callbackBody.operationKey !== "string" || !callbackBody.operationKey.trim()
+    || typeof callbackBody.idempotencyKey !== "string" || !callbackBody.idempotencyKey.trim()
+    || typeof callbackBody.terminalScopeKey !== "string" || !callbackBody.terminalScopeKey.trim()
+    || callbackBody.callbackType !== "PAGE_GENERATION_TERMINAL"
+    || typeof callbackBody.payloadSha256 !== "string" || !callbackBody.payloadSha256.trim()
+  )) {
+    return validationResponse("Version 2 callback identity fields are incomplete or unsupported.", {});
+  }
 
   const jobId = typeof callbackBody.jobId === "string" ? callbackBody.jobId.trim() : "";
   const executionId = typeof callbackBody.executionId === "string" ? callbackBody.executionId.trim() : "";
@@ -454,6 +484,12 @@ export async function handleJobCallback(
     jobId,
     executionId,
     status: normalizedStatus,
+    callbackVersion: callbackBody.callbackVersion === "2" ? "2" : undefined,
+    operationKey: typeof callbackBody.operationKey === "string" ? callbackBody.operationKey.trim() : undefined,
+    idempotencyKey: typeof callbackBody.idempotencyKey === "string" ? callbackBody.idempotencyKey.trim() : undefined,
+    terminalScopeKey: typeof callbackBody.terminalScopeKey === "string" ? callbackBody.terminalScopeKey.trim() : undefined,
+    callbackType: callbackBody.callbackType === "PAGE_GENERATION_TERMINAL" ? callbackBody.callbackType : undefined,
+    payloadSha256: typeof callbackBody.payloadSha256 === "string" ? callbackBody.payloadSha256.trim().toLowerCase() : undefined,
     title: typeof callbackBody.title === "string" ? callbackBody.title : undefined,
     wordpressPageId: normalizeOptionalIdentifier(
       callbackBody.wordpressPageId
@@ -502,9 +538,31 @@ export async function handleJobCallback(
   };
 
   try {
+    if (durableCallbackReceiverEnabled && isTerminalGlwJobStatus(normalizedPayload.status)) {
+      const result = await callbackTransaction(normalizedPayload);
+      if (result.outcome === "APPLIED" || result.outcome === "ALREADY_APPLIED") {
+        try {
+          refreshGlwCallbackProjection(result.job, normalizedPayload.executionId);
+        } catch {
+          // Durable callback state remains authoritative when the in-memory projection is unavailable.
+        }
+        return jsonResponse(result);
+      }
+      if (result.outcome === "NOT_FOUND") {
+        return notFoundResponse(result.message);
+      }
+      return jsonResponse(result, 409);
+    }
+
     const job = await applyGlwJobCallback(normalizedPayload, repository, eventStore);
     return jsonResponse({ job });
   } catch (error) {
+    if (error instanceof GlwCallbackIdentityError) {
+      return validationResponse(error.message, {});
+    }
+    if (error instanceof GlwCallbackTransactionUnavailableError) {
+      return jsonResponse({ outcome: "RETRYABLE_FAILURE", code: error.code }, 503);
+    }
     const message = error instanceof Error ? error.message : "The callback payload could not be processed.";
     if (message.includes("not found")) {
       return notFoundResponse(message);
