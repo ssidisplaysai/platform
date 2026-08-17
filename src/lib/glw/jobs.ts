@@ -215,6 +215,7 @@ export type GlwJobRepository = {
   create(data: GlwJobRecord): Promise<GlwJobRecord>;
   update(id: string, changes: Partial<GlwJobRecord>): Promise<GlwJobRecord>;
   findById(id: string): Promise<GlwJobRecord | null>;
+  findByOperationKey(operationKey: string): Promise<GlwJobRecord | null>;
   findRecentPageGenerationJobs(limit: number): Promise<GlwJobRecord[]>;
   findPageGenerationJobs(limit: number): Promise<GlwJobRecord[]>;
   findLatestRetryForJob(jobId: string): Promise<GlwJobRecord | null>;

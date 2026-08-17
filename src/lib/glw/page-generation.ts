@@ -15,6 +15,10 @@ import {
   normalizeGlwJobError,
 } from "./jobs";
 import { GlwN8nResponse, GlwN8nTransport } from "./n8n";
+import {
+  createGlwProducerOperationIdentity,
+  type GlwProducerOperationIdentity,
+} from "./producer-callback-contract";
 import type { GenesisEventStore } from "@/platform/gop/event-store";
 import { backfillGlwJobEvents, emitGlwJobLifecycleEvent } from "@/platform/gop/adapters/glw-events";
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
@@ -95,6 +99,7 @@ export async function submitGlwPageGenerationJob(
   request: GlwPageGenerationRequest,
   dependencies: GlwPageGenerationDependencies,
   retryOfJobId?: string,
+  producerIdentity?: GlwProducerOperationIdentity,
 ): Promise<GlwJobOperationResult> {
   const validation = validatePageGenerationRequest(request);
   if (!validation.ok) {
@@ -106,6 +111,7 @@ export async function submitGlwPageGenerationJob(
   const callbackUrl = buildCallbackUrl(dependencies.appUrl);
   const input = createGlwJobInput(request, callbackUrl);
   const title = buildGlwPageTitle(request);
+  const identity = createGlwProducerOperationIdentity(producerIdentity);
   const createdJob = createGlwJobRecord({
     type: "PAGE_GENERATION",
     status: "QUEUED",
@@ -116,6 +122,8 @@ export async function submitGlwPageGenerationJob(
     result: null,
     error: null,
     externalExecutionId: null,
+    operationKey: identity.operationKey,
+    publicationKey: identity.publicationKey,
     startedAt: null,
     completedAt: null,
   });
@@ -150,6 +158,8 @@ export async function submitGlwPageGenerationJob(
   try {
     const response = await dependencies.workflow.invokePageGeneration({
       jobId: startingJob.id,
+      operationKey: identity.operationKey,
+      publicationKey: identity.publicationKey,
       type: "page_generation",
       workspaceId: startingJob.input.page.workspaceId,
       workspace_id: startingJob.input.page.workspaceId,
@@ -374,6 +384,10 @@ export async function retryGlwPageGenerationJob(
     },
     dependencies,
     existingJob.id,
+    createGlwProducerOperationIdentity({
+      operationKey: existingJob.operationKey ?? undefined,
+      publicationKey: existingJob.publicationKey ?? undefined,
+    }),
   );
 }
 

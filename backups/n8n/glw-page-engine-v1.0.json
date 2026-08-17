@@ -991,32 +991,12 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
-              "operator": {
-                "type": "string",
-                "operation": "notEmpty",
-                "singleValue": true
-              },
-              "rightValue": ""
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "jsCode": "const crypto = require('node:crypto');\nconst source = $('Get row(s) in sheet').first().json;\nconst request = $('GLW Page Webhook').first().json.body || $('GLW Page Webhook').first().json;\nlet qa = {};\ntry { qa = $('Build Pre-Publish QA Result').first().json; } catch {}\nconst failed = $json.validation_error_message;\nconst status = failed ? 'FAILED' : (qa.qa_callback_status || 'COMPLETE');\nconst semantic = failed ? { jobId: String(source.job_id), executionId: String($execution.id), status, error: { code: $json.validation_error_code || 'VALIDATION_ERROR', message: failed, step: $json.validation_error_node || 'workflow' } } : { jobId: String(qa.job_id || source.job_id), executionId: String($execution.id), status, title: qa.qa_title, wordpressUrl: qa.qa_wordpress_url, wordpressPostId: qa.qa_page_id, wordpressPageId: qa.qa_page_id, wordpressStatus: qa.qa_wordpress_status, requestedPublishingMode: $('Normalize Published City Page').first().json.requested_publishing_mode, disposition: qa.qa_disposition, qaChecks: qa.qa_checks, qaFailureReasons: qa.qa_failure_reasons, ...(status === 'FAILED_QA' ? { error: { code: 'FAILED_QA', message: qa.qa_failure_summary, step: 'Pre-Publish QA Gate' } } : {}) };\nfunction canonicalize(value) { if (Array.isArray(value)) return value.map(canonicalize); if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0).map(([key, entry]) => [key, canonicalize(entry)])); return value; }\nconst operationKey = String(request.operationKey || '').trim();\nconst publicationKey = String(request.publicationKey || '').trim();\nif (!operationKey || !publicationKey) throw new Error('GLW_PRODUCER_IDENTITY_REQUIRED');\nconst callbackType = 'PAGE_GENERATION_TERMINAL';\nconst idempotencyKey = `glw-callback-v2:${operationKey}:${semantic.jobId}:${semantic.executionId}:${callbackType}:${semantic.status}`;\nconst terminalScopeKey = `glw-terminal-v2:${operationKey}:${semantic.jobId}:${semantic.executionId}:${callbackType}`;\nconst canonicalPayload = canonicalize(semantic);\nconst payloadSha256 = crypto.createHash('sha256').update(JSON.stringify(canonicalPayload), 'utf8').digest('hex');\nreturn [{ json: { operation_key: operationKey, publication_key: publicationKey, job_id: semantic.jobId, external_execution_id: semantic.executionId, terminal_status: semantic.status, idempotency_key: idempotencyKey, terminal_scope_key: terminalScopeKey, canonical_payload: canonicalPayload, payload_sha256: payloadSha256, wordpress_page_id: semantic.wordpressPageId == null ? null : String(semantic.wordpressPageId), wordpress_url: semantic.wordpressUrl || null, qa_contract_version: 16, qa_summary: { disposition: semantic.disposition || null }, callback_payload: { ...semantic, callbackVersion: '2', operationKey, idempotencyKey, terminalScopeKey, callbackType, payloadSha256 } } }];"
       },
       "id": "7e0e41c0-4142-4ead-9c9d-97fce12635ba",
-      "name": "GLW Callback Configured?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
+      "name": "Build GLW Producer Completion Envelope",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         6544,
         -160
@@ -1024,41 +1004,21 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ (() => { const qa = $('Build Pre-Publish QA Result').first().json; const callbackStatus = qa.qa_callback_status === 'FAILED_QA' ? 'FAILED' : qa.qa_callback_status; return { jobId: String(qa.job_id || qa.jobId || '').trim(), executionId: String($execution.id || '').trim(), status: callbackStatus, qaCallbackStatus: qa.qa_callback_status, title: qa.qa_title, wordpressUrl: qa.qa_wordpress_url, wordpressPostId: qa.qa_page_id, wordpressPageId: qa.qa_page_id, wordpressStatus: qa.qa_wordpress_status, requestedPublishingMode: $('Normalize Published City Page').first().json.requested_publishing_mode, disposition: qa.qa_disposition, qaChecks: qa.qa_checks, qaFailureReasons: qa.qa_failure_reasons, ...(qa.qa_callback_status === 'FAILED_QA' ? { error: { code: 'FAILED_QA', message: qa.qa_failure_summary, step: 'Pre-Publish QA Gate' } } : {}) }; })() }}",
+        "operation": "executeQuery",
+        "query": "BEGIN ISOLATION LEVEL SERIALIZABLE; SELECT * FROM \"enqueueGlwProducerCompletion\"($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13::jsonb); COMMIT;",
         "options": {
-          "timeout": 15000
+          "queryReplacement": "={{ [$json.operation_key, $json.publication_key, $json.job_id, $json.external_execution_id, $json.terminal_status, $json.idempotency_key, $json.terminal_scope_key, JSON.stringify($json.canonical_payload), $json.payload_sha256, $json.wordpress_page_id, $json.wordpress_url, $json.qa_contract_version, JSON.stringify($json.qa_summary)] }}"
         }
       },
       "id": "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
-      "name": "Send GLW Completion Callback",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "name": "Enqueue GLW Producer Completion",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
       "position": [
         6816,
         -256
       ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "TBbt7HMIkLGKvAzQ",
-          "name": "Header Auth account"
-        }
-      },
-      "notes": "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation."
+      "notes": "Slice C test authority: atomically freezes producer completion and PENDING outbox state. Configure only a non-production producer PostgreSQL credential."
     },
     {
       "parameters": {},
@@ -1073,42 +1033,16 @@
       "notes": "Development/test terminus when no callbackUrl is supplied."
     },
     {
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { jobId: $('Get row(s) in sheet').first().json.job_id, executionId: $execution.id, status: 'FAILED', error: { code: $json.validation_error_code || 'VALIDATION_ERROR', message: $json.validation_error_message || 'Validation failed.', step: $json.validation_error_node || 'Validate Parent Before Publish' } } }}",
-        "options": {
-          "timeout": 15000
-        }
-      },
+      "parameters": {},
       "id": "14ed3412-8ee1-4faf-bc43-6e9e583671fe",
-      "name": "Send GLW Failure Callback",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "name": "Legacy GLW Failure Callback Disabled",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
       "position": [
         144,
         144
       ],
-      "credentials": {
-        "httpHeaderAuth": {
-          "id": "TBbt7HMIkLGKvAzQ",
-          "name": "Header Auth account"
-        }
-      },
-      "notes": "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation."
+      "notes": "Slice C test authority marker. Unreachable; direct callback delivery is prohibited."
     },
     {
       "parameters": {
@@ -1994,7 +1928,7 @@
       "main": [
         [
           {
-            "node": "GLW Callback Configured?",
+            "node": "Build GLW Producer Completion Envelope",
             "type": "main",
             "index": 0
           }
@@ -2008,18 +1942,11 @@
         ]
       ]
     },
-    "GLW Callback Configured?": {
+    "Build GLW Producer Completion Envelope": {
       "main": [
         [
           {
-            "node": "Send GLW Completion Callback",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "GLW Complete Without Callback",
+            "node": "Enqueue GLW Producer Completion",
             "type": "main",
             "index": 0
           }
@@ -2070,7 +1997,7 @@
         ],
         [
           {
-            "node": "Send GLW Failure Callback",
+            "node": "Build GLW Producer Completion Envelope",
             "type": "main",
             "index": 0
           }
@@ -2110,7 +2037,7 @@
         ],
         [
           {
-            "node": "Send GLW Failure Callback",
+            "node": "Build GLW Producer Completion Envelope",
             "type": "main",
             "index": 0
           }
@@ -3387,32 +3314,12 @@
       },
       {
         "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict",
-              "version": 3
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
-                "operator": {
-                  "type": "string",
-                  "operation": "notEmpty",
-                  "singleValue": true
-                },
-                "rightValue": ""
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
+          "jsCode": "const crypto = require('node:crypto');\nconst source = $('Get row(s) in sheet').first().json;\nconst request = $('GLW Page Webhook').first().json.body || $('GLW Page Webhook').first().json;\nlet qa = {};\ntry { qa = $('Build Pre-Publish QA Result').first().json; } catch {}\nconst failed = $json.validation_error_message;\nconst status = failed ? 'FAILED' : (qa.qa_callback_status || 'COMPLETE');\nconst semantic = failed ? { jobId: String(source.job_id), executionId: String($execution.id), status, error: { code: $json.validation_error_code || 'VALIDATION_ERROR', message: failed, step: $json.validation_error_node || 'workflow' } } : { jobId: String(qa.job_id || source.job_id), executionId: String($execution.id), status, title: qa.qa_title, wordpressUrl: qa.qa_wordpress_url, wordpressPostId: qa.qa_page_id, wordpressPageId: qa.qa_page_id, wordpressStatus: qa.qa_wordpress_status, requestedPublishingMode: $('Normalize Published City Page').first().json.requested_publishing_mode, disposition: qa.qa_disposition, qaChecks: qa.qa_checks, qaFailureReasons: qa.qa_failure_reasons, ...(status === 'FAILED_QA' ? { error: { code: 'FAILED_QA', message: qa.qa_failure_summary, step: 'Pre-Publish QA Gate' } } : {}) };\nfunction canonicalize(value) { if (Array.isArray(value)) return value.map(canonicalize); if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0).map(([key, entry]) => [key, canonicalize(entry)])); return value; }\nconst operationKey = String(request.operationKey || '').trim();\nconst publicationKey = String(request.publicationKey || '').trim();\nif (!operationKey || !publicationKey) throw new Error('GLW_PRODUCER_IDENTITY_REQUIRED');\nconst callbackType = 'PAGE_GENERATION_TERMINAL';\nconst idempotencyKey = `glw-callback-v2:${operationKey}:${semantic.jobId}:${semantic.executionId}:${callbackType}:${semantic.status}`;\nconst terminalScopeKey = `glw-terminal-v2:${operationKey}:${semantic.jobId}:${semantic.executionId}:${callbackType}`;\nconst canonicalPayload = canonicalize(semantic);\nconst payloadSha256 = crypto.createHash('sha256').update(JSON.stringify(canonicalPayload), 'utf8').digest('hex');\nreturn [{ json: { operation_key: operationKey, publication_key: publicationKey, job_id: semantic.jobId, external_execution_id: semantic.executionId, terminal_status: semantic.status, idempotency_key: idempotencyKey, terminal_scope_key: terminalScopeKey, canonical_payload: canonicalPayload, payload_sha256: payloadSha256, wordpress_page_id: semantic.wordpressPageId == null ? null : String(semantic.wordpressPageId), wordpress_url: semantic.wordpressUrl || null, qa_contract_version: 16, qa_summary: { disposition: semantic.disposition || null }, callback_payload: { ...semantic, callbackVersion: '2', operationKey, idempotencyKey, terminalScopeKey, callbackType, payloadSha256 } } }];"
         },
         "id": "7e0e41c0-4142-4ead-9c9d-97fce12635ba",
-        "name": "GLW Callback Configured?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
+        "name": "Build GLW Producer Completion Envelope",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
         "position": [
           6544,
           -160
@@ -3420,41 +3327,21 @@
       },
       {
         "parameters": {
-          "method": "POST",
-          "url": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          },
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ (() => { const qa = $('Build Pre-Publish QA Result').first().json; const callbackStatus = qa.qa_callback_status === 'FAILED_QA' ? 'FAILED' : qa.qa_callback_status; return { jobId: String(qa.job_id || qa.jobId || '').trim(), executionId: String($execution.id || '').trim(), status: callbackStatus, qaCallbackStatus: qa.qa_callback_status, title: qa.qa_title, wordpressUrl: qa.qa_wordpress_url, wordpressPostId: qa.qa_page_id, wordpressPageId: qa.qa_page_id, wordpressStatus: qa.qa_wordpress_status, requestedPublishingMode: $('Normalize Published City Page').first().json.requested_publishing_mode, disposition: qa.qa_disposition, qaChecks: qa.qa_checks, qaFailureReasons: qa.qa_failure_reasons, ...(qa.qa_callback_status === 'FAILED_QA' ? { error: { code: 'FAILED_QA', message: qa.qa_failure_summary, step: 'Pre-Publish QA Gate' } } : {}) }; })() }}",
+          "operation": "executeQuery",
+          "query": "BEGIN ISOLATION LEVEL SERIALIZABLE; SELECT * FROM \"enqueueGlwProducerCompletion\"($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13::jsonb); COMMIT;",
           "options": {
-            "timeout": 15000
+            "queryReplacement": "={{ [$json.operation_key, $json.publication_key, $json.job_id, $json.external_execution_id, $json.terminal_status, $json.idempotency_key, $json.terminal_scope_key, JSON.stringify($json.canonical_payload), $json.payload_sha256, $json.wordpress_page_id, $json.wordpress_url, $json.qa_contract_version, JSON.stringify($json.qa_summary)] }}"
           }
         },
         "id": "8fb5e4dc-d61c-42f3-8b43-4faa7333d316",
-        "name": "Send GLW Completion Callback",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.4,
+        "name": "Enqueue GLW Producer Completion",
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.6,
         "position": [
           6816,
           -256
         ],
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "TBbt7HMIkLGKvAzQ",
-            "name": "Header Auth account"
-          }
-        },
-        "notes": "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation."
+        "notes": "Slice C test authority: atomically freezes producer completion and PENDING outbox state. Configure only a non-production producer PostgreSQL credential."
       },
       {
         "parameters": {},
@@ -3469,42 +3356,16 @@
         "notes": "Development/test terminus when no callbackUrl is supplied."
       },
       {
-        "parameters": {
-          "method": "POST",
-          "url": "={{ $('Get row(s) in sheet').first().json.callback_url }}",
-          "authentication": "genericCredentialType",
-          "genericAuthType": "httpHeaderAuth",
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Content-Type",
-                "value": "application/json"
-              }
-            ]
-          },
-          "sendBody": true,
-          "specifyBody": "json",
-          "jsonBody": "={{ { jobId: $('Get row(s) in sheet').first().json.job_id, executionId: $execution.id, status: 'FAILED', error: { code: $json.validation_error_code || 'VALIDATION_ERROR', message: $json.validation_error_message || 'Validation failed.', step: $json.validation_error_node || 'Validate Parent Before Publish' } } }}",
-          "options": {
-            "timeout": 15000
-          }
-        },
+        "parameters": {},
         "id": "14ed3412-8ee1-4faf-bc43-6e9e583671fe",
-        "name": "Send GLW Failure Callback",
-        "type": "n8n-nodes-base.httpRequest",
-        "typeVersion": 4.4,
+        "name": "Legacy GLW Failure Callback Disabled",
+        "type": "n8n-nodes-base.noOp",
+        "typeVersion": 1,
         "position": [
           144,
           144
         ],
-        "credentials": {
-          "httpHeaderAuth": {
-            "id": "TBbt7HMIkLGKvAzQ",
-            "name": "Header Auth account"
-          }
-        },
-        "notes": "Posts the completed WordPress result back to GLW. Requires GLW_N8N_WEBHOOK_SECRET in the n8n environment before production activation."
+        "notes": "Slice C test authority marker. Unreachable; direct callback delivery is prohibited."
       },
       {
         "parameters": {
@@ -4390,7 +4251,7 @@
         "main": [
           [
             {
-              "node": "GLW Callback Configured?",
+              "node": "Build GLW Producer Completion Envelope",
               "type": "main",
               "index": 0
             }
@@ -4404,18 +4265,11 @@
           ]
         ]
       },
-      "GLW Callback Configured?": {
+      "Build GLW Producer Completion Envelope": {
         "main": [
           [
             {
-              "node": "Send GLW Completion Callback",
-              "type": "main",
-              "index": 0
-            }
-          ],
-          [
-            {
-              "node": "GLW Complete Without Callback",
+              "node": "Enqueue GLW Producer Completion",
               "type": "main",
               "index": 0
             }
@@ -4466,7 +4320,7 @@
           ],
           [
             {
-              "node": "Send GLW Failure Callback",
+              "node": "Build GLW Producer Completion Envelope",
               "type": "main",
               "index": 0
             }
@@ -4506,7 +4360,7 @@
           ],
           [
             {
-              "node": "Send GLW Failure Callback",
+              "node": "Build GLW Producer Completion Envelope",
               "type": "main",
               "index": 0
             }

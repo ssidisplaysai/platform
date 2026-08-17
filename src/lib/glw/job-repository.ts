@@ -79,6 +79,12 @@ export function createPrismaGlwJobRepository(prisma = getPrismaClient()): GlwJob
       return job ? toRecord(job) : null;
     },
 
+    async findByOperationKey(operationKey: string): Promise<GlwJobRecord | null> {
+      const job = await prisma.glwJob.findUnique({ where: { operationKey } });
+
+      return job ? toRecord(job) : null;
+    },
+
     async findRecentPageGenerationJobs(limit: number): Promise<GlwJobRecord[]> {
       const jobs = await prisma.glwJob.findMany({
         where: { type: "PAGE_GENERATION" },
@@ -145,6 +151,10 @@ export function createInMemoryGlwJobRepository(initialJobs: GlwJobRecord[] = [])
 
     async findById(id: string): Promise<GlwJobRecord | null> {
       return jobs.get(id) ?? null;
+    },
+
+    async findByOperationKey(operationKey: string): Promise<GlwJobRecord | null> {
+      return [...jobs.values()].find((job) => job.operationKey === operationKey) ?? null;
     },
 
     async findRecentPageGenerationJobs(limit: number): Promise<GlwJobRecord[]> {

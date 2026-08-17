@@ -1,5 +1,7 @@
 export type GlwN8nPageGenerationRequest = {
   jobId: string;
+  operationKey: string;
+  publicationKey: string;
   type: "page_generation";
   workspaceId: string;
   workspace_id: string;
