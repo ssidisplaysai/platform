@@ -5,6 +5,8 @@ import { createActionReference } from "@/platform/gop/auth/resolver";
 import { authorizeGenesisJobAction } from "@/platform/gop/actions/authorization";
 import { getGenesisOrchestrationRuntime } from "@/platform/gop/runtime/orchestration-runtime";
 import { getGenesisEventStore } from "@/platform/gop/runtime/event-store";
+import { createPrismaExecutionRepository } from "@/platform/gop/persistence/prisma-execution-repository";
+import type { GenesisExecutionRepository } from "@/platform/gop/runtime/execution-repository";
 import type { GenesisExecution, GenesisJobStatus, GenesisJobType } from "@/platform/gop/contracts";
 import { GENESIS_PRIMARY_WORKSPACE_ID } from "@/platform/gop/workspaces/identity";
 
@@ -13,6 +15,20 @@ const GLW_MODULE_ID = "glw.core";
 type ExecutionsAuthorizeResult =
   | { error: NextResponse }
   | { subject: ReturnType<typeof buildGenesisSubjectFromSession> };
+
+type GopExecutionsApiDependencies = {
+  runtime?: ReturnType<typeof getGenesisOrchestrationRuntime>;
+  repository?: GenesisExecutionRepository;
+  sessionLoader?: typeof getGlwSession;
+};
+
+function dependencies(input?: GopExecutionsApiDependencies) {
+  return {
+    runtime: input?.runtime ?? getGenesisOrchestrationRuntime(),
+    repository: input?.repository ?? createPrismaExecutionRepository(),
+    sessionLoader: input?.sessionLoader ?? getGlwSession,
+  };
+}
 
 function unauthorizedResponse(): NextResponse {
   return NextResponse.json({ error: "GLW session is required." }, { status: 401 });
@@ -39,8 +55,8 @@ function mapExecutionStatusToJobStatus(executionStatus: GenesisExecution["status
   }
 }
 
-async function authorizeOperationsRead(): Promise<ExecutionsAuthorizeResult> {
-  const session = await getGlwSession();
+async function authorizeOperationsRead(sessionLoader: typeof getGlwSession = getGlwSession): Promise<ExecutionsAuthorizeResult> {
+  const session = await sessionLoader();
   if (!session) {
     return { error: unauthorizedResponse() } as const;
   }
@@ -65,8 +81,8 @@ async function authorizeOperationsRead(): Promise<ExecutionsAuthorizeResult> {
   return { subject } as const;
 }
 
-async function authorizeExecutionRead(execution: GenesisExecution): Promise<ExecutionsAuthorizeResult> {
-  const session = await getGlwSession();
+async function authorizeExecutionRead(execution: GenesisExecution, sessionLoader: typeof getGlwSession = getGlwSession): Promise<ExecutionsAuthorizeResult> {
+  const session = await sessionLoader();
   if (!session) {
     return { error: unauthorizedResponse() } as const;
   }
@@ -100,21 +116,54 @@ function parseListQuery(url: URL): { workspaceId?: string; moduleId?: string; st
   return { workspaceId, moduleId, status, q, limit };
 }
 
-export async function handleGetJobExecution(jobId: string): Promise<NextResponse> {
-  const access = await authorizeOperationsRead();
+async function loadExecutionById(
+  executionId: string,
+  d: ReturnType<typeof dependencies>,
+): Promise<GenesisExecution | null> {
+  try {
+    const durable = await d.repository.loadExecution(executionId);
+    if (durable) {
+      return durable;
+    }
+  } catch {
+    // Preserve the runtime fallback when durable persistence is unavailable.
+  }
+
+  await d.runtime.ensureRecovered();
+  return d.runtime.getExecutionById(executionId);
+}
+
+async function loadExecutionByJobId(
+  jobId: string,
+  d: ReturnType<typeof dependencies>,
+): Promise<GenesisExecution | null> {
+  try {
+    const durable = await d.repository.loadExecutionByJobId(jobId);
+    if (durable) {
+      return durable;
+    }
+  } catch {
+    // Preserve the runtime fallback when durable persistence is unavailable.
+  }
+
+  await d.runtime.ensureRecovered();
+  return d.runtime.getExecutionByJobId(jobId);
+}
+
+export async function handleGetJobExecution(jobId: string, input?: GopExecutionsApiDependencies): Promise<NextResponse> {
+  const d = dependencies(input);
+  const access = await authorizeOperationsRead(d.sessionLoader);
   if ("error" in access) {
     return access.error;
   }
 
-  const runtime = getGenesisOrchestrationRuntime();
-  await runtime.ensureRecovered();
-  const execution = runtime.getExecutionByJobId(jobId);
+  const execution = await loadExecutionByJobId(jobId, d);
 
   if (!execution) {
     return NextResponse.json({ execution: null }, { status: 200 });
   }
 
-  const authorization = await authorizeExecutionRead(execution);
+  const authorization = await authorizeExecutionRead(execution, d.sessionLoader);
   if ("error" in authorization) {
     return authorization.error;
   }
@@ -122,13 +171,14 @@ export async function handleGetJobExecution(jobId: string): Promise<NextResponse
   return NextResponse.json({ execution });
 }
 
-export async function handleListExecutions(request: Request): Promise<NextResponse> {
-  const access = await authorizeOperationsRead();
+export async function handleListExecutions(request: Request, input?: GopExecutionsApiDependencies): Promise<NextResponse> {
+  const d = dependencies(input);
+  const access = await authorizeOperationsRead(d.sessionLoader);
   if ("error" in access) {
     return access.error;
   }
 
-  const runtime = getGenesisOrchestrationRuntime();
+  const runtime = d.runtime;
   await runtime.ensureRecovered();
 
   const query = parseListQuery(new URL(request.url));
@@ -139,21 +189,19 @@ export async function handleListExecutions(request: Request): Promise<NextRespon
   return NextResponse.json({ executions });
 }
 
-export async function handleGetExecutionById(executionId: string): Promise<NextResponse> {
-  const access = await authorizeOperationsRead();
+export async function handleGetExecutionById(executionId: string, input?: GopExecutionsApiDependencies): Promise<NextResponse> {
+  const d = dependencies(input);
+  const access = await authorizeOperationsRead(d.sessionLoader);
   if ("error" in access) {
     return access.error;
   }
 
-  const runtime = getGenesisOrchestrationRuntime();
-  await runtime.ensureRecovered();
-
-  const execution = runtime.getExecutionById(executionId);
+  const execution = await loadExecutionById(executionId, d);
   if (!execution) {
     return NextResponse.json({ execution: null }, { status: 200 });
   }
 
-  const authorization = await authorizeExecutionRead(execution);
+  const authorization = await authorizeExecutionRead(execution, d.sessionLoader);
   if ("error" in authorization) {
     return authorization.error;
   }
@@ -161,26 +209,29 @@ export async function handleGetExecutionById(executionId: string): Promise<NextR
   return NextResponse.json({ execution });
 }
 
-export async function handleGetExecutionHistory(executionId: string): Promise<NextResponse> {
-  const access = await authorizeOperationsRead();
+export async function handleGetExecutionHistory(executionId: string, input?: GopExecutionsApiDependencies): Promise<NextResponse> {
+  const d = dependencies(input);
+  const access = await authorizeOperationsRead(d.sessionLoader);
   if ("error" in access) {
     return access.error;
   }
 
-  const runtime = getGenesisOrchestrationRuntime();
-  await runtime.ensureRecovered();
-
-  const execution = runtime.getExecutionById(executionId);
+  const execution = await loadExecutionById(executionId, d);
   if (!execution) {
     return NextResponse.json({ execution: null, history: [] }, { status: 200 });
   }
 
-  const authorization = await authorizeExecutionRead(execution);
+  const authorization = await authorizeExecutionRead(execution, d.sessionLoader);
   if ("error" in authorization) {
     return authorization.error;
   }
 
-  const history = await runtime.getExecutionHistory(executionId);
+  let history;
+  try {
+    history = await d.repository.listExecutionHistory(executionId);
+  } catch {
+    history = await d.runtime.getExecutionHistory(executionId);
+  }
   return NextResponse.json({ execution, history });
 }
 

@@ -1,30 +1,34 @@
 import { describe, expect, it, jest } from "@jest/globals";
 
 jest.mock("server-only", () => ({}), { virtual: true });
-jest.mock("next/headers", () => ({
-  cookies: async () => ({
-    get: () => ({ value: "mocked.session.token" }),
-    set: () => undefined,
-    delete: () => undefined,
+jest.mock("@/lib/glw/auth", () => ({
+  getGlwSession: async () => ({
+    email: "admin@example.com",
+    expiresAt: Date.now() + 60_000,
   }),
-}), { virtual: true });
+}));
+jest.mock("@/platform/gop/runtime/orchestration-runtime", () => ({
+  getGenesisOrchestrationRuntime: () => ({
+    buildOperationsSnapshot: async () => ({
+      workspaceId: "glw-led-display-warehouse",
+      queue: { depth: 0 },
+    }),
+  }),
+}));
+jest.mock("@/platform/gop/runtime/event-store", () => ({
+  getGenesisEventStore: () => ({}),
+}));
 
 import { handleGetOperationsSnapshot } from "@/lib/gop/operations-api";
 
 describe("gop operations api", () => {
   it("returns an operations snapshot payload shape", async () => {
-    process.env.GLW_AUTH_SECRET = "auth-secret";
     process.env.GLW_ADMIN_EMAIL = "admin@example.com";
 
     const originalVerify = global.Buffer.from;
     void originalVerify;
 
     const response = await handleGetOperationsSnapshot();
-
-    if (response.status === 401) {
-      expect(response.status).toBe(401);
-      return;
-    }
 
     expect(response.status).toBe(200);
     const payload = await response.json() as { snapshot?: { workspaceId: string; queue: { depth: number } } };
