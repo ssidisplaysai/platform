@@ -1,0 +1,184 @@
+{
+    "baselineId":  "GENESIS_DB_BASELINE_1_1_1_HR004_SLICE_A_E4231A8",
+    "formatVersion":  1,
+    "source":  {
+                   "commit":  "e4231a85bb84c2930f14df6c886ed53d4114264a",
+                   "tree":  "917d37bcba81bde9b24bda45bf79cb3566b8f670",
+                   "prismaSchemaPath":  "prisma/schema.prisma",
+                   "prismaSchemaSha256":  "EDE01E42CC939AC184FCC021BCC3E29B46F5F2F00ED7D9ABBC82FB3AB29D78A9"
+               },
+    "baseline":  {
+                     "path":  "prisma/baselines/genesis-1.1.1-hr004-slice-a-e4231a8/schema.sql",
+                     "sha256":  "2111A03084FAF6DA55252A63BA7B4FE950D2369540CCE83BD08749C4AA929676",
+                     "bytes":  285563,
+                     "dataFree":  true,
+                     "containsCredentials":  false,
+                     "containsRoles":  false,
+                     "objectCounts":  {
+                                          "schemas":  1,
+                                          "enums":  8,
+                                          "tables":  240,
+                                          "indexes":  787,
+                                          "uniqueIndexes":  33,
+                                          "foreignKeys":  102,
+                                          "extensions":  0
+                                      }
+                 },
+    "migrationCutoff":  "20260817060000_hr004_slice1_callback_idempotency_foundation",
+    "includedMigrationCount":  33,
+    "includedMigrations":  [
+                               {
+                                   "name":  "20260724000100_glw_jobs",
+                                   "sha256":  "E85920EB68633F88310B630DD0188D7FC0BFD9DA36D74E151F1AEF978E2EEF16"
+                               },
+                               {
+                                   "name":  "20260725000100_glw_job_retry_lineage",
+                                   "sha256":  "DAEC0599BF569DE226B96D3BDF8A131D1AAEA3437B462B5EBE73453B30588650"
+                               },
+                               {
+                                   "name":  "20260725045027_glw_job_retry_lineage",
+                                   "sha256":  "027BA8233DD7DC4F64665F5B07B72A903762DFC98109A2F539CB36CD5FC03B3A"
+                               },
+                               {
+                                   "name":  "20260726000100_gop_job_event_store",
+                                   "sha256":  "84C34D85D63819190DDD64D4592DA55A8D90B741EB45EC0C9BDD520C6698154E"
+                               },
+                               {
+                                   "name":  "20260726093000_gop_execution_store",
+                                   "sha256":  "F0917C320D1F95C406E3215CD19856E0836994A7B054BB1F5DEDA439744E05EE"
+                               },
+                               {
+                                   "name":  "20260726103000_gop_runtime_fabric",
+                                   "sha256":  "49037329D2D6364B65D6DFEA4AE375CB5D00D1CE615A7C34AC835D1157437F94"
+                               },
+                               {
+                                   "name":  "20260726114500_gmp_projects_and_sites",
+                                   "sha256":  "89967830003BAC0476CEE1FE3A031DC333346C649DAA58C797A9CA3C7EA9498D"
+                               },
+                               {
+                                   "name":  "20260726143000_gmp_knowledge_workspace",
+                                   "sha256":  "9778F2EF790A5BC967277C87EFFF383F85B5398D6906FD9E36C294AA1D2AF3F5"
+                               },
+                               {
+                                   "name":  "20260726165000_gmp_page_architecture",
+                                   "sha256":  "F4899EE2D8587A2C7955AA8A29FFAD6C5D63E8E4F67C06D0BFBD85FD3C9A3586"
+                               },
+                               {
+                                   "name":  "20260726202509_gmp_content_generation_editorial_governance",
+                                   "sha256":  "9C8886D86552D2B63E9A57AAC15EDAEBB349F83F31D93ED655B3F7D16D6AC87E"
+                               },
+                               {
+                                   "name":  "20260727021543_gmp_publishing_delivery_release_governance",
+                                   "sha256":  "2300FCAAC63997546F6F3D1C7929EC1ED77D6E07E1ABAED12257C06167AAB754"
+                               },
+                               {
+                                   "name":  "20260727113000_gmp_analytics_foundation_v1",
+                                   "sha256":  "DE1A994211062E37C3A9B8D9E53C1507AA40541E3AB2988FA5B5DF3E700E1210"
+                               },
+                               {
+                                   "name":  "20260727121500_gmp_analytics_collection_engine_v1",
+                                   "sha256":  "495323B526516660C515BF55B79FEE9A350DA68F23A7219135F0AD7CB481795E"
+                               },
+                               {
+                                   "name":  "20260727133000_gmp_analytics_timeline_contract_v1",
+                                   "sha256":  "420EEDE25986AB89D486D035874704CDB3F408C66F7E7642BBFDA3EF152CD8B0"
+                               },
+                               {
+                                   "name":  "20260727150000_gmp_enterprise_evidence_compiler_v1",
+                                   "sha256":  "EDAA807C5E46F5A2D47841FB0EA91A9F8FA26D76E85F4DA94A6DDCAA4B79C320"
+                               },
+                               {
+                                   "name":  "20260727170000_gmp_attribution_recommendations_decision_support_v1",
+                                   "sha256":  "31F98B01E18BF2D1197A8E44DB6D920852F52BC38224722FBB31AF439D64D249"
+                               },
+                               {
+                                   "name":  "20260727190000_gea_enterprise_agent_framework_v1",
+                                   "sha256":  "3896A362B8A077B24827FCE59C65947920AC14B1D266A3CB95A5BAF292112B9D"
+                               },
+                               {
+                                   "name":  "20260727203000_gea_enterprise_tool_framework_v1",
+                                   "sha256":  "55FE8B3C25B5A4F9D84C0116649614315E348C4BF70E426283D5609A1372486F"
+                               },
+                               {
+                                   "name":  "20260727212432_gba_sales_agent_v1",
+                                   "sha256":  "97B9A1DE4AFD93C7A05A1435B7CBD9B83D2989DDD88D4EDD80A8CF6E959D6604"
+                               },
+                               {
+                                   "name":  "20260727220000_gea_enterprise_memory_context_framework_v1",
+                                   "sha256":  "A03C88E1269D417D6C57621F981B3A570A8C86E044ACA996D6F15A1042B29FCC"
+                               },
+                               {
+                                   "name":  "20260727230000_gea_enterprise_multi_agent_orchestration_framework_v1",
+                                   "sha256":  "5F68437C042E6A6ED4164B390CFAA770E0D0F3C0C54B1204882B49BB3DA1FC55"
+                               },
+                               {
+                                   "name":  "20260728001000_gba_executive_agent_v1",
+                                   "sha256":  "671912F16767E31C857B651EB02B0038416B7408FA427BAFE0A4108A63D152D1"
+                               },
+                               {
+                                   "name":  "20260728002000_gba_operations_agent_v1",
+                                   "sha256":  "5A967D0B5FC2B0CBBCEEA0ED531BCCC91A4C8B5B7252F14CE0B1F5F5458797E4"
+                               },
+                               {
+                                   "name":  "20260728003000_gba_manufacturing_agent_v1",
+                                   "sha256":  "CE728FCF3EBDAC7CFF44DB919217EBDCA809B1CF7C9EDF6A8E25E6024ECB5F99"
+                               },
+                               {
+                                   "name":  "20260728020000_gba_marketing_agent_v1",
+                                   "sha256":  "8C6735F9E624619B74DBE808A79FFBFF4AA42B897C23677D80B28BE88052E7AE"
+                               },
+                               {
+                                   "name":  "20260728030000_ged_enterprise_domain_model_v1",
+                                   "sha256":  "6030BE69F4EF44C74507979FC85F1D9B2254E2F5C0659DCAB10490D365F3C519"
+                               },
+                               {
+                                   "name":  "20260728040000_gba_finance_agent_v1",
+                                   "sha256":  "3BDCA6D6319176EF0BFEFA5B02A612007F821941A804637CA35B086B94C0A4FA"
+                               },
+                               {
+                                   "name":  "20260728050000_gba_customer_success_agent_v1",
+                                   "sha256":  "7B0F68CF8D2E414E222FC86B860519CBD138930B15AB8B926C8E2C1BB7307CCB"
+                               },
+                               {
+                                   "name":  "20260810000100_glw_daily_publish_plan_persistence",
+                                   "sha256":  "3C9A38AA4A291D9970D34CCBD73F936694E3696ABED8A6367E03A70905B38723"
+                               },
+                               {
+                                   "name":  "20260810000200_gop_recovery_history",
+                                   "sha256":  "EE26AFBD224915532B3A3A849C492445CA5AB8AE7BB9E9A9A450493E346B073A"
+                               },
+                               {
+                                   "name":  "20260812010000_bge_canonical_persistence_v1",
+                                   "sha256":  "A61E0719D836F8C9C4E279269C581D0C9DF7B5407BFBE6A8AB1C920B4F389D69"
+                               },
+                               {
+                                   "name":  "20260813010000_bge_current_version_deferred_fk_v1",
+                                   "sha256":  "D579BE5E59713E9752FB629C211B268D91573B8EAB8BC9DAD5A795ADBA4BA699"
+                               },
+                               {
+                                   "name":  "20260817060000_hr004_slice1_callback_idempotency_foundation",
+                                   "sha256":  "D2A590378B1AC93D4C22D7C4722F0CA6BDB952789963ED8F92995ABF1800E191"
+                               }
+                           ],
+    "requiredAuthorities":  [
+                                "GlwCallbackReceipt",
+                                "GlwCallbackReceipt_idempotencyKey_key",
+                                "GlwCallbackReceipt_terminalScopeKey_key",
+                                "GopJobEvent_idempotencyKey_idx",
+                                "GopJobEvent_jobId_idempotencyKey_unique_when_not_null"
+                            ],
+    "target":  {
+                   "provider":  "postgresql",
+                   "majorVersion":  16,
+                   "databaseNamePattern":  "^genesis_hr004_[a-z0-9_]+$",
+                   "requiredEnvironmentClass":  "HR004_SLICE_B_TEST_ONLY",
+                   "requiredProductionClassification":  "NO",
+                   "requiredDisposableClassification":  "YES"
+               },
+    "generation":  {
+                       "command":  "prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script",
+                       "prismaVersion":  "7.9.0",
+                       "nodeVersion":  "24.18.0",
+                       "postgresProofVersion":  "16.14"
+                   }
+}
