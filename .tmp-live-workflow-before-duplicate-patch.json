@@ -1810,7 +1810,7 @@
             "accept": "*/*",
             "accept-encoding": "gzip, br",
             "accept-language": "*",
-            "authorization": "Bearer //zzle26nlu4eqN4LC0V4W7ckARTco00sT/6G9Owyz1PYMJpXPzjR00DlCNUPK1C",
+            "authorization": "[REDACTED]",
             "cdn-loop": "cloudflare; loops=1; subreqs=1",
             "cf-connecting-ip": "104.220.64.50",
             "cf-ew-via": "15",
@@ -1875,7 +1875,7 @@
               "generateFeaturedImage": true
             },
             "callbackUrl": "https://legislation-julia-findlaw-engage.trycloudflare.com/api/glw/jobs/callback",
-            "authToken": "//zzle26nlu4eqN4LC0V4W7ckARTco00sT/6G9Owyz1PYMJpXPzjR00DlCNUPK1C"
+            "authToken": "[REDACTED]"
           },
           "webhookUrl": "https://ssiai.app.n8n.cloud/webhook/glw-page-generation",
           "executionMode": "production"

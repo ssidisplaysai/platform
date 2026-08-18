@@ -8,7 +8,7 @@
       "accept": "*/*",
       "accept-encoding": "gzip, br",
       "accept-language": "*",
-      "authorization": "Bearer //zzle26nlu4eqN4LC0V4W7ckARTco00sT/6G9Owyz1PYMJpXPzjR00DlCNUPK1C",
+      "authorization": "[REDACTED]",
       "cdn-loop": "cloudflare; loops=1; subreqs=1",
       "cf-connecting-ip": "45.22.140.228",
       "cf-ew-via": "15",
@@ -100,7 +100,7 @@
         "additionalInstructions": "Controlled canonical identity test with aligned structured fields. No Houston values."
       },
       "callbackUrl": "https://app.ssiai.app/api/glw/jobs/callback",
-      "authToken": "//zzle26nlu4eqN4LC0V4W7ckARTco00sT/6G9Owyz1PYMJpXPzjR00DlCNUPK1C"
+      "authToken": "[REDACTED]"
     },
     "webhookUrl": "https://ssiai.app.n8n.cloud/webhook/glw-page-generation",
     "executionMode": "production"
@@ -300,7 +300,7 @@
     },
     "modified": "2026-08-10T22:54:20",
     "modified_gmt": "2026-08-10T22:54:20",
-    "password": "",
+    "password": "[REDACTED]",
     "slug": "phase-13-capacity-single-001",
     "status": "publish",
     "type": "page",
