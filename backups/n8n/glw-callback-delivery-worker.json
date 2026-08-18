@@ -1,0 +1,122 @@
+{
+  "id": "hr004-slice-d-delivery-worker",
+  "name": "Genesis GLW Callback Delivery Worker - Slice D",
+  "active": false,
+  "nodes": [
+    {
+      "id": "schedule-poll",
+      "name": "Poll Due GLW Deliveries",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "seconds", "secondsInterval": 5 }]
+        }
+      }
+    },
+    {
+      "id": "claim-deliveries",
+      "name": "Claim Due GLW Deliveries",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [240, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM \"claimGlwProducerDeliveries\"($1,10,60);",
+        "options": {
+          "queryReplacement": "={{ [$execution.id] }}"
+        }
+      },
+      "notes": "Producer PostgreSQL is the claim and lease authority. Configure a non-production/production producer DB credential outside this export."
+    },
+    {
+      "id": "begin-attempt",
+      "name": "Begin Durable Delivery Attempt",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [480, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \"beginGlwProducerDeliveryAttempt\"($1,$2::uuid) AS \"attemptNumber\";",
+        "options": {
+          "queryReplacement": "={{ [$json.idempotencyKey, $json.leaseToken] }}"
+        }
+      }
+    },
+    {
+      "id": "send-callback",
+      "name": "Send Stored GLW Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [720, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.GLW_CALLBACK_DELIVERY_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $('Claim Due GLW Deliveries').item.json.requestBodyUtf8 }}",
+        "options": {
+          "timeout": 15000,
+          "response": { "response": { "fullResponse": true, "neverError": true } }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "GwQIWWAN3paojT0i",
+          "name": "Genesis GLW Callback Auth 9A17"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "classify-result",
+      "name": "Classify GLW Delivery Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 0],
+      "parameters": {
+        "jsCode": "const status = Number($json.statusCode || 0);\nconst body = $json.body && typeof $json.body === 'object' ? $json.body : {};\nconst transportError = Boolean($json.error || (!status && $json.message));\nlet resultClass;\nlet errorClass = null;\nif (transportError) { resultClass = 'RETRYABLE'; errorClass = 'TRANSPORT_ERROR'; }\nelse if (status >= 200 && status <= 299) resultClass = 'ACKNOWLEDGED';\nelse if ([408,425,429].includes(status) || (status >= 500 && status <= 599)) { resultClass = 'RETRYABLE'; errorClass = `HTTP_${status}`; }\nelse { resultClass = 'DEAD_LETTER'; errorClass = status === 409 ? (body.outcome || 'HTTP_409_CONFLICT') : status === 401 || status === 403 ? 'AUTH_FAILURE' : status === 400 || status === 422 ? 'VALIDATION_FAILURE' : status === 404 || status === 410 ? 'DESTINATION_OR_IDENTITY_FAILURE' : 'UNEXPECTED_HTTP_STATUS'; }\nreturn [{ json: { ...$('Claim Due GLW Deliveries').item.json, attemptNumber: $('Begin Durable Delivery Attempt').item.json.attemptNumber, resultClass, httpStatus: status || null, receiverOutcome: typeof body.outcome === 'string' ? body.outcome : null, receiverReceiptId: typeof body.receiptId === 'string' ? body.receiptId : null, errorClass, durationMs: Number($json.timings?.duration || 0), jitterFraction: resultClass === 'RETRYABLE' ? Math.random() * 0.2 : 0 } }];"
+      }
+    },
+    {
+      "id": "finalize-attempt",
+      "name": "Finalize GLW Delivery Attempt",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [1200, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \"completeGlwProducerDeliveryAttempt\"($1,$2::uuid,$3,$4,$5,$6,$7,$8,$9,$10) AS \"deliveryStatus\";",
+        "options": {
+          "queryReplacement": "={{ [$json.idempotencyKey, $json.leaseToken, $json.attemptNumber, $json.resultClass, $json.httpStatus, $json.errorClass, $json.receiverOutcome, $json.receiverReceiptId, $json.durationMs, $json.jitterFraction] }}"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Poll Due GLW Deliveries": { "main": [[{ "node": "Claim Due GLW Deliveries", "type": "main", "index": 0 }]] },
+    "Claim Due GLW Deliveries": { "main": [[{ "node": "Begin Durable Delivery Attempt", "type": "main", "index": 0 }]] },
+    "Begin Durable Delivery Attempt": { "main": [[{ "node": "Send Stored GLW Callback", "type": "main", "index": 0 }]] },
+    "Send Stored GLW Callback": { "main": [[{ "node": "Classify GLW Delivery Result", "type": "main", "index": 0 }]] },
+    "Classify GLW Delivery Result": { "main": [[{ "node": "Finalize GLW Delivery Attempt", "type": "main", "index": 0 }]] }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none"
+  },
+  "tags": ["HR-004", "Slice-D", "INACTIVE"],
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "productionActivationAuthorized": false,
+    "maxConcurrency": 4
+  }
+}
