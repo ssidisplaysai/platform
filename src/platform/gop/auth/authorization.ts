@@ -11,11 +11,23 @@ import { GENESIS_PRIMARY_WORKSPACE_ID } from "../workspaces/identity";
 
 let resolver: GenesisAuthorizationResolver | null = null;
 
+function configuredActors(name: string): Set<string> {
+  return new Set((process.env[name] ?? "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
+}
+
 function inferRoleFromIdentity(identity: GenesisAuthenticatedIdentity): GenesisPlatformRole {
   const admin = process.env.GLW_ADMIN_EMAIL?.trim().toLowerCase();
 
   if (admin && identity.email === admin) {
     return "ADMINISTRATOR";
+  }
+
+  if (configuredActors("GLW_DELIVERY_RECOVERY_APPROVER_EMAILS").has(identity.email)) {
+    return "MANAGER";
+  }
+
+  if (configuredActors("GLW_DELIVERY_OPERATOR_EMAILS").has(identity.email)) {
+    return "OPERATOR";
   }
 
   return "VIEWER";
