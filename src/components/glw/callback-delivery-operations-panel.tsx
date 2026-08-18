@@ -5,6 +5,17 @@ import { PageContainer } from "./page-container";
 import type { GlwDeliveryOperationsSnapshot, GlwDeliverySafeSummary } from "@/lib/glw/callback-delivery-operations";
 
 type Permissions = { canView: boolean; canOperate: boolean; canRequestRecovery: boolean; canApproveRecovery: boolean };
+type ReconciliationSummary = {
+  latest: null | {
+    completedAt: string;
+    status: string;
+    snapshotSkewMs: number;
+    discrepancyCount: number;
+    criticalCount: number;
+  };
+  rollout: { ready: boolean; blockers: string[] };
+  closure: { current: string; closed: boolean };
+};
 
 function age(value: string | null) {
   return value ? new Date(value).toLocaleString() : "-";
@@ -13,12 +24,16 @@ function age(value: string | null) {
 export function CallbackDeliveryOperationsPanel() {
   const [snapshot, setSnapshot] = useState<GlwDeliveryOperationsSnapshot | null>(null);
   const [permissions, setPermissions] = useState<Permissions | null>(null);
+  const [reconciliation, setReconciliation] = useState<ReconciliationSummary | null>(null);
   const [selected, setSelected] = useState<GlwDeliverySafeSummary | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    const response = await fetch("/api/glw/callback-deliveries", { cache: "no-store", credentials: "include" });
+    const [response, reconciliationResponse] = await Promise.all([
+      fetch("/api/glw/callback-deliveries", { cache: "no-store", credentials: "include" }),
+      fetch("/api/glw/callback-delivery-reconciliation", { cache: "no-store", credentials: "include" }),
+    ]);
     const payload = await response.json().catch(() => null) as { snapshot?: GlwDeliveryOperationsSnapshot; permissions?: Permissions; error?: string } | null;
     if (!response.ok || !payload?.snapshot) {
       setError(payload?.error ?? "Delivery operations are unavailable.");
@@ -26,6 +41,9 @@ export function CallbackDeliveryOperationsPanel() {
     }
     setSnapshot(payload.snapshot);
     setPermissions(payload.permissions ?? null);
+    if (reconciliationResponse.ok) {
+      setReconciliation(await reconciliationResponse.json().catch(() => null) as ReconciliationSummary | null);
+    }
     setError(null);
   };
 
@@ -73,6 +91,12 @@ export function CallbackDeliveryOperationsPanel() {
           <span className="text-sm text-zinc-400">Operational state</span>
           <strong className="text-sm text-zinc-100">{snapshot?.operationalStatus ?? "LOADING"}</strong>
         </div>
+        <section className="grid gap-3 border border-zinc-800 bg-zinc-950 p-4 md:grid-cols-4">
+          <div><p className="text-xs uppercase text-zinc-500">Reconciliation</p><p className="mt-1 text-sm font-semibold text-zinc-100">{reconciliation?.latest?.status ?? "NOT_RUN"}</p></div>
+          <div><p className="text-xs uppercase text-zinc-500">Discrepancies</p><p className="mt-1 text-sm font-semibold text-zinc-100">{reconciliation?.latest?.discrepancyCount ?? 0} / {reconciliation?.latest?.criticalCount ?? 0} critical</p></div>
+          <div><p className="text-xs uppercase text-zinc-500">Rollout</p><p className="mt-1 text-sm font-semibold text-zinc-100">{reconciliation?.rollout.ready ? "READY" : "NOT READY"}</p></div>
+          <div><p className="text-xs uppercase text-zinc-500">HR-004 closure</p><p className="mt-1 text-sm font-semibold text-zinc-100">{reconciliation?.closure.current ?? "NOT_ELIGIBLE_FOR_CLOSURE"}</p></div>
+        </section>
         {error ? <p className="border border-red-900 bg-red-950 p-3 text-sm text-red-200">{error}</p> : null}
         <div className="overflow-x-auto border border-zinc-800">
           <table className="w-full text-left text-sm">

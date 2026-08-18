@@ -1,0 +1,54 @@
+{
+  "id": "hr004-slice-f-delivery-reconciliation",
+  "name": "Genesis GLW Delivery Reconciliation - Slice F",
+  "active": false,
+  "nodes": [
+    {
+      "id": "schedule-reconciliation",
+      "name": "Schedule Delivery Reconciliation",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "seconds", "secondsInterval": 60 }] } }
+    },
+    {
+      "id": "run-reconciliation",
+      "name": "Run Protected Delivery Reconciliation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [260, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.GLW_APP_URL + '/api/glw/callback-delivery-reconciliation' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "{\"runType\":\"SCHEDULED\",\"allowAutoRepair\":true}",
+        "options": { "timeout": 30000, "response": { "response": { "fullResponse": true, "neverError": true } } }
+      },
+      "credentials": { "httpHeaderAuth": { "id": "configure-outside-export", "name": "Genesis GLW Reconciliation Auth" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "classify-reconciliation",
+      "name": "Classify Reconciliation Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0],
+      "parameters": {
+        "jsCode": "const statusCode = Number($json.statusCode || 0);\nconst body = $json.body && typeof $json.body === 'object' ? $json.body : {};\nreturn [{ json: { result: statusCode >= 200 && statusCode < 300 && body.status === 'CLEAN' ? 'CLEAN' : body.status === 'INDETERMINATE' ? 'INDETERMINATE' : statusCode === 409 ? 'ALREADY_RUNNING' : 'ATTENTION_REQUIRED', statusCode, discrepancyCount: Number(body.discrepancyCount || 0), criticalCount: Number(body.criticalCount || 0), snapshotSkewMs: Number(body.snapshotSkewMs || 0) } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Delivery Reconciliation": { "main": [[{ "node": "Run Protected Delivery Reconciliation", "type": "main", "index": 0 }]] },
+    "Run Protected Delivery Reconciliation": { "main": [[{ "node": "Classify Reconciliation Result", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "saveDataErrorExecution": "none", "saveDataSuccessExecution": "none" },
+  "tags": ["HR-004", "Slice-F", "RECONCILIATION", "INACTIVE"],
+  "meta": { "templateCredsSetupCompleted": false, "productionActivationAuthorized": false, "callbackTransportPresent": false }
+}
