@@ -12,6 +12,7 @@ import {
   evaluateGlwRetentionEligibility,
   evaluateGlwRollbackStage,
   evaluateGlwRolloutReadiness,
+  detectGlwReconciliationDiscrepancies,
   isGlwAutoRepairAllowed,
   type GlwCanaryEvidence,
 } from "@/lib/glw/callback-delivery-reconciliation";
@@ -36,6 +37,22 @@ describe("HR-004 Slice F reconciliation contract", () => {
   it("labels externally authorized deletion without deleting", () => expect(evaluateGlwRetentionEligibility({ ...retention, archiveChecksumVerified: true, externalDeletePolicyAuthorized: true })).toBe("DELETE_ELIGIBLE_IF_EXTERNAL_POLICY_AUTHORIZES"));
   it("keeps predeployment closure ineligible", () => expect(evaluateGlwClosure({ implementationComplete: true, artifactCertified: false, rolloutReady: false, rolloutComplete: false, canaryPass: false, stabilityPass: false, reconciliationClean: true, noActiveIncident: true, noSecretContamination: true, rollbackAuthorityRetained: true, operatorVisibilityAvailable: true }).closed).toBe(false));
   it("closes only with every production predicate", () => expect(evaluateGlwClosure({ implementationComplete: true, artifactCertified: true, rolloutReady: true, rolloutComplete: true, canaryPass: true, stabilityPass: true, reconciliationClean: true, noActiveIncident: true, noSecretContamination: true, rollbackAuthorityRetained: true, operatorVisibilityAvailable: true }).closed).toBe(true));
+  it("detects orphan logical correlation from independently scanned authorities", () => {
+    const snapshotAt = new Date();
+    const findings = detectGlwReconciliationDiscrepancies({
+      snapshotAt,
+      completions: [],
+      deliveries: [],
+      recoveries: [],
+      heartbeatAt: null,
+      escalations: [{ escalationId: "orphan-escalation", idempotencyKey: "missing-delivery", deliveryPresent: false }],
+      operatorActions: [],
+      recoveryAttempts: [],
+    } as never, { snapshotAt, receipts: [], jobs: [], executions: [] });
+    expect(findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ discrepancyType: "ORPHAN_LOGICAL_CORRELATION", severity: "CRITICAL" }),
+    ]));
+  });
   it("passes exact one-effect canary", () => expect(evaluateGlwCanary(canary)).toEqual({ passed: true, failures: [] }));
   it("fails duplicate canary effect", () => expect(evaluateGlwCanary({ ...canary, terminalEventCount: 2 }).failures).toContain("terminalEventCount"));
   it("forbids dual-send in every rollback decision", () => expect(evaluateGlwRollbackStage("C_D_ACTIVE", true).dualSendAllowed).toBe(false));

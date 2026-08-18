@@ -17,6 +17,7 @@ export type GlwReconciliationDiscrepancy = {
   discrepancyKey: string;
   discrepancyType: string;
   severity: GlwDiscrepancySeverity;
+  correlationId?: string;
   idempotencyKey?: string;
   operationKey?: string;
   publicationKey?: string | null;
@@ -64,6 +65,7 @@ type ProducerDelivery = {
 type ProducerRecovery = {
   recoveryAuthorizationId: string;
   idempotencyKey: string;
+  deliveryPresent: boolean;
   recoveryState: string;
   attemptCount: number;
   attemptLedgerCount: number;
@@ -73,11 +75,38 @@ type ProducerRecovery = {
   leaseToken: string | null;
 };
 
+type ProducerEscalationCorrelation = {
+  escalationId: string;
+  idempotencyKey: string;
+  deliveryPresent: boolean;
+};
+
+type ProducerOperatorActionCorrelation = {
+  actionId: string;
+  idempotencyKey: string;
+  escalationId: string | null;
+  recoveryAuthorizationId: string | null;
+  deliveryPresent: boolean;
+  escalationPresent: boolean;
+  escalationIdempotencyKey: string | null;
+  recoveryAuthorizationPresent: boolean;
+  recoveryIdempotencyKey: string | null;
+};
+
+type ProducerRecoveryAttemptCorrelation = {
+  recoveryAuthorizationId: string;
+  attemptNumber: number;
+  authorizationPresent: boolean;
+};
+
 type ProducerSnapshot = {
   snapshotAt: Date;
   completions: ProducerCompletion[];
   deliveries: ProducerDelivery[];
   recoveries: ProducerRecovery[];
+  escalations: ProducerEscalationCorrelation[];
+  operatorActions: ProducerOperatorActionCorrelation[];
+  recoveryAttempts: ProducerRecoveryAttemptCorrelation[];
   heartbeatAt: Date | null;
 };
 
@@ -224,7 +253,7 @@ function discrepancyKey(type: string, ...identity: Array<string | null | undefin
 function discrepancy(input: Omit<GlwReconciliationDiscrepancy, "discrepancyKey">): GlwReconciliationDiscrepancy {
   return {
     ...input,
-    discrepancyKey: discrepancyKey(input.discrepancyType, input.idempotencyKey, input.operationKey, input.jobId, input.recoveryAuthorizationId),
+    discrepancyKey: discrepancyKey(input.discrepancyType, input.correlationId, input.idempotencyKey, input.operationKey, input.jobId, input.recoveryAuthorizationId),
     safeExpected: safeValue(input.safeExpected) as Record<string, unknown>,
     safeActual: safeValue(input.safeActual) as Record<string, unknown>,
   };
@@ -268,14 +297,20 @@ export function evaluateGlwRetentionEligibility(input: GlwRetentionInput) {
 }
 
 export function evaluateGlwClosure(input: GlwClosureInput) {
+  const implementationComplete = input.implementationComplete;
+  const artifactCertified = implementationComplete && input.artifactCertified;
+  const rolloutReady = artifactCertified && input.rolloutReady;
+  const rolloutComplete = rolloutReady && input.rolloutComplete;
+  const canaryPass = rolloutComplete && input.canaryPass;
+  const stabilityPass = canaryPass && input.stabilityPass;
   const stages = {
-    IMPLEMENTATION_COMPLETE: input.implementationComplete,
-    ARTIFACT_CERTIFIED: input.implementationComplete && input.artifactCertified,
-    ROLLOUT_READY: input.artifactCertified && input.rolloutReady,
-    ROLLOUT_COMPLETE: input.rolloutReady && input.rolloutComplete,
-    CANARY_PASS: input.rolloutComplete && input.canaryPass,
-    STABILITY_PASS: input.canaryPass && input.stabilityPass,
-    HR004_CLOSED: input.stabilityPass && input.reconciliationClean && input.noActiveIncident
+    IMPLEMENTATION_COMPLETE: implementationComplete,
+    ARTIFACT_CERTIFIED: artifactCertified,
+    ROLLOUT_READY: rolloutReady,
+    ROLLOUT_COMPLETE: rolloutComplete,
+    CANARY_PASS: canaryPass,
+    STABILITY_PASS: stabilityPass,
+    HR004_CLOSED: stabilityPass && input.reconciliationClean && input.noActiveIncident
       && input.noSecretContamination && input.rollbackAuthorityRetained && input.operatorVisibilityAvailable,
   };
   const current = Object.entries(stages).filter(([, passed]) => passed).at(-1)?.[0] ?? "NOT_ELIGIBLE_FOR_CLOSURE";
@@ -345,10 +380,33 @@ async function readProducerSnapshot(client: PoolClient): Promise<ProducerSnapsho
     const recoveries = (await client.query<ProducerRecovery>(`
       SELECT recovery."recoveryAuthorizationId",recovery."idempotencyKey",recovery."recoveryState",recovery."attemptCount",
         recovery."approvalExpiresAt",recovery."nextAttemptAt",recovery."deliveryDeadlineAt",recovery."leaseToken",
+        (delivery."idempotencyKey" IS NOT NULL) AS "deliveryPresent",
         (SELECT count(*)::int FROM "GlwProducerDeliveryRecoveryAttempt" attempt WHERE attempt."recoveryAuthorizationId"=recovery."recoveryAuthorizationId") AS "attemptLedgerCount"
-      FROM "GlwProducerDeliveryRecoveryAuthorization" recovery`)).rows;
+      FROM "GlwProducerDeliveryRecoveryAuthorization" recovery
+      LEFT JOIN "GlwProducerDelivery" delivery USING ("idempotencyKey")`)).rows;
+    const escalations = (await client.query<ProducerEscalationCorrelation>(`
+      SELECT escalation."escalationId",escalation."idempotencyKey",
+        (delivery."idempotencyKey" IS NOT NULL) AS "deliveryPresent"
+      FROM "GlwProducerDeliveryEscalation" escalation
+      LEFT JOIN "GlwProducerDelivery" delivery USING ("idempotencyKey")`)).rows;
+    const operatorActions = (await client.query<ProducerOperatorActionCorrelation>(`
+      SELECT action."actionId",action."idempotencyKey",action."escalationId",action."recoveryAuthorizationId",
+        (delivery."idempotencyKey" IS NOT NULL) AS "deliveryPresent",
+        (action."escalationId" IS NULL OR escalation."escalationId" IS NOT NULL) AS "escalationPresent",
+        escalation."idempotencyKey" AS "escalationIdempotencyKey",
+        (action."recoveryAuthorizationId" IS NULL OR recovery."recoveryAuthorizationId" IS NOT NULL) AS "recoveryAuthorizationPresent",
+        recovery."idempotencyKey" AS "recoveryIdempotencyKey"
+      FROM "GlwProducerDeliveryOperatorAction" action
+      LEFT JOIN "GlwProducerDelivery" delivery ON delivery."idempotencyKey"=action."idempotencyKey"
+      LEFT JOIN "GlwProducerDeliveryEscalation" escalation ON escalation."escalationId"=action."escalationId"
+      LEFT JOIN "GlwProducerDeliveryRecoveryAuthorization" recovery ON recovery."recoveryAuthorizationId"=action."recoveryAuthorizationId"`)).rows;
+    const recoveryAttempts = (await client.query<ProducerRecoveryAttemptCorrelation>(`
+      SELECT attempt."recoveryAuthorizationId",attempt."attemptNumber",
+        (recovery."recoveryAuthorizationId" IS NOT NULL) AS "authorizationPresent"
+      FROM "GlwProducerDeliveryRecoveryAttempt" attempt
+      LEFT JOIN "GlwProducerDeliveryRecoveryAuthorization" recovery USING ("recoveryAuthorizationId")`)).rows;
     const heartbeatAt = (await client.query<{ observedAt: Date }>(`SELECT "observedAt" FROM "GlwProducerDeliveryWorkerHeartbeat" ORDER BY "observedAt" DESC LIMIT 1`)).rows[0]?.observedAt ?? null;
-    return { snapshotAt, completions, deliveries, recoveries, heartbeatAt };
+    return { snapshotAt, completions, deliveries, recoveries, escalations, operatorActions, recoveryAttempts, heartbeatAt };
   });
 }
 
@@ -406,8 +464,25 @@ export function detectGlwReconciliationDiscrepancies(producer: ProducerSnapshot,
   }
 
   for (const recovery of producer.recoveries) {
+    if (!recovery.deliveryPresent) findings.push(discrepancy({ discrepancyType: "ORPHAN_LOGICAL_CORRELATION", severity: "CRITICAL", correlationId: `recovery:${recovery.recoveryAuthorizationId}`, idempotencyKey: recovery.idempotencyKey, recoveryAuthorizationId: recovery.recoveryAuthorizationId, safeExpected: { authority: "RECOVERY_AUTHORIZATION", deliveryPresent: true }, safeActual: { authority: "RECOVERY_AUTHORIZATION", deliveryPresent: false }, repairAuthority: "SCHEMA_INCIDENT_GATE", autoRepairEligible: false }));
     if (recovery.attemptCount !== recovery.attemptLedgerCount) findings.push(discrepancy({ discrepancyType: "RECOVERY_ATTEMPT_COUNT_MISMATCH", severity: "CRITICAL", idempotencyKey: recovery.idempotencyKey, recoveryAuthorizationId: recovery.recoveryAuthorizationId, safeExpected: { count: recovery.attemptCount }, safeActual: { count: recovery.attemptLedgerCount }, repairAuthority: "SLICE_E_INCIDENT", autoRepairEligible: false }));
     if (recovery.recoveryState === "APPROVED" && (!recovery.nextAttemptAt || !recovery.deliveryDeadlineAt || (recovery.approvalExpiresAt && recovery.approvalExpiresAt < now))) findings.push(discrepancy({ discrepancyType: "APPROVED_RECOVERY_NOT_ELIGIBLE_OR_EXPIRED", severity: "ACTION_REQUIRED", idempotencyKey: recovery.idempotencyKey, recoveryAuthorizationId: recovery.recoveryAuthorizationId, safeExpected: { dueAndUnexpired: true }, safeActual: { dueAndUnexpired: false }, repairAuthority: "SLICE_E_OPERATOR_SYSTEM", autoRepairEligible: false }));
+  }
+  for (const escalation of producer.escalations) {
+    if (!escalation.deliveryPresent) findings.push(discrepancy({ discrepancyType: "ORPHAN_LOGICAL_CORRELATION", severity: "CRITICAL", correlationId: `escalation:${escalation.escalationId}`, idempotencyKey: escalation.idempotencyKey, safeExpected: { authority: "ESCALATION", deliveryPresent: true }, safeActual: { authority: "ESCALATION", deliveryPresent: false, escalationId: escalation.escalationId }, repairAuthority: "SCHEMA_INCIDENT_GATE", autoRepairEligible: false }));
+  }
+  for (const action of producer.operatorActions) {
+    const reasons = [
+      !action.deliveryPresent ? "DELIVERY_MISSING" : null,
+      !action.escalationPresent ? "ESCALATION_MISSING" : null,
+      action.escalationIdempotencyKey && action.escalationIdempotencyKey !== action.idempotencyKey ? "ESCALATION_DELIVERY_MISMATCH" : null,
+      !action.recoveryAuthorizationPresent ? "RECOVERY_AUTHORIZATION_MISSING" : null,
+      action.recoveryIdempotencyKey && action.recoveryIdempotencyKey !== action.idempotencyKey ? "RECOVERY_DELIVERY_MISMATCH" : null,
+    ].filter((reason): reason is string => Boolean(reason));
+    if (reasons.length) findings.push(discrepancy({ discrepancyType: "ORPHAN_LOGICAL_CORRELATION", severity: "CRITICAL", correlationId: `operator-action:${action.actionId}`, idempotencyKey: action.idempotencyKey, recoveryAuthorizationId: action.recoveryAuthorizationId ?? undefined, safeExpected: { authority: "OPERATOR_ACTION", correlationsValid: true }, safeActual: { authority: "OPERATOR_ACTION", actionId: action.actionId, reasons }, repairAuthority: "SCHEMA_INCIDENT_GATE", autoRepairEligible: false }));
+  }
+  for (const attempt of producer.recoveryAttempts) {
+    if (!attempt.authorizationPresent) findings.push(discrepancy({ discrepancyType: "ORPHAN_LOGICAL_CORRELATION", severity: "CRITICAL", correlationId: `recovery-attempt:${attempt.recoveryAuthorizationId}:${attempt.attemptNumber}`, recoveryAuthorizationId: attempt.recoveryAuthorizationId, safeExpected: { authority: "RECOVERY_ATTEMPT", authorizationPresent: true }, safeActual: { authority: "RECOVERY_ATTEMPT", authorizationPresent: false, attemptNumber: attempt.attemptNumber }, repairAuthority: "SCHEMA_INCIDENT_GATE", autoRepairEligible: false }));
   }
   const dueWork = producer.deliveries.some((row) => ["PENDING", "RETRY_SCHEDULED"].includes(row.deliveryStatus) && row.nextAttemptAt <= now);
   if (dueWork && (!producer.heartbeatAt || now.getTime() - producer.heartbeatAt.getTime() > 300_000)) findings.push(discrepancy({ discrepancyType: "DUE_WORK_STALE_HEARTBEAT", severity: "CRITICAL", safeExpected: { heartbeatFresh: true }, safeActual: { heartbeatFresh: false }, repairAuthority: "RUNTIME_OPERATIONS", autoRepairEligible: false }));
@@ -427,7 +502,8 @@ async function insertEvidence(pool: Pool, input: {
       "reconciliationRunId","runType","triggeredBy","sourceCommit","sourceTree","sourceBuild","producerSnapshotAt","genesisSnapshotAt","snapshotSkewMs","startedAt","completedAt","status","producerScannedCount","genesisScannedCount","discrepancyCount","criticalCount","autoRepairCount","safeMetrics","truncated","failureClass"
     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,$20)`, values: [
       input.runId,input.runType,input.triggeredBy,input.sourceCommit,input.sourceTree,input.sourceBuild ?? null,input.producer.snapshotAt,input.genesis.snapshotAt,skew,input.startedAt,input.completedAt,input.status,
-      input.producer.completions.length + input.producer.deliveries.length + input.producer.recoveries.length,
+      input.producer.completions.length + input.producer.deliveries.length + input.producer.recoveries.length
+        + input.producer.escalations.length + input.producer.operatorActions.length + input.producer.recoveryAttempts.length,
       input.genesis.receipts.length + input.genesis.jobs.length + input.genesis.executions.length,input.discrepancies.length,
       input.discrepancies.filter((row) => row.severity === "CRITICAL").length,input.autoRepairCount,
       JSON.stringify({ discrepancyBySeverity: Object.fromEntries(["WARNING","ACTION_REQUIRED","CRITICAL"].map((severity) => [severity, input.discrepancies.filter((row) => row.severity === severity).length])) }),
@@ -476,7 +552,7 @@ export function createGlwDeliveryReconciliationService(dependencies: { producer?
       return { outcome: "COMPLETED" as const, reconciliationRunId: runId, status, snapshotSkewMs: skew.snapshotSkewMs, discrepancies, autoRepairCount };
     } catch (error) {
       const completedAt = new Date();
-      const emptyProducer: ProducerSnapshot = { snapshotAt: completedAt, completions: [], deliveries: [], recoveries: [], heartbeatAt: null };
+      const emptyProducer: ProducerSnapshot = { snapshotAt: completedAt, completions: [], deliveries: [], recoveries: [], escalations: [], operatorActions: [], recoveryAttempts: [], heartbeatAt: null };
       const emptyGenesis: GenesisSnapshot = { snapshotAt: completedAt, receipts: [], jobs: [], executions: [] };
       const failureClass = sanitizeGlwDeliveryDiagnostic(error instanceof Error ? error.name : "RECONCILIATION_FAILURE").slice(0, 100);
       if (locked) {

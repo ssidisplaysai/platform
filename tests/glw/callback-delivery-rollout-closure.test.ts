@@ -13,6 +13,33 @@ describe("HR-004 Slice F rollout and closure contract", () => {
   it("allows readiness only from complete checklist", () => expect(evaluateGlwRolloutReadiness(readiness).ready).toBe(true));
   it("blocks readiness on dirty reconciliation", () => expect(evaluateGlwRolloutReadiness({ ...readiness, latestReconciliation: { status: "DISCREPANCIES", snapshotSkewMs: 0, criticalCount: 1, discrepancyCount: 1 } }).ready).toBe(false));
   it("keeps closure ineligible before rollout", () => expect(evaluateGlwClosure({ implementationComplete: true, artifactCertified: true, rolloutReady: false, rolloutComplete: false, canaryPass: false, stabilityPass: false, reconciliationClean: true, noActiveIncident: true, noSecretContamination: true, rollbackAuthorityRetained: true, operatorVisibilityAvailable: true }).current).toBe("ARTIFACT_CERTIFIED"));
+  it.each([
+    ["stability without canary", { canaryPass: false }],
+    ["stability without rollout completion", { rolloutComplete: false }],
+    ["stability without rollout readiness", { rolloutReady: false }],
+    ["stability without artifact certification", { artifactCertified: false }],
+    ["stability without implementation", { implementationComplete: false }],
+    ["canary without rollout completion", { rolloutComplete: false }],
+    ["rollout completion without readiness", { rolloutReady: false }],
+    ["rollout readiness without artifact certification", { artifactCertified: false }],
+    ["artifact certification without implementation", { implementationComplete: false }],
+  ])("rejects skipped closure stage: %s", (_name, overrides) => {
+    const result = evaluateGlwClosure({
+      implementationComplete: true,
+      artifactCertified: true,
+      rolloutReady: true,
+      rolloutComplete: true,
+      canaryPass: true,
+      stabilityPass: true,
+      reconciliationClean: true,
+      noActiveIncident: true,
+      noSecretContamination: true,
+      rollbackAuthorityRetained: true,
+      operatorVisibilityAvailable: true,
+      ...overrides,
+    });
+    expect(result.closed).toBe(false);
+  });
   it("fails canary duplicate effect", () => expect(evaluateGlwCanary({ producerOperationCount:1,producerPublicationCount:1,producerCompletionCount:1,producerOutboxCount:1,producerDeliveryCount:1,originalAttemptCount:2,recoveryCycleCount:0,recoveryAttemptCount:0,receiverReceiptCount:1,receiverOutcome:"APPLIED",glwTerminalEffectCount:1,gopTerminalExecutionCount:1,terminalEventCount:1,terminalSnapshotCount:1,deliveryStatus:"ACKNOWLEDGED",activeLeaseCount:0,deadLetterCount:0,activeEscalationCount:0,reconciliationStatus:"CLEAN",reconciliationDiscrepancyCount:0 }).passed).toBe(false));
   it("commits an inactive 60-second workflow", async () => { const w=JSON.parse(await readFile(join(process.cwd(),"backups/n8n/glw-callback-delivery-reconciliation-worker.json"),"utf8")); expect(w.active).toBe(false); expect(w.nodes[0].parameters.rule.interval[0]).toEqual({field:"seconds",secondsInterval:60}); });
   it("workflow has no callback transport or business mutation", async () => { const text=await readFile(join(process.cwd(),"backups/n8n/glw-callback-delivery-reconciliation-worker.json"),"utf8"); expect(text).not.toMatch(/GLW_CALLBACK|requestBodyUtf8|claimGlwProducer|completeGlwProducer|wordpress/i); });
