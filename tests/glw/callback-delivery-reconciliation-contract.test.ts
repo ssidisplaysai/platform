@@ -14,6 +14,7 @@ import {
   evaluateGlwRolloutReadiness,
   detectGlwReconciliationDiscrepancies,
   isGlwAutoRepairAllowed,
+  settleGlwSnapshotTasks,
   type GlwCanaryEvidence,
 } from "@/lib/glw/callback-delivery-reconciliation";
 
@@ -52,6 +53,30 @@ describe("HR-004 Slice F reconciliation contract", () => {
     expect(findings).toEqual(expect.arrayContaining([
       expect.objectContaining({ discrepancyType: "ORPHAN_LOGICAL_CORRELATION", severity: "CRITICAL" }),
     ]));
+  });
+  it("settles successful producer and Genesis snapshots", async () => expect(await settleGlwSnapshotTasks(Promise.resolve("producer"), Promise.resolve("genesis"))).toEqual(["producer", "genesis"]));
+  it("preserves producer failure after Genesis settles", async () => await expect(settleGlwSnapshotTasks(Promise.reject(new Error("producer-failure")), Promise.resolve("genesis"))).rejects.toThrow("producer-failure"));
+  it("preserves Genesis failure after producer settles", async () => await expect(settleGlwSnapshotTasks(Promise.resolve("producer"), Promise.reject(new Error("genesis-failure")))).rejects.toThrow("genesis-failure"));
+  it("uses deterministic producer-first precedence when both snapshots fail", async () => await expect(settleGlwSnapshotTasks(Promise.reject(new Error("producer-first")), Promise.reject(new Error("genesis-second")))).rejects.toThrow("producer-first"));
+  it("waits for slow Genesis settlement after fast producer failure", async () => {
+    let settleGenesis!: () => void;
+    const genesis = new Promise<string>((resolve) => { settleGenesis = () => resolve("genesis"); });
+    let parentSettled = false;
+    const joined = settleGlwSnapshotTasks(Promise.reject(new Error("producer-fast")), genesis).finally(() => { parentSettled = true; });
+    await Promise.resolve();
+    expect(parentSettled).toBe(false);
+    settleGenesis();
+    await expect(joined).rejects.toThrow("producer-fast");
+  });
+  it("waits for slow producer settlement after fast Genesis failure", async () => {
+    let settleProducer!: () => void;
+    const producer = new Promise<string>((resolve) => { settleProducer = () => resolve("producer"); });
+    let parentSettled = false;
+    const joined = settleGlwSnapshotTasks(producer, Promise.reject(new Error("genesis-fast"))).finally(() => { parentSettled = true; });
+    await Promise.resolve();
+    expect(parentSettled).toBe(false);
+    settleProducer();
+    await expect(joined).rejects.toThrow("genesis-fast");
   });
   it("passes exact one-effect canary", () => expect(evaluateGlwCanary(canary)).toEqual({ passed: true, failures: [] }));
   it("fails duplicate canary effect", () => expect(evaluateGlwCanary({ ...canary, terminalEventCount: 2 }).failures).toContain("terminalEventCount"));

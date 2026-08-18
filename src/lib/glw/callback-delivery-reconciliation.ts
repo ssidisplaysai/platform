@@ -349,6 +349,8 @@ export function evaluateGlwRollbackStage(stage: string, hasProducerRows: boolean
   return { stage, decision: matrix[stage] ?? "STOP_UNKNOWN_STAGE", dualSendAllowed: false };
 }
 
+const snapshotClientsRequiringDestruction = new WeakSet<PoolClient>();
+
 async function inReadSnapshot<T>(client: PoolClient, fn: () => Promise<T>): Promise<T> {
   await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
   try {
@@ -356,13 +358,37 @@ async function inReadSnapshot<T>(client: PoolClient, fn: () => Promise<T>): Prom
     await client.query("COMMIT");
     return result;
   } catch (error) {
-    await client.query("ROLLBACK");
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      snapshotClientsRequiringDestruction.add(client);
+    }
     throw error;
   }
 }
 
-async function readProducerSnapshot(client: PoolClient): Promise<ProducerSnapshot> {
-  return inReadSnapshot(client, async () => {
+async function withReadSnapshot<T>(pool: Pool, read: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await pool.connect();
+  let taskError: Error | undefined;
+  try {
+    return await inReadSnapshot(client, () => read(client));
+  } catch (error) {
+    taskError = error instanceof Error ? error : new Error("GLW_RECONCILIATION_SNAPSHOT_FAILURE");
+    throw error;
+  } finally {
+    client.release(snapshotClientsRequiringDestruction.has(client) ? taskError : undefined);
+  }
+}
+
+export async function settleGlwSnapshotTasks<Producer, Genesis>(producerTask: Promise<Producer>, genesisTask: Promise<Genesis>): Promise<[Producer, Genesis]> {
+  const [producerResult, genesisResult] = await Promise.allSettled([producerTask, genesisTask]);
+  if (producerResult.status === "rejected") throw producerResult.reason;
+  if (genesisResult.status === "rejected") throw genesisResult.reason;
+  return [producerResult.value, genesisResult.value];
+}
+
+async function readProducerSnapshot(pool: Pool): Promise<ProducerSnapshot> {
+  return withReadSnapshot(pool, async (client) => {
     const snapshotAt = (await client.query<{ now: Date }>(`SELECT clock_timestamp() AS now`)).rows[0].now;
     const completions = (await client.query<ProducerCompletion>(`
       SELECT completion."operationKey",completion."publicationKey",completion."idempotencyKey",completion."terminalScopeKey",
@@ -410,8 +436,8 @@ async function readProducerSnapshot(client: PoolClient): Promise<ProducerSnapsho
   });
 }
 
-async function readGenesisSnapshot(client: PoolClient): Promise<GenesisSnapshot> {
-  return inReadSnapshot(client, async () => {
+async function readGenesisSnapshot(pool: Pool): Promise<GenesisSnapshot> {
+  return withReadSnapshot(pool, async (client) => {
     const snapshotAt = (await client.query<{ now: Date }>(`SELECT clock_timestamp() AS now`)).rows[0].now;
     const receipts = (await client.query<GenesisReceipt>(`SELECT "idempotencyKey","terminalScopeKey","operationKey","jobId","externalExecutionId","terminalStatus","payloadSha256","outcome" FROM "GlwCallbackReceipt"`)).rows;
     const jobs = (await client.query<GenesisJob>(`SELECT "id","status","businessStatus","operationKey","publicationKey","externalExecutionId","terminalReceiptId" FROM "GlwJob" WHERE "operationKey" IS NOT NULL`)).rows;
@@ -529,15 +555,13 @@ export function createGlwDeliveryReconciliationService(dependencies: { producer?
 
   async function run(input: { runType: GlwReconciliationRunType; triggeredBy: string; sourceCommit: string; sourceTree: string; sourceBuild?: string; allowAutoRepair?: boolean }) {
     const lock = await producer.connect();
-    const producerRead = await producer.connect();
-    const genesisRead = await genesis.connect();
     const startedAt = new Date();
     const runId = randomUUID();
     let locked = false;
     try {
       locked = (await lock.query<{ locked: boolean }>(`SELECT pg_try_advisory_lock(hashtext('hr004:delivery-reconciliation')) AS locked`)).rows[0].locked;
       if (!locked) return { outcome: "ALREADY_RUNNING" as const };
-      const [producerSnapshot, genesisSnapshot] = await Promise.all([readProducerSnapshot(producerRead), readGenesisSnapshot(genesisRead)]);
+      const [producerSnapshot, genesisSnapshot] = await settleGlwSnapshotTasks(readProducerSnapshot(producer), readGenesisSnapshot(genesis));
       const skew = classifyGlwSnapshotSkew(producerSnapshot.snapshotAt, genesisSnapshot.snapshotAt);
       let discrepancies = detectGlwReconciliationDiscrepancies(producerSnapshot, genesisSnapshot);
       let autoRepairCount = 0;
@@ -561,7 +585,7 @@ export function createGlwDeliveryReconciliationService(dependencies: { producer?
       throw error;
     } finally {
       await lock.query(`SELECT pg_advisory_unlock(hashtext('hr004:delivery-reconciliation'))`).catch(() => undefined);
-      producerRead.release(); genesisRead.release(); lock.release();
+      lock.release();
     }
   }
 
