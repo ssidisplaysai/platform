@@ -194,6 +194,7 @@ function buildPageRequestFromCandidate(candidate: GlwDailyPublishPlan["candidate
   return {
     siteId: site.id,
     workspaceId: site.workspaceId,
+    hierarchyMode: "legacy_city_page",
     pageType,
     productTopic,
     state,
