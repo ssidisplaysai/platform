@@ -40,6 +40,7 @@ export const glwJobStatusOrder: Record<GlwJobStatus, number> = {
 export type GlwPublishingMode = "draft" | "publish";
 export type GlwWordpressWorkflowStatus = GlwPublishingMode | "qa_failed";
 export type GlwPageType = "city_service" | "state_service" | "general_service";
+export type GlwHierarchyMode = "legacy_city_page" | "city_child_target";
 export type GlwQaCheckState = "PASS" | "FAIL" | "PENDING" | "UNKNOWN";
 export type GlwQaCheckKey =
   | "pageExists"
@@ -68,6 +69,8 @@ const CANONICAL_GLW_SITE_ID = "led-display-warehouse";
 export type GlwPageGenerationRequest = {
   siteId: string;
   workspaceId: string;
+  hierarchyMode: GlwHierarchyMode;
+  cityParentId?: number;
   pageType: GlwPageType;
   productTopic: string;
   state: string;
@@ -95,6 +98,8 @@ export type GlwPageGenerationJobInput = {
   };
   page: {
     workspaceId: string;
+    hierarchyMode: GlwHierarchyMode;
+    cityParentId: number | null;
     pageType: GlwPageType;
     productTopic: string;
     state: string;
@@ -145,6 +150,12 @@ export type GlwJobError = {
 export type GlwJobResult = {
   executionId: string;
   status: GlwJobStatus;
+  hierarchyMode?: GlwHierarchyMode;
+  cityParentId?: number;
+  targetSlug?: string;
+  wordpressParentId?: number;
+  wordpressSlug?: string;
+  canonicalTargetUrl?: string;
   title?: string;
   wordpressPageId?: string | number;
   wordpressUrl?: string;
@@ -191,6 +202,12 @@ export type GlwPageGenerationCallbackPayload = {
   jobId: string;
   executionId: string;
   status: GlwJobStatus;
+  hierarchyMode?: GlwHierarchyMode;
+  cityParentId?: number;
+  targetSlug?: string;
+  wordpressParentId?: number;
+  wordpressSlug?: string;
+  canonicalTargetUrl?: string;
   callbackVersion?: "2";
   operationKey?: string;
   idempotencyKey?: string;
@@ -560,9 +577,34 @@ export function validatePageGenerationRequest(
   input: Partial<GlwPageGenerationRequest> | Record<string, unknown>,
 ): GlwValidationResult<GlwPageGenerationRequest> {
   const errors: GlwJobFieldErrors = {};
+  const allowedFields = new Set([
+    "siteId", "workspaceId", "hierarchyMode", "cityParentId", "pageType", "productTopic", "state", "city",
+    "citySlug", "hierarchicalSlug", "additionalInstructions", "title", "targetSlug", "primaryKeyword",
+    "secondaryKeywords", "wordCount", "tone", "audience", "callToAction", "category", "status", "publishingMode",
+  ]);
+  const unknownFields = Object.keys(input).filter((field) => !allowedFields.has(field));
+
+  if (unknownFields.length > 0) {
+    return {
+      ok: false,
+      errors,
+      message: `Unknown request fields: ${unknownFields.sort().join(", ")}`,
+    };
+  }
 
   const siteId = typeof input.siteId === "string" ? input.siteId.trim() : "";
   const workspaceId = typeof input.workspaceId === "string" ? input.workspaceId.trim() : "";
+  const hierarchyModeInput = typeof input.hierarchyMode === "string" ? input.hierarchyMode.trim() : "";
+  const hierarchyMode: GlwHierarchyMode | null = hierarchyModeInput === "legacy_city_page"
+    ? "legacy_city_page"
+    : hierarchyModeInput === "city_child_target"
+      ? "city_child_target"
+      : null;
+  const cityParentId = typeof input.cityParentId === "number"
+    ? input.cityParentId
+    : typeof input.cityParentId === "string"
+      ? Number(input.cityParentId)
+      : Number.NaN;
   const pageType = normalizePageType(typeof input.pageType === "string" ? input.pageType : undefined);
   const productTopic = typeof input.productTopic === "string" ? input.productTopic.trim() : "";
   const state = typeof input.state === "string" ? input.state.trim() : "";
@@ -608,6 +650,18 @@ export function validatePageGenerationRequest(
 
   if (!workspaceId) {
     errors.workspaceId = "Workspace is required.";
+  }
+
+  if (!hierarchyMode) {
+    errors.hierarchyMode = "UNKNOWN_HIERARCHY_MODE";
+  }
+
+  if (hierarchyMode === "legacy_city_page" && input.cityParentId !== undefined && input.cityParentId !== "") {
+    errors.cityParentId = "Legacy city-page requests must not provide cityParentId.";
+  }
+
+  if (hierarchyMode === "city_child_target" && (!Number.isInteger(cityParentId) || cityParentId <= 0)) {
+    errors.cityParentId = "MISSING_CITY_PARENT_IDENTITY";
   }
 
   if (!pageType) {
@@ -666,6 +720,15 @@ export function validatePageGenerationRequest(
     errors.targetSlug = "Slug must contain only lowercase letters, numbers, and hyphens.";
   }
 
+  if (hierarchyMode === "city_child_target" && citySlug && targetSlug === citySlug) {
+    errors.targetSlug = "City-child targetSlug must differ from citySlug.";
+  }
+
+  const hierarchyParts = hierarchicalSlug.split("/").filter(Boolean);
+  if (hierarchyMode === "city_child_target" && (hierarchyParts.length !== 4 || hierarchyParts[2] !== citySlug || hierarchyParts[3] !== targetSlug)) {
+    errors.hierarchicalSlug = "City-child hierarchy must contain product/state/city/target with matching citySlug and targetSlug.";
+  }
+
   if (!category) {
     errors.category = "Category is required.";
   }
@@ -713,6 +776,8 @@ export function validatePageGenerationRequest(
     value: {
       siteId,
       workspaceId,
+      hierarchyMode: hierarchyMode as GlwHierarchyMode,
+      cityParentId: hierarchyMode === "city_child_target" ? cityParentId : undefined,
       pageType: pageType as GlwPageType,
       productTopic,
       state,
@@ -738,6 +803,8 @@ export function parsePageGenerationFormData(formData: FormData): GlwValidationRe
   return validatePageGenerationRequest({
     siteId: trimOptional(formData.get("siteId")) ?? "",
     workspaceId: trimOptional(formData.get("workspaceId")) ?? "",
+    hierarchyMode: trimOptional(formData.get("hierarchyMode")) ?? "",
+    cityParentId: trimOptional(formData.get("cityParentId")) ?? "",
     pageType: trimOptional(formData.get("pageType")) ?? "",
     productTopic: trimOptional(formData.get("productTopic")) ?? "",
     state: trimOptional(formData.get("state")) ?? "",
@@ -784,6 +851,8 @@ export function createGlwJobInput(
     },
     page: {
       workspaceId: request.workspaceId,
+      hierarchyMode: request.hierarchyMode,
+      cityParentId: request.cityParentId ?? null,
       pageType: request.pageType,
       productTopic: request.productTopic,
       state: request.state,

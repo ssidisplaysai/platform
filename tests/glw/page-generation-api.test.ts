@@ -68,6 +68,7 @@ function buildValidPageRequest(overrides?: Record<string, unknown>) {
   return {
     siteId: "led-display-warehouse",
     workspaceId: "glw-led-display-warehouse",
+    hierarchyMode: "legacy_city_page",
     pageType: "city_service",
     productTopic: "LED wall rental",
     state: "California",
@@ -104,6 +105,140 @@ afterEach(() => {
 });
 
 describe("GLW page generation validation", () => {
+  it("fails closed when hierarchy mode is absent", () => {
+    const request = buildValidPageRequest();
+    delete request.hierarchyMode;
+    const result = validatePageGenerationRequest(request);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.hierarchyMode).toBe("UNKNOWN_HIERARCHY_MODE");
+  });
+
+  it("preserves explicit legacy city-page semantics", () => {
+    const result = validatePageGenerationRequest(buildValidPageRequest());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.hierarchyMode).toBe("legacy_city_page");
+  });
+
+  it("requires and preserves separate parent and target identities for city-child mode", () => {
+    const result = validatePageGenerationRequest(buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      cityParentId: 2565,
+      hierarchicalSlug: "direct-view-led-video-walls/texas/austin/hr004-canary",
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "hr004-canary",
+    }));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.cityParentId).toBe(2565);
+      expect(result.value.targetSlug).toBe("hr004-canary");
+      expect(result.value.status).toBe("draft");
+    }
+  });
+
+  it("rejects missing or malformed parent identity and target collisions in city-child mode", () => {
+    const missingParent = validatePageGenerationRequest(buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      hierarchicalSlug: "direct-view-led-video-walls/texas/austin/hr004-canary",
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "hr004-canary",
+    }));
+    const sameTarget = validatePageGenerationRequest(buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      cityParentId: 2565,
+      hierarchicalSlug: "direct-view-led-video-walls/texas/austin/austin",
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "austin",
+    }));
+    const malformedParent = validatePageGenerationRequest(buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      cityParentId: "not-an-id",
+      hierarchicalSlug: "direct-view-led-video-walls/texas/austin/hr004-canary",
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "hr004-canary",
+    }));
+
+    expect(missingParent.ok).toBe(false);
+    expect(malformedParent.ok).toBe(false);
+    expect(sameTarget.ok).toBe(false);
+  });
+
+  it("rejects unknown hierarchy modes, unknown fields, and malformed child hierarchies", () => {
+    const unknownMode = validatePageGenerationRequest(buildValidPageRequest({ hierarchyMode: "future_mode" }));
+    const unknownField = validatePageGenerationRequest({ ...buildValidPageRequest(), unexpectedField: true });
+    const malformedHierarchy = validatePageGenerationRequest(buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      cityParentId: 2565,
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "hr004-canary",
+      hierarchicalSlug: "direct-view-led-video-walls/texas/hr004-canary",
+    }));
+
+    expect(unknownMode.ok).toBe(false);
+    expect(unknownField.ok).toBe(false);
+    expect(malformedHierarchy.ok).toBe(false);
+  });
+
+  it("persists child-target identities into durable input and n8n transport", async () => {
+    const repository = createInMemoryGlwJobRepository();
+    const workflow = { invokePageGeneration: jest.fn(async () => ({ kind: "accepted" as const, executionId: "exec_child", status: "accepted" as const })) };
+    const request = buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      cityParentId: 2565,
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "hr004-canary",
+      hierarchicalSlug: "direct-view-led-video-walls/texas/austin/hr004-canary",
+    });
+
+    const result = await submitGlwPageGenerationJob(request, {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      appUrl: "http://localhost:3000",
+    });
+    const sent = workflow.invokePageGeneration.mock.calls[0][0] as {
+      page: { hierarchyMode: string; hierarchy_mode: string; cityParentId: number; city_parent_id: number; targetSlug: string };
+      workflowContext: { hierarchyMode: string; cityParentId: number };
+    };
+    const persisted = await repository.findById(result.job.id);
+    const reloaded = JSON.parse(JSON.stringify(persisted)) as typeof persisted;
+
+    expect(result.job.input.page).toMatchObject({ hierarchyMode: "city_child_target", cityParentId: 2565, targetSlug: "hr004-canary", status: "draft" });
+    expect(persisted?.input.page).toMatchObject({ hierarchyMode: "city_child_target", cityParentId: 2565 });
+    expect(reloaded?.input.page).toMatchObject({ hierarchyMode: "city_child_target", cityParentId: 2565 });
+    expect(sent.page).toMatchObject({ hierarchyMode: "city_child_target", hierarchy_mode: "city_child_target", cityParentId: 2565, city_parent_id: 2565, targetSlug: "hr004-canary" });
+    expect(sent.workflowContext).toMatchObject({ hierarchyMode: "city_child_target", cityParentId: 2565 });
+  });
+
+  it("preserves child-target identity in callback-derived job results", async () => {
+    const request = buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      cityParentId: 2565,
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "hr004-canary",
+      hierarchicalSlug: "direct-view-led-video-walls/texas/austin/hr004-canary",
+    });
+    const job = createGlwJobRecord({
+      type: "PAGE_GENERATION", status: "RUNNING", retryOfJobId: null, siteId: request.siteId, title: request.title,
+      input: createGlwJobInput(request), result: null, error: null, externalExecutionId: "exec_child_callback", startedAt: new Date().toISOString(), completedAt: null,
+    });
+    const repository = createInMemoryGlwJobRepository([job]);
+
+    const updated = await applyGlwJobCallback({
+      jobId: job.id, executionId: "exec_child_callback", status: "GENERATING_CONTENT",
+      hierarchyMode: "city_child_target", cityParentId: 2565, targetSlug: "hr004-canary", wordpressParentId: 2565, wordpressSlug: "hr004-canary", canonicalTargetUrl: "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/austin/hr004-canary/",
+    }, repository, createInMemoryGenesisEventStore());
+
+    expect(updated.result).toMatchObject({ hierarchyMode: "city_child_target", cityParentId: 2565, targetSlug: "hr004-canary", wordpressParentId: 2565, wordpressSlug: "hr004-canary", canonicalTargetUrl: "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/austin/hr004-canary/" });
+  });
   it("rejects incomplete page requests", () => {
     const result = validatePageGenerationRequest({
       siteId: "led-display-warehouse",
@@ -163,6 +298,7 @@ describe("GLW page generation validation", () => {
     const formData = new FormData();
     formData.set("siteId", "led-display-warehouse");
     formData.set("workspaceId", "glw-led-display-warehouse");
+    formData.set("hierarchyMode", "legacy_city_page");
     formData.set("pageType", "city_service");
     formData.set("productTopic", "LED Wall Rental");
     formData.set("state", "California");
@@ -309,6 +445,8 @@ describe("GLW API auth and creation", () => {
     expect(secondPayload.workflowContext.workspaceId).toBe("glw-projection-screen-chicago");
 
     expect(firstPayload.page.page_type).toBe(firstRequest.pageType);
+    expect(firstPayload.page.hierarchyMode).toBe("legacy_city_page");
+    expect(firstPayload.page.cityParentId).toBeNull();
     expect(firstPayload.page.product_topic).toBe(firstRequest.productTopic);
     expect(firstPayload.page.state).toBe(firstRequest.state);
     expect(firstPayload.page.city).toBe(firstRequest.city);
@@ -318,6 +456,8 @@ describe("GLW API auth and creation", () => {
     expect(firstPayload.page.hierarchical_slug).toBe(firstRequest.hierarchicalSlug);
 
     expect(firstPayload.workflowContext.pageType).toBe(firstRequest.pageType);
+    expect(firstPayload.workflowContext.hierarchyMode).toBe("legacy_city_page");
+    expect(firstPayload.workflowContext.cityParentId).toBeNull();
     expect(firstPayload.workflowContext.productTopic).toBe(firstRequest.productTopic);
     expect(firstPayload.workflowContext.state).toBe(firstRequest.state);
     expect(firstPayload.workflowContext.city).toBe(firstRequest.city);
@@ -1221,6 +1361,36 @@ describe("GLW callback and retry behavior", () => {
     })).rejects.toThrow(/not found/);
   });
 
+  it("preserves persisted child-target identities when retrying", async () => {
+    const request = buildValidPageRequest({
+      hierarchyMode: "city_child_target",
+      cityParentId: 2565,
+      city: "Austin",
+      citySlug: "austin",
+      targetSlug: "hr004-canary",
+      hierarchicalSlug: "direct-view-led-video-walls/texas/austin/hr004-canary",
+    });
+    const failedJob = createGlwJobRecord({
+      type: "PAGE_GENERATION", status: "FAILED", retryOfJobId: null, siteId: request.siteId, title: request.title,
+      input: createGlwJobInput(request), result: null, error: { message: "Workflow failed" },
+      externalExecutionId: "exec_child_failed", startedAt: new Date().toISOString(), completedAt: new Date().toISOString(),
+    });
+    const repository = createInMemoryGlwJobRepository([failedJob]);
+    const workflow = { invokePageGeneration: jest.fn(async () => ({ kind: "accepted" as const, executionId: "exec_child_retry", status: "accepted" as const })) };
+
+    const retried = await retryGlwPageGenerationJob(failedJob.id, {
+      repository,
+      workflow: workflow as unknown as ReturnType<typeof createGlwN8nTransport>,
+      appUrl: "http://localhost:3000",
+    });
+    const sent = workflow.invokePageGeneration.mock.calls[0][0] as {
+      page: { hierarchyMode: string; cityParentId: number };
+    };
+
+    expect(retried.job.input.page).toMatchObject({ hierarchyMode: "city_child_target", cityParentId: 2565 });
+    expect(sent.page).toMatchObject({ hierarchyMode: "city_child_target", cityParentId: 2565 });
+  });
+
   it("allows retry for QA-failed jobs", async () => {
     const failedQaJob = createGlwJobRecord({
       type: "PAGE_GENERATION",
@@ -1308,6 +1478,7 @@ describe("GLW callback and retry behavior", () => {
     const result = await submitGlwPageGenerationJob({
       siteId: "led-display-warehouse",
       workspaceId: "glw-led-display-warehouse",
+      hierarchyMode: "legacy_city_page",
       pageType: "city_service",
       productTopic: "Projection screen rental",
       state: "Illinois",

@@ -169,6 +169,8 @@ export async function submitGlwPageGenerationJob(
       },
       page: {
         ...startingJob.input.page,
+        hierarchy_mode: startingJob.input.page.hierarchyMode,
+        city_parent_id: startingJob.input.page.cityParentId,
         page_type: startingJob.input.page.pageType,
         product_topic: startingJob.input.page.productTopic,
         city_slug: startingJob.input.page.citySlug,
@@ -184,6 +186,8 @@ export async function submitGlwPageGenerationJob(
       imageSettings: startingJob.input.imageSettings,
       workflowContext: {
         workspaceId: startingJob.input.page.workspaceId,
+        hierarchyMode: startingJob.input.page.hierarchyMode,
+        cityParentId: startingJob.input.page.cityParentId,
         pageType: startingJob.input.page.pageType,
         productTopic: startingJob.input.page.productTopic,
         state: startingJob.input.page.state,
@@ -364,6 +368,8 @@ export async function retryGlwPageGenerationJob(
     {
       siteId: existingJob.input.site.id,
       workspaceId: existingJob.input.page.workspaceId,
+      hierarchyMode: existingJob.input.page.hierarchyMode,
+      cityParentId: existingJob.input.page.cityParentId ?? undefined,
       pageType: existingJob.input.page.pageType,
       productTopic: existingJob.input.page.productTopic,
       state: existingJob.input.page.state,
@@ -416,6 +422,12 @@ export async function applyGlwJobCallback(
   const normalizedWordpressPostId = payload.wordpressPostId ?? normalizedWordpressIdentifier;
   const normalizedRequestedPublishingMode = payload.requestedPublishingMode ?? existingJob.input.page.status;
   const normalizedWordpressStatus = payload.wordpressStatus ?? normalizedRequestedPublishingMode;
+  const normalizedHierarchyMode = payload.hierarchyMode ?? existingJob.input.page.hierarchyMode;
+  const normalizedCityParentId = payload.cityParentId ?? existingJob.input.page.cityParentId ?? undefined;
+  const normalizedTargetSlug = payload.targetSlug ?? existingJob.input.page.targetSlug;
+  const normalizedWordpressParentId = payload.wordpressParentId;
+  const normalizedWordpressSlug = payload.wordpressSlug ?? normalizedTargetSlug;
+  const normalizedCanonicalTargetUrl = payload.canonicalTargetUrl;
   const normalizedWordpressUrl = normalizeGlwWordpressUrlForDisplay({
     wordpressUrl: payload.wordpressUrl ?? existingJob.result?.wordpressUrl,
     wordpressStatus: normalizedWordpressStatus,
@@ -438,6 +450,12 @@ export async function applyGlwJobCallback(
     existingJob.result?.wordpressPostId === normalizedWordpressPostId &&
     existingJob.result?.wordpressStatus === normalizedWordpressStatus &&
     existingJob.result?.requestedPublishingMode === normalizedRequestedPublishingMode &&
+    existingJob.result?.hierarchyMode === normalizedHierarchyMode &&
+    existingJob.result?.cityParentId === normalizedCityParentId &&
+    existingJob.result?.targetSlug === normalizedTargetSlug &&
+    existingJob.result?.wordpressParentId === normalizedWordpressParentId &&
+    existingJob.result?.wordpressSlug === normalizedWordpressSlug &&
+    existingJob.result?.canonicalTargetUrl === normalizedCanonicalTargetUrl &&
     existingJob.result?.disposition === payload.disposition &&
     JSON.stringify(existingJob.result?.qaChecks ?? null) === JSON.stringify(normalizedQaChecks ?? null) &&
     JSON.stringify(existingJob.result?.qaFailureReasons ?? null) === JSON.stringify(normalizedQaFailureReasons ?? null) &&
@@ -477,6 +495,12 @@ export async function applyGlwJobCallback(
         executionId: payload.executionId,
         n8nExecutionId: payload.executionId,
         status: "COMPLETE",
+        hierarchyMode: normalizedHierarchyMode,
+        cityParentId: normalizedCityParentId,
+        targetSlug: normalizedTargetSlug,
+        wordpressParentId: normalizedWordpressParentId,
+        wordpressSlug: normalizedWordpressSlug,
+        canonicalTargetUrl: normalizedCanonicalTargetUrl,
         title: normalizedTitle,
         wordpressPageId: wordpressIdentifier,
         wordpressUrl: normalizedWordpressUrl ?? payload.wordpressUrl,
@@ -518,6 +542,12 @@ export async function applyGlwJobCallback(
         executionId: payload.executionId,
         n8nExecutionId: payload.executionId,
         status: "FAILED_QA",
+        hierarchyMode: normalizedHierarchyMode,
+        cityParentId: normalizedCityParentId,
+        targetSlug: normalizedTargetSlug,
+        wordpressParentId: normalizedWordpressParentId,
+        wordpressSlug: normalizedWordpressSlug,
+        canonicalTargetUrl: normalizedCanonicalTargetUrl,
         title: normalizedTitle,
         wordpressPageId: normalizedWordpressIdentifier,
         wordpressUrl: normalizedWordpressUrl ?? payload.wordpressUrl,
@@ -592,6 +622,12 @@ export async function applyGlwJobCallback(
     result: {
       executionId: payload.executionId,
       status: payload.status,
+      hierarchyMode: normalizedHierarchyMode,
+      cityParentId: normalizedCityParentId,
+      targetSlug: normalizedTargetSlug,
+      wordpressParentId: normalizedWordpressParentId,
+      wordpressSlug: normalizedWordpressSlug,
+      canonicalTargetUrl: normalizedCanonicalTargetUrl,
       title: normalizedTitle,
       qaChecks: normalizedQaChecks,
       qaFailureReasons: normalizedQaFailureReasons,

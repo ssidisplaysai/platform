@@ -484,6 +484,16 @@ export async function handleJobCallback(
     jobId,
     executionId,
     status: normalizedStatus,
+    hierarchyMode: callbackBody.hierarchyMode === "city_child_target"
+      ? "city_child_target"
+      : callbackBody.hierarchyMode === "legacy_city_page"
+        ? "legacy_city_page"
+        : undefined,
+    cityParentId: typeof callbackBody.cityParentId === "number" ? callbackBody.cityParentId : undefined,
+    targetSlug: typeof callbackBody.targetSlug === "string" ? callbackBody.targetSlug.trim() : undefined,
+    wordpressParentId: typeof callbackBody.wordpressParentId === "number" ? callbackBody.wordpressParentId : undefined,
+    wordpressSlug: typeof callbackBody.wordpressSlug === "string" ? callbackBody.wordpressSlug.trim() : undefined,
+    canonicalTargetUrl: typeof callbackBody.canonicalTargetUrl === "string" ? callbackBody.canonicalTargetUrl.trim() : undefined,
     callbackVersion: callbackBody.callbackVersion === "2" ? "2" : undefined,
     operationKey: typeof callbackBody.operationKey === "string" ? callbackBody.operationKey.trim() : undefined,
     idempotencyKey: typeof callbackBody.idempotencyKey === "string" ? callbackBody.idempotencyKey.trim() : undefined,
