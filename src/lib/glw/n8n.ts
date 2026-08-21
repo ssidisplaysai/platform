@@ -10,6 +10,10 @@ export type GlwN8nPageGenerationRequest = {
     name: string;
   };
   page: {
+    hierarchyMode: "legacy_city_page" | "city_child_target";
+    hierarchy_mode: "legacy_city_page" | "city_child_target";
+    cityParentId: number | null;
+    city_parent_id: number | null;
     pageType: "city_service" | "state_service" | "general_service";
     page_type: "city_service" | "state_service" | "general_service";
     productTopic: string;
@@ -56,6 +60,8 @@ export type GlwN8nPageGenerationRequest = {
   };
   workflowContext: {
     workspaceId: string;
+    hierarchyMode: "legacy_city_page" | "city_child_target";
+    cityParentId: number | null;
     pageType: "city_service" | "state_service" | "general_service";
     productTopic: string;
     state: string;
