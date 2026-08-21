@@ -1,0 +1,132 @@
+{
+  "id": "hr004-slice-d-https-delivery-worker",
+  "name": "Genesis GLW HTTPS Callback Delivery Worker - Slice D",
+  "active": false,
+  "nodes": [
+    {
+      "id": "schedule-poll",
+      "name": "Poll Due GLW Deliveries",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": { "rule": { "interval": [{ "field": "seconds", "secondsInterval": 5 }] } }
+    },
+    {
+      "id": "worker-cycle",
+      "name": "Run Producer Worker Cycle",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [240, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.GLW_APP_URL + '/api/glw/callback-delivery-worker/cycles' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ commandId: $execution.id + ':cycle', workerId: 'n8n:' + $workflow.id, instanceId: $execution.id }) }}",
+        "options": { "timeout": 15000 }
+      },
+      "credentials": { "httpHeaderAuth": { "id": "hr004-producer-worker-api-auth", "name": "Genesis GLW Producer Worker API Auth" } },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "expand-claims",
+      "name": "Expand Claimed Work",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0],
+      "parameters": { "jsCode": "const items = Array.isArray($json.items) ? $json.items : [];\nreturn items.map((item, index) => ({ json: { ...item, commandItemIndex: index } }));" }
+    },
+    {
+      "id": "begin-attempt",
+      "name": "Begin Durable Delivery Attempt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [720, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.GLW_APP_URL + '/api/glw/callback-delivery-worker/attempts/begin' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ commandId: $execution.id + ':begin:' + $json.commandItemIndex, workerId: 'n8n:' + $workflow.id, workKind: $json.workKind, idempotencyKey: $json.idempotencyKey, recoveryAuthorizationId: $json.recoveryAuthorizationId, leaseToken: $json.leaseToken }) }}",
+        "options": { "timeout": 15000 }
+      },
+      "credentials": { "httpHeaderAuth": { "id": "hr004-producer-worker-api-auth", "name": "Genesis GLW Producer Worker API Auth" } },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "send-callback",
+      "name": "Send Stored GLW Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [960, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.GLW_CALLBACK_DELIVERY_URL }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $('Expand Claimed Work').item.json.requestBodyUtf8 }}",
+        "options": { "timeout": 15000, "response": { "response": { "fullResponse": true, "neverError": true } } }
+      },
+      "credentials": { "httpHeaderAuth": { "id": "GwQIWWAN3paojT0i", "name": "Genesis GLW Callback Auth 9A17" } },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "classify-result",
+      "name": "Classify GLW Delivery Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 0],
+      "parameters": {
+        "jsCode": "const status = Number($json.statusCode || 0);\nconst body = $json.body && typeof $json.body === 'object' ? $json.body : {};\nconst transportError = Boolean($json.error || (!status && $json.message));\nlet resultClass;\nlet errorClass = null;\nif (transportError) { resultClass = 'RETRYABLE'; errorClass = 'TRANSPORT_ERROR'; }\nelse if (status >= 200 && status <= 299) resultClass = 'ACKNOWLEDGED';\nelse if ([408,425,429].includes(status) || (status >= 500 && status <= 599)) { resultClass = 'RETRYABLE'; errorClass = `HTTP_${status}`; }\nelse { resultClass = 'DEAD_LETTER'; errorClass = status === 409 ? (body.outcome || 'HTTP_409_CONFLICT') : status === 401 || status === 403 ? 'AUTH_FAILURE' : status === 400 || status === 422 ? 'VALIDATION_FAILURE' : status === 404 || status === 410 ? 'DESTINATION_OR_IDENTITY_FAILURE' : 'UNEXPECTED_HTTP_STATUS'; }\nconst claimed = $('Expand Claimed Work').item.json;\nconst begun = $('Begin Durable Delivery Attempt').item.json;\nreturn [{ json: { ...claimed, attemptNumber: begun.attemptNumber, resultClass, httpStatus: status || null, receiverOutcome: typeof body.outcome === 'string' ? body.outcome : null, receiverReceiptId: typeof body.receiptId === 'string' ? body.receiptId : null, errorClass, durationMs: Number($json.timings?.duration || 0), jitterFraction: resultClass === 'RETRYABLE' ? Math.random() * 0.2 : 0 } }];"
+      }
+    },
+    {
+      "id": "complete-attempt",
+      "name": "Complete Durable Delivery Attempt",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1440, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $vars.GLW_APP_URL + '/api/glw/callback-delivery-worker/attempts/complete' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ commandId: $execution.id + ':complete:' + $json.commandItemIndex, workerId: 'n8n:' + $workflow.id, workKind: $json.workKind, idempotencyKey: $json.idempotencyKey, recoveryAuthorizationId: $json.recoveryAuthorizationId, leaseToken: $json.leaseToken, attemptNumber: $json.attemptNumber, resultClass: $json.resultClass, httpStatus: $json.httpStatus, errorClass: $json.errorClass, receiverOutcome: $json.receiverOutcome, receiverReceiptId: $json.receiverReceiptId, durationMs: $json.durationMs, jitterFraction: $json.jitterFraction }) }}",
+        "options": { "timeout": 15000 }
+      },
+      "credentials": { "httpHeaderAuth": { "id": "hr004-producer-worker-api-auth", "name": "Genesis GLW Producer Worker API Auth" } },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    }
+  ],
+  "connections": {
+    "Poll Due GLW Deliveries": { "main": [[{ "node": "Run Producer Worker Cycle", "type": "main", "index": 0 }]] },
+    "Run Producer Worker Cycle": { "main": [[{ "node": "Expand Claimed Work", "type": "main", "index": 0 }]] },
+    "Expand Claimed Work": { "main": [[{ "node": "Begin Durable Delivery Attempt", "type": "main", "index": 0 }]] },
+    "Begin Durable Delivery Attempt": { "main": [[{ "node": "Send Stored GLW Callback", "type": "main", "index": 0 }]] },
+    "Send Stored GLW Callback": { "main": [[{ "node": "Classify GLW Delivery Result", "type": "main", "index": 0 }]] },
+    "Classify GLW Delivery Result": { "main": [[{ "node": "Complete Durable Delivery Attempt", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "saveDataErrorExecution": "all", "saveDataSuccessExecution": "all" },
+  "tags": ["HR-004", "Slice-D", "HTTPS-Worker", "INACTIVE"],
+  "meta": { "templateCredsSetupCompleted": false, "productionActivationAuthorized": false, "maxConcurrency": 4 }
+}
