@@ -9,6 +9,7 @@ function service() {
     workerCycle: jest.fn(async () => ({ replayed: false, items: [] })),
     beginAttempt: jest.fn(async () => ({ replayed: false, attemptNumber: 1 })),
     completeAttempt: jest.fn(async () => ({ replayed: false, deliveryStatus: "ACKNOWLEDGED" })),
+    enqueueCompletion: jest.fn(async () => ({ replayed: false, outcome: "ENQUEUED" })),
   };
 }
 function request(body: unknown, token = "test-worker-token") {
@@ -31,6 +32,38 @@ describe("HR-004 HTTPS producer worker API", () => {
     const response = await handleGlwProducerWorkerCommand(request({ commandId: "execution:123:cycle", workerId: "worker-123", instanceId: "instance-123" }), "WORKER_CYCLE", { service: mock, token: "test-worker-token" });
     expect(response.status).toBe(200);
     expect(mock.workerCycle).toHaveBeenCalledTimes(1);
+  });
+  it("authenticates and enqueues an exact producer completion envelope", async () => {
+    const mock = service();
+    const body = {
+      commandId: "enqueue:completion:0001", workerId: "worker-enqueue",
+      operationKey: "glw-op-v1:test", publicationKey: "glw-publication-v1:test", jobId: "job-test", externalExecutionId: "exec-test",
+      terminalStatus: "FAILED_QA", idempotencyKey: "glw-callback-v2:test", terminalScopeKey: "glw-terminal-v2:test",
+      canonicalPayload: { jobId: "job-test", executionId: "exec-test", status: "FAILED_QA" }, payloadSha256: "a".repeat(64),
+      wordpressPageId: "19603", wordpressUrl: "https://example.test/page/", qaContractVersion: 16, qaSummary: { disposition: "FAILED_QA" },
+    };
+    const response = await handleGlwProducerWorkerCommand(request(body), "ENQUEUE_COMPLETION", { service: mock, token: "test-worker-token" });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ outcome: "ENQUEUED" });
+    expect(mock.enqueueCompletion).toHaveBeenCalledWith(body);
+  });
+  it.each([["", "missing"], ["wrong", "invalid"]])("rejects %s completion enqueue authentication", async (token) => {
+    const mock = service();
+    const response = await handleGlwProducerWorkerCommand(request({}, token), "ENQUEUE_COMPLETION", { service: mock, token: "test-worker-token" });
+    expect(response.status).toBe(401);
+    expect(mock.enqueueCompletion).not.toHaveBeenCalled();
+  });
+  it("rejects unknown or missing producer completion fields", async () => {
+    const mock = service();
+    const response = await handleGlwProducerWorkerCommand(request({ commandId: "enqueue:invalid:0001", workerId: "worker-enqueue", sql: "SELECT 1" }), "ENQUEUE_COMPLETION", { service: mock, token: "test-worker-token" });
+    expect(response.status).toBe(400);
+    expect(mock.enqueueCompletion).not.toHaveBeenCalled();
+  });
+  it("rejects an oversized producer completion body", async () => {
+    const mock = service();
+    const response = await handleGlwProducerWorkerCommand(request({ commandId: "enqueue:oversized:0001", workerId: "worker-enqueue", padding: "x".repeat(17_000) }), "ENQUEUE_COMPLETION", { service: mock, token: "test-worker-token" });
+    expect(response.status).toBe(400);
+    expect(mock.enqueueCompletion).not.toHaveBeenCalled();
   });
   it("returns a durable replay result after an uncertain prior response", async () => {
     const mock = service();

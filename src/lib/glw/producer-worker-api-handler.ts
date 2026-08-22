@@ -1,9 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createGlwProducerWorkerApiService, type BeginAttemptInput, type CompleteAttemptInput, type WorkerCycleInput } from "./producer-worker-api";
+import { createGlwProducerWorkerApiService, type BeginAttemptInput, type CompleteAttemptInput, type EnqueueCompletionInput, type WorkerCycleInput } from "./producer-worker-api";
 
 type Service = ReturnType<typeof createGlwProducerWorkerApiService>;
-type Command = "WORKER_CYCLE" | "BEGIN_ATTEMPT" | "COMPLETE_ATTEMPT";
+type Command = "WORKER_CYCLE" | "ENQUEUE_COMPLETION" | "BEGIN_ATTEMPT" | "COMPLETE_ATTEMPT";
 type InvocationGate = { enter(workerId: string): boolean; leave(workerId: string): void };
 
 const invocationWindows = new Map<string, { startedAt: number; count: number; inFlight: number }>();
@@ -44,6 +44,25 @@ function validWork(body: Record<string, unknown>) {
     && (body.recoveryAuthorizationId == null || text(body.recoveryAuthorizationId, 100));
 }
 
+const completionKeys = [
+  "commandId", "workerId", "operationKey", "publicationKey", "jobId", "externalExecutionId",
+  "terminalStatus", "idempotencyKey", "terminalScopeKey", "canonicalPayload", "payloadSha256",
+  "wordpressPageId", "wordpressUrl", "qaContractVersion", "qaSummary",
+];
+function object(value: unknown): value is Record<string, unknown> { return Boolean(value) && typeof value === "object" && !Array.isArray(value); }
+function nullableText(value: unknown, max: number) { return value === null || text(value, max); }
+function validCompletion(body: Record<string, unknown>): body is EnqueueCompletionInput {
+  return hasOnly(body, completionKeys) && completionKeys.every((key) => Object.prototype.hasOwnProperty.call(body, key))
+    && validBase(body)
+    && text(body.operationKey, 500) && text(body.publicationKey, 500) && text(body.jobId, 200) && text(body.externalExecutionId, 200)
+    && ["COMPLETE", "FAILED_QA", "FAILED"].includes(String(body.terminalStatus))
+    && text(body.idempotencyKey, 500) && text(body.terminalScopeKey, 500)
+    && object(body.canonicalPayload) && /^[0-9a-f]{64}$/.test(String(body.payloadSha256))
+    && nullableText(body.wordpressPageId, 100) && nullableText(body.wordpressUrl, 2000)
+    && (body.qaContractVersion === null || body.qaContractVersion === 16)
+    && (body.qaSummary === null || object(body.qaSummary));
+}
+
 export async function handleGlwProducerWorkerCommand(request: Request, command: Command, dependencies: { service?: Service; token?: string; invocationGate?: InvocationGate } = {}) {
   const expected = dependencies.token ?? process.env.GLW_PRODUCER_WORKER_SYSTEM_TOKEN ?? "";
   const received = request.headers.get("x-glw-producer-worker-token") ?? "";
@@ -59,6 +78,10 @@ export async function handleGlwProducerWorkerCommand(request: Request, command: 
     if (command === "WORKER_CYCLE") {
       if (!hasOnly(body, ["commandId", "workerId", "instanceId"]) || !validBase(body) || !text(body.instanceId, 100)) return json({ error: "INVALID_REQUEST" }, 400);
       return json(await service.workerCycle(body as WorkerCycleInput));
+    }
+    if (command === "ENQUEUE_COMPLETION") {
+      if (!validCompletion(body)) return json({ error: "INVALID_REQUEST" }, 400);
+      return json(await service.enqueueCompletion(body));
     }
     const workKeys = ["commandId", "workerId", "workKind", "idempotencyKey", "recoveryAuthorizationId", "leaseToken"];
     if (!validWork(body)) return json({ error: "INVALID_REQUEST" }, 400);

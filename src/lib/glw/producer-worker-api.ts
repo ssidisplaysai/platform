@@ -3,6 +3,24 @@ import { Pool, type PoolClient } from "pg";
 
 export type WorkerCommandType = "WORKER_CYCLE" | "BEGIN_ATTEMPT" | "COMPLETE_ATTEMPT";
 
+export type EnqueueCompletionInput = {
+  commandId: string;
+  workerId: string;
+  operationKey: string;
+  publicationKey: string;
+  jobId: string;
+  externalExecutionId: string;
+  terminalStatus: "COMPLETE" | "FAILED_QA" | "FAILED";
+  idempotencyKey: string;
+  terminalScopeKey: string;
+  canonicalPayload: Record<string, unknown>;
+  payloadSha256: string;
+  wordpressPageId: string | null;
+  wordpressUrl: string | null;
+  qaContractVersion: number | null;
+  qaSummary: Record<string, unknown> | null;
+};
+
 export type WorkerCycleInput = {
   commandId: string;
   workerId: string;
@@ -141,6 +159,24 @@ export function createGlwProducerWorkerApiService(pool = new Pool({ connectionSt
     });
   }
 
+  async function enqueueCompletion(input: EnqueueCompletionInput) {
+    validateIdentity(input.commandId, input.workerId);
+    return transaction(async (client) => {
+      await client.query("SET TRANSACTION ISOLATION LEVEL SERIALIZABLE");
+      const row = (await client.query<{ outcome: "ENQUEUED" | "ALREADY_ENQUEUED"; operationKey: string; idempotencyKey: string }>({
+        text: `SELECT * FROM "enqueueGlwProducerCompletion"($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12,$13::jsonb)`,
+        values: [
+          input.operationKey, input.publicationKey, input.jobId, input.externalExecutionId,
+          input.terminalStatus, input.idempotencyKey, input.terminalScopeKey,
+          JSON.stringify(input.canonicalPayload), input.payloadSha256, input.wordpressPageId,
+          input.wordpressUrl, input.qaContractVersion, JSON.stringify(input.qaSummary),
+        ],
+      })).rows[0];
+      if (!row) throw new Error("GLW_PRODUCER_ENQUEUE_EMPTY_RESULT");
+      return { replayed: row.outcome === "ALREADY_ENQUEUED", ...row };
+    });
+  }
+
   async function beginAttempt(input: BeginAttemptInput) {
     return transaction(async (client) => {
       const command = await beginCommand(client, "BEGIN_ATTEMPT", input);
@@ -169,5 +205,5 @@ export function createGlwProducerWorkerApiService(pool = new Pool({ connectionSt
     });
   }
 
-  return { workerCycle, beginAttempt, completeAttempt };
+  return { workerCycle, enqueueCompletion, beginAttempt, completeAttempt };
 }

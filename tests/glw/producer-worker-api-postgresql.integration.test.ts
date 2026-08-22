@@ -47,6 +47,24 @@ describeDatabase("HR-004 HTTPS producer worker API PostgreSQL", () => {
     expect((await service.workerCycle(input))).toMatchObject({ replayed: true, items: [] });
     expect(Number((await pool.query(`SELECT count(*) FROM "GlwProducerDeliveryWorkerHeartbeat"`)).rows[0].count)).toBe(1);
   });
+  it.each(["COMPLETE", "FAILED_QA"] as const)("enqueues and idempotently replays %s completion with its outbox", async (terminalStatus) => {
+    const suffix = terminalStatus.toLowerCase();
+    const input = {
+      commandId: `enqueue:${suffix}:0001`, workerId: "worker-enqueue",
+      operationKey: `op-enqueue-${suffix}`, publicationKey: `pub-enqueue-${suffix}`, jobId: `job-enqueue-${suffix}`, externalExecutionId: `exec-enqueue-${suffix}`,
+      terminalStatus, idempotencyKey: `glw-callback-v2:enqueue-${suffix}`, terminalScopeKey: `glw-terminal-v2:enqueue-${suffix}`,
+      canonicalPayload: { jobId: `job-enqueue-${suffix}`, executionId: `exec-enqueue-${suffix}`, status: terminalStatus }, payloadSha256: "b".repeat(64),
+      wordpressPageId: "19603", wordpressUrl: "https://example.test/page/", qaContractVersion: 16, qaSummary: { disposition: terminalStatus },
+    };
+    expect(await service.enqueueCompletion(input)).toMatchObject({ replayed: false, outcome: "ENQUEUED" });
+    expect(await service.enqueueCompletion(input)).toMatchObject({ replayed: true, outcome: "ALREADY_ENQUEUED" });
+    const counts = await pool.query(`SELECT
+      (SELECT count(*)::int FROM "GlwProducerOperation") AS operations,
+      (SELECT count(*)::int FROM "GlwProducerPublication") AS publications,
+      (SELECT count(*)::int FROM "GlwProducerCompletion") AS completions,
+      (SELECT count(*)::int FROM "GlwProducerOutbox") AS outbox`);
+    expect(counts.rows[0]).toEqual({ operations: 1, publications: 1, completions: 1, outbox: 1 });
+  });
   it("claims one due delivery once and replays the same lease", async () => {
     await enqueue(pool, "claim");
     const input = { commandId: "cycle:claim:0001", workerId: "worker-claim", instanceId: "instance-claim" };
