@@ -93,7 +93,7 @@ $approvedDllImports = @(
 )
 
 if ($dllImportCount -ne $approvedDllImports.Count) {
-    throw "SUP-M2 production DllImport count is not approved: $dllImportCount."
+    throw "SUP-M3 production DllImport count is not approved: $dllImportCount."
 }
 
 $dllImportMethodPattern = '(?ms)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?DllImport(?:Attribute)?\s*\(.*?\)\]\s*(?:\[[^\]]+\]\s*)*internal\s+static\s+extern\s+[^\r\n(]+\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\('
@@ -103,7 +103,7 @@ $dllImportNames = @(
 )
 
 if (Compare-Object ($dllImportNames | Sort-Object) ($approvedDllImports | Sort-Object)) {
-    throw "SUP-M2 production DllImport set is not approved: $($dllImportNames -join ',')."
+    throw "SUP-M3 production DllImport set is not approved: $($dllImportNames -join ',')."
 }
 $libraryImportPattern = '(?m)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?LibraryImport(?:Attribute)?\s*\('
 $importCount = [regex]::Matches($productionText, $libraryImportPattern).Count
@@ -111,11 +111,13 @@ $approvedImports = @(
     'CertFreeCertificateContext',
     'CloseHandle',
     'DeleteProcThreadAttributeList',
-    'LocalFree'
+    'GetExitCodeProcess',
+    'LocalFree',
+    'WaitForSingleObject'
 )
 
 if ($importCount -ne $approvedImports.Count) {
-    throw "SUP-M2 production LibraryImport count is not approved: $importCount."
+    throw "SUP-M3 production LibraryImport count is not approved: $importCount."
 }
 
 $partialMethodPattern = '(?m)^\s*(?=[^\r\n]*\bstatic\b)(?=[^\r\n]*\bpartial\b)[^\r\n(]*\b(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\('
@@ -125,7 +127,7 @@ $importNames = @(
 )
 
 if (Compare-Object ($importNames | Sort-Object) ($approvedImports | Sort-Object)) {
-    throw "SUP-M2 production LibraryImport set is not approved: $($importNames -join ',')."
+    throw "SUP-M3 production LibraryImport set is not approved: $($importNames -join ',')."
 }
 
 $interopAliasPattern = '(?m)^\s*using\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*(?:global::)?System\.Runtime\.InteropServices\.(?:DllImport|LibraryImport)(?:Attribute)?\s*;'
