@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Genesis.GLW.RuntimeSupervisor.Tests</AssemblyName>
+    <RootNamespace>Genesis.GLW.RuntimeSupervisor.Tests</RootNamespace>
+    <SelfContained>true</SelfContained>
+    <PublishAot>false</PublishAot>
+    <PublishSingleFile>false</PublishSingleFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Genesis.GLW.RuntimeSupervisor/Genesis.GLW.RuntimeSupervisor.csproj" />
+  </ItemGroup>
+</Project>

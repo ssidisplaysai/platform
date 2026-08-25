@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Genesis.GLW.RuntimeSupervisor/Genesis.GLW.RuntimeSupervisor.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Genesis.GLW.RuntimeSupervisor.Tests/Genesis.GLW.RuntimeSupervisor.Tests.csproj" />
+  </Folder>
+</Solution>
