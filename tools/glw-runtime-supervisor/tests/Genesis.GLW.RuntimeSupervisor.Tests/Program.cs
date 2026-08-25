@@ -64,6 +64,11 @@ var tests = new (string Name, Action Body)[]
     ("Owned termination preserves requested exit code", OwnedTerminationPreservesRequestedExitCode),
     ("Owned termination rejects already exited process", OwnedTerminationRejectsAlreadyExitedProcess),
     ("Disposed isolated process rejects termination", DisposedIsolatedProcessRejectsTermination),
+    ("Owned terminate-and-wait observes exit", OwnedTerminateAndWaitObservesExit),
+    ("Owned terminate-and-wait preserves requested exit code", OwnedTerminateAndWaitPreservesRequestedExitCode),
+    ("Owned terminate-and-wait rejects already exited process", OwnedTerminateAndWaitRejectsAlreadyExitedProcess),
+    ("Owned terminate-and-wait rejects invalid timeout", OwnedTerminateAndWaitRejectsInvalidTimeout),
+    ("Disposed isolated process rejects terminate-and-wait", DisposedIsolatedProcessRejectsTerminateAndWait),
 };
 
 var failures = 0;
@@ -553,6 +558,72 @@ static void DisposedIsolatedProcessRejectsTermination()
     Assert.Throws<ObjectDisposedException>(
         () => process.Terminate(77));
 }
+static void OwnedTerminateAndWaitObservesExit()
+{
+    using var process =
+        CreateRunningObservationFixture();
+
+    var exited = process.TerminateAndWait(
+        81,
+        TimeSpan.FromSeconds(5));
+
+    Assert.True(exited);
+    Assert.False(process.IsRunning);
+}
+
+static void OwnedTerminateAndWaitPreservesRequestedExitCode()
+{
+    using var process =
+        CreateRunningObservationFixture();
+
+    var exited = process.TerminateAndWait(
+        82,
+        TimeSpan.FromSeconds(5));
+
+    Assert.True(exited);
+    Assert.Equal(
+        (uint)82,
+        process.GetExitCode());
+}
+
+static void OwnedTerminateAndWaitRejectsAlreadyExitedProcess()
+{
+    using var process =
+        CreateCompletedObservationFixture();
+
+    Assert.True(
+        process.WaitForExit(TimeSpan.FromSeconds(5)));
+
+    Assert.Throws<InvalidOperationException>(
+        () => process.TerminateAndWait(
+            83,
+            TimeSpan.FromSeconds(1)));
+}
+
+static void OwnedTerminateAndWaitRejectsInvalidTimeout()
+{
+    using var process =
+        CreateRunningObservationFixture();
+
+    Assert.Throws<ArgumentOutOfRangeException>(
+        () => process.TerminateAndWait(
+            84,
+            TimeSpan.FromMilliseconds(-2)));
+}
+
+static void DisposedIsolatedProcessRejectsTerminateAndWait()
+{
+    var process =
+        CreateCompletedObservationFixture();
+
+    process.Dispose();
+
+    Assert.Throws<ObjectDisposedException>(
+        () => process.TerminateAndWait(
+            85,
+            TimeSpan.FromSeconds(1)));
+}
+
 static IsolatedTestProcess CreateRunningObservationFixture()
 {
     var executablePath =
