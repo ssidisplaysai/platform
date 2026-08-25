@@ -128,6 +128,42 @@ public sealed class IsolatedTestProcess : IDisposable
         }
     }
 
+    public bool TerminateAndWait(
+        uint exitCode,
+        TimeSpan timeout)
+    {
+        ThrowIfDisposed();
+
+        if (timeout < TimeSpan.Zero &&
+            timeout != Timeout.InfiniteTimeSpan)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(timeout));
+        }
+
+        if (timeout != Timeout.InfiniteTimeSpan)
+        {
+            var totalMilliseconds = timeout.TotalMilliseconds;
+
+            if (double.IsNaN(totalMilliseconds) ||
+                totalMilliseconds > uint.MaxValue - 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeout));
+            }
+        }
+
+        if (!IsRunning)
+        {
+            throw new InvalidOperationException(
+                "The isolated test process has already exited.");
+        }
+
+        Terminate(exitCode);
+
+        return WaitForExit(timeout);
+    }
+
     private void ThrowIfDisposed()
     {
         if (Volatile.Read(ref disposed) != 0)
