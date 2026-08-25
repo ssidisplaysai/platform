@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>Genesis.GLW.RuntimeSupervisor.Tests</AssemblyName>
     <RootNamespace>Genesis.GLW.RuntimeSupervisor.Tests</RootNamespace>
-    <SelfContained>false</SelfContained>
+    <SelfContained>true</SelfContained>
     <PublishAot>false</PublishAot>
     <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>

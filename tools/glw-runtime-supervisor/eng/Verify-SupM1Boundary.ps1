@@ -23,7 +23,6 @@ $productionLifecyclePatterns = @(
     'CreateJobObjectW',
     'CreateNamedPipeW',
     'CreateProcessAsUserW',
-    'CreateProcessW',
     'CreateRestrictedToken',
     'GetExtendedTcpTable',
     'HttpClient',
@@ -84,12 +83,28 @@ if ($violations.Count -ne 0) {
 }
 
 $allText = ($relevantFiles | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
-$dllImportPattern = '(?m)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?DllImport(?:Attribute)?\s*\('
-if ($allText -match $dllImportPattern) {
-    throw 'SUP-M1 does not permit DllImport declarations.'
-}
 
 $productionText = ($productionFiles | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join "`n"
+
+$dllImportPattern = '(?m)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?DllImport(?:Attribute)?\s*\('
+$dllImportCount = [regex]::Matches($productionText, $dllImportPattern).Count
+$approvedDllImports = @(
+    'CreateProcessW'
+)
+
+if ($dllImportCount -ne $approvedDllImports.Count) {
+    throw "SUP-M2 production DllImport count is not approved: $dllImportCount."
+}
+
+$dllImportMethodPattern = '(?ms)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?DllImport(?:Attribute)?\s*\(.*?\)\]\s*(?:\[[^\]]+\]\s*)*internal\s+static\s+extern\s+[^\r\n(]+\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\('
+$dllImportNames = @(
+    [regex]::Matches($productionText, $dllImportMethodPattern) |
+        ForEach-Object { $_.Groups['name'].Value }
+)
+
+if (Compare-Object ($dllImportNames | Sort-Object) ($approvedDllImports | Sort-Object)) {
+    throw "SUP-M2 production DllImport set is not approved: $($dllImportNames -join ',')."
+}
 $libraryImportPattern = '(?m)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?LibraryImport(?:Attribute)?\s*\('
 $importCount = [regex]::Matches($productionText, $libraryImportPattern).Count
 $approvedImports = @(
@@ -100,7 +115,7 @@ $approvedImports = @(
 )
 
 if ($importCount -ne $approvedImports.Count) {
-    throw "SUP-M1 production LibraryImport count is not approved: $importCount."
+    throw "SUP-M2 production LibraryImport count is not approved: $importCount."
 }
 
 $partialMethodPattern = '(?m)^\s*(?=[^\r\n]*\bstatic\b)(?=[^\r\n]*\bpartial\b)[^\r\n(]*\b(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\('
@@ -110,7 +125,7 @@ $importNames = @(
 )
 
 if (Compare-Object ($importNames | Sort-Object) ($approvedImports | Sort-Object)) {
-    throw "SUP-M1 production LibraryImport set is not approved: $($importNames -join ',')."
+    throw "SUP-M2 production LibraryImport set is not approved: $($importNames -join ',')."
 }
 
 $interopAliasPattern = '(?m)^\s*using\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*(?:global::)?System\.Runtime\.InteropServices\.(?:DllImport|LibraryImport)(?:Attribute)?\s*;'
