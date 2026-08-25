@@ -131,6 +131,22 @@ public sealed class IsolatedTestProcess : IDisposable
         }
     }
 
+    public IsolatedTestProcessResult WaitForResult(
+        TimeSpan timeout)
+    {
+        var exited = WaitForExit(timeout);
+
+        if (!exited)
+        {
+            return new IsolatedTestProcessResult(
+                false,
+                null);
+        }
+
+        return new IsolatedTestProcessResult(
+            true,
+            GetExitCode());
+    }
     public bool TerminateAndWait(
         uint exitCode,
         TimeSpan timeout)
