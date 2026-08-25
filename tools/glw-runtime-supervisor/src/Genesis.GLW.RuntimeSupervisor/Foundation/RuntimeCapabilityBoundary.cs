@@ -2,6 +2,8 @@ namespace Genesis.GLW.RuntimeSupervisor.Foundation;
 
 public static class RuntimeCapabilityBoundary
 {
+    public const bool CanCreateIsolatedTestProcess = true;
+
     public const bool CanCreateRuntimeProcess = false;
     public const bool CanCreateProductionJob = false;
     public const bool CanResumeRuntimeThread = false;

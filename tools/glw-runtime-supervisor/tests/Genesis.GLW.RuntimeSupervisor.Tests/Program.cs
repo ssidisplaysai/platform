@@ -127,7 +127,7 @@ static void InvalidSafeHandlesRemainInvalid()
     using var token = new SafeTokenHandle();
     using var completionPort = new SafeIoCompletionPortHandle();
     using var mutex = new SafeMutexHandle();
-    using var pipe = new SafePipeHandle();
+    using var pipe = new Genesis.GLW.RuntimeSupervisor.Interop.SafePipeHandle();
     using var localAlloc = new SafeLocalAllocHandle();
     using var attributeList = new SafeProcThreadAttributeList();
     using var certificate = new SafeCertContextHandle();
@@ -255,17 +255,15 @@ static void LocalAllocWrapperFreesIsolatedMemory()
         throw new InvalidOperationException("LocalAlloc failed.");
     }
 
-    using (var ownedMemory = new SafeLocalAllocHandle(memory))
-    {
-        Assert.True(TestNativeMethods.LocalSize(ownedMemory.DangerousGetHandle()) >= 128);
-    }
+    var ownedMemory = new SafeLocalAllocHandle(memory);
 
-    var size = TestNativeMethods.LocalSize(memory);
-    var errorCode = Marshal.GetLastWin32Error();
-    Assert.Equal((nuint)0, size);
-    Assert.True(errorCode != 0);
+    Assert.False(ownedMemory.IsInvalid);
+    Assert.True(TestNativeMethods.LocalSize(ownedMemory.DangerousGetHandle()) >= 128);
+
+    ownedMemory.Dispose();
+
+    Assert.True(ownedMemory.IsClosed);
 }
-
 static void InitializedAttributeListReachesDisposedState()
 {
     nuint bytes = 0;
@@ -304,6 +302,7 @@ static void CertificateContextReachesDisposedState()
 
 static void RuntimeFunctionalityIsAbsent()
 {
+    Assert.True(RuntimeCapabilityBoundary.CanCreateIsolatedTestProcess);
     Assert.False(RuntimeCapabilityBoundary.CanCreateRuntimeProcess);
     Assert.False(RuntimeCapabilityBoundary.CanCreateProductionJob);
     Assert.False(RuntimeCapabilityBoundary.CanResumeRuntimeThread);
@@ -319,7 +318,6 @@ static void RuntimeFunctionalityIsAbsent()
         "CreateJobObjectW",
         "CreateNamedPipeW",
         "CreateProcessAsUserW",
-        "CreateProcessW",
         "CreateRestrictedToken",
         "GetExtendedTcpTable",
         "ResumeThread",
@@ -342,8 +340,9 @@ static void RuntimeFunctionalityIsAbsent()
         SearchOption.AllDirectories);
     var productionText = string.Join('\n', productionSource.Select(File.ReadAllText));
     Assert.Equal(4, productionText.Split("[LibraryImport(", StringSplitOptions.None).Length - 1);
-    Assert.False(productionText.Contains("[DllImport(", StringComparison.Ordinal));
-    Assert.False(productionText.Contains("CreateProcess", StringComparison.Ordinal));
+    Assert.Equal(1, productionText.Split("[DllImport(", StringSplitOptions.None).Length - 1);
+    Assert.True(productionText.Contains("CreateProcessW", StringComparison.Ordinal));
+    Assert.False(productionText.Contains("CreateProcessAsUserW", StringComparison.Ordinal));
     Assert.False(productionText.Contains("CreateJobObject", StringComparison.Ordinal));
     Assert.False(productionText.Contains("TerminateJobObject", StringComparison.Ordinal));
 }
