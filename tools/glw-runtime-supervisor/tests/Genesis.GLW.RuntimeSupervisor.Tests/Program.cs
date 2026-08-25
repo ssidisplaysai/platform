@@ -60,6 +60,10 @@ var tests = new (string Name, Action Body)[]
     ("Isolated process rejects exit code while running", IsolatedProcessRejectsExitCodeWhileRunning),
     ("Isolated process rejects invalid timeout", IsolatedProcessRejectsInvalidTimeout),
     ("Disposed isolated process rejects observation", DisposedIsolatedProcessRejectsObservation),
+    ("Owned isolated process can be terminated", OwnedIsolatedProcessCanBeTerminated),
+    ("Owned termination preserves requested exit code", OwnedTerminationPreservesRequestedExitCode),
+    ("Owned termination rejects already exited process", OwnedTerminationRejectsAlreadyExitedProcess),
+    ("Disposed isolated process rejects termination", DisposedIsolatedProcessRejectsTermination),
 };
 
 var failures = 0;
@@ -349,7 +353,7 @@ static void ApprovedIsolatedRuntimeObservationSurface()
     var factoryText = File.ReadAllText(factoryPath);
 
     Assert.Equal(
-        6,
+        7,
         productionText.Split(
             "[LibraryImport(",
             StringSplitOptions.None).Length - 1);
@@ -389,9 +393,34 @@ static void ApprovedIsolatedRuntimeObservationSurface()
             "OpenProcess",
             StringComparison.Ordinal));
 
-    Assert.False(
+    Assert.True(
         productionText.Contains(
-            "TerminateProcess",
+            "partial bool TerminateProcess(",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        productionText.Contains(
+            "SafeProcessHandle process",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        factoryText.Contains(
+            "public void Terminate(uint exitCode)",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        factoryText.Contains(
+            "NativeMethods.TerminateProcess(",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        factoryText.Contains(
+            "Process,",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        factoryText.Contains(
+            "exitCode",
             StringComparison.Ordinal));
 
     Assert.False(
@@ -478,6 +507,52 @@ static void DisposedIsolatedProcessRejectsObservation()
         () => process.GetExitCode());
 }
 
+static void OwnedIsolatedProcessCanBeTerminated()
+{
+    using var process = CreateRunningObservationFixture();
+
+    Assert.True(process.IsRunning);
+
+    process.Terminate(71);
+
+    Assert.True(
+        process.WaitForExit(TimeSpan.FromSeconds(5)));
+
+    Assert.False(process.IsRunning);
+}
+
+static void OwnedTerminationPreservesRequestedExitCode()
+{
+    using var process = CreateRunningObservationFixture();
+
+    process.Terminate(73);
+
+    Assert.True(
+        process.WaitForExit(TimeSpan.FromSeconds(5)));
+
+    Assert.Equal((uint)73, process.GetExitCode());
+}
+
+static void OwnedTerminationRejectsAlreadyExitedProcess()
+{
+    using var process = CreateCompletedObservationFixture();
+
+    Assert.True(
+        process.WaitForExit(TimeSpan.FromSeconds(5)));
+
+    Assert.Throws<InvalidOperationException>(
+        () => process.Terminate(75));
+}
+
+static void DisposedIsolatedProcessRejectsTermination()
+{
+    var process = CreateCompletedObservationFixture();
+
+    process.Dispose();
+
+    Assert.Throws<ObjectDisposedException>(
+        () => process.Terminate(77));
+}
 static IsolatedTestProcess CreateRunningObservationFixture()
 {
     var executablePath =

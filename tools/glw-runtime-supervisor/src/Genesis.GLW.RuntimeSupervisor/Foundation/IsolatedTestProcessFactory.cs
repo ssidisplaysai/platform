@@ -109,6 +109,25 @@ public sealed class IsolatedTestProcess : IDisposable
         return exitCode;
     }
 
+    public void Terminate(uint exitCode)
+    {
+        ThrowIfDisposed();
+
+        if (!IsRunning)
+        {
+            throw new InvalidOperationException(
+                "The isolated test process has already exited.");
+        }
+
+        if (!NativeMethods.TerminateProcess(
+            Process,
+            exitCode))
+        {
+            throw Win32Error.CaptureImmediate(
+                "TerminateProcess").ToException();
+        }
+    }
+
     private void ThrowIfDisposed()
     {
         if (Volatile.Read(ref disposed) != 0)
