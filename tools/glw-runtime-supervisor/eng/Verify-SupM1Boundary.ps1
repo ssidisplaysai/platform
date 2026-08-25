@@ -30,7 +30,6 @@ $productionLifecyclePatterns = @(
     'Register-ScheduledTask',
     'ResumeThread',
     'TerminateJobObject',
-    'TerminateProcess',
     'UpdateProcThreadAttribute'
 )
 
@@ -93,7 +92,7 @@ $approvedDllImports = @(
 )
 
 if ($dllImportCount -ne $approvedDllImports.Count) {
-    throw "SUP-M3 production DllImport count is not approved: $dllImportCount."
+    throw "SUP-M4 production DllImport count is not approved: $dllImportCount."
 }
 
 $dllImportMethodPattern = '(?ms)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?DllImport(?:Attribute)?\s*\(.*?\)\]\s*(?:\[[^\]]+\]\s*)*internal\s+static\s+extern\s+[^\r\n(]+\s+(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\('
@@ -103,7 +102,7 @@ $dllImportNames = @(
 )
 
 if (Compare-Object ($dllImportNames | Sort-Object) ($approvedDllImports | Sort-Object)) {
-    throw "SUP-M3 production DllImport set is not approved: $($dllImportNames -join ',')."
+    throw "SUP-M4 production DllImport set is not approved: $($dllImportNames -join ',')."
 }
 $libraryImportPattern = '(?m)^\s*\[(?:(?:global::)?System\.Runtime\.InteropServices\.)?LibraryImport(?:Attribute)?\s*\('
 $importCount = [regex]::Matches($productionText, $libraryImportPattern).Count
@@ -113,11 +112,12 @@ $approvedImports = @(
     'DeleteProcThreadAttributeList',
     'GetExitCodeProcess',
     'LocalFree',
+    'TerminateProcess',
     'WaitForSingleObject'
 )
 
 if ($importCount -ne $approvedImports.Count) {
-    throw "SUP-M3 production LibraryImport count is not approved: $importCount."
+    throw "SUP-M4 production LibraryImport count is not approved: $importCount."
 }
 
 $partialMethodPattern = '(?m)^\s*(?=[^\r\n]*\bstatic\b)(?=[^\r\n]*\bpartial\b)[^\r\n(]*\b(?<name>[A-Za-z_][A-Za-z0-9_]*)\s*\('
@@ -127,9 +127,67 @@ $importNames = @(
 )
 
 if (Compare-Object ($importNames | Sort-Object) ($approvedImports | Sort-Object)) {
-    throw "SUP-M3 production LibraryImport set is not approved: $($importNames -join ',')."
+    throw "SUP-M4 production LibraryImport set is not approved: $($importNames -join ',')."
 }
 
+$terminateImportDeclarationPattern = '(?ms)^\s*\[LibraryImport\("kernel32\.dll",\s*SetLastError\s*=\s*true\)\]\s*\[return:\s*MarshalAs\(UnmanagedType\.Bool\)\]\s*internal\s+static\s+partial\s+bool\s+TerminateProcess\s*\(\s*SafeProcessHandle\s+process,\s*uint\s+exitCode\s*\)\s*;'
+$terminateImportDeclarationCount = [regex]::Matches(
+    $productionText,
+    $terminateImportDeclarationPattern
+).Count
+
+if ($terminateImportDeclarationCount -ne 1) {
+    throw "SUP-M4 requires exactly one approved SafeProcessHandle TerminateProcess import."
+}
+
+$isolatedFactoryPath = Join-Path `
+    $supervisorRoot `
+    'src\Genesis.GLW.RuntimeSupervisor\Foundation\IsolatedTestProcessFactory.cs'
+
+$isolatedFactoryText = Get-Content `
+    -LiteralPath $isolatedFactoryPath `
+    -Raw
+
+$terminateMethodPattern = '(?ms)public\s+void\s+Terminate\s*\(\s*uint\s+exitCode\s*\)\s*\{.*?NativeMethods\.TerminateProcess\s*\(\s*Process,\s*exitCode\s*\).*?\}'
+$terminateMethodCount = [regex]::Matches(
+    $isolatedFactoryText,
+    $terminateMethodPattern
+).Count
+
+if ($terminateMethodCount -ne 1) {
+    throw "SUP-M4 requires exactly one owned isolated-process termination method."
+}
+
+$terminateInvocationPattern = 'NativeMethods\.TerminateProcess\s*\('
+$terminateInvocationCount = [regex]::Matches(
+    $productionText,
+    $terminateInvocationPattern
+).Count
+
+if ($terminateInvocationCount -ne 1) {
+    throw "SUP-M4 production TerminateProcess invocation count is not approved: $terminateInvocationCount."
+}
+
+$terminateInvocationOutsideOwnedFactory = 0
+
+foreach ($sourceFile in $productionFiles) {
+    if ($sourceFile.FullName -eq $isolatedFactoryPath) {
+        continue
+    }
+
+    $sourceText = Get-Content `
+        -LiteralPath $sourceFile.FullName `
+        -Raw
+
+    $terminateInvocationOutsideOwnedFactory += [regex]::Matches(
+        $sourceText,
+        $terminateInvocationPattern
+    ).Count
+}
+
+if ($terminateInvocationOutsideOwnedFactory -ne 0) {
+    throw "SUP-M4 does not permit TerminateProcess invocation outside IsolatedTestProcessFactory."
+}
 $interopAliasPattern = '(?m)^\s*using\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*(?:global::)?System\.Runtime\.InteropServices\.(?:DllImport|LibraryImport)(?:Attribute)?\s*;'
 if ($allText -match $interopAliasPattern) {
     throw 'SUP-M1 does not permit aliases for native import attributes.'
