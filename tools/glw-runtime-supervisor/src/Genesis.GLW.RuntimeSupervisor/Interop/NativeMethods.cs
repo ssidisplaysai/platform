@@ -39,6 +39,16 @@ internal static partial class NativeMethods
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool CloseHandle(nint handle);
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetExitCodeProcess(
+        SafeProcessHandle process,
+        out uint exitCode);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    internal static partial uint WaitForSingleObject(
+        SafeProcessHandle handle,
+        uint milliseconds);
 
     [LibraryImport("kernel32.dll")]
     internal static partial nint LocalFree(nint memory);

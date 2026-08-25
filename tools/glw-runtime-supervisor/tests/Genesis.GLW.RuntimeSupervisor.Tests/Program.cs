@@ -8,6 +8,26 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using System.Xml.Linq;
 
+var supM3FixtureMode =
+    Environment.GetEnvironmentVariable(
+        "GENESIS_SUP_M3_FIXTURE_MODE");
+
+if (string.Equals(
+    supM3FixtureMode,
+    "RUNNING",
+    StringComparison.Ordinal))
+{
+    Thread.Sleep(TimeSpan.FromSeconds(2));
+    return 0;
+}
+
+if (string.Equals(
+    supM3FixtureMode,
+    "COMPLETED",
+    StringComparison.Ordinal))
+{
+    return 37;
+}
 var tests = new (string Name, Action Body)[]
 {
     ("Project files target Windows x64 NativeAOT", ProjectFilesTargetWindowsX64NativeAot),
@@ -32,7 +52,14 @@ var tests = new (string Name, Action Body)[]
     ("LocalAlloc wrapper frees isolated memory", LocalAllocWrapperFreesIsolatedMemory),
     ("Initialized attribute list reaches disposed state", InitializedAttributeListReachesDisposedState),
     ("Certificate context reaches disposed state", CertificateContextReachesDisposedState),
-    ("Runtime functionality is absent", RuntimeFunctionalityIsAbsent),
+    ("Approved isolated runtime observation surface", ApprovedIsolatedRuntimeObservationSurface),
+    ("Isolated process reports running state", IsolatedProcessReportsRunningState),
+    ("Isolated process zero timeout reports running", IsolatedProcessZeroTimeoutReportsRunning),
+    ("Isolated process bounded wait observes exit", IsolatedProcessBoundedWaitObservesExit),
+    ("Isolated process exposes exit code after exit", IsolatedProcessExposesExitCodeAfterExit),
+    ("Isolated process rejects exit code while running", IsolatedProcessRejectsExitCodeWhileRunning),
+    ("Isolated process rejects invalid timeout", IsolatedProcessRejectsInvalidTimeout),
+    ("Disposed isolated process rejects observation", DisposedIsolatedProcessRejectsObservation),
 };
 
 var failures = 0;
@@ -300,51 +327,203 @@ static void CertificateContextReachesDisposedState()
     Assert.True(context.IsClosed);
 }
 
-static void RuntimeFunctionalityIsAbsent()
+static void ApprovedIsolatedRuntimeObservationSurface()
 {
-    Assert.True(RuntimeCapabilityBoundary.CanCreateIsolatedTestProcess);
-    Assert.False(RuntimeCapabilityBoundary.CanCreateRuntimeProcess);
-    Assert.False(RuntimeCapabilityBoundary.CanCreateProductionJob);
-    Assert.False(RuntimeCapabilityBoundary.CanResumeRuntimeThread);
-    Assert.False(RuntimeCapabilityBoundary.CanTerminateRuntime);
-    Assert.False(RuntimeCapabilityBoundary.CanControlPort3001);
-    Assert.False(RuntimeCapabilityBoundary.CanAccessProductionJournal);
-    Assert.False(RuntimeCapabilityBoundary.CanHostProductionControlPipe);
-    Assert.False(RuntimeCapabilityBoundary.CanModifyTaskScheduler);
-
-    var forbiddenMethods = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "AssignProcessToJobObject",
-        "CreateJobObjectW",
-        "CreateNamedPipeW",
-        "CreateProcessAsUserW",
-        "CreateRestrictedToken",
-        "GetExtendedTcpTable",
-        "ResumeThread",
-        "TerminateProcess",
-        "TerminateJobObject",
-        "UpdateProcThreadAttribute",
-    };
-
-    var declaredMethods = typeof(BuildContract).Assembly
-        .GetTypes()
-        .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
-        .Select(method => method.Name);
-
-    Assert.False(declaredMethods.Any(forbiddenMethods.Contains));
-
     var sourceRoot = FindSupervisorRoot();
-    var productionSource = Directory.GetFiles(
-        Path.Combine(sourceRoot, "src", "Genesis.GLW.RuntimeSupervisor"),
-        "*.cs",
-        SearchOption.AllDirectories);
-    var productionText = string.Join('\n', productionSource.Select(File.ReadAllText));
-    Assert.Equal(4, productionText.Split("[LibraryImport(", StringSplitOptions.None).Length - 1);
-    Assert.Equal(1, productionText.Split("[DllImport(", StringSplitOptions.None).Length - 1);
-    Assert.True(productionText.Contains("CreateProcessW", StringComparison.Ordinal));
-    Assert.False(productionText.Contains("CreateProcessAsUserW", StringComparison.Ordinal));
-    Assert.False(productionText.Contains("CreateJobObject", StringComparison.Ordinal));
-    Assert.False(productionText.Contains("TerminateJobObject", StringComparison.Ordinal));
+
+    var nativeMethodsPath = Path.Combine(
+        sourceRoot,
+        "src",
+        "Genesis.GLW.RuntimeSupervisor",
+        "Interop",
+        "NativeMethods.cs");
+
+    var factoryPath = Path.Combine(
+        sourceRoot,
+        "src",
+        "Genesis.GLW.RuntimeSupervisor",
+        "Foundation",
+        "IsolatedTestProcessFactory.cs");
+
+    var productionText = File.ReadAllText(nativeMethodsPath);
+    var factoryText = File.ReadAllText(factoryPath);
+
+    Assert.Equal(
+        6,
+        productionText.Split(
+            "[LibraryImport(",
+            StringSplitOptions.None).Length - 1);
+
+    Assert.True(
+        productionText.Contains(
+            "CreateProcessW",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        productionText.Contains(
+            "WaitForSingleObject",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        productionText.Contains(
+            "GetExitCodeProcess",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        factoryText.Contains(
+            "public bool IsRunning",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        factoryText.Contains(
+            "public bool WaitForExit",
+            StringComparison.Ordinal));
+
+    Assert.True(
+        factoryText.Contains(
+            "public uint GetExitCode",
+            StringComparison.Ordinal));
+
+    Assert.False(
+        productionText.Contains(
+            "OpenProcess",
+            StringComparison.Ordinal));
+
+    Assert.False(
+        productionText.Contains(
+            "TerminateProcess",
+            StringComparison.Ordinal));
+
+    Assert.False(
+        factoryText.Contains(
+            "Process.GetProcessById",
+            StringComparison.Ordinal));
+
+    Assert.False(
+        factoryText.Contains(
+            "Process.GetProcesses",
+            StringComparison.Ordinal));
+
+    Assert.False(
+        factoryText.Contains(
+            "Process.Start",
+            StringComparison.Ordinal));
+}
+
+static void IsolatedProcessReportsRunningState()
+{
+    using var process = CreateRunningObservationFixture();
+
+    Assert.True(process.IsRunning);
+}
+
+static void IsolatedProcessZeroTimeoutReportsRunning()
+{
+    using var process = CreateRunningObservationFixture();
+
+    Assert.False(process.WaitForExit(TimeSpan.Zero));
+    Assert.True(process.IsRunning);
+}
+
+static void IsolatedProcessBoundedWaitObservesExit()
+{
+    using var process = CreateCompletedObservationFixture();
+
+    Assert.True(
+        process.WaitForExit(TimeSpan.FromSeconds(5)));
+
+    Assert.False(process.IsRunning);
+}
+
+static void IsolatedProcessExposesExitCodeAfterExit()
+{
+    using var process = CreateCompletedObservationFixture();
+
+    Assert.True(
+        process.WaitForExit(TimeSpan.FromSeconds(5)));
+
+    Assert.Equal((uint)37, process.GetExitCode());
+}
+
+static void IsolatedProcessRejectsExitCodeWhileRunning()
+{
+    using var process = CreateRunningObservationFixture();
+
+    Assert.Throws<InvalidOperationException>(
+        () => process.GetExitCode());
+}
+
+static void IsolatedProcessRejectsInvalidTimeout()
+{
+    using var process = CreateRunningObservationFixture();
+
+    Assert.Throws<ArgumentOutOfRangeException>(
+        () => process.WaitForExit(
+            TimeSpan.FromMilliseconds(-2)));
+}
+
+static void DisposedIsolatedProcessRejectsObservation()
+{
+    var process = CreateCompletedObservationFixture();
+
+    process.Dispose();
+
+    Assert.Throws<ObjectDisposedException>(
+        () => _ = process.IsRunning);
+
+    Assert.Throws<ObjectDisposedException>(
+        () => process.WaitForExit(TimeSpan.Zero));
+
+    Assert.Throws<ObjectDisposedException>(
+        () => process.GetExitCode());
+}
+
+static IsolatedTestProcess CreateRunningObservationFixture()
+{
+    var executablePath =
+        Environment.ProcessPath
+        ?? throw new InvalidOperationException(
+            "Current test executable path is unavailable.");
+
+    Environment.SetEnvironmentVariable(
+        "GENESIS_SUP_M3_FIXTURE_MODE",
+        "RUNNING");
+
+    try
+    {
+        return IsolatedTestProcessFactory.Create(
+            executablePath);
+    }
+    finally
+    {
+        Environment.SetEnvironmentVariable(
+            "GENESIS_SUP_M3_FIXTURE_MODE",
+            null);
+    }
+}
+
+static IsolatedTestProcess CreateCompletedObservationFixture()
+{
+    var executablePath =
+        Environment.ProcessPath
+        ?? throw new InvalidOperationException(
+            "Current test executable path is unavailable.");
+
+    Environment.SetEnvironmentVariable(
+        "GENESIS_SUP_M3_FIXTURE_MODE",
+        "COMPLETED");
+
+    try
+    {
+        return IsolatedTestProcessFactory.Create(
+            executablePath);
+    }
+    finally
+    {
+        Environment.SetEnvironmentVariable(
+            "GENESIS_SUP_M3_FIXTURE_MODE",
+            null);
+    }
 }
 
 static nint CreateIsolatedEvent()

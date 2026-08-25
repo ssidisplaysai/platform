@@ -23,6 +23,100 @@ public sealed class IsolatedTestProcess : IDisposable
     public SafeThreadHandle Thread { get; }
     public uint ProcessId { get; }
     public uint ThreadId { get; }
+    public bool IsRunning
+    {
+        get
+        {
+            ThrowIfDisposed();
+
+            var waitResult = NativeMethods.WaitForSingleObject(Process, 0);
+
+            return waitResult switch
+            {
+                0x00000102 => true,
+                0x00000000 => false,
+                0xFFFFFFFF => throw Win32Error.CaptureImmediate(
+                    "WaitForSingleObject").ToException(),
+                _ => throw new InvalidOperationException(
+                    $"WaitForSingleObject returned unexpected result 0x{waitResult:X8}."),
+            };
+        }
+    }
+
+    public bool WaitForExit(TimeSpan timeout)
+    {
+        ThrowIfDisposed();
+
+        if (timeout < TimeSpan.Zero &&
+            timeout != Timeout.InfiniteTimeSpan)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout));
+        }
+
+        uint milliseconds;
+
+        if (timeout == Timeout.InfiniteTimeSpan)
+        {
+            milliseconds = uint.MaxValue;
+        }
+        else
+        {
+            var totalMilliseconds = timeout.TotalMilliseconds;
+
+            if (double.IsNaN(totalMilliseconds) ||
+                totalMilliseconds > uint.MaxValue - 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+
+            milliseconds = checked(
+                (uint)Math.Ceiling(totalMilliseconds));
+        }
+
+        var waitResult = NativeMethods.WaitForSingleObject(
+            Process,
+            milliseconds);
+
+        return waitResult switch
+        {
+            0x00000000 => true,
+            0x00000102 => false,
+            0xFFFFFFFF => throw Win32Error.CaptureImmediate(
+                "WaitForSingleObject").ToException(),
+            _ => throw new InvalidOperationException(
+                $"WaitForSingleObject returned unexpected result 0x{waitResult:X8}."),
+        };
+    }
+
+    public uint GetExitCode()
+    {
+        ThrowIfDisposed();
+
+        if (IsRunning)
+        {
+            throw new InvalidOperationException(
+                "The isolated test process has not exited.");
+        }
+
+        if (!NativeMethods.GetExitCodeProcess(
+            Process,
+            out var exitCode))
+        {
+            throw Win32Error.CaptureImmediate(
+                "GetExitCodeProcess").ToException();
+        }
+
+        return exitCode;
+    }
+
+    private void ThrowIfDisposed()
+    {
+        if (Volatile.Read(ref disposed) != 0)
+        {
+            throw new ObjectDisposedException(
+                nameof(IsolatedTestProcess));
+        }
+    }
 
     public void Dispose()
     {
