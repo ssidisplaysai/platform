@@ -75,6 +75,11 @@ var tests = new (string Name, Action Body)[]
     ("Owned result coordination rejects already exited process", OwnedResultCoordinationRejectsAlreadyExitedProcess),
     ("Owned result coordination rejects invalid timeout", OwnedResultCoordinationRejectsInvalidTimeout),
     ("Disposed isolated process rejects result coordination", DisposedIsolatedProcessRejectsResultCoordination),
+    ("Owned wait-for-result observes exit", OwnedWaitForResultObservesExit),
+    ("Owned wait-for-result reports observed exit code", OwnedWaitForResultReportsObservedExitCode),
+    ("Owned wait-for-result reports timeout without exit code", OwnedWaitForResultReportsTimeoutWithoutExitCode),
+    ("Owned wait-for-result rejects invalid timeout", OwnedWaitForResultRejectsInvalidTimeout),
+    ("Disposed isolated process rejects wait-for-result", DisposedIsolatedProcessRejectsWaitForResult),
 };
 
 var failures = 0;
@@ -726,6 +731,69 @@ static void DisposedIsolatedProcessRejectsResultCoordination()
     Assert.Throws<ObjectDisposedException>(
         () => process.TerminateAndWaitForResult(
             96,
+            TimeSpan.FromSeconds(1)));
+}
+static void OwnedWaitForResultObservesExit()
+{
+    using var process =
+        CreateCompletedObservationFixture();
+
+    var result =
+        process.WaitForResult(
+            TimeSpan.FromSeconds(5));
+
+    Assert.True(result.Exited);
+    Assert.False(process.IsRunning);
+}
+
+static void OwnedWaitForResultReportsObservedExitCode()
+{
+    using var process =
+        CreateCompletedObservationFixture();
+
+    var result =
+        process.WaitForResult(
+            TimeSpan.FromSeconds(5));
+
+    Assert.True(result.Exited);
+    Assert.True(result.ExitCode.HasValue);
+    Assert.Equal(
+        process.GetExitCode(),
+        result.ExitCode.GetValueOrDefault());
+}
+
+static void OwnedWaitForResultReportsTimeoutWithoutExitCode()
+{
+    using var process =
+        CreateRunningObservationFixture();
+
+    var result =
+        process.WaitForResult(
+            TimeSpan.Zero);
+
+    Assert.False(result.Exited);
+    Assert.False(result.ExitCode.HasValue);
+}
+
+static void OwnedWaitForResultRejectsInvalidTimeout()
+{
+    using var process =
+        CreateRunningObservationFixture();
+
+    Assert.Throws<ArgumentOutOfRangeException>(
+        () => process.WaitForResult(
+            TimeSpan.FromMilliseconds(-2)));
+}
+
+static void DisposedIsolatedProcessRejectsWaitForResult()
+{
+    var process =
+        CreateCompletedObservationFixture();
+
+    process.Dispose();
+
+    Assert.Throws<ObjectDisposedException>(
+        () => process.WaitForResult(
             TimeSpan.FromSeconds(1)));
 }
 static IsolatedTestProcess CreateRunningObservationFixture()
