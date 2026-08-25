@@ -3,6 +3,9 @@ using System.Runtime.InteropServices;
 
 namespace Genesis.GLW.RuntimeSupervisor.Foundation;
 
+public readonly record struct IsolatedTestProcessResult(
+    bool Exited,
+    uint? ExitCode);
 public sealed class IsolatedTestProcess : IDisposable
 {
     private int disposed;
@@ -164,6 +167,28 @@ public sealed class IsolatedTestProcess : IDisposable
         return WaitForExit(timeout);
     }
 
+    public IsolatedTestProcessResult TerminateAndWaitForResult(
+        uint exitCode,
+        TimeSpan timeout)
+    {
+        ThrowIfDisposed();
+
+        var exited =
+            TerminateAndWait(
+                exitCode,
+                timeout);
+
+        if (!exited)
+        {
+            return new IsolatedTestProcessResult(
+                false,
+                null);
+        }
+
+        return new IsolatedTestProcessResult(
+            true,
+            GetExitCode());
+    }
     private void ThrowIfDisposed()
     {
         if (Volatile.Read(ref disposed) != 0)
