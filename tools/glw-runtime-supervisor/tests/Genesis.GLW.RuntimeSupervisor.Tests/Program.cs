@@ -1,4 +1,4 @@
-using Genesis.GLW.RuntimeSupervisor.Foundation;
+﻿using Genesis.GLW.RuntimeSupervisor.Foundation;
 using Genesis.GLW.RuntimeSupervisor.Interop;
 using Microsoft.Win32.SafeHandles;
 using System.Reflection;
@@ -80,6 +80,10 @@ var tests = new (string Name, Action Body)[]
     ("Owned wait-for-result reports timeout without exit code", OwnedWaitForResultReportsTimeoutWithoutExitCode),
     ("Owned wait-for-result rejects invalid timeout", OwnedWaitForResultRejectsInvalidTimeout),
     ("Disposed isolated process rejects wait-for-result", DisposedIsolatedProcessRejectsWaitForResult),
+    ("Supervisor observation reports running process", SupervisorObservationReportsRunningProcess),
+    ("Supervisor observation reports exited process", SupervisorObservationReportsExitedProcess),
+    ("Supervisor observation preserves observed exit code", SupervisorObservationPreservesObservedExitCode),
+    ("Supervisor observation rejects disposed process", SupervisorObservationRejectsDisposedProcess),
 };
 
 var failures = 0;
@@ -100,6 +104,70 @@ foreach (var test in tests)
 Console.WriteLine($"TOTAL={tests.Length} PASSED={tests.Length - failures} FAILED={failures}");
 return failures == 0 ? 0 : 1;
 
+static void SupervisorObservationReportsRunningProcess()
+{
+    using var process =
+        CreateRunningObservationFixture();
+
+    var observation =
+        SupervisorFoundation.ObserveIsolatedProcess(
+            process);
+
+    Assert.True(observation.Running);
+    Assert.False(observation.ExitCode.HasValue);
+}
+
+static void SupervisorObservationReportsExitedProcess()
+{
+    using var process =
+        CreateCompletedObservationFixture();
+
+    Assert.True(
+        process.WaitForExit(
+            TimeSpan.FromSeconds(5)));
+
+    var observation =
+        SupervisorFoundation.ObserveIsolatedProcess(
+            process);
+
+    Assert.False(observation.Running);
+    Assert.True(observation.ExitCode.HasValue);
+}
+
+static void SupervisorObservationPreservesObservedExitCode()
+{
+    using var process =
+        CreateCompletedObservationFixture();
+
+    Assert.True(
+        process.WaitForExit(
+            TimeSpan.FromSeconds(5)));
+
+    var observation =
+        SupervisorFoundation.ObserveIsolatedProcess(
+            process);
+
+    Assert.True(observation.ExitCode.HasValue);
+    Assert.Equal(
+        (uint)37,
+        observation.ExitCode.GetValueOrDefault());
+    Assert.Equal(
+        process.GetExitCode(),
+        observation.ExitCode.GetValueOrDefault());
+}
+
+static void SupervisorObservationRejectsDisposedProcess()
+{
+    var process =
+        CreateCompletedObservationFixture();
+
+    process.Dispose();
+
+    Assert.Throws<ObjectDisposedException>(
+        () =>
+            SupervisorFoundation.ObserveIsolatedProcess(
+                process));
+}
 static void ProjectFilesTargetWindowsX64NativeAot()
 {
     var sourceRoot = FindSupervisorRoot();
@@ -999,3 +1067,4 @@ internal static class Assert
         throw new InvalidOperationException($"Expected {typeof(TException).Name}.");
     }
 }
+
