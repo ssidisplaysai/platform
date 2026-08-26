@@ -11,6 +11,17 @@ public enum SupervisorProcessState
     ExitedWithFailure
 }
 
+public enum SupervisorHealth
+{
+    Healthy,
+    Unhealthy
+}
+
+public readonly record struct SupervisorSnapshot(
+    IsolatedProcessObservation Observation,
+    SupervisorProcessState ProcessState,
+    SupervisorHealth Health);
+
 internal static class SupervisorFoundation
 {
     internal static int Run()
@@ -70,5 +81,19 @@ internal static class SupervisorFoundation
         return observation.ExitCode.GetValueOrDefault() == 0
             ? SupervisorProcessState.ExitedSuccessfully
             : SupervisorProcessState.ExitedWithFailure;
+    }
+
+    internal static SupervisorSnapshot CreateSnapshot(
+        IsolatedProcessObservation observation)
+    {
+        var processState = ClassifyProcessState(observation);
+        var health = processState == SupervisorProcessState.Running
+            ? SupervisorHealth.Healthy
+            : SupervisorHealth.Unhealthy;
+
+        return new SupervisorSnapshot(
+            observation,
+            processState,
+            health);
     }
 }
