@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genesis.local/hr004/production-runtime-launch-identity.schema.json",
+  "title": "ProductionRuntimeLaunchIdentity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "releaseIdentityHash", "taskName", "taskDefinitionIdentity", "lifecycleOwner", "ownershipEpoch", "deploymentEpoch", "canonicalStartupScript", "startupScriptHash", "workingDirectory", "environmentSourceIdentity", "expectedPort", "descriptorCreatedAtUtc", "descriptorExpiresAtUtc", "descriptorNonce", "descriptorHash", "correlationId"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "releaseIdentityHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "taskName": { "const": "Genesis Production Server" },
+    "taskDefinitionIdentity": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "lifecycleOwner": { "type": "string", "minLength": 3, "maxLength": 128 },
+    "ownershipEpoch": { "type": "integer", "minimum": 1 },
+    "deploymentEpoch": { "type": "integer", "minimum": 1 },
+    "canonicalStartupScript": { "type": "string", "pattern": "^[A-Za-z]:\\\\" },
+    "startupScriptHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "workingDirectory": { "type": "string", "pattern": "^[A-Za-z]:\\\\" },
+    "environmentSourceIdentity": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "expectedPort": { "const": 3001 },
+    "descriptorCreatedAtUtc": { "type": "string", "format": "date-time" },
+    "descriptorExpiresAtUtc": { "type": "string", "format": "date-time" },
+    "descriptorNonce": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+    "descriptorHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$" }
+  }
+}

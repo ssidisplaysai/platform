@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genesis.local/hr004/runtime-verification-audit-event.schema.json",
+  "title": "RuntimeVerificationAuditEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "eventType", "verificationStatus", "correlationId", "releaseIdentityHash", "ownershipEpoch", "deploymentEpoch", "mismatchCodes", "startedAtUtc", "completedAtUtc", "auditSequence", "predecessorHash", "eventHash"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "eventType": { "const": "ProductionRuntimeIdentityVerification" },
+    "verificationStatus": { "enum": ["Verified", "Absent", "Ambiguous", "Rejected"] },
+    "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$" },
+    "releaseIdentityHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "launchIdentityHash": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+    "instanceIdentityHash": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+    "ownershipEpoch": { "type": "integer", "minimum": 1 },
+    "deploymentEpoch": { "type": "integer", "minimum": 1 },
+    "mismatchCodes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" } },
+    "startedAtUtc": { "type": "string", "format": "date-time" },
+    "completedAtUtc": { "type": "string", "format": "date-time" },
+    "auditSequence": { "type": "integer", "minimum": 1 },
+    "predecessorHash": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+    "eventHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

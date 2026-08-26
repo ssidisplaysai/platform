@@ -1,0 +1,132 @@
+{
+  "cases": [
+    {
+      "name": "valid-release-identity",
+      "schema": "identity/production-release-identity.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0",
+        "application": "Genesis",
+        "runtimeRole": "GLWProductionRuntime",
+        "releaseId": "SYNTHETIC-RELEASE-001",
+        "releaseCommit": "1111111111111111111111111111111111111111",
+        "buildIdentity": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "canonicalProductionRoot": "C:\\Synthetic\\Genesis\\releases\\001",
+        "taskDefinitionIdentity": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "lifecycleOwner": "SyntheticLifecycleOwner",
+        "deploymentEpoch": 7,
+        "descriptorCreatedAtUtc": "2030-01-01T00:00:00Z",
+        "descriptorHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "name": "valid-launch-identity",
+      "schema": "identity/production-runtime-launch-identity.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0",
+        "releaseIdentityHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "taskName": "Genesis Production Server",
+        "taskDefinitionIdentity": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "lifecycleOwner": "SyntheticLifecycleOwner",
+        "ownershipEpoch": 11,
+        "deploymentEpoch": 7,
+        "canonicalStartupScript": "C:\\Synthetic\\Genesis\\bin\\start-genesis.ps1",
+        "startupScriptHash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "workingDirectory": "C:\\Synthetic\\Genesis\\releases\\001",
+        "environmentSourceIdentity": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "expectedPort": 3001,
+        "descriptorCreatedAtUtc": "2030-01-01T00:00:01Z",
+        "descriptorExpiresAtUtc": "2030-01-01T00:05:01Z",
+        "descriptorNonce": "0123456789abcdef0123456789abcdef",
+        "descriptorHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "correlationId": "synthetic-correlation-0001"
+      }
+    },
+    {
+      "name": "valid-instance-identity",
+      "schema": "identity/production-runtime-instance-identity.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0",
+        "issuer": "TrustedLifecycleLauncher",
+        "releaseIdentityHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "launchIdentityHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "processId": 4242,
+        "processCreationTimeUtc": "2030-01-01T00:00:02Z",
+        "processImagePath": "C:\\Synthetic\\Node\\node.exe",
+        "ownershipEpoch": 11,
+        "deploymentEpoch": 7,
+        "descriptorCreatedAtUtc": "2030-01-01T00:00:03Z",
+        "descriptorExpiresAtUtc": "2030-01-01T00:05:03Z",
+        "descriptorNonce": "11111111111111111111111111111111",
+        "bootIdentity": "22222222222222222222222222222222",
+        "descriptorHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "correlationId": "synthetic-correlation-0001"
+      }
+    },
+    {
+      "name": "valid-verification-verified",
+      "schema": "identity/production-runtime-identity-verification.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0",
+        "status": "Verified",
+        "releaseIdentityHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "launchIdentityHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "instanceIdentityHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "ownershipEpochBefore": 11,
+        "ownershipEpochAfter": 11,
+        "deploymentEpochBefore": 7,
+        "deploymentEpochAfter": 7,
+        "epochsStable": true,
+        "observedCandidateCount": 1,
+        "sanitizedProcessEvidence": [{ "processId": 4242, "processCreationTimeUtc": "2030-01-01T00:00:02Z", "processImagePathHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444", "running": true }],
+        "mismatchCodes": [],
+        "startedAtUtc": "2030-01-01T00:01:00Z",
+        "completedAtUtc": "2030-01-01T00:01:01Z",
+        "correlationId": "synthetic-correlation-0001",
+        "auditOutcome": "Recorded",
+        "mayExecute": false
+      }
+    },
+    {
+      "name": "valid-verification-absent",
+      "schema": "identity/production-runtime-identity-verification.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0", "status": "Absent", "releaseIdentityHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "launchIdentityHash": null, "instanceIdentityHash": null, "ownershipEpochBefore": 11, "ownershipEpochAfter": 11, "deploymentEpochBefore": 7, "deploymentEpochAfter": 7, "epochsStable": true, "observedCandidateCount": 0, "sanitizedProcessEvidence": [], "mismatchCodes": [], "startedAtUtc": "2030-01-01T00:02:00Z", "completedAtUtc": "2030-01-01T00:02:01Z", "correlationId": "synthetic-correlation-0002", "auditOutcome": "Recorded", "mayExecute": false
+      }
+    },
+    {
+      "name": "valid-verification-ambiguous",
+      "schema": "identity/production-runtime-identity-verification.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0", "status": "Ambiguous", "releaseIdentityHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "launchIdentityHash": null, "instanceIdentityHash": null, "ownershipEpochBefore": 11, "ownershipEpochAfter": 11, "deploymentEpochBefore": 7, "deploymentEpochAfter": 7, "epochsStable": true, "observedCandidateCount": 2, "sanitizedProcessEvidence": [], "mismatchCodes": ["MULTIPLE_CANDIDATES"], "startedAtUtc": "2030-01-01T00:03:00Z", "completedAtUtc": "2030-01-01T00:03:01Z", "correlationId": "synthetic-correlation-0003", "auditOutcome": "Recorded", "mayExecute": false
+      }
+    },
+    {
+      "name": "valid-verification-rejected",
+      "schema": "identity/production-runtime-identity-verification.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0", "status": "Rejected", "releaseIdentityHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "launchIdentityHash": null, "instanceIdentityHash": null, "ownershipEpochBefore": 11, "ownershipEpochAfter": 11, "deploymentEpochBefore": 7, "deploymentEpochAfter": 7, "epochsStable": true, "observedCandidateCount": 1, "sanitizedProcessEvidence": [], "mismatchCodes": ["IDENTITY_MISMATCH"], "startedAtUtc": "2030-01-01T00:04:00Z", "completedAtUtc": "2030-01-01T00:04:01Z", "correlationId": "synthetic-correlation-0004", "auditOutcome": "Recorded", "mayExecute": false
+      }
+    },
+    {
+      "name": "valid-audit-event",
+      "schema": "audit/runtime-verification-audit-event.schema.json",
+      "data": {
+        "schemaVersion": "1.0.0",
+        "eventType": "ProductionRuntimeIdentityVerification",
+        "verificationStatus": "Verified",
+        "correlationId": "synthetic-correlation-0001",
+        "releaseIdentityHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "launchIdentityHash": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "instanceIdentityHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "ownershipEpoch": 11,
+        "deploymentEpoch": 7,
+        "mismatchCodes": [],
+        "startedAtUtc": "2030-01-01T00:01:00Z",
+        "completedAtUtc": "2030-01-01T00:01:01Z",
+        "auditSequence": 1,
+        "predecessorHash": null,
+        "eventHash": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+      }
+    }
+  ]
+}

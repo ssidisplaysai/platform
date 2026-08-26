@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genesis.local/hr004/production-runtime-instance-identity.schema.json",
+  "title": "ProductionRuntimeInstanceIdentity",
+  "description": "Ephemeral identity issued by the trusted lifecycle launcher, never by the runtime or supervisor.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "issuer", "releaseIdentityHash", "launchIdentityHash", "processId", "processCreationTimeUtc", "processImagePath", "ownershipEpoch", "deploymentEpoch", "descriptorCreatedAtUtc", "descriptorExpiresAtUtc", "descriptorNonce", "bootIdentity", "descriptorHash", "correlationId"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "issuer": { "const": "TrustedLifecycleLauncher" },
+    "releaseIdentityHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "launchIdentityHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "processId": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+    "processCreationTimeUtc": { "type": "string", "format": "date-time" },
+    "processImagePath": { "type": "string", "pattern": "^[A-Za-z]:\\\\" },
+    "ownershipEpoch": { "type": "integer", "minimum": 1 },
+    "deploymentEpoch": { "type": "integer", "minimum": 1 },
+    "descriptorCreatedAtUtc": { "type": "string", "format": "date-time" },
+    "descriptorExpiresAtUtc": { "type": "string", "format": "date-time" },
+    "descriptorNonce": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+    "bootIdentity": { "type": "string", "pattern": "^[0-9a-f]{32}$" },
+    "descriptorHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$" }
+  }
+}

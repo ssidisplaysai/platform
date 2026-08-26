@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationStatus": "TemplateUninstalled",
+  "taskName": "Genesis Production Server",
+  "taskPath": "\\",
+  "principalSid": "S-1-0-0",
+  "logonMode": "ServiceAccount",
+  "triggers": ["AtStartup"],
+  "restartPolicy": "Never",
+  "failurePolicy": "StopAndRequireOperator",
+  "multipleInstancePolicy": "IgnoreNew",
+  "workingDirectory": "C:\\ProgramData\\Genesis\\GLW\\releases\\approved",
+  "startupPath": "C:\\ProgramData\\Genesis\\GLW\\bin\\start-genesis.ps1",
+  "startupScriptHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "releaseRootTemplate": "C:\\ProgramData\\Genesis\\GLW\\releases",
+  "environmentSourceIdentity": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "expectedPort": 3001,
+  "approvedArguments": [],
+  "loggingDestinations": ["C:\\ProgramData\\Genesis\\GLW\\logs"],
+  "installTask": false,
+  "operationalAuthority": false
+}

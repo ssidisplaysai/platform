@@ -1,0 +1,15 @@
+{
+  "cases": [
+    { "name": "unknown-property", "schema": "identity/production-release-identity.schema.json", "baseValidCase": "valid-release-identity", "add": { "unknownProperty": true } },
+    { "name": "missing-mandatory-identity", "schema": "identity/production-release-identity.schema.json", "baseValidCase": "valid-release-identity", "remove": ["releaseId"] },
+    { "name": "malformed-commit", "schema": "identity/production-release-identity.schema.json", "baseValidCase": "valid-release-identity", "set": { "releaseCommit": "not-a-commit" } },
+    { "name": "relative-production-path", "schema": "identity/production-release-identity.schema.json", "baseValidCase": "valid-release-identity", "set": { "canonicalProductionRoot": "relative/release" } },
+    { "name": "raw-environment-data", "schema": "identity/production-runtime-launch-identity.schema.json", "baseValidCase": "valid-launch-identity", "add": { "environment": { "NODE_ENV": "production" } } },
+    { "name": "secret-bearing-data", "schema": "identity/production-runtime-launch-identity.schema.json", "baseValidCase": "valid-launch-identity", "add": { "databaseUrl": "synthetic-secret-forbidden" } },
+    { "name": "authorization-like-status", "schema": "identity/production-runtime-identity-verification.schema.json", "baseValidCase": "valid-verification-rejected", "set": { "status": "Authorized" } },
+    { "name": "may-execute-true", "schema": "identity/production-runtime-identity-verification.schema.json", "baseValidCase": "valid-verification-verified", "set": { "mayExecute": true } },
+    { "name": "invalid-pid", "schema": "identity/production-runtime-instance-identity.schema.json", "baseValidCase": "valid-instance-identity", "set": { "processId": 0 } },
+    { "name": "missing-process-creation-time", "schema": "identity/production-runtime-instance-identity.schema.json", "baseValidCase": "valid-instance-identity", "remove": ["processCreationTimeUtc"] },
+    { "name": "epoch-mismatch", "schema": "identity/production-runtime-identity-verification.schema.json", "baseValidCase": "valid-verification-verified", "set": { "ownershipEpochAfter": 12, "epochsStable": false } }
+  ]
+}

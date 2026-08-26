@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genesis.local/hr004/production-task-contract.schema.json",
+  "title": "ProductionTaskContract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "configurationStatus", "taskName", "taskPath", "principalSid", "logonMode", "triggers", "restartPolicy", "failurePolicy", "multipleInstancePolicy", "workingDirectory", "startupPath", "startupScriptHash", "releaseRootTemplate", "environmentSourceIdentity", "expectedPort", "approvedArguments", "loggingDestinations", "installTask", "operationalAuthority"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "configurationStatus": { "const": "TemplateUninstalled" },
+    "taskName": { "const": "Genesis Production Server" },
+    "taskPath": { "const": "\\" },
+    "principalSid": { "type": "string", "pattern": "^S-1-[0-9]+(?:-[0-9]+)+$" },
+    "logonMode": { "enum": ["ServiceAccount", "Password", "S4U"] },
+    "triggers": { "type": "array", "minItems": 1, "items": { "enum": ["AtStartup", "AtLogOn"] } },
+    "restartPolicy": { "enum": ["Never", "OnFailure"] },
+    "failurePolicy": { "enum": ["StopAndRequireOperator", "RestartBounded"] },
+    "multipleInstancePolicy": { "const": "IgnoreNew" },
+    "workingDirectory": { "type": "string", "pattern": "^[A-Za-z]:\\\\" },
+    "startupPath": { "type": "string", "pattern": "^[A-Za-z]:\\\\" },
+    "startupScriptHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "releaseRootTemplate": { "type": "string", "pattern": "^[A-Za-z]:\\\\" },
+    "environmentSourceIdentity": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "expectedPort": { "const": 3001 },
+    "approvedArguments": { "type": "array", "maxItems": 16, "items": { "type": "string", "pattern": "^[A-Za-z0-9._:/=-]{1,128}$" } },
+    "loggingDestinations": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[A-Za-z]:\\\\" } },
+    "installTask": { "const": false },
+    "operationalAuthority": { "const": false }
+  }
+}

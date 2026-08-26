@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genesis.local/hr004/production-release-identity.schema.json",
+  "title": "ProductionReleaseIdentity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "application", "runtimeRole", "releaseId", "releaseCommit", "buildIdentity", "canonicalProductionRoot", "taskDefinitionIdentity", "lifecycleOwner", "deploymentEpoch", "descriptorCreatedAtUtc", "descriptorHash"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "application": { "const": "Genesis" },
+    "runtimeRole": { "const": "GLWProductionRuntime" },
+    "releaseId": { "type": "string", "pattern": "^[A-Z][A-Z0-9-]{2,63}$" },
+    "releaseCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "buildIdentity": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "canonicalProductionRoot": { "type": "string", "pattern": "^[A-Za-z]:\\\\" },
+    "taskDefinitionIdentity": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "lifecycleOwner": { "type": "string", "minLength": 3, "maxLength": 128 },
+    "deploymentEpoch": { "type": "integer", "minimum": 1 },
+    "descriptorCreatedAtUtc": { "type": "string", "format": "date-time" },
+    "descriptorHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

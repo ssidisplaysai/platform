@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://genesis.local/hr004/production-runtime-identity-verification.schema.json",
+  "title": "ProductionRuntimeIdentityVerification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "releaseIdentityHash", "ownershipEpochBefore", "ownershipEpochAfter", "deploymentEpochBefore", "deploymentEpochAfter", "epochsStable", "observedCandidateCount", "sanitizedProcessEvidence", "mismatchCodes", "startedAtUtc", "completedAtUtc", "correlationId", "auditOutcome", "mayExecute"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "status": { "enum": ["Verified", "Absent", "Ambiguous", "Rejected"] },
+    "releaseIdentityHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "launchIdentityHash": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+    "instanceIdentityHash": { "type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$" },
+    "ownershipEpochBefore": { "type": "integer", "minimum": 1 },
+    "ownershipEpochAfter": { "type": "integer", "minimum": 1 },
+    "deploymentEpochBefore": { "type": "integer", "minimum": 1 },
+    "deploymentEpochAfter": { "type": "integer", "minimum": 1 },
+    "epochsStable": { "const": true },
+    "observedCandidateCount": { "type": "integer", "minimum": 0 },
+    "sanitizedProcessEvidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["processId", "processCreationTimeUtc", "processImagePathHash", "running"],
+        "properties": {
+          "processId": { "type": "integer", "minimum": 1, "maximum": 4294967295 },
+          "processCreationTimeUtc": { "type": "string", "format": "date-time" },
+          "processImagePathHash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+          "running": { "type": "boolean" }
+        }
+      }
+    },
+    "mismatchCodes": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" } },
+    "startedAtUtc": { "type": "string", "format": "date-time" },
+    "completedAtUtc": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$" },
+    "auditOutcome": { "enum": ["Recorded", "Failed"] },
+    "mayExecute": { "const": false }
+  }
+}
