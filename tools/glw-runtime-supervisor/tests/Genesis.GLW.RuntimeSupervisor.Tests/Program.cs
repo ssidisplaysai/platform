@@ -100,6 +100,15 @@ var tests = new (string Name, Action Body)[]
     ("Supervisor snapshot rejects running observation with exit code", SupervisorSnapshotRejectsRunningObservationWithExitCode),
     ("Supervisor snapshot rejects exited observation without exit code", SupervisorSnapshotRejectsExitedObservationWithoutExitCode),
     ("Supervisor snapshot creation is deterministic", SupervisorSnapshotCreationIsDeterministic),
+    ("Supervisor decision continues monitoring running healthy snapshot", SupervisorDecisionContinuesMonitoringRunningHealthySnapshot),
+    ("Supervisor decision remains stopped after successful exit", SupervisorDecisionRemainsStoppedAfterSuccessfulExit),
+    ("Supervisor decision requires recovery after failed exit", SupervisorDecisionRequiresRecoveryAfterFailedExit),
+    ("Supervisor decision evaluation is deterministic", SupervisorDecisionEvaluationIsDeterministic),
+    ("Supervisor decision rejects running unhealthy snapshot", SupervisorDecisionRejectsRunningUnhealthySnapshot),
+    ("Supervisor decision rejects successful exit healthy snapshot", SupervisorDecisionRejectsSuccessfulExitHealthySnapshot),
+    ("Supervisor decision rejects failed exit healthy snapshot", SupervisorDecisionRejectsFailedExitHealthySnapshot),
+    ("Supervisor decision rejects observation state disagreement", SupervisorDecisionRejectsObservationStateDisagreement),
+    ("Supervisor decision preserves fail-closed observation semantics", SupervisorDecisionPreservesFailClosedObservationSemantics),
 };
 
 var failures = 0;
@@ -376,6 +385,115 @@ static void SupervisorSnapshotCreationIsDeterministic()
     var second = SupervisorFoundation.CreateSnapshot(observation);
 
     Assert.Equal(first, second);
+}
+
+static void SupervisorDecisionContinuesMonitoringRunningHealthySnapshot()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: true,
+            ExitCode: null));
+
+    Assert.Equal(
+        SupervisorDecision.ContinueMonitoring,
+        SupervisorFoundation.EvaluateDecision(snapshot));
+}
+
+static void SupervisorDecisionRemainsStoppedAfterSuccessfulExit()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 0));
+
+    Assert.Equal(
+        SupervisorDecision.RemainStopped,
+        SupervisorFoundation.EvaluateDecision(snapshot));
+}
+
+static void SupervisorDecisionRequiresRecoveryAfterFailedExit()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    Assert.Equal(
+        SupervisorDecision.RecoveryRequired,
+        SupervisorFoundation.EvaluateDecision(snapshot));
+}
+
+static void SupervisorDecisionEvaluationIsDeterministic()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    var first = SupervisorFoundation.EvaluateDecision(snapshot);
+    var second = SupervisorFoundation.EvaluateDecision(snapshot);
+
+    Assert.Equal(first, second);
+}
+
+static void SupervisorDecisionRejectsRunningUnhealthySnapshot()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateDecision(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: null),
+                SupervisorProcessState.Running,
+                SupervisorHealth.Unhealthy)));
+}
+
+static void SupervisorDecisionRejectsSuccessfulExitHealthySnapshot()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateDecision(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: false,
+                    ExitCode: 0),
+                SupervisorProcessState.ExitedSuccessfully,
+                SupervisorHealth.Healthy)));
+}
+
+static void SupervisorDecisionRejectsFailedExitHealthySnapshot()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateDecision(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: false,
+                    ExitCode: 37),
+                SupervisorProcessState.ExitedWithFailure,
+                SupervisorHealth.Healthy)));
+}
+
+static void SupervisorDecisionRejectsObservationStateDisagreement()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateDecision(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: null),
+                SupervisorProcessState.ExitedSuccessfully,
+                SupervisorHealth.Unhealthy)));
+}
+
+static void SupervisorDecisionPreservesFailClosedObservationSemantics()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateDecision(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: 37),
+                SupervisorProcessState.Running,
+                SupervisorHealth.Healthy)));
 }
 
 static void ProjectFilesTargetWindowsX64NativeAot()
