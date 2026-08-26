@@ -17,6 +17,13 @@ public enum SupervisorHealth
     Unhealthy
 }
 
+public enum SupervisorDecision
+{
+    ContinueMonitoring,
+    RemainStopped,
+    RecoveryRequired
+}
+
 public readonly record struct SupervisorSnapshot(
     IsolatedProcessObservation Observation,
     SupervisorProcessState ProcessState,
@@ -95,5 +102,30 @@ internal static class SupervisorFoundation
             observation,
             processState,
             health);
+    }
+
+    internal static SupervisorDecision EvaluateDecision(
+        SupervisorSnapshot snapshot)
+    {
+        var certifiedSnapshot = CreateSnapshot(snapshot.Observation);
+        if (snapshot != certifiedSnapshot)
+        {
+            throw new ArgumentException(
+                "The supervisor snapshot is inconsistent with its process observation.",
+                nameof(snapshot));
+        }
+
+        return snapshot.ProcessState switch
+        {
+            SupervisorProcessState.Running =>
+                SupervisorDecision.ContinueMonitoring,
+            SupervisorProcessState.ExitedSuccessfully =>
+                SupervisorDecision.RemainStopped,
+            SupervisorProcessState.ExitedWithFailure =>
+                SupervisorDecision.RecoveryRequired,
+            _ => throw new ArgumentException(
+                "The supervisor snapshot contains an unsupported process state.",
+                nameof(snapshot))
+        };
     }
 }
