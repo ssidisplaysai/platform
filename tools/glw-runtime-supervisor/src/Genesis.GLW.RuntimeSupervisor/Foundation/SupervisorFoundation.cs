@@ -4,6 +4,13 @@ public readonly record struct IsolatedProcessObservation(
     bool Running,
     uint? ExitCode);
 
+public enum SupervisorProcessState
+{
+    Running,
+    ExitedSuccessfully,
+    ExitedWithFailure
+}
+
 internal static class SupervisorFoundation
 {
     internal static int Run()
@@ -36,5 +43,32 @@ internal static class SupervisorFoundation
         return new IsolatedProcessObservation(
             Running: false,
             ExitCode: process.GetExitCode());
+    }
+
+    internal static SupervisorProcessState ClassifyProcessState(
+        IsolatedProcessObservation observation)
+    {
+        if (observation.Running)
+        {
+            if (observation.ExitCode.HasValue)
+            {
+                throw new ArgumentException(
+                    "A running process observation cannot have an exit code.",
+                    nameof(observation));
+            }
+
+            return SupervisorProcessState.Running;
+        }
+
+        if (!observation.ExitCode.HasValue)
+        {
+            throw new ArgumentException(
+                "An exited process observation must have an exit code.",
+                nameof(observation));
+        }
+
+        return observation.ExitCode.GetValueOrDefault() == 0
+            ? SupervisorProcessState.ExitedSuccessfully
+            : SupervisorProcessState.ExitedWithFailure;
     }
 }
