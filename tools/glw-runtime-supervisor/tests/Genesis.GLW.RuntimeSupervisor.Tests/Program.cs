@@ -127,6 +127,15 @@ var tests = new (string Name, Action Body)[]
     ("Supervisor recovery request rejects running unhealthy snapshot", SupervisorRecoveryRequestRejectsRunningUnhealthySnapshot),
     ("Supervisor recovery request rejects observation state disagreement", SupervisorRecoveryRequestRejectsObservationStateDisagreement),
     ("Supervisor recovery request preserves fail-closed observation semantics", SupervisorRecoveryRequestPreservesFailClosedObservationSemantics),
+    ("Supervisor recovery authorization reports not requested when recovery request is absent", SupervisorRecoveryAuthorizationReportsNotRequestedWhenRecoveryRequestIsAbsent),
+    ("Supervisor recovery authorization denies valid recovery request", SupervisorRecoveryAuthorizationDeniesValidRecoveryRequest),
+    ("Supervisor recovery authorization is deterministic", SupervisorRecoveryAuthorizationIsDeterministic),
+    ("Supervisor recovery authorization rejects request carrying continue monitoring action", SupervisorRecoveryAuthorizationRejectsRequestCarryingContinueMonitoringAction),
+    ("Supervisor recovery authorization rejects request carrying no action", SupervisorRecoveryAuthorizationRejectsRequestCarryingNoAction),
+    ("Supervisor recovery authorization rejects snapshot that would not naturally request recovery", SupervisorRecoveryAuthorizationRejectsSnapshotThatWouldNotNaturallyRequestRecovery),
+    ("Supervisor recovery authorization rejects observation state disagreement", SupervisorRecoveryAuthorizationRejectsObservationStateDisagreement),
+    ("Supervisor recovery authorization rejects process state health disagreement", SupervisorRecoveryAuthorizationRejectsProcessStateHealthDisagreement),
+    ("Supervisor recovery authorization preserves fail-closed malformed observation semantics", SupervisorRecoveryAuthorizationPreservesFailClosedMalformedObservationSemantics),
 };
 
 var failures = 0;
@@ -747,6 +756,125 @@ static void SupervisorRecoveryRequestPreservesFailClosedObservationSemantics()
                     ExitCode: 37),
                 SupervisorProcessState.Running,
                 SupervisorHealth.Healthy)));
+}
+
+static void SupervisorRecoveryAuthorizationReportsNotRequestedWhenRecoveryRequestIsAbsent()
+{
+    Assert.Equal(
+        SupervisorRecoveryAuthorization.NotRequested,
+        SupervisorFoundation.EvaluateRecoveryAuthorization(null));
+}
+
+static void SupervisorRecoveryAuthorizationDeniesValidRecoveryRequest()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    Assert.True(request.HasValue);
+    Assert.Equal(
+        SupervisorRecoveryAuthorization.Denied,
+        SupervisorFoundation.EvaluateRecoveryAuthorization(request));
+}
+
+static void SupervisorRecoveryAuthorizationIsDeterministic()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    var first = SupervisorFoundation.EvaluateRecoveryAuthorization(request);
+    var second = SupervisorFoundation.EvaluateRecoveryAuthorization(request);
+
+    Assert.Equal(first, second);
+}
+
+static void SupervisorRecoveryAuthorizationRejectsRequestCarryingContinueMonitoringAction()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateRecoveryAuthorization(
+            new SupervisorRecoveryRequest(
+                snapshot,
+                SupervisorAction.ContinueMonitoring)));
+}
+
+static void SupervisorRecoveryAuthorizationRejectsRequestCarryingNoAction()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateRecoveryAuthorization(
+            new SupervisorRecoveryRequest(
+                snapshot,
+                SupervisorAction.NoAction)));
+}
+
+static void SupervisorRecoveryAuthorizationRejectsSnapshotThatWouldNotNaturallyRequestRecovery()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 0));
+
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateRecoveryAuthorization(
+            new SupervisorRecoveryRequest(
+                snapshot,
+                SupervisorAction.RequestRecovery)));
+}
+
+static void SupervisorRecoveryAuthorizationRejectsObservationStateDisagreement()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateRecoveryAuthorization(
+            new SupervisorRecoveryRequest(
+                new SupervisorSnapshot(
+                    new IsolatedProcessObservation(
+                        Running: true,
+                        ExitCode: null),
+                    SupervisorProcessState.ExitedSuccessfully,
+                    SupervisorHealth.Unhealthy),
+                SupervisorAction.RequestRecovery)));
+}
+
+static void SupervisorRecoveryAuthorizationRejectsProcessStateHealthDisagreement()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateRecoveryAuthorization(
+            new SupervisorRecoveryRequest(
+                new SupervisorSnapshot(
+                    new IsolatedProcessObservation(
+                        Running: false,
+                        ExitCode: 37),
+                    SupervisorProcessState.ExitedWithFailure,
+                    SupervisorHealth.Healthy),
+                SupervisorAction.RequestRecovery)));
+}
+
+static void SupervisorRecoveryAuthorizationPreservesFailClosedMalformedObservationSemantics()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.EvaluateRecoveryAuthorization(
+            new SupervisorRecoveryRequest(
+                new SupervisorSnapshot(
+                    new IsolatedProcessObservation(
+                        Running: true,
+                        ExitCode: 37),
+                    SupervisorProcessState.Running,
+                    SupervisorHealth.Healthy),
+                SupervisorAction.RequestRecovery)));
 }
 
 static void ProjectFilesTargetWindowsX64NativeAot()
