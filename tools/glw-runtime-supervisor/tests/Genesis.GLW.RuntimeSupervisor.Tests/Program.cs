@@ -136,6 +136,15 @@ var tests = new (string Name, Action Body)[]
     ("Supervisor recovery authorization rejects observation state disagreement", SupervisorRecoveryAuthorizationRejectsObservationStateDisagreement),
     ("Supervisor recovery authorization rejects process state health disagreement", SupervisorRecoveryAuthorizationRejectsProcessStateHealthDisagreement),
     ("Supervisor recovery authorization preserves fail-closed malformed observation semantics", SupervisorRecoveryAuthorizationPreservesFailClosedMalformedObservationSemantics),
+    ("Supervisor recovery disposition reports not requested when request is absent", SupervisorRecoveryDispositionReportsNotRequestedWhenRequestIsAbsent),
+    ("Supervisor recovery disposition reports denied for valid recovery request", SupervisorRecoveryDispositionReportsDeniedForValidRecoveryRequest),
+    ("Supervisor recovery disposition preserves absent request", SupervisorRecoveryDispositionPreservesAbsentRequest),
+    ("Supervisor recovery disposition preserves exact valid request", SupervisorRecoveryDispositionPreservesExactValidRequest),
+    ("Supervisor recovery disposition preserves derived authorization", SupervisorRecoveryDispositionPreservesDerivedAuthorization),
+    ("Supervisor recovery disposition creation is deterministic", SupervisorRecoveryDispositionCreationIsDeterministic),
+    ("Supervisor recovery disposition rejects non-recovery action", SupervisorRecoveryDispositionRejectsNonRecoveryAction),
+    ("Supervisor recovery disposition rejects snapshot that does not naturally request recovery", SupervisorRecoveryDispositionRejectsSnapshotThatDoesNotNaturallyRequestRecovery),
+    ("Supervisor recovery disposition preserves fail-closed malformed snapshot semantics", SupervisorRecoveryDispositionPreservesFailClosedMalformedSnapshotSemantics),
 };
 
 var failures = 0;
@@ -867,6 +876,125 @@ static void SupervisorRecoveryAuthorizationPreservesFailClosedMalformedObservati
 {
     Assert.Throws<ArgumentException>(
         () => SupervisorFoundation.EvaluateRecoveryAuthorization(
+            new SupervisorRecoveryRequest(
+                new SupervisorSnapshot(
+                    new IsolatedProcessObservation(
+                        Running: true,
+                        ExitCode: 37),
+                    SupervisorProcessState.Running,
+                    SupervisorHealth.Healthy),
+                SupervisorAction.RequestRecovery)));
+}
+
+static void SupervisorRecoveryDispositionReportsNotRequestedWhenRequestIsAbsent()
+{
+    var disposition = SupervisorFoundation.CreateRecoveryDisposition(null);
+
+    Assert.Equal(
+        SupervisorRecoveryAuthorization.NotRequested,
+        disposition.Authorization);
+}
+
+static void SupervisorRecoveryDispositionReportsDeniedForValidRecoveryRequest()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    var disposition = SupervisorFoundation.CreateRecoveryDisposition(request);
+
+    Assert.Equal(
+        SupervisorRecoveryAuthorization.Denied,
+        disposition.Authorization);
+}
+
+static void SupervisorRecoveryDispositionPreservesAbsentRequest()
+{
+    var disposition = SupervisorFoundation.CreateRecoveryDisposition(null);
+
+    Assert.False(disposition.Request.HasValue);
+}
+
+static void SupervisorRecoveryDispositionPreservesExactValidRequest()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    var disposition = SupervisorFoundation.CreateRecoveryDisposition(request);
+
+    Assert.True(request.HasValue);
+    Assert.True(disposition.Request.HasValue);
+    Assert.Equal(
+        request.GetValueOrDefault(),
+        disposition.Request.GetValueOrDefault());
+}
+
+static void SupervisorRecoveryDispositionPreservesDerivedAuthorization()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+    var authorization =
+        SupervisorFoundation.EvaluateRecoveryAuthorization(request);
+
+    var disposition = SupervisorFoundation.CreateRecoveryDisposition(request);
+
+    Assert.Equal(authorization, disposition.Authorization);
+}
+
+static void SupervisorRecoveryDispositionCreationIsDeterministic()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    var first = SupervisorFoundation.CreateRecoveryDisposition(request);
+    var second = SupervisorFoundation.CreateRecoveryDisposition(request);
+
+    Assert.Equal(first, second);
+}
+
+static void SupervisorRecoveryDispositionRejectsNonRecoveryAction()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.CreateRecoveryDisposition(
+            new SupervisorRecoveryRequest(
+                snapshot,
+                SupervisorAction.ContinueMonitoring)));
+}
+
+static void SupervisorRecoveryDispositionRejectsSnapshotThatDoesNotNaturallyRequestRecovery()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 0));
+
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.CreateRecoveryDisposition(
+            new SupervisorRecoveryRequest(
+                snapshot,
+                SupervisorAction.RequestRecovery)));
+}
+
+static void SupervisorRecoveryDispositionPreservesFailClosedMalformedSnapshotSemantics()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.CreateRecoveryDisposition(
             new SupervisorRecoveryRequest(
                 new SupervisorSnapshot(
                     new IsolatedProcessObservation(

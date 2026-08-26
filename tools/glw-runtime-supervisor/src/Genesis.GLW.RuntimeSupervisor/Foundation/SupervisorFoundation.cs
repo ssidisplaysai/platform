@@ -46,6 +46,10 @@ public readonly record struct SupervisorRecoveryRequest(
     SupervisorSnapshot Snapshot,
     SupervisorAction Action);
 
+public readonly record struct SupervisorRecoveryDisposition(
+    SupervisorRecoveryRequest? Request,
+    SupervisorRecoveryAuthorization Authorization);
+
 internal static class SupervisorFoundation
 {
     internal static int Run()
@@ -199,5 +203,13 @@ internal static class SupervisorFoundation
         }
 
         return SupervisorRecoveryAuthorization.Denied;
+    }
+
+    internal static SupervisorRecoveryDisposition CreateRecoveryDisposition(
+        SupervisorRecoveryRequest? request)
+    {
+        var authorization = EvaluateRecoveryAuthorization(request);
+
+        return new SupervisorRecoveryDisposition(request, authorization);
     }
 }
