@@ -24,6 +24,13 @@ public enum SupervisorDecision
     RecoveryRequired
 }
 
+public enum SupervisorAction
+{
+    ContinueMonitoring,
+    NoAction,
+    RequestRecovery
+}
+
 public readonly record struct SupervisorSnapshot(
     IsolatedProcessObservation Observation,
     SupervisorProcessState ProcessState,
@@ -125,6 +132,25 @@ internal static class SupervisorFoundation
                 SupervisorDecision.RecoveryRequired,
             _ => throw new ArgumentException(
                 "The supervisor snapshot contains an unsupported process state.",
+                nameof(snapshot))
+        };
+    }
+
+    internal static SupervisorAction PlanAction(
+        SupervisorSnapshot snapshot)
+    {
+        var decision = EvaluateDecision(snapshot);
+
+        return decision switch
+        {
+            SupervisorDecision.ContinueMonitoring =>
+                SupervisorAction.ContinueMonitoring,
+            SupervisorDecision.RemainStopped =>
+                SupervisorAction.NoAction,
+            SupervisorDecision.RecoveryRequired =>
+                SupervisorAction.RequestRecovery,
+            _ => throw new ArgumentException(
+                "The supervisor decision is unsupported.",
                 nameof(snapshot))
         };
     }
