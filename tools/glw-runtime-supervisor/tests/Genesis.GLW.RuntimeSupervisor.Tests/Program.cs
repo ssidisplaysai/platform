@@ -1,4 +1,4 @@
-﻿using Genesis.GLW.RuntimeSupervisor.Foundation;
+using Genesis.GLW.RuntimeSupervisor.Foundation;
 using Genesis.GLW.RuntimeSupervisor.Interop;
 using Microsoft.Win32.SafeHandles;
 using System.Reflection;
@@ -109,6 +109,15 @@ var tests = new (string Name, Action Body)[]
     ("Supervisor decision rejects failed exit healthy snapshot", SupervisorDecisionRejectsFailedExitHealthySnapshot),
     ("Supervisor decision rejects observation state disagreement", SupervisorDecisionRejectsObservationStateDisagreement),
     ("Supervisor decision preserves fail-closed observation semantics", SupervisorDecisionPreservesFailClosedObservationSemantics),
+    ("Supervisor action continues monitoring for continue decision", SupervisorActionContinuesMonitoringForContinueDecision),
+    ("Supervisor action performs no action for remain stopped decision", SupervisorActionPerformsNoActionForRemainStoppedDecision),
+    ("Supervisor action requests recovery for recovery required decision", SupervisorActionRequestsRecoveryForRecoveryRequiredDecision),
+    ("Supervisor action planning is deterministic", SupervisorActionPlanningIsDeterministic),
+    ("Supervisor action rejects running unhealthy snapshot", SupervisorActionRejectsRunningUnhealthySnapshot),
+    ("Supervisor action rejects successful exit healthy snapshot", SupervisorActionRejectsSuccessfulExitHealthySnapshot),
+    ("Supervisor action rejects failed exit healthy snapshot", SupervisorActionRejectsFailedExitHealthySnapshot),
+    ("Supervisor action rejects observation state disagreement", SupervisorActionRejectsObservationStateDisagreement),
+    ("Supervisor action preserves fail-closed observation semantics", SupervisorActionPreservesFailClosedObservationSemantics),
 };
 
 var failures = 0;
@@ -488,6 +497,124 @@ static void SupervisorDecisionPreservesFailClosedObservationSemantics()
 {
     Assert.Throws<ArgumentException>(
         () => SupervisorFoundation.EvaluateDecision(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: 37),
+                SupervisorProcessState.Running,
+                SupervisorHealth.Healthy)));
+}
+
+static void SupervisorActionContinuesMonitoringForContinueDecision()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: true,
+            ExitCode: null));
+
+    Assert.Equal(
+        SupervisorDecision.ContinueMonitoring,
+        SupervisorFoundation.EvaluateDecision(snapshot));
+    Assert.Equal(
+        SupervisorAction.ContinueMonitoring,
+        SupervisorFoundation.PlanAction(snapshot));
+}
+
+static void SupervisorActionPerformsNoActionForRemainStoppedDecision()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 0));
+
+    Assert.Equal(
+        SupervisorDecision.RemainStopped,
+        SupervisorFoundation.EvaluateDecision(snapshot));
+    Assert.Equal(
+        SupervisorAction.NoAction,
+        SupervisorFoundation.PlanAction(snapshot));
+}
+
+static void SupervisorActionRequestsRecoveryForRecoveryRequiredDecision()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    Assert.Equal(
+        SupervisorDecision.RecoveryRequired,
+        SupervisorFoundation.EvaluateDecision(snapshot));
+    Assert.Equal(
+        SupervisorAction.RequestRecovery,
+        SupervisorFoundation.PlanAction(snapshot));
+}
+
+static void SupervisorActionPlanningIsDeterministic()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    var first = SupervisorFoundation.PlanAction(snapshot);
+    var second = SupervisorFoundation.PlanAction(snapshot);
+
+    Assert.Equal(first, second);
+}
+
+static void SupervisorActionRejectsRunningUnhealthySnapshot()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.PlanAction(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: null),
+                SupervisorProcessState.Running,
+                SupervisorHealth.Unhealthy)));
+}
+
+static void SupervisorActionRejectsSuccessfulExitHealthySnapshot()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.PlanAction(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: false,
+                    ExitCode: 0),
+                SupervisorProcessState.ExitedSuccessfully,
+                SupervisorHealth.Healthy)));
+}
+
+static void SupervisorActionRejectsFailedExitHealthySnapshot()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.PlanAction(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: false,
+                    ExitCode: 37),
+                SupervisorProcessState.ExitedWithFailure,
+                SupervisorHealth.Healthy)));
+}
+
+static void SupervisorActionRejectsObservationStateDisagreement()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.PlanAction(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: null),
+                SupervisorProcessState.ExitedSuccessfully,
+                SupervisorHealth.Unhealthy)));
+}
+
+static void SupervisorActionPreservesFailClosedObservationSemantics()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.PlanAction(
             new SupervisorSnapshot(
                 new IsolatedProcessObservation(
                     Running: true,
@@ -1195,9 +1322,16 @@ static void DisposedIsolatedProcessRejectsWaitForResult()
 static IsolatedTestProcess CreateRunningObservationFixture()
 {
     var executablePath =
-        Environment.ProcessPath
-        ?? throw new InvalidOperationException(
-            "Current test executable path is unavailable.");
+        Path.Combine(
+            AppContext.BaseDirectory,
+            "Genesis.GLW.RuntimeSupervisor.Tests.exe");
+
+    if (!File.Exists(executablePath))
+    {
+        throw new FileNotFoundException(
+            "Current test executable was not found.",
+            executablePath);
+    }
 
     Environment.SetEnvironmentVariable(
         "GENESIS_SUP_M3_FIXTURE_MODE",
@@ -1219,9 +1353,16 @@ static IsolatedTestProcess CreateRunningObservationFixture()
 static IsolatedTestProcess CreateCompletedObservationFixture()
 {
     var executablePath =
-        Environment.ProcessPath
-        ?? throw new InvalidOperationException(
-            "Current test executable path is unavailable.");
+        Path.Combine(
+            AppContext.BaseDirectory,
+            "Genesis.GLW.RuntimeSupervisor.Tests.exe");
+
+    if (!File.Exists(executablePath))
+    {
+        throw new FileNotFoundException(
+            "Current test executable was not found.",
+            executablePath);
+    }
 
     Environment.SetEnvironmentVariable(
         "GENESIS_SUP_M3_FIXTURE_MODE",
