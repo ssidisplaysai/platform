@@ -84,6 +84,11 @@ var tests = new (string Name, Action Body)[]
     ("Supervisor observation reports exited process", SupervisorObservationReportsExitedProcess),
     ("Supervisor observation preserves observed exit code", SupervisorObservationPreservesObservedExitCode),
     ("Supervisor observation rejects disposed process", SupervisorObservationRejectsDisposedProcess),
+    ("Supervisor state classifies running process", SupervisorStateClassifiesRunningProcess),
+    ("Supervisor state classifies successful exit", SupervisorStateClassifiesSuccessfulExit),
+    ("Supervisor state classifies failed exit", SupervisorStateClassifiesFailedExit),
+    ("Supervisor state rejects running observation with exit code", SupervisorStateRejectsRunningObservationWithExitCode),
+    ("Supervisor state rejects exited observation without exit code", SupervisorStateRejectsExitedObservationWithoutExitCode),
 };
 
 var failures = 0;
@@ -168,6 +173,66 @@ static void SupervisorObservationRejectsDisposedProcess()
             SupervisorFoundation.ObserveIsolatedProcess(
                 process));
 }
+
+static void SupervisorStateClassifiesRunningProcess()
+{
+    var state =
+        SupervisorFoundation.ClassifyProcessState(
+            new IsolatedProcessObservation(
+                Running: true,
+                ExitCode: null));
+
+    Assert.Equal(
+        SupervisorProcessState.Running,
+        state);
+}
+
+static void SupervisorStateClassifiesSuccessfulExit()
+{
+    var state =
+        SupervisorFoundation.ClassifyProcessState(
+            new IsolatedProcessObservation(
+                Running: false,
+                ExitCode: 0));
+
+    Assert.Equal(
+        SupervisorProcessState.ExitedSuccessfully,
+        state);
+}
+
+static void SupervisorStateClassifiesFailedExit()
+{
+    var state =
+        SupervisorFoundation.ClassifyProcessState(
+            new IsolatedProcessObservation(
+                Running: false,
+                ExitCode: 37));
+
+    Assert.Equal(
+        SupervisorProcessState.ExitedWithFailure,
+        state);
+}
+
+static void SupervisorStateRejectsRunningObservationWithExitCode()
+{
+    Assert.Throws<ArgumentException>(
+        () =>
+            SupervisorFoundation.ClassifyProcessState(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: 37)));
+}
+
+static void SupervisorStateRejectsExitedObservationWithoutExitCode()
+{
+    Assert.Throws<ArgumentException>(
+        () =>
+            SupervisorFoundation.ClassifyProcessState(
+                new IsolatedProcessObservation(
+                    Running: false,
+                    ExitCode: null)));
+}
+
 static void ProjectFilesTargetWindowsX64NativeAot()
 {
     var sourceRoot = FindSupervisorRoot();
