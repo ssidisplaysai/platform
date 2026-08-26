@@ -31,6 +31,12 @@ public enum SupervisorAction
     RequestRecovery
 }
 
+public enum SupervisorRecoveryAuthorization
+{
+    NotRequested,
+    Denied
+}
+
 public readonly record struct SupervisorSnapshot(
     IsolatedProcessObservation Observation,
     SupervisorProcessState ProcessState,
@@ -174,5 +180,24 @@ internal static class SupervisorFoundation
                 "The supervisor action is unsupported.",
                 nameof(snapshot))
         };
+    }
+
+    internal static SupervisorRecoveryAuthorization EvaluateRecoveryAuthorization(
+        SupervisorRecoveryRequest? request)
+    {
+        if (!request.HasValue)
+        {
+            return SupervisorRecoveryAuthorization.NotRequested;
+        }
+
+        var certifiedRequest = CreateRecoveryRequest(request.Value.Snapshot);
+        if (!certifiedRequest.HasValue || certifiedRequest.Value != request.Value)
+        {
+            throw new ArgumentException(
+                "The recovery request is inconsistent with the certified supervisor action chain.",
+                nameof(request));
+        }
+
+        return SupervisorRecoveryAuthorization.Denied;
     }
 }
