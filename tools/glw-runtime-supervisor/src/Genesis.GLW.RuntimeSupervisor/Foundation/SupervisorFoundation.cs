@@ -36,6 +36,10 @@ public readonly record struct SupervisorSnapshot(
     SupervisorProcessState ProcessState,
     SupervisorHealth Health);
 
+public readonly record struct SupervisorRecoveryRequest(
+    SupervisorSnapshot Snapshot,
+    SupervisorAction Action);
+
 internal static class SupervisorFoundation
 {
     internal static int Run()
@@ -151,6 +155,23 @@ internal static class SupervisorFoundation
                 SupervisorAction.RequestRecovery,
             _ => throw new ArgumentException(
                 "The supervisor decision is unsupported.",
+                nameof(snapshot))
+        };
+    }
+
+    internal static SupervisorRecoveryRequest? CreateRecoveryRequest(
+        SupervisorSnapshot snapshot)
+    {
+        var action = PlanAction(snapshot);
+
+        return action switch
+        {
+            SupervisorAction.RequestRecovery =>
+                new SupervisorRecoveryRequest(snapshot, action),
+            SupervisorAction.ContinueMonitoring or SupervisorAction.NoAction =>
+                null,
+            _ => throw new ArgumentException(
+                "The supervisor action is unsupported.",
                 nameof(snapshot))
         };
     }

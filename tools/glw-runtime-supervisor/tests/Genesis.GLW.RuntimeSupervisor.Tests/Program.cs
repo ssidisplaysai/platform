@@ -118,6 +118,15 @@ var tests = new (string Name, Action Body)[]
     ("Supervisor action rejects failed exit healthy snapshot", SupervisorActionRejectsFailedExitHealthySnapshot),
     ("Supervisor action rejects observation state disagreement", SupervisorActionRejectsObservationStateDisagreement),
     ("Supervisor action preserves fail-closed observation semantics", SupervisorActionPreservesFailClosedObservationSemantics),
+    ("Supervisor recovery request is created for request recovery action", SupervisorRecoveryRequestIsCreatedForRequestRecoveryAction),
+    ("Supervisor recovery request is absent for continue monitoring action", SupervisorRecoveryRequestIsAbsentForContinueMonitoringAction),
+    ("Supervisor recovery request is absent for no action", SupervisorRecoveryRequestIsAbsentForNoAction),
+    ("Supervisor recovery request preserves originating snapshot", SupervisorRecoveryRequestPreservesOriginatingSnapshot),
+    ("Supervisor recovery request preserves request recovery action", SupervisorRecoveryRequestPreservesRequestRecoveryAction),
+    ("Supervisor recovery request creation is deterministic", SupervisorRecoveryRequestCreationIsDeterministic),
+    ("Supervisor recovery request rejects running unhealthy snapshot", SupervisorRecoveryRequestRejectsRunningUnhealthySnapshot),
+    ("Supervisor recovery request rejects observation state disagreement", SupervisorRecoveryRequestRejectsObservationStateDisagreement),
+    ("Supervisor recovery request preserves fail-closed observation semantics", SupervisorRecoveryRequestPreservesFailClosedObservationSemantics),
 };
 
 var failures = 0;
@@ -615,6 +624,123 @@ static void SupervisorActionPreservesFailClosedObservationSemantics()
 {
     Assert.Throws<ArgumentException>(
         () => SupervisorFoundation.PlanAction(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: 37),
+                SupervisorProcessState.Running,
+                SupervisorHealth.Healthy)));
+}
+
+static void SupervisorRecoveryRequestIsCreatedForRequestRecoveryAction()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    Assert.True(request.HasValue);
+}
+
+static void SupervisorRecoveryRequestIsAbsentForContinueMonitoringAction()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: true,
+            ExitCode: null));
+
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    Assert.False(request.HasValue);
+}
+
+static void SupervisorRecoveryRequestIsAbsentForNoAction()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 0));
+
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    Assert.False(request.HasValue);
+}
+
+static void SupervisorRecoveryRequestPreservesOriginatingSnapshot()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    Assert.True(request.HasValue);
+    Assert.Equal(snapshot, request.GetValueOrDefault().Snapshot);
+}
+
+static void SupervisorRecoveryRequestPreservesRequestRecoveryAction()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    var request = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    Assert.True(request.HasValue);
+    Assert.Equal(
+        SupervisorAction.RequestRecovery,
+        request.GetValueOrDefault().Action);
+}
+
+static void SupervisorRecoveryRequestCreationIsDeterministic()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    var first = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+    var second = SupervisorFoundation.CreateRecoveryRequest(snapshot);
+
+    Assert.True(first.HasValue);
+    Assert.True(second.HasValue);
+    Assert.Equal(
+        first.GetValueOrDefault(),
+        second.GetValueOrDefault());
+}
+
+static void SupervisorRecoveryRequestRejectsRunningUnhealthySnapshot()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.CreateRecoveryRequest(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: null),
+                SupervisorProcessState.Running,
+                SupervisorHealth.Unhealthy)));
+}
+
+static void SupervisorRecoveryRequestRejectsObservationStateDisagreement()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.CreateRecoveryRequest(
+            new SupervisorSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: null),
+                SupervisorProcessState.ExitedSuccessfully,
+                SupervisorHealth.Unhealthy)));
+}
+
+static void SupervisorRecoveryRequestPreservesFailClosedObservationSemantics()
+{
+    Assert.Throws<ArgumentException>(
+        () => SupervisorFoundation.CreateRecoveryRequest(
             new SupervisorSnapshot(
                 new IsolatedProcessObservation(
                     Running: true,
