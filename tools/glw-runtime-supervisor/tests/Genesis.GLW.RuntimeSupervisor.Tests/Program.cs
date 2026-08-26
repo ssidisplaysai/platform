@@ -89,6 +89,17 @@ var tests = new (string Name, Action Body)[]
     ("Supervisor state classifies failed exit", SupervisorStateClassifiesFailedExit),
     ("Supervisor state rejects running observation with exit code", SupervisorStateRejectsRunningObservationWithExitCode),
     ("Supervisor state rejects exited observation without exit code", SupervisorStateRejectsExitedObservationWithoutExitCode),
+    ("Supervisor snapshot represents running process", SupervisorSnapshotRepresentsRunningProcess),
+    ("Supervisor snapshot reports running process healthy", SupervisorSnapshotReportsRunningProcessHealthy),
+    ("Supervisor snapshot represents successful exit", SupervisorSnapshotRepresentsSuccessfulExit),
+    ("Supervisor snapshot reports successful exit unhealthy", SupervisorSnapshotReportsSuccessfulExitUnhealthy),
+    ("Supervisor snapshot represents failed exit", SupervisorSnapshotRepresentsFailedExit),
+    ("Supervisor snapshot reports failed exit unhealthy", SupervisorSnapshotReportsFailedExitUnhealthy),
+    ("Supervisor snapshot preserves process observation", SupervisorSnapshotPreservesProcessObservation),
+    ("Supervisor snapshot preserves semantic process state", SupervisorSnapshotPreservesSemanticProcessState),
+    ("Supervisor snapshot rejects running observation with exit code", SupervisorSnapshotRejectsRunningObservationWithExitCode),
+    ("Supervisor snapshot rejects exited observation without exit code", SupervisorSnapshotRejectsExitedObservationWithoutExitCode),
+    ("Supervisor snapshot creation is deterministic", SupervisorSnapshotCreationIsDeterministic),
 };
 
 var failures = 0;
@@ -231,6 +242,140 @@ static void SupervisorStateRejectsExitedObservationWithoutExitCode()
                 new IsolatedProcessObservation(
                     Running: false,
                     ExitCode: null)));
+}
+
+static void SupervisorSnapshotRepresentsRunningProcess()
+{
+    var observation = new IsolatedProcessObservation(
+        Running: true,
+        ExitCode: null);
+
+    var snapshot = SupervisorFoundation.CreateSnapshot(observation);
+
+    Assert.Equal(
+        new SupervisorSnapshot(
+            observation,
+            SupervisorProcessState.Running,
+            SupervisorHealth.Healthy),
+        snapshot);
+}
+
+static void SupervisorSnapshotReportsRunningProcessHealthy()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: true,
+            ExitCode: null));
+
+    Assert.Equal(SupervisorHealth.Healthy, snapshot.Health);
+}
+
+static void SupervisorSnapshotRepresentsSuccessfulExit()
+{
+    var observation = new IsolatedProcessObservation(
+        Running: false,
+        ExitCode: 0);
+
+    var snapshot = SupervisorFoundation.CreateSnapshot(observation);
+
+    Assert.Equal(
+        new SupervisorSnapshot(
+            observation,
+            SupervisorProcessState.ExitedSuccessfully,
+            SupervisorHealth.Unhealthy),
+        snapshot);
+}
+
+static void SupervisorSnapshotReportsSuccessfulExitUnhealthy()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 0));
+
+    Assert.Equal(SupervisorHealth.Unhealthy, snapshot.Health);
+}
+
+static void SupervisorSnapshotRepresentsFailedExit()
+{
+    var observation = new IsolatedProcessObservation(
+        Running: false,
+        ExitCode: 37);
+
+    var snapshot = SupervisorFoundation.CreateSnapshot(observation);
+
+    Assert.Equal(
+        new SupervisorSnapshot(
+            observation,
+            SupervisorProcessState.ExitedWithFailure,
+            SupervisorHealth.Unhealthy),
+        snapshot);
+}
+
+static void SupervisorSnapshotReportsFailedExitUnhealthy()
+{
+    var snapshot = SupervisorFoundation.CreateSnapshot(
+        new IsolatedProcessObservation(
+            Running: false,
+            ExitCode: 37));
+
+    Assert.Equal(SupervisorHealth.Unhealthy, snapshot.Health);
+}
+
+static void SupervisorSnapshotPreservesProcessObservation()
+{
+    var observation = new IsolatedProcessObservation(
+        Running: false,
+        ExitCode: 37);
+
+    var snapshot = SupervisorFoundation.CreateSnapshot(observation);
+
+    Assert.Equal(observation, snapshot.Observation);
+}
+
+static void SupervisorSnapshotPreservesSemanticProcessState()
+{
+    var observation = new IsolatedProcessObservation(
+        Running: false,
+        ExitCode: 37);
+    var expectedState =
+        SupervisorFoundation.ClassifyProcessState(observation);
+
+    var snapshot = SupervisorFoundation.CreateSnapshot(observation);
+
+    Assert.Equal(expectedState, snapshot.ProcessState);
+}
+
+static void SupervisorSnapshotRejectsRunningObservationWithExitCode()
+{
+    Assert.Throws<ArgumentException>(
+        () =>
+            SupervisorFoundation.CreateSnapshot(
+                new IsolatedProcessObservation(
+                    Running: true,
+                    ExitCode: 37)));
+}
+
+static void SupervisorSnapshotRejectsExitedObservationWithoutExitCode()
+{
+    Assert.Throws<ArgumentException>(
+        () =>
+            SupervisorFoundation.CreateSnapshot(
+                new IsolatedProcessObservation(
+                    Running: false,
+                    ExitCode: null)));
+}
+
+static void SupervisorSnapshotCreationIsDeterministic()
+{
+    var observation = new IsolatedProcessObservation(
+        Running: false,
+        ExitCode: 37);
+
+    var first = SupervisorFoundation.CreateSnapshot(observation);
+    var second = SupervisorFoundation.CreateSnapshot(observation);
+
+    Assert.Equal(first, second);
 }
 
 static void ProjectFilesTargetWindowsX64NativeAot()
