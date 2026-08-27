@@ -4,7 +4,7 @@ Classification: NAVIGATION ONLY
 Authority: NON-AUTHORITATIVE
 Constitutional Status: NON-CONSTITUTIONAL
 Lifecycle Authority: NONE
-Status: PENDING ARCHITECTURE REVIEW BOARD APPROVAL
+Status: ARCHITECTURE APPROVED WITH CONDITIONS; NOT PUBLISHED OR EFFECTIVE
 
 ## Disclaimer
 
@@ -32,4 +32,4 @@ Historical or self-described lifecycle and current Genesis disposition are separ
 
 ## Current Boundary
 
-Artifacts marked `PENDING CUSTODY INTEGRATION` are present on the recovery branch and are not present on the governance branch. This index does not import or activate them.
+Architecture approval is recorded in `ARD-0002`. Documentation, Governance Operations, Engineering Leadership, CODEOWNER, publication, and integration reviews remain pending. Artifacts marked `PENDING CUSTODY INTEGRATION` are present on the recovery branch and are not present on the governance branch. This index does not import or activate them.

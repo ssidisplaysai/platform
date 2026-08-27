@@ -1,8 +1,12 @@
 # Genesis Institutional Artifact Custody and Placement
 
-Status: PENDING ARCHITECTURE REVIEW BOARD APPROVAL
+Status: ARCHITECTURE APPROVED WITH CONDITIONS; OTHER GOVERNANCE REVIEWS PENDING
 Classification: Non-Constitutional Repository Governance Record
 Scope: Institutional artifact custody, placement, and discoverability only
+
+Architecture Decision: `ARD-0002`
+Architecture Record: `ADR-0014`
+Repository Implementation: NOT PUBLISHED; NOT INTEGRATED; NOT EFFECTIVE ON MAIN
 
 ## 1. Purpose
 
@@ -14,11 +18,11 @@ This record applies to non-constitutional experience, founder-intent, executive-
 
 ## 3. Authority Boundary
 
-This is a subordinate repository governance record. It requires review by Genesis Documentation, Governance Operations, Engineering Leadership, and the Architecture Review Board before becoming effective because it defines repository roots and package taxonomy treatment.
+This is a subordinate repository governance record. Architecture Review Board decision `ARD-0002` approved the architecture with conditions on 2026-08-27. Review by Genesis Documentation, Governance Operations, Engineering Leadership, and CODEOWNERS remains pending before publication or integration.
 
 It does not possess or confer constitutional, architecture, engineering certification, runtime, production, security, release, or package certification authority.
 
-Until those reviews are complete and this candidate is integrated through the approved repository process, current `origin/main` governance and taxonomy remain authoritative. This candidate branch does not activate any proposed institution, repository root, artifact class, lifecycle state, or GPW classification.
+Until those remaining reviews are complete and this candidate is integrated through the approved repository process, current `origin/main` governance and taxonomy remain authoritative. This candidate branch and the architecture decision alone do not activate any proposed institution, repository root, artifact class, lifecycle state, or GPW classification.
 
 ## 4. Canonical Custody vs Canonical Authority
 
@@ -113,7 +117,7 @@ Placement there does not independently imply current canonical authority, approv
 
 It does not authorize engineering or runtime work and is excluded from constitutional package-root parity. `GPW-1001`, `GPW-1002`, and `GPW-1003` are prospectively classified as `VISION_PACKAGE` when integrated under canonical custody.
 
-This classification is proposed and does not become effective through its presence on the candidate branch. It becomes repository policy only after required architecture approval and approved integration. Until then, current-main taxonomy remains authoritative and no GPW package has current canonical `VISION_PACKAGE` classification.
+This classification is architecturally approved with the conditions in `ARD-0002` but does not become effective through its presence on the candidate branch. It becomes repository policy only after remaining required reviews and approved integration. Until then, current-main taxonomy remains authoritative and no GPW package has current canonical `VISION_PACKAGE` classification.
 
 ## 13. `EXPERIENCE_WORKING_DEFINITION` Classification
 
@@ -170,7 +174,7 @@ Integration of the recovered institutional corpus into `genesis/` establishes du
 
 ## 19. GMX-0001 Future Placement
 
-The proposed future target is `genesis/experience-studio/GMX-0001/`. It is not approved or effective while this record remains pending.
+The proposed future target is `genesis/experience-studio/GMX-0001/`. The Experience Studio model is architecturally approved, but this GMX target remains proposed and is not effective before governance integration and separate GMX authorization.
 
 GMX-0001 remains suspended. No relocation has occurred, and no Experience Studio root becomes effective merely through this candidate. Future relocation requires approved architecture governance, a separately authorized GMX remediation task, and revalidation.
 
@@ -180,10 +184,10 @@ This record does not amend `genesis/CONSTITUTION.md`, modify constitutional cata
 
 ## 21. Review and Change Control
 
-Initial effectiveness requires review by Genesis Documentation, Governance Operations, Engineering Leadership, and the Architecture Review Board. Future material changes to roots, artifact classes, or authority boundaries follow the repository governance process and require architecture review when they affect repository architecture.
+Architecture review is complete through `ARD-0002` and `ADR-0014`. Initial effectiveness still requires review by Genesis Documentation, Governance Operations, Engineering Leadership, and CODEOWNERS, followed by approved repository integration. Future material changes to roots, artifact classes, or authority boundaries follow the repository governance process and require architecture review when they affect repository architecture.
 
 ## 22. Effective Status
 
-**PENDING ARCHITECTURE REVIEW BOARD APPROVAL**
+**ARCHITECTURE APPROVED WITH CONDITIONS - REPOSITORY IMPLEMENTATION NOT EFFECTIVE**
 
-This record is prepared for review. Until approval is recorded, the recovery branch remains isolated and the institutional model described here is recommended but not currently effective repository authority.
+The authorized human Architecture Review Board disposition is recorded in `ARD-0002`. Remaining reviews, publication, and integration are pending. The recovery branch remains isolated, and this institutional model is not currently effective repository authority on main.
