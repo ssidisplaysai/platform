@@ -1,0 +1,22 @@
+# LIFECYCLE METADATA
+
+- Artifact Identifier: GX-004
+- Artifact Title: Genesis Workspace Blueprint
+- Version: v1.0
+- Artifact Type: Foundational Experience Template
+- Lifecycle State: FOUNDATIONAL BASELINE
+- Status Value: FOUNDATIONAL EXPERIENCE TEMPLATE
+- Approval Authority: Genesis Experience Studio
+- Classification: Non-constitutional reusable product experience blueprint
+- Scope Boundary: Experience architecture guidance only; no implementation specification
+- Inheritance Policy: Mandatory blueprint baseline for all future Genesis workspaces
+- Extension Policy: Specialization allowed, fragmentation prohibited
+- Reference Artifacts:
+  - genesis/philosophy/The-Genesis-Experience-Manifesto.md
+  - genesis/philosophy/GES-0001/GES-0001-Genesis-Executive-Workspace-Visual-Standard.md
+  - genesis/vision/principles.md
+  - genesis/engineering/packages/GPO-0001/Genesis-Product-Portfolio.md
+  - genesis/engineering/packages/GPO-0002/Genesis-Product-Execution-Roadmap.md
+- Constitutional Boundary Record: This artifact does not modify constitutional packages or constitutional catalogs.
+- Last Normalized Date: 2026-08-05
+- Normalization Source: GX-004 publication baseline
