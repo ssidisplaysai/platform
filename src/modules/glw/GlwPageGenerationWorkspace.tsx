@@ -9,6 +9,7 @@ import {
   type GlwGenerationProduct,
   type GlwGenerationRequestInput,
   type GlwGenerationSite,
+  type GlwLocalPlannedOperation,
   type GlwLocalGenerationPreview,
   type GlwPageType,
   type GlwPublicationIntent,
@@ -66,6 +67,13 @@ export function GlwPageGenerationWorkspace({
     ? availableProducts.find((product) => product.productId === form.productId) ?? null
     : null;
   const availableCities = form ? getGlwCitiesForState(form.stateCode) : [];
+  const operationTarget = form.pageType === "city_service"
+    ? "CITY"
+    : form.pageType === "state_service"
+      ? "STATE"
+      : "GENERAL";
+  const operation = form.plannedOperation ?? `CREATE_${operationTarget}`;
+  const isUpdate = operation.startsWith("UPDATE_");
 
   function resetFromSelection(input: {
     site: GlwGenerationSite;
@@ -158,6 +166,44 @@ export function GlwPageGenerationWorkspace({
       </header>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <label className="text-sm text-zinc-300">
+          Operation
+          <select
+            aria-label="Generation operation"
+            value={operation}
+            onChange={(event) => {
+              const plannedOperation = event.target.value as GlwLocalPlannedOperation;
+              setForm((current) => current ? {
+                ...current,
+                plannedOperation,
+                wordpressObjectId: plannedOperation.startsWith("UPDATE_")
+                  ? current.wordpressObjectId
+                  : null,
+              } : current);
+              setPreview(null);
+              setExecution(null);
+              setExecutionMessage(null);
+            }}
+            className="mt-1 h-10 w-full border border-zinc-700 bg-zinc-900 px-3"
+          >
+            <option value={`CREATE_${operationTarget}`}>Create new draft</option>
+            <option value={`UPDATE_${operationTarget}`}>Update exact draft</option>
+          </select>
+        </label>
+
+        {isUpdate ? (
+          <label className="text-sm text-zinc-300">
+            WordPress object ID
+            <input
+              aria-label="WordPress object ID"
+              inputMode="numeric"
+              value={form.wordpressObjectId ?? ""}
+              onChange={(event) => updateField("wordpressObjectId", event.target.value)}
+              className="mt-1 h-10 w-full border border-zinc-700 bg-zinc-900 px-3"
+            />
+          </label>
+        ) : null}
+
         <label className="text-sm text-zinc-300">
           Site
           <select
@@ -313,6 +359,7 @@ export function GlwPageGenerationWorkspace({
               <div><dt className="text-zinc-500">SEO title</dt><dd>{preview.request.seoTitle}</dd></div>
               <div className="md:col-span-2"><dt className="text-zinc-500">Meta description</dt><dd>{preview.request.metaDescription}</dd></div>
               <div><dt className="text-zinc-500">Publication intent</dt><dd>{preview.request.publicationIntent}</dd></div>
+              <div><dt className="text-zinc-500">WordPress target</dt><dd>{preview.request.wordpressObjectId ?? "New object"}</dd></div>
               <div><dt className="text-zinc-500">External execution</dt><dd>Disabled</dd></div>
             </dl>
           ) : null}
@@ -341,7 +388,9 @@ export function GlwPageGenerationWorkspace({
             onClick={executeWordpressDraft}
             className="border border-amber-500 px-4 py-2 text-sm text-white disabled:opacity-40"
           >
-            {executing ? "Creating WordPress draft..." : "Create one WordPress draft"}
+            {executing
+              ? (isUpdate ? "Updating exact WordPress draft..." : "Creating WordPress draft...")
+              : (isUpdate ? "Update exact WordPress draft" : "Create one WordPress draft")}
           </button>
           {execution ? (
             <button type="button" onClick={refreshExecution} className="border border-zinc-600 px-4 py-2 text-sm text-zinc-200">
@@ -357,10 +406,14 @@ export function GlwPageGenerationWorkspace({
           <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
             <div><dt className="text-zinc-500">Job ID</dt><dd>{execution.jobId}</dd></div>
             <div><dt className="text-zinc-500">Status</dt><dd>{execution.status}</dd></div>
+            <div><dt className="text-zinc-500">Transport</dt><dd>{execution.executionTransport}</dd></div>
+            <div><dt className="text-zinc-500">Disposition</dt><dd>{execution.disposition ?? "Pending"}</dd></div>
             <div><dt className="text-zinc-500">External execution</dt><dd>{execution.externalExecutionId ?? "Pending"}</dd></div>
             <div><dt className="text-zinc-500">WordPress ID</dt><dd>{execution.wordpressObjectId ?? "Pending"}</dd></div>
             <div><dt className="text-zinc-500">WordPress status</dt><dd>{execution.wordpressStatus ?? "Pending"}</dd></div>
             <div><dt className="text-zinc-500">WordPress URL</dt><dd>{execution.wordpressUrl ?? "Pending"}</dd></div>
+            <div><dt className="text-zinc-500">QA status</dt><dd>{execution.qaStatus ?? "Pending"}</dd></div>
+            <div><dt className="text-zinc-500">Featured image</dt><dd>{execution.featuredImagePresent === null ? "Pending" : execution.featuredImagePresent ? "Present" : "Missing"}</dd></div>
             {execution.errorMessage ? <div className="md:col-span-2"><dt className="text-zinc-500">Failure</dt><dd className="text-red-300">{execution.errorCode}: {execution.errorMessage}</dd></div> : null}
           </dl>
         ) : null}

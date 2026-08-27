@@ -93,4 +93,17 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain("listIntegrationProfiles(");
     expect(source).toContain("resolvePermissions(");
   });
+
+  test("exposes exact create/update authority and bounded execution results to operators", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/modules/glw/GlwPageGenerationWorkspace.tsx"), "utf8");
+    expect(source).toContain('aria-label="Generation operation"');
+    expect(source).toContain('aria-label="WordPress object ID"');
+    expect(source).toContain("Update exact WordPress draft");
+    expect(source).toContain("execution.wordpressObjectId");
+    expect(source).toContain("execution.wordpressUrl");
+    expect(source).toContain("execution.qaStatus");
+    expect(source).toContain("execution.featuredImagePresent");
+    expect(source).toContain("execution.disposition");
+    expect(source).toContain("execution.executionTransport");
+  });
 });
