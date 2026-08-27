@@ -404,6 +404,13 @@ function optionalNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function optionalBoolean(value: unknown): boolean | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (value === true || value === "true") return true;
+  if (value === false || value === "false") return false;
+  return false;
+}
+
 function countHtmlWords(value: unknown): number | null {
   if (typeof value !== "string" || !value.trim()) return null;
   const text = value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -466,6 +473,12 @@ export function normalizeGlwN8nExecutionResult(input: {
     throw new GlwExecutionResultError("Terminal n8n execution did not produce the expected WordPress draft identity.");
   }
 
+  const featuredImagePresent = optionalBoolean(
+    qa.qa_featured_image_present
+      ?? qa.featuredImagePresent
+      ?? normalized.featured_image_present
+      ?? normalized.featuredImagePresent,
+  );
   const featuredImageUrl = optionalString(qa.qa_featured_image_url);
   const featuredImageId = optionalNumber(generated?.featured_media);
   return {
@@ -484,7 +497,8 @@ export function normalizeGlwN8nExecutionResult(input: {
     seoTitle: optionalString(qa.qa_meta_title ?? generated?.seo_title) ?? undefined,
     focusKeyphrase: optionalString(qa.qa_focus_keyword ?? generated?.focus_keyphrase) ?? undefined,
     wordCount: optionalNumber(qa.qa_word_count) ?? countHtmlWords(generated?.article_html) ?? undefined,
-    featuredImagePresent: Boolean(featuredImageUrl) || (featuredImageId !== null && featuredImageId > 0),
+    featuredImagePresent: featuredImagePresent
+      ?? (Boolean(featuredImageUrl) || (featuredImageId !== null && featuredImageId > 0)),
   };
 }
 

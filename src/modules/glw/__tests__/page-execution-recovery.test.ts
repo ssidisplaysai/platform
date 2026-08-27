@@ -292,6 +292,23 @@ describe("GLW async n8n result recovery", () => {
       });
   });
 
+  test.each([
+    { name: "explicit true", qa: { qa_featured_image_present: true }, generated: {}, expected: true },
+    { name: "explicit false", qa: { qa_featured_image_present: false }, generated: {}, expected: false },
+    { name: "explicit false overrides URL", qa: { qa_featured_image_present: false, qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: false },
+    { name: "URL fallback", qa: { qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: true },
+    { name: "media ID fallback", qa: {}, generated: { featured_media: 42 }, expected: true },
+    { name: "missing evidence", qa: { qa_featured_image_url: "" }, generated: {}, expected: false },
+    { name: "serialized false", qa: { qa_featured_image_present: "false", qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: false },
+    { name: "serialized true", qa: { qa_featured_image_present: "true" }, generated: {}, expected: true },
+    { name: "malformed explicit value", qa: { qa_featured_image_present: "yes", qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: false },
+  ])("normalizes featured-image evidence: $name", ({ qa, generated, expected }) => {
+    expect(normalizeGlwN8nExecutionResult({
+      snapshot: terminalSnapshot({ qa, generated }),
+      expectedJobId: "glw-job-001",
+    })).toMatchObject({ kind: "complete", featuredImagePresent: expected });
+  });
+
   test("rejects terminal success without required result nodes", () => {
     expect(() => normalizeGlwN8nExecutionResult({
       snapshot: { ...terminalSnapshot(), runData: {} },
