@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.gcp-foundation-data-test-*/
 
 # next.js
 /.next/

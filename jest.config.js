@@ -20,5 +20,6 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^server-only$': '<rootDir>/tests/mocks/server-only.js',
   },
 };
