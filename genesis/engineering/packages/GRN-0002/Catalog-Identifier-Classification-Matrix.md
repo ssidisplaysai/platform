@@ -5,6 +5,17 @@
 - GOVERNANCE_DOCUMENTATION_ARTIFACT_NOT_PACKAGE_ROOT
 - REGISTRY_TOKEN_NOT_PACKAGE_ROOT
 - REFERENCE_ARTIFACT_NOT_PACKAGE_ROOT
+- PROPOSED_VISION_PACKAGE_PENDING_APPROVAL
+
+## Proposed Vision Package Classifications
+
+These entries are deterministic review proposals, not active classifications. They become effective only after required architecture approval, approved taxonomy integration, and custody integration of the referenced package paths. Until then, current `origin/main` classification remains authoritative.
+
+| Identifier | Intended path | Constitutional catalog presence | Custody state | Artifact type | Proposed representation | Proposed classification | Parity treatment if approved | Authority effect |
+|---|---|---|---|---|---|---|---|---|
+| GPW-1001 | genesis/engineering/packages/GPW-1001 | absent | pending custody integration | workspace vision | non-constitutional vision package | PROPOSED_VISION_PACKAGE_PENDING_APPROVAL | exclude from constitutional package-root parity | no engineering, runtime, lifecycle-promotion, or constitutional authority |
+| GPW-1002 | genesis/engineering/packages/GPW-1002 | absent | pending custody integration | workspace vision | non-constitutional vision package | PROPOSED_VISION_PACKAGE_PENDING_APPROVAL | exclude from constitutional package-root parity | no engineering, runtime, lifecycle-promotion, or constitutional authority |
+| GPW-1003 | genesis/engineering/packages/GPW-1003 | absent | pending custody integration | workspace vision | non-constitutional vision package | PROPOSED_VISION_PACKAGE_PENDING_APPROVAL | exclude from constitutional package-root parity | no engineering, runtime, lifecycle-promotion, or constitutional authority |
 
 ## Missing Registrations
 | Identifier | Observed path | Catalog presence | Package-root presence | Artifact type | Expected representation | Classification | Recommended correction | Evidence |

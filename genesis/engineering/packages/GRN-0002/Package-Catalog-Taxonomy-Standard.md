@@ -1,5 +1,8 @@
 # Package Catalog Taxonomy Standard
 
+## Candidate Effectiveness
+The `VISION_PACKAGE` addition in this governance candidate is PROPOSED and NOT EFFECTIVE. It becomes repository policy only after required architecture approval and approved integration. Until then, the taxonomy on current `origin/main` remains authoritative, this candidate branch does not activate `VISION_PACKAGE`, and no GPW identifier receives current canonical classification.
+
 ## Taxonomy Goals
 The parity model must distinguish canonical package roots from governance references that share catalog presence but do not represent package-root directories.
 

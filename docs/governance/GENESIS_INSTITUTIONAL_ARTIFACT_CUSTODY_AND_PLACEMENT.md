@@ -18,6 +18,8 @@ This is a subordinate repository governance record. It requires review by Genesi
 
 It does not possess or confer constitutional, architecture, engineering certification, runtime, production, security, release, or package certification authority.
 
+Until those reviews are complete and this candidate is integrated through the approved repository process, current `origin/main` governance and taxonomy remain authoritative. This candidate branch does not activate any proposed institution, repository root, artifact class, lifecycle state, or GPW classification.
+
 ## 4. Canonical Custody vs Canonical Authority
 
 Institutional integration establishes durable canonical custody of an artifact, but does not independently validate or promote the lifecycle claims contained within that artifact.
@@ -61,7 +63,7 @@ It may not:
 
 ## 8. Genesis Founder's Office
 
-Genesis Founder's Office is a non-constitutional founder-intent and historical function. Its approved repository root, once this record is effective, is `genesis/founder-office/`.
+Genesis Founder's Office is a proposed non-constitutional founder-intent and historical function. Its proposed repository root, subject to approval of this record, is `genesis/founder-office/`.
 
 It may preserve founder journals, founder-authored narratives, founder session closeouts, founder intent, Founder Genome source material, and founder-authored working papers. It may confirm whether an interpretation accurately represents founder intent.
 
@@ -69,7 +71,7 @@ It may not grant constitutional authority, engineering certification, architectu
 
 ## 9. Genesis CEO Office
 
-Genesis CEO Office is a non-constitutional executive-intent function. Its approved repository root, once this record is effective, is `genesis/ceo-office/`.
+Genesis CEO Office is a proposed non-constitutional executive-intent function. Its proposed repository root, subject to approval of this record, is `genesis/ceo-office/`.
 
 It may define executive product intent, record strategic product direction, establish executive intent baselines, record executive decisions and portfolio intent, and sponsor product or experience work.
 
@@ -77,7 +79,7 @@ It may not independently authorize engineering implementation; grant constitutio
 
 `EXECUTIVE BASELINE` means an executive intent baseline only.
 
-## 10. Approved Repository Roots
+## 10. Proposed Repository Roots
 
 Subject to this record becoming effective, the non-constitutional placement model is:
 
@@ -110,6 +112,8 @@ Placement there does not independently imply current canonical authority, approv
 `VISION_PACKAGE` is a non-constitutional, non-implementation package classification. It may exist as a physical directory under `genesis/engineering/packages/`, contain product or workspace vision material, and carry product-vision lifecycle labels.
 
 It does not authorize engineering or runtime work and is excluded from constitutional package-root parity. `GPW-1001`, `GPW-1002`, and `GPW-1003` are prospectively classified as `VISION_PACKAGE` when integrated under canonical custody.
+
+This classification is proposed and does not become effective through its presence on the candidate branch. It becomes repository policy only after required architecture approval and approved integration. Until then, current-main taxonomy remains authoritative and no GPW package has current canonical `VISION_PACKAGE` classification.
 
 ## 13. `EXPERIENCE_WORKING_DEFINITION` Classification
 
@@ -166,9 +170,9 @@ Integration of the recovered institutional corpus into `genesis/` establishes du
 
 ## 19. GMX-0001 Future Placement
 
-The approved future target, once this record is effective, is `genesis/experience-studio/GMX-0001/`.
+The proposed future target is `genesis/experience-studio/GMX-0001/`. It is not approved or effective while this record remains pending.
 
-GMX-0001 remains suspended. This record does not move, edit, approve, publish, freeze, certify, or resume GMX-0001. Future relocation requires separately authorized remediation and revalidation.
+GMX-0001 remains suspended. No relocation has occurred, and no Experience Studio root becomes effective merely through this candidate. Future relocation requires approved architecture governance, a separately authorized GMX remediation task, and revalidation.
 
 ## 20. Constitutional Boundary
 
