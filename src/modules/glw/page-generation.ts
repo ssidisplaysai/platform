@@ -6,7 +6,13 @@ import type {
 
 export type GlwPageType = "general_service" | "state_service" | "city_service";
 export type GlwPublicationIntent = "draft" | "publish";
-export type GlwLocalPlannedOperation = "CREATE_GENERAL" | "CREATE_STATE" | "CREATE_CITY";
+export type GlwLocalPlannedOperation =
+  | "CREATE_GENERAL"
+  | "CREATE_STATE"
+  | "CREATE_CITY"
+  | "UPDATE_GENERAL"
+  | "UPDATE_STATE"
+  | "UPDATE_CITY";
 
 export type GlwState = {
   code: string;
@@ -151,6 +157,8 @@ export type GlwGenerationRequestInput = {
   seoTitle: string;
   metaDescription: string;
   publicationIntent: GlwPublicationIntent;
+  plannedOperation?: GlwLocalPlannedOperation;
+  wordpressObjectId?: string | null;
 };
 
 export type GlwGenerationRequest = GlwGenerationRequestInput & {
@@ -161,6 +169,7 @@ export type GlwGenerationRequest = GlwGenerationRequestInput & {
   cityName: string | null;
   canonicalPath: string;
   plannedOperation: GlwLocalPlannedOperation;
+  wordpressObjectId: string | null;
   externalExecutionAllowed: false;
 };
 
@@ -219,6 +228,18 @@ export function buildLocalGlwGenerationPreview(input: {
   const city = form.citySlug && form.stateCode
     ? getGlwCity(form.stateCode, form.citySlug)
     : null;
+  const defaultOperation: GlwLocalPlannedOperation = form.pageType === "city_service"
+    ? "CREATE_CITY"
+    : form.pageType === "state_service"
+      ? "CREATE_STATE"
+      : "CREATE_GENERAL";
+  const plannedOperation = form.plannedOperation ?? defaultOperation;
+  const expectedOperationTarget = form.pageType === "city_service"
+    ? "CITY"
+    : form.pageType === "state_service"
+      ? "STATE"
+      : "GENERAL";
+  const wordpressObjectId = form.wordpressObjectId?.trim() || null;
 
   if (!site) issues.push({ field: "siteId", message: "Select a current site." });
   if (!product) issues.push({ field: "productId", message: "Select a current product or topic." });
@@ -245,6 +266,15 @@ export function buildLocalGlwGenerationPreview(input: {
   if (!form.metaDescription.trim() || form.metaDescription.length > 160) {
     issues.push({ field: "metaDescription", message: "Meta description is required and must be 160 characters or fewer." });
   }
+  if (!plannedOperation.endsWith(`_${expectedOperationTarget}`)) {
+    issues.push({ field: "plannedOperation", message: "The operation must match the requested page type." });
+  }
+  if (plannedOperation.startsWith("UPDATE_") && !wordpressObjectId?.match(/^[1-9]\d*$/)) {
+    issues.push({ field: "wordpressObjectId", message: "Updates require an exact persisted WordPress object ID." });
+  }
+  if (plannedOperation.startsWith("CREATE_") && wordpressObjectId) {
+    issues.push({ field: "wordpressObjectId", message: "Create operations cannot carry WordPress update authority." });
+  }
 
   const validation = { valid: issues.length === 0, issues };
   if (!validation.valid || !site || !product) {
@@ -261,11 +291,8 @@ export function buildLocalGlwGenerationPreview(input: {
       stateName: state?.name ?? null,
       cityName: city?.name ?? null,
       canonicalPath: form.slug,
-      plannedOperation: form.pageType === "city_service"
-        ? "CREATE_CITY"
-        : form.pageType === "state_service"
-          ? "CREATE_STATE"
-          : "CREATE_GENERAL",
+      plannedOperation,
+      wordpressObjectId,
       externalExecutionAllowed: false,
     },
   };

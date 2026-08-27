@@ -78,6 +78,8 @@ export type GlwPageExecutionRecord = {
 export type GlwN8nDraftRequest = {
   jobId: string;
   callbackUrl: string;
+  operation: GlwGenerationRequest["plannedOperation"];
+  wordpressObjectId: string | null;
   operationKey: string;
   publicationKey: string;
   type: "page_generation";
@@ -200,6 +202,60 @@ export class GlwUnknownExecutionError extends Error {}
 export class GlwDraftOnlyExecutionError extends Error {}
 export class GlwExecutionResultError extends Error {}
 
+export type GlwWordPressIdentityCandidate = {
+  wordpressObjectId: string;
+  targetSlug: string;
+  parentId: string;
+  productId: string;
+  status: string;
+};
+
+export type GlwWordPressIdentityDecision =
+  | { operation: "CREATE"; targetSlug: string; wordpressObjectId: null }
+  | { operation: "UPDATE"; targetSlug: string; wordpressObjectId: string };
+
+export function resolveGlwWordPressIdentityDecision(input: {
+  operation: GlwGenerationRequest["plannedOperation"];
+  targetSlug: string;
+  parentId: string;
+  productId: string;
+  wordpressObjectId: string | null;
+  candidates: readonly GlwWordPressIdentityCandidate[];
+}): GlwWordPressIdentityDecision {
+  const exactTarget = input.candidates.find((candidate) =>
+    candidate.targetSlug === input.targetSlug
+    && candidate.parentId === input.parentId
+    && candidate.productId === input.productId);
+
+  if (input.operation.startsWith("CREATE_")) {
+    if (input.wordpressObjectId) {
+      throw new GlwExecutionResultError("Create operations cannot carry WordPress update authority.");
+    }
+    if (exactTarget) {
+      throw new GlwExecutionResultError("The exact requested WordPress target already exists.");
+    }
+    return { operation: "CREATE", targetSlug: input.targetSlug, wordpressObjectId: null };
+  }
+
+  if (!input.wordpressObjectId) {
+    throw new GlwExecutionResultError("Update operations require an exact persisted WordPress object ID.");
+  }
+  const exactObject = input.candidates.find(
+    (candidate) => candidate.wordpressObjectId === input.wordpressObjectId,
+  );
+  if (!exactObject) {
+    throw new GlwExecutionResultError("The authorized WordPress object was not found.");
+  }
+  if (exactObject.parentId !== input.parentId || exactObject.productId !== input.productId) {
+    throw new GlwExecutionResultError("The authorized WordPress object does not match the requested hierarchy.");
+  }
+  return {
+    operation: "UPDATE",
+    targetSlug: input.targetSlug,
+    wordpressObjectId: exactObject.wordpressObjectId,
+  };
+}
+
 export function redactGlwExecutionError(value: unknown): string {
   const message = value instanceof Error ? value.message : String(value ?? "Execution failed.");
   return message
@@ -227,6 +283,8 @@ export function mapGenerationRequestToN8nDraft(
   return {
     jobId,
     callbackUrl: "",
+    operation: request.plannedOperation,
+    wordpressObjectId: request.wordpressObjectId,
     operationKey: `${jobId}:draft`,
     publicationKey: `${request.siteId}:${request.canonicalPath}:draft`,
     type: "page_generation",

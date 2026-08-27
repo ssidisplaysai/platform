@@ -18,6 +18,10 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   const jobId = typeof request.jobId === "string" ? request.jobId.trim() : "";
   const operationKey = typeof request.operationKey === "string" ? request.operationKey.trim() : "";
   const publicationKey = typeof request.publicationKey === "string" ? request.publicationKey.trim() : "";
+  const operation = typeof request.operation === "string" ? request.operation.trim().toUpperCase() : "";
+  const wordpressObjectId = typeof request.wordpressObjectId === "string"
+    ? request.wordpressObjectId.trim()
+    : "";
   const publicationAliases = [
     request.publishing_mode,
     request.publishingMode,
@@ -35,6 +39,15 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   if (!operationKey.endsWith(":draft")) throw new Error("GLW MCP operation key must end with :draft.");
   if (!publicationKey.endsWith(":draft")) throw new Error("GLW MCP publication key must end with :draft.");
   if (request.callbackUrl !== "") throw new Error("GLW MCP callback URL must be empty.");
+  if (!/^(CREATE|UPDATE)_(GENERAL|STATE|CITY)$/.test(operation)) {
+    throw new Error("GLW MCP request requires an explicit create or update operation.");
+  }
+  if (operation.startsWith("UPDATE_") && !/^[1-9]\d*$/.test(wordpressObjectId)) {
+    throw new Error("GLW MCP updates require an exact persisted WordPress object ID.");
+  }
+  if (operation.startsWith("CREATE_") && wordpressObjectId) {
+    throw new Error("GLW MCP creates cannot carry WordPress update authority.");
+  }
   if (publicationAliases.some((entry) => String(entry).trim().toLowerCase() !== "draft")) {
     throw new Error("GLW MCP request contains a conflicting publication alias.");
   }

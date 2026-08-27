@@ -22,6 +22,7 @@ import {
   mapGenerationRequestToN8nDraft,
   normalizeGlwN8nExecutionResult,
   redactGlwExecutionError,
+  resolveGlwWordPressIdentityDecision,
   resolveGlwN8nEngineProduct,
   resolveGlwN8nEngineSiteId,
   type GlwN8nDraftDispatcher,
@@ -129,6 +130,8 @@ describe("GLW one-draft execution recovery", () => {
     expect(mapped.page.productId).toBe(GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID);
     expect(mapped.page.product).toBe(GLW_N8N_ENGINE_PRODUCT_NAME);
     expect(mapped.page.productTopic).toBe(request.productTopic);
+    expect(mapped.operation).toBe("CREATE_CITY");
+    expect(mapped.wordpressObjectId).toBeNull();
     expect(mapped.page.product_topic).toBe(request.productTopic);
     expect(mapped.page.hierarchical_slug).toBe(request.canonicalPath);
     expect(mapped.publishingSettings.status).toBe("draft");
@@ -147,6 +150,7 @@ describe("GLW one-draft execution recovery", () => {
     expect(mapped).toMatchObject({
       jobId,
       callbackUrl: "",
+      operation: "CREATE_CITY",
       site: { id: "led-display-warehouse", name: "LEDDisplayWarehouse.com" },
       page: {
         productId: "prod-indoor-led-video-wall",
@@ -588,5 +592,74 @@ describe("GLW static acceptance correlation recovery", () => {
     expect(discovered).toMatchObject({ status: "RUNNING", externalExecutionId: "123" });
     await expect(service.pollToTerminal("glw-job-001", reader, { maxAttempts: 1 }))
       .resolves.toMatchObject({ status: "COMPLETE", wordpressObjectId: "19308" });
+  });
+});
+
+describe("GLW exact WordPress identity safety", () => {
+  const targetSlug = "austin-recovery-draft-20260826";
+  const parentId = "2563";
+  const productId = GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID;
+  const austinPage = {
+    wordpressObjectId: "2565",
+    targetSlug: "austin",
+    parentId,
+    productId,
+    status: "publish",
+  };
+  const exactTarget = { ...austinPage, wordpressObjectId: "3001", targetSlug };
+
+  function decide(overrides: Partial<Parameters<typeof resolveGlwWordPressIdentityDecision>[0]> = {}) {
+    return resolveGlwWordPressIdentityDecision({
+      operation: "CREATE_CITY",
+      targetSlug,
+      parentId,
+      productId,
+      wordpressObjectId: null,
+      candidates: [austinPage],
+      ...overrides,
+    });
+  }
+
+  test("creates an absent exact target instead of adopting a fuzzy city match", () => {
+    expect(decide()).toEqual({ operation: "CREATE", targetSlug, wordpressObjectId: null });
+  });
+
+  test("fails closed when a create target has an exact collision", () => {
+    expect(() => decide({ candidates: [austinPage, exactTarget] })).toThrow("exact requested");
+  });
+
+  test("updates exactly the persisted WordPress object ID", () => {
+    expect(decide({ operation: "UPDATE_CITY", wordpressObjectId: "3001", candidates: [austinPage, exactTarget] }))
+      .toEqual({ operation: "UPDATE", targetSlug, wordpressObjectId: "3001" });
+  });
+
+  test("fails closed when an update has no WordPress object ID", () => {
+    expect(() => decide({ operation: "UPDATE_CITY" })).toThrow("exact persisted");
+  });
+
+  test("does not demote a published fuzzy city match during create", () => {
+    expect(decide().wordpressObjectId).toBeNull();
+    expect(austinPage.status).toBe("publish");
+  });
+
+  test("applies exact identity protection to state creates", () => {
+    expect(decide({ operation: "CREATE_STATE" })).toMatchObject({ operation: "CREATE" });
+  });
+
+  test("requires exact object authority for state updates", () => {
+    expect(decide({ operation: "UPDATE_STATE", wordpressObjectId: "3001", candidates: [exactTarget] }))
+      .toMatchObject({ operation: "UPDATE", wordpressObjectId: "3001" });
+  });
+
+  test("never adopts a page under the wrong parent", () => {
+    expect(decide({ candidates: [{ ...exactTarget, parentId: "9999" }] })).toMatchObject({ operation: "CREATE" });
+  });
+
+  test("never adopts a page for the wrong product", () => {
+    expect(decide({ candidates: [{ ...exactTarget, productId: "prod-other" }] })).toMatchObject({ operation: "CREATE" });
+  });
+
+  test("fails closed for an unknown product before identity resolution", () => {
+    expect(() => resolveGlwN8nEngineProduct("prod-unknown")).toThrow("Unsupported GLW application product");
   });
 });
