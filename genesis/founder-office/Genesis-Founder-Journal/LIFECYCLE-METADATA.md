@@ -1,0 +1,31 @@
+# LIFECYCLE METADATA
+
+- Repository Title: Genesis Founder Journal
+- Version: 1.0
+- Status: FROZEN PROCESS
+- Office: Genesis Founder's Office
+- Repository Type: Historical discovery record
+- Scope Boundary: Preserve founder discoveries that permanently changed how Genesis thinks
+- Process Rule: Preserve discoveries, not brainstorming
+- Entry Lifecycle:
+  - Conversation
+  - Founder Journal
+  - Working Paper
+  - Founder Review
+  - Official Artifact
+  - Published
+  - Frozen
+- Allowed Entry Status Values:
+  - INCUBATING
+  - EXPLORING
+  - MATURING
+  - READY FOR WORKING PAPER
+- Disallowed Initial Status Values:
+  - APPROVED
+  - CERTIFIED
+  - CANONICAL
+  - STANDARD
+  - FROZEN
+- Archivist Standard: Authenticity always takes precedence over polish
+- Last Normalized Date: 2026-08-10
+- Normalization Source: Genesis Founder Journal repository baseline
