@@ -1,8 +1,14 @@
 import Link from "next/link";
 import {
   createFoundationContext,
-  getSitesForOrganization,
 } from "@/modules/foundation/context";
+import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
+import { resolvePermissions } from "@/modules/foundation/permissions";
+import { listProducts } from "@/modules/foundation/product-repository";
+import { listSites } from "@/modules/foundation/site-repository";
+import { GlwPageGenerationWorkspace } from "./GlwPageGenerationWorkspace";
+import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
+import { adaptProductForGeneration, adaptSiteForGeneration } from "./page-generation";
 
 export function GlwPagesCenter() {
   const context = createFoundationContext();
@@ -10,10 +16,31 @@ export function GlwPagesCenter() {
     context.organizations.find(
       (organization) => organization.id === context.selectedOrganizationId,
     ) ?? null;
-  const availableSites = getSitesForOrganization(
-    context.sites,
-    context.selectedOrganizationId,
+  const currentSites = listSites().filter(
+    (site) => site.organizationId === context.selectedOrganizationId,
   );
+  const profiles = listIntegrationProfiles({
+    organizationId: context.selectedOrganizationId,
+  });
+  const availableSites = currentSites.map((site) => adaptSiteForGeneration(
+    site,
+    profiles.filter((profile) => profile.assignedSiteIds.includes(site.siteId)).length,
+  ));
+  const availableProducts = currentSites.flatMap((site) =>
+    listProducts()
+      .filter(
+        (product) =>
+          product.organizationId === context.selectedOrganizationId &&
+          product.assignedSiteIds.includes(site.siteId),
+      )
+      .map((product) => adaptProductForGeneration(product, site.siteId)),
+  );
+  const permissions = resolvePermissions(context.user.roles);
+  const executionConfiguration = getGlwN8nMcpConfigurationStatus();
+  const canPrepareRequest =
+    permissions.has("sites:read") &&
+    permissions.has("products:read") &&
+    permissions.has("profiles:read");
 
   return (
     <div className="space-y-6">
@@ -23,7 +50,7 @@ export function GlwPagesCenter() {
             <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">GLW</p>
             <h1 className="mt-2 text-2xl font-black text-white">Pages Center</h1>
             <p className="mt-2 text-sm text-zinc-300">
-              Structural foundation for GLW page management. No pages are created in this baseline.
+              Prepare and validate page-generation requests locally before any external workflow is connected.
             </p>
           </div>
           <Link
@@ -47,40 +74,25 @@ export function GlwPagesCenter() {
         </article>
 
         <article className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <h2 className="text-sm font-semibold text-white">Site Selector</h2>
-          <select
-            defaultValue={context.selectedSiteId}
-            className="mt-2 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-200"
-          >
-            {availableSites.length === 0 ? (
-              <option value="">No sites available</option>
-            ) : (
-              availableSites.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.name} ({site.environment})
-                </option>
-              ))
-            )}
-          </select>
+          <h2 className="text-sm font-semibold text-white">Current Inputs</h2>
+          <p className="mt-2 text-sm text-zinc-300">
+            {availableSites.length} sites and {availableProducts.length} site-assigned products are available.
+          </p>
           <p className="mt-2 text-xs text-zinc-500">
-            Site options are inherited from Genesis workspace context.
+            Sites, products, profiles, and permissions come from current Genesis foundations.
           </p>
         </article>
       </section>
 
-      <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
-        <h2 className="text-sm font-semibold text-white">Pages Registry</h2>
-        <p className="mt-2 text-sm text-zinc-300">
-          No GLW pages are currently registered for this workspace.
-        </p>
-        <button
-          type="button"
-          disabled
-          className="mt-4 rounded-lg border border-zinc-700 px-4 py-2 text-sm text-zinc-400 opacity-60"
-        >
-          Create Page
-        </button>
-      </section>
+      <GlwPageGenerationWorkspace
+        sites={availableSites}
+        products={availableProducts}
+        canPrepareRequest={canPrepareRequest}
+        executionConfigured={executionConfiguration.configured}
+        executionWorkflowName="n8n MCP"
+        requestRoles={context.user.roles}
+        organizationId={context.selectedOrganizationId}
+      />
     </div>
   );
 }

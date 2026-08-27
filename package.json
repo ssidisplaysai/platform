@@ -15,6 +15,7 @@
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/pdf-parse": "^1.1.5",
     "next": "16.2.10",
     "pdf-parse": "^2.4.5",

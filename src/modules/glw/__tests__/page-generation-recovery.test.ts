@@ -1,0 +1,96 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { FOUNDATION_PRODUCTS } from "@/modules/foundation/catalog-fixtures";
+import { FOUNDATION_SITE_FIXTURES } from "@/modules/foundation/site-fixtures";
+import {
+  adaptProductForGeneration,
+  adaptSiteForGeneration,
+  buildLocalGlwGenerationPreview,
+  createDefaultGlwGenerationInput,
+  createGlwCanonicalPath,
+  getGlwCitiesForState,
+} from "../page-generation";
+import { planGlwPageMatrix } from "../matrix-planner";
+
+const site = adaptSiteForGeneration(FOUNDATION_SITE_FIXTURES[0], 4);
+const product = adaptProductForGeneration(FOUNDATION_PRODUCTS[0], site.siteId);
+
+describe("GLW selective page generation recovery", () => {
+  test("adapts a current site for generation", () => {
+    expect(site.siteId).toBe(FOUNDATION_SITE_FIXTURES[0].siteId);
+    expect(site.profileCount).toBe(4);
+  });
+
+  test("adapts a current product without creating a parallel catalog", () => {
+    expect(product.productId).toBe(FOUNDATION_PRODUCTS[0].productId);
+    expect(product.slug).toBe(FOUNDATION_PRODUCTS[0].siteAssignments[0].siteSpecificSlug);
+  });
+
+  test("validates a state page request", () => {
+    const form = createDefaultGlwGenerationInput(site, product, "state_service", "TX", "");
+    const result = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
+    expect(result.validation.valid).toBe(true);
+    expect(result.request?.plannedOperation).toBe("CREATE_STATE");
+  });
+
+  test("validates a city page request", () => {
+    const form = createDefaultGlwGenerationInput(site, product, "city_service", "TX", "austin");
+    const result = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
+    expect(result.validation.valid).toBe(true);
+    expect(result.request?.cityName).toBe("Austin");
+  });
+
+  test("rejects a city paired with another state", () => {
+    const form = createDefaultGlwGenerationInput(site, product, "city_service", "CA", "austin");
+    const result = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
+    expect(result.validation.valid).toBe(false);
+    expect(result.validation.issues.some((issue) => issue.field === "citySlug")).toBe(true);
+  });
+
+  test("builds deterministic canonical product, state, and city paths", () => {
+    expect(createGlwCanonicalPath({ productSlug: "Indoor LED Video Wall", stateCode: "TX", citySlug: "austin" }))
+      .toBe("indoor-led-video-wall/texas/austin");
+  });
+
+  test("blocks duplicate matrix targets", () => {
+    const statePath = createGlwCanonicalPath({ productSlug: product.slug, stateCode: "TX" });
+    const plans = planGlwPageMatrix({ products: [product], stateCodes: ["TX"], citySlugsByState: { TX: [] }, existingPages: [{ canonicalPath: statePath }, { canonicalPath: statePath }] });
+    expect(plans[0].action).toBe("BLOCKED_DUPLICATE");
+  });
+
+  test("enforces a unique parent state before city generation", () => {
+    const plans = planGlwPageMatrix({ products: [product], stateCodes: ["TX"], citySlugsByState: { TX: ["austin"] }, existingPages: [] });
+    expect(plans.some((plan) => plan.action === "BLOCKED_PARENT_STATE")).toBe(true);
+  });
+
+  test("plans one product across two states and three cities per state", () => {
+    expect(getGlwCitiesForState("TX").length).toBeGreaterThanOrEqual(3);
+    expect(getGlwCitiesForState("CA").length).toBeGreaterThanOrEqual(3);
+    const statePaths = ["TX", "CA"].map((stateCode) => ({ canonicalPath: createGlwCanonicalPath({ productSlug: product.slug, stateCode }) }));
+    const plans = planGlwPageMatrix({ products: [product], stateCodes: ["TX", "CA"], citySlugsByState: { TX: ["austin", "dallas", "houston"], CA: ["los-angeles", "san-diego", "san-francisco"] }, existingPages: statePaths });
+    expect(plans.filter((plan) => plan.action === "CREATE_CITY")).toHaveLength(6);
+  });
+
+  test("planning creates semantic operations without external publication", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/modules/glw/matrix-planner.ts"), "utf8");
+    expect(source).not.toMatch(/fetch\(|n8n|wordpress|child_process|Process\.Start/i);
+    const plans = planGlwPageMatrix({ products: [product], stateCodes: ["TX"], citySlugsByState: { TX: [] }, existingPages: [] });
+    expect(plans.every((plan) => plan.externalExecutionAllowed === false)).toBe(true);
+  });
+
+  test("publication intent remains non-executable request data", () => {
+    const form = { ...createDefaultGlwGenerationInput(site, product), publicationIntent: "publish" as const };
+    const result = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
+    expect(result.request?.publicationIntent).toBe("publish");
+    expect(result.request?.externalExecutionAllowed).toBe(false);
+  });
+
+  test("exposes the recovered workspace from the current Pages Center", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/modules/glw/GlwPagesCenter.tsx"), "utf8");
+    expect(source).toContain("<GlwPageGenerationWorkspace");
+    expect(source).toContain("listSites()");
+    expect(source).toContain("listProducts()");
+    expect(source).toContain("listIntegrationProfiles(");
+    expect(source).toContain("resolvePermissions(");
+  });
+});
