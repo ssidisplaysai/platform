@@ -106,4 +106,30 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain("execution.disposition");
     expect(source).toContain("execution.executionTransport");
   });
+
+  test("shows canonical target preflight and blocks unavailable mutations", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/modules/glw/GlwPageGenerationWorkspace.tsx"), "utf8");
+    expect(source).toContain("/api/glw/target-preflight");
+    expect(source).toContain("Canonical WordPress target");
+    expect(source).toContain("targetPreflight.target.applicationPath");
+    expect(source).toContain("targetPreflight.target.canonicalPath");
+    expect(source).toContain("targetPreflight.target.wordpressObjectId");
+    expect(source).toContain("targetPreflight.target.wordpressStatus");
+    expect(source).toContain("disabled={!createAvailable}");
+    expect(source).toContain("disabled={!updateAvailable}");
+    expect(source).toContain("!operationAvailable");
+    expect(source).not.toContain('preview.request.wordpressObjectId ?? "New object"');
+  });
+
+  test("blocks canonical collisions and published updates before dispatch", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const collisionGuard = source.indexOf('code: "CREATE_COLLISION"');
+    const updateGuard = source.indexOf('code: "UPDATE_AUTHORITY_REQUIRED"');
+    const dispatch = source.indexOf("service.execute(preview.request)");
+    expect(collisionGuard).toBeGreaterThan(0);
+    expect(updateGuard).toBeGreaterThan(collisionGuard);
+    expect(dispatch).toBeGreaterThan(updateGuard);
+    expect(source).toContain("Published WordPress targets cannot be updated under the draft-only release.");
+    expect(source).toContain("Creation was stopped before any WordPress changes.");
+  });
 });

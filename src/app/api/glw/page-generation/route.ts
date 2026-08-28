@@ -24,6 +24,7 @@ import {
   buildLocalGlwGenerationPreview,
   type GlwGenerationRequestInput,
 } from "@/modules/glw/page-generation";
+import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -94,6 +95,32 @@ export async function POST(request: NextRequest) {
   }
   if (preview.request.publicationIntent !== "draft") {
     return NextResponse.json({ error: "Public publish is blocked. Select draft intent." }, { status: 403 });
+  }
+
+  const target = await readGlwTargetPreflight({
+    request: preview.request,
+    wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+    localExecutions: await glwPageExecutionRepository.list(),
+  });
+  const availability = resolveGlwTargetMutationAvailability(target);
+  if (preview.request.plannedOperation.startsWith("CREATE_") && !availability.createAvailable) {
+    return NextResponse.json({
+      error: `An existing WordPress page was found for this canonical target${target.wordpressObjectId ? ` (ID ${target.wordpressObjectId})` : ""}. Creation was stopped before any WordPress changes.`,
+      code: "CREATE_COLLISION",
+      target,
+    }, { status: 409 });
+  }
+  if (preview.request.plannedOperation.startsWith("UPDATE_") && (
+    !availability.updateAvailable
+    || preview.request.wordpressObjectId !== target.wordpressObjectId
+  )) {
+    return NextResponse.json({
+      error: target.state === "EXISTS_PUBLISHED"
+        ? "Published WordPress targets cannot be updated under the draft-only release."
+        : "Exact draft update authority could not be verified.",
+      code: "UPDATE_AUTHORITY_REQUIRED",
+      target,
+    }, { status: 409 });
   }
 
   const configuration = getGlwN8nMcpConfigurationStatus();

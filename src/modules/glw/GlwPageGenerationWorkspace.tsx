@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   GLW_STATES,
   buildLocalGlwGenerationPreview,
@@ -15,6 +15,10 @@ import {
   type GlwPublicationIntent,
 } from "./page-generation";
 import type { GlwPageExecutionRecord } from "./page-execution";
+import type {
+  GlwTargetMutationAvailability,
+  GlwTargetPreflightResult,
+} from "./target-preflight";
 
 type Props = {
   sites: readonly GlwGenerationSite[];
@@ -24,6 +28,12 @@ type Props = {
   executionWorkflowName: string;
   requestRoles: readonly string[];
   organizationId: string;
+};
+
+type TargetPreflightResponse = {
+  target?: GlwTargetPreflightResult;
+  availability?: GlwTargetMutationAvailability;
+  error?: string;
 };
 
 function firstProductForSite(
@@ -55,6 +65,8 @@ export function GlwPageGenerationWorkspace({
   const [execution, setExecution] = useState<GlwPageExecutionRecord | null>(null);
   const [executionMessage, setExecutionMessage] = useState<string | null>(null);
   const [executing, setExecuting] = useState(false);
+  const [targetPreflight, setTargetPreflight] = useState<TargetPreflightResponse | null>(null);
+  const [targetPreflightLoading, setTargetPreflightLoading] = useState(true);
 
   const selectedSite = form
     ? sites.find((site) => site.siteId === form.siteId) ?? null
@@ -74,6 +86,50 @@ export function GlwPageGenerationWorkspace({
       : "GENERAL";
   const operation = form.plannedOperation ?? `CREATE_${operationTarget}`;
   const isUpdate = operation.startsWith("UPDATE_");
+  const createAvailable = targetPreflight?.availability?.createAvailable ?? false;
+  const updateAvailable = targetPreflight?.availability?.updateAvailable ?? false;
+  const operationAvailable = isUpdate ? updateAvailable : createAvailable;
+
+  useEffect(() => {
+    if (!form) return;
+    const controller = new AbortController();
+    const query = new URLSearchParams({
+      siteId: form.siteId,
+      productId: form.productId,
+      pageType: form.pageType,
+      stateCode: form.stateCode,
+      citySlug: form.citySlug,
+      slug: form.slug,
+    });
+    setTargetPreflightLoading(true);
+    fetch(`/api/glw/target-preflight?${query}`, {
+      headers: {
+        "x-gcp-roles": requestRoles.join(","),
+        "x-gcp-organization-id": organizationId,
+      },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const body = await response.json() as TargetPreflightResponse;
+        if (!response.ok) throw new Error(body.error ?? "Target preflight failed.");
+        setTargetPreflight(body);
+        const targetOperation = form.pageType === "city_service" ? "CITY" : form.pageType === "state_service" ? "STATE" : "GENERAL";
+        setForm((current) => current ? {
+          ...current,
+          plannedOperation: body.availability?.updateAvailable ? `UPDATE_${targetOperation}` : `CREATE_${targetOperation}`,
+          wordpressObjectId: body.availability?.updateAvailable ? body.target?.wordpressObjectId ?? null : null,
+        } : current);
+        setPreview(null);
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+        setTargetPreflight({ error: error instanceof Error ? error.message : "Target preflight failed." });
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setTargetPreflightLoading(false);
+      });
+    return () => controller.abort();
+  }, [form?.siteId, form?.productId, form?.pageType, form?.stateCode, form?.citySlug, form?.slug, organizationId, requestRoles]);
 
   function resetFromSelection(input: {
     site: GlwGenerationSite;
@@ -186,8 +242,8 @@ export function GlwPageGenerationWorkspace({
             }}
             className="mt-1 h-10 w-full border border-zinc-700 bg-zinc-900 px-3"
           >
-            <option value={`CREATE_${operationTarget}`}>Create new draft</option>
-            <option value={`UPDATE_${operationTarget}`}>Update exact draft</option>
+            <option value={`CREATE_${operationTarget}`} disabled={!createAvailable}>Create new draft</option>
+            <option value={`UPDATE_${operationTarget}`} disabled={!updateAvailable}>Update exact draft</option>
           </select>
         </label>
 
@@ -308,6 +364,29 @@ export function GlwPageGenerationWorkspace({
         </label>
       </div>
 
+      <article className="border border-zinc-700 bg-zinc-900/60 p-4" aria-live="polite">
+        <h3 className="text-sm font-semibold text-white">Canonical WordPress target</h3>
+        {targetPreflightLoading ? (
+          <p className="mt-2 text-sm text-zinc-400">Checking canonical target...</p>
+        ) : targetPreflight?.target && targetPreflight.availability ? (
+          <dl className="mt-3 grid gap-3 text-sm md:grid-cols-2">
+            <div><dt className="text-zinc-500">Application path</dt><dd>/{targetPreflight.target.applicationPath}</dd></div>
+            <div><dt className="text-zinc-500">Canonical WordPress path</dt><dd>/{targetPreflight.target.canonicalPath}</dd></div>
+            <div><dt className="text-zinc-500">Target state</dt><dd>{targetPreflight.target.state}</dd></div>
+            <div><dt className="text-zinc-500">WordPress leaf</dt><dd>{targetPreflight.target.canonicalSlug}</dd></div>
+            <div><dt className="text-zinc-500">Parent</dt><dd>{targetPreflight.target.canonicalParentId ?? "Unverified"}</dd></div>
+            <div><dt className="text-zinc-500">WordPress ID</dt><dd>{targetPreflight.target.wordpressObjectId ?? "Unverified"}</dd></div>
+            <div><dt className="text-zinc-500">WordPress status</dt><dd>{targetPreflight.target.wordpressStatus ?? "Unverified"}</dd></div>
+            <div><dt className="text-zinc-500">Title</dt><dd>{targetPreflight.target.wordpressTitle ?? "Unverified"}</dd></div>
+            <div className="md:col-span-2"><dt className="text-zinc-500">Mutation availability</dt><dd>{targetPreflight.availability.message}</dd></div>
+          </dl>
+        ) : (
+          <p className="mt-2 text-sm text-amber-300">
+            Target state is unknown. Target existence must be verified authoritatively before creation.
+          </p>
+        )}
+      </article>
+
       <div className="grid gap-4 md:grid-cols-2">
         <label className="text-sm text-zinc-300 md:col-span-2">
           Canonical slug / path
@@ -353,13 +432,14 @@ export function GlwPageGenerationWorkspace({
               <div><dt className="text-zinc-500">Site</dt><dd>{preview.request.siteName}</dd></div>
               <div><dt className="text-zinc-500">Product/topic</dt><dd>{preview.request.productTopic}</dd></div>
               <div><dt className="text-zinc-500">Geography</dt><dd>{[preview.request.cityName, preview.request.stateName].filter(Boolean).join(", ") || "General"}</dd></div>
-              <div><dt className="text-zinc-500">Planned operation</dt><dd>{preview.request.plannedOperation}</dd></div>
+              <div><dt className="text-zinc-500">Planned operation</dt><dd>{operationAvailable ? preview.request.plannedOperation : "BLOCKED"}</dd></div>
               <div className="md:col-span-2"><dt className="text-zinc-500">Canonical path</dt><dd>/{preview.request.canonicalPath}</dd></div>
+              <div className="md:col-span-2"><dt className="text-zinc-500">Canonical WordPress identity</dt><dd>/{targetPreflight?.target?.canonicalPath ?? "Unverified"}</dd></div>
               <div><dt className="text-zinc-500">Title</dt><dd>{preview.request.title}</dd></div>
               <div><dt className="text-zinc-500">SEO title</dt><dd>{preview.request.seoTitle}</dd></div>
               <div className="md:col-span-2"><dt className="text-zinc-500">Meta description</dt><dd>{preview.request.metaDescription}</dd></div>
               <div><dt className="text-zinc-500">Publication intent</dt><dd>{preview.request.publicationIntent}</dd></div>
-              <div><dt className="text-zinc-500">WordPress target</dt><dd>{preview.request.wordpressObjectId ?? "New object"}</dd></div>
+              <div><dt className="text-zinc-500">WordPress target</dt><dd>{targetPreflight?.target?.wordpressObjectId ? `Existing page ${targetPreflight.target.wordpressObjectId}` : targetPreflight?.target?.state === "ABSENT" ? "New object" : "Unverified"}</dd></div>
               <div><dt className="text-zinc-500">External execution</dt><dd>Disabled</dd></div>
             </dl>
           ) : null}
@@ -383,6 +463,8 @@ export function GlwPageGenerationWorkspace({
               executing ||
               !executionConfigured ||
               !preview?.request ||
+              targetPreflightLoading ||
+              !operationAvailable ||
               preview.request.publicationIntent !== "draft"
             }
             onClick={executeWordpressDraft}
