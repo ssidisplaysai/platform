@@ -2,6 +2,8 @@ import type { CatalogMappingTarget } from "./catalog-import-preview";
 
 export type CatalogSourceMappingProfile = {
   profileId: string;
+  version: string;
+  frozen: boolean;
   sourceName: string;
   columnMappings: Readonly<Record<string, CatalogMappingTarget>>;
   allowProductNameWithoutSku: boolean;
@@ -9,6 +11,8 @@ export type CatalogSourceMappingProfile = {
 
 export const SSI_PRICING_MASTER_PROFILE: CatalogSourceMappingProfile = {
   profileId: "ssi-pricing-master-v1",
+  version: "1.0.0",
+  frozen: true,
   sourceName: "SSI Pricing Master Sheet.xlsx",
   allowProductNameWithoutSku: true,
   columnMappings: {
