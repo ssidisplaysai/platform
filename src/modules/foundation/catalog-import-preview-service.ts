@@ -110,6 +110,10 @@ export async function createPersistedCatalogImportPreview(
       normalizedCandidate: {
         productIdentity: row.candidateProductIdentity,
         attributes: row.candidateAttributeValues,
+        sourceMetadata: row.candidateSourceMetadata,
+        commercialFields: row.candidateCommercialFields,
+        logisticsFields: row.candidateLogisticsFields,
+        taxFields: row.candidateTaxFields,
         mediaReferences: row.candidateMediaReferences,
         documentReferences: row.candidateDocumentReferences,
       },

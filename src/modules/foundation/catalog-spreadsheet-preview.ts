@@ -4,6 +4,10 @@ import ExcelJS from "exceljs";
 
 import { createCanonicalContentHash, type CanonicalJsonValue } from "./canonical-content-hash";
 import {
+  getCatalogSourceMappingProfile,
+  type CatalogSourceMappingProfile,
+} from "./catalog-source-mapping-profile";
+import {
   CATALOG_IMPORT_LIMITS,
   type AttributeMappingCandidate,
   type CatalogImportFileType,
@@ -127,7 +131,11 @@ function parsedCell(cell: ExcelJS.Cell, mergedRanges: readonly string[]): Parsed
     rawValue,
     normalizedStructuralValue: typeof rawValue === "string" ? rawValue.trim() : rawValue,
     formula,
-    mergedCell: mergedRange ? { range: mergedRange, inference: cell.address === cell.master.address ? "NONE" : "INFERRED_FROM_MERGED_CELL" } : null,
+    mergedCell: mergedRange ? {
+      range: mergedRange,
+      masterCell: cell.master.address,
+      inference: cell.address === cell.master.address ? "NONE" : "INFERRED_FROM_MERGED_CELL",
+    } : null,
     text,
   };
 }
@@ -348,7 +356,11 @@ function isSensitiveHeader(header: string): boolean {
   return /^(password|secret|api key|token|authorization|connection string)$/i.test(normalizeCatalogHeader(header));
 }
 
-function inspectSheet(sheet: ParsedSheet, overrides: CatalogImportMappingOverrides): CatalogSheetInspection {
+function inspectSheet(
+  sheet: ParsedSheet,
+  overrides: CatalogImportMappingOverrides,
+  sourceProfile: CatalogSourceMappingProfile | null,
+): CatalogSheetInspection {
   const diagnostics: PreviewDiagnostic[] = [];
   const headerSelection = detectHeader(sheet.rows);
   if (!headerSelection.selectedHeaderRow) diagnostics.push({ code: "HEADER_NOT_FOUND", severity: "BLOCKING", message: "No defensible header row was found.", sourceLocator: { sheet: sheet.name } });
@@ -356,7 +368,12 @@ function inspectSheet(sheet: ParsedSheet, overrides: CatalogImportMappingOverrid
   const duplicateHeaders = headerSelection.columns.filter((column, index, all) => all.findIndex((candidate) => candidate.normalizedHeader === column.normalizedHeader) !== index);
   duplicateHeaders.forEach((column) => diagnostics.push({ code: "DUPLICATE_HEADER", severity: "WARNING", message: `Duplicate header: ${column.sourceHeader}`, sourceLocator: { sheet: sheet.name, row: headerSelection.selectedHeaderRow ?? undefined, column: column.columnLetter } }));
   headerSelection.columns.filter((column) => isSensitiveHeader(column.sourceHeader)).forEach((column) => diagnostics.push({ code: "SENSITIVE_VALUE_REJECTED", severity: "BLOCKING", message: `Credential-like column is not permitted: ${column.sourceHeader}`, sourceLocator: { sheet: sheet.name, column: column.columnLetter } }));
-  const mappings = headerSelection.columns.map((column) => suggestMapping(column, overrides[`${sheet.name}:${column.normalizedHeader}`] ?? overrides[column.normalizedHeader]));
+  const mappings = headerSelection.columns.map((column) => suggestMapping(
+    column,
+    overrides[`${sheet.name}:${column.normalizedHeader}`]
+      ?? overrides[column.normalizedHeader]
+      ?? sourceProfile?.columnMappings[column.normalizedHeader],
+  ));
   mappings.filter((mapping) => mapping.suggestedTarget === "UNMAPPED").forEach((mapping) => diagnostics.push({ code: "UNMAPPED_COLUMN", severity: "WARNING", message: `Unmapped column: ${mapping.sourceColumn.sourceHeader}` }));
   mappings.filter((mapping) => mapping.confidence === "LOW" && mapping.alternatives.length > 0).forEach((mapping) => diagnostics.push({ code: "AMBIGUOUS_MAPPING", severity: "WARNING", message: `Ambiguous mapping: ${mapping.sourceColumn.sourceHeader}` }));
   const recordPreviews: CatalogRecordPreview[] = [];
@@ -367,30 +384,100 @@ function inspectSheet(sheet: ParsedSheet, overrides: CatalogImportMappingOverrid
     headerSelection.columns.forEach((column) => { rawValues[column.sourceValueKey] = row[column.columnIndex - 1] ?? { rawValue: null, normalizedStructuralValue: null, formula: null, mergedCell: null }; });
     const values = Object.values(rawValues).map((value) => value.rawValue).filter((value) => value !== null && String(value).trim());
     let classification: CatalogRecordPreview["classification"] = "DATA";
+    const classificationReasons: CatalogRecordPreview["classificationReasons"][number][] = [];
     const rowDiagnostics: PreviewDiagnostic[] = [];
-    if (rowNumber === headerRow) classification = "HEADER";
-    else if (!values.length) classification = "BLANK";
-    else if (/^(notes?|specifications?|features?|variants?)[:]?$/i.test(String(values[0])) && values.length === 1) classification = "SUBHEADER";
-    else if (/^(total|end|footer|disclaimer)\b/i.test(String(values[0]))) classification = "FOOTER";
+    if (rowNumber === headerRow) {
+      classification = "HEADER";
+      classificationReasons.push("HEADER_ROW");
+    } else if (!values.length) {
+      classification = "BLANK";
+      classificationReasons.push("BLANK_ROW");
+    } else if (/^(notes?|specifications?|features?|variants?|applications?|standard sizes?)[:]?$/i.test(String(values[0]))
+      && new Set(values.map(String)).size === 1) {
+      classification = "SUBHEADER";
+      classificationReasons.push("SUBHEADER_ROW");
+    } else if (/^(total|end|footer|disclaimer)\b/i.test(String(values[0]))) {
+      classification = "FOOTER";
+      classificationReasons.push("FOOTER_ROW");
+    }
     const candidateProductIdentity: Record<string, CanonicalJsonValue> = {};
     const candidateAttributeValues: Record<string, CanonicalJsonValue> = {};
+    const candidateSourceMetadata: Record<string, CanonicalJsonValue> = {};
+    const candidateCommercialFields: Record<string, CanonicalJsonValue> = {};
+    const candidateLogisticsFields: Record<string, CanonicalJsonValue> = {};
+    const candidateTaxFields: Record<string, CanonicalJsonValue> = {};
     const candidateMediaReferences: string[] = [];
     const candidateDocumentReferences: string[] = [];
     mappings.forEach((mapping) => {
       const cell = row[mapping.sourceColumn.columnIndex - 1];
       if (!cell || cell.rawValue === null) return;
       if (mapping.suggestedTarget === "ATTRIBUTE") candidateAttributeValues[mapping.sourceColumn.normalizedHeader] = cell.rawValue;
+      else if (mapping.suggestedTarget === "SOURCE_METADATA") candidateSourceMetadata[mapping.sourceColumn.normalizedHeader] = cell.rawValue;
+      else if (mapping.suggestedTarget === "COMMERCIAL_PRICING_FIELD") candidateCommercialFields[mapping.sourceColumn.normalizedHeader] = cell.rawValue;
+      else if (mapping.suggestedTarget === "LOGISTICS_FIELD") candidateLogisticsFields[mapping.sourceColumn.normalizedHeader] = cell.rawValue;
+      else if (mapping.suggestedTarget === "TAX_FIELD") candidateTaxFields[mapping.sourceColumn.normalizedHeader] = cell.rawValue;
       else if (mapping.suggestedTarget === "MEDIA_REFERENCE") candidateMediaReferences.push(String(cell.rawValue));
       else if (mapping.suggestedTarget === "DOCUMENT_REFERENCE") candidateDocumentReferences.push(String(cell.rawValue));
       else if (!["UNMAPPED", "IGNORE", "MEDIA_REFERENCE", "DOCUMENT_REFERENCE"].includes(mapping.suggestedTarget)) candidateProductIdentity[mapping.suggestedTarget] = cell.rawValue;
       if (cell.formula) rowDiagnostics.push({ code: "FORMULA_VALUE_PRESENT", severity: "INFO", message: "Formula metadata and cached value were preserved; no formula was executed.", sourceLocator: { sheet: sheet.name, row: rowNumber, column: mapping.sourceColumn.columnLetter } });
       if (cell.mergedCell?.inference === "INFERRED_FROM_MERGED_CELL") rowDiagnostics.push({ code: "INFERRED_FROM_MERGED_CELL", severity: "WARNING", message: "Value was inferred from a merged-cell master and requires identity review.", sourceLocator: { sheet: sheet.name, row: rowNumber, column: mapping.sourceColumn.columnLetter, cellRange: cell.mergedCell.range } });
     });
-    if (classification === "DATA" && !candidateProductIdentity.SKU && !candidateProductIdentity.PRODUCT_NAME && !candidateProductIdentity.MODEL_NUMBER) {
-      classification = "MALFORMED";
-      rowDiagnostics.push({ code: "MALFORMED_ROW", severity: "ERROR", message: "No candidate SKU, model, or product name is present.", sourceLocator: { sheet: sheet.name, row: rowNumber } });
+    if (classification === "DATA") {
+      const hasIdentity = Boolean(
+        candidateProductIdentity.SKU
+        || candidateProductIdentity.PRODUCT_NAME
+        || candidateProductIdentity.MODEL_NUMBER,
+      );
+      const narrativeText = values.map(String).join("\n");
+      const hasNarrative = /category overview|standard sizes|applications?:|features?:/i.test(narrativeText)
+        || (narrativeText.length > 240 && /designed|ideal for|suitable for/i.test(narrativeText));
+      const identityTargets: CatalogMappingTarget[] = ["SKU", "PRODUCT_NAME", "MODEL_NUMBER"];
+      const identityCells = mappings
+        .filter((mapping) => identityTargets.includes(mapping.suggestedTarget))
+        .map((mapping) => row[mapping.sourceColumn.columnIndex - 1])
+        .filter((cell) => cell && cell.rawValue !== null && String(cell.rawValue).trim());
+      const mergedIdentityCells = identityCells.filter((cell) => cell.mergedCell !== null);
+      const independentIdentityCells = identityCells.filter((cell) => cell.mergedCell === null);
+      const strongMergedNarrative = rowNumber < headerRow
+        && hasNarrative
+        && mergedIdentityCells.length >= 2
+        && independentIdentityCells.length === 0
+        && new Set(mergedIdentityCells.map((cell) => cell.mergedCell?.masterCell)).size === 1;
+      const hasTechnicalIntent = Object.keys(candidateAttributeValues).length > 0
+        || Boolean(candidateProductIdentity.DESCRIPTION)
+        || candidateMediaReferences.length > 0
+        || candidateDocumentReferences.length > 0;
+      const hasCommercial = Object.keys(candidateCommercialFields).length > 0
+        || Object.keys(candidateLogisticsFields).length > 0
+        || Object.keys(candidateTaxFields).length > 0;
+      const formulaOnly = Object.values(rawValues)
+        .filter((cell) => cell.rawValue !== null && String(cell.rawValue).trim())
+        .every((cell) => cell.formula !== null);
+
+      if (strongMergedNarrative) {
+        classification = "NARRATIVE";
+        classificationReasons.push("CATEGORY_NARRATIVE");
+      } else if (hasIdentity) {
+        classificationReasons.push("PRODUCT_IDENTITY_PRESENT");
+      } else if (hasNarrative) {
+        classification = "NARRATIVE";
+        classificationReasons.push("CATEGORY_NARRATIVE");
+      } else if (hasCommercial && !hasTechnicalIntent) {
+        classification = "PRICING_FILLER";
+        classificationReasons.push(formulaOnly ? "FORMULA_TAIL" : "PRICING_ONLY_FILLER");
+      } else if (Object.keys(candidateSourceMetadata).length > 0 && !hasTechnicalIntent) {
+        classification = "NOTES";
+        classificationReasons.push("NOTES_ONLY");
+      } else if (!hasTechnicalIntent) {
+        classification = "STRUCTURAL_FILLER";
+        classificationReasons.push("STRUCTURAL_FILLER");
+      } else {
+        classification = "MALFORMED";
+        classificationReasons.push("MISSING_REQUIRED_IDENTITY");
+        rowDiagnostics.push({ code: "MALFORMED_ROW", severity: "ERROR", message: "Product-like row has technical or descriptive evidence but no usable product identity.", sourceLocator: { sheet: sheet.name, row: rowNumber } });
+      }
     }
-    recordPreviews.push({ sheetName: sheet.name, rowNumber, classification, sourceLocator: { sheet: sheet.name, row: rowNumber, cellRange: `A${rowNumber}:${columnLetter(sheet.rows[0]?.length ?? 1)}${rowNumber}` }, rawValues, candidateProductIdentity, candidateAttributeValues, candidateMediaReferences, candidateDocumentReferences, diagnostics: rowDiagnostics });
+    recordPreviews.push({ sheetName: sheet.name, rowNumber, classification, classificationReasons, sourceLocator: { sheet: sheet.name, row: rowNumber, cellRange: `A${rowNumber}:${columnLetter(sheet.rows[0]?.length ?? 1)}${rowNumber}` }, rawValues, candidateProductIdentity, candidateAttributeValues, candidateSourceMetadata, candidateCommercialFields, candidateLogisticsFields, candidateTaxFields, candidateMediaReferences, candidateDocumentReferences, diagnostics: rowDiagnostics });
   });
   const dataRows = recordPreviews.filter((row) => row.classification === "DATA");
   const attributeCandidates = mappings.filter((mapping) => mapping.suggestedTarget === "ATTRIBUTE").map((mapping) => {
@@ -426,7 +513,8 @@ export async function createCatalogImportPreview(input: CatalogImportInput, mapp
   const contentHash = createCanonicalContentHash(input.buffer.toString("base64"));
   const parsedSheets = await parseInput(input, fileType);
   if (!parsedSheets.length) throw new CatalogPreviewError("PARSER_ERROR", "No usable sheet was found.");
-  const sheets = parsedSheets.map((sheet) => inspectSheet(sheet, mappingOverrides));
+  const sourceProfile = getCatalogSourceMappingProfile(input.mappingProfileId);
+  const sheets = parsedSheets.map((sheet) => inspectSheet(sheet, mappingOverrides, sourceProfile));
   const recordPreviews = sheets.flatMap((sheet) => sheet.recordPreviews);
   const columnMappings = sheets.flatMap((sheet) => sheet.columnMappings);
   const attributeCandidates = sheets.flatMap((sheet) => sheet.attributeCandidates);
@@ -447,6 +535,11 @@ export async function createCatalogImportPreview(input: CatalogImportInput, mapp
     blankRowCount: recordPreviews.filter((row) => row.classification === "BLANK").length,
     ignoredRowCount: recordPreviews.filter((row) => ["HEADER", "SUBHEADER", "FOOTER", "IGNORED"].includes(row.classification)).length,
     malformedRowCount: recordPreviews.filter((row) => row.classification === "MALFORMED").length,
+    pricingFillerRowCount: recordPreviews.filter((row) => row.classification === "PRICING_FILLER").length,
+    structuralFillerRowCount: recordPreviews.filter((row) => row.classification === "STRUCTURAL_FILLER").length,
+    narrativeRowCount: recordPreviews.filter((row) => row.classification === "NARRATIVE").length,
+    subheaderRowCount: recordPreviews.filter((row) => row.classification === "SUBHEADER").length,
+    notesRowCount: recordPreviews.filter((row) => row.classification === "NOTES").length,
     mappedColumnCount: columnMappings.filter((mapping) => !["UNMAPPED", "IGNORE"].includes(mapping.suggestedTarget)).length,
     unmappedColumnCount: columnMappings.filter((mapping) => mapping.suggestedTarget === "UNMAPPED").length,
     ambiguousMappingCount: columnMappings.filter((mapping) => mapping.reviewRequired).length,

@@ -84,6 +84,10 @@ export type CatalogMappingTarget =
   | "ATTRIBUTE"
   | "MEDIA_REFERENCE"
   | "DOCUMENT_REFERENCE"
+  | "SOURCE_METADATA"
+  | "COMMERCIAL_PRICING_FIELD"
+  | "LOGISTICS_FIELD"
+  | "TAX_FIELD"
   | "IGNORE"
   | "UNMAPPED";
 
@@ -139,7 +143,11 @@ export type AttributeMappingCandidate = {
 };
 
 export type FormulaEvidence = { formula: string; cachedResult: CanonicalJsonValue | null };
-export type MergedCellEvidence = { range: string; inference: "NONE" | "INFERRED_FROM_MERGED_CELL" };
+export type MergedCellEvidence = {
+  range: string;
+  masterCell: string;
+  inference: "NONE" | "INFERRED_FROM_MERGED_CELL";
+};
 export type PreviewCellValue = {
   rawValue: CanonicalJsonValue;
   normalizedStructuralValue: CanonicalJsonValue;
@@ -152,18 +160,41 @@ export type PreviewRowClassification =
   | "BLANK"
   | "HEADER"
   | "SUBHEADER"
+  | "NARRATIVE"
+  | "STRUCTURAL_FILLER"
+  | "PRICING_FILLER"
+  | "NOTES"
   | "FOOTER"
   | "MALFORMED"
   | "IGNORED";
+
+export type PreviewRowReason =
+  | "PRODUCT_IDENTITY_PRESENT"
+  | "BLANK_ROW"
+  | "HEADER_ROW"
+  | "SUBHEADER_ROW"
+  | "CATEGORY_NARRATIVE"
+  | "PRICING_ONLY_FILLER"
+  | "FORMULA_TAIL"
+  | "STRUCTURAL_FILLER"
+  | "NOTES_ONLY"
+  | "MISSING_REQUIRED_IDENTITY"
+  | "CONFLICTING_ROW_STRUCTURE"
+  | "FOOTER_ROW";
 
 export type CatalogRecordPreview = {
   sheetName: string;
   rowNumber: number;
   classification: PreviewRowClassification;
+  classificationReasons: readonly PreviewRowReason[];
   sourceLocator: SourceLocator;
   rawValues: Readonly<Record<string, PreviewCellValue>>;
   candidateProductIdentity: Readonly<Record<string, CanonicalJsonValue>>;
   candidateAttributeValues: Readonly<Record<string, CanonicalJsonValue>>;
+  candidateSourceMetadata: Readonly<Record<string, CanonicalJsonValue>>;
+  candidateCommercialFields: Readonly<Record<string, CanonicalJsonValue>>;
+  candidateLogisticsFields: Readonly<Record<string, CanonicalJsonValue>>;
+  candidateTaxFields: Readonly<Record<string, CanonicalJsonValue>>;
   candidateMediaReferences: readonly string[];
   candidateDocumentReferences: readonly string[];
   diagnostics: readonly PreviewDiagnostic[];
@@ -210,6 +241,11 @@ export type CatalogImportPreviewCounts = {
   blankRowCount: number;
   ignoredRowCount: number;
   malformedRowCount: number;
+  pricingFillerRowCount: number;
+  structuralFillerRowCount: number;
+  narrativeRowCount: number;
+  subheaderRowCount: number;
+  notesRowCount: number;
   mappedColumnCount: number;
   unmappedColumnCount: number;
   ambiguousMappingCount: number;

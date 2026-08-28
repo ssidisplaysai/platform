@@ -353,7 +353,11 @@ describe("catalog spreadsheet mapping preview", () => {
     const preview = await createCatalogImportPreview(input);
     expect(preview.sheets[0].mergedRanges).toContain("B2:B3");
     const inferred = preview.recordPreviews.find((row) => row.rowNumber === 3)?.rawValues["Product Name"].mergedCell;
-    expect(inferred).toEqual({ range: "B2:B3", inference: "INFERRED_FROM_MERGED_CELL" });
+    expect(inferred).toEqual({
+      range: "B2:B3",
+      masterCell: "B2",
+      inference: "INFERRED_FROM_MERGED_CELL",
+    });
   });
 
   test("42. duplicate headers are diagnosed", async () => {
