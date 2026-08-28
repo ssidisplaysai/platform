@@ -325,6 +325,7 @@ export function detectTargetStaleness(input: {
 export type TargetSubjectCandidate = {
   productFamilyId: string | null;
   productId: string;
+  productName?: string;
   variantId: string | null;
   applicationProductSlug: string;
   canonicalProductSlug: string;
@@ -450,7 +451,7 @@ export function expandTargetInventoryPreview(input: {
         dimensionType: "PRODUCT",
         dimensionKey: "product-id",
         stableValue: subject.productId,
-        displayValue: subject.productId,
+        displayValue: subject.productName ?? subject.productId,
         normalizedValue: subject.productId,
       }),
     ];

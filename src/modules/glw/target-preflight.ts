@@ -45,6 +45,9 @@ export type GlwWordPressTargetPage = {
   status?: string;
   link?: string;
   title?: { rendered?: string };
+  modified_gmt?: string;
+  featured_media?: number;
+  author?: number;
 };
 
 type FetchResponse = {

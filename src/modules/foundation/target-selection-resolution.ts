@@ -292,6 +292,7 @@ export function canonicalProductsToPlanningCandidates(input: {
   return input.products.map((product) => ({
     productFamilyId: product.productFamilyId,
     productId: product.productId,
+    productName: product.productName,
     variantId: null,
     applicationProductSlug: product.slug,
     canonicalProductSlug: input.canonicalSlugByProductId[product.productId] ?? product.slug,
@@ -321,6 +322,7 @@ export function reconciliationPlanToPlanningCandidates(input: {
     return {
       productFamilyId: decision.familyId,
       productId,
+      productName: decision.canonicalName,
       variantId: null,
       applicationProductSlug,
       canonicalProductSlug,
