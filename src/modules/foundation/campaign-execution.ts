@@ -259,7 +259,12 @@ export function projectApprovedTargetToGlwRequest(input: {
   targetId: string;
   now: string;
 }): GlwGenerationRequest {
-  validateCampaignApproval({ campaign: input.campaign, approval: input.approval, now: input.now });
+  validateCampaignApproval({
+    campaign: input.campaign,
+    approval: input.approval,
+    now: input.now,
+    targetIds: [input.targetId],
+  });
   if (!input.plan.targetIds.includes(input.targetId)) throw new CampaignExecutionError("APPROVAL_SCOPE_MISMATCH", "Target is outside the approved execution subset.");
   const target = input.matrix.targets.find((candidate) => candidate.targetId === input.targetId);
   const preflight = preflightByTarget(input.campaign).get(input.targetId);

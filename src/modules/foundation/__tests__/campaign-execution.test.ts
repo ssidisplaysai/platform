@@ -8,6 +8,7 @@ import {
   type CampaignTargetPreflightResult,
 } from "@/modules/foundation/campaign-plan";
 import {
+  CAMPAIGN_EXECUTION_LIMITS,
   CampaignDispatchRejectedError,
   createCampaignExecutionPlan,
   createCampaignTargetExecutionRecords,
@@ -140,11 +141,41 @@ function readyCampaign(input: {
   return { matrix: targetMatrix, campaign };
 }
 
-function approvedExecution(targetCount: number, createCount = targetCount) {
+function approvedExecution(targetCount: number, createCount = targetCount, input?: {
+  concurrency?: number;
+  dispatchPacingMs?: number;
+}) {
   const { matrix: targetMatrix, campaign } = readyCampaign({ targetCount, createCount });
   const approval = createCampaignApproval({ campaign, approvedBy: "operator", approvedAt: EXECUTION_AT });
-  const plan = createCampaignExecutionPlan({ campaign, approval, now: EXECUTION_AT, dispatchPacingMs: 0 });
+  const plan = createCampaignExecutionPlan({
+    campaign,
+    approval,
+    now: EXECUTION_AT,
+    concurrency: input?.concurrency,
+    dispatchPacingMs: input?.dispatchPacingMs ?? 0,
+  });
   return { matrix: targetMatrix, campaign, approval, plan, now: () => EXECUTION_AT };
+}
+
+async function executeWithQueuedTimers(
+  input: ReturnType<typeof approvedExecution>,
+  dispatcher: CampaignGlwDispatcher = successDispatcher,
+) {
+  jest.useFakeTimers({ now: 0 });
+  const invocationTimes: number[] = [];
+  try {
+    const execution = executeApprovedCampaign({
+      ...input,
+      dispatcher: async (dispatchInput) => {
+        invocationTimes.push(performance.now());
+        return dispatcher(dispatchInput);
+      },
+    });
+    await jest.runAllTimersAsync();
+    return { run: await execution, invocationTimes };
+  } finally {
+    jest.useRealTimers();
+  }
 }
 
 function glwRecord(input: {
@@ -465,5 +496,268 @@ describe("002D bounded synthetic execution", () => {
     expect(dispatcher).toHaveBeenCalledTimes(1);
     expect(run.records[0].attemptCount).toBe(1);
     expect(input.plan.publicationIntent).toBe("draft");
+  });
+
+  test("31. concurrent workers preserve the global pacing floor after an early timer wake", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    let earlyWake = true;
+    const invocationTimes: number[] = [];
+    const run = await executeApprovedCampaign({
+      ...input,
+      dispatcher: async ({ request, targetId }) => {
+        invocationTimes.push(monotonicTime);
+        return glwRecord({ request, targetId });
+      },
+      delay: async (milliseconds) => {
+        monotonicTime += earlyWake ? Math.max(0, milliseconds - 381) : milliseconds;
+        earlyWake = false;
+      },
+      monotonicNow: () => monotonicTime,
+    });
+    expect(run.summary.succeeded).toBe(2);
+    expect(invocationTimes[1] - invocationTimes[0]).toBeGreaterThanOrEqual(5_000);
+  });
+
+  test("32. simultaneous workers reserve distinct global dispatch slots", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    const invocationTimes: number[] = [];
+    const run = await executeApprovedCampaign({
+      ...input,
+      dispatcher: async ({ request, targetId }) => {
+        invocationTimes.push(monotonicTime);
+        return glwRecord({ request, targetId });
+      },
+      delay: async (milliseconds) => { monotonicTime += milliseconds; },
+      monotonicNow: () => monotonicTime,
+    });
+    expect(invocationTimes).toEqual([0, 5_000]);
+    expect(run.metrics.dispatchPacing.map((entry) => entry.dispatchReservedAt)).toEqual([0, 5_000]);
+  });
+
+  test("33. recycled worker slots retain second-wave global pacing", async () => {
+    const input = approvedExecution(4, 4, { concurrency: 2, dispatchPacingMs: 5_000 });
+    const { run, invocationTimes } = await executeWithQueuedTimers(input);
+    expect(invocationTimes).toEqual([0, 5_000, 10_000, 15_000]);
+    expect(run.metrics.dispatchedCount).toBe(4);
+  });
+
+  test("34. a 4999 ms wake waits for the remaining millisecond", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    let earlyWake = true;
+    const delays: number[] = [];
+    const invocationTimes: number[] = [];
+    await executeApprovedCampaign({
+      ...input,
+      dispatcher: async ({ request, targetId }) => {
+        invocationTimes.push(monotonicTime);
+        return glwRecord({ request, targetId });
+      },
+      delay: async (milliseconds) => {
+        delays.push(milliseconds);
+        monotonicTime += earlyWake ? milliseconds - 1 : milliseconds;
+        earlyWake = false;
+      },
+      monotonicNow: () => monotonicTime,
+    });
+    expect(delays).toEqual([5_000, 1]);
+    expect(invocationTimes).toEqual([0, 5_000]);
+  });
+
+  test("35. an exact 5000 ms wake is immediately dispatchable", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    const delays: number[] = [];
+    await executeApprovedCampaign({
+      ...input,
+      dispatcher: async ({ request, targetId }) => glwRecord({ request, targetId }),
+      delay: async (milliseconds) => { delays.push(milliseconds); monotonicTime += milliseconds; },
+      monotonicNow: () => monotonicTime,
+    });
+    expect(delays).toEqual([5_000]);
+  });
+
+  test.each([[4, 2], [10, 2]] as const)("36-37. %i targets at concurrency %i preserve every pacing interval", async (targetCount, concurrency) => {
+    const input = approvedExecution(targetCount, targetCount, { concurrency, dispatchPacingMs: 5_000 });
+    const { run, invocationTimes } = await executeWithQueuedTimers(
+      input,
+      async ({ request, targetId }) => {
+        await new Promise((resolve) => setTimeout(resolve, 6_000));
+        return glwRecord({ request, targetId });
+      },
+    );
+    const intervals = invocationTimes.slice(1).map((value, index) => value - invocationTimes[index]);
+    expect(run.metrics.dispatchedCount).toBe(targetCount);
+    expect(Math.min(...intervals)).toBe(5_000);
+    expect(run.metrics.observedMaximumInFlight).toBe(2);
+  });
+
+  test("38. concurrency one retains the global pacing floor", async () => {
+    const input = approvedExecution(4, 4, { concurrency: 1, dispatchPacingMs: 5_000 });
+    const { run, invocationTimes } = await executeWithQueuedTimers(input);
+    expect(run.metrics.observedMaximumInFlight).toBe(1);
+    expect(invocationTimes).toEqual([0, 5_000, 10_000, 15_000]);
+  });
+
+  test("39. a failed outbound dispatch consumes its pacing slot", async () => {
+    const input = approvedExecution(3, 3, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let calls = 0;
+    const { invocationTimes } = await executeWithQueuedTimers(
+      input,
+      async ({ request, targetId }) => {
+        calls += 1;
+        if (calls === 2) throw new Error("synthetic outbound failure");
+        return glwRecord({ request, targetId });
+      },
+    );
+    expect(invocationTimes).toEqual([0, 5_000, 10_000]);
+  });
+
+  test("40. read retry policy remains separate from dispatch pacing", () => {
+    expect(CAMPAIGN_EXECUTION_LIMITS.dispatchPacingMs).toBe(5_000);
+    expect(CAMPAIGN_EXECUTION_LIMITS).not.toHaveProperty("readRetryBackoffMs");
+  });
+
+  test("41. dispatch rate-limit failure is attempted once without auto-retry", async () => {
+    const input = approvedExecution(1, 1, { concurrency: 2, dispatchPacingMs: 5_000 });
+    const dispatcher = jest.fn(async () => { throw new Error("HTTP 429 Too many requests"); });
+    const run = await executeApprovedCampaign({ ...input, dispatcher });
+    expect(dispatcher).toHaveBeenCalledTimes(1);
+    expect(run.records[0]).toMatchObject({ status: "RETRY_REVIEW_REQUIRED", attemptCount: 1 });
+  });
+
+  test("42. pause while waiting prevents the reserved target from dispatching", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    const dispatcher = jest.fn(successDispatcher);
+    const run = await executeApprovedCampaign({
+      ...input,
+      dispatcher,
+      delay: async (milliseconds) => { monotonicTime += milliseconds; },
+      monotonicNow: () => monotonicTime,
+      shouldPause: () => monotonicTime >= 5_000,
+    });
+    expect(dispatcher).toHaveBeenCalledTimes(1);
+    expect(run.plan.status).toBe("PAUSED");
+  });
+
+  test("43. circuit opening prevents later reserved dispatches", async () => {
+    const input = approvedExecution(10, 10, { concurrency: 2, dispatchPacingMs: 5_000 });
+    const { run, invocationTimes } = await executeWithQueuedTimers(input, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      throw new Error("infrastructure unavailable");
+    });
+    expect(run.metrics.circuitBreakerTripped).toBe(true);
+    expect(invocationTimes).toHaveLength(3);
+  });
+
+  test("44. stale preflight can be refreshed after a pacing wait", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 1, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    let wallTime = EXECUTION_AT;
+    const refreshTargetPreflight = jest.fn(async ({ targetId }: { targetId: string }) => ({
+      ...input.campaign.preflightResults.find((result) => result.targetId === targetId)!,
+      checkedAt: wallTime,
+    }));
+    const run = await executeApprovedCampaign({
+      ...input,
+      dispatcher: successDispatcher,
+      now: () => wallTime,
+      delay: async (milliseconds) => { monotonicTime += milliseconds; wallTime = "2026-08-27T01:40:00.000Z"; },
+      monotonicNow: () => monotonicTime,
+      refreshTargetPreflight,
+    });
+    expect(run.summary.succeeded).toBe(2);
+    expect(refreshTargetPreflight).toHaveBeenCalledTimes(2);
+  });
+
+  test("45. unsafe refreshed preflight prevents outbound dispatch", async () => {
+    const input = approvedExecution(1, 1, { concurrency: 1, dispatchPacingMs: 5_000 });
+    const dispatcher = jest.fn(successDispatcher);
+    const source = input.campaign.preflightResults[0];
+    const run = await executeApprovedCampaign({
+      ...input,
+      dispatcher,
+      refreshTargetPreflight: async () => ({
+        ...source,
+        targetState: "EXISTS_PUBLISHED",
+        eligibility: "NOT_ELIGIBLE_PUBLISHED",
+        plannedOperation: "NO_ACTION",
+        wordpressObjectId: "protected",
+      }),
+    });
+    expect(dispatcher).not.toHaveBeenCalled();
+    expect(run.records[0]).toMatchObject({ status: "FAILED", attemptCount: 0 });
+  });
+
+  test("46. pacing reservations do not change idempotency or dispatch twice", async () => {
+    const input = approvedExecution(4, 4, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    const dispatcher = jest.fn(successDispatcher);
+    const first = await executeApprovedCampaign({ ...input, dispatcher, delay: async (milliseconds) => { monotonicTime += milliseconds; }, monotonicNow: () => monotonicTime });
+    const second = await executeApprovedCampaign({ ...input, dispatcher, monotonicNow: () => monotonicTime });
+    expect(first.metrics.dispatchPacing).toHaveLength(4);
+    expect(second.metrics.dispatchedCount).toBe(0);
+    expect(dispatcher).toHaveBeenCalledTimes(4);
+  });
+
+  test("47. dispatch pacing serializes initiation without reducing active concurrency", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    let releaseFirst!: () => void;
+    const firstActive = new Promise<void>((resolve) => { releaseFirst = resolve; });
+    let calls = 0;
+    const run = await executeApprovedCampaign({
+      ...input,
+      dispatcher: async ({ request, targetId }) => {
+        calls += 1;
+        if (calls === 1) await firstActive;
+        else releaseFirst();
+        return glwRecord({ request, targetId });
+      },
+      delay: async (milliseconds) => { monotonicTime += milliseconds; },
+      monotonicNow: () => monotonicTime,
+    });
+    expect(run.metrics.observedMaximumInFlight).toBe(2);
+  });
+
+  test("48. pacing observations distinguish eligibility, reservation, and invocation", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 100;
+    const run = await executeApprovedCampaign({
+      ...input,
+      dispatcher: successDispatcher,
+      delay: async (milliseconds) => { monotonicTime += milliseconds; },
+      monotonicNow: () => monotonicTime,
+    });
+    expect(run.metrics.dispatchPacing).toEqual([
+      { targetId: expect.any(String), dispatchEligibleAt: 100, dispatchReservedAt: 100, dispatchInvokedAt: 100, dispatchPacingDelayMs: 0 },
+      { targetId: expect.any(String), dispatchEligibleAt: 100, dispatchReservedAt: 5_100, dispatchInvokedAt: 5_100, dispatchPacingDelayMs: 5_000 },
+    ]);
+  });
+
+  test("49. unequal preflight refresh latency cannot compress actual invocation spacing", async () => {
+    const input = approvedExecution(2, 2, { concurrency: 2, dispatchPacingMs: 5_000 });
+    let monotonicTime = 0;
+    let refreshCount = 0;
+    const invocationTimes: number[] = [];
+    await executeApprovedCampaign({
+      ...input,
+      dispatcher: async ({ request, targetId }) => {
+        invocationTimes.push(monotonicTime);
+        return glwRecord({ request, targetId });
+      },
+      refreshTargetPreflight: async ({ targetId }) => {
+        monotonicTime += refreshCount === 0 ? 500 : 100;
+        refreshCount += 1;
+        return input.campaign.preflightResults.find((result) => result.targetId === targetId)!;
+      },
+      delay: async (milliseconds) => { monotonicTime += milliseconds; },
+      monotonicNow: () => monotonicTime,
+    });
+    expect(invocationTimes).toEqual([500, 5_600]);
+    expect(invocationTimes[1] - invocationTimes[0]).toBeGreaterThanOrEqual(5_000);
   });
 });

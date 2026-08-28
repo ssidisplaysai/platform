@@ -3,6 +3,7 @@ import type { GlwPageExecutionRecord } from "../glw/page-execution";
 import type { CampaignApproval } from "./campaign-approval";
 import { validateCampaignApproval } from "./campaign-approval";
 import type { CampaignPlan } from "./campaign-plan";
+import type { CampaignTargetPreflightResult } from "./campaign-plan";
 import {
   CAMPAIGN_EXECUTION_LIMITS,
   CampaignDispatchRejectedError,
@@ -42,6 +43,15 @@ export type CampaignExecutionMetrics = {
   duplicateDispatchCount: number;
   persistenceReplacementCount: number;
   circuitBreakerTripped: boolean;
+  dispatchPacing: readonly CampaignDispatchPacingObservation[];
+};
+
+export type CampaignDispatchPacingObservation = {
+  targetId: string;
+  dispatchEligibleAt: number;
+  dispatchReservedAt: number;
+  dispatchInvokedAt: number;
+  dispatchPacingDelayMs: number;
 };
 
 export type CampaignExecutionRun = {
@@ -91,10 +101,15 @@ export async function executeApprovedCampaign(input: {
   matrix: TargetMatrix;
   dispatcher: CampaignGlwDispatcher;
   now?: () => string;
+  monotonicNow?: () => number;
   delay?: (milliseconds: number) => Promise<void>;
   shouldPause?: () => boolean;
+  refreshTargetPreflight?: (input: {
+    targetId: string;
+  }) => Promise<CampaignTargetPreflightResult>;
 }): Promise<CampaignExecutionRun> {
   const now = input.now ?? (() => new Date().toISOString());
+  const monotonicNow = input.monotonicNow ?? (() => performance.now());
   const delay = input.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   validateCampaignApproval({ campaign: input.campaign, approval: input.approval, now: now(), targetIds: [] });
   if (input.plan.approvalFingerprint !== input.approval.approvalFingerprint
@@ -133,7 +148,29 @@ export async function executeApprovedCampaign(input: {
   const failureWindow: boolean[] = [];
   let circuitBreakerTripped = false;
   let paused = false;
-  let nextDispatchAt = 0;
+  let lastDispatchInvokedAt: number | null = null;
+  let dispatchInitiationQueue = Promise.resolve();
+  const dispatchPacing: CampaignDispatchPacingObservation[] = [];
+
+  const waitForDispatchSlot = async (reservedAt: number): Promise<void> => {
+    let remainingMs = reservedAt - monotonicNow();
+    while (remainingMs > 0) {
+      await delay(remainingMs);
+      remainingMs = reservedAt - monotonicNow();
+    }
+  };
+
+  const withDispatchInitiationLock = async <T>(operation: () => Promise<T>): Promise<T> => {
+    const previous = dispatchInitiationQueue;
+    let release!: () => void;
+    dispatchInitiationQueue = new Promise<void>((resolve) => { release = resolve; });
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      release();
+    }
+  };
 
   const targetById = new Map(input.matrix.targets.map((target) => [target.targetId, target]));
   const dispatchRecord = async (record: CampaignTargetExecutionRecord): Promise<CampaignTargetExecutionRecord> => {
@@ -146,51 +183,103 @@ export async function executeApprovedCampaign(input: {
       duplicateDispatchCount += 1;
       return record;
     }
-    let request: GlwGenerationRequest;
-    try {
-      request = projectApprovedTargetToGlwRequest({
-        campaign: input.campaign,
-        approval: input.approval,
-        plan: input.plan,
-        matrix: input.matrix,
-        targetId: record.targetId,
-        now: now(),
-      });
-      if (!targetById.has(record.targetId) || request.publicationIntent !== "draft") {
-        throw new CampaignExecutionError("PRE_DISPATCH_VALIDATION", "Approved target failed final dispatch validation.");
-      }
-    } catch (error) {
+    if (!targetById.has(record.targetId)) {
       return failureRecord({
         record,
-        failureClass: error instanceof CampaignExecutionError && error.code === "PREFLIGHT_REFRESH_REQUIRED"
-          ? "PREFLIGHT_EXPIRED"
-          : "PRE_DISPATCH_VALIDATION",
-        reason: error instanceof Error ? error.message : "Pre-dispatch validation failed.",
+        failureClass: "PRE_DISPATCH_VALIDATION",
+        reason: "Approved target failed final dispatch validation.",
         requiresReview: false,
         dispatched: false,
         now: now(),
       });
     }
-    const currentTime = Date.now();
-    const waitMs = Math.max(0, nextDispatchAt - currentTime);
-    nextDispatchAt = Math.max(nextDispatchAt, currentTime) + input.plan.dispatchPacingMs;
-    if (waitMs > 0) await delay(waitMs);
-    if (input.shouldPause?.() || circuitBreakerTripped) {
-      paused = true;
-      return record;
-    }
-    dispatchedKeys.add(record.idempotencyKey);
-    dispatchedCount += 1;
-    inFlight += 1;
-    observedMaximumInFlight = Math.max(observedMaximumInFlight, inFlight);
+    const dispatchEligibleAt = monotonicNow();
+    const initiation = await withDispatchInitiationLock(async () => {
+      const dispatchReservedAt = lastDispatchInvokedAt === null
+        ? monotonicNow()
+        : Math.max(monotonicNow(), lastDispatchInvokedAt + input.plan.dispatchPacingMs);
+      if (dispatchReservedAt > monotonicNow()) await waitForDispatchSlot(dispatchReservedAt);
+      if (input.shouldPause?.() || circuitBreakerTripped) {
+        paused = true;
+        return { kind: "SKIPPED" as const, record };
+      }
+      try {
+        const refreshed = input.refreshTargetPreflight
+          ? await input.refreshTargetPreflight({ targetId: record.targetId })
+          : null;
+        const dispatchCampaign = refreshed
+          ? {
+              ...input.campaign,
+              preflightResults: input.campaign.preflightResults.map((result) =>
+                result.targetId === record.targetId ? refreshed : result),
+            }
+          : input.campaign;
+        validateCampaignApproval({
+          campaign: dispatchCampaign,
+          approval: input.approval,
+          now: now(),
+          targetIds: [record.targetId],
+        });
+        const request = projectApprovedTargetToGlwRequest({
+          campaign: dispatchCampaign,
+          approval: input.approval,
+          plan: input.plan,
+          matrix: input.matrix,
+          targetId: record.targetId,
+          now: now(),
+        });
+        if (request.publicationIntent !== "draft") {
+          throw new CampaignExecutionError("PRE_DISPATCH_VALIDATION", "Approved target failed final dispatch validation.");
+        }
+        if (input.shouldPause?.() || circuitBreakerTripped) {
+          paused = true;
+          return { kind: "SKIPPED" as const, record };
+        }
+        const dispatchInvokedAt = monotonicNow();
+        lastDispatchInvokedAt = dispatchInvokedAt;
+        dispatchPacing.push({
+          targetId: record.targetId,
+          dispatchEligibleAt,
+          dispatchReservedAt,
+          dispatchInvokedAt,
+          dispatchPacingDelayMs: dispatchInvokedAt - dispatchEligibleAt,
+        });
+        dispatchedKeys.add(record.idempotencyKey);
+        dispatchedCount += 1;
+        inFlight += 1;
+        observedMaximumInFlight = Math.max(observedMaximumInFlight, inFlight);
+        let dispatchPromise: Promise<GlwPageExecutionRecord>;
+        try {
+          dispatchPromise = input.dispatcher({
+            request,
+            idempotencyKey: record.idempotencyKey,
+            campaignId: record.campaignId,
+            executionPlanId: record.executionPlanId,
+            targetId: record.targetId,
+          });
+        } catch (error) {
+          dispatchPromise = Promise.reject(error);
+        }
+        return { kind: "DISPATCHED" as const, dispatchPromise };
+      } catch (error) {
+        return {
+          kind: "FAILED_SAFETY" as const,
+          record: failureRecord({
+            record,
+            failureClass: error instanceof CampaignExecutionError && error.code === "TARGET_STATE_CHANGED"
+              ? "TARGET_STATE_CHANGED"
+              : "PREFLIGHT_EXPIRED",
+            reason: error instanceof Error ? error.message : "Final pre-dispatch safety validation failed.",
+            requiresReview: false,
+            dispatched: false,
+            now: now(),
+          }),
+        };
+      }
+    });
+    if (initiation.kind !== "DISPATCHED") return initiation.record;
     try {
-      const glw = await input.dispatcher({
-        request,
-        idempotencyKey: record.idempotencyKey,
-        campaignId: record.campaignId,
-        executionPlanId: record.executionPlanId,
-        targetId: record.targetId,
-      });
+      const glw = await initiation.dispatchPromise;
       return projectGlwTerminalExecution({ record, glw, now: now() });
     } catch (error) {
       if (error instanceof CampaignDispatchRejectedError) {
@@ -291,6 +380,7 @@ export async function executeApprovedCampaign(input: {
       duplicateDispatchCount,
       persistenceReplacementCount: getCampaignExecutionPersistenceReplacementCount() - beforeReplacements,
       circuitBreakerTripped,
+      dispatchPacing,
     },
   };
 }
