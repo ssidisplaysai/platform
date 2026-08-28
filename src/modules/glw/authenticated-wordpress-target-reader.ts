@@ -1,15 +1,15 @@
+﻿import {
+  createAuthenticatedWordPressReadAuthority,
+  type AuthenticatedWordPressGetFetcher,
+  type AuthenticatedWordPressReadConfiguration,
+} from "@/modules/foundation/authenticated-wordpress-read-authority";
 import type {
   GlwCanonicalTargetIdentity,
   GlwTargetPreflightResult,
   GlwWordPressTargetPage,
 } from "./target-preflight";
 
-export type AuthenticatedWordPressReadConfiguration = {
-  apiBaseUrl: string;
-  username: string;
-  applicationPassword: string;
-  timeoutMs?: number;
-};
+export type { AuthenticatedWordPressReadConfiguration };
 
 export type AuthenticatedWordPressReadReason =
   | "EXACT_ZERO_RESULTS"
@@ -23,7 +23,9 @@ export type AuthenticatedWordPressReadReason =
   | "IDENTITY_MISMATCH";
 
 export type AuthenticatedWordPressTargetReadResult = {
-  preflight: GlwTargetPreflightResult & { state: GlwTargetPreflightResult["state"] | "BLOCKED" };
+  preflight: GlwTargetPreflightResult & {
+    state: GlwTargetPreflightResult["state"] | "BLOCKED";
+  };
   reason: AuthenticatedWordPressReadReason;
   exactResultCount: number | null;
   pageMetadata: {
@@ -32,17 +34,6 @@ export type AuthenticatedWordPressTargetReadResult = {
     authorId: string | null;
   } | null;
 };
-
-type FetchResponse = {
-  ok: boolean;
-  status: number;
-  json(): Promise<unknown>;
-};
-
-type GetFetcher = (
-  url: string,
-  init: { method: "GET"; headers: Record<string, string>; signal: AbortSignal },
-) => Promise<FetchResponse>;
 
 export type AuthenticatedWordPressTargetReader = {
   readExactTargetBySlugParent(input: {
@@ -75,6 +66,7 @@ function pageResult(
   page: GlwWordPressTargetPage,
 ): AuthenticatedWordPressTargetReadResult {
   const published = page.status === "publish";
+
   return {
     preflight: {
       ...identity,
@@ -90,79 +82,22 @@ function pageResult(
     exactResultCount: 1,
     pageMetadata: {
       modifiedGmt: page.modified_gmt ?? null,
-      featuredMediaId: page.featured_media ? String(page.featured_media) : null,
+      featuredMediaId: page.featured_media
+        ? String(page.featured_media)
+        : null,
       authorId: page.author ? String(page.author) : null,
     },
   };
 }
 
-function normalizeBaseUrl(value: string): string {
-  const url = new URL(value);
-  if (url.protocol !== "https:" && url.hostname !== "localhost" && url.hostname !== "127.0.0.1") {
-    throw new Error("WordPress read authority must use HTTPS outside localhost.");
-  }
-  const marker = "/wp-json/wp/v2";
-  const markerIndex = url.pathname.indexOf(marker);
-  const pathname = markerIndex >= 0
-    ? url.pathname.slice(0, markerIndex + marker.length)
-    : `${url.pathname.replace(/\/$/, "")}${marker}`;
-  return `${url.protocol}//${url.host}${pathname}`;
-}
-
-function boundedErrorReason(error: unknown): AuthenticatedWordPressReadReason {
-  return error instanceof DOMException && error.name === "AbortError" ? "READ_TIMEOUT" : "NETWORK_ERROR";
-}
-
 export function createAuthenticatedWordPressTargetReader(input: {
   configuration: AuthenticatedWordPressReadConfiguration;
-  fetcher?: GetFetcher;
+  fetcher?: AuthenticatedWordPressGetFetcher;
 }): AuthenticatedWordPressTargetReader {
-  const apiBaseUrl = normalizeBaseUrl(input.configuration.apiBaseUrl);
-  const timeoutMs = Math.min(Math.max(input.configuration.timeoutMs ?? 10_000, 1_000), 30_000);
-  const authorization = `Basic ${Buffer.from(`${input.configuration.username}:${input.configuration.applicationPassword}`).toString("base64")}`;
-  const fetcher = input.fetcher ?? (fetch as unknown as GetFetcher);
-
-  const get = async (
-    url: string,
-    identity: GlwCanonicalTargetIdentity,
-  ): Promise<{ body: unknown; failure: AuthenticatedWordPressTargetReadResult | null }> => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const response = await fetcher(url, {
-        method: "GET",
-        headers: { Accept: "application/json", Authorization: authorization },
-        signal: controller.signal,
-      });
-      if (response.status === 401 || response.status === 403) {
-        return {
-          body: null,
-          failure: { preflight: safeIdentity(identity), reason: "AUTH_FAILURE", exactResultCount: null, pageMetadata: null },
-        };
-      }
-      if (!response.ok) {
-        return {
-          body: null,
-          failure: { preflight: safeIdentity(identity), reason: "NETWORK_ERROR", exactResultCount: null, pageMetadata: null },
-        };
-      }
-      try {
-        return { body: await response.json(), failure: null };
-      } catch {
-        return {
-          body: null,
-          failure: { preflight: safeIdentity(identity), reason: "MALFORMED_RESPONSE", exactResultCount: null, pageMetadata: null },
-        };
-      }
-    } catch (error) {
-      return {
-        body: null,
-        failure: { preflight: safeIdentity(identity), reason: boundedErrorReason(error), exactResultCount: null, pageMetadata: null },
-      };
-    } finally {
-      clearTimeout(timeout);
-    }
-  };
+  const authority = createAuthenticatedWordPressReadAuthority({
+    configuration: input.configuration,
+    fetcher: input.fetcher,
+  });
 
   return {
     async readExactTargetBySlugParent({ identity }) {
@@ -172,16 +107,40 @@ export function createAuthenticatedWordPressTargetReader(input: {
         per_page: "100",
         status: "any",
         context: "edit",
-        _fields: "id,slug,parent,status,link,title,modified_gmt,featured_media,author",
+        _fields:
+          "id,slug,parent,status,link,title,modified_gmt,featured_media,author",
       });
-      const read = await get(`${apiBaseUrl}/pages?${query}`, identity);
-      if (read.failure) return read.failure;
-      if (!Array.isArray(read.body)) {
-        return { preflight: safeIdentity(identity), reason: "MALFORMED_RESPONSE", exactResultCount: null, pageMetadata: null };
+
+      const read = await authority.getJson({
+        path: "/pages",
+        query,
+      });
+
+      if (!read.ok) {
+        return {
+          preflight: safeIdentity(identity),
+          reason: read.reason,
+          exactResultCount: null,
+          pageMetadata: null,
+        };
       }
-      const exact = (read.body as GlwWordPressTargetPage[]).filter((page) =>
-        page.slug === identity.canonicalSlug
-        && String(page.parent ?? "") === String(identity.canonicalParentId ?? ""));
+
+      if (!Array.isArray(read.body)) {
+        return {
+          preflight: safeIdentity(identity),
+          reason: "MALFORMED_RESPONSE",
+          exactResultCount: null,
+          pageMetadata: null,
+        };
+      }
+
+      const exact = (read.body as GlwWordPressTargetPage[]).filter(
+        (page) =>
+          page.slug === identity.canonicalSlug
+          && String(page.parent ?? "")
+            === String(identity.canonicalParentId ?? ""),
+      );
+
       if (exact.length === 0) {
         return {
           preflight: {
@@ -194,6 +153,7 @@ export function createAuthenticatedWordPressTargetReader(input: {
           pageMetadata: null,
         };
       }
+
       if (exact.length > 1) {
         return {
           preflight: safeIdentity(identity, "BLOCKED"),
@@ -202,25 +162,65 @@ export function createAuthenticatedWordPressTargetReader(input: {
           pageMetadata: null,
         };
       }
+
       return pageResult(identity, exact[0]);
     },
 
     async readExactPageById({ identity, wordpressObjectId }) {
       if (!/^\d+$/.test(wordpressObjectId)) {
-        return { preflight: safeIdentity(identity), reason: "IDENTITY_MISMATCH", exactResultCount: null, pageMetadata: null };
+        return {
+          preflight: safeIdentity(identity),
+          reason: "IDENTITY_MISMATCH",
+          exactResultCount: null,
+          pageMetadata: null,
+        };
       }
-      const query = new URLSearchParams({ context: "edit", _fields: "id,slug,parent,status,link,title,modified_gmt,featured_media,author" });
-      const read = await get(`${apiBaseUrl}/pages/${wordpressObjectId}?${query}`, identity);
-      if (read.failure) return read.failure;
+
+      const query = new URLSearchParams({
+        context: "edit",
+        _fields:
+          "id,slug,parent,status,link,title,modified_gmt,featured_media,author",
+      });
+
+      const read = await authority.getJson({
+        path: `/pages/${wordpressObjectId}`,
+        query,
+      });
+
+      if (!read.ok) {
+        return {
+          preflight: safeIdentity(identity),
+          reason: read.reason,
+          exactResultCount: null,
+          pageMetadata: null,
+        };
+      }
+
       if (!read.body || typeof read.body !== "object" || Array.isArray(read.body)) {
-        return { preflight: safeIdentity(identity), reason: "MALFORMED_RESPONSE", exactResultCount: null, pageMetadata: null };
+        return {
+          preflight: safeIdentity(identity),
+          reason: "MALFORMED_RESPONSE",
+          exactResultCount: null,
+          pageMetadata: null,
+        };
       }
+
       const page = read.body as GlwWordPressTargetPage;
-      if (String(page.id ?? "") !== wordpressObjectId
+
+      if (
+        String(page.id ?? "") !== wordpressObjectId
         || page.slug !== identity.canonicalSlug
-        || String(page.parent ?? "") !== String(identity.canonicalParentId ?? "")) {
-        return { preflight: safeIdentity(identity), reason: "IDENTITY_MISMATCH", exactResultCount: 0, pageMetadata: null };
+        || String(page.parent ?? "")
+          !== String(identity.canonicalParentId ?? "")
+      ) {
+        return {
+          preflight: safeIdentity(identity),
+          reason: "IDENTITY_MISMATCH",
+          exactResultCount: 0,
+          pageMetadata: null,
+        };
       }
+
       return pageResult(identity, page);
     },
   };
