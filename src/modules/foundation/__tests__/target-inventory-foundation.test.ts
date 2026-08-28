@@ -28,11 +28,13 @@ import {
 import {
   createTargetInventoryRecord as persistTarget,
   getTargetInventoryRecord,
+  getTargetInventoryPersistenceReplacementCount,
   getTargetInventoryRepositoryRevision,
   listTargetInventoryRecords,
   resetTargetInventoryRepositoryForTests,
   TargetInventoryRepositoryError,
   updateTargetInventoryMetadata,
+  upsertTargetInventoryBatch,
 } from "@/modules/foundation/target-inventory-repository";
 
 const planProvenance: TargetSourceProvenance = {
@@ -503,5 +505,13 @@ describe("002A persistent target inventory", () => {
     const target = persistTarget(cityTarget()) as unknown as Record<string, unknown>;
     expect(target.executionStatus).toBeUndefined();
     expect(target.externalExecutionId).toBeUndefined();
+  });
+
+  test("53. batch upsert validates all records and persists once", () => {
+    const targets = [cityTarget(austin), cityTarget(dallas)];
+    const result = upsertTargetInventoryBatch({ targets, expectedRepositoryRevision: 0 });
+    expect(result).toMatchObject({ createdCount: 2, reusedCount: 0, repositoryRevision: 1 });
+    expect(listTargetInventoryRecords()).toHaveLength(2);
+    expect(getTargetInventoryPersistenceReplacementCount()).toBe(1);
   });
 });

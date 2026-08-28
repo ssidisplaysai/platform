@@ -14,6 +14,10 @@ import type {
 
 const PERSISTENCE_NAMESPACE = "target-inventory-repository";
 
+export const TARGET_INVENTORY_BATCH_LIMITS = {
+  maximumTargetsPerBatch: 100_000,
+} as const;
+
 type TargetInventoryRepositoryState = {
   targets: TargetInventoryRecord[];
 };
@@ -52,6 +56,7 @@ export class TargetInventoryRepositoryError extends Error {
 
 const targetStore = new Map<string, TargetInventoryRecord>();
 let stateRevision = 0;
+let persistenceReplacementCount = 0;
 
 function emptyState(): TargetInventoryRepositoryState {
   return { targets: [] };
@@ -80,6 +85,7 @@ function persistCurrentState(): void {
     expectedRevision: stateRevision,
   });
   stateRevision = saved.revision;
+  persistenceReplacementCount += 1;
 }
 
 function assertRepositoryRevision(expectedRepositoryRevision?: number): void {
@@ -135,6 +141,10 @@ export function getTargetInventoryRepositoryRevision(): number {
   return stateRevision;
 }
 
+export function getTargetInventoryPersistenceReplacementCount(): number {
+  return persistenceReplacementCount;
+}
+
 export function createTargetInventoryRecord(
   target: TargetInventoryRecord,
   expectedRepositoryRevision?: number,
@@ -149,6 +159,55 @@ export function createTargetInventoryRecord(
     targetStore.set(target.targetId, deepClone(target));
     return target;
   }, expectedRepositoryRevision);
+}
+
+export type UpsertTargetInventoryBatchResult = {
+  createdCount: number;
+  reusedCount: number;
+  repositoryRevision: number;
+  targets: readonly TargetInventoryRecord[];
+};
+
+export function upsertTargetInventoryBatch(input: {
+  targets: readonly TargetInventoryRecord[];
+  expectedRepositoryRevision?: number;
+}): UpsertTargetInventoryBatchResult {
+  if (input.targets.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch) {
+    throw new TargetInventoryRepositoryError(
+      "TARGET_BATCH_LIMIT_EXCEEDED",
+      "Target batch exceeds the configured persistence limit.",
+    );
+  }
+  const candidates = new Map<string, TargetInventoryRecord>();
+  input.targets.forEach((target) => {
+    const duplicate = candidates.get(target.targetId);
+    if (duplicate) assertSameIdentity(duplicate, target);
+    candidates.set(target.targetId, target);
+    const existing = targetStore.get(target.targetId);
+    if (existing) assertSameIdentity(existing, target);
+  });
+  const createdCount = [...candidates.keys()].filter((targetId) => !targetStore.has(targetId)).length;
+  const reusedCount = candidates.size - createdCount;
+  if (createdCount === 0) {
+    assertRepositoryRevision(input.expectedRepositoryRevision);
+    return {
+      createdCount,
+      reusedCount,
+      repositoryRevision: stateRevision,
+      targets: [...candidates.keys()].map((targetId) => deepClone(targetStore.get(targetId)!)),
+    };
+  }
+  return mutateWithRollback(() => {
+    candidates.forEach((target, targetId) => {
+      if (!targetStore.has(targetId)) targetStore.set(targetId, deepClone(target));
+    });
+    return {
+      createdCount,
+      reusedCount,
+      repositoryRevision: stateRevision + 1,
+      targets: [...candidates.keys()].map((targetId) => deepClone(targetStore.get(targetId)!)),
+    };
+  }, input.expectedRepositoryRevision);
 }
 
 export function getTargetInventoryRecord(targetId: string): TargetInventoryRecord | null {
@@ -225,4 +284,5 @@ export function resetTargetInventoryRepositoryForTests(): void {
   });
   applyState(reset.state);
   stateRevision = reset.revision;
+  persistenceReplacementCount = 0;
 }
