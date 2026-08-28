@@ -45,6 +45,7 @@ export type CampaignExecutionPlan = {
   matrixFingerprint: string;
   targetIds: readonly string[];
   operations: Readonly<Record<string, "CREATE" | "EXACT_UPDATE">>;
+  exactWordpressObjectIds: Readonly<Record<string, string>>;
   operationCounts: Readonly<Record<"CREATE" | "EXACT_UPDATE", number>>;
   concurrency: number;
   batchSize: number;
@@ -65,7 +66,9 @@ export type CampaignTargetExecutionRecord = {
   operation: "CREATE" | "EXACT_UPDATE";
   status: CampaignTargetExecutionStatus;
   attemptCount: number;
+  reviewedRetryCount: number;
   glwJobId: string | null;
+  glwExternalExecutionId: string | null;
   idempotencyKey: string;
   dispatchedAt: string | null;
   terminalAt: string | null;
@@ -77,6 +80,8 @@ export type CampaignTargetExecutionRecord = {
   wordpressUrl: string | null;
   wordpressStatus: string | null;
   qaStatus: string | null;
+  qaChecks: Readonly<Record<string, unknown>> | null;
+  qaFailureReasons: Readonly<Record<string, unknown>> | null;
   featuredImagePresent: boolean | null;
   version: number;
 };
@@ -158,12 +163,21 @@ export function createCampaignExecutionPlan(input: {
     approvalFingerprint: input.approval.approvalFingerprint,
     targetIds: input.approval.approvedTargetIds,
     operations: Object.entries(input.approval.approvedOperations).sort(([left], [right]) => left.localeCompare(right)),
+    exactWordpressObjectIds: input.campaign.preflightResults
+      .filter((result) => input.approval.approvedTargetIds.includes(result.targetId) && result.wordpressObjectId)
+      .map((result) => [result.targetId, result.wordpressObjectId] as const)
+      .sort(([left], [right]) => left.localeCompare(right)),
     concurrency,
     batchSize,
     dispatchPacingMs,
     publicationIntent: "draft",
   };
   const fingerprint = createCanonicalContentHash(semantic);
+  const exactWordpressObjectIds = Object.fromEntries(
+    input.campaign.preflightResults
+      .filter((result) => input.approval.approvedTargetIds.includes(result.targetId) && result.wordpressObjectId)
+      .map((result) => [result.targetId, result.wordpressObjectId]),
+  ) as Record<string, string>;
   return {
     executionPlanId: `campaign-execution-${fingerprint.slice(0, 24)}`,
     campaignId: input.campaign.campaignId,
@@ -172,6 +186,7 @@ export function createCampaignExecutionPlan(input: {
     matrixFingerprint: input.campaign.matrixFingerprint,
     targetIds: [...input.approval.approvedTargetIds],
     operations: { ...input.approval.approvedOperations },
+    exactWordpressObjectIds,
     operationCounts: { ...input.approval.approvedOperationCounts },
     concurrency,
     batchSize,
@@ -205,7 +220,9 @@ export function createCampaignTargetExecutionRecords(input: {
       operation,
       status: "PENDING",
       attemptCount: 0,
+      reviewedRetryCount: 0,
       glwJobId: null,
+      glwExternalExecutionId: null,
       idempotencyKey: createExecutionIdempotencyKey({
         campaignFingerprint: input.plan.campaignFingerprint,
         approvalFingerprint: input.plan.approvalFingerprint,
@@ -218,10 +235,12 @@ export function createCampaignTargetExecutionRecords(input: {
       failureReason: null,
       requiresReview: false,
       resultReference: null,
-      wordpressObjectId: null,
+      wordpressObjectId: operation === "EXACT_UPDATE" ? input.plan.exactWordpressObjectIds[targetId] ?? null : null,
       wordpressUrl: null,
       wordpressStatus: null,
       qaStatus: null,
+      qaChecks: null,
+      qaFailureReasons: null,
       featuredImagePresent: null,
       version: 1,
     };
@@ -300,6 +319,7 @@ export function projectGlwTerminalExecution(input: {
   const base = {
     ...input.record,
     glwJobId: input.glw.jobId,
+    glwExternalExecutionId: input.glw.externalExecutionId,
     attemptCount: input.record.attemptCount + 1,
     dispatchedAt: input.glw.dispatchedAt ?? input.record.dispatchedAt,
     resultReference: `glw-job:${input.glw.jobId}`,
@@ -320,6 +340,8 @@ export function projectGlwTerminalExecution(input: {
       wordpressUrl: input.glw.wordpressUrl,
       wordpressStatus: input.glw.wordpressStatus,
       qaStatus: input.glw.qaStatus,
+      qaChecks: input.glw.qaChecks,
+      qaFailureReasons: input.glw.qaFailureReasons,
       featuredImagePresent: input.glw.featuredImagePresent,
     };
   }
@@ -335,6 +357,8 @@ export function projectGlwTerminalExecution(input: {
       wordpressUrl: input.glw.wordpressUrl,
       wordpressStatus: input.glw.wordpressStatus,
       qaStatus: input.glw.qaStatus,
+      qaChecks: input.glw.qaChecks,
+      qaFailureReasons: input.glw.qaFailureReasons,
       featuredImagePresent: input.glw.featuredImagePresent,
     };
   }
@@ -349,6 +373,8 @@ export function projectGlwTerminalExecution(input: {
     wordpressUrl: input.glw.wordpressUrl,
     wordpressStatus: input.glw.wordpressStatus,
     qaStatus: input.glw.qaStatus,
+    qaChecks: input.glw.qaChecks,
+    qaFailureReasons: input.glw.qaFailureReasons,
     featuredImagePresent: input.glw.featuredImagePresent,
   };
 }

@@ -5,6 +5,10 @@ import type {
 } from "./campaign-execution";
 import type { CampaignApproval } from "./campaign-approval";
 import {
+  prepareReviewedRetry,
+  type CampaignTargetRetryAuthorization,
+} from "./campaign-retry-authorization";
+import {
   deepClone,
   loadPersistedState,
   resetPersistedState,
@@ -17,6 +21,17 @@ type CampaignExecutionRepositoryState = {
   approvals: CampaignApproval[];
   plans: CampaignExecutionPlan[];
   records: CampaignTargetExecutionRecord[];
+  runtimeStates: CampaignExecutionRuntimeState[];
+  retryAuthorizations: CampaignTargetRetryAuthorization[];
+};
+
+export type CampaignExecutionRuntimeState = {
+  executionPlanId: string;
+  circuitState: "CLOSED" | "OPEN";
+  consecutiveInfrastructureFailures: number;
+  failureWindow: readonly boolean[];
+  pauseReason: string | null;
+  updatedAt: string;
 };
 
 export class CampaignExecutionRepositoryError extends Error {
@@ -32,6 +47,8 @@ export class CampaignExecutionRepositoryError extends Error {
 const planStore = new Map<string, CampaignExecutionPlan>();
 const approvalStore = new Map<string, CampaignApproval>();
 const recordStore = new Map<string, CampaignTargetExecutionRecord>();
+const runtimeStateStore = new Map<string, CampaignExecutionRuntimeState>();
+const retryAuthorizationStore = new Map<string, CampaignTargetRetryAuthorization>();
 let stateRevision = 0;
 let persistenceReplacementCount = 0;
 
@@ -40,7 +57,7 @@ function recordKey(executionPlanId: string, targetId: string): string {
 }
 
 function emptyState(): CampaignExecutionRepositoryState {
-  return { approvals: [], plans: [], records: [] };
+  return { approvals: [], plans: [], records: [], runtimeStates: [], retryAuthorizations: [] };
 }
 
 function applyState(state: CampaignExecutionRepositoryState): void {
@@ -49,7 +66,14 @@ function applyState(state: CampaignExecutionRepositoryState): void {
   planStore.clear();
   state.plans.forEach((plan) => planStore.set(plan.executionPlanId, deepClone(plan)));
   recordStore.clear();
-  state.records.forEach((record) => recordStore.set(recordKey(record.executionPlanId, record.targetId), deepClone(record)));
+  state.records.forEach((record) => recordStore.set(recordKey(record.executionPlanId, record.targetId), deepClone({
+    ...record,
+    reviewedRetryCount: record.reviewedRetryCount ?? 0,
+  })));
+  runtimeStateStore.clear();
+  (state.runtimeStates ?? []).forEach((runtimeState) => runtimeStateStore.set(runtimeState.executionPlanId, deepClone(runtimeState)));
+  retryAuthorizationStore.clear();
+  (state.retryAuthorizations ?? []).forEach((authorization) => retryAuthorizationStore.set(authorization.fingerprint, deepClone(authorization)));
 }
 
 function snapshotState(): CampaignExecutionRepositoryState {
@@ -57,6 +81,8 @@ function snapshotState(): CampaignExecutionRepositoryState {
     approvals: [...approvalStore.values()].map((approval) => deepClone(approval)),
     plans: [...planStore.values()].map((plan) => deepClone(plan)),
     records: [...recordStore.values()].map((record) => deepClone(record)),
+    runtimeStates: [...runtimeStateStore.values()].map((runtimeState) => deepClone(runtimeState)),
+    retryAuthorizations: [...retryAuthorizationStore.values()].map((authorization) => deepClone(authorization)),
   };
 }
 
@@ -124,7 +150,90 @@ export function createCampaignExecutionRecordSet(input: {
     approvalStore.set(input.approval.approvalFingerprint, deepClone(input.approval));
     planStore.set(input.plan.executionPlanId, deepClone(input.plan));
     input.records.forEach((record) => recordStore.set(recordKey(record.executionPlanId, record.targetId), deepClone(record)));
+    runtimeStateStore.set(input.plan.executionPlanId, {
+      executionPlanId: input.plan.executionPlanId,
+      circuitState: "CLOSED",
+      consecutiveInfrastructureFailures: 0,
+      failureWindow: [],
+      pauseReason: null,
+      updatedAt: input.plan.createdAt,
+    });
     return { plan: input.plan, records: input.records };
+  });
+}
+
+export function getCampaignExecutionRuntimeState(
+  executionPlanId: string,
+): CampaignExecutionRuntimeState | null {
+  const runtimeState = runtimeStateStore.get(executionPlanId);
+  return runtimeState ? deepClone(runtimeState) : null;
+}
+
+export function prepareCampaignExecutionBatch(input: {
+  executionPlanId: string;
+  targetIds: readonly string[];
+  now: string;
+}): readonly CampaignTargetExecutionRecord[] {
+  requirePlan(input.executionPlanId);
+  const targetIds = [...new Set(input.targetIds)];
+  const records = targetIds.map((targetId) => {
+    const existing = recordStore.get(recordKey(input.executionPlanId, targetId));
+    if (!existing) throw new CampaignExecutionRepositoryError("EXECUTION_RECORD_NOT_FOUND", `Execution record not found: ${targetId}`);
+    if (existing.status !== "PENDING") {
+      throw new CampaignExecutionRepositoryError("EXECUTION_NOT_PENDING", `Only pending execution may cross the dispatch boundary: ${targetId}`);
+    }
+    return existing;
+  });
+  return mutate(() => records.map((record) => {
+    const prepared: CampaignTargetExecutionRecord = {
+      ...record,
+      status: "DISPATCHING",
+      dispatchedAt: input.now,
+      version: record.version + 1,
+    };
+    recordStore.set(recordKey(prepared.executionPlanId, prepared.targetId), prepared);
+    return prepared;
+  }));
+}
+
+export function checkpointCampaignExecutionRuntimeState(input: {
+  executionPlanId: string;
+  circuitState: CampaignExecutionRuntimeState["circuitState"];
+  consecutiveInfrastructureFailures: number;
+  failureWindow: readonly boolean[];
+  pauseReason: string | null;
+  updatedAt: string;
+}): CampaignExecutionRuntimeState {
+  requirePlan(input.executionPlanId);
+  return mutate(() => {
+    const runtimeState: CampaignExecutionRuntimeState = { ...input };
+    runtimeStateStore.set(input.executionPlanId, runtimeState);
+    return runtimeState;
+  });
+}
+
+export function recoverCampaignCircuit(input: {
+  executionPlanId: string;
+  authorizedBy: string;
+  recoveredAt: string;
+}): CampaignExecutionRuntimeState {
+  const existing = runtimeStateStore.get(input.executionPlanId);
+  if (!existing) throw new CampaignExecutionRepositoryError("EXECUTION_RUNTIME_NOT_FOUND", "Execution runtime state was not found.");
+  if (existing.circuitState !== "OPEN") {
+    throw new CampaignExecutionRepositoryError("CIRCUIT_NOT_OPEN", "Only an open circuit may be explicitly recovered.");
+  }
+  if (!input.authorizedBy.trim()) throw new CampaignExecutionRepositoryError("CIRCUIT_RECOVERY_AUTHORITY_REQUIRED", "Circuit recovery requires explicit operator authority.");
+  return mutate(() => {
+    const recovered: CampaignExecutionRuntimeState = {
+      executionPlanId: input.executionPlanId,
+      circuitState: "CLOSED",
+      consecutiveInfrastructureFailures: 0,
+      failureWindow: [],
+      pauseReason: null,
+      updatedAt: input.recoveredAt,
+    };
+    runtimeStateStore.set(input.executionPlanId, recovered);
+    return recovered;
   });
 }
 
@@ -146,6 +255,7 @@ export function checkpointCampaignExecution(input: {
   executionPlanId: string;
   planStatus: CampaignExecutionPlanStatus;
   records: readonly CampaignTargetExecutionRecord[];
+  runtimeState?: Omit<CampaignExecutionRuntimeState, "executionPlanId">;
 }): { plan: CampaignExecutionPlan; records: readonly CampaignTargetExecutionRecord[] } {
   const existingPlan = requirePlan(input.executionPlanId);
   input.records.forEach((record) => {
@@ -159,6 +269,12 @@ export function checkpointCampaignExecution(input: {
     const plan = { ...existingPlan, status: input.planStatus, version: existingPlan.version + 1 };
     planStore.set(plan.executionPlanId, plan);
     input.records.forEach((record) => recordStore.set(recordKey(record.executionPlanId, record.targetId), deepClone(record)));
+    if (input.runtimeState) {
+      runtimeStateStore.set(input.executionPlanId, {
+        executionPlanId: input.executionPlanId,
+        ...input.runtimeState,
+      });
+    }
     return { plan, records: listCampaignTargetExecutionRecords(input.executionPlanId) };
   });
 }
@@ -216,7 +332,40 @@ export function resetCampaignExecutionRepositoryForTests(): void {
   persistenceReplacementCount = 0;
 }
 
+export function reloadCampaignExecutionRepositoryForTests(): void {
+  const reloaded = loadPersistedState<CampaignExecutionRepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: emptyState,
+  });
+  applyState(reloaded.state);
+  stateRevision = reloaded.revision;
+  persistenceReplacementCount = 0;
+}
+
 export function getCampaignApprovalRecord(approvalFingerprint: string): CampaignApproval | null {
   const approval = approvalStore.get(approvalFingerprint);
   return approval ? deepClone(approval) : null;
+}
+
+export function getCampaignTargetRetryAuthorization(
+  fingerprint: string,
+): CampaignTargetRetryAuthorization | null {
+  const authorization = retryAuthorizationStore.get(fingerprint);
+  return authorization ? deepClone(authorization) : null;
+}
+
+export function saveReviewedRetryAuthorization(input: {
+  executionPlanId: string;
+  targetId: string;
+  authorization: CampaignTargetRetryAuthorization;
+}): CampaignTargetExecutionRecord {
+  requirePlan(input.executionPlanId);
+  const existing = recordStore.get(recordKey(input.executionPlanId, input.targetId));
+  if (!existing) throw new CampaignExecutionRepositoryError("EXECUTION_RECORD_NOT_FOUND", `Execution record not found: ${input.targetId}`);
+  const prepared = prepareReviewedRetry({ record: existing, authorization: input.authorization });
+  return mutate(() => {
+    retryAuthorizationStore.set(input.authorization.fingerprint, deepClone(input.authorization));
+    recordStore.set(recordKey(prepared.executionPlanId, prepared.targetId), deepClone(prepared));
+    return prepared;
+  });
 }

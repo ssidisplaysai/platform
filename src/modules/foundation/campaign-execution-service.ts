@@ -20,8 +20,10 @@ import {
   createCampaignExecutionRecordSet,
   getCampaignExecutionPlanRecord,
   getCampaignExecutionPersistenceReplacementCount,
+  getCampaignExecutionRuntimeState,
   listCampaignTargetExecutionRecords,
   pauseCampaignExecution,
+  prepareCampaignExecutionBatch,
 } from "./campaign-execution-repository";
 import type { TargetMatrix } from "./target-matrix";
 
@@ -94,7 +96,7 @@ export async function executeApprovedCampaign(input: {
 }): Promise<CampaignExecutionRun> {
   const now = input.now ?? (() => new Date().toISOString());
   const delay = input.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
-  validateCampaignApproval({ campaign: input.campaign, approval: input.approval, now: now() });
+  validateCampaignApproval({ campaign: input.campaign, approval: input.approval, now: now(), targetIds: [] });
   if (input.plan.approvalFingerprint !== input.approval.approvalFingerprint
     || input.plan.campaignFingerprint !== input.campaign.fingerprint
     || input.plan.matrixFingerprint !== input.matrix.fingerprint
@@ -107,8 +109,22 @@ export async function executeApprovedCampaign(input: {
   const initialRecords = createCampaignTargetExecutionRecords({ plan: input.plan, matrix: input.matrix });
   createCampaignExecutionRecordSet({ approval: input.approval, plan: input.plan, records: initialRecords });
   let records = listCampaignTargetExecutionRecords(input.plan.executionPlanId);
+  const persistedPlanAtStart = getCampaignExecutionPlanRecord(input.plan.executionPlanId)!;
+  const persistedRuntimeAtStart = getCampaignExecutionRuntimeState(input.plan.executionPlanId);
+  if (persistedRuntimeAtStart?.circuitState === "OPEN") {
+    throw new CampaignExecutionError("CIRCUIT_RECOVERY_REQUIRED", "Open circuit requires explicit recovery before execution may resume.");
+  }
+  if (persistedPlanAtStart.status === "PAUSED") {
+    throw new CampaignExecutionError("EXPLICIT_RESUME_REQUIRED", "Paused execution requires an explicit resume action.");
+  }
+  validateCampaignApproval({
+    campaign: input.campaign,
+    approval: input.approval,
+    now: now(),
+    targetIds: records.filter((record) => record.status === "PENDING").map((record) => record.targetId),
+  });
   const beforeReplacements = getCampaignExecutionPersistenceReplacementCount();
-  const dispatchedKeys = new Set(records.filter((record) => record.attemptCount > 0).map((record) => record.idempotencyKey));
+  const dispatchedKeys = new Set(records.filter((record) => record.status !== "PENDING").map((record) => record.idempotencyKey));
   let duplicateDispatchCount = 0;
   let dispatchedCount = 0;
   let inFlight = 0;
@@ -207,6 +223,11 @@ export async function executeApprovedCampaign(input: {
       break;
     }
     const batch = pending.slice(offset, offset + input.plan.batchSize);
+    prepareCampaignExecutionBatch({
+      executionPlanId: input.plan.executionPlanId,
+      targetIds: batch.map((record) => record.targetId),
+      now: now(),
+    });
     let nextIndex = 0;
     const completed: CampaignTargetExecutionRecord[] = [];
     const worker = async (): Promise<void> => {
@@ -230,13 +251,29 @@ export async function executeApprovedCampaign(input: {
     };
     await Promise.all(Array.from({ length: Math.min(input.plan.concurrency, batch.length) }, () => worker()));
     if (input.shouldPause?.()) paused = true;
+    const completedTargetIds = new Set(completed.map((record) => record.targetId));
+    const unacquired = batch
+      .filter((record) => !completedTargetIds.has(record.targetId))
+      .map((record) => ({
+        ...record,
+        status: "PENDING" as const,
+        dispatchedAt: null,
+      }));
     const byTarget = new Map(records.map((record) => [record.targetId, record]));
     completed.forEach((record) => byTarget.set(record.targetId, record));
+    unacquired.forEach((record) => byTarget.set(record.targetId, record));
     records = [...byTarget.values()].sort((left, right) => left.targetId.localeCompare(right.targetId));
     const checkpoint = checkpointCampaignExecution({
       executionPlanId: input.plan.executionPlanId,
       planStatus: planStatus(records, paused),
-      records: completed,
+      records: [...completed, ...unacquired],
+      runtimeState: {
+        circuitState: circuitBreakerTripped ? "OPEN" : "CLOSED",
+        consecutiveInfrastructureFailures,
+        failureWindow,
+        pauseReason: circuitBreakerTripped ? "CIRCUIT_BREAKER" : paused ? "OPERATOR_PAUSE" : null,
+        updatedAt: now(),
+      },
     });
     records = checkpoint.records;
     if (paused) break;

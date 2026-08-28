@@ -444,8 +444,8 @@ describe("002D bounded synthetic execution", () => {
   test("28. persistence checkpoints are bounded by execution batches", async () => {
     const input = approvedExecution(45);
     const run = await executeApprovedCampaign({ ...input, dispatcher: successDispatcher, delay: async () => {} });
-    expect(run.metrics.persistenceReplacementCount).toBe(3);
-    expect(getCampaignExecutionPersistenceReplacementCount()).toBe(4);
+    expect(run.metrics.persistenceReplacementCount).toBe(6);
+    expect(getCampaignExecutionPersistenceReplacementCount()).toBe(7);
   });
 
   test("29. 1000 mocked targets are accounted with no duplicate dispatch", async () => {
@@ -455,7 +455,7 @@ describe("002D bounded synthetic execution", () => {
     expect(run.summary.succeeded).toBe(1_000);
     expect(run.metrics).toMatchObject({ dispatchedCount: 1_000, duplicateDispatchCount: 0, observedMaximumInFlight: 2 });
     expect(new Set(run.records.map((record) => record.targetId)).size).toBe(1_000);
-    expect(run.metrics.persistenceReplacementCount).toBe(50);
+    expect(run.metrics.persistenceReplacementCount).toBe(100);
   }, 30_000);
 
   test("30. no automatic generation retry or publish path exists", async () => {

@@ -120,6 +120,7 @@ export function validateCampaignApproval(input: {
   campaign: CampaignPlan;
   approval: CampaignApproval;
   now: string;
+  targetIds?: readonly string[];
 }): void {
   if (input.approval.campaignId !== input.campaign.campaignId
     || input.approval.campaignFingerprint !== input.campaign.fingerprint
@@ -136,7 +137,11 @@ export function validateCampaignApproval(input: {
     throw new CampaignApprovalError("APPROVAL_SCOPE_MISMATCH", "Approval fingerprint is invalid.");
   }
   const byTarget = new Map(input.campaign.preflightResults.map((result) => [result.targetId, result]));
-  input.approval.approvedTargetIds.forEach((targetId) => {
+  const targetIds = input.targetIds ?? input.approval.approvedTargetIds;
+  targetIds.forEach((targetId) => {
+    if (!input.approval.approvedTargetIds.includes(targetId)) {
+      throw new CampaignApprovalError("APPROVAL_SCOPE_MISMATCH", `Target is outside the approved subset: ${targetId}`);
+    }
     const result = byTarget.get(targetId);
     if (!result || !executable(result) || result.plannedOperation !== input.approval.approvedOperations[targetId]) {
       throw new CampaignApprovalError("APPROVAL_SCOPE_MISMATCH", `Approved target operation changed: ${targetId}`);
