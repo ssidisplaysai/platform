@@ -1,4 +1,4 @@
-﻿import {
+import {
   createAuthenticatedWordPressReadAuthority,
   normalizeWordPressApiBaseUrl,
 } from "../authenticated-wordpress-read-authority";
@@ -10,10 +10,22 @@ const configuration = {
   timeoutMs: 1_000,
 };
 
-function response(status: number, body: unknown) {
+function response(
+  status: number,
+  body: unknown,
+  headers: Record<string, string> = {},
+) {
   return {
     ok: status >= 200 && status < 300,
     status,
+    headers: {
+      get(name: string) {
+        const key = Object.keys(headers).find(
+          (candidate) => candidate.toLowerCase() === name.toLowerCase(),
+        );
+        return key ? headers[key] : null;
+      },
+    },
     async json() {
       return body;
     },
@@ -60,6 +72,10 @@ describe("Genesis authenticated WordPress read authority", () => {
     expect(result).toEqual({
       ok: true,
       body: [{ id: 1 }],
+      pagination: {
+        total: null,
+        totalPages: null,
+      },
     });
 
     expect(fetcher).toHaveBeenCalledTimes(1);
@@ -73,6 +89,64 @@ describe("Genesis authenticated WordPress read authority", () => {
     expect(init.headers.Authorization).toMatch(/^Basic /);
   });
 
+  test("returns bounded WordPress pagination metadata", async () => {
+    const authority = createAuthenticatedWordPressReadAuthority({
+      configuration,
+      fetcher: async () =>
+        response(
+          200,
+          [{ id: 1 }],
+          {
+            "X-WP-Total": "245",
+            "X-WP-TotalPages": "3",
+            "X-Unrelated-Secret": "must-not-be-returned",
+          },
+        ),
+    });
+
+    const result = await authority.getJson({
+      path: "/pages",
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      body: [{ id: 1 }],
+      pagination: {
+        total: 245,
+        totalPages: 3,
+      },
+    });
+
+    expect(JSON.stringify(result)).not.toContain("must-not-be-returned");
+  });
+
+  test("rejects malformed pagination metadata without failing the body read", async () => {
+    const authority = createAuthenticatedWordPressReadAuthority({
+      configuration,
+      fetcher: async () =>
+        response(
+          200,
+          [],
+          {
+            "X-WP-Total": "not-a-number",
+            "X-WP-TotalPages": "-1",
+          },
+        ),
+    });
+
+    const result = await authority.getJson({
+      path: "/pages",
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      body: [],
+      pagination: {
+        total: null,
+        totalPages: null,
+      },
+    });
+  });
   test.each([401, 403])("classifies auth failure %i", async (status) => {
     const authority = createAuthenticatedWordPressReadAuthority({
       configuration,
@@ -189,4 +263,3 @@ describe("Genesis authenticated WordPress read authority", () => {
     expect(authority.uploadMedia).toBeUndefined();
   });
 });
-

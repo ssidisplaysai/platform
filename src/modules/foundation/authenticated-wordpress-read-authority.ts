@@ -1,4 +1,4 @@
-﻿export type AuthenticatedWordPressReadConfiguration = {
+export type AuthenticatedWordPressReadConfiguration = {
   apiBaseUrl: string;
   username: string;
   applicationPassword: string;
@@ -14,6 +14,10 @@ export type AuthenticatedWordPressReadFailureReason =
 export type AuthenticatedWordPressReadSuccess = {
   ok: true;
   body: unknown;
+  pagination: {
+    total: number | null;
+    totalPages: number | null;
+  };
 };
 
 export type AuthenticatedWordPressReadFailure = {
@@ -28,6 +32,9 @@ export type AuthenticatedWordPressReadResult =
 type FetchResponse = {
   ok: boolean;
   status: number;
+  headers?: {
+    get(name: string): string | null;
+  };
   json(): Promise<unknown>;
 };
 
@@ -143,9 +150,24 @@ export function createAuthenticatedWordPressReadAuthority(input: {
         }
 
         try {
+          const totalHeader = response.headers?.get("X-WP-Total") ?? null;
+          const totalPagesHeader = response.headers?.get("X-WP-TotalPages") ?? null;
+
+          const total = totalHeader !== null && /^\d+$/.test(totalHeader)
+            ? Number(totalHeader)
+            : null;
+
+          const totalPages = totalPagesHeader !== null && /^\d+$/.test(totalPagesHeader)
+            ? Number(totalPagesHeader)
+            : null;
+
           return {
             ok: true,
             body: await response.json(),
+            pagination: {
+              total,
+              totalPages,
+            },
           };
         } catch {
           return {
@@ -164,4 +186,3 @@ export function createAuthenticatedWordPressReadAuthority(input: {
     },
   };
 }
-
