@@ -93,6 +93,8 @@ export type TargetInventoryRecord = {
   wordpressObjectId: string | null;
   wordpressStatus: string | null;
   wordpressUrl: string | null;
+  lastPreflightAt: string | null;
+  preflightPolicyVersion: string | null;
   sourceProvenance: TargetSourceProvenance;
   createdAt: string;
   updatedAt: string;
@@ -261,6 +263,8 @@ export function planTargetInventoryRecord(input: {
     wordpressObjectId: null,
     wordpressStatus: null,
     wordpressUrl: null,
+    lastPreflightAt: null,
+    preflightPolicyVersion: null,
     sourceProvenance: input.sourceProvenance,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -290,6 +294,7 @@ export function projectGlwPreflightToTarget(
     wordpressObjectId: preflight.wordpressObjectId,
     wordpressStatus: preflight.wordpressStatus,
     wordpressUrl: preflight.wordpressUrl,
+    lastPreflightAt: now,
     parentReferences: {
       ...target.parentReferences,
       canonicalTargetParentId: preflight.canonicalParentId,

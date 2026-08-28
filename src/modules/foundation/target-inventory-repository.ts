@@ -40,6 +40,8 @@ export type UpdateTargetInventoryMetadataInput = {
   wordpressObjectId?: string | null;
   wordpressStatus?: string | null;
   wordpressUrl?: string | null;
+  lastPreflightAt?: string | null;
+  preflightPolicyVersion?: string | null;
   parentReferences?: TargetParentReferences;
   updatedAt?: string;
 };
@@ -244,6 +246,8 @@ export function updateTargetInventoryMetadata(input: {
     "wordpressObjectId",
     "wordpressStatus",
     "wordpressUrl",
+    "lastPreflightAt",
+    "preflightPolicyVersion",
     "parentReferences",
     "updatedAt",
   ]);
@@ -285,4 +289,160 @@ export function resetTargetInventoryRepositoryForTests(): void {
   applyState(reset.state);
   stateRevision = reset.revision;
   persistenceReplacementCount = 0;
+}
+
+export type UpdateTargetInventoryMetadataBatchResult = {
+  updatedCount: number;
+  repositoryRevision: number;
+  targets: readonly TargetInventoryRecord[];
+};
+
+export type ApplyTargetPreflightBatchResult = {
+  createdCount: number;
+  reusedCount: number;
+  updatedCount: number;
+  repositoryRevision: number;
+  targets: readonly TargetInventoryRecord[];
+};
+
+export function applyTargetPreflightBatch(input: {
+  targets: readonly TargetInventoryRecord[];
+  updates: readonly {
+    targetId: string;
+    patch: UpdateTargetInventoryMetadataInput;
+  }[];
+  expectedRepositoryRevision?: number;
+}): ApplyTargetPreflightBatchResult {
+  if (input.targets.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch
+    || input.updates.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch) {
+    throw new TargetInventoryRepositoryError("TARGET_BATCH_LIMIT_EXCEEDED", "Target preflight batch exceeds the configured persistence limit.");
+  }
+  const allowedPatchKeys = new Set([
+    "targetState",
+    "eligibility",
+    "wordpressObjectId",
+    "wordpressStatus",
+    "wordpressUrl",
+    "lastPreflightAt",
+    "preflightPolicyVersion",
+    "parentReferences",
+    "updatedAt",
+  ]);
+  const candidates = new Map<string, TargetInventoryRecord>();
+  input.targets.forEach((target) => {
+    const duplicate = candidates.get(target.targetId);
+    if (duplicate) assertSameIdentity(duplicate, target);
+    const existing = targetStore.get(target.targetId);
+    if (existing) assertSameIdentity(existing, target);
+    candidates.set(target.targetId, target);
+  });
+  const updates = new Map<string, UpdateTargetInventoryMetadataInput>();
+  input.updates.forEach((update) => {
+    if (updates.has(update.targetId)) {
+      throw new TargetInventoryRepositoryError("DUPLICATE_TARGET_UPDATE", `Duplicate target metadata update: ${update.targetId}.`);
+    }
+    if (!candidates.has(update.targetId) && !targetStore.has(update.targetId)) {
+      throw new TargetInventoryRepositoryError("TARGET_NOT_FOUND", `Target not found: ${update.targetId}`);
+    }
+    const forbiddenPatchKey = Object.keys(update.patch).find((key) => !allowedPatchKeys.has(key));
+    if (forbiddenPatchKey) {
+      throw new TargetInventoryRepositoryError("TARGET_IDENTITY_IMMUTABLE", `Target identity field cannot be updated: ${forbiddenPatchKey}.`);
+    }
+    updates.set(update.targetId, update.patch);
+  });
+  const createdCount = [...candidates.keys()].filter((targetId) => !targetStore.has(targetId)).length;
+  const reusedCount = candidates.size - createdCount;
+  if (candidates.size === 0 && updates.size === 0) {
+    assertRepositoryRevision(input.expectedRepositoryRevision);
+    return { createdCount: 0, reusedCount: 0, updatedCount: 0, repositoryRevision: stateRevision, targets: [] };
+  }
+  return mutateWithRollback(() => {
+    candidates.forEach((target, targetId) => {
+      if (!targetStore.has(targetId)) targetStore.set(targetId, deepClone(target));
+    });
+    const targets = [...updates.entries()].map(([targetId, patch]) => {
+      const existing = targetStore.get(targetId)!;
+      const updated: TargetInventoryRecord = {
+        ...existing,
+        ...patch,
+        parentReferences: patch.parentReferences ?? existing.parentReferences,
+        updatedAt: patch.updatedAt ?? new Date().toISOString(),
+        version: existing.version + 1,
+      };
+      targetStore.set(targetId, updated);
+      return updated;
+    });
+    return {
+      createdCount,
+      reusedCount,
+      updatedCount: targets.length,
+      repositoryRevision: stateRevision + 1,
+      targets,
+    };
+  }, input.expectedRepositoryRevision);
+}
+
+export function updateTargetInventoryMetadataBatch(input: {
+  updates: readonly {
+    targetId: string;
+    expectedTargetVersion: number;
+    patch: UpdateTargetInventoryMetadataInput;
+  }[];
+  expectedRepositoryRevision?: number;
+}): UpdateTargetInventoryMetadataBatchResult {
+  if (input.updates.length > TARGET_INVENTORY_BATCH_LIMITS.maximumTargetsPerBatch) {
+    throw new TargetInventoryRepositoryError(
+      "TARGET_BATCH_LIMIT_EXCEEDED",
+      "Target metadata batch exceeds the configured persistence limit.",
+    );
+  }
+  const allowedPatchKeys = new Set([
+    "targetState",
+    "eligibility",
+    "wordpressObjectId",
+    "wordpressStatus",
+    "wordpressUrl",
+    "lastPreflightAt",
+    "preflightPolicyVersion",
+    "parentReferences",
+    "updatedAt",
+  ]);
+  const seen = new Set<string>();
+  input.updates.forEach((update) => {
+    if (seen.has(update.targetId)) {
+      throw new TargetInventoryRepositoryError("DUPLICATE_TARGET_UPDATE", `Duplicate target metadata update: ${update.targetId}.`);
+    }
+    seen.add(update.targetId);
+    const forbiddenPatchKey = Object.keys(update.patch).find((key) => !allowedPatchKeys.has(key));
+    if (forbiddenPatchKey) {
+      throw new TargetInventoryRepositoryError("TARGET_IDENTITY_IMMUTABLE", `Target identity field cannot be updated: ${forbiddenPatchKey}.`);
+    }
+    const existing = targetStore.get(update.targetId);
+    if (!existing) throw new TargetInventoryRepositoryError("TARGET_NOT_FOUND", `Target not found: ${update.targetId}`);
+    if (existing.version !== update.expectedTargetVersion) {
+      throw new TargetInventoryRepositoryError(
+        "TARGET_VERSION_CONFLICT",
+        `Expected target version ${update.expectedTargetVersion}, found ${existing.version}.`,
+      );
+    }
+  });
+  if (input.updates.length === 0) {
+    assertRepositoryRevision(input.expectedRepositoryRevision);
+    return { updatedCount: 0, repositoryRevision: stateRevision, targets: [] };
+  }
+  return mutateWithRollback(() => {
+    const targets = input.updates.map((update) => {
+      const existing = targetStore.get(update.targetId)!;
+      const updated: TargetInventoryRecord = {
+        ...existing,
+        ...update.patch,
+        parentReferences: update.patch.parentReferences ?? existing.parentReferences,
+        updatedAt: update.patch.updatedAt ?? new Date().toISOString(),
+        version: existing.version + 1,
+      };
+      targetStore.set(updated.targetId, updated);
+      return updated;
+    });
+    return { updatedCount: targets.length, repositoryRevision: stateRevision + 1, targets };
+  }, input.expectedRepositoryRevision);
 }

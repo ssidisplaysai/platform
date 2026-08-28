@@ -34,6 +34,7 @@ import {
   resetTargetInventoryRepositoryForTests,
   TargetInventoryRepositoryError,
   updateTargetInventoryMetadata,
+  updateTargetInventoryMetadataBatch,
   upsertTargetInventoryBatch,
 } from "@/modules/foundation/target-inventory-repository";
 
@@ -513,5 +514,28 @@ describe("002A persistent target inventory", () => {
     expect(result).toMatchObject({ createdCount: 2, reusedCount: 0, repositoryRevision: 1 });
     expect(listTargetInventoryRecords()).toHaveLength(2);
     expect(getTargetInventoryPersistenceReplacementCount()).toBe(1);
+  });
+
+  test("54. mass preflight metadata updates persist once without changing identity", () => {
+    const targets = [cityTarget(austin), cityTarget(dallas)];
+    upsertTargetInventoryBatch({ targets, expectedRepositoryRevision: 0 });
+    const identities = targets.map((target) => target.identity);
+    const result = updateTargetInventoryMetadataBatch({
+      expectedRepositoryRevision: 1,
+      updates: targets.map((target, index) => ({
+        targetId: target.targetId,
+        expectedTargetVersion: 1,
+        patch: {
+          targetState: index === 0 ? "ABSENT" : "EXISTS_DRAFT",
+          eligibility: index === 0 ? "ELIGIBLE_CREATE" : "ELIGIBLE_UPDATE",
+          wordpressObjectId: index === 0 ? null : "3001",
+          lastPreflightAt: "2026-08-27T01:00:00.000Z",
+          preflightPolicyVersion: "1.0.0",
+        },
+      })),
+    });
+    expect(result).toMatchObject({ updatedCount: 2, repositoryRevision: 2 });
+    expect(result.targets.map((target) => target.identity)).toEqual(identities);
+    expect(getTargetInventoryPersistenceReplacementCount()).toBe(2);
   });
 });
