@@ -29,6 +29,26 @@ type McpToolResult = {
 
 type McpToolCaller = (name: string, argumentsValue: Record<string, unknown>) => Promise<McpToolResult>;
 
+export const GLW_MCP_READ_RETRY_POLICY = {
+  maximumAttempts: 3,
+  fallbackBackoffMs: [2_000, 5_000, 10_000],
+  maximumRetryAfterMs: 30_000,
+} as const;
+
+export class GlwMcpRateLimitError extends Error {
+  readonly status: 429;
+  readonly code: string | null;
+  readonly retryAfterMs: number | null;
+
+  constructor(input: { message: string; code?: string | null; retryAfterMs?: number | null }) {
+    super(input.message);
+    this.name = "GlwMcpRateLimitError";
+    this.status = 429;
+    this.code = input.code ?? null;
+    this.retryAfterMs = input.retryAfterMs ?? null;
+  }
+}
+
 function readConfiguration(environment: NodeJS.ProcessEnv = process.env): McpConfiguration | null {
   const rawUrl = environment.GLW_N8N_MCP_URL?.trim() ?? "";
   const token = environment.GLW_N8N_MCP_TOKEN?.trim() ?? "";
@@ -61,6 +81,51 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value as Record<string, unknown>
     : null;
+}
+
+function parseRetryAfterMs(value: unknown, nowMs = Date.now()): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && value >= 0) return value * 1_000;
+  if (typeof value !== "string" || !value.trim()) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1_000;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - nowMs) : null;
+}
+
+function retryAfterValue(source: Record<string, unknown> | null): unknown {
+  const direct = source?.retryAfter ?? source?.retry_after;
+  if (direct !== undefined) return direct;
+  const headers = source?.headers;
+  if (headers && typeof headers === "object" && "get" in headers && typeof headers.get === "function") {
+    return headers.get("retry-after");
+  }
+  const headerRecord = asRecord(headers);
+  const key = headerRecord && Object.keys(headerRecord).find((name) => name.toLowerCase() === "retry-after");
+  return key && headerRecord ? headerRecord[key] : undefined;
+}
+
+function rateLimitError(value: unknown): GlwMcpRateLimitError | null {
+  if (value instanceof GlwMcpRateLimitError) return value;
+  const record = asRecord(value);
+  const response = asRecord(record?.response);
+  const structured = asRecord(record?.structuredContent);
+  const source = structured ?? response ?? record;
+  const status = Number(source?.status ?? source?.statusCode ?? response?.status);
+  const codeValue = source?.code ?? source?.errorCode;
+  const code = typeof codeValue === "string" ? codeValue.trim() : null;
+  const rawMessage = source?.message ?? source?.error ?? (value instanceof Error ? value.message : "");
+  const message = redactGlwExecutionError(rawMessage);
+  const explicitlyRateLimited = status === 429
+    || code === "429"
+    || Boolean(code && /^(?:RATE[_-]?LIMIT(?:ED)?|TOO[_-]?MANY[_-]?REQUESTS)$/i.test(code))
+    || /\b(?:HTTP\s*)?429\b|\btoo many requests\b|\brate limit(?:ed| exceeded)?\b/i.test(message);
+  if (!explicitlyRateLimited) return null;
+  const retryAfter = retryAfterValue(source);
+  return new GlwMcpRateLimitError({
+    message: message || "n8n MCP execution read was rate limited.",
+    code,
+    retryAfterMs: parseRetryAfterMs(retryAfter),
+  });
 }
 
 function parseToolResult(result: McpToolResult): Record<string, unknown> {
@@ -114,6 +179,8 @@ async function withMcpClient<T>(input: {
     return await input.operation(client);
   } catch (error) {
     if (controller.signal.aborted) throw new Error("n8n MCP request timed out.");
+    const limited = rateLimitError(error);
+    if (limited) throw limited;
     throw new Error(redactGlwExecutionError(error));
   } finally {
     clearTimeout(timeout);
@@ -128,7 +195,10 @@ function createToolCaller(environment: NodeJS.ProcessEnv, injected?: McpToolCall
       try {
         return await injected(name, argumentsValue);
       } catch (error) {
-        throw new Error(redactGlwExecutionError(error));
+        const limited = rateLimitError(error);
+        if (limited) throw limited;
+        const errorRecord = asRecord(error);
+        throw new Error(redactGlwExecutionError(errorRecord?.message ?? error));
       }
     };
   }
@@ -205,19 +275,38 @@ export function createGlwN8nMcpDispatcher(input?: {
 export function createGlwN8nMcpExecutionReader(input?: {
   environment?: NodeJS.ProcessEnv;
   callTool?: McpToolCaller;
+  delay?: (milliseconds: number) => Promise<void>;
 }): GlwN8nExecutionReader {
   const environment = input?.environment ?? process.env;
   const callTool = createToolCaller(environment, input?.callTool);
+  const delay = input?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
   return {
     async readExecution(executionId) {
       if (!/^\d+$/.test(executionId)) throw new Error("n8n execution identifier must be numeric.");
-      const result = await callTool("get_workflow_execution", {
-        workflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
-        executionId,
-        includeData: true,
-      });
-      if (result.isError) throw new Error("n8n MCP execution read failed.");
-      return normalizeExecution(parseToolResult(result), executionId);
+      for (let attempt = 0; attempt < GLW_MCP_READ_RETRY_POLICY.maximumAttempts; attempt += 1) {
+        try {
+          const result = await callTool("get_workflow_execution", {
+            workflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+            executionId,
+            includeData: true,
+          });
+          if (result.isError) {
+            const limited = rateLimitError(result);
+            if (limited) throw limited;
+            throw new Error(`n8n MCP execution read failed: ${extractToolError(result)}`);
+          }
+          return normalizeExecution(parseToolResult(result), executionId);
+        } catch (error) {
+          const limited = rateLimitError(error);
+          if (!limited || attempt === GLW_MCP_READ_RETRY_POLICY.maximumAttempts - 1) throw error;
+          const fallbackMs = GLW_MCP_READ_RETRY_POLICY.fallbackBackoffMs[attempt];
+          const waitMs = limited.retryAfterMs === null
+            ? fallbackMs
+            : Math.min(limited.retryAfterMs, GLW_MCP_READ_RETRY_POLICY.maximumRetryAfterMs);
+          await delay(waitMs);
+        }
+      }
+      throw new Error("n8n MCP execution read exhausted its bounded retry policy.");
     },
     async findExecutionIds() {
       throw new Error("Execution discovery is not supported for n8n MCP transport.");

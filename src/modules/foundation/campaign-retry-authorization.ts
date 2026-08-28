@@ -28,6 +28,10 @@ export type CampaignTargetRetryAuthorization = {
   fingerprint: string;
 };
 
+export type CampaignRetryEligibility =
+  | "ELIGIBLE_FOR_EXPLICIT_REVIEWED_RETRY"
+  | "NOT_ELIGIBLE";
+
 export const MAX_REVIEWED_RETRY_ATTEMPTS_PER_TARGET = 1;
 
 export class CampaignRetryAuthorizationError extends Error {
@@ -164,4 +168,27 @@ export function prepareReviewedRetry(input: {
     terminalAt: null,
     version: input.record.version + 1,
   };
+}
+
+export function determineCampaignRetryEligibility(input: {
+  record: CampaignTargetExecutionRecord;
+  mutationReconciliation: CampaignMutationReconciliation;
+}): CampaignRetryEligibility {
+  const { record, mutationReconciliation } = input;
+  if (record.status !== "RETRY_REVIEW_REQUIRED"
+    || record.reviewedRetryCount >= MAX_REVIEWED_RETRY_ATTEMPTS_PER_TARGET
+    || mutationReconciliation.targetId !== record.targetId
+    || mutationReconciliation.originalOperation !== record.operation
+    || !mutationReconciliation.exactTargetIdentityMatched) {
+    return "NOT_ELIGIBLE";
+  }
+  if (record.operation === "CREATE") {
+    return mutationReconciliation.state === "ABSENT" && !record.glwExternalExecutionId
+      ? "ELIGIBLE_FOR_EXPLICIT_REVIEWED_RETRY"
+      : "NOT_ELIGIBLE";
+  }
+  return mutationReconciliation.state === "EXISTS_DRAFT"
+    && mutationReconciliation.exactWordpressObjectId === record.wordpressObjectId
+    ? "ELIGIBLE_FOR_EXPLICIT_REVIEWED_RETRY"
+    : "NOT_ELIGIBLE";
 }

@@ -112,7 +112,7 @@ export type CampaignExecutionSummary = {
 export const CAMPAIGN_EXECUTION_LIMITS = {
   maximumConcurrency: 2,
   batchSize: 20,
-  dispatchPacingMs: 250,
+  dispatchPacingMs: 5_000,
   maximumConsecutiveInfrastructureFailures: 3,
   failureRateWindow: 10,
   failureRateThreshold: 0.5,

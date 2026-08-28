@@ -214,6 +214,11 @@ export type GlwN8nExecutionReader = {
   findExecutionIds(input: { jobId: string; startedAt: string }): Promise<readonly string[]>;
 };
 
+export const GLW_TERMINAL_READ_POLICY = {
+  maximumAttempts: 3,
+  intervalMs: 5_000,
+} as const;
+
 export class GlwUnknownExecutionError extends Error {}
 export class GlwDraftOnlyExecutionError extends Error {}
 export class GlwExecutionResultError extends Error {}
@@ -661,11 +666,12 @@ export function createGlwDraftExecutionService(input: {
         delay?: (milliseconds: number) => Promise<void>;
       },
     ): Promise<GlwPageExecutionRecord> {
-      const maxAttempts = Math.min(Math.max(options?.maxAttempts ?? 30, 1), 60);
-      const intervalMs = Math.min(Math.max(options?.intervalMs ?? 2_000, 0), 5_000);
+      const maxAttempts = Math.min(Math.max(options?.maxAttempts ?? GLW_TERMINAL_READ_POLICY.maximumAttempts, 1), GLW_TERMINAL_READ_POLICY.maximumAttempts);
+      const intervalMs = Math.min(Math.max(options?.intervalMs ?? GLW_TERMINAL_READ_POLICY.intervalMs, 0), GLW_TERMINAL_READ_POLICY.intervalMs);
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+      if (current.status === "COMPLETE" || current.status === "FAILED") return current;
       if (!current.externalExecutionId) {
         throw new GlwExecutionResultError("Tracked GLW job has no n8n execution identity.");
       }

@@ -3,6 +3,8 @@ import type {
   CampaignExecutionPlanStatus,
   CampaignTargetExecutionRecord,
 } from "./campaign-execution";
+import { projectGlwTerminalExecution } from "./campaign-execution";
+import type { GlwPageExecutionRecord } from "../glw/page-execution";
 import type { CampaignApproval } from "./campaign-approval";
 import {
   prepareReviewedRetry,
@@ -367,5 +369,53 @@ export function saveReviewedRetryAuthorization(input: {
     retryAuthorizationStore.set(input.authorization.fingerprint, deepClone(input.authorization));
     recordStore.set(recordKey(prepared.executionPlanId, prepared.targetId), deepClone(prepared));
     return prepared;
+  });
+}
+
+export function reconcileCampaignTargetFromTerminalGlw(input: {
+  executionPlanId: string;
+  targetId: string;
+  expectedGlwJobId: string;
+  expectedGlwSlug: string;
+  expectedExternalExecutionId: string;
+  expectedWordpressObjectId: string;
+  glwRecord: GlwPageExecutionRecord;
+  reconciledAt: string;
+}): { plan: CampaignExecutionPlan; record: CampaignTargetExecutionRecord } {
+  const existingPlan = requirePlan(input.executionPlanId);
+  const existing = recordStore.get(recordKey(input.executionPlanId, input.targetId));
+  if (!existing) throw new CampaignExecutionRepositoryError("EXECUTION_RECORD_NOT_FOUND", `Execution record not found: ${input.targetId}`);
+  if (existing.status === "SUCCEEDED") return { plan: deepClone(existingPlan), record: deepClone(existing) };
+  if (existing.status !== "RETRY_REVIEW_REQUIRED") {
+    throw new CampaignExecutionRepositoryError("RECONCILIATION_STATE_INVALID", "Only a review-required target may consume reviewed terminal evidence.");
+  }
+  if ((existing.glwJobId !== null && existing.glwJobId !== input.expectedGlwJobId)
+    || input.glwRecord.jobId !== input.expectedGlwJobId
+    || input.glwRecord.slug !== input.expectedGlwSlug
+    || input.glwRecord.externalExecutionId !== input.expectedExternalExecutionId
+    || input.glwRecord.wordpressObjectId !== input.expectedWordpressObjectId) {
+    throw new CampaignExecutionRepositoryError("RECONCILIATION_IDENTITY_MISMATCH", "Terminal GLW evidence does not match the exact campaign target identity.");
+  }
+  const projected = projectGlwTerminalExecution({
+    record: { ...existing, attemptCount: Math.max(0, existing.attemptCount - 1) },
+    glw: input.glwRecord,
+    now: input.reconciledAt,
+  });
+  if (projected.status !== "SUCCEEDED") {
+    throw new CampaignExecutionRepositoryError("RECONCILIATION_NOT_SUCCESSFUL", "GLW evidence is not terminal draft success with complete QA.");
+  }
+  return mutate(() => {
+    recordStore.set(recordKey(projected.executionPlanId, projected.targetId), deepClone(projected));
+    const records = listCampaignTargetExecutionRecords(input.executionPlanId);
+    const planStatus: CampaignExecutionPlanStatus = records.every((record) => record.status === "SUCCEEDED")
+      ? "COMPLETE"
+      : records.some((record) => record.status === "FAILED" || record.status === "RETRY_REVIEW_REQUIRED")
+        ? "FAILED"
+        : records.some((record) => ["DISPATCHING", "DISPATCHED", "RUNNING"].includes(record.status))
+          ? "EXECUTING"
+          : "PAUSED";
+    const plan = { ...existingPlan, status: planStatus, version: existingPlan.version + 1 };
+    planStore.set(plan.executionPlanId, plan);
+    return { plan, record: projected };
   });
 }
