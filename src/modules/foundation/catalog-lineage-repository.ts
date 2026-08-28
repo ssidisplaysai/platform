@@ -27,6 +27,26 @@ import {
 
 const PERSISTENCE_NAMESPACE = "catalog-lineage-repository";
 
+export const CATALOG_LINEAGE_BATCH_LIMITS = {
+  maximumImportRecords: 25_000,
+  maximumProvenanceRecords: 100_000,
+  maximumTotalObjects: 125_000,
+} as const;
+
+export type AppendImportLineageBatchInput = {
+  importId: string;
+  records: readonly NewCatalogImportRecordInput[];
+  provenance: readonly NewSourceProvenanceInput[];
+  expectedRepositoryRevision?: number;
+};
+
+export type AppendImportLineageBatchResult = {
+  importId: string;
+  importRecordCount: number;
+  provenanceCount: number;
+  repositoryRevision: number;
+};
+
 type CatalogLineageRepositoryState = {
   sources: CatalogSource[];
   imports: CatalogImport[];
@@ -53,6 +73,7 @@ const provenanceStore = new Map<string, SourceProvenance>();
 const revisionStore = new Map<string, CatalogRevision>();
 let revisionSequenceByOrganization: Record<string, number> = {};
 let stateRevision = 0;
+let persistenceReplacementCount = 0;
 
 function emptyState(): CatalogLineageRepositoryState {
   return {
@@ -104,6 +125,7 @@ function persistCurrentState(): void {
     expectedRevision: stateRevision,
   });
   stateRevision = saved.revision;
+  persistenceReplacementCount += 1;
 }
 
 function mutateWithRollback<T>(mutator: () => T): T {
@@ -367,6 +389,131 @@ export function listCatalogImportRecords(importId: string): readonly CatalogImpo
     .map((record) => deepClone(record));
 }
 
+function buildCatalogImportRecord(input: NewCatalogImportRecordInput): CatalogImportRecord {
+  if (containsSensitiveKey(input.rawPayload)) {
+    throw new CatalogLineageRepositoryError(
+      "SENSITIVE_PAYLOAD_REJECTED",
+      "Raw payload contains a direct credential-like field and was not persisted.",
+    );
+  }
+  return {
+    recordId: input.recordId,
+    importId: input.importId,
+    sourceLocator: deepClone(input.sourceLocator),
+    rawPayloadHash: createCanonicalContentHash(input.rawPayload),
+    rawPayload: deepClone(input.rawPayload),
+    normalizedCandidate: deepClone(input.normalizedCandidate),
+    status: input.status,
+    diagnostics: input.diagnostics.map(redactDiagnostic),
+    reconciliationDecision: input.reconciliationDecision,
+    createdAt: nowIso(),
+  };
+}
+
+function buildSourceProvenance(input: NewSourceProvenanceInput): SourceProvenance {
+  return {
+    ...deepClone(input),
+    provenanceId: createSourceProvenanceIdentity(input),
+    contentHash: createCanonicalContentHash({
+      rawValue: input.rawValue,
+      normalizedValue: input.normalizedValue,
+      transformationChain: input.transformationChain,
+    }),
+  };
+}
+
+export function appendImportLineageBatch(
+  input: AppendImportLineageBatchInput,
+): AppendImportLineageBatchResult {
+  if (input.records.length > CATALOG_LINEAGE_BATCH_LIMITS.maximumImportRecords) {
+    throw new CatalogLineageRepositoryError(
+      "IMPORT_RECORD_BATCH_LIMIT_EXCEEDED",
+      "Import lineage batch exceeds the import-record limit.",
+    );
+  }
+  if (input.provenance.length > CATALOG_LINEAGE_BATCH_LIMITS.maximumProvenanceRecords) {
+    throw new CatalogLineageRepositoryError(
+      "PROVENANCE_BATCH_LIMIT_EXCEEDED",
+      "Import lineage batch exceeds the provenance limit.",
+    );
+  }
+  if (input.records.length + input.provenance.length
+    > CATALOG_LINEAGE_BATCH_LIMITS.maximumTotalObjects) {
+    throw new CatalogLineageRepositoryError(
+      "LINEAGE_BATCH_LIMIT_EXCEEDED",
+      "Import lineage batch exceeds the total object limit.",
+    );
+  }
+  if (input.expectedRepositoryRevision !== undefined
+    && input.expectedRepositoryRevision !== stateRevision) {
+    throw new CatalogLineageRepositoryError(
+      "LINEAGE_REVISION_CONFLICT",
+      `Expected lineage revision ${input.expectedRepositoryRevision}, found ${stateRevision}.`,
+    );
+  }
+
+  const catalogImport = requireImport(input.importId);
+  const source = requireSource(catalogImport.sourceId);
+  const incomingRecordIds = new Set<string>();
+  const candidateRecords = input.records.map((recordInput) => {
+    if (recordInput.importId !== input.importId) {
+      throw new CatalogLineageRepositoryError(
+        "IMPORT_RECORD_LINEAGE_MISMATCH",
+        `Import record ${recordInput.recordId} belongs to another import.`,
+      );
+    }
+    if (importRecordStore.has(recordInput.recordId) || incomingRecordIds.has(recordInput.recordId)) {
+      throw new CatalogLineageRepositoryError(
+        "IMPORT_RECORD_ALREADY_EXISTS",
+        `Import record already exists: ${recordInput.recordId}`,
+      );
+    }
+    incomingRecordIds.add(recordInput.recordId);
+    return buildCatalogImportRecord(recordInput);
+  });
+  const candidateRecordById = new Map(candidateRecords.map((record) => [record.recordId, record]));
+  const incomingProvenanceIds = new Set<string>();
+  const candidateProvenance = input.provenance.map((provenanceInput) => {
+    if (provenanceInput.importId !== input.importId
+      || provenanceInput.sourceId !== source.sourceId) {
+      throw new CatalogLineageRepositoryError(
+        "PROVENANCE_LINEAGE_MISMATCH",
+        "Provenance source and import must match the batch import.",
+      );
+    }
+    const referencedRecord = candidateRecordById.get(provenanceInput.importRecordId)
+      ?? importRecordStore.get(provenanceInput.importRecordId);
+    if (!referencedRecord || referencedRecord.importId !== input.importId) {
+      throw new CatalogLineageRepositoryError(
+        "PROVENANCE_LINEAGE_MISMATCH",
+        "Provenance must reference a record from the same import or batch.",
+      );
+    }
+    const provenance = buildSourceProvenance(provenanceInput);
+    if (provenanceStore.has(provenance.provenanceId)
+      || incomingProvenanceIds.has(provenance.provenanceId)) {
+      throw new CatalogLineageRepositoryError(
+        "PROVENANCE_ALREADY_EXISTS",
+        `Source provenance already exists: ${provenance.provenanceId}`,
+      );
+    }
+    incomingProvenanceIds.add(provenance.provenanceId);
+    return provenance;
+  });
+
+  mutateWithRollback(() => {
+    candidateRecords.forEach((record) => importRecordStore.set(record.recordId, record));
+    candidateProvenance.forEach((record) => provenanceStore.set(record.provenanceId, record));
+  });
+
+  return {
+    importId: input.importId,
+    importRecordCount: candidateRecords.length,
+    provenanceCount: candidateProvenance.length,
+    repositoryRevision: stateRevision,
+  };
+}
+
 export function appendSourceProvenance(input: NewSourceProvenanceInput): SourceProvenance {
   return mutateWithRollback(() => {
     const catalogImport = requireImport(input.importId);
@@ -492,6 +639,15 @@ export function resetCatalogLineageRepositoryForTests(): void {
   });
   applyState(reset.state);
   stateRevision = reset.revision;
+  persistenceReplacementCount = 0;
+}
+
+export function getCatalogLineageRepositoryRevision(): number {
+  return stateRevision;
+}
+
+export function getCatalogLineagePersistenceReplacementCount(): number {
+  return persistenceReplacementCount;
 }
 
 export function createImportContentHash(payload: CanonicalJsonValue): string {

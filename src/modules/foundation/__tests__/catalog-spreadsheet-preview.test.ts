@@ -9,6 +9,9 @@ import {
   CatalogPreviewError,
   createCatalogImportPreview,
   normalizeCatalogHeader,
+  validateCatalogImportTransportSize,
+  validateWorkbookComplexity,
+  type WorkbookComplexity,
 } from "@/modules/foundation/catalog-spreadsheet-preview";
 import {
   createCatalogSource,
@@ -301,7 +304,7 @@ describe("catalog spreadsheet mapping preview", () => {
 
   test("36. oversized input fails closed before parsing", async () => {
     const input = csvInput("x");
-    input.buffer = Buffer.alloc(CATALOG_IMPORT_LIMITS.maximumFileSizeBytes + 1, 1);
+    input.buffer = Buffer.alloc(CATALOG_IMPORT_LIMITS.maximumCsvFileSizeBytes + 1, 1);
     await expect(createCatalogImportPreview(input)).rejects.toMatchObject({ code: "FILE_TOO_LARGE" });
   });
 
@@ -435,5 +438,234 @@ describe("catalog spreadsheet mapping preview", () => {
     });
     const preview = await createCatalogImportPreview(input);
     expect(preview.diagnostics.some((diagnostic) => diagnostic.code === "FORMULA_VALUE_PRESENT")).toBe(true);
+  });
+
+  function complexity(overrides: Partial<WorkbookComplexity> = {}): WorkbookComplexity {
+    return {
+      sheetCount: 1,
+      rowsPerSheet: [{ sheetName: "Products", rowCount: 100, columnCount: 20 }],
+      totalStructuralCells: 2_000,
+      totalNonEmptyCells: 500,
+      totalFormulaCells: 20,
+      totalMergedRanges: 5,
+      totalHyperlinks: 5,
+      ...overrides,
+    };
+  }
+
+  test("53. XLSX just below the 128 MiB transport limit passes the byte guard", () => {
+    expect(() => validateCatalogImportTransportSize(
+      "XLSX",
+      CATALOG_IMPORT_LIMITS.maximumXlsxFileSizeBytes - 1,
+    )).not.toThrow();
+  });
+
+  test("54. XLSX above the transport limit fails FILE_TOO_LARGE", () => {
+    expect(() => validateCatalogImportTransportSize(
+      "XLSX",
+      CATALOG_IMPORT_LIMITS.maximumXlsxFileSizeBytes + 1,
+    )).toThrow(expect.objectContaining({ code: "FILE_TOO_LARGE" }));
+  });
+
+  test("55. CSV retains its smaller transport limit", () => {
+    expect(() => validateCatalogImportTransportSize(
+      "CSV",
+      CATALOG_IMPORT_LIMITS.maximumCsvFileSizeBytes + 1,
+    )).toThrow(expect.objectContaining({ code: "FILE_TOO_LARGE" }));
+  });
+
+  test("56. structural cell count is bounded independently", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      totalStructuralCells: CATALOG_IMPORT_LIMITS.maximumTotalStructuralCells + 1,
+    }))).toThrow(expect.objectContaining({ code: "CELL_LIMIT_EXCEEDED" }));
+  });
+
+  test("57. non-empty cell count is bounded independently", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      totalNonEmptyCells: CATALOG_IMPORT_LIMITS.maximumTotalNonEmptyCells + 1,
+    }))).toThrow(expect.objectContaining({ code: "NON_EMPTY_CELL_LIMIT_EXCEEDED" }));
+  });
+
+  test("58. formula count is bounded independently", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      totalFormulaCells: CATALOG_IMPORT_LIMITS.maximumFormulaCells + 1,
+    }))).toThrow(expect.objectContaining({ code: "FORMULA_LIMIT_EXCEEDED" }));
+  });
+
+  test("59. merged-range count is bounded independently", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      totalMergedRanges: CATALOG_IMPORT_LIMITS.maximumMergedRanges + 1,
+    }))).toThrow(expect.objectContaining({ code: "MERGED_RANGE_LIMIT_EXCEEDED" }));
+  });
+
+  test("60. hyperlink count is bounded independently", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      totalHyperlinks: CATALOG_IMPORT_LIMITS.maximumHyperlinks + 1,
+    }))).toThrow(expect.objectContaining({ code: "HYPERLINK_LIMIT_EXCEEDED" }));
+  });
+
+  test("61. formatted empty ranges consume structural budget but not substantive rows", async () => {
+    const input = await xlsxInput((workbook) => {
+      const sheet = workbook.addWorksheet("Products");
+      sheet.addRows([["SKU", "Product Name"], ["A", "One"]]);
+      sheet.getCell("Z100").style = { font: { bold: true } };
+    });
+    const preview = await createCatalogImportPreview(input);
+    expect(preview.counts.structuralCellCount).toBe(200);
+    expect(preview.counts.nonEmptyCellCount).toBe(4);
+    expect(preview.counts.candidateDataRowCount).toBe(1);
+    expect(preview.counts.blankRowCount).toBe(98);
+  });
+
+  test("62. formula and hyperlink metrics are exposed without execution", async () => {
+    const input = await xlsxInput((workbook) => {
+      const sheet = workbook.addWorksheet("Products");
+      sheet.addRows([["SKU", "Product Name", "Calculated", "Spec Sheet"], [
+        "A",
+        "One",
+        { formula: "1+1", result: 2 },
+        { text: "Spec", hyperlink: "https://example.test/spec.pdf" },
+      ]]);
+    });
+    const preview = await createCatalogImportPreview(input);
+    expect(preview.counts.formulaCellCount).toBe(1);
+    expect(preview.counts.hyperlinkCount).toBe(1);
+    expect(preview.recordPreviews[1].rawValues.Calculated.formula?.cachedResult).toBe(2);
+  });
+
+  test("63. large transport eligibility does not mutate products or lineage", () => {
+    const productsBefore = JSON.stringify(listProducts());
+    expect(() => validateCatalogImportTransportSize("XLSX", 67_074_593)).not.toThrow();
+    expect(JSON.stringify(listProducts())).toBe(productsBefore);
+    expect(getCatalogImport("large-workbook-test")).toBeNull();
+    expect(listCatalogRevisions()).toEqual([]);
+  });
+
+  test("64. excessive cell text fails closed", async () => {
+    const input = await xlsxInput((workbook) => {
+      workbook.addWorksheet("Products").addRows([
+        ["SKU", "Product Name"],
+        ["A", "x".repeat(CATALOG_IMPORT_LIMITS.maximumCellTextLength + 1)],
+      ]);
+    });
+    await expect(createCatalogImportPreview(input))
+      .rejects.toMatchObject({ code: "CELL_TEXT_LIMIT_EXCEEDED" });
+  });
+
+  test("65. exactly MAX_SHEETS passes sheet-count validation", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      sheetCount: CATALOG_IMPORT_LIMITS.maximumSheets,
+      rowsPerSheet: Array.from({ length: CATALOG_IMPORT_LIMITS.maximumSheets }, (_, index) => ({
+        sheetName: `Sheet ${index + 1}`,
+        rowCount: 1,
+        columnCount: 1,
+      })),
+      totalStructuralCells: CATALOG_IMPORT_LIMITS.maximumSheets,
+    }))).not.toThrow();
+  });
+
+  test("66. MAX_SHEETS plus one fails SHEET_LIMIT_EXCEEDED", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      sheetCount: CATALOG_IMPORT_LIMITS.maximumSheets + 1,
+    }))).toThrow(expect.objectContaining({ code: "SHEET_LIMIT_EXCEEDED" }));
+  });
+
+  test("67. the real workbook equivalent count of 27 passes sheet validation", () => {
+    expect(() => validateWorkbookComplexity(complexity({ sheetCount: 27 }))).not.toThrow();
+  });
+
+  test("68. mostly empty sheets still consume sheet-count budget", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      sheetCount: 41,
+      rowsPerSheet: Array.from({ length: 41 }, (_, index) => ({
+        sheetName: `Empty ${index + 1}`,
+        rowCount: 0,
+        columnCount: 0,
+      })),
+      totalStructuralCells: 0,
+      totalNonEmptyCells: 0,
+    }))).toThrow(expect.objectContaining({ code: "SHEET_LIMIT_EXCEEDED" }));
+  });
+
+  test("69. revised sheet limit does not bypass structural cell limit", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      sheetCount: 27,
+      totalStructuralCells: CATALOG_IMPORT_LIMITS.maximumTotalStructuralCells + 1,
+    }))).toThrow(expect.objectContaining({ code: "CELL_LIMIT_EXCEEDED" }));
+  });
+
+  test("70. revised sheet limit does not bypass row limit", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      sheetCount: 27,
+      rowsPerSheet: [{
+        sheetName: "Oversized",
+        rowCount: CATALOG_IMPORT_LIMITS.maximumRowsPerSheet + 1,
+        columnCount: 1,
+      }],
+    }))).toThrow(expect.objectContaining({ code: "ROW_LIMIT_EXCEEDED" }));
+  });
+
+  test("71. revised sheet limit does not bypass column limit", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      sheetCount: 27,
+      rowsPerSheet: [{
+        sheetName: "Oversized",
+        rowCount: 1,
+        columnCount: CATALOG_IMPORT_LIMITS.maximumColumnsPerSheet + 1,
+      }],
+    }))).toThrow(expect.objectContaining({ code: "COLUMN_LIMIT_EXCEEDED" }));
+  });
+
+  test("72. revised sheet limit does not bypass non-empty cell limit", () => {
+    expect(() => validateWorkbookComplexity(complexity({
+      sheetCount: 27,
+      totalNonEmptyCells: CATALOG_IMPORT_LIMITS.maximumTotalNonEmptyCells + 1,
+    }))).toThrow(expect.objectContaining({ code: "NON_EMPTY_CELL_LIMIT_EXCEEDED" }));
+  });
+
+  test("73. sheet-limit failure does not mutate product authority", () => {
+    const before = JSON.stringify(listProducts());
+    expect(() => validateWorkbookComplexity(complexity({ sheetCount: 41 })))
+      .toThrow(expect.objectContaining({ code: "SHEET_LIMIT_EXCEEDED" }));
+    expect(JSON.stringify(listProducts())).toBe(before);
+  });
+
+  test("74. sheet-limit failure before preview persistence creates no import lineage", async () => {
+    const input = await xlsxInput((workbook) => {
+      for (let index = 0; index <= CATALOG_IMPORT_LIMITS.maximumSheets; index += 1) {
+        workbook.addWorksheet(`Sheet ${index + 1}`).addRows([["SKU", "Product Name"], ["A", "One"]]);
+      }
+    }, "sheet-limit-lineage-test");
+    await expect(createPersistedCatalogImportPreview(input))
+      .rejects.toMatchObject({ code: "SHEET_LIMIT_EXCEEDED" });
+    expect(getCatalogImport("sheet-limit-lineage-test")).toBeNull();
+  });
+
+  test("75. valid many-sheet preview still stops at PREVIEW_READY", async () => {
+    const input = await xlsxInput((workbook) => {
+      for (let index = 0; index < 27; index += 1) {
+        workbook.addWorksheet(`Category ${index + 1}`).addRows([
+          ["SKU", "Product Name"],
+          [`SKU-${index}`, `Product ${index}`],
+        ]);
+      }
+    }, "many-sheet-preview-ready-test");
+    await createPersistedCatalogImportPreview(input);
+    expect(getCatalogImport("many-sheet-preview-ready-test")?.status).toBe("PREVIEW_READY");
+  });
+
+  test("76. revised sheet policy leaves all non-sheet limits unchanged", () => {
+    expect(CATALOG_IMPORT_LIMITS).toMatchObject({
+      maximumXlsxFileSizeBytes: 134_217_728,
+      maximumCsvFileSizeBytes: 10_485_760,
+      maximumRowsPerSheet: 5_000,
+      maximumColumnsPerSheet: 256,
+      maximumTotalStructuralCells: 1_000_000,
+      maximumTotalNonEmptyCells: 250_000,
+      maximumCellTextLength: 32_768,
+      maximumFormulaCells: 100_000,
+      maximumMergedRanges: 20_000,
+      maximumHyperlinks: 10_000,
+    });
   });
 });

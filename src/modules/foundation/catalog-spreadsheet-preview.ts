@@ -25,7 +25,26 @@ import {
 } from "./catalog-import-preview";
 
 type ParsedCell = PreviewCellValue & { text: string };
-type ParsedSheet = { name: string; index: number; rows: ParsedCell[][]; mergedRanges: string[] };
+type ParsedSheet = {
+  name: string;
+  index: number;
+  rows: ParsedCell[][];
+  mergedRanges: string[];
+  structuralCellCount: number;
+  nonEmptyCellCount: number;
+  formulaCellCount: number;
+  hyperlinkCount: number;
+};
+
+export type WorkbookComplexity = {
+  sheetCount: number;
+  rowsPerSheet: readonly { sheetName: string; rowCount: number; columnCount: number }[];
+  totalStructuralCells: number;
+  totalNonEmptyCells: number;
+  totalFormulaCells: number;
+  totalMergedRanges: number;
+  totalHyperlinks: number;
+};
 
 const CORE_ALIASES: Readonly<Record<string, readonly string[]>> = {
   PRODUCT_ID: ["product id", "productid"],
@@ -81,6 +100,10 @@ function isFormula(value: ExcelJS.CellValue): value is ExcelJS.CellFormulaValue 
   return Boolean(value && typeof value === "object" && "formula" in value);
 }
 
+function isHyperlink(value: ExcelJS.CellValue): value is ExcelJS.CellHyperlinkValue {
+  return Boolean(value && typeof value === "object" && "hyperlink" in value);
+}
+
 function scalar(value: unknown): CanonicalJsonValue {
   if (value === null || value === undefined) return null;
   if (typeof value === "string" || typeof value === "boolean" || typeof value === "number") return value;
@@ -134,7 +157,7 @@ async function parseInput(input: CatalogImportInput, fileType: CatalogImportFile
   try {
     if (fileType === "XLSX") {
       await workbook.xlsx.load(input.buffer, {
-        ignoreNodes: ["dataValidations", "extLst", "hyperlinks", "picture", "drawing", "sheetProtection"],
+        ignoreNodes: ["dataValidations", "extLst", "picture", "drawing", "sheetProtection"],
       });
     } else {
       if (countCsvRecords(input.buffer.toString("utf8")) > CATALOG_IMPORT_LIMITS.maximumRowsPerSheet) {
@@ -158,27 +181,46 @@ async function parseInput(input: CatalogImportInput, fileType: CatalogImportFile
     if (error instanceof CatalogPreviewError) throw error;
     throw new CatalogPreviewError("PARSER_ERROR", `Unable to parse source: ${(error as Error).message}`);
   }
-  if (workbook.worksheets.length > CATALOG_IMPORT_LIMITS.maximumSheets) {
-    throw new CatalogPreviewError("SHEET_LIMIT_EXCEEDED", "Workbook exceeds the configured sheet limit.");
-  }
-  let totalCells = 0;
+  const rowsPerSheet = workbook.worksheets.map((worksheet) => ({
+    sheetName: worksheet.name,
+    rowCount: worksheet.rowCount,
+    columnCount: worksheet.columnCount,
+  }));
+  const totalStructuralCells = rowsPerSheet.reduce(
+    (total, sheet) => total + sheet.rowCount * sheet.columnCount,
+    0,
+  );
+  const totalMergedRanges = workbook.worksheets.reduce(
+    (total, worksheet) => total + ((worksheet.model as { merges?: string[] }).merges?.length ?? 0),
+    0,
+  );
+  validateWorkbookComplexity({
+    sheetCount: workbook.worksheets.length,
+    rowsPerSheet,
+    totalStructuralCells,
+    totalNonEmptyCells: 0,
+    totalFormulaCells: 0,
+    totalMergedRanges,
+    totalHyperlinks: 0,
+  });
+
+  let runningNonEmptyCells = 0;
+  let runningFormulaCells = 0;
+  let runningHyperlinks = 0;
   return workbook.worksheets.map((worksheet, sheetOffset) => {
-    if (worksheet.rowCount > CATALOG_IMPORT_LIMITS.maximumRowsPerSheet) {
-      throw new CatalogPreviewError("ROW_LIMIT_EXCEEDED", `Sheet ${worksheet.name} exceeds the row limit.`);
-    }
-    if (worksheet.columnCount > CATALOG_IMPORT_LIMITS.maximumColumnsPerSheet) {
-      throw new CatalogPreviewError("COLUMN_LIMIT_EXCEEDED", `Sheet ${worksheet.name} exceeds the column limit.`);
-    }
-    totalCells += worksheet.rowCount * worksheet.columnCount;
-    if (totalCells > CATALOG_IMPORT_LIMITS.maximumTotalCells) {
-      throw new CatalogPreviewError("CELL_LIMIT_EXCEEDED", "Workbook exceeds the total cell limit.");
-    }
     const mergedRanges = [...((worksheet.model as { merges?: string[] }).merges ?? [])].sort();
     const rows: ParsedCell[][] = [];
+    let nonEmptyCellCount = 0;
+    let formulaCellCount = 0;
+    let hyperlinkCount = 0;
     for (let rowNumber = 1; rowNumber <= worksheet.rowCount; rowNumber += 1) {
       const row: ParsedCell[] = [];
       for (let column = 1; column <= worksheet.columnCount; column += 1) {
-        const value = parsedCell(worksheet.getCell(rowNumber, column), mergedRanges);
+        const cell = worksheet.getCell(rowNumber, column);
+        const value = parsedCell(cell, mergedRanges);
+        if (value.text.trim()) nonEmptyCellCount += 1;
+        if (value.formula) formulaCellCount += 1;
+        if (isHyperlink(cell.value)) hyperlinkCount += 1;
         if (value.text.length > CATALOG_IMPORT_LIMITS.maximumCellTextLength) {
           throw new CatalogPreviewError("CELL_TEXT_LIMIT_EXCEEDED", `Cell ${worksheet.name}!${columnLetter(column)}${rowNumber} exceeds the text limit.`);
         }
@@ -186,7 +228,28 @@ async function parseInput(input: CatalogImportInput, fileType: CatalogImportFile
       }
       rows.push(row);
     }
-    return { name: worksheet.name || (fileType === "CSV" ? "CSV" : `Sheet${sheetOffset + 1}`), index: sheetOffset, rows, mergedRanges };
+    runningNonEmptyCells += nonEmptyCellCount;
+    runningFormulaCells += formulaCellCount;
+    runningHyperlinks += hyperlinkCount;
+    validateWorkbookComplexity({
+      sheetCount: workbook.worksheets.length,
+      rowsPerSheet,
+      totalStructuralCells,
+      totalNonEmptyCells: runningNonEmptyCells,
+      totalFormulaCells: runningFormulaCells,
+      totalMergedRanges,
+      totalHyperlinks: runningHyperlinks,
+    });
+    return {
+      name: worksheet.name || (fileType === "CSV" ? "CSV" : `Sheet${sheetOffset + 1}`),
+      index: sheetOffset,
+      rows,
+      mergedRanges,
+      structuralCellCount: worksheet.rowCount * worksheet.columnCount,
+      nonEmptyCellCount,
+      formulaCellCount,
+      hyperlinkCount,
+    };
   });
 }
 
@@ -338,7 +401,7 @@ function inspectSheet(sheet: ParsedSheet, overrides: CatalogImportMappingOverrid
     if (units.length > 1) diagnostics.push({ code: "UNIT_REVIEW_REQUIRED", severity: "WARNING", message: `Multiple units observed for ${mapping.sourceColumn.sourceHeader}.` });
     return { sourceHeader: mapping.sourceColumn.sourceHeader, suggestedKey: mapping.sourceColumn.normalizedHeader.replace(/\s+/g, "-"), observedDataType: inference.type, observedUnits: units, sampleValues: samples, confidence: mapping.confidence, reviewRequired: mapping.reviewRequired || inference.mixed || units.length > 1 };
   });
-  return { sheetName: sheet.name, sheetIndex: sheet.index, usedRange: sheet.rows.length && sheet.rows[0]?.length ? `A1:${columnLetter(sheet.rows[0].length)}${sheet.rows.length}` : null, rowCount: sheet.rows.length, columnCount: sheet.rows[0]?.length ?? 0, nonEmptyRowCount: sheet.rows.filter((row) => row.some((cell) => cell.text.trim())).length, mergedRanges: sheet.mergedRanges, headerSelection, columnMappings: mappings, attributeCandidates, recordPreviews, diagnostics };
+  return { sheetName: sheet.name, sheetIndex: sheet.index, usedRange: sheet.rows.length && sheet.rows[0]?.length ? `A1:${columnLetter(sheet.rows[0].length)}${sheet.rows.length}` : null, rowCount: sheet.rows.length, columnCount: sheet.rows[0]?.length ?? 0, nonEmptyRowCount: sheet.rows.filter((row) => row.some((cell) => cell.text.trim())).length, structuralCellCount: sheet.structuralCellCount, nonEmptyCellCount: sheet.nonEmptyCellCount, formulaCellCount: sheet.formulaCellCount, hyperlinkCount: sheet.hyperlinkCount, mergedRanges: sheet.mergedRanges, headerSelection, columnMappings: mappings, attributeCandidates, recordPreviews, diagnostics };
 }
 
 function inferStructure(rows: readonly CatalogRecordPreview[]): CatalogStructureInference {
@@ -358,8 +421,8 @@ function semanticPreview(input: Omit<CatalogImportPreview, "previewId" | "semant
 }
 
 export async function createCatalogImportPreview(input: CatalogImportInput, mappingOverrides: CatalogImportMappingOverrides = {}): Promise<CatalogImportPreview> {
-  if (input.buffer.length > CATALOG_IMPORT_LIMITS.maximumFileSizeBytes) throw new CatalogPreviewError("FILE_TOO_LARGE", "Input exceeds the configured file-size limit.");
   const fileType = validateFileType(input);
+  validateCatalogImportTransportSize(fileType, input.buffer.length);
   const contentHash = createCanonicalContentHash(input.buffer.toString("base64"));
   const parsedSheets = await parseInput(input, fileType);
   if (!parsedSheets.length) throw new CatalogPreviewError("PARSER_ERROR", "No usable sheet was found.");
@@ -390,6 +453,12 @@ export async function createCatalogImportPreview(input: CatalogImportInput, mapp
     candidateProductCount: structureInference.candidateProductCount,
     candidateVariantCount: structureInference.candidateVariantCount,
     attributeCandidateCount: attributeCandidates.length,
+    structuralCellCount: sheets.reduce((total, sheet) => total + sheet.structuralCellCount, 0),
+    nonEmptyCellCount: sheets.reduce((total, sheet) => total + sheet.nonEmptyCellCount, 0),
+    formulaCellCount: sheets.reduce((total, sheet) => total + sheet.formulaCellCount, 0),
+    mergedRangeCount: sheets.reduce((total, sheet) => total + sheet.mergedRanges.length, 0),
+    hyperlinkCount: sheets.reduce((total, sheet) => total + sheet.hyperlinkCount, 0),
+    embeddedImageCount: 0,
   };
   const base = { importId: input.importId, sourceId: input.sourceId, fileName: input.fileName, fileType, contentHash, sheets, selectedSheets: sheets.filter((sheet) => sheet.headerSelection.selectedHeaderRow !== null).map((sheet) => sheet.sheetName), headerSelections: Object.fromEntries(sheets.map((sheet) => [sheet.sheetName, sheet.headerSelection])), columnMappings, attributeCandidates, structureInference, recordPreviews, diagnostics, counts, status: diagnostics.some((diagnostic) => diagnostic.severity === "BLOCKING") ? "BLOCKED" as const : "READY_FOR_REVIEW" as const };
   const semanticFingerprint = createCanonicalContentHash(semanticPreview(base));
@@ -410,4 +479,47 @@ function countCsvRecords(content: string): number {
     }
   }
   return records;
+}
+
+export function validateCatalogImportTransportSize(
+  fileType: CatalogImportFileType,
+  byteLength: number,
+): void {
+  const maximum = fileType === "XLSX"
+    ? CATALOG_IMPORT_LIMITS.maximumXlsxFileSizeBytes
+    : CATALOG_IMPORT_LIMITS.maximumCsvFileSizeBytes;
+  if (byteLength > maximum) {
+    throw new CatalogPreviewError("FILE_TOO_LARGE", `${fileType} input exceeds the configured file-size limit.`);
+  }
+}
+
+export function validateWorkbookComplexity(complexity: WorkbookComplexity): void {
+  if (complexity.sheetCount > CATALOG_IMPORT_LIMITS.maximumSheets) {
+    throw new CatalogPreviewError("SHEET_LIMIT_EXCEEDED", "Workbook exceeds the configured sheet limit.");
+  }
+  const oversizedRows = complexity.rowsPerSheet.find((sheet) =>
+    sheet.rowCount > CATALOG_IMPORT_LIMITS.maximumRowsPerSheet);
+  if (oversizedRows) {
+    throw new CatalogPreviewError("ROW_LIMIT_EXCEEDED", `Sheet ${oversizedRows.sheetName} exceeds the row limit.`);
+  }
+  const oversizedColumns = complexity.rowsPerSheet.find((sheet) =>
+    sheet.columnCount > CATALOG_IMPORT_LIMITS.maximumColumnsPerSheet);
+  if (oversizedColumns) {
+    throw new CatalogPreviewError("COLUMN_LIMIT_EXCEEDED", `Sheet ${oversizedColumns.sheetName} exceeds the column limit.`);
+  }
+  if (complexity.totalStructuralCells > CATALOG_IMPORT_LIMITS.maximumTotalStructuralCells) {
+    throw new CatalogPreviewError("CELL_LIMIT_EXCEEDED", "Workbook exceeds the structural cell limit.");
+  }
+  if (complexity.totalNonEmptyCells > CATALOG_IMPORT_LIMITS.maximumTotalNonEmptyCells) {
+    throw new CatalogPreviewError("NON_EMPTY_CELL_LIMIT_EXCEEDED", "Workbook exceeds the non-empty cell limit.");
+  }
+  if (complexity.totalFormulaCells > CATALOG_IMPORT_LIMITS.maximumFormulaCells) {
+    throw new CatalogPreviewError("FORMULA_LIMIT_EXCEEDED", "Workbook exceeds the formula cell limit.");
+  }
+  if (complexity.totalMergedRanges > CATALOG_IMPORT_LIMITS.maximumMergedRanges) {
+    throw new CatalogPreviewError("MERGED_RANGE_LIMIT_EXCEEDED", "Workbook exceeds the merged-range limit.");
+  }
+  if (complexity.totalHyperlinks > CATALOG_IMPORT_LIMITS.maximumHyperlinks) {
+    throw new CatalogPreviewError("HYPERLINK_LIMIT_EXCEEDED", "Workbook exceeds the hyperlink limit.");
+  }
 }

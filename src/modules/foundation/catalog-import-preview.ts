@@ -3,12 +3,17 @@ import type { CanonicalJsonValue } from "./canonical-content-hash";
 import type { SourceLocator } from "./catalog-lineage";
 
 export const CATALOG_IMPORT_LIMITS = {
-  maximumFileSizeBytes: 10 * 1024 * 1024,
-  maximumSheets: 20,
+  maximumXlsxFileSizeBytes: 128 * 1024 * 1024,
+  maximumCsvFileSizeBytes: 10 * 1024 * 1024,
+  maximumSheets: 40,
   maximumRowsPerSheet: 5_000,
   maximumColumnsPerSheet: 256,
-  maximumTotalCells: 250_000,
+  maximumTotalStructuralCells: 1_000_000,
+  maximumTotalNonEmptyCells: 250_000,
   maximumCellTextLength: 32_768,
+  maximumFormulaCells: 100_000,
+  maximumMergedRanges: 20_000,
+  maximumHyperlinks: 10_000,
   maximumHeaderScanRows: 25,
 } as const;
 
@@ -35,7 +40,11 @@ export type PreviewDiagnosticCode =
   | "ROW_LIMIT_EXCEEDED"
   | "COLUMN_LIMIT_EXCEEDED"
   | "CELL_LIMIT_EXCEEDED"
+  | "NON_EMPTY_CELL_LIMIT_EXCEEDED"
   | "CELL_TEXT_LIMIT_EXCEEDED"
+  | "FORMULA_LIMIT_EXCEEDED"
+  | "MERGED_RANGE_LIMIT_EXCEEDED"
+  | "HYPERLINK_LIMIT_EXCEEDED"
   | "HEADER_NOT_FOUND"
   | "HEADER_REVIEW_REQUIRED"
   | "DUPLICATE_HEADER"
@@ -182,6 +191,10 @@ export type CatalogSheetInspection = {
   rowCount: number;
   columnCount: number;
   nonEmptyRowCount: number;
+  structuralCellCount: number;
+  nonEmptyCellCount: number;
+  formulaCellCount: number;
+  hyperlinkCount: number;
   mergedRanges: readonly string[];
   headerSelection: HeaderSelection;
   columnMappings: readonly ColumnMappingSuggestion[];
@@ -203,6 +216,12 @@ export type CatalogImportPreviewCounts = {
   candidateProductCount: number;
   candidateVariantCount: number;
   attributeCandidateCount: number;
+  structuralCellCount: number;
+  nonEmptyCellCount: number;
+  formulaCellCount: number;
+  mergedRangeCount: number;
+  hyperlinkCount: number;
+  embeddedImageCount: number;
 };
 
 export type CatalogImportPreview = {

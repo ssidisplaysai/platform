@@ -7,13 +7,28 @@ import type {
 } from "./catalog-import-preview";
 import { createCatalogImportPreview } from "./catalog-spreadsheet-preview";
 import {
-  appendCatalogImportRecord,
-  appendSourceProvenance,
+  appendImportLineageBatch,
   createCatalogImport,
+  getCatalogLineageRepositoryRevision,
   getCatalogSource,
   transitionCatalogImportStatus,
 } from "./catalog-lineage-repository";
-import type { CatalogDiagnostic, SourceLocator } from "./catalog-lineage";
+import type {
+  CatalogDiagnostic,
+  NewCatalogImportRecordInput,
+  NewSourceProvenanceInput,
+  SourceLocator,
+} from "./catalog-lineage";
+
+export type CatalogImportPreviewExecutionMetrics = {
+  previewComputeDurationMs: number;
+  lineageBatchBuildDurationMs: number;
+  lineageBatchPersistDurationMs: number;
+};
+
+export type CatalogImportPreviewExecutionOptions = {
+  onMetrics?: (metrics: CatalogImportPreviewExecutionMetrics) => void;
+};
 
 function lineageDiagnostic(diagnostic: PreviewDiagnostic): CatalogDiagnostic {
   return {
@@ -46,12 +61,15 @@ function columnLocator(
 export async function createPersistedCatalogImportPreview(
   input: CatalogImportInput,
   mappingOverrides: CatalogImportMappingOverrides = {},
+  options: CatalogImportPreviewExecutionOptions = {},
 ): Promise<CatalogImportPreview> {
   if (!getCatalogSource(input.sourceId)) {
     throw new Error(`Catalog source not found: ${input.sourceId}`);
   }
 
+  const previewStartedAt = performance.now();
   const preview = await createCatalogImportPreview(input, mappingOverrides);
+  const previewComputeDurationMs = Math.round(performance.now() - previewStartedAt);
   if (preview.status === "BLOCKED") {
     return preview;
   }
@@ -74,6 +92,9 @@ export async function createPersistedCatalogImportPreview(
   });
   transitionCatalogImportStatus({ importId: input.importId, status: "PARSED", actor: "catalog-preview-parser" });
 
+  const batchBuildStartedAt = performance.now();
+  const records: NewCatalogImportRecordInput[] = [];
+  const provenance: NewSourceProvenanceInput[] = [];
   for (const row of preview.recordPreviews.filter((candidate) =>
     candidate.classification === "DATA" || candidate.classification === "MALFORMED")) {
     const recordId = `catalog-import-record-${createCanonicalContentHash({
@@ -81,7 +102,7 @@ export async function createPersistedCatalogImportPreview(
       sourceLocator: row.sourceLocator,
       rawValues: rawRowPayload(row.rawValues),
     }).slice(0, 32)}`;
-    appendCatalogImportRecord({
+    records.push({
       recordId,
       importId: input.importId,
       sourceLocator: row.sourceLocator,
@@ -102,7 +123,7 @@ export async function createPersistedCatalogImportPreview(
       if (mapping.suggestedTarget === "UNMAPPED" || mapping.suggestedTarget === "IGNORE") continue;
       const cell = row.rawValues[mapping.sourceColumn.sourceValueKey];
       if (!cell || cell.rawValue === null) continue;
-      appendSourceProvenance({
+      provenance.push({
         sourceId: input.sourceId,
         importId: input.importId,
         importRecordId: recordId,
@@ -141,8 +162,23 @@ export async function createPersistedCatalogImportPreview(
     }
   }
 
+  const lineageBatchBuildDurationMs = Math.round(performance.now() - batchBuildStartedAt);
+  const batchPersistStartedAt = performance.now();
+  appendImportLineageBatch({
+    importId: input.importId,
+    records,
+    provenance,
+    expectedRepositoryRevision: getCatalogLineageRepositoryRevision(),
+  });
+  const lineageBatchPersistDurationMs = Math.round(performance.now() - batchPersistStartedAt);
+
   transitionCatalogImportStatus({ importId: input.importId, status: "MAPPED", actor: "catalog-preview-mapper" });
   transitionCatalogImportStatus({ importId: input.importId, status: "VALIDATED", actor: "catalog-preview-validator" });
   transitionCatalogImportStatus({ importId: input.importId, status: "PREVIEW_READY", actor: input.createdBy });
+  options.onMetrics?.({
+    previewComputeDurationMs,
+    lineageBatchBuildDurationMs,
+    lineageBatchPersistDurationMs,
+  });
   return preview;
 }
