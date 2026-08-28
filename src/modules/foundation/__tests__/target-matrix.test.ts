@@ -180,7 +180,8 @@ describe("002B operator selection resolution", () => {
 
   test("2. one product and all Texas cities resolve the certified inventory", () => {
     const resolved = resolve({ citySelection: { mode: "ALL_ELIGIBLE_IN_SELECTED_STATES", values: [] } });
-    expect(resolved.cities.map((city) => city.citySlug)).toEqual(["austin", "dallas", "houston", "san-antonio"]);
+    expect(resolved.cities).toHaveLength(15);
+    expect(resolved.cities.map((city) => city.citySlug)).toEqual(expect.arrayContaining(["austin", "dallas", "fort-worth", "houston", "san-antonio"]));
   });
 
   test("3. multiple products and all Texas cities resolve independently", () => {
@@ -188,7 +189,7 @@ describe("002B operator selection resolution", () => {
       productSelection: { mode: "SELECTED", values: ["product-1", "product-2"] },
       citySelection: { mode: "ALL_ELIGIBLE_IN_SELECTED_STATES", values: [] },
     });
-    expect(buildTargetMatrixPreview({ resolved }).targets).toHaveLength(8);
+    expect(buildTargetMatrixPreview({ resolved }).targets).toHaveLength(30);
   });
 
   test("4. duplicate selected product IDs collapse", () => {
@@ -230,8 +231,8 @@ describe("002B operator selection resolution", () => {
       stateSelection: { mode: "SELECTED", values: ["TX", "CA"] },
       citySelection: { mode: "ALL_ELIGIBLE_IN_SELECTED_STATES", values: [] },
     });
-    expect(resolved.cities.filter((city) => city.stateCode === "TX")).toHaveLength(4);
-    expect(resolved.cities.filter((city) => city.stateCode === "CA")).toHaveLength(3);
+    expect(resolved.cities.filter((city) => city.stateCode === "TX")).toHaveLength(15);
+    expect(resolved.cities.filter((city) => city.stateCode === "CA")).toHaveLength(15);
   });
 
   test("13. explicit city plus all state cities preserves overlap for matrix dedup", () => {
@@ -292,8 +293,8 @@ describe("002B blueprint-specific matrix planning", () => {
       citySelection: { mode: "ALL_ELIGIBLE_IN_SELECTED_STATES", values: [] },
     });
     const cardinality = calculateTargetMatrixCardinality({ resolved });
-    expect(cardinality.theoreticalTargetCount).toBe(12);
-    expect(Object.values(cardinality.byBlueprint).sort((left, right) => left - right)).toEqual([2, 2, 8]);
+    expect(cardinality.theoreticalTargetCount).toBe(34);
+    expect(Object.values(cardinality.byBlueprint).sort((left, right) => left - right)).toEqual([2, 2, 30]);
   });
 
   test("24. family exclusions are filtered and reported", () => {
@@ -331,7 +332,7 @@ describe("002B blueprint-specific matrix planning", () => {
 
   test("30. explicit plus all-state city overlap deduplicates after expansion", () => {
     const matrix = buildTargetMatrixPreview({ resolved: resolve({ citySelection: { mode: "ALL_ELIGIBLE_IN_SELECTED_STATES", values: [{ stateCode: "TX", citySlug: "dallas" }] } }) });
-    expect(matrix.summary).toMatchObject({ theoreticalTargetCount: 5, materializedBeforeDedupCount: 5, deduplicatedTargetCount: 4, duplicateTargetCount: 1 });
+    expect(matrix.summary).toMatchObject({ theoreticalTargetCount: 16, materializedBeforeDedupCount: 16, deduplicatedTargetCount: 15, duplicateTargetCount: 1 });
     expect(matrix.filters).toEqual(expect.arrayContaining([expect.objectContaining({ reason: "DUPLICATE_TARGET" })]));
   });
 

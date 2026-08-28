@@ -42,16 +42,116 @@ export const GLW_CITIES: readonly GlwCity[] = [
   { stateCode: "TX", name: "Dallas", slug: "dallas", metro: "Dallas-Fort Worth" },
   { stateCode: "TX", name: "Houston", slug: "houston", metro: "Houston" },
   { stateCode: "TX", name: "San Antonio", slug: "san-antonio", metro: "San Antonio" },
+  { stateCode: "TX", name: "Fort Worth", slug: "fort-worth", metro: "Dallas-Fort Worth" },
+  { stateCode: "TX", name: "El Paso", slug: "el-paso", metro: "El Paso" },
+  { stateCode: "TX", name: "Arlington", slug: "arlington", metro: "Dallas-Fort Worth" },
+  { stateCode: "TX", name: "Corpus Christi", slug: "corpus-christi", metro: "Corpus Christi" },
+  { stateCode: "TX", name: "Plano", slug: "plano", metro: "Dallas-Fort Worth" },
+  { stateCode: "TX", name: "Lubbock", slug: "lubbock", metro: "Lubbock" },
+  { stateCode: "TX", name: "Laredo", slug: "laredo", metro: "Laredo" },
+  { stateCode: "TX", name: "Irving", slug: "irving", metro: "Dallas-Fort Worth" },
+  { stateCode: "TX", name: "Garland", slug: "garland", metro: "Dallas-Fort Worth" },
+  { stateCode: "TX", name: "Frisco", slug: "frisco", metro: "Dallas-Fort Worth" },
+  { stateCode: "TX", name: "McKinney", slug: "mckinney", metro: "Dallas-Fort Worth" },
   { stateCode: "CA", name: "Los Angeles", slug: "los-angeles", metro: "Los Angeles" },
   { stateCode: "CA", name: "San Diego", slug: "san-diego", metro: "San Diego" },
   { stateCode: "CA", name: "San Francisco", slug: "san-francisco", metro: "San Francisco Bay Area" },
+  { stateCode: "CA", name: "San Jose", slug: "san-jose", metro: "San Francisco Bay Area" },
+  { stateCode: "CA", name: "Sacramento", slug: "sacramento", metro: "Sacramento" },
+  { stateCode: "CA", name: "Fresno", slug: "fresno", metro: "Fresno" },
+  { stateCode: "CA", name: "Long Beach", slug: "long-beach", metro: "Los Angeles" },
+  { stateCode: "CA", name: "Oakland", slug: "oakland", metro: "San Francisco Bay Area" },
+  { stateCode: "CA", name: "Bakersfield", slug: "bakersfield", metro: "Bakersfield" },
+  { stateCode: "CA", name: "Anaheim", slug: "anaheim", metro: "Los Angeles" },
+  { stateCode: "CA", name: "Santa Ana", slug: "santa-ana", metro: "Los Angeles" },
+  { stateCode: "CA", name: "Riverside", slug: "riverside", metro: "Inland Empire" },
+  { stateCode: "CA", name: "Irvine", slug: "irvine", metro: "Los Angeles" },
+  { stateCode: "CA", name: "Stockton", slug: "stockton", metro: "Stockton" },
+  { stateCode: "CA", name: "Chula Vista", slug: "chula-vista", metro: "San Diego" },
   { stateCode: "FL", name: "Miami", slug: "miami", metro: "Miami" },
   { stateCode: "FL", name: "Orlando", slug: "orlando", metro: "Orlando" },
+  { stateCode: "FL", name: "Jacksonville", slug: "jacksonville", metro: "Jacksonville" },
+  { stateCode: "FL", name: "Tampa", slug: "tampa", metro: "Tampa Bay" },
+  { stateCode: "FL", name: "St. Petersburg", slug: "st-petersburg", metro: "Tampa Bay" },
+  { stateCode: "FL", name: "Fort Lauderdale", slug: "fort-lauderdale", metro: "Miami" },
+  { stateCode: "FL", name: "Tallahassee", slug: "tallahassee", metro: "Tallahassee" },
+  { stateCode: "FL", name: "Hialeah", slug: "hialeah", metro: "Miami" },
+  { stateCode: "FL", name: "Cape Coral", slug: "cape-coral", metro: "Cape Coral-Fort Myers" },
+  { stateCode: "FL", name: "Port St. Lucie", slug: "port-st-lucie", metro: "Port St. Lucie" },
   { stateCode: "IL", name: "Chicago", slug: "chicago", metro: "Chicago" },
+  { stateCode: "IL", name: "Aurora", slug: "aurora", metro: "Chicago" },
+  { stateCode: "IL", name: "Joliet", slug: "joliet", metro: "Chicago" },
+  { stateCode: "IL", name: "Naperville", slug: "naperville", metro: "Chicago" },
+  { stateCode: "IL", name: "Rockford", slug: "rockford", metro: "Rockford" },
+  { stateCode: "IL", name: "Springfield", slug: "springfield", metro: "Springfield" },
+  { stateCode: "IL", name: "Elgin", slug: "elgin", metro: "Chicago" },
+  { stateCode: "IL", name: "Peoria", slug: "peoria", metro: "Peoria" },
   { stateCode: "GA", name: "Atlanta", slug: "atlanta", metro: "Atlanta" },
+  { stateCode: "GA", name: "Augusta", slug: "augusta", metro: "Augusta" },
+  { stateCode: "GA", name: "Columbus", slug: "columbus", metro: "Columbus" },
+  { stateCode: "GA", name: "Macon", slug: "macon", metro: "Macon" },
+  { stateCode: "GA", name: "Savannah", slug: "savannah", metro: "Savannah" },
+  { stateCode: "GA", name: "Athens", slug: "athens", metro: "Athens" },
+  { stateCode: "GA", name: "Sandy Springs", slug: "sandy-springs", metro: "Atlanta" },
+  { stateCode: "GA", name: "Roswell", slug: "roswell", metro: "Atlanta" },
   { stateCode: "NC", name: "Charlotte", slug: "charlotte", metro: "Charlotte" },
+  { stateCode: "NC", name: "Raleigh", slug: "raleigh", metro: "Research Triangle" },
+  { stateCode: "NC", name: "Greensboro", slug: "greensboro", metro: "Piedmont Triad" },
+  { stateCode: "NC", name: "Durham", slug: "durham", metro: "Research Triangle" },
+  { stateCode: "NC", name: "Winston-Salem", slug: "winston-salem", metro: "Piedmont Triad" },
+  { stateCode: "NC", name: "Fayetteville", slug: "fayetteville", metro: "Fayetteville" },
+  { stateCode: "NC", name: "Cary", slug: "cary", metro: "Research Triangle" },
+  { stateCode: "NC", name: "Wilmington", slug: "wilmington", metro: "Wilmington" },
   { stateCode: "NY", name: "New York", slug: "new-york", metro: "New York City" },
+  { stateCode: "NY", name: "Buffalo", slug: "buffalo", metro: "Buffalo" },
+  { stateCode: "NY", name: "Rochester", slug: "rochester", metro: "Rochester" },
+  { stateCode: "NY", name: "Yonkers", slug: "yonkers", metro: "New York City" },
+  { stateCode: "NY", name: "Syracuse", slug: "syracuse", metro: "Syracuse" },
+  { stateCode: "NY", name: "Albany", slug: "albany", metro: "Capital District" },
+  { stateCode: "NY", name: "New Rochelle", slug: "new-rochelle", metro: "New York City" },
+  { stateCode: "NY", name: "Mount Vernon", slug: "mount-vernon", metro: "New York City" },
+  { stateCode: "NY", name: "Schenectady", slug: "schenectady", metro: "Capital District" },
+  { stateCode: "NY", name: "Utica", slug: "utica", metro: "Utica-Rome" },
+  { stateCode: "NY", name: "White Plains", slug: "white-plains", metro: "New York City" },
 ];
+
+export type GlwGeographyValidation = {
+  valid: boolean;
+  duplicateCityIdentityCount: number;
+  cityWithoutValidStateCount: number;
+  cityWithMultipleStateOwnerCount: number;
+};
+
+export function validateGlwGeographyAuthority(input: {
+  states?: readonly GlwState[];
+  cities?: readonly GlwCity[];
+} = {}): GlwGeographyValidation {
+  const states = input.states ?? GLW_STATES;
+  const cities = input.cities ?? GLW_CITIES;
+  const stateCodes = new Set(states.map((state) => state.code));
+  const identities = cities.map((city) => `${city.stateCode}|${city.slug}`);
+  const duplicateCityIdentityCount = identities.length - new Set(identities).size;
+  const cityWithoutValidStateCount = cities.filter((city) => !stateCodes.has(city.stateCode)).length;
+  const cityWithMultipleStateOwnerCount = new Set(identities).size === identities.length ? 0 : duplicateCityIdentityCount;
+  return {
+    valid: duplicateCityIdentityCount === 0 && cityWithoutValidStateCount === 0,
+    duplicateCityIdentityCount,
+    cityWithoutValidStateCount,
+    cityWithMultipleStateOwnerCount,
+  };
+}
+
+export function assertGlwGeographyAuthority(input: {
+  states?: readonly GlwState[];
+  cities?: readonly GlwCity[];
+} = {}): void {
+  const validation = validateGlwGeographyAuthority(input);
+  if (!validation.valid) {
+    throw new Error(
+      `Invalid GLW geography authority: duplicate=${validation.duplicateCityIdentityCount}; orphaned=${validation.cityWithoutValidStateCount}`,
+    );
+  }
+}
 
 export type GlwGenerationSite = {
   siteId: string;

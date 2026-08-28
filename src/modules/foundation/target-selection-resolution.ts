@@ -1,4 +1,8 @@
-import { GLW_CITIES, GLW_STATES } from "../glw/page-generation";
+import {
+  GLW_CITIES,
+  GLW_STATES,
+  assertGlwGeographyAuthority,
+} from "../glw/page-generation";
 import type { CanonicalProduct } from "./canonical-catalog";
 import type { CatalogReconciliationPlan } from "./catalog-reconciliation-plan";
 import type { CatalogPlanningAuthority, PageBlueprint } from "./page-blueprint";
@@ -245,6 +249,7 @@ export function resolveOperatorTargetSelection(input: {
   products: readonly ProductPlanningCandidate[];
   variants: readonly VariantPlanningCandidate[];
 }): ResolvedOperatorTargetSelection {
+  assertGlwGeographyAuthority();
   if (input.selection.pageBlueprintIds.length === 0) {
     throw new TargetSelectionResolutionError("BLUEPRINT_SELECTION_REQUIRED", "Select at least one page blueprint explicitly.");
   }
