@@ -4,13 +4,20 @@ export const GLW_APPLICATION_SITE_ID = "site-led-display-warehouse-production";
 export const GLW_N8N_ENGINE_SITE_ID = "led-display-warehouse";
 export const GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID = "prod-indoor-led-video-wall";
 export const GLW_N8N_ENGINE_PRODUCT_NAME = "LED Video Walls";
+export const GLW_N8N_ENGINE_PRODUCT_SLUG = "direct-view-led-video-walls";
 
 const GLW_N8N_ENGINE_SITE_BY_APPLICATION_SITE: Readonly<Record<string, string>> = {
   [GLW_APPLICATION_SITE_ID]: GLW_N8N_ENGINE_SITE_ID,
 };
 
-const GLW_N8N_ENGINE_PRODUCT_BY_APPLICATION_PRODUCT: Readonly<Record<string, string>> = {
-  [GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID]: GLW_N8N_ENGINE_PRODUCT_NAME,
+const GLW_N8N_ENGINE_PRODUCT_BY_APPLICATION_PRODUCT: Readonly<Record<string, {
+  name: string;
+  slug: string;
+}>> = {
+  [GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID]: {
+    name: GLW_N8N_ENGINE_PRODUCT_NAME,
+    slug: GLW_N8N_ENGINE_PRODUCT_SLUG,
+  },
 };
 
 export function resolveGlwN8nEngineSiteId(applicationSiteId: string): string {
@@ -26,7 +33,15 @@ export function resolveGlwN8nEngineProduct(applicationProductId: string): string
   if (!engineProduct) {
     throw new Error(`Unsupported GLW application product: ${applicationProductId || "MISSING"}`);
   }
-  return engineProduct;
+  return engineProduct.name;
+}
+
+export function resolveGlwN8nEngineProductSlug(applicationProductId: string): string {
+  const engineProduct = GLW_N8N_ENGINE_PRODUCT_BY_APPLICATION_PRODUCT[applicationProductId];
+  if (!engineProduct) {
+    throw new Error(`Unsupported GLW application product: ${applicationProductId || "MISSING"}`);
+  }
+  return engineProduct.slug;
 }
 
 export type GlwPageExecutionStatus =
@@ -179,6 +194,7 @@ export type GlwN8nDraftResponse =
 export type GlwPageExecutionRepository = {
   create(record: GlwPageExecutionRecord): Promise<GlwPageExecutionRecord>;
   getById(jobId: string): Promise<GlwPageExecutionRecord | null>;
+  list(): Promise<readonly GlwPageExecutionRecord[]>;
   update(jobId: string, patch: Partial<GlwPageExecutionRecord>): Promise<GlwPageExecutionRecord>;
 };
 
@@ -364,6 +380,9 @@ export function createInMemoryGlwPageExecutionRepository(
     async getById(jobId) {
       const record = records.get(jobId);
       return record ? structuredClone(record) : null;
+    },
+    async list() {
+      return Array.from(records.values(), (record) => structuredClone(record));
     },
     async update(jobId, patch) {
       const record = records.get(jobId);

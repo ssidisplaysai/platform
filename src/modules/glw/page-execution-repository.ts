@@ -58,6 +58,9 @@ export const glwPageExecutionRepository: GlwPageExecutionRepository = {
     const record = recordStore.get(jobId);
     return record ? deepClone(record) : null;
   },
+  async list() {
+    return Array.from(recordStore.values(), (record) => deepClone(record));
+  },
   async update(jobId, patch) {
     const record = recordStore.get(jobId);
     if (!record) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
