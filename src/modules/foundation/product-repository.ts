@@ -15,6 +15,13 @@ import {
   validateNewProductInput,
   validateUpdateProductInput,
 } from "./catalog-validation";
+import {
+  createCanonicalCatalogReadModel,
+  projectProductConfiguration,
+  type CanonicalCatalogReadModel,
+  type CanonicalProduct,
+  type ProductFamily,
+} from "./canonical-catalog";
 import type {
   NewProductInput,
   ProductCategory,
@@ -133,6 +140,26 @@ export function listProducts(): readonly ProductConfiguration[] {
 
 export function getProductById(productId: string): ProductConfiguration | null {
   return productStore.get(productId) ?? null;
+}
+
+export function getCanonicalProduct(
+  productId: string,
+  productFamilies: readonly ProductFamily[] = [],
+): CanonicalProduct | null {
+  const product = getProductById(productId);
+  return product ? projectProductConfiguration({ product, productFamilies }) : null;
+}
+
+export function listCanonicalProducts(
+  productFamilies: readonly ProductFamily[] = [],
+): readonly CanonicalProduct[] {
+  return listProducts().map((product) => projectProductConfiguration({ product, productFamilies }));
+}
+
+export function getCanonicalCatalogReadModel(
+  productFamilies: readonly ProductFamily[] = [],
+): CanonicalCatalogReadModel {
+  return createCanonicalCatalogReadModel({ products: listProducts(), productFamilies });
 }
 
 export function listCategories(): readonly ProductCategory[] {
