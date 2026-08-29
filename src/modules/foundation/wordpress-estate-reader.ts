@@ -172,10 +172,13 @@ export function createWordPressEstateReader(input: {
     while (true) {
       const query = new URLSearchParams({
         context: "edit",
-        status: "any",
         per_page: String(perPage),
         page: String(page),
       });
+
+      if (kind === "page" || kind === "post") {
+        query.set("status", "any");
+      }
 
       const read = await input.authority.getJson({
         path,

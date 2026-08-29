@@ -130,6 +130,38 @@ describe("Genesis WordPress estate reader", () => {
     expect(callCount).toBe(2);
   });
 
+  test.each([
+    ["media", "/media", "readMedia"],
+    ["categories", "/categories", "readCategories"],
+    ["tags", "/tags", "readTags"],
+  ] as const)(
+    "reads %s with edit context and without a status filter",
+    async (_label, expectedPath, method) => {
+      const calls: Array<{ path: string; query?: URLSearchParams }> = [];
+      const authority = authorityFrom(async (path, query) => {
+        calls.push({ path, query });
+
+        return {
+          ok: true,
+          body: [],
+          pagination: {
+            total: 0,
+            totalPages: 0,
+          },
+        };
+      });
+      const reader = createWordPressEstateReader({ authority });
+
+      await reader[method]();
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0].path).toBe(expectedPath);
+      expect(calls[0].query?.get("context")).toBe("edit");
+      expect(calls[0].query?.has("status")).toBe(false);
+      expect(calls[0].query?.get("per_page")).toBe("100");
+    },
+  );
+
   test("reads post types as bounded object map", async () => {
     const authority = authorityFrom(async (path, query) => {
       expect(path).toBe("/types");
