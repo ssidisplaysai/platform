@@ -112,4 +112,18 @@ describe("evaluateGlwGeneratedContentQa", () => {
     expect(result.checks.textIntegrity.ok).toBe(false);
     expect(result.failureReasons.textIntegrity).toContain("text-integrity");
   });
+
+  test("fails closed on generic Plano-style spacing corruption", () => {
+    const cleanSentence = "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
+    const result = evaluateGlwGeneratedContentQa({
+      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>Film,Plano teams can improve colors forsuperior presentation across glasswalls and windowsinto active displays. Poor maintenance may result inreduced clarity at the final stepof installation. ${cleanSentence.repeat(170)}</p>`),
+      request,
+      siteDomain: "ssidisplays.com",
+      minimumWordCount: 1500,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.checks.textIntegrity.ok).toBe(false);
+    expect(result.failureReasons.textIntegrity).toMatch(/,P|forsuperior|glasswalls|windowsinto|inreduced|stepof/i);
+  });
 });
