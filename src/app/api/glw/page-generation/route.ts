@@ -11,6 +11,7 @@ import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { resolveOrCreateGenesisWordPressHierarchy } from "@/modules/foundation/wordpress-hierarchy-authority";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
+import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import {
   createGlwN8nMcpDispatcher,
   createGlwN8nMcpExecutionReader,
@@ -61,6 +62,27 @@ async function finalizeContentReadyExecution(input: {
       errorMessage: "n8n completed without a generated draft artifact for Genesis WordPress mutation.",
       completedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+    });
+  }
+
+  const qa = evaluateGlwGeneratedContentQa({
+    artifact: input.job.generatedDraft,
+    request: input.request,
+    siteDomain: input.siteRecord.domain,
+    minimumWordCount: 1500,
+  });
+  if (!qa.ok) {
+    const timestamp = new Date().toISOString();
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      errorCode: "GENERATED_CONTENT_QA_FAILED",
+      errorMessage: Object.values(qa.failureReasons).join(" ") || "Generated content failed Genesis QA.",
+      qaStatus: "FAILED",
+      qaChecks: qa.checks,
+      qaFailureReasons: qa.failureReasons,
+      wordCount: qa.wordCount,
+      updatedAt: timestamp,
+      completedAt: timestamp,
     });
   }
 
@@ -126,6 +148,10 @@ async function finalizeContentReadyExecution(input: {
       status: "FAILED",
       errorCode: `WORDPRESS_${result.state.toUpperCase()}`,
       errorMessage: result.message,
+      qaStatus: "PASSED",
+      qaChecks: qa.checks,
+      qaFailureReasons: {},
+      wordCount: qa.wordCount,
       updatedAt: timestamp,
       completedAt: timestamp,
     });
@@ -138,6 +164,9 @@ async function finalizeContentReadyExecution(input: {
     wordpressStatus: result.wordpressStatus,
     disposition: result.operation === "CREATE" ? "CREATED" : "UPDATED",
     qaStatus: "COMPLETE",
+    qaChecks: qa.checks,
+    qaFailureReasons: {},
+    wordCount: qa.wordCount,
     errorCode: null,
     errorMessage: null,
     updatedAt: timestamp,
