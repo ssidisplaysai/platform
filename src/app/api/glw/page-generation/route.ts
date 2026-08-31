@@ -317,7 +317,7 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
     wordpressReadAuthority,
     localExecutions: await glwPageExecutionRepository.list(),
   });
-  const availability = resolveGlwTargetMutationAvailability(target);
+  const availability = resolveGlwTargetMutationAvailability(target, request.pageType);
   if (request.plannedOperation.startsWith("CREATE_") && !availability.createAvailable) {
     return { error: `An existing WordPress page was found for this canonical target${target.wordpressObjectId ? ` (ID ${target.wordpressObjectId})` : ""}. Creation was stopped before any WordPress changes.`, code: "CREATE_COLLISION", target, status: 409 } as const;
   }

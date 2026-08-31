@@ -64,5 +64,5 @@ export async function GET(request: NextRequest) {
     wordpressReadAuthority,
     localExecutions: await glwPageExecutionRepository.list(),
   });
-  return NextResponse.json({ target, availability: resolveGlwTargetMutationAvailability(target) });
+  return NextResponse.json({ target, availability: resolveGlwTargetMutationAvailability(target, preview.request.pageType) });
 }

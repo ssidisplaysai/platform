@@ -104,12 +104,15 @@ export function createGlwCanonicalTargetIdentity(input: {
 
 export function resolveGlwTargetMutationAvailability(
   preflight: GlwTargetPreflightResult,
+  pageType: GlwGenerationRequest["pageType"] = "city_service",
 ): GlwTargetMutationAvailability {
+  const createOperation = pageType === "state_service" ? "CREATE_STATE" : "CREATE_CITY";
+  const updateOperation = pageType === "state_service" ? "UPDATE_STATE" : "UPDATE_CITY";
   if (preflight.state === "EXISTS_DRAFT") {
     return {
       createAvailable: false,
       updateAvailable: Boolean(preflight.wordpressObjectId),
-      plannedOperation: "UPDATE_CITY",
+      plannedOperation: updateOperation,
       wordpressObjectId: preflight.wordpressObjectId,
       message: "An existing draft is available for exact-ID update.",
     };
@@ -127,7 +130,7 @@ export function resolveGlwTargetMutationAvailability(
     return {
       createAvailable: preflight.hierarchy?.generationAvailable ?? true,
       updateAvailable: false,
-      plannedOperation: preflight.hierarchy?.generationAvailable === false ? null : "CREATE_CITY",
+      plannedOperation: preflight.hierarchy?.generationAvailable === false ? null : createOperation,
       wordpressObjectId: null,
       message: preflight.hierarchy?.generationAvailable === false
         ? "The canonical target is absent, but its WordPress hierarchy is not safe for automatic generation."
@@ -316,7 +319,7 @@ export async function readGlwTargetPreflight(input: {
     cityName: input.request.cityName ?? "",
     localExecutions: input.localExecutions,
   };
-  if (!input.wordpressReadAuthority || !state || input.request.pageType !== "city_service") {
+  if (!input.wordpressReadAuthority || !state || (input.request.pageType !== "city_service" && input.request.pageType !== "state_service")) {
     return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
   }
 
@@ -397,6 +400,48 @@ export async function readGlwTargetPreflight(input: {
     ...stateRead,
   });
 
+  if (input.request.pageType === "state_service") {
+    const identity = createGlwCanonicalTargetIdentity({
+      productId: input.request.productId,
+      productTopic: input.request.productTopic,
+      stateCode: input.request.stateCode,
+      citySlug: state.slug,
+      applicationPath: input.request.canonicalPath,
+      canonicalParentId: productParentId,
+    });
+
+    const hierarchyBase: GlwHierarchyPreflight = {
+      productParent,
+      stateParent,
+      leaf: stateParent,
+      generationAvailable: true,
+    };
+
+    const hierarchy = {
+      ...hierarchyBase,
+      generationAvailable: hierarchyIsSafeForGeneration(hierarchyBase),
+    };
+
+    if (
+      stateParent.state === "UNVERIFIED"
+      || stateParent.state === "AMBIGUOUS"
+      || stateParent.state === "UNSUPPORTED_STATUS"
+    ) {
+      return resolveGlwTargetPreflight({
+        identity,
+        hierarchy,
+        ...common,
+      });
+    }
+
+    return resolveGlwTargetPreflight({
+      identity,
+      wordpressPages: stateRead.pages,
+      inventoryComplete: true,
+      hierarchy,
+      ...common,
+    });
+  }
   if (stateParent.state === "UNVERIFIED" || stateParent.state === "AMBIGUOUS" || stateParent.state === "UNSUPPORTED_STATUS") {
     const hierarchy: GlwHierarchyPreflight = {
       productParent,
