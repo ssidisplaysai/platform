@@ -1,3 +1,4 @@
+import type { AuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import {
   createGlwCanonicalTargetIdentity,
   resolveGlwTargetMutationAvailability,
@@ -8,11 +9,23 @@ import {
 
 const identity = createGlwCanonicalTargetIdentity({
   productId: "prod-indoor-led-video-wall",
+  productTopic: "Indoor LED Video Wall",
   stateCode: "TX",
   citySlug: "dallas",
   applicationPath: "indoor-led-video-wall/texas/dallas",
   canonicalParentId: "2563",
 });
+
+function authorityFromBodies(bodies: unknown[]): AuthenticatedWordPressReadAuthority {
+  const queue = [...bodies];
+  return {
+    getJson: jest.fn(async () => ({
+      ok: true as const,
+      body: queue.shift(),
+      pagination: { total: null, totalPages: null },
+    })),
+  };
+}
 
 function result(state: GlwTargetPreflightResult["state"]): GlwTargetPreflightResult {
   return {
@@ -27,12 +40,41 @@ function result(state: GlwTargetPreflightResult["state"]): GlwTargetPreflightRes
   };
 }
 
+function request(citySlug = "dallas") {
+  const cityName = citySlug === "houston" ? "Houston" : "Dallas";
+  return {
+    siteId: "site-led-display-warehouse-production",
+    productId: "prod-indoor-led-video-wall",
+    pageType: "city_service" as const,
+    stateCode: "TX",
+    citySlug,
+    slug: `indoor-led-video-wall/texas/${citySlug}`,
+    title: cityName,
+    seoTitle: `${cityName} SEO`,
+    metaDescription: `${cityName} meta`,
+    publicationIntent: "draft" as const,
+    organizationId: "org",
+    siteName: "LEDDisplayWarehouse.com",
+    siteDomain: "example.test",
+    siteCanonicalUrl: "https://example.test",
+    wordpressApiBaseUrl: "https://example.test/wp-json/wp/v2",
+    productTopic: "Indoor LED Video Wall",
+    stateName: "Texas",
+    cityName,
+    canonicalPath: `indoor-led-video-wall/texas/${citySlug}`,
+    plannedOperation: "CREATE_CITY" as const,
+    wordpressObjectId: null,
+    externalExecutionAllowed: false as const,
+  };
+}
+
 describe("GLW canonical target preflight", () => {
-  test("maps the Dallas application path to the canonical WordPress identity", () => {
+  test("maps the application path to canonical target identity", () => {
     expect(identity).toMatchObject({
       applicationPath: "indoor-led-video-wall/texas/dallas",
-      canonicalPath: "direct-view-led-video-walls/texas/dallas",
-      canonicalProductSlug: "direct-view-led-video-walls",
+      canonicalPath: "indoor-led-video-wall/texas/dallas",
+      canonicalProduct: "Indoor LED Video Wall",
+      canonicalProductSlug: "indoor-led-video-wall",
       canonicalSlug: "dallas",
       canonicalParentId: "2563",
     });
@@ -41,7 +83,7 @@ describe("GLW canonical target preflight", () => {
   test("represents known published Dallas as an existing page", () => {
     expect(resolveGlwTargetPreflight({
       identity,
-      wordpressPages: [{ id: 18846, status: "publish", slug: "dallas", parent: 2563, title: { rendered: "Direct View LED Video Walls in Dallas, Texas" } }],
+      wordpressPages: [{ id: 18846, status: "publish", slug: "dallas", parent: 2563 }],
       siteId: "site-led-display-warehouse-production",
       productId: "prod-indoor-led-video-wall",
       stateName: "Texas",
@@ -49,12 +91,12 @@ describe("GLW canonical target preflight", () => {
     })).toMatchObject({ state: "EXISTS_PUBLISHED", wordpressObjectId: "18846" });
   });
 
-  test("blocks create for a published target", () => {
-    expect(resolveGlwTargetMutationAvailability(result("EXISTS_PUBLISHED")).createAvailable).toBe(false);
-  });
-
-  test("does not expose draft update for a published target", () => {
-    expect(resolveGlwTargetMutationAvailability(result("EXISTS_PUBLISHED")).updateAvailable).toBe(false);
+  test("blocks create and update for a published target", () => {
+    expect(resolveGlwTargetMutationAvailability(result("EXISTS_PUBLISHED"))).toMatchObject({
+      createAvailable: false,
+      updateAvailable: false,
+      plannedOperation: null,
+    });
   });
 
   test("exposes exact update for an existing draft", () => {
@@ -74,10 +116,12 @@ describe("GLW canonical target preflight", () => {
     });
   });
 
-  test("does not represent unknown target state as absent", () => {
-    const unknown = result("UNKNOWN");
-    expect(unknown.state).toBe("UNKNOWN");
-    expect(resolveGlwTargetMutationAvailability(unknown).message).toContain("verified authoritatively");
+  test("fails closed for unknown target state", () => {
+    expect(resolveGlwTargetMutationAvailability(result("UNKNOWN"))).toMatchObject({
+      createAvailable: false,
+      updateAvailable: false,
+      plannedOperation: null,
+    });
   });
 
   test("uses a durable completed draft as local partial authority", () => {
@@ -103,92 +147,82 @@ describe("GLW canonical target preflight", () => {
     expect(preflight).toMatchObject({ state: "EXISTS_DRAFT", wordpressObjectId: "3001", source: "LOCAL_EXECUTION" });
   });
 
-  test("resolves the public Dallas hierarchy and existing page read-only", async () => {
-    const responses = [
-      [{ id: 124, slug: "direct-view-led-video-walls", parent: 0, status: "publish" }],
+  test("resolves published product, state, and leaf hierarchy read-only", async () => {
+    const authority = authorityFromBodies([
+      [{ id: 124, slug: "indoor-led-video-wall", parent: 0, status: "publish" }],
       [{ id: 2563, slug: "texas", parent: 124, status: "publish" }],
-      [{ id: 18846, slug: "dallas", parent: 2563, status: "publish", title: { rendered: "Direct View LED Video Walls in Dallas, Texas" } }],
-    ];
-    const fetcher = jest.fn().mockImplementation(async () => ({ ok: true, async json() { return responses.shift(); } }));
-    const target = await readGlwTargetPreflight({
-      request: {
-        siteId: "site-led-display-warehouse-production", productId: "prod-indoor-led-video-wall",
-        pageType: "city_service", stateCode: "TX", citySlug: "dallas",
-        slug: identity.applicationPath, title: "Dallas", seoTitle: "Dallas SEO", metaDescription: "Dallas meta",
-        publicationIntent: "draft", organizationId: "org", siteName: "LEDDisplayWarehouse.com",
-        productTopic: "Indoor LED Video Wall", stateName: "Texas", cityName: "Dallas",
-        canonicalPath: identity.applicationPath, plannedOperation: "CREATE_CITY", wordpressObjectId: null,
-        externalExecutionAllowed: false,
-      },
-      wordpressApiBaseUrl: "https://example.test/wp-json/wp/v2",
-      localExecutions: [],
-      fetcher,
-    });
+      [{ id: 18846, slug: "dallas", parent: 2563, status: "publish" }],
+    ]);
+    const target = await readGlwTargetPreflight({ request: request(), wordpressReadAuthority: authority, localExecutions: [] });
     expect(target).toMatchObject({
-      state: "EXISTS_PUBLISHED", wordpressObjectId: "18846",
-      canonicalPath: "direct-view-led-video-walls/texas/dallas", canonicalParentId: "2563",
-    });
-    expect(fetcher).toHaveBeenCalledTimes(3);
-    expect(fetcher.mock.calls[2][0]).toContain("slug=dallas");
-    expect(fetcher.mock.calls[2][0]).toContain("parent=2563");
-  });
-
-  test("keeps a public zero-result lookup unknown because drafts are not visible", async () => {
-    const responses = [[{ id: 124 }], [{ id: 2563 }], []];
-    const target = await readGlwTargetPreflight({
-      request: {
-        siteId: "site-led-display-warehouse-production", productId: "prod-indoor-led-video-wall",
-        pageType: "city_service", stateCode: "TX", citySlug: "houston",
-        slug: "indoor-led-video-wall/texas/houston", title: "Houston", seoTitle: "Houston SEO", metaDescription: "Houston meta",
-        publicationIntent: "draft", organizationId: "org", siteName: "LEDDisplayWarehouse.com",
-        productTopic: "Indoor LED Video Wall", stateName: "Texas", cityName: "Houston",
-        canonicalPath: "indoor-led-video-wall/texas/houston", plannedOperation: "CREATE_CITY", wordpressObjectId: null,
-        externalExecutionAllowed: false,
+      state: "EXISTS_PUBLISHED",
+      wordpressObjectId: "18846",
+      canonicalParentId: "2563",
+      hierarchy: {
+        productParent: { state: "EXISTS_PUBLISHED", wordpressObjectId: "124" },
+        stateParent: { state: "EXISTS_PUBLISHED", wordpressObjectId: "2563" },
+        leaf: { state: "EXISTS_PUBLISHED", wordpressObjectId: "18846" },
+        generationAvailable: true,
       },
-      wordpressApiBaseUrl: "https://example.test/wp-json/wp/v2",
-      localExecutions: [],
-      fetcher: async () => ({ ok: true, async json() { return responses.shift(); } }),
-    });
-    expect(target.state).toBe("UNKNOWN");
-    expect(resolveGlwTargetMutationAvailability(target).message).toContain("verified authoritatively");
-  });
-
-  test("blocks all mutation choices for a known published page", () => {
-    expect(resolveGlwTargetMutationAvailability(result("EXISTS_PUBLISHED"))).toMatchObject({
-      createAvailable: false,
-      updateAvailable: false,
-      plannedOperation: null,
     });
   });
 
-  test("never falls back from exact update to create", () => {
-    expect(resolveGlwTargetMutationAvailability(result("EXISTS_DRAFT"))).toMatchObject({
-      createAvailable: false,
-      updateAvailable: true,
-      wordpressObjectId: "3001",
+  test("reports missing product parent and dependent hierarchy explicitly", async () => {
+    const authority = authorityFromBodies([[]]);
+    const target = await readGlwTargetPreflight({ request: request("houston"), wordpressReadAuthority: authority, localExecutions: [] });
+    expect(target).toMatchObject({
+      state: "ABSENT",
+      canonicalParentId: null,
+      hierarchy: {
+        productParent: { state: "ABSENT", wordpressObjectId: null },
+        stateParent: { state: "PARENT_ABSENT", wordpressObjectId: null },
+        leaf: { state: "PARENT_ABSENT", wordpressObjectId: null },
+        generationAvailable: true,
+      },
+    });
+    expect(resolveGlwTargetMutationAvailability(target).createAvailable).toBe(true);
+  });
+
+  test("reports missing state parent beneath an existing product parent", async () => {
+    const authority = authorityFromBodies([
+      [{ id: 124, slug: "indoor-led-video-wall", parent: 0, status: "draft" }],
+      [],
+    ]);
+    const target = await readGlwTargetPreflight({ request: request("houston"), wordpressReadAuthority: authority, localExecutions: [] });
+    expect(target).toMatchObject({
+      state: "ABSENT",
+      hierarchy: {
+        productParent: { state: "EXISTS_DRAFT", wordpressObjectId: "124" },
+        stateParent: { state: "ABSENT", parentId: "124" },
+        leaf: { state: "PARENT_ABSENT" },
+        generationAvailable: true,
+      },
     });
   });
 
-  test("ignores a local execution for another canonical application path", () => {
-    const target = resolveGlwTargetPreflight({
-      identity,
-      localExecutions: [{
-        jobId: "other", correlationId: "other", executionTransport: "N8N_MCP", organizationId: "org",
-        siteId: "site-led-display-warehouse-production", productId: "prod-indoor-led-video-wall",
-        productTopic: "Indoor LED Video Wall", state: "Texas", city: "Dallas", slug: "another/path",
-        title: "Other", seoTitle: "Other", metaDescription: "Other", publicationIntent: "draft",
-        status: "COMPLETE", externalExecutionId: "2", wordpressObjectId: "9999", wordpressUrl: null,
-        wordpressStatus: "draft", errorCode: null, errorMessage: null, requestedPublicationMode: "draft",
-        disposition: "CREATED", qaStatus: "COMPLETE", qaChecks: {}, qaFailureReasons: {},
-        focusKeyphrase: null, wordCount: null, featuredImagePresent: null,
-        createdAt: "2026-01-01", dispatchedAt: "2026-01-01", updatedAt: "2026-01-01", completedAt: "2026-01-01",
-      }],
-      siteId: "site-led-display-warehouse-production",
-      productId: "prod-indoor-led-video-wall",
-      stateName: "Texas",
-      cityName: "Dallas",
+  test("blocks generation when product hierarchy is ambiguous", async () => {
+    const authority = authorityFromBodies([[
+      { id: 124, slug: "indoor-led-video-wall", parent: 0, status: "draft" },
+      { id: 125, slug: "indoor-led-video-wall", parent: 0, status: "draft" },
+    ]]);
+    const target = await readGlwTargetPreflight({ request: request("houston"), wordpressReadAuthority: authority, localExecutions: [] });
+    expect(target).toMatchObject({
+      state: "UNKNOWN",
+      hierarchy: { productParent: { state: "AMBIGUOUS" }, generationAvailable: false },
     });
-    expect(target.state).toBe("UNKNOWN");
+    expect(resolveGlwTargetMutationAvailability(target).createAvailable).toBe(false);
+  });
+
+  test("blocks generation when hierarchy status is unsupported", async () => {
+    const authority = authorityFromBodies([[
+      { id: 124, slug: "indoor-led-video-wall", parent: 0, status: "pending" },
+    ]]);
+    const target = await readGlwTargetPreflight({ request: request("houston"), wordpressReadAuthority: authority, localExecutions: [] });
+    expect(target).toMatchObject({
+      state: "UNKNOWN",
+      hierarchy: { productParent: { state: "UNSUPPORTED_STATUS" }, generationAvailable: false },
+    });
+    expect(resolveGlwTargetMutationAvailability(target).createAvailable).toBe(false);
   });
 
   test("requires exact parent and leaf for a WordPress match", () => {
