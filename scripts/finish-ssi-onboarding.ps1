@@ -35,13 +35,6 @@ Write-Host "`n=== CREATE CLEAN AUTOMATION WORKTREE ==="
 git -C $SourceWorktree worktree add --force $target $branch
 if ($LASTEXITCODE -ne 0) { throw "WORKTREE_CREATE_FAILED" }
 
-$sourceModules = Join-Path $SourceWorktree "node_modules"
-$targetModules = Join-Path $target "node_modules"
-if ((Test-Path -LiteralPath $sourceModules) -and -not (Test-Path -LiteralPath $targetModules)) {
-    New-Item -ItemType Junction -Path $targetModules -Target $sourceModules | Out-Null
-    Write-Host "NODE_MODULES=SHARED"
-}
-
 $sourceEnv = Join-Path $SourceWorktree ".env.local"
 $targetEnv = Join-Path $target ".env.local"
 if (Test-Path -LiteralPath $sourceEnv) {
@@ -53,6 +46,16 @@ $sourcePersistence = Join-Path $SourceWorktree ".gcp-foundation-data"
 if (Test-Path -LiteralPath $sourcePersistence) {
     $env:GCP_FOUNDATION_PERSISTENCE_DIR = $sourcePersistence
     Write-Host "PERSISTENCE=$sourcePersistence"
+}
+
+Write-Host "`n=== INSTALL ISOLATED DEPENDENCIES ==="
+Push-Location $target
+try {
+    npm ci --no-audit --no-fund
+    if ($LASTEXITCODE -ne 0) { throw "NPM_CI_FAILED" }
+}
+finally {
+    Pop-Location
 }
 
 Write-Host "`n=== ONE-COMMAND CERTIFICATION ==="
