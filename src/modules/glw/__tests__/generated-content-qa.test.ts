@@ -72,6 +72,19 @@ describe("evaluateGlwGeneratedContentQa", () => {
     expect(result.checks.expectedCity.ok).toBe(true);
   });
 
+  test("allows a visible configured-site hostname in body text", () => {
+    const cleanSentence = "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
+    const result = evaluateGlwGeneratedContentQa({
+      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>${cleanSentence.repeat(170)} Visit ssidisplays.com for project assistance.</p>`),
+      request,
+      siteDomain: "ssidisplays.com",
+      minimumWordCount: 1500,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.checks.textIntegrity.ok).toBe(true);
+  });
+
   test("fails closed on a foreign absolute link domain", () => {
     const cleanSentence = "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
     const result = evaluateGlwGeneratedContentQa({
