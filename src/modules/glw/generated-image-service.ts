@@ -2,8 +2,8 @@ import "server-only";
 
 export type GenesisGeneratedImage = {
   bytes: Buffer;
-  mimeType: "image/png";
-  fileExtension: "png";
+  mimeType: "image/jpeg";
+  fileExtension: "jpg";
 };
 
 export type GenesisGeneratedImageResult =
@@ -90,6 +90,8 @@ export async function generateGenesisFeaturedImage(input: {
         prompt: buildProductionPrompt(input),
         size: "1536x1024",
         quality: "medium",
+        output_format: "jpeg",
+        output_compression: 82,
         n: 1,
       }),
       cache: "no-store",
@@ -139,8 +141,8 @@ export async function generateGenesisFeaturedImage(input: {
       ok: true,
       image: {
         bytes,
-        mimeType: "image/png",
-        fileExtension: "png",
+        mimeType: "image/jpeg",
+        fileExtension: "jpg",
       },
     };
   } catch {
