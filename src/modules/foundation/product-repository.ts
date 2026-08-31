@@ -166,6 +166,120 @@ export function listCategories(): readonly ProductCategory[] {
   return Array.from(categoryStore.values());
 }
 
+export function createCategory(input: {
+  organizationId: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  parentCategoryId?: string | null;
+  sortOrder?: number;
+  siteAssignments?: readonly string[];
+}): {
+  validation: ProductValidationResult;
+  category: ProductCategory | null;
+} {
+  loadStateFromPersistence();
+
+  const organizationId = input.organizationId.trim();
+  const name = input.name.trim();
+  const slug = input.slug
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  const issues: ProductValidationResult["issues"][number][] = [];
+
+  if (!organizationId) {
+    issues.push({
+      field: "organizationId",
+      message: "Organization ID is required.",
+    });
+  }
+
+  if (!name) {
+    issues.push({
+      field: "name",
+      message: "Category name is required.",
+    });
+  }
+
+  if (!slug) {
+    issues.push({
+      field: "slug",
+      message: "Category slug is required.",
+    });
+  }
+
+  const duplicate = Array.from(categoryStore.values()).find(
+    (category) =>
+      category.organizationId === organizationId &&
+      category.slug === slug,
+  );
+
+  if (duplicate) {
+    issues.push({
+      field: "slug",
+      message: "Category slug already exists for this organization.",
+    });
+  }
+
+  if (input.parentCategoryId) {
+    const parent = categoryStore.get(input.parentCategoryId);
+
+    if (!parent) {
+      issues.push({
+        field: "parentCategoryId",
+        message: "Parent category was not found.",
+      });
+    } else if (parent.organizationId !== organizationId) {
+      issues.push({
+        field: "parentCategoryId",
+        message: "Parent category belongs to another organization.",
+      });
+    }
+  }
+
+  if (issues.length > 0) {
+    return {
+      validation: {
+        valid: false,
+        issues,
+      },
+      category: null,
+    };
+  }
+
+  const timestamp = nowIso();
+  const categoryId = `cat-${organizationId}-${slug}`;
+
+  const category: ProductCategory = {
+    categoryId,
+    organizationId,
+    name,
+    slug,
+    description: input.description?.trim() || null,
+    parentCategoryId: input.parentCategoryId ?? null,
+    status: "active",
+    sortOrder: input.sortOrder ?? 0,
+    siteAssignments: Array.from(
+      new Set(input.siteAssignments ?? []),
+    ),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  categoryStore.set(categoryId, category);
+  persistCurrentState();
+
+  return {
+    validation: {
+      valid: true,
+      issues: [],
+    },
+    category,
+  };
+}
 export function listManufacturers(): readonly ProductManufacturer[] {
   return Array.from(manufacturerStore.values());
 }

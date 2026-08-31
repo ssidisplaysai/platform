@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
+import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import {
   adaptProductForGeneration,
@@ -35,9 +37,31 @@ export async function GET(request: NextRequest) {
   const preview = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
   if (!preview.request) return NextResponse.json({ issues: preview.validation.issues }, { status: 400 });
 
+  const wordpressApiBaseUrl =
+    siteRecord.integrations.wordpressApiBaseUrl?.trim() ?? "";
+
+  const wordpressCredentialReference =
+    siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
+
+  const credential = resolveWordPressCredentialReference(
+    wordpressCredentialReference,
+  );
+
+  const wordpressReadAuthority =
+    wordpressApiBaseUrl && credential
+      ? createAuthenticatedWordPressReadAuthority({
+          configuration: {
+            apiBaseUrl: wordpressApiBaseUrl,
+            username: credential.username,
+            applicationPassword: credential.applicationPassword,
+            timeoutMs: 30_000,
+          },
+        })
+      : null;
+
   const target = await readGlwTargetPreflight({
     request: preview.request,
-    wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+    wordpressReadAuthority,
     localExecutions: await glwPageExecutionRepository.list(),
   });
   return NextResponse.json({ target, availability: resolveGlwTargetMutationAvailability(target) });

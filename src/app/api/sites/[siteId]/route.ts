@@ -46,6 +46,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   const { siteId } = await context.params;
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const existing = getSiteById(siteId);
+
+  if (
+    !existing ||
+    !isRecordInScope({
+      recordOrganizationId: existing.organizationId,
+      recordSiteId: existing.siteId,
+      scope,
+    })
+  ) {
+    return NextResponse.json({ error: "Site not found" }, { status: 404 });
+  }
   const patch = (await request.json()) as UpdateSiteInput;
   const result = updateSite(siteId, patch);
 

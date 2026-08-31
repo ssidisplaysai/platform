@@ -1,8 +1,4 @@
-import {
-  GLW_N8N_ENGINE_SITE_ID,
-  resolveGlwN8nEngineSiteId,
-  type GlwN8nDraftRequest,
-} from "./page-execution";
+import type { GlwN8nDraftRequest } from "./page-execution";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -53,13 +49,10 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   }
 
   const incomingSiteId = typeof site.id === "string" ? site.id.trim() : "";
-  const engineSiteId = incomingSiteId === GLW_N8N_ENGINE_SITE_ID
-    ? incomingSiteId
-    : resolveGlwN8nEngineSiteId(incomingSiteId);
 
-  if (engineSiteId === incomingSiteId) return value as GlwN8nDraftRequest;
-  return {
-    ...request,
-    site: { ...site, id: engineSiteId },
-  } as GlwN8nDraftRequest;
+  if (!incomingSiteId) {
+    throw new Error("GLW MCP request requires a canonical Genesis site ID.");
+  }
+
+  return value as GlwN8nDraftRequest;
 }

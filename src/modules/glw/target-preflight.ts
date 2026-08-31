@@ -1,9 +1,6 @@
+import type { AuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { getGlwState, type GlwGenerationRequest } from "./page-generation";
-import {
-  resolveGlwN8nEngineProduct,
-  resolveGlwN8nEngineProductSlug,
-  type GlwPageExecutionRecord,
-} from "./page-execution";
+import type { GlwPageExecutionRecord } from "./page-execution";
 
 export type GlwTargetPreflightState =
   | "ABSENT"
@@ -50,25 +47,30 @@ export type GlwWordPressTargetPage = {
   author?: number;
 };
 
-type FetchResponse = {
-  ok: boolean;
-  json(): Promise<unknown>;
-};
-
 export function createGlwCanonicalTargetIdentity(input: {
   productId: string;
+  productTopic: string;
   stateCode: string;
   citySlug: string;
   applicationPath: string;
   canonicalParentId?: string | null;
 }): GlwCanonicalTargetIdentity {
   const state = getGlwState(input.stateCode);
-  const canonicalProductSlug = resolveGlwN8nEngineProductSlug(input.productId);
+  const applicationPathSegments = input.applicationPath
+    .split("/")
+    .map((segment) => segment.trim().toLowerCase())
+    .filter(Boolean);
+
+  const canonicalProductSlug = applicationPathSegments[0] ?? "";
+
+  if (!canonicalProductSlug) {
+    throw new Error("Canonical product slug is required.");
+  }
   const canonicalSlug = input.citySlug.trim().toLowerCase();
   return {
     applicationPath: input.applicationPath,
     canonicalPath: [canonicalProductSlug, state?.slug, canonicalSlug].filter(Boolean).join("/"),
-    canonicalProduct: resolveGlwN8nEngineProduct(input.productId),
+    canonicalProduct: input.productTopic.trim(),
     canonicalProductSlug,
     canonicalSlug,
     canonicalParentId: input.canonicalParentId ?? null,
@@ -176,13 +178,13 @@ export function resolveGlwTargetPreflight(input: {
 
 export async function readGlwTargetPreflight(input: {
   request: GlwGenerationRequest;
-  wordpressApiBaseUrl: string | null;
+  wordpressReadAuthority: AuthenticatedWordPressReadAuthority | null;
   localExecutions: readonly GlwPageExecutionRecord[];
-  fetcher?: (url: string, init: { headers: Record<string, string> }) => Promise<FetchResponse>;
 }): Promise<GlwTargetPreflightResult> {
   const state = getGlwState(input.request.stateCode);
   const initialIdentity = createGlwCanonicalTargetIdentity({
     productId: input.request.productId,
+    productTopic: input.request.productTopic,
     stateCode: input.request.stateCode,
     citySlug: input.request.citySlug,
     applicationPath: input.request.canonicalPath,
@@ -194,53 +196,115 @@ export async function readGlwTargetPreflight(input: {
     cityName: input.request.cityName ?? "",
     localExecutions: input.localExecutions,
   };
-  if (!input.wordpressApiBaseUrl || !state || input.request.pageType !== "city_service") {
+  if (!input.wordpressReadAuthority || !state || input.request.pageType !== "city_service") {
     return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
   }
 
-  const fetcher = input.fetcher ?? fetch;
-  const readPages = async (slug: string, parent: string): Promise<readonly GlwWordPressTargetPage[] | null> => {
+  const readPages = async (
+    slug: string,
+    parent: string,
+  ): Promise<{
+    pages: readonly GlwWordPressTargetPage[] | null;
+    authoritative: boolean;
+  }> => {
     const query = new URLSearchParams({
       slug,
       parent,
-      context: "view",
+      context: "edit",
+      status: "publish,draft,pending,private,future",
       per_page: "2",
       _fields: "id,slug,parent,status,link,title",
     });
-    try {
-      const response = await fetcher(`${input.wordpressApiBaseUrl}/pages?${query}`, {
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) return null;
-      const body = await response.json();
-      return Array.isArray(body) ? body as GlwWordPressTargetPage[] : null;
-    } catch {
-      return null;
+
+    const response = await input.wordpressReadAuthority.getJson({
+      path: "/pages",
+      query,
+    });
+
+    if (!response.ok || !Array.isArray(response.body)) {
+      return {
+        pages: null,
+        authoritative: false,
+      };
     }
+
+    return {
+      pages: response.body as GlwWordPressTargetPage[],
+      authoritative: true,
+    };
   };
 
-  const productPages = await readPages(initialIdentity.canonicalProductSlug, "0");
-  const productParentId = productPages?.[0]?.id;
-  if (!productParentId) {
-    return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
+  const productRead = await readPages(
+    initialIdentity.canonicalProductSlug,
+    "0",
+  );
+
+  if (!productRead.authoritative) {
+    return resolveGlwTargetPreflight({
+      identity: initialIdentity,
+      ...common,
+    });
   }
-  const statePages = await readPages(state.slug, String(productParentId));
-  const stateParentId = statePages?.[0]?.id;
+
+  const productParentId = productRead.pages?.[0]?.id;
+
+  if (!productParentId) {
+    return resolveGlwTargetPreflight({
+      identity: initialIdentity,
+      wordpressPages: [],
+      inventoryComplete: true,
+      ...common,
+    });
+  }
+
+  const stateRead = await readPages(
+    state.slug,
+    String(productParentId),
+  );
+
+  if (!stateRead.authoritative) {
+    return resolveGlwTargetPreflight({
+      identity: initialIdentity,
+      ...common,
+    });
+  }
+
+  const stateParentId = stateRead.pages?.[0]?.id;
+
   if (!stateParentId) {
-    return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
+    return resolveGlwTargetPreflight({
+      identity: initialIdentity,
+      wordpressPages: [],
+      inventoryComplete: true,
+      ...common,
+    });
   }
 
   const identity = createGlwCanonicalTargetIdentity({
     productId: input.request.productId,
+    productTopic: input.request.productTopic,
     stateCode: input.request.stateCode,
     citySlug: input.request.citySlug,
     applicationPath: input.request.canonicalPath,
     canonicalParentId: String(stateParentId),
   });
-  const targetPages = await readPages(identity.canonicalSlug, String(stateParentId));
+
+  const targetRead = await readPages(
+    identity.canonicalSlug,
+    String(stateParentId),
+  );
+
+  if (!targetRead.authoritative) {
+    return resolveGlwTargetPreflight({
+      identity,
+      ...common,
+    });
+  }
+
   return resolveGlwTargetPreflight({
     identity,
-    wordpressPages: targetPages,
+    wordpressPages: targetRead.pages,
+    inventoryComplete: true,
     ...common,
   });
 }

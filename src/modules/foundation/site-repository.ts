@@ -73,17 +73,22 @@ function createSiteId(organizationId: string, slug: string): string {
 }
 
 export function listSites(): readonly SiteConfiguration[] {
-  return Array.from(siteStore.values());
+  loadStateFromPersistence();
+  return Array.from(siteStore.values()).map((site) => deepClone(site));
 }
 
 export function getSiteById(siteId: string): SiteConfiguration | null {
-  return siteStore.get(siteId) ?? null;
+  loadStateFromPersistence();
+  const site = siteStore.get(siteId);
+  return site ? deepClone(site) : null;
 }
 
 export function createSite(input: NewSiteInput): {
   validation: SiteValidationResult;
   site: SiteConfiguration | null;
 } {
+  loadStateFromPersistence();
+
   const validation = validateNewSiteInput(input);
   if (!validation.valid) {
     return { validation, site: null };
@@ -108,6 +113,15 @@ export function createSite(input: NewSiteInput): {
     displayName: input.displayName,
     slug: input.slug,
     domain: input.domain,
+    primaryAddress: input.primaryAddress,
+    onboarding: {
+      status: "not_started",
+      wordpressConnectionVerifiedAt: null,
+      certificationStatus: "not_started",
+      certificationPageId: null,
+      certificationUrl: null,
+      certifiedAt: null,
+    },
     canonicalUrl: input.canonicalUrl,
     environment: input.environment,
     lifecycleState: "draft",
@@ -140,6 +154,8 @@ export function updateSite(
   validation: SiteValidationResult;
   site: SiteConfiguration | null;
 } {
+  loadStateFromPersistence();
+
   const existing = siteStore.get(siteId);
   if (!existing) {
     return {

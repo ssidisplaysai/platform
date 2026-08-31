@@ -125,10 +125,10 @@ describe("GLW one-draft execution recovery", () => {
   test("maps a validated local request to the historical n8n contract", () => {
     const mapped = mapGenerationRequestToN8nDraft("glw-job-001", request);
     expect(request.siteId).toBe(GLW_APPLICATION_SITE_ID);
-    expect(mapped.site.id).toBe(GLW_N8N_ENGINE_SITE_ID);
+    expect(mapped.site.id).toBe(GLW_APPLICATION_SITE_ID);
     expect(mapped.publicationKey).toContain(GLW_APPLICATION_SITE_ID);
     expect(mapped.page.productId).toBe(GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID);
-    expect(mapped.page.product).toBe(GLW_N8N_ENGINE_PRODUCT_NAME);
+    expect(mapped.page.product).toBe(request.productTopic);
     expect(mapped.page.productTopic).toBe(request.productTopic);
     expect(mapped.operation).toBe("CREATE_CITY");
     expect(mapped.wordpressObjectId).toBeNull();
@@ -151,10 +151,10 @@ describe("GLW one-draft execution recovery", () => {
       jobId,
       callbackUrl: "",
       operation: "CREATE_CITY",
-      site: { id: "led-display-warehouse", name: "LEDDisplayWarehouse.com" },
+      site: { id: "site-led-display-warehouse-production", name: "LEDDisplayWarehouse.com" },
       page: {
         productId: "prod-indoor-led-video-wall",
-        product: "LED Video Walls",
+        product: "Indoor LED Video Wall",
         productTopic: "Indoor LED Video Wall",
         state: "Texas",
         city: "Austin",
@@ -168,23 +168,42 @@ describe("GLW one-draft execution recovery", () => {
     );
   });
 
-  test("rejects unknown or wrong-layer site identities at the engine boundary", () => {
+  test("preserves generalized canonical site identity while legacy resolver remains strict", () => {
     expect(() => resolveGlwN8nEngineSiteId("site-unknown")).toThrow("Unsupported GLW application site");
     expect(() => resolveGlwN8nEngineSiteId(GLW_N8N_ENGINE_SITE_ID)).toThrow(
       "Unsupported GLW application site",
     );
-    expect(() => mapGenerationRequestToN8nDraft("glw-job-001", { ...request, siteId: "site-unknown" }))
-      .toThrow("Unsupported GLW application site");
+
+    const mapped = mapGenerationRequestToN8nDraft("glw-job-001", {
+      ...request,
+      siteId: "site-generalized-example",
+      siteName: "Generalized Example",
+    });
+
+    expect(mapped.site).toEqual({
+      id: "site-generalized-example",
+      name: "Generalized Example",
+      domain: "LEDDisplayWarehouse.com",
+      canonicalUrl: "https://leddisplaywarehouse.com",
+      wordpressApiBaseUrl: "https://leddisplaywarehouse.com/wp-json/wp/v2",
+    });
   });
 
-  test("rejects unknown product identities at the engine boundary", () => {
+  test("preserves generalized canonical product identity while legacy resolver remains strict", () => {
     expect(() => resolveGlwN8nEngineProduct("prod-unknown"))
       .toThrow("Unsupported GLW application product");
-    expect(() => mapGenerationRequestToN8nDraft("glw-job-001", {
+
+    const mapped = mapGenerationRequestToN8nDraft("glw-job-001", {
       ...request,
-      productId: "prod-unknown",
-    })).toThrow("Unsupported GLW application product");
+      productId: "prod-generalized-example",
+      productTopic: "Generalized Product",
+    });
+
+    expect(mapped.page.productId).toBe("prod-generalized-example");
+    expect(mapped.page.product).toBe("Generalized Product");
+    expect(mapped.page.productTopic).toBe("Generalized Product");
   });
+
 
   test("allows explicit draft execution", async () => {
     const { service } = serviceWith({ kind: "accepted", executionId: "execution-1", status: "accepted" });
@@ -348,7 +367,7 @@ describe("GLW async n8n result recovery", () => {
         normalized: { normalized_city_page_status: "publish", requested_publishing_mode: "publish" },
       }),
       expectedJobId: "glw-job-001",
-    })).toThrow("WordPress draft identity");
+    })).toThrow("required draft publication mode");
   });
 
   test("rejects a terminal result without WordPress identity", () => {

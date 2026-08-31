@@ -100,7 +100,13 @@ export type GlwN8nDraftRequest = {
   type: "page_generation";
   workspaceId: string;
   workspace_id: string;
-  site: { id: string; name: string };
+  site: {
+    id: string;
+    name: string;
+    domain: string | null;
+    canonicalUrl: string | null;
+    wordpressApiBaseUrl: string | null;
+  };
   page: {
     hierarchyMode: "city_child_target";
     hierarchy_mode: "city_child_target";
@@ -166,9 +172,18 @@ export type GlwN8nDraftResponse =
       kind: "complete";
       executionId: string;
       status: "complete";
-      wordpressObjectId: string;
-      wordpressUrl: string;
-      wordpressStatus: "draft";
+      wordpressObjectId: string | null;
+      wordpressUrl: string | null;
+      wordpressStatus: "draft" | null;
+      generatedDraft?: {
+        title: string;
+        contentHtml: string;
+        slug: string;
+        excerpt: string | null;
+        seoTitle: string | null;
+        metaDescription: string | null;
+        focusKeyphrase: string | null;
+      };
       requestedPublicationMode?: "draft";
       disposition?: string;
       qaStatus?: string;
@@ -311,7 +326,13 @@ export function mapGenerationRequestToN8nDraft(
     type: "page_generation",
     workspaceId: request.organizationId,
     workspace_id: request.organizationId,
-    site: { id: resolveGlwN8nEngineSiteId(request.siteId), name: request.siteName },
+    site: {
+      id: request.siteId,
+      name: request.siteName,
+      domain: request.siteDomain,
+      canonicalUrl: request.siteCanonicalUrl,
+      wordpressApiBaseUrl: request.wordpressApiBaseUrl,
+    },
     page: {
       hierarchyMode: "city_child_target",
       hierarchy_mode: "city_child_target",
@@ -320,7 +341,7 @@ export function mapGenerationRequestToN8nDraft(
       pageType: request.pageType,
       page_type: request.pageType,
       productId: request.productId,
-      product: resolveGlwN8nEngineProduct(request.productId),
+      product: request.productTopic,
       productTopic: request.productTopic,
       product_topic: request.productTopic,
       state: request.stateName ?? "",
@@ -493,9 +514,62 @@ export function normalizeGlwN8nExecutionResult(input: {
   const requestedPublicationMode = optionalString(
     normalized.requested_publishing_mode ?? qa.requestedPublishingMode,
   );
-  if (!wordpressObjectId || !wordpressUrl || wordpressStatus !== "draft" || requestedPublicationMode !== "draft") {
-    throw new GlwExecutionResultError("Terminal n8n execution did not produce the expected WordPress draft identity.");
+  if (requestedPublicationMode !== "draft") {
+    throw new GlwExecutionResultError("Terminal n8n execution did not preserve the required draft publication mode.");
   }
+
+  const generatedTitle = optionalString(
+    generated?.page_title ?? qa.qa_title,
+  );
+
+  const generatedContentHtml = optionalString(
+    generated?.article_html,
+  );
+
+  const generatedSlug = optionalString(
+    generated?.desired_hierarchical_slug
+      ?? generated?.slug
+      ?? normalized.desired_hierarchical_slug
+      ?? normalized.slug,
+  );
+
+  const generatedExcerpt = optionalString(
+    generated?.excerpt
+      ?? generated?.meta_description
+      ?? generated?.metaDescription,
+  );
+
+  const generatedSeoTitle = optionalString(
+    generated?.seo_title ?? qa.qa_meta_title,
+  );
+
+  const generatedMetaDescription = optionalString(
+    generated?.meta_description
+      ?? generated?.metaDescription
+      ?? qa.qa_meta_description,
+  );
+
+  const generatedFocusKeyphrase = optionalString(
+    generated?.focus_keyphrase
+      ?? generated?.focus_keyword
+      ?? qa.qa_focus_keyword,
+  );
+
+  const hasWordPressDraftIdentity = Boolean(
+    wordpressObjectId
+      && wordpressUrl
+      && wordpressStatus === "draft",
+  );
+
+  if (
+    !hasWordPressDraftIdentity
+    && (!generatedTitle || !generatedContentHtml || !generatedSlug)
+  ) {
+    throw new GlwExecutionResultError(
+      "Terminal n8n execution produced neither a WordPress draft identity nor a complete generated draft artifact.",
+    );
+  }
+
 
   const featuredImagePresent = optionalBoolean(
     qa.qa_featured_image_present
@@ -509,9 +583,27 @@ export function normalizeGlwN8nExecutionResult(input: {
     kind: "complete",
     executionId: input.snapshot.executionId,
     status: "complete",
-    wordpressObjectId,
-    wordpressUrl,
-    wordpressStatus: "draft",
+    wordpressObjectId: hasWordPressDraftIdentity
+      ? wordpressObjectId
+      : null,
+    wordpressUrl: hasWordPressDraftIdentity
+      ? wordpressUrl
+      : null,
+    wordpressStatus: hasWordPressDraftIdentity
+      ? "draft"
+      : null,
+    generatedDraft:
+      generatedTitle && generatedContentHtml && generatedSlug
+        ? {
+            title: generatedTitle,
+            contentHtml: generatedContentHtml,
+            slug: generatedSlug,
+            excerpt: generatedExcerpt,
+            seoTitle: generatedSeoTitle,
+            metaDescription: generatedMetaDescription,
+            focusKeyphrase: generatedFocusKeyphrase,
+          }
+        : undefined,
     requestedPublicationMode: "draft",
     disposition: optionalString(qa.qa_disposition ?? normalized.disposition) ?? undefined,
     qaStatus,

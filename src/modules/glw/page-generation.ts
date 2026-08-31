@@ -158,6 +158,9 @@ export type GlwGenerationSite = {
   organizationId: string;
   name: string;
   slug: string;
+  domain: string | null;
+  canonicalUrl: string | null;
+  wordpressApiBaseUrl: string | null;
   environment: SiteEnvironment;
   enabled: boolean;
   profileCount: number;
@@ -174,7 +177,17 @@ export type GlwGenerationProduct = {
 };
 
 export function adaptSiteForGeneration(
-  site: Pick<SiteConfiguration, "siteId" | "organizationId" | "displayName" | "slug" | "environment" | "enabled">,
+  site: Pick<SiteConfiguration,
+    | "siteId"
+    | "organizationId"
+    | "displayName"
+    | "slug"
+    | "domain"
+    | "canonicalUrl"
+    | "integrations"
+    | "environment"
+    | "enabled"
+  >,
   profileCount = 0,
 ): GlwGenerationSite {
   return {
@@ -182,6 +195,9 @@ export function adaptSiteForGeneration(
     organizationId: site.organizationId,
     name: site.displayName,
     slug: site.slug,
+    domain: site.domain,
+    canonicalUrl: site.canonicalUrl,
+    wordpressApiBaseUrl: site.integrations.wordpressApiBaseUrl,
     environment: site.environment,
     enabled: site.enabled,
     profileCount,
@@ -264,6 +280,9 @@ export type GlwGenerationRequestInput = {
 export type GlwGenerationRequest = GlwGenerationRequestInput & {
   organizationId: string;
   siteName: string;
+  siteDomain: string | null;
+  siteCanonicalUrl: string | null;
+  wordpressApiBaseUrl: string | null;
   productTopic: string;
   stateName: string | null;
   cityName: string | null;
@@ -387,6 +406,9 @@ export function buildLocalGlwGenerationPreview(input: {
       ...form,
       organizationId: site.organizationId,
       siteName: site.name,
+      siteDomain: site.domain,
+      siteCanonicalUrl: site.canonicalUrl,
+      wordpressApiBaseUrl: site.wordpressApiBaseUrl,
       productTopic: product.topic,
       stateName: state?.name ?? null,
       cityName: city?.name ?? null,

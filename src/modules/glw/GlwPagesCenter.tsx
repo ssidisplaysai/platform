@@ -10,27 +10,73 @@ import { GlwPageGenerationWorkspace } from "./GlwPageGenerationWorkspace";
 import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
 import { adaptProductForGeneration, adaptSiteForGeneration } from "./page-generation";
 
-export function GlwPagesCenter() {
+type GlwPagesCenterProps = {
+  requestedOrganizationId?: string | null;
+  requestedSiteId?: string | null;
+};
+
+export function GlwPagesCenter({
+  requestedOrganizationId = null,
+  requestedSiteId = null,
+}: GlwPagesCenterProps = {}) {
   const context = createFoundationContext();
+  const persistedSites = listSites();
+
+  const requestedSite =
+    requestedOrganizationId && requestedSiteId
+      ? persistedSites.find(
+          (site) =>
+            site.siteId === requestedSiteId &&
+            site.organizationId === requestedOrganizationId,
+        ) ?? null
+      : null;
+
+  /*
+   * The URL identifies a requested workspace only.
+   * Genesis accepts it only when the persisted site exists
+   * and belongs to the requested organization.
+   */
+  const effectiveOrganizationId =
+    requestedSite?.organizationId ??
+    context.selectedOrganizationId;
+
+  const effectiveSiteId =
+    requestedSite?.siteId ??
+    context.selectedSiteId;
+
   const selectedOrganization =
     context.organizations.find(
-      (organization) => organization.id === context.selectedOrganizationId,
+      (organization) =>
+        organization.id === effectiveOrganizationId,
     ) ?? null;
-  const currentSites = listSites().filter(
-    (site) => site.organizationId === context.selectedOrganizationId,
+
+  const currentSites = persistedSites.filter(
+    (site) =>
+      site.organizationId === effectiveOrganizationId &&
+      (
+        requestedSite
+          ? site.siteId === effectiveSiteId
+          : true
+      ),
   );
+
   const profiles = listIntegrationProfiles({
-    organizationId: context.selectedOrganizationId,
+    organizationId: effectiveOrganizationId,
   });
-  const availableSites = currentSites.map((site) => adaptSiteForGeneration(
-    site,
-    profiles.filter((profile) => profile.assignedSiteIds.includes(site.siteId)).length,
-  ));
+  const availableSites = currentSites.map((site) =>
+    adaptSiteForGeneration(
+      site,
+      profiles.filter(
+        (profile) => profile.siteId === site.siteId,
+      ).length,
+    ),
+  );
+
   const availableProducts = currentSites.flatMap((site) =>
     listProducts()
       .filter(
         (product) =>
-          product.organizationId === context.selectedOrganizationId &&
+          product.organizationId === effectiveOrganizationId &&
           product.assignedSiteIds.includes(site.siteId),
       )
       .map((product) => adaptProductForGeneration(product, site.siteId)),
@@ -48,9 +94,9 @@ export function GlwPagesCenter() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">GLW</p>
-            <h1 className="mt-2 text-2xl font-black text-white">Pages Center</h1>
+            <h1 className="mt-2 text-2xl font-black text-white">Page Studio</h1>
             <p className="mt-2 text-sm text-zinc-300">
-              Prepare and validate page-generation requests locally before any external workflow is connected.
+              Create, preflight and generate WordPress draft pages for the selected Genesis site.
             </p>
           </div>
           <Link
@@ -69,17 +115,17 @@ export function GlwPagesCenter() {
             {selectedOrganization?.name ?? "No organization selected"}
           </p>
           <p className="mt-1 text-xs text-zinc-500">
-            Organization ID: {context.selectedOrganizationId || "Unavailable"}
+            Organization ID: {effectiveOrganizationId || "Unavailable"}
           </p>
         </article>
 
         <article className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-          <h2 className="text-sm font-semibold text-white">Current Inputs</h2>
+          <h2 className="text-sm font-semibold text-white">Site Content</h2>
           <p className="mt-2 text-sm text-zinc-300">
             {availableSites.length} sites and {availableProducts.length} site-assigned products are available.
           </p>
           <p className="mt-2 text-xs text-zinc-500">
-            Sites, products, profiles, and permissions come from current Genesis foundations.
+            Sites, products and publishing authority come from the current Genesis workspace.
           </p>
         </article>
       </section>
@@ -91,7 +137,7 @@ export function GlwPagesCenter() {
         executionConfigured={executionConfiguration.configured}
         executionWorkflowName="n8n MCP"
         requestRoles={context.user.roles}
-        organizationId={context.selectedOrganizationId}
+        organizationId={effectiveOrganizationId}
       />
     </div>
   );

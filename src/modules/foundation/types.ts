@@ -721,6 +721,14 @@ export type SiteDefaultContentType =
 
 export type SiteDefaultPublicationStatus = "draft" | "review" | "scheduled";
 
+export type SitePrimaryAddress = {
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  stateRegion: string;
+  postalCode: string;
+  countryCode: string;
+};
 export type SiteIntegrationReferences = {
   wordpressApiBaseUrl: string | null;
   wordpressCredentialReference: string | null;
@@ -735,6 +743,23 @@ export type SiteProfileReferences = {
   analyticsProfileReference: string | null;
 };
 
+export type SiteOnboardingStatus =
+  | "not_started"
+  | "connected"
+  | "certified";
+
+export type SiteCertificationStatus =
+  | "not_started"
+  | "certified";
+
+export type SiteOnboardingState = {
+  status: SiteOnboardingStatus;
+  wordpressConnectionVerifiedAt: string | null;
+  certificationStatus: SiteCertificationStatus;
+  certificationPageId: string | null;
+  certificationUrl: string | null;
+  certifiedAt: string | null;
+};
 export type SiteConfiguration = {
   siteId: string;
   organizationId: string;
@@ -742,6 +767,8 @@ export type SiteConfiguration = {
   displayName: string;
   slug: string;
   domain: string | null;
+  primaryAddress: SitePrimaryAddress | null;
+  onboarding?: SiteOnboardingState;
   canonicalUrl: string | null;
   environment: SiteEnvironment;
   lifecycleState: SiteLifecycleState;
@@ -814,6 +841,7 @@ export type NewSiteInput = {
   displayName: string;
   slug: string;
   domain: string | null;
+  primaryAddress: SitePrimaryAddress | null;
   canonicalUrl: string | null;
   environment: SiteEnvironment;
   enabled: boolean;

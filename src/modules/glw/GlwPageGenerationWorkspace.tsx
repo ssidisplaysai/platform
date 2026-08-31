@@ -43,6 +43,47 @@ function firstProductForSite(
   return products.find((product) => product.siteId === siteId) ?? null;
 }
 
+type SiteDiscoveryCandidate = {
+  wordpressPageId: number;
+  title: string;
+  slug: string;
+  sourceUrl: string;
+  status: string;
+  classification: "product_or_service" | "possible_product_or_service";
+  confidence: "high" | "medium";
+  evidence: readonly string[];
+};
+
+type DiscoveryCategoryOption = {
+  categoryId: string;
+  organizationId: string;
+  name: string;
+  status: string;
+  siteAssignments: readonly string[];
+};
+
+type SiteDiscoverySuccess = {
+  ok: true;
+  siteId: string;
+  siteName: string;
+  scannedPageCount: number;
+  candidateCount: number;
+  candidates: readonly SiteDiscoveryCandidate[];
+  truncated: boolean;
+  discoveredAt: string;
+};
+
+type SiteDiscoveryFailure = {
+  ok: false;
+  siteId: string;
+  message: string;
+  reason: string;
+  discoveredAt: string;
+};
+
+type SiteDiscoveryResult =
+  | SiteDiscoverySuccess
+  | SiteDiscoveryFailure;
 export function GlwPageGenerationWorkspace({
   sites,
   products,
@@ -67,6 +108,22 @@ export function GlwPageGenerationWorkspace({
   const [executing, setExecuting] = useState(false);
   const [targetPreflight, setTargetPreflight] = useState<TargetPreflightResponse | null>(null);
   const [targetPreflightLoading, setTargetPreflightLoading] = useState(true);
+  const [siteDiscovery, setSiteDiscovery] =
+    useState<SiteDiscoveryResult | null>(null);
+  const [siteDiscoveryLoading, setSiteDiscoveryLoading] =
+    useState(false);
+  const [selectedDiscoveryIds, setSelectedDiscoveryIds] =
+    useState<Set<number>>(() => new Set());
+  const [discoveryCategories, setDiscoveryCategories] =
+    useState<DiscoveryCategoryOption[]>([]);
+  const [
+    discoveryCategoryByCandidate,
+    setDiscoveryCategoryByCandidate,
+  ] = useState<Record<number, string>>({});
+  const [discoveryApprovalLoading, setDiscoveryApprovalLoading] =
+    useState(false);
+  const [discoveryApprovalMessage, setDiscoveryApprovalMessage] =
+    useState<string | null>(null);
 
   const selectedSite = form
     ? sites.find((site) => site.siteId === form.siteId) ?? null
@@ -79,13 +136,15 @@ export function GlwPageGenerationWorkspace({
     ? availableProducts.find((product) => product.productId === form.productId) ?? null
     : null;
   const availableCities = form ? getGlwCitiesForState(form.stateCode) : [];
-  const operationTarget = form.pageType === "city_service"
-    ? "CITY"
-    : form.pageType === "state_service"
-      ? "STATE"
-      : "GENERAL";
-  const operation = form.plannedOperation ?? `CREATE_${operationTarget}`;
-  const isUpdate = operation.startsWith("UPDATE_");
+  const operationTarget = form
+    ? form.pageType === "city_service"
+      ? "CITY"
+      : form.pageType === "state_service"
+        ? "STATE"
+        : "GENERAL"
+    : null;
+  const operation = form ? form.plannedOperation ?? `CREATE_${operationTarget}` : null;
+  const isUpdate = operation?.startsWith("UPDATE_") ?? false;
   const createAvailable = targetPreflight?.availability?.createAvailable ?? false;
   const updateAvailable = targetPreflight?.availability?.updateAvailable ?? false;
   const operationAvailable = isUpdate ? updateAvailable : createAvailable;
@@ -176,12 +235,12 @@ export function GlwPageGenerationWorkspace({
       });
       const body = await response.json() as { job?: GlwPageExecutionRecord; error?: string };
       if (!response.ok || !body.job) {
-        setExecutionMessage(body.error ?? "WordPress draft execution failed.");
+        setExecutionMessage(body.error ?? "Generate WordPress Draft failed.");
         return;
       }
       setExecution(body.job);
     } catch {
-      setExecutionMessage("WordPress draft execution request failed.");
+      setExecutionMessage("Generate WordPress Draft request failed.");
     } finally {
       setExecuting(false);
     }
@@ -200,13 +259,537 @@ export function GlwPageGenerationWorkspace({
     else setExecutionMessage(body.error ?? "Unable to refresh the GLW execution.");
   }
 
+  async function discoverCurrentSiteContent() {
+    if (!initialSite) {
+      return;
+    }
+
+    setSiteDiscoveryLoading(true);
+    setSiteDiscovery(null);
+    setSelectedDiscoveryIds(new Set());
+    setDiscoveryApprovalMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/sites/${encodeURIComponent(initialSite.siteId)}/content-discovery`,
+        {
+          method: "POST",
+          headers: {
+            "x-gcp-roles": requestRoles.join(","),
+            "x-gcp-organization-id": organizationId,
+            "x-gcp-site-id": initialSite.siteId,
+          },
+        },
+      );
+
+      const body = await response.json() as {
+        result?: SiteDiscoveryResult;
+        error?: string;
+      };
+
+      if (body.result) {
+        setSiteDiscovery(body.result);
+        return;
+      }
+
+      setSiteDiscovery({
+        ok: false,
+        siteId: initialSite.siteId,
+        message: body.error ?? "Site content discovery failed.",
+        reason: "request_failed",
+        discoveredAt: new Date().toISOString(),
+      });
+    } catch {
+      setSiteDiscovery({
+        ok: false,
+        siteId: initialSite.siteId,
+        message: "Genesis could not complete site content discovery.",
+        reason: "network_error",
+        discoveredAt: new Date().toISOString(),
+      });
+    } finally {
+      setSiteDiscoveryLoading(false);
+    }
+  }
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDiscoveryCategories() {
+      if (!initialSite) {
+        setDiscoveryCategories([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          "/api/categories",
+          {
+            headers: {
+              "x-gcp-roles":
+                requestRoles.join(","),
+              "x-gcp-organization-id":
+                organizationId,
+              "x-gcp-site-id":
+                initialSite.siteId,
+            },
+          },
+        );
+
+        if (!response.ok) {
+          return;
+        }
+
+        const body = (await response.json()) as {
+          categories?: DiscoveryCategoryOption[];
+        };
+
+        if (cancelled) {
+          return;
+        }
+
+        setDiscoveryCategories(
+          (body.categories ?? []).filter(
+            (category) =>
+              category.organizationId ===
+                organizationId &&
+              category.status === "active" &&
+              category.siteAssignments.includes(
+                initialSite.siteId,
+              ),
+          ),
+        );
+      } catch {
+        if (!cancelled) {
+          setDiscoveryCategories([]);
+        }
+      }
+    }
+
+    void loadDiscoveryCategories();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    initialSite,
+    organizationId,
+    requestRoles,
+  ]);
+
+  function toggleDiscoveryCandidate(
+    wordpressPageId: number,
+  ) {
+    setSelectedDiscoveryIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(wordpressPageId)) {
+        next.delete(wordpressPageId);
+      } else {
+        next.add(wordpressPageId);
+      }
+
+      return next;
+    });
+  }
+
+  function selectAllHighConfidenceCandidates() {
+    if (!siteDiscovery?.ok) {
+      return;
+    }
+
+    setSelectedDiscoveryIds(
+      new Set(
+        siteDiscovery.candidates
+          .filter(
+            (candidate) =>
+              candidate.confidence === "high",
+          )
+          .map(
+            (candidate) =>
+              candidate.wordpressPageId,
+          ),
+      ),
+    );
+  }
+
+  function clearDiscoverySelection() {
+    setSelectedDiscoveryIds(new Set());
+  }
+
+  async function approveSelectedDiscoveryCandidates() {
+    if (
+      !initialSite ||
+      !siteDiscovery?.ok ||
+      selectedDiscoveryIds.size === 0
+    ) {
+      return;
+    }
+
+    const selectedCandidates =
+      siteDiscovery.candidates
+        .filter(
+          (candidate) =>
+            selectedDiscoveryIds.has(
+              candidate.wordpressPageId,
+            ),
+        )
+        .map((candidate) => ({
+          ...candidate,
+          categoryIds:
+            discoveryCategoryByCandidate[
+              candidate.wordpressPageId
+            ]
+              ? [
+                  discoveryCategoryByCandidate[
+                    candidate.wordpressPageId
+                  ],
+                ]
+              : [],
+        }));
+
+    setDiscoveryApprovalLoading(true);
+    setDiscoveryApprovalMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/sites/${encodeURIComponent(initialSite.siteId)}/content-discovery/approve`,
+        {
+          method: "POST",
+          headers: {
+            "content-type":
+              "application/json",
+            "x-gcp-roles":
+              requestRoles.join(","),
+            "x-gcp-organization-id":
+              organizationId,
+            "x-gcp-site-id":
+              initialSite.siteId,
+          },
+          body: JSON.stringify({
+            candidates: selectedCandidates,
+          }),
+        },
+      );
+
+      const body =
+        await response.json() as {
+          createdCount?: number;
+          rejectedCount?: number;
+          error?: string;
+        };
+
+      if (!response.ok) {
+        setDiscoveryApprovalMessage(
+          body.error ??
+            "Genesis could not approve the selected candidates.",
+        );
+
+        return;
+      }
+
+      const createdCount =
+        body.createdCount ?? 0;
+
+      const rejectedCount =
+        body.rejectedCount ?? 0;
+
+      if (
+        createdCount > 0 &&
+        rejectedCount === 0
+      ) {
+        setDiscoveryApprovalMessage(
+          `${createdCount} product${createdCount === 1 ? "" : "s"} approved and assigned. Reloading Page Studio...`,
+        );
+
+        window.location.reload();
+        return;
+      }
+
+      setDiscoveryApprovalMessage(
+        `${createdCount} approved; ${rejectedCount} require review.`,
+      );
+    } catch {
+      setDiscoveryApprovalMessage(
+        "Genesis could not complete product approval.",
+      );
+    } finally {
+      setDiscoveryApprovalLoading(false);
+    }
+  }
+
   if (!form || !initialSite || !initialProduct) {
     return (
-      <section className="border border-zinc-800 bg-zinc-950 p-5">
-        <h2 className="text-sm font-semibold text-white">Page Generation</h2>
-        <p className="mt-2 text-sm text-amber-300">
-          A current site with an assigned product is required before a request can be prepared.
-        </p>
+      <section className="space-y-5 border border-zinc-800 bg-zinc-950 p-6">
+        <header>
+          <p className="text-xs uppercase tracking-[0.24em] text-red-400">
+            Genesis Site Studio
+          </p>
+
+          <h2 className="mt-2 text-xl font-semibold text-white">
+            Build This Site's Content Catalog
+          </h2>
+
+          <p className="mt-2 max-w-3xl text-sm text-zinc-400">
+            This Genesis site is connected, but it does not have any approved
+            products or services assigned yet. Discover the site's existing
+            content, review what Genesis finds, and approve the products and
+            services that should become available in Page Studio.
+          </p>
+        </header>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-xs uppercase tracking-wider text-zinc-500">
+              Step 1
+            </p>
+            <p className="mt-2 font-semibold text-white">
+              Discover
+            </p>
+            <p className="mt-1 text-sm text-zinc-400">
+              Inventory existing product and service content from the connected site.
+            </p>
+          </div>
+
+          <div className="border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-xs uppercase tracking-wider text-zinc-500">
+              Step 2
+            </p>
+            <p className="mt-2 font-semibold text-white">
+              Review
+            </p>
+            <p className="mt-1 text-sm text-zinc-400">
+              Confirm names, classifications, and which discoveries belong in Genesis.
+            </p>
+          </div>
+
+          <div className="border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="text-xs uppercase tracking-wider text-zinc-500">
+              Step 3
+            </p>
+            <p className="mt-2 font-semibold text-white">
+              Assign
+            </p>
+            <p className="mt-1 text-sm text-zinc-400">
+              Approved catalog records are assigned to this site and become available for generation.
+            </p>
+          </div>
+        </div>
+
+        <div className="border border-red-950 bg-red-950/10 p-5">
+          <p className="font-semibold text-white">
+            Site Content Discovery
+          </p>
+
+          <p className="mt-2 max-w-3xl text-sm text-zinc-400">
+            Discovery is review-first. Nothing discovered here is published to
+            WordPress, and no product becomes generation authority until it is approved.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => void discoverCurrentSiteContent()}
+            disabled={siteDiscoveryLoading}
+            className="mt-4 border border-red-700 px-4 py-2 text-sm font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {siteDiscoveryLoading
+              ? "Discovering Site Content..."
+              : "Discover Site Content"}
+          </button>
+
+          {siteDiscovery && !siteDiscovery.ok ? (
+            <div className="mt-4 border border-red-900 bg-red-950/30 p-4">
+              <p className="font-semibold text-red-300">
+                Discovery could not be completed
+              </p>
+              <p className="mt-2 text-sm text-zinc-400">
+                {siteDiscovery.message}
+              </p>
+            </div>
+          ) : null}
+
+          {siteDiscovery?.ok ? (
+            <div className="mt-5 space-y-4">
+              <div className="flex flex-wrap gap-3 text-sm">
+                <span className="border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-300">
+                  Pages scanned: {siteDiscovery.scannedPageCount}
+                </span>
+                <span className="border border-zinc-800 bg-zinc-950 px-3 py-2 text-zinc-300">
+                  Candidates: {siteDiscovery.candidateCount}
+                </span>
+                {siteDiscovery.truncated ? (
+                  <span className="border border-amber-900 bg-amber-950/20 px-3 py-2 text-amber-300">
+                    Inventory limit reached
+                  </span>
+                ) : null}
+              </div>
+
+              <div>
+                <p className="font-semibold text-white">
+                  Review Discovered Products &amp; Services
+                </p>
+                <p className="mt-1 text-sm text-zinc-400">
+                  These are candidates only. Genesis has not created or assigned any products.
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={selectAllHighConfidenceCandidates}
+                    className="border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300"
+                  >
+                    Select High Confidence
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={clearDiscoverySelection}
+                    disabled={selectedDiscoveryIds.size === 0}
+                    className="border border-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-400 disabled:opacity-40"
+                  >
+                    Clear Selection
+                  </button>
+
+                  <span className="px-2 text-xs text-zinc-500">
+                    Selected: {selectedDiscoveryIds.size}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void approveSelectedDiscoveryCandidates()
+                    }
+                    disabled={
+                      discoveryApprovalLoading ||
+                      selectedDiscoveryIds.size === 0
+                    }
+                    className="border border-red-700 bg-red-950/20 px-4 py-2 text-xs font-semibold text-red-300 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {discoveryApprovalLoading
+                      ? "Approving..."
+                      : "Approve & Assign Selected"}
+                  </button>
+                </div>
+
+                {discoveryApprovalMessage ? (
+                  <div className="mt-3 border border-zinc-800 bg-zinc-950 p-3 text-sm text-zinc-300">
+                    {discoveryApprovalMessage}
+                  </div>
+                ) : null}
+              </div>
+
+              {siteDiscovery.candidates.length === 0 ? (
+                <div className="border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-400">
+                  No product or service candidates met the current discovery threshold.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {siteDiscovery.candidates.map((candidate) => (
+                    <article
+                      key={candidate.wordpressPageId}
+                      className="border border-zinc-800 bg-zinc-950 p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedDiscoveryIds.has(
+                              candidate.wordpressPageId,
+                            )}
+                            onChange={() =>
+                              toggleDiscoveryCandidate(
+                                candidate.wordpressPageId,
+                              )
+                            }
+                            aria-label={`Select ${candidate.title}`}
+                            className="mt-1 h-4 w-4"
+                          />
+
+                          <div className="min-w-0">
+                            <p className="font-semibold text-white">
+                              {candidate.title}
+                            </p>
+                            <p className="mt-1 text-xs text-zinc-500">
+                              /{candidate.slug}
+                            </p>
+
+                            <label className="mt-3 block text-xs text-zinc-400">
+                              Category
+
+                              <select
+                                value={
+                                  discoveryCategoryByCandidate[
+                                    candidate.wordpressPageId
+                                  ] ?? ""
+                                }
+                                onChange={(event) =>
+                                  setDiscoveryCategoryByCandidate(
+                                    (current) => ({
+                                      ...current,
+                                      [candidate.wordpressPageId]:
+                                        event.target.value,
+                                    }),
+                                  )
+                                }
+                                className="mt-1 block w-full border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white"
+                              >
+                                <option value="">
+                                  Select category
+                                </option>
+
+                                {discoveryCategories.map(
+                                  (category) => (
+                                    <option
+                                      key={category.categoryId}
+                                      value={category.categoryId}
+                                    >
+                                      {category.name}
+                                    </option>
+                                  ),
+                                )}
+                              </select>
+                            </label>
+                          </div>
+                        </div>
+
+                        <span className="border border-zinc-700 px-2 py-1 text-xs uppercase text-zinc-300">
+                          {candidate.confidence} confidence
+                        </span>
+                      </div>
+
+                      <a
+                        href={candidate.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 block break-all text-xs text-red-300 underline"
+                      >
+                        {candidate.sourceUrl}
+                      </a>
+
+                      {candidate.evidence.length > 0 ? (
+                        <p className="mt-3 text-xs text-zinc-500">
+                          {candidate.evidence.join(" · ")}
+                        </p>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled
+                className="border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-400 opacity-60"
+                title="Approval and Genesis product creation are the next controlled slice."
+              >
+                Approve Selected Products &amp; Services
+              </button>
+
+              <p className="text-xs text-zinc-500">
+                Approval remains disabled until the review-and-assignment authority is implemented.
+              </p>
+            </div>
+          ) : null}
+        </div>
       </section>
     );
   }
@@ -214,10 +797,12 @@ export function GlwPageGenerationWorkspace({
   return (
     <section className="space-y-5 border border-zinc-800 bg-zinc-950 p-5">
       <header>
-        <p className="text-xs uppercase text-red-400">Recovered page-generation workflow</p>
-        <h2 className="mt-1 text-lg font-semibold text-white">Prepare a local generation request</h2>
+        <p className="text-xs uppercase text-red-400">Genesis Site Studio</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-red-500">
+          Genesis Site Studio
+        </p>        <h2 className="mt-1 text-lg font-semibold text-white">Create a WordPress Page</h2>
         <p className="mt-2 text-sm text-zinc-400">
-          This slice validates local request data only. It does not call n8n, WordPress, callbacks, or deployment.
+          Choose the page target, review its WordPress destination, then generate safely as a draft.
         </p>
       </header>
 
@@ -310,9 +895,9 @@ export function GlwPageGenerationWorkspace({
             }}
             className="mt-1 h-10 w-full border border-zinc-700 bg-zinc-900 px-3"
           >
-            <option value="general_service">General service</option>
-            <option value="state_service">State service</option>
-            <option value="city_service">City service</option>
+            <option value="general_service">General Product / Service Page</option>
+            <option value="state_service">State Market Page</option>
+            <option value="city_service">City / Local Market Page</option>
           </select>
         </label>
 
@@ -358,14 +943,14 @@ export function GlwPageGenerationWorkspace({
             onChange={(event) => updateField("publicationIntent", event.target.value as GlwPublicationIntent)}
             className="mt-1 h-10 w-full border border-zinc-700 bg-zinc-900 px-3"
           >
-            <option value="draft">Draft intent</option>
+            <option value="draft">Create as WordPress Draft</option>
             <option value="publish">Publish intent</option>
           </select>
         </label>
       </div>
 
       <article className="border border-zinc-700 bg-zinc-900/60 p-4" aria-live="polite">
-        <h3 className="text-sm font-semibold text-white">Canonical WordPress target</h3>
+        <h3 className="text-sm font-semibold text-white">WordPress Target</h3>
         {targetPreflightLoading ? (
           <p className="mt-2 text-sm text-zinc-400">Checking canonical target...</p>
         ) : targetPreflight?.target && targetPreflight.availability ? (
@@ -413,7 +998,7 @@ export function GlwPageGenerationWorkspace({
           onClick={() => setPreview(buildLocalGlwGenerationPreview({ form, sites, products }))}
           className="border border-red-500 px-4 py-2 text-sm text-white disabled:opacity-40"
         >
-          Build local request
+          Prepare Page
         </button>
         <span className="text-xs text-zinc-500">
           {selectedSite?.profileCount ?? 0} current integration profiles available; none are executed here.
@@ -429,7 +1014,7 @@ export function GlwPageGenerationWorkspace({
             </ul>
           ) : preview.request ? (
             <dl className="mt-3 grid gap-3 text-sm md:grid-cols-2">
-              <div><dt className="text-zinc-500">Site</dt><dd>{preview.request.siteName}</dd></div>
+              <div><dt className="text-zinc-500">Website</dt><dd>{preview.request.siteName}</dd></div>
               <div><dt className="text-zinc-500">Product/topic</dt><dd>{preview.request.productTopic}</dd></div>
               <div><dt className="text-zinc-500">Geography</dt><dd>{[preview.request.cityName, preview.request.stateName].filter(Boolean).join(", ") || "General"}</dd></div>
               <div><dt className="text-zinc-500">Planned operation</dt><dd>{operationAvailable ? preview.request.plannedOperation : "BLOCKED"}</dd></div>
@@ -438,7 +1023,7 @@ export function GlwPageGenerationWorkspace({
               <div><dt className="text-zinc-500">Title</dt><dd>{preview.request.title}</dd></div>
               <div><dt className="text-zinc-500">SEO title</dt><dd>{preview.request.seoTitle}</dd></div>
               <div className="md:col-span-2"><dt className="text-zinc-500">Meta description</dt><dd>{preview.request.metaDescription}</dd></div>
-              <div><dt className="text-zinc-500">Publication intent</dt><dd>{preview.request.publicationIntent}</dd></div>
+              <div><dt className="text-zinc-500">Publishing</dt><dd>{preview.request.publicationIntent}</dd></div>
               <div><dt className="text-zinc-500">WordPress target</dt><dd>{targetPreflight?.target?.wordpressObjectId ? `Existing page ${targetPreflight.target.wordpressObjectId}` : targetPreflight?.target?.state === "ABSENT" ? "New object" : "Unverified"}</dd></div>
               <div><dt className="text-zinc-500">External execution</dt><dd>Disabled</dd></div>
             </dl>
@@ -447,14 +1032,14 @@ export function GlwPageGenerationWorkspace({
       ) : null}
 
       <article className="border border-zinc-700 bg-zinc-900/60 p-4">
-        <h3 className="text-sm font-semibold text-white">WordPress draft execution</h3>
+        <h3 className="text-sm font-semibold text-white">Generate WordPress Draft</h3>
         <p className="mt-2 text-sm text-zinc-400">
           Transport: {executionWorkflowName}. Public publish remains blocked.
         </p>
         <p className={`mt-2 text-xs ${executionConfigured ? "text-emerald-300" : "text-amber-300"}`}>
           {executionConfigured
             ? "Server-side n8n MCP configuration is present."
-            : "Server-side n8n MCP configuration is not present; execution is disabled."}
+            : "Draft generation is not yet available for this site."}
         </p>
         <div className="mt-3 flex flex-wrap gap-3">
           <button
@@ -472,7 +1057,7 @@ export function GlwPageGenerationWorkspace({
           >
             {executing
               ? (isUpdate ? "Updating exact WordPress draft..." : "Creating WordPress draft...")
-              : (isUpdate ? "Update exact WordPress draft" : "Create one WordPress draft")}
+              : (isUpdate ? "Update WordPress Draft" : "Generate WordPress Draft")}
           </button>
           {execution ? (
             <button type="button" onClick={refreshExecution} className="border border-zinc-600 px-4 py-2 text-sm text-zinc-200">
