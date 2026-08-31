@@ -11,7 +11,9 @@ import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { resolveOrCreateGenesisWordPressHierarchy } from "@/modules/foundation/wordpress-hierarchy-authority";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
+import { attachGenesisWordPressFeaturedImage } from "@/modules/foundation/wordpress-media-writer";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
+import { generateGenesisFeaturedImage } from "@/modules/glw/generated-image-service";
 import {
   createGlwN8nMcpDispatcher,
   createGlwN8nMcpExecutionReader,
@@ -47,6 +49,21 @@ function isTerminal(status: string): boolean {
 async function recoverExecution(job: GlwPageExecutionRecord): Promise<GlwPageExecutionRecord> {
   if (!job.externalExecutionId) return job;
   return service.pollToTerminal(job.jobId, executionReader);
+}
+
+function buildGenesisImagePrompt(input: {
+  request: GlwGenerationRequest;
+  siteName: string;
+}): string {
+  const location = [input.request.cityName, input.request.stateName]
+    .filter(Boolean)
+    .join(", ");
+  return [
+    `Photorealistic commercial installation featuring ${input.request.productTopic}.`,
+    location ? `The setting should feel appropriate for a commercial project in ${location}.` : "Use a premium commercial architectural environment.",
+    `Create the image for ${input.siteName} as a polished website hero visual.`,
+    "Show the product clearly and realistically with professional lighting, believable materials, correct scale, and useful negative space.",
+  ].join(" ");
 }
 
 async function finalizeContentReadyExecution(input: {
@@ -86,8 +103,16 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  const operation = input.request.plannedOperation.startsWith("CREATE_") ? "CREATE" : "UPDATE";
-  if (operation === "UPDATE" && !input.request.wordpressObjectId) {
+  const persistedDraftId = input.job.wordpressStatus === "draft"
+    ? input.job.wordpressObjectId
+    : null;
+  const requestedOperation = input.request.plannedOperation.startsWith("CREATE_")
+    ? "CREATE"
+    : "UPDATE";
+  const operation = persistedDraftId ? "UPDATE" : requestedOperation;
+  const updateObjectId = persistedDraftId ?? input.request.wordpressObjectId;
+
+  if (operation === "UPDATE" && !updateObjectId) {
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
       errorCode: "UPDATE_AUTHORITY_REQUIRED",
@@ -140,7 +165,7 @@ async function finalizeContentReadyExecution(input: {
   };
   const result = operation === "CREATE"
     ? await writeGenesisWordPressDraft({ operation: "CREATE", site: input.siteRecord, artifact })
-    : await writeGenesisWordPressDraft({ operation: "UPDATE", site: input.siteRecord, wordpressObjectId: input.request.wordpressObjectId!, artifact });
+    : await writeGenesisWordPressDraft({ operation: "UPDATE", site: input.siteRecord, wordpressObjectId: updateObjectId!, artifact });
 
   const timestamp = new Date().toISOString();
   if (!result.ok) {
@@ -157,7 +182,70 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  return glwPageExecutionRepository.update(input.job.jobId, {
+  const draftJob = await glwPageExecutionRepository.update(input.job.jobId, {
+    status: "CONTENT_READY",
+    wordpressObjectId: result.wordpressObjectId,
+    wordpressUrl: result.wordpressUrl,
+    wordpressStatus: result.wordpressStatus,
+    disposition: result.operation === "CREATE" ? "CREATED" : "UPDATED",
+    qaStatus: "PASSED",
+    qaChecks: qa.checks,
+    qaFailureReasons: {},
+    wordCount: qa.wordCount,
+    featuredImagePresent: false,
+    errorCode: null,
+    errorMessage: null,
+    updatedAt: timestamp,
+    completedAt: null,
+  });
+
+  const imageResult = await generateGenesisFeaturedImage({
+    prompt: buildGenesisImagePrompt({
+      request: input.request,
+      siteName: input.siteRecord.displayName,
+    }),
+    siteName: input.siteRecord.displayName,
+    productTopic: input.request.productTopic,
+  });
+
+  if (!imageResult.ok) {
+    return glwPageExecutionRepository.update(draftJob.jobId, {
+      status: "CONTENT_READY",
+      errorCode: `IMAGE_${imageResult.state.toUpperCase()}`,
+      errorMessage: imageResult.message,
+      featuredImagePresent: false,
+      updatedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+  }
+
+  const location = [input.request.cityName, input.request.stateName]
+    .filter(Boolean)
+    .join(", ");
+  const mediaResult = await attachGenesisWordPressFeaturedImage({
+    site: input.siteRecord,
+    wordpressObjectId: result.wordpressObjectId,
+    canonicalSlug: input.request.canonicalPath,
+    contentHtml: input.job.generatedDraft.contentHtml,
+    image: imageResult.image,
+    title: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
+    altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
+    description: `Commercial hero image for ${input.request.productTopic}${location ? ` in ${location}` : ""} on ${input.siteRecord.displayName}.`,
+  });
+
+  if (!mediaResult.ok) {
+    return glwPageExecutionRepository.update(draftJob.jobId, {
+      status: "CONTENT_READY",
+      errorCode: `WORDPRESS_MEDIA_${mediaResult.state.toUpperCase()}`,
+      errorMessage: mediaResult.message,
+      featuredImagePresent: false,
+      updatedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+  }
+
+  const completedAt = new Date().toISOString();
+  return glwPageExecutionRepository.update(draftJob.jobId, {
     status: "COMPLETE",
     wordpressObjectId: result.wordpressObjectId,
     wordpressUrl: result.wordpressUrl,
@@ -167,10 +255,11 @@ async function finalizeContentReadyExecution(input: {
     qaChecks: qa.checks,
     qaFailureReasons: {},
     wordCount: qa.wordCount,
+    featuredImagePresent: true,
     errorCode: null,
     errorMessage: null,
-    updatedAt: timestamp,
-    completedAt: timestamp,
+    updatedAt: completedAt,
+    completedAt,
   });
 }
 
@@ -305,8 +394,10 @@ export async function POST(request: NextRequest) {
     try {
       const recovered = existing.status === "CONTENT_READY" ? existing : await recoverExecution(existing);
       if (recovered.status !== "CONTENT_READY") return NextResponse.json({ job: recovered }, { status: 202 });
-      const authority = await verifyMutationAuthority(generationRequest, siteRecord);
-      if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
+      if (!recovered.wordpressObjectId || recovered.wordpressStatus !== "draft") {
+        const authority = await verifyMutationAuthority(generationRequest, siteRecord);
+        if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
+      }
       const job = await finalizeContentReadyExecution({ job: recovered, request: generationRequest, siteRecord });
       return NextResponse.json({ job }, { status: job.status === "COMPLETE" || job.status === "FAILED" ? 200 : 202 });
     } catch (error) {
