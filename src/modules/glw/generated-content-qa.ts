@@ -50,7 +50,10 @@ function includesExpected(text: string, value: string | null | undefined): boole
 
 function collectTextIntegrityMarkers(text: string): string[] {
   const markers = new Set<string>();
-  const punctuationJoin = text.match(/[.!?;,][A-Za-z]/g) ?? [];
+  // Do not flag ordinary hostnames such as ssidisplays.com. A period is only
+  // suspicious here when followed immediately by an uppercase letter, while
+  // punctuation that normally requires spacing remains checked for any letter.
+  const punctuationJoin = text.match(/(?:[!?;,][A-Za-z]|\.[A-Z])/g) ?? [];
   punctuationJoin.forEach((value) => markers.add(value));
 
   const knownJoinedWordPattern = /\b(?:needfor|wayto|architecturalfeatures|acrossarlington|surfacesminimizes|andongoing|meetingrooms|foottraffic|viewablefrom|theoptical|improvedviewing|assesssurface|contentandenvironment|tintand|andinstallation|thoroughlycleaned|projectorpositioning|retailersand|assessthe|youplan|glass-safecleaner|tobubbles|improvementsin|filmlayers|spacewith|radiuswhen)\b/gi;
