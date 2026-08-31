@@ -65,8 +65,11 @@ export function evaluateGlwGeneratedContentQa(input: {
     ? linkedDomains.filter((domain) => domain !== allowedDomain && !domain.endsWith(`.${allowedDomain}`))
     : linkedDomains;
 
-  const mojibakePattern = /(?:â€|â€™|â€œ|â€|â€“|â€”|Ã.|Â.|\uFFFD)/;
-  const mojibakeMatches = text.match(new RegExp(mojibakePattern.source, "g")) ?? [];
+  // Fail closed on common UTF-8-as-Windows-1252/Latin-1 corruption. In the
+  // observed artifact the punctuation tail byte was dropped, leaving a bare
+  // U+00E2 ("â"), so checking only full sequences such as "â€™" is insufficient.
+  const mojibakePattern = /[âÃÂ\uFFFD]/g;
+  const mojibakeMatches = text.match(mojibakePattern) ?? [];
   const mojibakeOk = mojibakeMatches.length === 0;
 
   const expectedProduct = includesExpected(text, input.request.productTopic);
