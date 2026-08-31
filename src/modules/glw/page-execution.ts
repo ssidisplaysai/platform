@@ -624,7 +624,7 @@ export function normalizeGlwN8nExecutionResult(input: {
     pageTitle: optionalString(qa.qa_title ?? generatedDraft?.title) ?? undefined,
     seoTitle: optionalString(qa.qa_meta_title ?? generatedDraft?.seoTitle) ?? undefined,
     focusKeyphrase: optionalString(qa.qa_focus_keyword ?? generatedDraft?.focusKeyphrase) ?? undefined,
-    wordCount: optionalNumber(qa.qa_word_count) ?? countHtmlWords(generatedDraft?.contentHtml) ?? undefined,
+    wordCount: optionalNumber(qa.qa_word_count) ?? countHtmlWords(generatedDraft?.contentHtml ?? generated?.article_html) ?? undefined,
     featuredImagePresent: featuredImagePresent
       ?? (Boolean(featuredImageUrl) || (featuredImageId !== null && featuredImageId > 0)),
   };
