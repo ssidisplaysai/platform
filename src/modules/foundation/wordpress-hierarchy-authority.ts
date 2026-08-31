@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   createAuthenticatedWordPressReadAuthority,
+  normalizeWordPressApiBaseUrl,
   type AuthenticatedWordPressReadAuthority,
 } from "./authenticated-wordpress-read-authority";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
@@ -106,12 +107,21 @@ async function readExactNode(input: {
       wordpressStatus: null,
     };
   }
+  if (page.status !== "publish" && page.status !== "draft") {
+    return {
+      slug: input.slug,
+      parentId: input.parentId,
+      state: "UNVERIFIED",
+      wordpressObjectId: page.id,
+      wordpressStatus: page.status ?? null,
+    };
+  }
   return {
     slug: input.slug,
     parentId: input.parentId,
     state: page.status === "publish" ? "EXISTS_PUBLISHED" : "EXISTS_DRAFT",
     wordpressObjectId: page.id,
-    wordpressStatus: page.status ?? null,
+    wordpressStatus: page.status,
   };
 }
 
@@ -174,23 +184,21 @@ export async function resolveOrCreateGenesisWordPressHierarchy(input: {
   let authority: AuthenticatedWordPressReadAuthority;
   let normalizedApiBaseUrl: string;
   try {
+    normalizedApiBaseUrl = normalizeWordPressApiBaseUrl(apiBaseUrl);
     authority = createAuthenticatedWordPressReadAuthority({
       configuration: {
-        apiBaseUrl,
+        apiBaseUrl: normalizedApiBaseUrl,
         username: credential.username,
         applicationPassword: credential.applicationPassword,
       },
     });
-    normalizedApiBaseUrl = new URL(apiBaseUrl).pathname.includes("/wp-json/wp/v2")
-      ? apiBaseUrl.replace(/\/$/, "")
-      : `${apiBaseUrl.replace(/\/$/, "")}/wp-json/wp/v2`;
   } catch {
     return { ok: false, state: "invalid_target", message: "The configured WordPress hierarchy target is invalid." };
   }
   const authorization = `Basic ${Buffer.from(`${credential.username}:${credential.applicationPassword}`, "utf8").toString("base64")}`;
 
   let product = await readExactNode({ authority, slug: productSlug, parentId: 0 });
-  if (product.state === "UNVERIFIED") return { ok: false, state: "read_failed", message: "Genesis could not verify the product hierarchy parent.", product };
+  if (product.state === "UNVERIFIED") return { ok: false, state: "read_failed", message: "Genesis could not verify an acceptable published-or-draft product hierarchy parent.", product };
   if (product.state === "COLLISION") return { ok: false, state: "collision", message: "Multiple exact product hierarchy parents were returned. Genesis failed closed.", product };
   if (product.state === "ABSENT") {
     const created = await createDraftParent({ apiBaseUrl: normalizedApiBaseUrl, authorization, slug: productSlug, title: productTitle, parentId: 0 });
@@ -205,7 +213,7 @@ export async function resolveOrCreateGenesisWordPressHierarchy(input: {
   if (!product.wordpressObjectId) return { ok: false, state: "collision", message: "Product hierarchy parent has no authoritative WordPress identity.", product };
 
   let stateNode = await readExactNode({ authority, slug: stateSlug, parentId: product.wordpressObjectId });
-  if (stateNode.state === "UNVERIFIED") return { ok: false, state: "read_failed", message: "Genesis could not verify the state hierarchy parent.", product, stateNode };
+  if (stateNode.state === "UNVERIFIED") return { ok: false, state: "read_failed", message: "Genesis could not verify an acceptable published-or-draft state hierarchy parent.", product, stateNode };
   if (stateNode.state === "COLLISION") return { ok: false, state: "collision", message: "Multiple exact state hierarchy parents were returned. Genesis failed closed.", product, stateNode };
   if (stateNode.state === "ABSENT") {
     const created = await createDraftParent({ apiBaseUrl: normalizedApiBaseUrl, authorization, slug: stateSlug, title: stateTitle, parentId: product.wordpressObjectId });
