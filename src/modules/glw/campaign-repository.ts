@@ -128,3 +128,48 @@ export function createGlwCampaign(input: NewGlwCampaignInput): {
   persistState();
   return { campaign: deepClone(campaign), errors: [] };
 }
+export function activateGlwCampaign(campaignId: string): {
+  campaign: GlwCampaign | null;
+  errors: readonly string[];
+} {
+  loadState();
+
+  const campaign = campaignStore.get(campaignId);
+
+  if (!campaign) {
+    return {
+      campaign: null,
+      errors: ["Campaign not found."],
+    };
+  }
+
+  if (campaign.status === "active") {
+    return {
+      campaign: deepClone(campaign),
+      errors: [],
+    };
+  }
+
+  if (campaign.status !== "draft") {
+    return {
+      campaign: null,
+      errors: [
+        `Campaign cannot activate from status ${campaign.status}.`,
+      ],
+    };
+  }
+
+  const updated: GlwCampaign = {
+    ...campaign,
+    status: "active",
+    updatedAt: new Date().toISOString(),
+  };
+
+  campaignStore.set(campaignId, updated);
+  persistState();
+
+  return {
+    campaign: deepClone(updated),
+    errors: [],
+  };
+}

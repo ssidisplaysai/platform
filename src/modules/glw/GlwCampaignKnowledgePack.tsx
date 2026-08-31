@@ -54,6 +54,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const [recoveringReference, setRecoveringReference] = useState(false);
   const [continuingReference, setContinuingReference] = useState(false);
   const [approvingReference, setApprovingReference] = useState(false);
+  const [activatingCampaign, setActivatingCampaign] = useState(false);
   const [continuationAttemptedJobId, setContinuationAttemptedJobId] = useState<string | null>(null);
   const [referenceResult, setReferenceResult] = useState<ReferenceResult | null>(null);
 
@@ -249,6 +250,54 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       setMessage("Reference approved. This exact job and WordPress draft are now the campaign reference authority.");
     } finally {
       setApprovingReference(false);
+    }
+  }
+
+  async function activateCampaign() {
+    setActivatingCampaign(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(
+        `/api/glw/campaigns/${campaign.campaignId}/activate`,
+        {
+          method: "POST",
+          headers,
+        },
+      );
+
+      const payload = await response.json() as {
+        campaign?: {
+          status?: string;
+        };
+        activation?: {
+          totalTargets?: number;
+          referenceComplete?: number;
+          queued?: number;
+          pagesPerDay?: number;
+        };
+        error?: string;
+        errors?: string[];
+      };
+
+      if (!response.ok) {
+        setMessage(
+          payload.errors?.join(" ")
+          ?? payload.error
+          ?? "Campaign activation failed.",
+        );
+        return;
+      }
+
+      setMessage(
+        `Campaign activated. ${payload.activation?.queued ?? 0} production targets queued at ${payload.activation?.pagesPerDay ?? campaign.pagesPerDay}/day. No pages were dispatched during activation.`,
+      );
+
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 800);
+    } finally {
+      setActivatingCampaign(false);
     }
   }
 
@@ -550,9 +599,32 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
                 ) : null}
 
                 {referenceResult.approved && referenceResult.approval ? (
-                  <p className="mt-2 text-[11px] text-emerald-400">
-                    Approved {new Date(referenceResult.approval.approvedAt).toLocaleString()}
-                  </p>
+                  <>
+                    <p className="mt-2 text-[11px] text-emerald-400">
+                      Approved {new Date(referenceResult.approval.approvedAt).toLocaleString()}
+                    </p>
+
+                    <div className="mt-4 border-t border-emerald-900/60 pt-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-300">
+                        Production Activation
+                      </p>
+
+                      <p className="mt-1 text-xs text-zinc-400">
+                        Activation creates the 50-state target queue. California remains the approved completed reference. The other states are queued only; activation does not generate, publish, or dispatch them.
+                      </p>
+
+                      <button
+                        type="button"
+                        disabled={activatingCampaign}
+                        onClick={() => void activateCampaign()}
+                        className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                      >
+                        {activatingCampaign
+                          ? "Activating..."
+                          : `Activate Campaign - ${campaign.pagesPerDay}/day`}
+                      </button>
+                    </div>
+                  </>
                 ) : null}
               </div>
             ) : null}
