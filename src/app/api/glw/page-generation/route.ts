@@ -4,9 +4,11 @@ import {
   hasOrganizationScope,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
+import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { resolveOrCreateGenesisWordPressHierarchy } from "@/modules/foundation/wordpress-hierarchy-authority";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import {
@@ -160,9 +162,39 @@ async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organiz
 }
 
 async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
+  const apiBaseUrl = siteRecord.integrations.wordpressApiBaseUrl?.trim() ?? "";
+  const credentialReference = siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
+  const credential = resolveWordPressCredentialReference(credentialReference);
+
+  if (!apiBaseUrl || !credential) {
+    return {
+      error: "Authenticated WordPress read authority is required before generation or continuation.",
+      code: "WORDPRESS_READ_AUTHORITY_REQUIRED",
+      status: 503,
+    } as const;
+  }
+
+  let wordpressReadAuthority;
+  try {
+    wordpressReadAuthority = createAuthenticatedWordPressReadAuthority({
+      configuration: {
+        apiBaseUrl,
+        username: credential.username,
+        applicationPassword: credential.applicationPassword,
+        timeoutMs: 30_000,
+      },
+    });
+  } catch {
+    return {
+      error: "The configured WordPress read target is invalid.",
+      code: "WORDPRESS_READ_AUTHORITY_INVALID",
+      status: 503,
+    } as const;
+  }
+
   const target = await readGlwTargetPreflight({
     request,
-    wordpressReadAuthority: null,
+    wordpressReadAuthority,
     localExecutions: await glwPageExecutionRepository.list(),
   });
   const availability = resolveGlwTargetMutationAvailability(target);
