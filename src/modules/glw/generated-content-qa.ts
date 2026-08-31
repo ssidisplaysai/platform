@@ -48,6 +48,17 @@ function includesExpected(text: string, value: string | null | undefined): boole
   return !expected || text.toLowerCase().includes(expected);
 }
 
+function collectTextIntegrityMarkers(text: string): string[] {
+  const markers = new Set<string>();
+  const punctuationJoin = text.match(/[.!?;,][A-Za-z]/g) ?? [];
+  punctuationJoin.forEach((value) => markers.add(value));
+
+  const knownJoinedWordPattern = /\b(?:needfor|wayto|architecturalfeatures|acrossarlington|surfacesminimizes|andongoing|meetingrooms|foottraffic|viewablefrom|theoptical|improvedviewing|assesssurface|contentandenvironment|tintand|andinstallation|thoroughlycleaned|projectorpositioning|retailersand|assessthe|youplan|glass-safecleaner|tobubbles|improvementsin|filmlayers|spacewith|radiuswhen)\b/gi;
+  (text.match(knownJoinedWordPattern) ?? []).forEach((value) => markers.add(value));
+
+  return [...markers];
+}
+
 export function evaluateGlwGeneratedContentQa(input: {
   artifact: GlwGeneratedDraftArtifact;
   request: GlwGenerationRequest;
@@ -65,16 +76,15 @@ export function evaluateGlwGeneratedContentQa(input: {
     ? linkedDomains.filter((domain) => domain !== allowedDomain && !domain.endsWith(`.${allowedDomain}`))
     : linkedDomains;
 
-  // Fail closed on common UTF-8-as-Windows-1252/Latin-1 corruption. In the
-  // observed artifact the punctuation tail byte was dropped, leaving a bare
-  // U+00E2 ("â"), so checking only full sequences such as "â€™" is insufficient.
   const mojibakePattern = /[âÃÂ\uFFFD]/g;
   const mojibakeMatches = text.match(mojibakePattern) ?? [];
   const mojibakeOk = mojibakeMatches.length === 0;
+  const textIntegrityMarkers = collectTextIntegrityMarkers(text);
+  const textIntegrityOk = textIntegrityMarkers.length === 0;
 
   const expectedProduct = includesExpected(text, input.request.productTopic);
-  const expectedState = includesExpected(text, input.request.state);
-  const expectedCity = includesExpected(text, input.request.city);
+  const expectedState = includesExpected(text, input.request.stateName);
+  const expectedCity = includesExpected(text, input.request.cityName);
   const contentPresent = text.length > 0;
   const wordCountOk = wordCount >= minimumWordCount;
   const domainsOk = foreignDomains.length === 0;
@@ -84,9 +94,10 @@ export function evaluateGlwGeneratedContentQa(input: {
     minimumWordCount: { ok: wordCountOk, message: `${wordCount} words generated; minimum is ${minimumWordCount}.` },
     siteDomainIsolation: { ok: domainsOk, message: domainsOk ? "All absolute links remain on the configured site domain." : `Foreign absolute link domains found: ${foreignDomains.join(", ")}.` },
     encodingIntegrity: { ok: mojibakeOk, message: mojibakeOk ? "No known mojibake markers detected." : `Detected ${mojibakeMatches.length} mojibake marker(s).` },
+    textIntegrity: { ok: textIntegrityOk, message: textIntegrityOk ? "No known spacing or word-join corruption detected." : `Detected text-integrity markers: ${textIntegrityMarkers.slice(0, 12).join(", ")}.` },
     expectedProduct: { ok: expectedProduct, message: expectedProduct ? "Expected product/topic is present." : `Expected product/topic is missing: ${input.request.productTopic}.` },
-    expectedState: { ok: expectedState, message: expectedState ? "Expected state is present." : `Expected state is missing: ${input.request.state}.` },
-    expectedCity: { ok: expectedCity, message: expectedCity ? "Expected city is present." : `Expected city is missing: ${input.request.city}.` },
+    expectedState: { ok: expectedState, message: expectedState ? "Expected state is present." : `Expected state is missing: ${input.request.stateName ?? ""}.` },
+    expectedCity: { ok: expectedCity, message: expectedCity ? "Expected city is present." : `Expected city is missing: ${input.request.cityName ?? ""}.` },
   };
 
   const failureReasons = Object.fromEntries(
