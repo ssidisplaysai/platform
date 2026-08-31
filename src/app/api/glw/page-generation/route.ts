@@ -143,8 +143,28 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const scope = resolveRequestScope(request);
   if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
+
   const jobId = request.nextUrl.searchParams.get("jobId")?.trim() ?? "";
-  if (!jobId) return NextResponse.json({ error: "jobId is required." }, { status: 400 });
+  if (!jobId) {
+    const siteId = request.nextUrl.searchParams.get("siteId")?.trim() ?? "";
+    const productId = request.nextUrl.searchParams.get("productId")?.trim() ?? "";
+    const slug = request.nextUrl.searchParams.get("slug")?.trim() ?? "";
+    if (!siteId || !productId || !slug) {
+      return NextResponse.json({ error: "jobId or exact siteId, productId, and slug target is required." }, { status: 400 });
+    }
+    const jobs = await glwPageExecutionRepository.list();
+    const recoverable = jobs
+      .filter((candidate) =>
+        candidate.organizationId === scope.organizationId
+        && candidate.siteId === siteId
+        && candidate.productId === productId
+        && candidate.slug === slug
+        && !isTerminal(candidate.status)
+        && Boolean(candidate.externalExecutionId))
+      .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0] ?? null;
+    return NextResponse.json({ job: recoverable });
+  }
+
   const job = await glwPageExecutionRepository.getById(jobId);
   if (job && job.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!job) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
