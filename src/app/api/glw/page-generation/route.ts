@@ -7,6 +7,7 @@ import {
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import {
   createGlwN8nMcpDispatcher,
   createGlwN8nMcpExecutionReader,
@@ -22,6 +23,7 @@ import {
   adaptProductForGeneration,
   adaptSiteForGeneration,
   buildLocalGlwGenerationPreview,
+  type GlwGenerationRequest,
   type GlwGenerationRequestInput,
 } from "@/modules/glw/page-generation";
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
@@ -42,6 +44,77 @@ async function recoverExecution(job: GlwPageExecutionRecord): Promise<GlwPageExe
   return service.pollToTerminal(job.jobId, executionReader);
 }
 
+async function finalizeContentReadyExecution(input: {
+  job: GlwPageExecutionRecord;
+  request: GlwGenerationRequest;
+  siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
+}): Promise<GlwPageExecutionRecord> {
+  if (input.job.status !== "CONTENT_READY") return input.job;
+  if (!input.job.generatedDraft) {
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      errorCode: "GENERATED_DRAFT_MISSING",
+      errorMessage: "n8n completed without a generated draft artifact for Genesis WordPress mutation.",
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  const operation = input.request.plannedOperation.startsWith("CREATE_") ? "CREATE" : "UPDATE";
+  if (operation === "UPDATE" && !input.request.wordpressObjectId) {
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      errorCode: "UPDATE_AUTHORITY_REQUIRED",
+      errorMessage: "Genesis requires an exact WordPress object ID before a draft update.",
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  const artifact = {
+    title: input.job.generatedDraft.title,
+    contentHtml: input.job.generatedDraft.contentHtml,
+    slug: input.job.generatedDraft.slug,
+    excerpt: input.job.generatedDraft.excerpt,
+  };
+  const result = operation === "CREATE"
+    ? await writeGenesisWordPressDraft({
+        operation: "CREATE",
+        site: input.siteRecord,
+        artifact,
+      })
+    : await writeGenesisWordPressDraft({
+        operation: "UPDATE",
+        site: input.siteRecord,
+        wordpressObjectId: input.request.wordpressObjectId!,
+        artifact,
+      });
+
+  const timestamp = new Date().toISOString();
+  if (!result.ok) {
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      errorCode: `WORDPRESS_${result.state.toUpperCase()}`,
+      errorMessage: result.message,
+      updatedAt: timestamp,
+      completedAt: timestamp,
+    });
+  }
+
+  return glwPageExecutionRepository.update(input.job.jobId, {
+    status: "COMPLETE",
+    wordpressObjectId: result.wordpressObjectId,
+    wordpressUrl: result.wordpressUrl,
+    wordpressStatus: result.wordpressStatus,
+    disposition: result.operation === "CREATE" ? "CREATED" : "UPDATED",
+    qaStatus: "COMPLETE",
+    errorCode: null,
+    errorMessage: null,
+    updatedAt: timestamp,
+    completedAt: timestamp,
+  });
+}
+
 export async function GET(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:read");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -57,7 +130,13 @@ export async function GET(request: NextRequest) {
   if (request.nextUrl.searchParams.get("refresh") === "true" && !isTerminal(job.status)) {
     try {
       const refreshedJob = await recoverExecution(job);
-      return NextResponse.json({ job: refreshedJob });
+      if (refreshedJob.status !== "CONTENT_READY") {
+        return NextResponse.json({ job: refreshedJob });
+      }
+      return NextResponse.json({
+        job: refreshedJob,
+        recoveryError: "Generated content is ready, but WordPress mutation must be finalized by the originating generation request.",
+      }, { status: 202 });
     } catch (error) {
       return NextResponse.json({
         job,
@@ -130,9 +209,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const dispatchedJob = await service.execute(preview.request);
-    const job = isTerminal(dispatchedJob.status)
+    const recoveredJob = isTerminal(dispatchedJob.status)
       ? dispatchedJob
       : await recoverExecution(dispatchedJob);
+    const job = recoveredJob.status === "CONTENT_READY"
+      ? await finalizeContentReadyExecution({
+          job: recoveredJob,
+          request: preview.request,
+          siteRecord,
+        })
+      : recoveredJob;
     return NextResponse.json({ job }, { status: job.status === "COMPLETE" || job.status === "FAILED" ? 200 : 202 });
   } catch (error) {
     const status = error instanceof GlwDraftOnlyExecutionError ? 403 : 500;
