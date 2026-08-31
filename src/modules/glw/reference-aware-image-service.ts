@@ -57,7 +57,7 @@ export async function generateGenesisFeaturedImageWithCampaignReferences(input: 
   form.append("output_compression", "82");
   form.append(
     "image",
-    new Blob([primaryReference.bytes], { type: primaryReference.mediaType }),
+    new Blob([new Uint8Array(primaryReference.bytes)], { type: primaryReference.mediaType }),
     primaryReference.fileName,
   );
 

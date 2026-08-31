@@ -63,6 +63,7 @@ export async function POST(request: NextRequest, context: Context) {
 
   form.additionalInstructions = generationContext.additionalInstructions;
   form.imageDirection = generationContext.imageDirection;
+  form.campaignId = campaign.campaignId;
 
   const generationResponse = await fetch(`${request.nextUrl.origin}/api/glw/page-generation`, {
     method: "POST",

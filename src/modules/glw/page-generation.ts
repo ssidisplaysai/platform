@@ -277,6 +277,7 @@ export type GlwGenerationRequestInput = {
   wordpressObjectId?: string | null;
   additionalInstructions?: string;
   imageDirection?: string;
+  campaignId?: string;
 };
 
 export type GlwGenerationRequest = GlwGenerationRequestInput & {
