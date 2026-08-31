@@ -7,6 +7,7 @@ import {
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { resolveOrCreateGenesisWordPressHierarchy } from "@/modules/foundation/wordpress-hierarchy-authority";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import {
   createGlwN8nMcpDispatcher,
@@ -23,6 +24,7 @@ import {
   adaptProductForGeneration,
   adaptSiteForGeneration,
   buildLocalGlwGenerationPreview,
+  getGlwState,
   type GlwGenerationRequest,
   type GlwGenerationRequestInput,
 } from "@/modules/glw/page-generation";
@@ -71,11 +73,46 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
+  let parentId: number | undefined;
+  if (input.request.pageType === "city_service") {
+    const state = getGlwState(input.request.stateCode);
+    const pathSegments = input.request.canonicalPath.split("/").map((segment) => segment.trim()).filter(Boolean);
+    const productSlug = pathSegments[0] ?? "";
+    if (!state || !productSlug) {
+      return glwPageExecutionRepository.update(input.job.jobId, {
+        status: "FAILED",
+        errorCode: "WORDPRESS_HIERARCHY_INVALID_TARGET",
+        errorMessage: "Genesis could not derive the canonical product/state hierarchy for this city target.",
+        completedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+    const hierarchy = await resolveOrCreateGenesisWordPressHierarchy({
+      site: input.siteRecord,
+      productSlug,
+      productTitle: input.request.productTopic,
+      stateSlug: state.slug,
+      stateTitle: state.name,
+    });
+    if (!hierarchy.ok) {
+      const timestamp = new Date().toISOString();
+      return glwPageExecutionRepository.update(input.job.jobId, {
+        status: "FAILED",
+        errorCode: `WORDPRESS_HIERARCHY_${hierarchy.state.toUpperCase()}`,
+        errorMessage: hierarchy.message,
+        updatedAt: timestamp,
+        completedAt: timestamp,
+      });
+    }
+    parentId = hierarchy.leafParentId;
+  }
+
   const artifact = {
     title: input.job.generatedDraft.title,
     contentHtml: input.job.generatedDraft.contentHtml,
     slug: input.job.generatedDraft.slug,
     excerpt: input.job.generatedDraft.excerpt,
+    parentId,
   };
   const result = operation === "CREATE"
     ? await writeGenesisWordPressDraft({ operation: "CREATE", site: input.siteRecord, artifact })
@@ -125,7 +162,7 @@ async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organiz
 async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
   const target = await readGlwTargetPreflight({
     request,
-    wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+    wordpressReadAuthority: null,
     localExecutions: await glwPageExecutionRepository.list(),
   });
   const availability = resolveGlwTargetMutationAvailability(target);
