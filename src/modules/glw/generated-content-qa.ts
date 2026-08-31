@@ -50,14 +50,24 @@ function includesExpected(text: string, value: string | null | undefined): boole
 
 function collectTextIntegrityMarkers(text: string): string[] {
   const markers = new Set<string>();
-  // Do not flag ordinary hostnames such as ssidisplays.com. A period is only
-  // suspicious here when followed immediately by an uppercase letter, while
-  // punctuation that normally requires spacing remains checked for any letter.
-  const punctuationJoin = text.match(/(?:[!?;,][A-Za-z]|\.[A-Z])/g) ?? [];
-  punctuationJoin.forEach((value) => markers.add(value));
 
-  const knownJoinedWordPattern = /\b(?:needfor|wayto|architecturalfeatures|acrossarlington|surfacesminimizes|andongoing|meetingrooms|foottraffic|viewablefrom|theoptical|improvedviewing|assesssurface|contentandenvironment|tintand|andinstallation|thoroughlycleaned|projectorpositioning|retailersand|assessthe|youplan|glass-safecleaner|tobubbles|improvementsin|filmlayers|spacewith|radiuswhen)\b/gi;
-  (text.match(knownJoinedWordPattern) ?? []).forEach((value) => markers.add(value));
+  // A comma, semicolon, exclamation point, or question mark followed directly
+  // by a letter is malformed prose. Periods are restricted to uppercase starts
+  // so ordinary hostnames such as ssidisplays.com remain valid.
+  for (const value of text.match(/(?:[!?;,][A-Za-z]|\.[A-Z])/g) ?? []) markers.add(value);
+
+  // Detect common word-boundary loss generically. These patterns target a
+  // closed set of high-confidence function words whose accidental attachment
+  // to the neighboring token is not normal English prose. They catch defects
+  // such as forsuperior, glasswalls, windowsinto, inreduced, and stepof without
+  // maintaining a page- or city-specific list of generated bad strings.
+  const joinedFunctionWordPatterns = [
+    /\b(?:a|an|and|as|at|by|for|from|in|into|of|on|or|the|to|with)[a-z]{3,}\b/gi,
+    /\b[a-z]{4,}(?:and|for|from|into|of|the|to|with)\b/gi,
+  ];
+  for (const pattern of joinedFunctionWordPatterns) {
+    for (const value of text.match(pattern) ?? []) markers.add(value);
+  }
 
   return [...markers];
 }
