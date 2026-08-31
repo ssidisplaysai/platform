@@ -49,10 +49,21 @@ export type GlwPageExecutionStatus =
   | "DISPATCHED"
   | "DISCOVERING_EXECUTION"
   | "RUNNING"
+  | "CONTENT_READY"
   | "COMPLETE"
   | "FAILED";
 
 export type GlwExecutionTransport = "N8N_WEBHOOK" | "N8N_MCP";
+
+export type GlwGeneratedDraftArtifact = {
+  title: string;
+  contentHtml: string;
+  slug: string;
+  excerpt: string | null;
+  seoTitle: string | null;
+  metaDescription: string | null;
+  focusKeyphrase: string | null;
+};
 
 export type GlwPageExecutionRecord = {
   jobId: string;
@@ -74,6 +85,7 @@ export type GlwPageExecutionRecord = {
   wordpressObjectId: string | null;
   wordpressUrl: string | null;
   wordpressStatus: string | null;
+  generatedDraft: GlwGeneratedDraftArtifact | null;
   errorCode: string | null;
   errorMessage: string | null;
   requestedPublicationMode: "draft";
@@ -175,15 +187,7 @@ export type GlwN8nDraftResponse =
       wordpressObjectId: string | null;
       wordpressUrl: string | null;
       wordpressStatus: "draft" | null;
-      generatedDraft?: {
-        title: string;
-        contentHtml: string;
-        slug: string;
-        excerpt: string | null;
-        seoTitle: string | null;
-        metaDescription: string | null;
-        focusKeyphrase: string | null;
-      };
+      generatedDraft?: GlwGeneratedDraftArtifact;
       requestedPublicationMode?: "draft";
       disposition?: string;
       qaStatus?: string;
@@ -461,6 +465,31 @@ function countHtmlWords(value: unknown): number | null {
   const text = value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
   return text ? text.split(" ").length : null;
 }
+
+function normalizeGeneratedDraft(
+  generated: Record<string, unknown> | null,
+): GlwGeneratedDraftArtifact | null {
+  if (!generated) return null;
+  const title = optionalString(generated.page_title ?? generated.title);
+  const contentHtml = optionalString(generated.article_html ?? generated.content_html ?? generated.content);
+  const slug = optionalString(
+    generated.desired_hierarchical_slug
+      ?? generated.requested_target_path
+      ?? generated.hierarchical_slug
+      ?? generated.slug,
+  );
+  if (!title || !contentHtml || !slug) return null;
+  return {
+    title,
+    contentHtml,
+    slug,
+    excerpt: optionalString(generated.excerpt ?? generated.meta_description ?? generated.metaDescription),
+    seoTitle: optionalString(generated.seo_title ?? generated.meta_title),
+    metaDescription: optionalString(generated.meta_description ?? generated.metaDescription),
+    focusKeyphrase: optionalString(generated.focus_keyphrase ?? generated.focus_keyword),
+  };
+}
+
 export function normalizeGlwN8nExecutionResult(input: {
   snapshot: GlwN8nExecutionSnapshot;
   expectedJobId: string;
@@ -473,6 +502,46 @@ export function normalizeGlwN8nExecutionResult(input: {
       status: "failed",
       errorCode: "N8N_EXECUTION_FAILED",
       errorMessage: redactGlwExecutionError(input.snapshot.errorMessage ?? "n8n execution failed."),
+    };
+  }
+
+  const contentReady = extractNodeJson(input.snapshot.runData, "GLW Content Ready");
+  if (contentReady) {
+    const jobId = optionalString(contentReady.job_id ?? contentReady.jobId);
+    if (jobId !== input.expectedJobId) {
+      throw new GlwExecutionResultError("Terminal n8n execution does not match the tracked GLW job.");
+    }
+    if (contentReady.glw_content_ready !== true) {
+      throw new GlwExecutionResultError("GLW content-ready terminal node did not assert content readiness.");
+    }
+    if (optionalString(contentReady.requested_publishing_mode ?? contentReady.publishing_mode) !== "draft") {
+      throw new GlwExecutionResultError("Terminal n8n execution did not preserve the required draft publication mode.");
+    }
+    if (optionalString(contentReady.mutation_authority) !== "GENESIS") {
+      throw new GlwExecutionResultError("GLW content-ready terminal node did not preserve Genesis mutation authority.");
+    }
+    const generatedDraft = normalizeGeneratedDraft(contentReady);
+    if (!generatedDraft) {
+      throw new GlwExecutionResultError("GLW content-ready terminal node is missing the generated draft artifact.");
+    }
+    return {
+      kind: "complete",
+      executionId: input.snapshot.executionId,
+      status: "complete",
+      wordpressObjectId: null,
+      wordpressUrl: null,
+      wordpressStatus: null,
+      generatedDraft,
+      requestedPublicationMode: "draft",
+      disposition: "CONTENT_READY",
+      qaStatus: "CONTENT_READY",
+      qaChecks: {},
+      qaFailureReasons: {},
+      pageTitle: generatedDraft.title,
+      seoTitle: generatedDraft.seoTitle ?? undefined,
+      focusKeyphrase: generatedDraft.focusKeyphrase ?? undefined,
+      wordCount: countHtmlWords(generatedDraft.contentHtml) ?? undefined,
+      featuredImagePresent: false,
     };
   }
 
@@ -518,58 +587,18 @@ export function normalizeGlwN8nExecutionResult(input: {
     throw new GlwExecutionResultError("Terminal n8n execution did not preserve the required draft publication mode.");
   }
 
-  const generatedTitle = optionalString(
-    generated?.page_title ?? qa.qa_title,
-  );
-
-  const generatedContentHtml = optionalString(
-    generated?.article_html,
-  );
-
-  const generatedSlug = optionalString(
-    generated?.desired_hierarchical_slug
-      ?? generated?.slug
-      ?? normalized.desired_hierarchical_slug
-      ?? normalized.slug,
-  );
-
-  const generatedExcerpt = optionalString(
-    generated?.excerpt
-      ?? generated?.meta_description
-      ?? generated?.metaDescription,
-  );
-
-  const generatedSeoTitle = optionalString(
-    generated?.seo_title ?? qa.qa_meta_title,
-  );
-
-  const generatedMetaDescription = optionalString(
-    generated?.meta_description
-      ?? generated?.metaDescription
-      ?? qa.qa_meta_description,
-  );
-
-  const generatedFocusKeyphrase = optionalString(
-    generated?.focus_keyphrase
-      ?? generated?.focus_keyword
-      ?? qa.qa_focus_keyword,
-  );
-
+  const generatedDraft = normalizeGeneratedDraft(generated);
   const hasWordPressDraftIdentity = Boolean(
     wordpressObjectId
       && wordpressUrl
       && wordpressStatus === "draft",
   );
 
-  if (
-    !hasWordPressDraftIdentity
-    && (!generatedTitle || !generatedContentHtml || !generatedSlug)
-  ) {
+  if (!hasWordPressDraftIdentity && !generatedDraft) {
     throw new GlwExecutionResultError(
       "Terminal n8n execution produced neither a WordPress draft identity nor a complete generated draft artifact.",
     );
   }
-
 
   const featuredImagePresent = optionalBoolean(
     qa.qa_featured_image_present
@@ -583,36 +612,19 @@ export function normalizeGlwN8nExecutionResult(input: {
     kind: "complete",
     executionId: input.snapshot.executionId,
     status: "complete",
-    wordpressObjectId: hasWordPressDraftIdentity
-      ? wordpressObjectId
-      : null,
-    wordpressUrl: hasWordPressDraftIdentity
-      ? wordpressUrl
-      : null,
-    wordpressStatus: hasWordPressDraftIdentity
-      ? "draft"
-      : null,
-    generatedDraft:
-      generatedTitle && generatedContentHtml && generatedSlug
-        ? {
-            title: generatedTitle,
-            contentHtml: generatedContentHtml,
-            slug: generatedSlug,
-            excerpt: generatedExcerpt,
-            seoTitle: generatedSeoTitle,
-            metaDescription: generatedMetaDescription,
-            focusKeyphrase: generatedFocusKeyphrase,
-          }
-        : undefined,
+    wordpressObjectId: hasWordPressDraftIdentity ? wordpressObjectId : null,
+    wordpressUrl: hasWordPressDraftIdentity ? wordpressUrl : null,
+    wordpressStatus: hasWordPressDraftIdentity ? "draft" : null,
+    generatedDraft: generatedDraft ?? undefined,
     requestedPublicationMode: "draft",
     disposition: optionalString(qa.qa_disposition ?? normalized.disposition) ?? undefined,
     qaStatus,
     qaChecks: asRecord(qa.qa_checks ?? qa.qaChecks) ?? {},
     qaFailureReasons: asRecord(qa.qa_failure_reasons ?? qa.qaFailureReasons) ?? {},
-    pageTitle: optionalString(qa.qa_title ?? generated?.page_title) ?? undefined,
-    seoTitle: optionalString(qa.qa_meta_title ?? generated?.seo_title) ?? undefined,
-    focusKeyphrase: optionalString(qa.qa_focus_keyword ?? generated?.focus_keyphrase) ?? undefined,
-    wordCount: optionalNumber(qa.qa_word_count) ?? countHtmlWords(generated?.article_html) ?? undefined,
+    pageTitle: optionalString(qa.qa_title ?? generatedDraft?.title) ?? undefined,
+    seoTitle: optionalString(qa.qa_meta_title ?? generatedDraft?.seoTitle) ?? undefined,
+    focusKeyphrase: optionalString(qa.qa_focus_keyword ?? generatedDraft?.focusKeyphrase) ?? undefined,
+    wordCount: optionalNumber(qa.qa_word_count) ?? countHtmlWords(generatedDraft?.contentHtml) ?? undefined,
     featuredImagePresent: featuredImagePresent
       ?? (Boolean(featuredImageUrl) || (featuredImageId !== null && featuredImageId > 0)),
   };
@@ -641,26 +653,28 @@ export function createGlwDraftExecutionService(input: {
 
     const timestamp = now();
     if (result.kind === "complete") {
+      const contentReady = Boolean(result.generatedDraft && !result.wordpressObjectId);
       return input.repository.update(jobId, {
-        status: "COMPLETE",
+        status: contentReady ? "CONTENT_READY" : "COMPLETE",
         externalExecutionId: result.executionId,
         wordpressObjectId: result.wordpressObjectId,
         wordpressUrl: result.wordpressUrl,
         wordpressStatus: result.wordpressStatus,
+        generatedDraft: result.generatedDraft ?? existing.generatedDraft,
         requestedPublicationMode: result.requestedPublicationMode ?? "draft",
         disposition: result.disposition ?? null,
-        qaStatus: result.qaStatus ?? "COMPLETE",
+        qaStatus: result.qaStatus ?? (contentReady ? "CONTENT_READY" : "COMPLETE"),
         qaChecks: result.qaChecks ?? null,
         qaFailureReasons: result.qaFailureReasons ?? null,
-        title: result.pageTitle ?? existing.title,
-        seoTitle: result.seoTitle ?? existing.seoTitle,
-        focusKeyphrase: result.focusKeyphrase ?? null,
-        wordCount: result.wordCount ?? null,
+        title: result.pageTitle ?? result.generatedDraft?.title ?? existing.title,
+        seoTitle: result.seoTitle ?? result.generatedDraft?.seoTitle ?? existing.seoTitle,
+        focusKeyphrase: result.focusKeyphrase ?? result.generatedDraft?.focusKeyphrase ?? null,
+        wordCount: result.wordCount ?? countHtmlWords(result.generatedDraft?.contentHtml) ?? null,
         featuredImagePresent: result.featuredImagePresent ?? null,
         errorCode: null,
         errorMessage: null,
         updatedAt: timestamp,
-        completedAt: timestamp,
+        completedAt: contentReady ? null : timestamp,
       });
     }
 
@@ -763,7 +777,7 @@ export function createGlwDraftExecutionService(input: {
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
-      if (current.status === "COMPLETE" || current.status === "FAILED") return current;
+      if (current.status === "COMPLETE" || current.status === "FAILED" || current.status === "CONTENT_READY") return current;
       if (!current.externalExecutionId) {
         throw new GlwExecutionResultError("Tracked GLW job has no n8n execution identity.");
       }
@@ -815,6 +829,7 @@ export function createGlwDraftExecutionService(input: {
         wordpressObjectId: null,
         wordpressUrl: null,
         wordpressStatus: null,
+        generatedDraft: null,
         errorCode: null,
         errorMessage: null,
         requestedPublicationMode: "draft",
