@@ -7,6 +7,7 @@ import type { SiteConfiguration } from "./types";
 type WordPressPage = {
   id?: number;
   slug?: string;
+  parent?: number;
   status?: string;
   link?: string;
 };
@@ -80,6 +81,14 @@ function normalizeObjectId(value: string): number | null {
     : null;
 }
 
+function normalizeParentId(value: number | null | undefined): number | null {
+  return typeof value === "number"
+    && Number.isSafeInteger(value)
+    && value > 0
+    ? value
+    : null;
+}
+
 function createAuthorizationHeader(
   username: string,
   applicationPassword: string,
@@ -101,6 +110,7 @@ function isWordPressPage(value: unknown): value is WordPressPage {
 function exactPageFromBody(
   body: unknown,
   expectedSlug: string,
+  expectedParentId: number | null,
 ): WordPressPage | null {
   if (!Array.isArray(body)) {
     return null;
@@ -113,7 +123,12 @@ function exactPageFromBody(
         typeof candidate.slug === "string"
           ? candidate.slug
           : "",
-      ) === expectedSlug,
+      ) === expectedSlug
+      && (
+        expectedParentId === null
+          ? true
+          : candidate.parent === expectedParentId
+      ),
   );
 
   return exact.length === 1
@@ -211,6 +226,7 @@ export async function writeGenesisWordPressDraft(
   const slug = normalizeSlug(input.artifact.slug);
   const title = input.artifact.title.trim();
   const contentHtml = input.artifact.contentHtml.trim();
+  const parentId = normalizeParentId(input.artifact.parentId);
 
   if (!slug || !title || !contentHtml) {
     return {
@@ -218,6 +234,15 @@ export async function writeGenesisWordPressDraft(
       state: "invalid_target",
       message:
         "Genesis requires a non-empty title, content artifact, and canonical target slug.",
+    };
+  }
+
+  if (input.artifact.parentId != null && parentId === null) {
+    return {
+      ok: false,
+      state: "invalid_target",
+      message:
+        "Genesis requires an exact positive WordPress parent ID when hierarchy authority is supplied.",
     };
   }
 
@@ -231,8 +256,12 @@ export async function writeGenesisWordPressDraft(
     context: "edit",
     status: "publish,draft,pending,private,future",
     per_page: "100",
-    _fields: "id,slug,status,link",
+    _fields: "id,slug,parent,status,link",
   });
+
+  if (parentId !== null) {
+    lookupQuery.set("parent", String(parentId));
+  }
 
   const lookup = await readJson(
     `${apiBaseUrl}/pages?${lookupQuery.toString()}`,
@@ -251,6 +280,7 @@ export async function writeGenesisWordPressDraft(
   const exactExisting = exactPageFromBody(
     lookup.body,
     slug,
+    parentId,
   );
 
   let writeUrl: string;
@@ -264,7 +294,7 @@ export async function writeGenesisWordPressDraft(
           : "collision",
         message: exactExisting.status === "publish"
           ? "The canonical WordPress target is already published. Genesis will not overwrite it."
-          : "The canonical WordPress target already exists. Genesis will not create a duplicate or adopt it automatically.",
+          : "The canonical WordPress target already exists beneath the authorized parent. Genesis will not create a duplicate or adopt it automatically.",
       };
     }
 
@@ -284,7 +314,7 @@ export async function writeGenesisWordPressDraft(
     }
 
     const objectLookup = await readJson(
-      `${apiBaseUrl}/pages/${wordpressObjectId}?context=edit&_fields=id,slug,status,link`,
+      `${apiBaseUrl}/pages/${wordpressObjectId}?context=edit&_fields=id,slug,parent,status,link`,
       authorization,
     );
 
@@ -350,6 +380,15 @@ export async function writeGenesisWordPressDraft(
       };
     }
 
+    if (parentId !== null && current.parent !== parentId) {
+      return {
+        ok: false,
+        state: "identity_mismatch",
+        message:
+          "The exact WordPress object ID is not beneath the authorized canonical parent. Genesis will not silently re-parent it.",
+      };
+    }
+
     if (
       exactExisting?.id
       && exactExisting.id !== wordpressObjectId
@@ -358,7 +397,7 @@ export async function writeGenesisWordPressDraft(
         ok: false,
         state: "collision",
         message:
-          "Another WordPress object already occupies the canonical target slug.",
+          "Another WordPress object already occupies the canonical target beneath the authorized parent.",
       };
     }
 
@@ -378,12 +417,8 @@ export async function writeGenesisWordPressDraft(
     body.excerpt = excerpt;
   }
 
-  if (
-    typeof input.artifact.parentId === "number"
-    && Number.isSafeInteger(input.artifact.parentId)
-    && input.artifact.parentId > 0
-  ) {
-    body.parent = input.artifact.parentId;
+  if (parentId !== null) {
+    body.parent = parentId;
   }
 
   let writeResponse: Response;
@@ -440,12 +475,13 @@ export async function writeGenesisWordPressDraft(
         ? written.slug
         : "",
     ) !== slug
+    || (parentId !== null && written.parent !== parentId)
   ) {
     return {
       ok: false,
       state: "write_failed",
       message:
-        "WordPress did not return a confirmed exact draft identity.",
+        "WordPress did not return a confirmed exact draft identity beneath the authorized parent.",
     };
   }
 
