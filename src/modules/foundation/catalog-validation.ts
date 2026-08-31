@@ -97,9 +97,11 @@ export function validateUpdateProductInput(
     issues.push({ field: "productId", message: "Product ID is immutable." });
   }
 
+  const patchRecord = patch as UpdateProductInput & { organizationId?: string };
+
   if (
-    Object.prototype.hasOwnProperty.call(patch, "organizationId") &&
-    patch.organizationId !== existing.organizationId
+    Object.prototype.hasOwnProperty.call(patchRecord, "organizationId") &&
+    patchRecord.organizationId !== existing.organizationId
   ) {
     issues.push({ field: "organizationId", message: "Organization reassignment is not allowed." });
   }

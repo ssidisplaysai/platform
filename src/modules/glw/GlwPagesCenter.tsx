@@ -67,7 +67,7 @@ export function GlwPagesCenter({
     adaptSiteForGeneration(
       site,
       profiles.filter(
-        (profile) => profile.siteId === site.siteId,
+        (profile) => profile.assignedSiteIds.includes(site.siteId),
       ).length,
     ),
   );

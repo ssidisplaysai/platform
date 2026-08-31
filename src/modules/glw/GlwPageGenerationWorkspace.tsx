@@ -907,7 +907,7 @@ export function GlwPageGenerationWorkspace({
           Operation
           <select
             aria-label="Generation operation"
-            value={operation}
+            value={operation ?? ""}
             onChange={(event) => {
               const plannedOperation = event.target.value as GlwLocalPlannedOperation;
               setForm((current) => current ? {

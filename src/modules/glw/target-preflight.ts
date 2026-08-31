@@ -320,6 +320,8 @@ export async function readGlwTargetPreflight(input: {
     return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
   }
 
+  const wordpressReadAuthority = input.wordpressReadAuthority;
+
   const readPages = async (
     slug: string,
     parent: string,
@@ -336,7 +338,7 @@ export async function readGlwTargetPreflight(input: {
       _fields: "id,slug,parent,status,link,title",
     });
 
-    const response = await input.wordpressReadAuthority.getJson({
+    const response = await wordpressReadAuthority.getJson({
       path: "/pages",
       query,
     });

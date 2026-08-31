@@ -1,4 +1,4 @@
-﻿import {
+import {
   createAuthenticatedWordPressReadAuthority,
   type AuthenticatedWordPressGetFetcher,
   type AuthenticatedWordPressReadConfiguration,
@@ -23,7 +23,7 @@ export type AuthenticatedWordPressReadReason =
   | "IDENTITY_MISMATCH";
 
 export type AuthenticatedWordPressTargetReadResult = {
-  preflight: GlwTargetPreflightResult & {
+  preflight: Omit<GlwTargetPreflightResult, "state"> & {
     state: GlwTargetPreflightResult["state"] | "BLOCKED";
   };
   reason: AuthenticatedWordPressReadReason;

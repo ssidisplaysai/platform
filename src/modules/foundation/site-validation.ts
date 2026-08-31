@@ -71,9 +71,11 @@ export function validateUpdateSiteInput(
     issues.push({ field: "siteId", message: "Site ID is immutable." });
   }
 
+  const patchRecord = patch as UpdateSiteInput & { organizationId?: string };
+
   if (
-    Object.prototype.hasOwnProperty.call(patch, "organizationId") &&
-    patch.organizationId !== existing.organizationId
+    Object.prototype.hasOwnProperty.call(patchRecord, "organizationId") &&
+    patchRecord.organizationId !== existing.organizationId
   ) {
     issues.push({ field: "organizationId", message: "Organization reassignment is not allowed." });
   }

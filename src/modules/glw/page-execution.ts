@@ -711,6 +711,7 @@ export function createGlwDraftExecutionService(input: {
       if (!current.dispatchedAt) {
         throw new GlwExecutionResultError("Tracked GLW job has no dispatch boundary.");
       }
+      const dispatchedAt = current.dispatchedAt;
 
       current = await input.repository.update(jobId, {
         status: "DISCOVERING_EXECUTION",
@@ -720,7 +721,7 @@ export function createGlwDraftExecutionService(input: {
         for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
           const executionIds = [...new Set(await reader.findExecutionIds({
             jobId: current.correlationId,
-            startedAt: current.dispatchedAt,
+            startedAt: dispatchedAt,
           }))];
           if (executionIds.length > 1) {
             const timestamp = now();
@@ -781,10 +782,11 @@ export function createGlwDraftExecutionService(input: {
       if (!current.externalExecutionId) {
         throw new GlwExecutionResultError("Tracked GLW job has no n8n execution identity.");
       }
+      const externalExecutionId = current.externalExecutionId;
 
       for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const snapshot = await reader.readExecution(current.externalExecutionId);
-        if (snapshot.executionId !== current.externalExecutionId) {
+        const snapshot = await reader.readExecution(externalExecutionId);
+        if (snapshot.executionId !== externalExecutionId) {
           throw new GlwExecutionResultError("n8n execution reader returned a mismatched identity.");
         }
         const terminal = normalizeGlwN8nExecutionResult({ snapshot, expectedJobId: current.jobId });
