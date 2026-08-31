@@ -4,6 +4,7 @@ import { listIntegrationProfiles } from "@/modules/foundation/integration-profil
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import { resolveGlwCampaignGenerationContext } from "@/modules/glw/campaign-generation-context";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
@@ -48,6 +49,21 @@ export async function POST(request: NextRequest, context: Context) {
   form.publicationIntent = "draft";
   form.plannedOperation = "CREATE_STATE";
 
+  const generationContext = resolveGlwCampaignGenerationContext({
+    campaignId: campaign.campaignId,
+    referencePage: true,
+  });
+
+  if (!generationContext) {
+    return NextResponse.json(
+      { error: "Approved campaign generation guidance could not be resolved." },
+      { status: 409 },
+    );
+  }
+
+  form.additionalInstructions = generationContext.additionalInstructions;
+  form.imageDirection = generationContext.imageDirection;
+
   const generationResponse = await fetch(`${request.nextUrl.origin}/api/glw/page-generation`, {
     method: "POST",
     headers: {
@@ -56,15 +72,7 @@ export async function POST(request: NextRequest, context: Context) {
       "x-gcp-organization-id": campaign.organizationId,
       "x-gcp-site-id": campaign.siteId,
     },
-    body: JSON.stringify({
-      form,
-      campaignContext: {
-        campaignId: campaign.campaignId,
-        referencePage: true,
-        instructions: pack.instructions,
-        referenceIds: pack.references.map((reference) => reference.referenceId),
-      },
-    }),
+    body: JSON.stringify({ form }),
     cache: "no-store",
   });
   const payload = await generationResponse.json().catch(() => ({ error: "Reference generation returned malformed JSON." }));

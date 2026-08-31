@@ -62,6 +62,7 @@ function buildGenesisImagePrompt(input: {
     `Photorealistic commercial installation featuring ${input.request.productTopic}.`,
     location ? `The setting should feel appropriate for a commercial project in ${location}.` : "Use a premium commercial architectural environment.",
     `Create the image for ${input.siteName} as a polished website hero visual.`,
+    input.request.imageDirection?.trim() || "",
     "Show the product clearly and realistically with professional lighting, believable materials, correct scale, and useful negative space.",
   ].join(" ");
 }

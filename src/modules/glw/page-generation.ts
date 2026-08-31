@@ -275,6 +275,8 @@ export type GlwGenerationRequestInput = {
   publicationIntent: GlwPublicationIntent;
   plannedOperation?: GlwLocalPlannedOperation;
   wordpressObjectId?: string | null;
+  additionalInstructions?: string;
+  imageDirection?: string;
 };
 
 export type GlwGenerationRequest = GlwGenerationRequestInput & {
