@@ -78,17 +78,8 @@ async function finalizeContentReadyExecution(input: {
     excerpt: input.job.generatedDraft.excerpt,
   };
   const result = operation === "CREATE"
-    ? await writeGenesisWordPressDraft({
-        operation: "CREATE",
-        site: input.siteRecord,
-        artifact,
-      })
-    : await writeGenesisWordPressDraft({
-        operation: "UPDATE",
-        site: input.siteRecord,
-        wordpressObjectId: input.request.wordpressObjectId!,
-        artifact,
-      });
+    ? await writeGenesisWordPressDraft({ operation: "CREATE", site: input.siteRecord, artifact })
+    : await writeGenesisWordPressDraft({ operation: "UPDATE", site: input.siteRecord, wordpressObjectId: input.request.wordpressObjectId!, artifact });
 
   const timestamp = new Date().toISOString();
   if (!result.ok) {
@@ -115,6 +106,38 @@ async function finalizeContentReadyExecution(input: {
   });
 }
 
+async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organizationId: string) {
+  const siteRecord = getSiteById(form.siteId);
+  const productRecord = getProductById(form.productId);
+  if (!siteRecord || !productRecord) return { error: "Configured site and product are required.", status: 400 } as const;
+  if (siteRecord.organizationId !== organizationId) return { error: "Forbidden", status: 403 } as const;
+
+  const profileCount = listIntegrationProfiles({ organizationId: siteRecord.organizationId })
+    .filter((profile) => profile.assignedSiteIds.includes(siteRecord.siteId)).length;
+  const site = adaptSiteForGeneration(siteRecord, profileCount);
+  const product = adaptProductForGeneration(productRecord, site.siteId);
+  const preview = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
+  if (!preview.validation.valid || !preview.request) return { issues: preview.validation.issues, status: 400 } as const;
+  if (preview.request.publicationIntent !== "draft") return { error: "Public publish is blocked. Select draft intent.", status: 403 } as const;
+  return { siteRecord, request: preview.request } as const;
+}
+
+async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
+  const target = await readGlwTargetPreflight({
+    request,
+    wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+    localExecutions: await glwPageExecutionRepository.list(),
+  });
+  const availability = resolveGlwTargetMutationAvailability(target);
+  if (request.plannedOperation.startsWith("CREATE_") && !availability.createAvailable) {
+    return { error: `An existing WordPress page was found for this canonical target${target.wordpressObjectId ? ` (ID ${target.wordpressObjectId})` : ""}. Creation was stopped before any WordPress changes.`, code: "CREATE_COLLISION", target, status: 409 } as const;
+  }
+  if (request.plannedOperation.startsWith("UPDATE_") && (!availability.updateAvailable || request.wordpressObjectId !== target.wordpressObjectId)) {
+    return { error: target.state === "EXISTS_PUBLISHED" ? "Published WordPress targets cannot be updated under the draft-only release." : "Exact draft update authority could not be verified.", code: "UPDATE_AUTHORITY_REQUIRED", target, status: 409 } as const;
+  }
+  return { ok: true } as const;
+}
+
 export async function GET(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:read");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -123,25 +146,15 @@ export async function GET(request: NextRequest) {
   const jobId = request.nextUrl.searchParams.get("jobId")?.trim() ?? "";
   if (!jobId) return NextResponse.json({ error: "jobId is required." }, { status: 400 });
   const job = await glwPageExecutionRepository.getById(jobId);
-  if (job && job.organizationId !== scope.organizationId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  if (job && job.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (!job) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
   if (request.nextUrl.searchParams.get("refresh") === "true" && !isTerminal(job.status)) {
     try {
       const refreshedJob = await recoverExecution(job);
-      if (refreshedJob.status !== "CONTENT_READY") {
-        return NextResponse.json({ job: refreshedJob });
-      }
-      return NextResponse.json({
-        job: refreshedJob,
-        recoveryError: "Generated content is ready, but WordPress mutation must be finalized by the originating generation request.",
-      }, { status: 202 });
+      if (refreshedJob.status !== "CONTENT_READY") return NextResponse.json({ job: refreshedJob });
+      return NextResponse.json({ job: refreshedJob, recoveryError: "Generated content is ready. Use Continue Existing Job to perform the authorized Genesis WordPress draft mutation." }, { status: 202 });
     } catch (error) {
-      return NextResponse.json({
-        job,
-        recoveryError: error instanceof Error ? error.message : "Execution recovery failed.",
-      }, { status: 202 });
+      return NextResponse.json({ job, recoveryError: error instanceof Error ? error.message : "Execution recovery failed." }, { status: 202 });
     }
   }
   return NextResponse.json({ job });
@@ -152,73 +165,47 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const scope = resolveRequestScope(request);
   if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
-  const body = await request.json().catch(() => null) as { form?: GlwGenerationRequestInput } | null;
+  const body = await request.json().catch(() => null) as { form?: GlwGenerationRequestInput; action?: "continue"; jobId?: string } | null;
   if (!body?.form) return NextResponse.json({ error: "Generation request is required." }, { status: 400 });
 
-  const siteRecord = getSiteById(body.form.siteId);
-  const productRecord = getProductById(body.form.productId);
-  if (!siteRecord || !productRecord) {
-    return NextResponse.json({ error: "Configured site and product are required." }, { status: 400 });
-  }
-  if (siteRecord.organizationId !== scope.organizationId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const resolved = await resolveAuthorizedPreview(body.form, scope.organizationId);
+  if ("error" in resolved) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
+  if ("issues" in resolved) return NextResponse.json({ issues: resolved.issues }, { status: resolved.status });
+  const { siteRecord, request: generationRequest } = resolved;
+
+  if (body.action === "continue") {
+    const jobId = body.jobId?.trim() ?? "";
+    if (!jobId) return NextResponse.json({ error: "jobId is required to continue an existing job." }, { status: 400 });
+    const existing = await glwPageExecutionRepository.getById(jobId);
+    if (!existing) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+    if (existing.organizationId !== scope.organizationId || existing.siteId !== generationRequest.siteId || existing.productId !== generationRequest.productId || existing.slug !== generationRequest.slug) {
+      return NextResponse.json({ error: "Existing job does not match the current authorized generation target." }, { status: 409 });
+    }
+    if (existing.status === "COMPLETE" || existing.status === "FAILED") return NextResponse.json({ job: existing });
+    if (!existing.externalExecutionId) return NextResponse.json({ error: "Existing job has no external execution to recover." }, { status: 409 });
+
+    try {
+      const recovered = existing.status === "CONTENT_READY" ? existing : await recoverExecution(existing);
+      if (recovered.status !== "CONTENT_READY") return NextResponse.json({ job: recovered }, { status: 202 });
+      const authority = await verifyMutationAuthority(generationRequest, siteRecord);
+      if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
+      const job = await finalizeContentReadyExecution({ job: recovered, request: generationRequest, siteRecord });
+      return NextResponse.json({ job }, { status: job.status === "COMPLETE" || job.status === "FAILED" ? 200 : 202 });
+    } catch (error) {
+      return NextResponse.json({ job: existing, recoveryError: error instanceof Error ? error.message : "Execution continuation failed." }, { status: 202 });
+    }
   }
 
-  const profileCount = listIntegrationProfiles({ organizationId: siteRecord.organizationId })
-    .filter((profile) => profile.assignedSiteIds.includes(siteRecord.siteId)).length;
-  const site = adaptSiteForGeneration(siteRecord, profileCount);
-  const product = adaptProductForGeneration(productRecord, site.siteId);
-  const preview = buildLocalGlwGenerationPreview({ form: body.form, sites: [site], products: [product] });
-  if (!preview.validation.valid || !preview.request) {
-    return NextResponse.json({ issues: preview.validation.issues }, { status: 400 });
-  }
-  if (preview.request.publicationIntent !== "draft") {
-    return NextResponse.json({ error: "Public publish is blocked. Select draft intent." }, { status: 403 });
-  }
-
-  const target = await readGlwTargetPreflight({
-    request: preview.request,
-    wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
-    localExecutions: await glwPageExecutionRepository.list(),
-  });
-  const availability = resolveGlwTargetMutationAvailability(target);
-  if (preview.request.plannedOperation.startsWith("CREATE_") && !availability.createAvailable) {
-    return NextResponse.json({
-      error: `An existing WordPress page was found for this canonical target${target.wordpressObjectId ? ` (ID ${target.wordpressObjectId})` : ""}. Creation was stopped before any WordPress changes.`,
-      code: "CREATE_COLLISION",
-      target,
-    }, { status: 409 });
-  }
-  if (preview.request.plannedOperation.startsWith("UPDATE_") && (
-    !availability.updateAvailable
-    || preview.request.wordpressObjectId !== target.wordpressObjectId
-  )) {
-    return NextResponse.json({
-      error: target.state === "EXISTS_PUBLISHED"
-        ? "Published WordPress targets cannot be updated under the draft-only release."
-        : "Exact draft update authority could not be verified.",
-      code: "UPDATE_AUTHORITY_REQUIRED",
-      target,
-    }, { status: 409 });
-  }
+  const authority = await verifyMutationAuthority(generationRequest, siteRecord);
+  if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
 
   const configuration = getGlwN8nMcpConfigurationStatus();
-  if (!configuration.configured) {
-    return NextResponse.json({ error: "GLW n8n MCP execution is not configured.", configuration }, { status: 503 });
-  }
+  if (!configuration.configured) return NextResponse.json({ error: "GLW n8n MCP execution is not configured.", configuration }, { status: 503 });
 
   try {
-    const dispatchedJob = await service.execute(preview.request);
-    const recoveredJob = isTerminal(dispatchedJob.status)
-      ? dispatchedJob
-      : await recoverExecution(dispatchedJob);
-    const job = recoveredJob.status === "CONTENT_READY"
-      ? await finalizeContentReadyExecution({
-          job: recoveredJob,
-          request: preview.request,
-          siteRecord,
-        })
-      : recoveredJob;
+    const dispatchedJob = await service.execute(generationRequest);
+    const recoveredJob = isTerminal(dispatchedJob.status) ? dispatchedJob : await recoverExecution(dispatchedJob);
+    const job = recoveredJob.status === "CONTENT_READY" ? await finalizeContentReadyExecution({ job: recoveredJob, request: generationRequest, siteRecord }) : recoveredJob;
     return NextResponse.json({ job }, { status: job.status === "COMPLETE" || job.status === "FAILED" ? 200 : 202 });
   } catch (error) {
     const status = error instanceof GlwDraftOnlyExecutionError ? 403 : 500;
