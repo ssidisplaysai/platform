@@ -4,9 +4,9 @@ import { listIntegrationProfiles } from "@/modules/foundation/integration-profil
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
-import { getGlwCampaignState } from "@/modules/glw/us-state-authority";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest, context: Context) {
   const body = await request.json().catch(() => null) as { stateCode?: string } | null;
   const stateCode = body?.stateCode?.trim().toUpperCase() ?? "";
   if (!campaign.stateCodes.includes(stateCode)) return NextResponse.json({ error: "Select a state included in this campaign." }, { status: 400 });
-  const state = getGlwCampaignState(stateCode);
+  const state = GLW_CAMPAIGN_US_STATES.find((candidate) => candidate.code === stateCode) ?? null;
   if (!state) return NextResponse.json({ error: "Campaign state is not recognized." }, { status: 400 });
 
   const pack = getGlwCampaignKnowledgePack(campaignId);
@@ -37,9 +37,9 @@ export async function POST(request: NextRequest, context: Context) {
   const site = adaptSiteForGeneration(siteRecord, profileCount);
   const product = adaptProductForGeneration(productRecord, site.siteId);
 
-  // The existing generation authority currently recognizes the original GLW state catalog.
-  // California is supported and is the first campaign reference target. The campaign's
-  // additive 50-state authority remains separate until production campaign dispatch is wired.
+  // Reference generation deliberately uses the existing draft-only page-generation authority.
+  // California is the first reference target because it is already part of the certified page
+  // geography authority; the 50-state campaign geography remains additive until dispatch wiring.
   const form = createDefaultGlwGenerationInput(site, product, "state_service", stateCode, "");
   const title = `${product.topic} in ${state.name}`;
   form.title = title;
@@ -48,8 +48,7 @@ export async function POST(request: NextRequest, context: Context) {
   form.publicationIntent = "draft";
   form.plannedOperation = "CREATE_STATE";
 
-  const origin = request.nextUrl.origin;
-  const generationResponse = await fetch(`${origin}/api/glw/page-generation`, {
+  const generationResponse = await fetch(`${request.nextUrl.origin}/api/glw/page-generation`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
