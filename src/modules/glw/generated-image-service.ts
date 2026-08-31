@@ -17,7 +17,6 @@ export type GenesisGeneratedImageResult =
 type OpenAiImageGenerationResponse = {
   data?: Array<{
     b64_json?: string;
-    url?: string;
   }>;
 };
 
@@ -34,7 +33,7 @@ function resolveApiKey(): string | null {
 function resolveModel(): string {
   return (
     process.env.GENESIS_OPENAI_IMAGE_MODEL
-    ?? "gpt-image-1-mini"
+    ?? "gpt-image-2"
   ).trim();
 }
 
@@ -124,60 +123,18 @@ export async function generateGenesisFeaturedImage(input: {
     };
   }
 
-  const first = body.data?.[0];
-  const base64 = first?.b64_json?.trim();
-
-  if (base64) {
-    try {
-      const bytes = Buffer.from(base64, "base64");
-      if (bytes.length === 0) throw new Error("empty image");
-      return {
-        ok: true,
-        image: {
-          bytes,
-          mimeType: "image/png",
-          fileExtension: "png",
-        },
-      };
-    } catch {
-      return {
-        ok: false,
-        state: "invalid_response",
-        message: "The image-generation provider returned invalid base64 image data.",
-      };
-    }
-  }
-
-  const remoteUrl = first?.url?.trim();
-  if (!remoteUrl) {
+  const base64 = body.data?.[0]?.b64_json?.trim();
+  if (!base64) {
     return {
       ok: false,
       state: "invalid_response",
-      message: "The image-generation provider returned no usable image payload.",
+      message: "The image-generation provider returned no usable base64 image payload.",
     };
   }
 
   try {
-    const imageResponse = await fetch(remoteUrl, {
-      method: "GET",
-      cache: "no-store",
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!imageResponse.ok) {
-      return {
-        ok: false,
-        state: "invalid_response",
-        message: `Generated image download failed with HTTP ${imageResponse.status}.`,
-      };
-    }
-    const bytes = Buffer.from(await imageResponse.arrayBuffer());
-    if (bytes.length === 0) {
-      return {
-        ok: false,
-        state: "invalid_response",
-        message: "Generated image download returned an empty payload.",
-      };
-    }
+    const bytes = Buffer.from(base64, "base64");
+    if (bytes.length === 0) throw new Error("empty image");
     return {
       ok: true,
       image: {
@@ -190,7 +147,7 @@ export async function generateGenesisFeaturedImage(input: {
     return {
       ok: false,
       state: "invalid_response",
-      message: "Genesis could not download the generated image payload.",
+      message: "The image-generation provider returned invalid base64 image data.",
     };
   }
 }
