@@ -51,23 +51,10 @@ function includesExpected(text: string, value: string | null | undefined): boole
 function collectTextIntegrityMarkers(text: string): string[] {
   const markers = new Set<string>();
 
-  // A comma, semicolon, exclamation point, or question mark followed directly
-  // by a letter is malformed prose. Periods are restricted to uppercase starts
-  // so ordinary hostnames such as ssidisplays.com remain valid.
+  // These are syntax-level spacing defects rather than vocabulary guesses.
+  // Keep periods restricted to uppercase starts so hostnames such as
+  // ssidisplays.com remain valid while sentence joins such as matters.Next fail.
   for (const value of text.match(/(?:[!?;,][A-Za-z]|\.[A-Z])/g) ?? []) markers.add(value);
-
-  // Detect common word-boundary loss generically. These patterns target a
-  // closed set of high-confidence function words whose accidental attachment
-  // to the neighboring token is not normal English prose. They catch defects
-  // such as forsuperior, glasswalls, windowsinto, inreduced, and stepof without
-  // maintaining a page- or city-specific list of generated bad strings.
-  const joinedFunctionWordPatterns = [
-    /\b(?:a|an|and|as|at|by|for|from|in|into|of|on|or|the|to|with)[a-z]{3,}\b/gi,
-    /\b[a-z]{4,}(?:and|for|from|into|of|the|to|with)\b/gi,
-  ];
-  for (const pattern of joinedFunctionWordPatterns) {
-    for (const value of text.match(pattern) ?? []) markers.add(value);
-  }
 
   return [...markers];
 }
