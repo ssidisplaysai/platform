@@ -8,6 +8,30 @@ export type GlwTargetPreflightState =
   | "EXISTS_PUBLISHED"
   | "UNKNOWN";
 
+export type GlwHierarchyNodeState =
+  | "ABSENT"
+  | "EXISTS_DRAFT"
+  | "EXISTS_PUBLISHED"
+  | "PARENT_ABSENT"
+  | "AMBIGUOUS"
+  | "UNSUPPORTED_STATUS"
+  | "UNVERIFIED";
+
+export type GlwHierarchyNodePreflight = {
+  slug: string;
+  parentId: string | null;
+  state: GlwHierarchyNodeState;
+  wordpressObjectId: string | null;
+  wordpressStatus: string | null;
+};
+
+export type GlwHierarchyPreflight = {
+  productParent: GlwHierarchyNodePreflight;
+  stateParent: GlwHierarchyNodePreflight;
+  leaf: GlwHierarchyNodePreflight;
+  generationAvailable: boolean;
+};
+
 export type GlwCanonicalTargetIdentity = {
   applicationPath: string;
   canonicalPath: string;
@@ -25,6 +49,7 @@ export type GlwTargetPreflightResult = GlwCanonicalTargetIdentity & {
   wordpressUrl: string | null;
   source: "WORDPRESS_READ" | "LOCAL_EXECUTION" | "UNVERIFIED";
   confidence: "AUTHORITATIVE" | "LOCAL_DURABLE" | "UNVERIFIED";
+  hierarchy?: GlwHierarchyPreflight;
 };
 
 export type GlwTargetMutationAvailability = {
@@ -100,19 +125,21 @@ export function resolveGlwTargetMutationAvailability(
   }
   if (preflight.state === "ABSENT") {
     return {
-      createAvailable: true,
+      createAvailable: preflight.hierarchy?.generationAvailable ?? true,
       updateAvailable: false,
-      plannedOperation: "CREATE_CITY",
+      plannedOperation: preflight.hierarchy?.generationAvailable === false ? null : "CREATE_CITY",
       wordpressObjectId: null,
-      message: "No canonical WordPress target exists. Draft creation is available.",
+      message: preflight.hierarchy?.generationAvailable === false
+        ? "The canonical target is absent, but its WordPress hierarchy is not safe for automatic generation."
+        : "No canonical WordPress target exists. Draft creation is available.",
     };
   }
   return {
-    createAvailable: true,
+    createAvailable: false,
     updateAvailable: false,
-    plannedOperation: "CREATE_CITY",
+    plannedOperation: null,
     wordpressObjectId: null,
-    message: "Target existence is unknown and will be verified authoritatively before creation.",
+    message: "Target or hierarchy identity is not authoritatively resolved. Mutation is unavailable until preflight succeeds.",
   };
 }
 
@@ -125,6 +152,7 @@ export function resolveGlwTargetPreflight(input: {
   productId: string;
   stateName: string;
   cityName: string;
+  hierarchy?: GlwHierarchyPreflight;
 }): GlwTargetPreflightResult {
   const page = input.wordpressPages?.find((candidate) =>
     String(candidate.slug ?? "") === input.identity.canonicalSlug
@@ -140,6 +168,7 @@ export function resolveGlwTargetPreflight(input: {
       wordpressUrl: page.link ?? null,
       source: "WORDPRESS_READ",
       confidence: "AUTHORITATIVE",
+      hierarchy: input.hierarchy,
     };
   }
 
@@ -161,6 +190,7 @@ export function resolveGlwTargetPreflight(input: {
       wordpressUrl: local.wordpressUrl,
       source: "LOCAL_EXECUTION",
       confidence: "LOCAL_DURABLE",
+      hierarchy: input.hierarchy,
     };
   }
 
@@ -173,7 +203,97 @@ export function resolveGlwTargetPreflight(input: {
     wordpressUrl: null,
     source: input.inventoryComplete ? "WORDPRESS_READ" : "UNVERIFIED",
     confidence: input.inventoryComplete ? "AUTHORITATIVE" : "UNVERIFIED",
+    hierarchy: input.hierarchy,
   };
+}
+
+function unresolvedNode(slug: string, parentId: string | null): GlwHierarchyNodePreflight {
+  return {
+    slug,
+    parentId,
+    state: "UNVERIFIED",
+    wordpressObjectId: null,
+    wordpressStatus: null,
+  };
+}
+
+function parentAbsentNode(slug: string): GlwHierarchyNodePreflight {
+  return {
+    slug,
+    parentId: null,
+    state: "PARENT_ABSENT",
+    wordpressObjectId: null,
+    wordpressStatus: null,
+  };
+}
+
+function classifyNode(input: {
+  slug: string;
+  parentId: string;
+  pages: readonly GlwWordPressTargetPage[] | null;
+  authoritative: boolean;
+}): GlwHierarchyNodePreflight {
+  if (!input.authoritative || !input.pages) {
+    return unresolvedNode(input.slug, input.parentId);
+  }
+
+  const exact = input.pages.filter((candidate) =>
+    String(candidate.slug ?? "").trim().toLowerCase() === input.slug
+    && String(candidate.parent ?? "") === input.parentId,
+  );
+
+  if (exact.length === 0) {
+    return {
+      slug: input.slug,
+      parentId: input.parentId,
+      state: "ABSENT",
+      wordpressObjectId: null,
+      wordpressStatus: null,
+    };
+  }
+
+  if (exact.length !== 1 || !exact[0]?.id) {
+    return {
+      slug: input.slug,
+      parentId: input.parentId,
+      state: "AMBIGUOUS",
+      wordpressObjectId: null,
+      wordpressStatus: null,
+    };
+  }
+
+  const page = exact[0];
+  const status = page.status ?? null;
+  if (status !== "draft" && status !== "publish") {
+    return {
+      slug: input.slug,
+      parentId: input.parentId,
+      state: "UNSUPPORTED_STATUS",
+      wordpressObjectId: String(page.id),
+      wordpressStatus: status,
+    };
+  }
+
+  return {
+    slug: input.slug,
+    parentId: input.parentId,
+    state: status === "publish" ? "EXISTS_PUBLISHED" : "EXISTS_DRAFT",
+    wordpressObjectId: String(page.id),
+    wordpressStatus: status,
+  };
+}
+
+function hierarchyIsSafeForGeneration(hierarchy: GlwHierarchyPreflight): boolean {
+  const unsafeStates: readonly GlwHierarchyNodeState[] = [
+    "AMBIGUOUS",
+    "UNSUPPORTED_STATUS",
+    "UNVERIFIED",
+  ];
+  return ![
+    hierarchy.productParent.state,
+    hierarchy.stateParent.state,
+    hierarchy.leaf.state,
+  ].some((state) => unsafeStates.includes(state));
 }
 
 export async function readGlwTargetPreflight(input: {
@@ -212,7 +332,7 @@ export async function readGlwTargetPreflight(input: {
       parent,
       context: "edit",
       status: "publish,draft,pending,private,future",
-      per_page: "2",
+      per_page: "100",
       _fields: "id,slug,parent,status,link,title",
     });
 
@@ -234,77 +354,109 @@ export async function readGlwTargetPreflight(input: {
     };
   };
 
-  const productRead = await readPages(
-    initialIdentity.canonicalProductSlug,
-    "0",
-  );
+  const productRead = await readPages(initialIdentity.canonicalProductSlug, "0");
+  const productParent = classifyNode({
+    slug: initialIdentity.canonicalProductSlug,
+    parentId: "0",
+    ...productRead,
+  });
 
-  if (!productRead.authoritative) {
-    return resolveGlwTargetPreflight({
-      identity: initialIdentity,
-      ...common,
-    });
+  if (productParent.state === "UNVERIFIED" || productParent.state === "AMBIGUOUS" || productParent.state === "UNSUPPORTED_STATUS") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent: unresolvedNode(state.slug, null),
+      leaf: unresolvedNode(initialIdentity.canonicalSlug, null),
+      generationAvailable: false,
+    };
+    return resolveGlwTargetPreflight({ identity: initialIdentity, hierarchy, ...common });
   }
 
-  const productParentId = productRead.pages?.[0]?.id;
-
-  if (!productParentId) {
-    return resolveGlwTargetPreflight({
-      identity: initialIdentity,
-      wordpressPages: [],
-      inventoryComplete: true,
-      ...common,
-    });
-  }
-
-  const stateRead = await readPages(
-    state.slug,
-    String(productParentId),
-  );
-
-  if (!stateRead.authoritative) {
-    return resolveGlwTargetPreflight({
-      identity: initialIdentity,
-      ...common,
-    });
-  }
-
-  const stateParentId = stateRead.pages?.[0]?.id;
-
-  if (!stateParentId) {
+  if (productParent.state === "ABSENT") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent: parentAbsentNode(state.slug),
+      leaf: parentAbsentNode(initialIdentity.canonicalSlug),
+      generationAvailable: true,
+    };
     return resolveGlwTargetPreflight({
       identity: initialIdentity,
       wordpressPages: [],
       inventoryComplete: true,
+      hierarchy,
       ...common,
     });
   }
 
+  const productParentId = productParent.wordpressObjectId!;
+  const stateRead = await readPages(state.slug, productParentId);
+  const stateParent = classifyNode({
+    slug: state.slug,
+    parentId: productParentId,
+    ...stateRead,
+  });
+
+  if (stateParent.state === "UNVERIFIED" || stateParent.state === "AMBIGUOUS" || stateParent.state === "UNSUPPORTED_STATUS") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent,
+      leaf: unresolvedNode(initialIdentity.canonicalSlug, null),
+      generationAvailable: false,
+    };
+    return resolveGlwTargetPreflight({ identity: initialIdentity, hierarchy, ...common });
+  }
+
+  if (stateParent.state === "ABSENT") {
+    const hierarchy: GlwHierarchyPreflight = {
+      productParent,
+      stateParent,
+      leaf: parentAbsentNode(initialIdentity.canonicalSlug),
+      generationAvailable: true,
+    };
+    return resolveGlwTargetPreflight({
+      identity: initialIdentity,
+      wordpressPages: [],
+      inventoryComplete: true,
+      hierarchy,
+      ...common,
+    });
+  }
+
+  const stateParentId = stateParent.wordpressObjectId!;
   const identity = createGlwCanonicalTargetIdentity({
     productId: input.request.productId,
     productTopic: input.request.productTopic,
     stateCode: input.request.stateCode,
     citySlug: input.request.citySlug,
     applicationPath: input.request.canonicalPath,
-    canonicalParentId: String(stateParentId),
+    canonicalParentId: stateParentId,
   });
 
-  const targetRead = await readPages(
-    identity.canonicalSlug,
-    String(stateParentId),
-  );
+  const targetRead = await readPages(identity.canonicalSlug, stateParentId);
+  const leaf = classifyNode({
+    slug: identity.canonicalSlug,
+    parentId: stateParentId,
+    ...targetRead,
+  });
+  const hierarchyBase: GlwHierarchyPreflight = {
+    productParent,
+    stateParent,
+    leaf,
+    generationAvailable: true,
+  };
+  const hierarchy = {
+    ...hierarchyBase,
+    generationAvailable: hierarchyIsSafeForGeneration(hierarchyBase),
+  };
 
-  if (!targetRead.authoritative) {
-    return resolveGlwTargetPreflight({
-      identity,
-      ...common,
-    });
+  if (leaf.state === "UNVERIFIED" || leaf.state === "AMBIGUOUS" || leaf.state === "UNSUPPORTED_STATUS") {
+    return resolveGlwTargetPreflight({ identity, hierarchy, ...common });
   }
 
   return resolveGlwTargetPreflight({
     identity,
     wordpressPages: targetRead.pages,
     inventoryComplete: true,
+    hierarchy,
     ...common,
   });
 }
