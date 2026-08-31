@@ -190,6 +190,65 @@ export function GlwPageGenerationWorkspace({
     return () => controller.abort();
   }, [form?.siteId, form?.productId, form?.pageType, form?.stateCode, form?.citySlug, form?.slug, organizationId, requestRoles]);
 
+  useEffect(() => {
+    if (!form) return;
+
+    const controller = new AbortController();
+    const query = new URLSearchParams({
+      recoverable: "true",
+      siteId: form.siteId,
+      productId: form.productId,
+      slug: form.slug,
+    });
+
+    fetch(`/api/glw/page-generation?${query}`, {
+      headers: {
+        "x-gcp-roles": requestRoles.join(","),
+        "x-gcp-organization-id": organizationId,
+      },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const body = await response.json() as {
+          job?: GlwPageExecutionRecord | null;
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(
+            body.error ?? "Recoverable execution lookup failed.",
+          );
+        }
+
+        if (body.job) {
+          setExecution((current) =>
+            current?.jobId === body.job?.jobId
+              ? current
+              : body.job ?? current,
+          );
+          setExecutionMessage(
+            "Existing generation job restored. Continue the existing job instead of generating again.",
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return;
+
+        setExecutionMessage(
+          error instanceof Error
+            ? error.message
+            : "Recoverable execution lookup failed.",
+        );
+      });
+
+    return () => controller.abort();
+  }, [
+    form?.siteId,
+    form?.productId,
+    form?.slug,
+    organizationId,
+    requestRoles,
+  ]);
   function resetFromSelection(input: {
     site: GlwGenerationSite;
     product: GlwGenerationProduct;
