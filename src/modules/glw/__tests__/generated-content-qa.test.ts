@@ -43,7 +43,7 @@ describe("evaluateGlwGeneratedContentQa", () => {
   test("fails closed on bare mojibake lead bytes", () => {
     const cleanSentence = "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
     const result = evaluateGlwGeneratedContentQa({
-      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>Whether youâre planning a display, ${cleanSentence.repeat(170)}</p>`),
+      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>Whether youÃ¢re planning a display, ${cleanSentence.repeat(170)}</p>`),
       request,
       siteDomain: "ssidisplays.com",
       minimumWordCount: 1500,
@@ -124,6 +124,7 @@ describe("evaluateGlwGeneratedContentQa", () => {
 
     expect(result.ok).toBe(false);
     expect(result.checks.textIntegrity.ok).toBe(false);
-    expect(result.failureReasons.textIntegrity).toMatch(/,P|forsuperior|glasswalls|windowsinto|inreduced|stepof/i);
+    expect(result.checks.textIntegrity.message).toContain(",P");
+    expect(result.failureReasons.textIntegrity).toContain(",P");
   });
 });
