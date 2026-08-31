@@ -246,17 +246,54 @@ export function GlwPageGenerationWorkspace({
     }
   }
 
-  async function refreshExecution() {
-    if (!execution) return;
-    const response = await fetch(`/api/glw/page-generation?jobId=${encodeURIComponent(execution.jobId)}`, {
-      headers: {
-        "x-gcp-roles": requestRoles.join(","),
-        "x-gcp-organization-id": organizationId,
-      },
-    });
-    const body = await response.json() as { job?: GlwPageExecutionRecord; error?: string };
-    if (response.ok && body.job) setExecution(body.job);
-    else setExecutionMessage(body.error ?? "Unable to refresh the GLW execution.");
+  async function continueExistingExecution() {
+    if (!execution || !form) return;
+
+    setExecuting(true);
+    setExecutionMessage(null);
+
+    try {
+      const response = await fetch("/api/glw/page-generation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-gcp-roles": requestRoles.join(","),
+          "x-gcp-organization-id": organizationId,
+        },
+        body: JSON.stringify({
+          action: "continue",
+          jobId: execution.jobId,
+          form,
+        }),
+      });
+
+      const body = await response.json() as {
+        job?: GlwPageExecutionRecord;
+        error?: string;
+        recoveryError?: string;
+      };
+
+      if (body.job) {
+        setExecution(body.job);
+      }
+
+      if (!response.ok) {
+        setExecutionMessage(
+          body.error ??
+          body.recoveryError ??
+          "Unable to continue the existing GLW execution.",
+        );
+        return;
+      }
+
+      if (body.recoveryError) {
+        setExecutionMessage(body.recoveryError);
+      }
+    } catch {
+      setExecutionMessage("Continue Existing Job request failed.");
+    } finally {
+      setExecuting(false);
+    }
   }
 
   async function discoverCurrentSiteContent() {
@@ -1059,9 +1096,14 @@ export function GlwPageGenerationWorkspace({
               ? (isUpdate ? "Updating exact WordPress draft..." : "Creating WordPress draft...")
               : (isUpdate ? "Update WordPress Draft" : "Generate WordPress Draft")}
           </button>
-          {execution ? (
-            <button type="button" onClick={refreshExecution} className="border border-zinc-600 px-4 py-2 text-sm text-zinc-200">
-              Refresh result
+          {execution && execution.status !== "COMPLETE" && execution.status !== "FAILED" ? (
+            <button
+              type="button"
+              disabled={executing}
+              onClick={() => void continueExistingExecution()}
+              className="border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-300 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {executing ? "Continuing Existing Job..." : "Continue Existing Job"}
             </button>
           ) : null}
         </div>
