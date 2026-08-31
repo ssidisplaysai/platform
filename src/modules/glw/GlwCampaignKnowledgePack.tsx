@@ -24,8 +24,18 @@ type ReferenceJob = Record<string, unknown> & {
   } | null;
 };
 
+type ReferenceApproval = {
+  campaignId: string;
+  stateCode: string;
+  jobId: string;
+  wordpressObjectId: string;
+  approvedAt: string;
+};
+
 type ReferenceResult = Record<string, unknown> & {
   job?: ReferenceJob | null;
+  approval?: ReferenceApproval | null;
+  approved?: boolean;
   error?: string;
   recoveryError?: string | null;
 };
@@ -43,6 +53,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const [generatingReference, setGeneratingReference] = useState(false);
   const [recoveringReference, setRecoveringReference] = useState(false);
   const [continuingReference, setContinuingReference] = useState(false);
+  const [approvingReference, setApprovingReference] = useState(false);
   const [continuationAttemptedJobId, setContinuationAttemptedJobId] = useState<string | null>(null);
   const [referenceResult, setReferenceResult] = useState<ReferenceResult | null>(null);
 
@@ -209,6 +220,38 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     }
   }
 
+  async function approveReferencePage(jobId: string) {
+    setApprovingReference(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(referenceEndpoint, {
+        method: "PATCH",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          stateCode: referenceState,
+          jobId,
+        }),
+      });
+
+      const payload = await response.json() as ReferenceResult;
+
+      setReferenceResult(payload);
+
+      if (!response.ok) {
+        setMessage(payload.error ?? "Reference approval failed.");
+        return;
+      }
+
+      setMessage("Reference approved. This exact job and WordPress draft are now the campaign reference authority.");
+    } finally {
+      setApprovingReference(false);
+    }
+  }
+
   async function continueReferencePage(jobId: string) {
     setContinuingReference(true);
     setContinuationAttemptedJobId(jobId);
@@ -307,6 +350,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     generatingReference
     || recoveringReference
     || continuingReference
+    || approvingReference
     || jobStatus === "QUEUED"
     || jobStatus === "DISPATCHED"
     || jobStatus === "DISCOVERING_EXECUTION"
@@ -485,11 +529,31 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
             {job.status === "COMPLETE" ? (
               <div className="mt-4 rounded-lg border border-emerald-900/60 bg-emerald-950/20 p-3">
                 <p className="font-semibold text-emerald-300">
-                  Reference Ready
+                  {referenceResult.approved ? "Reference Approved" : "Reference Ready"}
                 </p>
+
                 <p className="mt-1 text-zinc-400">
-                  Genesis completed the same persisted job. The WordPress target remains a draft.
+                  {referenceResult.approved
+                    ? "This exact completed job and WordPress draft are locked as the approved campaign reference."
+                    : "Genesis completed the persisted job. Review it, then approve this exact draft before campaign activation."}
                 </p>
+
+                {!referenceResult.approved && jobId ? (
+                  <button
+                    type="button"
+                    disabled={approvingReference}
+                    onClick={() => void approveReferencePage(jobId)}
+                    className="mt-3 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                  >
+                    {approvingReference ? "Approving..." : "Approve Reference"}
+                  </button>
+                ) : null}
+
+                {referenceResult.approved && referenceResult.approval ? (
+                  <p className="mt-2 text-[11px] text-emerald-400">
+                    Approved {new Date(referenceResult.approval.approvedAt).toLocaleString()}
+                  </p>
+                ) : null}
               </div>
             ) : null}
 

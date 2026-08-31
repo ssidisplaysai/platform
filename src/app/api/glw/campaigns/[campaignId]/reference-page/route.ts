@@ -4,6 +4,10 @@ import { listIntegrationProfiles } from "@/modules/foundation/integration-profil
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import {
+  approveGlwCampaignReference,
+  getGlwCampaignReferenceApproval,
+} from "@/modules/glw/campaign-reference-approval-repository";
 import { resolveGlwCampaignGenerationContext } from "@/modules/glw/campaign-generation-context";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
@@ -113,6 +117,11 @@ export async function GET(request: NextRequest, context: Context) {
     return NextResponse.json({
       state,
       job: null,
+      approval: getGlwCampaignReferenceApproval(
+        campaign.campaignId,
+        stateCode,
+      ),
+      approved: false,
       recoveryError: null,
     });
   }
@@ -152,10 +161,147 @@ export async function GET(request: NextRequest, context: Context) {
     );
   }
 
+  const approval = getGlwCampaignReferenceApproval(
+    campaign.campaignId,
+    stateCode,
+  );
+
   return NextResponse.json({
     state,
     job,
+    approval,
+    approved:
+      Boolean(approval)
+      && approval?.jobId === job.jobId
+      && approval?.wordpressObjectId === job.wordpressObjectId,
     recoveryError: null,
+  });
+}
+
+export async function PATCH(request: NextRequest, context: Context) {
+  const auth = authorizeRequest(request, "sites:update");
+
+  if (!auth.ok) {
+    return NextResponse.json(
+      { error: auth.error },
+      { status: auth.status },
+    );
+  }
+
+  const scope = resolveRequestScope(request);
+
+  if (!hasOrganizationScope(scope)) {
+    return NextResponse.json(
+      { error: "Organization scope is required." },
+      { status: 403 },
+    );
+  }
+
+  const { campaignId } = await context.params;
+
+  const campaign = listGlwCampaigns().find(
+    (candidate) =>
+      candidate.campaignId === campaignId
+      && candidate.organizationId === scope.organizationId,
+  ) ?? null;
+
+  if (!campaign) {
+    return NextResponse.json(
+      { error: "Campaign not found." },
+      { status: 404 },
+    );
+  }
+
+  if (campaign.status !== "draft") {
+    return NextResponse.json(
+      { error: "Reference approval is only available while the campaign is draft." },
+      { status: 409 },
+    );
+  }
+
+  if (scope.siteId && scope.siteId !== campaign.siteId) {
+    return NextResponse.json(
+      { error: "Forbidden" },
+      { status: 403 },
+    );
+  }
+
+  const body = await request.json().catch(() => null) as {
+    stateCode?: string;
+    jobId?: string;
+  } | null;
+
+  const stateCode = body?.stateCode?.trim().toUpperCase() ?? "";
+  const jobId = body?.jobId?.trim() ?? "";
+
+  if (!campaign.stateCodes.includes(stateCode)) {
+    return NextResponse.json(
+      { error: "Select a state included in this campaign." },
+      { status: 400 },
+    );
+  }
+
+  if (!jobId) {
+    return NextResponse.json(
+      { error: "Reference job ID is required." },
+      { status: 400 },
+    );
+  }
+
+  const state = GLW_CAMPAIGN_US_STATES.find(
+    (candidate) => candidate.code === stateCode,
+  ) ?? null;
+
+  if (!state) {
+    return NextResponse.json(
+      { error: "Campaign state is not recognized." },
+      { status: 400 },
+    );
+  }
+
+  const job = await glwPageExecutionRepository.getById(jobId);
+
+  if (
+    !job
+    || job.organizationId !== campaign.organizationId
+    || job.siteId !== campaign.siteId
+    || job.productId !== campaign.productId
+    || job.state !== state.name
+  ) {
+    return NextResponse.json(
+      { error: "Reference job does not match this campaign target." },
+      { status: 409 },
+    );
+  }
+
+  if (
+    job.status !== "COMPLETE"
+    || job.qaStatus !== "COMPLETE"
+    || job.wordpressStatus !== "draft"
+    || !job.wordpressObjectId
+    || job.featuredImagePresent !== true
+  ) {
+    return NextResponse.json(
+      {
+        error: "Only a complete QA-passed WordPress draft with a featured image can be approved as the campaign reference.",
+        job,
+      },
+      { status: 409 },
+    );
+  }
+
+  const approval = approveGlwCampaignReference({
+    campaignId: campaign.campaignId,
+    stateCode,
+    jobId: job.jobId,
+    wordpressObjectId: job.wordpressObjectId,
+  });
+
+  return NextResponse.json({
+    state,
+    job,
+    approval,
+    approved: true,
   });
 }
 
