@@ -175,7 +175,7 @@ describe("Genesis WordPress hierarchy authority", () => {
       stateTitle: "Texas",
     });
 
-    expect(result).toMatchObject({ ok: false, state: "collision" });
+    expect(result).toMatchObject({ ok: false, state: "read_failed" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
