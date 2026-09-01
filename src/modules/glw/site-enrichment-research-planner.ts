@@ -65,6 +65,9 @@ export function buildGlwStateServiceResearchPlan(
   const stateToken =
     slugToken(input.stateName);
 
+  void productToken;
+  void stateToken;
+
   const requirements:
     GlwResearchRequirement[] = [
       {
@@ -131,20 +134,6 @@ export function buildGlwStateServiceResearchPlan(
           "Internal product authority link",
         description:
           `Plan a contextual internal link to the primary ${input.productTopic} authority page on the destination site.`,
-        required: true,
-        sourceTier: null,
-        minimumCount: 1,
-        fulfilledSourceIds: [],
-        fulfilledLinkIds: [],
-      },
-      {
-        requirementId:
-          "link-internal-geography",
-        kind: "internal_link",
-        label:
-          "Internal geography link",
-        description:
-          `Plan a contextual internal link to the relevant ${input.stateName} geography, market, or parent service page.`,
         required: true,
         sourceTier: null,
         minimumCount: 1,
