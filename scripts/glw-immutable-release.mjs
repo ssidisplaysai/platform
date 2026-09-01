@@ -104,7 +104,18 @@ export function renderLauncher({ template, assignments, environment }) {
   return result.replace(blockPattern, `$ExpectedEnvironment = [ordered]@{\n${lines.join("\n")}\n}`);
 }
 
-function run(command, args, cwd) { const result = spawnSync(command, args, { cwd, stdio: "inherit", shell: false }); if (result.status !== 0) fail(`${command} failed with exit code ${result.status}`); }
+export function commandInvocation(command, args, platform = process.platform, commandShell = process.env.ComSpec) {
+  if (platform === "win32" && command.toLowerCase().endsWith(".cmd")) {
+    return { command: commandShell || "cmd.exe", args: ["/d", "/s", "/c", command, ...args] };
+  }
+  return { command, args };
+}
+function run(command, args, cwd) {
+  const invocation = commandInvocation(command, args);
+  const result = spawnSync(invocation.command, invocation.args, { cwd, stdio: "inherit", shell: false });
+  if (result.error) fail(`${command} could not start: ${result.error.message}`);
+  if (result.status !== 0) fail(`${command} failed with exit code ${result.status}`);
+}
 function capture(command, args, cwd) { const result = spawnSync(command, args, { cwd, encoding: "utf8", shell: false }); if (result.status !== 0) fail(result.stderr?.trim() || `${command} failed`); return result.stdout.trim(); }
 function parseArgs(argv) { const options = {}; for (let i = 0; i < argv.length; i += 2) { if (!argv[i]?.startsWith("--") || argv[i + 1] === undefined) fail(`Invalid argument: ${argv[i] ?? ""}`); options[argv[i].slice(2)] = argv[i + 1]; } return options; }
 
