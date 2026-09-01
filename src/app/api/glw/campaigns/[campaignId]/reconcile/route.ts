@@ -5,6 +5,7 @@ import {
   listGlwCampaignTargets,
   markGlwCampaignTargetDraftReady,
   markGlwCampaignTargetFailed,
+  markGlwFailedCampaignTargetDraftReady,
 } from "@/modules/glw/campaign-target-repository";
 import {
   resolveGlwCampaignJobReconciliationDecision,
@@ -67,10 +68,13 @@ export async function POST(
     );
   }
 
-  const runningTargets =
+  const reconcilableTargets =
     listGlwCampaignTargets(campaignId).filter(
       (target) =>
-        target.status === "running"
+        (
+          target.status === "running"
+          || target.status === "failed"
+        )
         && Boolean(target.jobId),
     );
 
@@ -78,7 +82,7 @@ export async function POST(
 
   const results: Array<Record<string, unknown>> = [];
 
-  for (const target of runningTargets) {
+  for (const target of reconcilableTargets) {
     const jobId = target.jobId!;
 
     try {
@@ -193,13 +197,21 @@ export async function POST(
 
       if (decision.action === "draft_ready") {
         const updated =
-          markGlwCampaignTargetDraftReady({
-            campaignId,
-            stateCode: target.stateCode,
-            jobId,
-            wordpressObjectId:
-              decision.wordpressObjectId,
-          });
+          target.status === "failed"
+            ? markGlwFailedCampaignTargetDraftReady({
+                campaignId,
+                stateCode: target.stateCode,
+                jobId,
+                wordpressObjectId:
+                  decision.wordpressObjectId,
+              })
+            : markGlwCampaignTargetDraftReady({
+                campaignId,
+                stateCode: target.stateCode,
+                jobId,
+                wordpressObjectId:
+                  decision.wordpressObjectId,
+              });
 
         results.push({
           stateCode: target.stateCode,

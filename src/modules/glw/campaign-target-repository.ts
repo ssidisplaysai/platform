@@ -509,6 +509,50 @@ export function markGlwCampaignTargetDraftReady(input: {
   return deepClone(updated);
 }
 
+export function markGlwFailedCampaignTargetDraftReady(input: {
+  campaignId: string;
+  stateCode: string;
+  jobId: string;
+  wordpressObjectId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(
+    input.campaignId,
+    input.stateCode.trim().toUpperCase(),
+  );
+
+  const current = targetStore.get(targetKey);
+
+  if (
+    !current
+    || current.status !== "failed"
+    || current.jobId !== input.jobId
+  ) {
+    throw new Error(
+      "Failed campaign target does not match the recovered generation job.",
+    );
+  }
+
+  const timestamp = new Date().toISOString();
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "draft_ready",
+    wordpressObjectId: input.wordpressObjectId,
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: null,
+    updatedAt: timestamp,
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+
+  return deepClone(updated);
+}
+
 export function markGlwCampaignTargetFailed(input: {
   campaignId: string;
   stateCode: string;
