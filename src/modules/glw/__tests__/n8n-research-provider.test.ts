@@ -1,0 +1,354 @@
+jest.mock("server-only", () => ({}));
+
+const originalPersistenceDirectory =
+  process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
+const testPersistenceDirectory =
+  `${process.cwd()}/.gcp-foundation-data-test-${process.env.JEST_WORKER_ID ?? "0"}-n8n-research-provider`;
+
+beforeAll(() => {
+  process.env.GCP_FOUNDATION_PERSISTENCE_DIR =
+    testPersistenceDirectory;
+});
+
+afterAll(() => {
+  if (originalPersistenceDirectory === undefined) {
+    delete process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
+  } else {
+    process.env.GCP_FOUNDATION_PERSISTENCE_DIR =
+      originalPersistenceDirectory;
+  }
+});
+
+import {
+  createGlwN8nResearchProvider,
+  GLW_N8N_RESEARCH_WORKFLOW_ID,
+  GLW_N8N_RESEARCH_WORKFLOW_NAME,
+  type GlwN8nResearchPayload,
+  type GlwN8nResearchTransport,
+} from "../n8n-research-provider";
+import {
+  GLW_N8N_WORKFLOW_ID,
+} from "../n8n-draft-adapter";
+import {
+  GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
+} from "../n8n-mcp-adapter";
+import {
+  initializeGlwSiteEnrichmentRecord,
+  resetGlwSiteEnrichmentRepositoryForTests,
+} from "../site-enrichment-repository";
+import {
+  buildGlwStateServiceResearchPlan,
+} from "../site-enrichment-research-planner";
+import type {
+  GlwResearchExecutionRequest,
+} from "../site-enrichment-research-executor";
+
+function request(): GlwResearchExecutionRequest {
+  return {
+    organizationId: "led-display-warehouse",
+    siteId: "site-led-display-warehouse-production",
+    campaignId: "campaign-n8n-research-test",
+    productId: "prod-indoor-digital-sphere",
+    stateCode: "CO",
+    canonicalPath:
+      "/indoor-digital-sphere/colorado/",
+    jobId: "job-colorado-n8n-research",
+    wordpressObjectId: "19853",
+  };
+}
+
+function initialize(): void {
+  const executionRequest = request();
+  const planned =
+    buildGlwStateServiceResearchPlan({
+      organizationId:
+        executionRequest.organizationId,
+      siteId: executionRequest.siteId,
+      siteDomain: "leddisplaywarehouse.com",
+      productId: executionRequest.productId,
+      productTopic: "Indoor LED Sphere",
+      campaignId: executionRequest.campaignId,
+      stateCode: executionRequest.stateCode,
+      stateName: "Colorado",
+      canonicalPath:
+        executionRequest.canonicalPath,
+      jobId: executionRequest.jobId,
+      wordpressObjectId:
+        executionRequest.wordpressObjectId,
+      upstreamAuthorityDomains: [
+        "ssidisplays.com",
+      ],
+    });
+
+  initializeGlwSiteEnrichmentRecord({
+    enrichmentId: planned.enrichmentId,
+    organizationId: planned.organizationId,
+    siteId: planned.siteId,
+    productId: planned.productId,
+    campaignId: planned.campaignId,
+    stateCode: planned.stateCode,
+    canonicalPath: planned.canonicalPath,
+    jobId: planned.jobId,
+    wordpressObjectId:
+      planned.wordpressObjectId,
+    upstreamAuthorityDomains:
+      planned.upstreamAuthorityDomains,
+    researchRequirements:
+      planned.researchRequirements,
+    plan: planned.emptyPlan,
+  });
+}
+
+function acquisition() {
+  return {
+    ...request(),
+    sources: [
+      {
+        sourceId: "product-source",
+        title: "Indoor Digital Sphere",
+        url:
+          "https://ssidisplays.com/digital-spheres/",
+        domain: "ssidisplays.com",
+        tier: "first_party" as const,
+        publisher:
+          "Screen Solutions International",
+        retrievedAt:
+          "2026-09-01T09:00:00.000Z",
+      },
+      {
+        sourceId: "state-source",
+        title: "State of Colorado",
+        url: "https://co.colorado.gov/",
+        domain: "co.colorado.gov",
+        tier: "government" as const,
+        publisher: "State of Colorado",
+        retrievedAt:
+          "2026-09-01T09:00:00.000Z",
+      },
+    ],
+    claims: [
+      {
+        claimId: "product-claim",
+        claimClass: "product" as const,
+        statement:
+          "SSI publishes information about indoor digital spheres.",
+        evidenceSourceIds: [
+          "product-source",
+        ],
+      },
+    ],
+    links: [
+      {
+        linkId: "internal-product",
+        kind: "internal" as const,
+        href: "/indoor-digital-sphere/",
+        anchorText: "Indoor LED Spheres",
+        sourceId: null,
+      },
+      {
+        linkId: "external-state",
+        kind: "external_authority" as const,
+        href: "https://co.colorado.gov/",
+        anchorText: "State of Colorado",
+        sourceId: "state-source",
+      },
+    ],
+    fulfillment: {
+      "source-product-first-party": {
+        sourceIds: ["product-source"],
+      },
+      "source-state-government": {
+        sourceIds: ["state-source"],
+      },
+      "link-internal-product": {
+        linkIds: ["internal-product"],
+      },
+      "link-external-authority": {
+        linkIds: ["external-state"],
+      },
+    },
+  };
+}
+
+function transportFor(
+  response: unknown,
+  inspect?: (payload: GlwN8nResearchPayload) => void,
+): GlwN8nResearchTransport {
+  return {
+    async execute(input) {
+      inspect?.(input.payload);
+      return response;
+    },
+  };
+}
+
+function providerFor(
+  response: unknown,
+  inspect?: (payload: GlwN8nResearchPayload) => void,
+) {
+  return createGlwN8nResearchProvider({
+    transport: transportFor(response, inspect),
+    resolveAllowedInternalLinks: () => [
+      {
+        href: "/indoor-digital-sphere/",
+        anchorText: "Indoor LED Spheres",
+        authorityClass: "product",
+      },
+    ],
+  });
+}
+
+describe("GLW n8n research provider", () => {
+  beforeEach(() => {
+    resetGlwSiteEnrichmentRepositoryForTests();
+    initialize();
+  });
+
+  test("uses its dedicated real workflow identity", () => {
+    expect(GLW_N8N_RESEARCH_WORKFLOW_NAME)
+      .toBe("GLW Enrichment Research Provider v1");
+    expect(GLW_N8N_RESEARCH_WORKFLOW_ID)
+      .toBe("E3ZgpwAu98DwpUzO");
+    expect(GLW_N8N_RESEARCH_WORKFLOW_ID)
+      .not.toBe(GLW_N8N_WORKFLOW_ID);
+    expect(GLW_N8N_RESEARCH_WORKFLOW_ID)
+      .not.toBe(GLW_N8N_MCP_RECOVERY_WORKFLOW_ID);
+  });
+
+  test("sends exact identity and bounded requirements", async () => {
+    let observed: GlwN8nResearchPayload | null = null;
+    const provider = providerFor(
+      { output: acquisition() },
+      (payload) => {
+        observed = payload;
+      },
+    );
+
+    const result = await provider.research(request());
+
+    expect(result.organizationId)
+      .toBe(request().organizationId);
+    expect(observed?.workflowId)
+      .toBe(GLW_N8N_RESEARCH_WORKFLOW_ID);
+    expect(observed?.request)
+      .toEqual(request());
+    expect(observed?.researchRequirements.length)
+      .toBe(8);
+    expect(observed?.upstreamAuthorityDomains)
+      .toEqual(["ssidisplays.com"]);
+    expect(observed?.allowedInternalLinks)
+      .toEqual([
+        expect.objectContaining({
+          href: "/indoor-digital-sphere/",
+        }),
+      ]);
+    expect(observed)
+      .not.toHaveProperty("wordpressMutation");
+    expect(observed)
+      .not.toHaveProperty("publication");
+  });
+
+  test("rejects mismatched response identity", async () => {
+    const response = {
+      ...acquisition(),
+      jobId: "wrong-job",
+    };
+    await expect(
+      providerFor(response).research(request()),
+    ).rejects.toThrow(/mismatched execution identity/i);
+  });
+
+  test("rejects invalid source domains", async () => {
+    const response = acquisition();
+    response.sources[0] = {
+      ...response.sources[0],
+      domain: "example.com",
+    };
+    await expect(
+      providerFor(response).research(request()),
+    ).rejects.toThrow(/invalid source/i);
+  });
+
+  test("rejects claims with unknown evidence", async () => {
+    const response = acquisition();
+    response.claims[0] = {
+      ...response.claims[0],
+      evidenceSourceIds: ["unknown-source"],
+    };
+    await expect(
+      providerFor(response).research(request()),
+    ).rejects.toThrow(/unsupported claim/i);
+  });
+
+  test("rejects internal links outside the Genesis allow-list", async () => {
+    const response = acquisition();
+    response.links[0] = {
+      ...response.links[0],
+      href: "/fabricated-page/",
+    };
+    await expect(
+      providerFor(response).research(request()),
+    ).rejects.toThrow(/unapproved internal link/i);
+  });
+
+  test("rejects unknown requirement IDs", async () => {
+    const response = {
+      ...acquisition(),
+      fulfillment: {
+        ...acquisition().fulfillment,
+        "invented-requirement": {
+          sourceIds: ["product-source"],
+        },
+      },
+    };
+    await expect(
+      providerFor(response).research(request()),
+    ).rejects.toThrow(/unknown requirement/i);
+  });
+
+  test("fails closed on malformed responses", async () => {
+    await expect(
+      providerFor({ output: "not-json" })
+        .research(request()),
+    ).rejects.toThrow(/malformed response/i);
+  });
+
+  test("propagates bounded n8n execution failures", async () => {
+    const transport: GlwN8nResearchTransport = {
+      async execute() {
+        throw new Error("provider unavailable");
+      },
+    };
+    const provider = createGlwN8nResearchProvider({
+      transport,
+    });
+    await expect(provider.research(request()))
+      .rejects.toThrow("provider unavailable");
+  });
+
+  test("aborts and reports provider timeouts", async () => {
+    jest.useFakeTimers();
+    const transport: GlwN8nResearchTransport = {
+      execute({ signal }) {
+        return new Promise((resolve, reject) => {
+          signal.addEventListener("abort", () => {
+            reject(new DOMException("aborted", "AbortError"));
+          });
+          void resolve;
+        });
+      },
+    };
+    const provider = createGlwN8nResearchProvider({
+      environment: {
+        GLW_N8N_RESEARCH_TIMEOUT_MS: "1000",
+      },
+      transport,
+    });
+    const result = expect(
+      provider.research(request()),
+    ).rejects.toThrow(/timed out/i);
+    await jest.advanceTimersByTimeAsync(1_000);
+    await result;
+    jest.useRealTimers();
+  });
+});
