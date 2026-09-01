@@ -4,6 +4,8 @@ import type {
   SiteEnvironment,
 } from "@/modules/foundation/types";
 
+import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
+
 export type GlwPageType = "general_service" | "state_service" | "city_service";
 export type GlwPublicationIntent = "draft" | "publish";
 export type GlwLocalPlannedOperation =
@@ -27,15 +29,8 @@ export type GlwCity = {
   metro: string;
 };
 
-export const GLW_STATES: readonly GlwState[] = [
-  { code: "TX", name: "Texas", slug: "texas" },
-  { code: "CA", name: "California", slug: "california" },
-  { code: "FL", name: "Florida", slug: "florida" },
-  { code: "IL", name: "Illinois", slug: "illinois" },
-  { code: "GA", name: "Georgia", slug: "georgia" },
-  { code: "NC", name: "North Carolina", slug: "north-carolina" },
-  { code: "NY", name: "New York", slug: "new-york" },
-];
+export const GLW_STATES: readonly GlwState[] =
+  GLW_CAMPAIGN_US_STATES;
 
 export const GLW_CITIES: readonly GlwCity[] = [
   { stateCode: "TX", name: "Austin", slug: "austin", metro: "Austin" },
