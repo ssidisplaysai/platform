@@ -146,11 +146,25 @@ describe(
               }),
               expect.objectContaining({
                 requirementId:
+                  "link-internal-product",
+                kind: "internal_link",
+                required: true,
+              }),
+              expect.objectContaining({
+                requirementId:
                   "link-upstream-source-of-truth",
                 required: true,
               }),
             ]),
           );
+
+        expect(
+          plan.researchRequirements.some(
+            (requirement) =>
+              requirement.requirementId
+              === "link-internal-geography",
+          ),
+        ).toBe(false);
       },
     );
 
