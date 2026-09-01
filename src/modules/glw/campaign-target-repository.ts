@@ -220,10 +220,12 @@ export function previewGlwCampaignTargetLease(input: {
 
   const targets = listGlwCampaignTargets(input.campaignId);
 
+  // dispatchDate is durable accounting authority. Once a target
+  // consumes a daily slot, later recovery/requeue/failure must not
+  // make that slot available again for the same dispatch date.
   const alreadyDispatchedToday = targets.filter(
     (target) =>
-      target.dispatchDate === input.dispatchDate
-      && target.status !== "queued",
+      target.dispatchDate === input.dispatchDate,
   ).length;
 
   const allowance = Math.max(
@@ -348,6 +350,10 @@ export function releaseExpiredGlwCampaignTargetLeases(
       current.campaignId !== campaignId
       || current.status !== "running"
       || !current.leaseExpiresAt
+      // A target with an accepted generation job must be reconciled
+      // against that exact job. It must never return to the generic
+      // queue and become eligible for duplicate dispatch.
+      || Boolean(current.jobId)
     ) {
       continue;
     }
@@ -378,6 +384,43 @@ export function releaseExpiredGlwCampaignTargetLeases(
   }
 
   return released;
+}
+export function requireGlwCampaignTargetResumeAuthority(input: {
+  campaignId: string;
+  stateCode: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(
+    input.campaignId,
+    input.stateCode.trim().toUpperCase(),
+  );
+
+  const current = targetStore.get(targetKey);
+
+  if (!current) {
+    throw new Error("Campaign target was not found.");
+  }
+
+  if (current.status !== "running") {
+    throw new Error(
+      "Only an existing running campaign target can be resumed.",
+    );
+  }
+
+  if (current.jobId) {
+    throw new Error(
+      "Campaign target already has a generation job and must be reconciled instead of redispatched.",
+    );
+  }
+
+  if (!current.dispatchDate || !current.leaseId) {
+    throw new Error(
+      "Campaign target has no durable dispatch authority.",
+    );
+  }
+
+  return deepClone(current);
 }
 export function attachGlwCampaignTargetJob(input: {
   campaignId: string;

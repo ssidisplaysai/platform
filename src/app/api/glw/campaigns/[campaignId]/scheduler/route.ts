@@ -12,9 +12,14 @@ import {
 } from "@/modules/glw/campaign-production-generation";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import {
+  resolveGlwCampaignTargetRecoveryAction,
+} from "@/modules/glw/campaign-target-reconciliation";
+import {
   attachGlwCampaignTargetJob,
   leaseGlwCampaignTargets,
+  listGlwCampaignTargets,
   previewGlwCampaignTargetLease,
+  requireGlwCampaignTargetResumeAuthority,
   summarizeGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
 
@@ -218,9 +223,16 @@ export async function POST(
 
   const body = await request.json().catch(() => null) as {
     confirm?: string;
+    stateCodes?: string[];
   } | null;
 
-  if (body?.confirm !== "RUN_DRAFT_BATCH") {
+  const isExactResume =
+    body?.confirm === "RESUME_EXISTING_DRAFT_TARGETS";
+
+  if (
+    body?.confirm !== "RUN_DRAFT_BATCH"
+    && !isExactResume
+  ) {
     return NextResponse.json(
       {
         error:
@@ -233,12 +245,64 @@ export async function POST(
   const dispatchDate = resolveDispatchDate(request);
   const leaseId = randomUUID();
 
-  const leased = leaseGlwCampaignTargets({
-    campaignId: campaign.campaignId,
-    pagesPerDay: campaign.pagesPerDay,
-    dispatchDate,
-    leaseId,
-  });
+  let leased;
+
+  if (isExactResume) {
+    const requestedStates = Array.from(
+      new Set(
+        (body?.stateCodes ?? [])
+          .map((stateCode) => stateCode.trim().toUpperCase())
+          .filter(Boolean),
+      ),
+    );
+
+    if (requestedStates.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Exact stateCodes are required for existing-target resume.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const campaignTargets = listGlwCampaignTargets(
+      campaign.campaignId,
+    );
+
+    leased = requestedStates.map((stateCode) => {
+      const target = campaignTargets.find(
+        (candidate) => candidate.stateCode === stateCode,
+      );
+
+      if (!target) {
+        throw new Error(
+          `Campaign target ${stateCode} was not found.`,
+        );
+      }
+
+      const action =
+        resolveGlwCampaignTargetRecoveryAction(target);
+
+      if (action !== "resume_exact_target") {
+        throw new Error(
+          `Campaign target ${stateCode} is not eligible for exact resume.`,
+        );
+      }
+
+      return requireGlwCampaignTargetResumeAuthority({
+        campaignId: campaign.campaignId,
+        stateCode,
+      });
+    });
+  } else {
+    leased = leaseGlwCampaignTargets({
+      campaignId: campaign.campaignId,
+      pagesPerDay: campaign.pagesPerDay,
+      dispatchDate,
+      leaseId,
+    });
+  }
 
   const results: Array<Record<string, unknown>> = [];
 
@@ -296,7 +360,10 @@ export async function POST(
       attachGlwCampaignTargetJob({
         campaignId: campaign.campaignId,
         stateCode: target.stateCode,
-        leaseId,
+        leaseId:
+          isExactResume
+            ? target.leaseId!
+            : leaseId,
         jobId,
       });
 
@@ -341,6 +408,10 @@ export async function POST(
     queue: summarizeGlwCampaignTargets(
       campaign.campaignId,
     ),
+    executionMode:
+      isExactResume
+        ? "exact_existing_target_resume"
+        : "new_daily_batch",
     publicationIntent: "draft",
     publicationPerformed: false,
   });
