@@ -1,9 +1,11 @@
 import "server-only";
 
 import type {
-  GlwEnrichmentLink,
   GlwEnrichmentSource,
 } from "./site-enrichment-authority";
+import {
+  resolveGlwAllowedInternalLinks,
+} from "./site-internal-link-authority";
 import {
   getGlwSiteEnrichmentRecord,
   type GlwResearchRequirement,
@@ -486,19 +488,16 @@ export function createGlwN8nResearchProvider(input?: {
       }
       assertRecordIdentity(request, record);
 
+
       const allowedInternalLinks =
         input?.resolveAllowedInternalLinks?.(request)
-        ?? record.plan.links
-          .filter(
-            (link): link is GlwEnrichmentLink & {
-              kind: "internal";
-            } => link.kind === "internal",
-          )
-          .map((link) => ({
-            href: link.href,
-            anchorText: link.anchorText,
-            authorityClass: "product" as const,
-          }));
+        ?? resolveGlwAllowedInternalLinks({
+          organizationId: request.organizationId,
+          siteId: request.siteId,
+          productId: request.productId,
+          stateCode: request.stateCode,
+          canonicalPath: request.canonicalPath,
+        });
 
       const payload: GlwN8nResearchPayload = {
         workflowId: GLW_N8N_RESEARCH_WORKFLOW_ID,
