@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 import { GlwCampaignKnowledgePack } from "./GlwCampaignKnowledgePack";
@@ -21,6 +21,102 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
   const [campaigns, setCampaigns] = useState<readonly GlwCampaign[]>(initialCampaigns);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [queueSummaries, setQueueSummaries] = useState<Record<string, {
+    total: number;
+    referenceComplete: number;
+    queued: number;
+    running: number;
+    draftReady: number;
+    published: number;
+    failed: number;
+    skipped: number;
+  }>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadQueueSummaries() {
+      const activeCampaigns = campaigns.filter(
+        (campaign) => campaign.status === "active",
+      );
+
+      if (activeCampaigns.length === 0) {
+        return;
+      }
+
+      const entries = await Promise.all(
+        activeCampaigns.map(async (campaign) => {
+          const response = await fetch(
+            `/api/glw/campaigns/${campaign.campaignId}/scheduler`,
+            {
+              method: "GET",
+              headers: {
+                "x-gcp-roles": "platform_admin",
+                "x-gcp-organization-id": organizationId,
+                "x-gcp-site-id": campaign.siteId,
+              },
+              cache: "no-store",
+            },
+          );
+
+          if (!response.ok) {
+            return null;
+          }
+
+          const payload = await response.json() as {
+            queue?: {
+              total: number;
+              referenceComplete: number;
+              queued: number;
+              running: number;
+              draftReady: number;
+              published: number;
+              failed: number;
+              skipped: number;
+            };
+          };
+
+          if (!payload.queue) {
+            return null;
+          }
+
+          return {
+            campaignId: campaign.campaignId,
+            queue: payload.queue,
+          };
+        }),
+      );
+
+      if (cancelled) {
+        return;
+      }
+
+      const next: Record<string, {
+        total: number;
+        referenceComplete: number;
+        queued: number;
+        running: number;
+        draftReady: number;
+        published: number;
+        failed: number;
+        skipped: number;
+      }> = {};
+
+      for (const entry of entries) {
+        if (entry) {
+          next[entry.campaignId] = entry.queue;
+        }
+      }
+
+      setQueueSummaries(next);
+    }
+
+    void loadQueueSummaries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaigns, organizationId]);
 
   async function createCampaign() {
     setSaving(true); setMessage(null);
@@ -60,8 +156,45 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
         <div className="mt-4 space-y-3">
           {campaigns.length === 0 ? <p className="text-sm text-zinc-400">No campaigns configured yet.</p> : campaigns.map((campaign) => <article key={campaign.campaignId} className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
             <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold text-white">{campaign.name}</h3><p className="mt-1 text-xs text-zinc-500">{campaign.stateCodes.length} states · {campaign.pagesPerDay}/day</p></div><span className="rounded-full border border-zinc-700 px-2 py-1 text-xs uppercase text-zinc-300">{campaign.status}</span></div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800"><div className="h-full bg-red-600" style={{ width: `${Math.round((campaign.completedTargetCount / campaign.stateCodes.length) * 100)}%` }} /></div>
-            <p className="mt-2 text-xs text-zinc-500">{campaign.completedTargetCount}/{campaign.stateCodes.length} complete · {campaign.failedTargetCount} failed</p>
+            {(() => {
+              const queue = queueSummaries[campaign.campaignId];
+
+              const completeCount = queue
+                ? queue.referenceComplete + queue.draftReady + queue.published
+                : campaign.completedTargetCount;
+
+              const failedCount = queue
+                ? queue.failed
+                : campaign.failedTargetCount;
+
+              const totalCount = queue?.total ?? campaign.stateCodes.length;
+              const queuedCount = queue?.queued ?? null;
+              const runningCount = queue?.running ?? null;
+
+              return (
+                <>
+                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
+                    <div
+                      className="h-full bg-red-600"
+                      style={{
+                        width: `${
+                          totalCount > 0
+                            ? Math.round((completeCount / totalCount) * 100)
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+
+                  <p className="mt-2 text-xs text-zinc-500">
+                    {completeCount}/{totalCount} complete · {failedCount} failed
+                    {queuedCount !== null ? ` · ${queuedCount} queued` : ""}
+                    {runningCount !== null ? ` · ${runningCount} running` : ""}
+                  </p>
+                </>
+              );
+            })()}
+
             {campaign.status === "draft" ? <GlwCampaignKnowledgePack campaign={campaign} organizationId={organizationId} /> : null}
           </article>)}
         </div>

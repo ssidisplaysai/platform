@@ -29,6 +29,10 @@ export type GlwCampaignTarget = {
   wordpressObjectId: string | null;
   attemptCount: number;
   lastError: string | null;
+  leaseId?: string | null;
+  leasedAt?: string | null;
+  leaseExpiresAt?: string | null;
+  dispatchDate?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -141,6 +145,10 @@ export function initializeGlwCampaignTargets(input: {
         : null,
       attemptCount: isReference ? 1 : 0,
       lastError: null,
+      leaseId: null,
+      leasedAt: null,
+      leaseExpiresAt: null,
+      dispatchDate: null,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -154,4 +162,220 @@ export function initializeGlwCampaignTargets(input: {
   persistState();
 
   return listGlwCampaignTargets(input.campaignId);
+}
+export type GlwCampaignTargetQueueSummary = {
+  total: number;
+  referenceComplete: number;
+  queued: number;
+  running: number;
+  draftReady: number;
+  published: number;
+  failed: number;
+  skipped: number;
+};
+
+export function summarizeGlwCampaignTargets(
+  campaignId: string,
+): GlwCampaignTargetQueueSummary {
+  const targets = listGlwCampaignTargets(campaignId);
+
+  return {
+    total: targets.length,
+    referenceComplete: targets.filter(
+      (target) => target.status === "reference_complete",
+    ).length,
+    queued: targets.filter(
+      (target) => target.status === "queued",
+    ).length,
+    running: targets.filter(
+      (target) => target.status === "running",
+    ).length,
+    draftReady: targets.filter(
+      (target) => target.status === "draft_ready",
+    ).length,
+    published: targets.filter(
+      (target) => target.status === "published",
+    ).length,
+    failed: targets.filter(
+      (target) => target.status === "failed",
+    ).length,
+    skipped: targets.filter(
+      (target) => target.status === "skipped",
+    ).length,
+  };
+}
+
+export function previewGlwCampaignTargetLease(input: {
+  campaignId: string;
+  pagesPerDay: number;
+  dispatchDate: string;
+  now?: Date;
+}): {
+  allowance: number;
+  alreadyDispatchedToday: number;
+  selected: readonly GlwCampaignTarget[];
+} {
+  const now = input.now ?? new Date();
+  const nowMs = now.getTime();
+
+  const targets = listGlwCampaignTargets(input.campaignId);
+
+  const alreadyDispatchedToday = targets.filter(
+    (target) =>
+      target.dispatchDate === input.dispatchDate
+      && target.status !== "queued",
+  ).length;
+
+  const allowance = Math.max(
+    0,
+    input.pagesPerDay - alreadyDispatchedToday,
+  );
+
+  const selected = targets
+    .filter((target) => {
+      if (target.status !== "queued") {
+        return false;
+      }
+
+      if (!target.leaseExpiresAt) {
+        return true;
+      }
+
+      const expiresAt = new Date(target.leaseExpiresAt).getTime();
+
+      return !Number.isFinite(expiresAt) || expiresAt <= nowMs;
+    })
+    .sort(
+      (a, b) =>
+        a.stateCode.localeCompare(b.stateCode),
+    )
+    .slice(0, allowance);
+
+  return {
+    allowance,
+    alreadyDispatchedToday,
+    selected,
+  };
+}
+
+export function leaseGlwCampaignTargets(input: {
+  campaignId: string;
+  pagesPerDay: number;
+  dispatchDate: string;
+  leaseId: string;
+  leaseDurationMs?: number;
+  now?: Date;
+}): readonly GlwCampaignTarget[] {
+  loadState();
+
+  const now = input.now ?? new Date();
+  const preview = previewGlwCampaignTargetLease({
+    campaignId: input.campaignId,
+    pagesPerDay: input.pagesPerDay,
+    dispatchDate: input.dispatchDate,
+    now,
+  });
+
+  if (preview.selected.length === 0) {
+    return [];
+  }
+
+  const leasedAt = now.toISOString();
+  const leaseExpiresAt = new Date(
+    now.getTime() + (input.leaseDurationMs ?? 15 * 60 * 1000),
+  ).toISOString();
+
+  const leased: GlwCampaignTarget[] = [];
+
+  for (const selected of preview.selected) {
+    const targetKey = key(
+      selected.campaignId,
+      selected.stateCode,
+    );
+
+    const current = targetStore.get(targetKey);
+
+    if (!current || current.status !== "queued") {
+      continue;
+    }
+
+    const currentLeaseExpiry = current.leaseExpiresAt
+      ? new Date(current.leaseExpiresAt).getTime()
+      : Number.NaN;
+
+    if (
+      current.leaseId
+      && Number.isFinite(currentLeaseExpiry)
+      && currentLeaseExpiry > now.getTime()
+    ) {
+      continue;
+    }
+
+    const updated: GlwCampaignTarget = {
+      ...current,
+      status: "running",
+      leaseId: input.leaseId,
+      leasedAt,
+      leaseExpiresAt,
+      dispatchDate: input.dispatchDate,
+      attemptCount: current.attemptCount + 1,
+      lastError: null,
+      updatedAt: leasedAt,
+    };
+
+    targetStore.set(targetKey, updated);
+    leased.push(deepClone(updated));
+  }
+
+  if (leased.length > 0) {
+    persistState();
+  }
+
+  return leased;
+}
+
+export function releaseExpiredGlwCampaignTargetLeases(
+  campaignId: string,
+  now: Date = new Date(),
+): number {
+  loadState();
+
+  let released = 0;
+  const timestamp = now.toISOString();
+
+  for (const current of targetStore.values()) {
+    if (
+      current.campaignId !== campaignId
+      || current.status !== "running"
+      || !current.leaseExpiresAt
+    ) {
+      continue;
+    }
+
+    const expiresAt = new Date(current.leaseExpiresAt).getTime();
+
+    if (!Number.isFinite(expiresAt) || expiresAt > now.getTime()) {
+      continue;
+    }
+
+    targetStore.set(
+      key(current.campaignId, current.stateCode),
+      {
+        ...current,
+        status: "queued",
+        leaseId: null,
+        leasedAt: null,
+        leaseExpiresAt: null,
+        updatedAt: timestamp,
+      },
+    );
+
+    released += 1;
+  }
+
+  if (released > 0) {
+    persistState();
+  }
+
+  return released;
 }
