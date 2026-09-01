@@ -266,7 +266,7 @@ export async function POST(
   return NextResponse.json({
     campaignId,
     reconciledTargetCount:
-      runningTargets.length,
+      reconcilableTargets.length,
     results,
     publicationIntent: "draft",
     publicationPerformed: false,
