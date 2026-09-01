@@ -54,7 +54,31 @@ function collectTextIntegrityMarkers(text: string): string[] {
   // These are syntax-level spacing defects rather than vocabulary guesses.
   // Keep periods restricted to uppercase starts so hostnames such as
   // ssidisplays.com remain valid while sentence joins such as matters.Next fail.
-  for (const value of text.match(/(?:[!?;,][A-Za-z]|\.[A-Z])/g) ?? []) markers.add(value);
+  for (const match of text.matchAll(/(?:[!?;,][A-Za-z]|\.[A-Z])/g)) {
+    const value = match[0];
+    const index = match.index ?? 0;
+
+    if (value.startsWith(".")) {
+      const precedingCharacter =
+        index > 0
+          ? text[index - 1]
+          : "";
+
+      const followingCharacter =
+        text[index + value.length] ?? "";
+
+      // Dotted abbreviations such as U.S. contain ".S." but do not
+      // represent a missing space between sentences.
+      if (
+        /[A-Za-z]/.test(precedingCharacter)
+        && followingCharacter === "."
+      ) {
+        continue;
+      }
+    }
+
+    markers.add(value);
+  }
 
   return [...markers];
 }

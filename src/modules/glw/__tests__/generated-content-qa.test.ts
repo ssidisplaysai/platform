@@ -127,4 +127,21 @@ describe("evaluateGlwGeneratedContentQa", () => {
     expect(result.checks.textIntegrity.message).toContain(",P");
     expect(result.failureReasons.textIntegrity).toContain(",P");
   });
+  test("allows dotted abbreviations such as U.S.", () => {
+    const cleanSentence =
+      "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
+
+    const result = evaluateGlwGeneratedContentQa({
+      artifact: artifact(
+        `<h1>Accent Rear Projection Film in Fort Worth</h1><p>Project planning should account for U.S. electrical standards. ${cleanSentence.repeat(170)}</p>`,
+      ),
+      request,
+      siteDomain: "ssidisplays.com",
+      minimumWordCount: 1500,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.checks.textIntegrity.ok).toBe(true);
+    expect(result.failureReasons.textIntegrity).toBeUndefined();
+  });
 });
