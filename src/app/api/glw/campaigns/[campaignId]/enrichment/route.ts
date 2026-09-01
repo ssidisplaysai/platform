@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
-  getGlwCampaign,
+  listGlwCampaigns,
 } from "@/modules/glw/campaign-repository";
 
 import {
@@ -83,9 +83,10 @@ function campaignConfig(
     requireScope(request);
 
   const campaign =
-    getGlwCampaign({
-      campaignId,
-    });
+    listGlwCampaigns().find(
+      (candidate) =>
+        candidate.campaignId === campaignId,
+    );
 
   if (!campaign) {
     throw new Error(
