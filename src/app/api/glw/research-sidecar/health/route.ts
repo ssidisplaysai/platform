@@ -20,9 +20,6 @@ export async function GET(
       "[::1]",
       "::1",
     ].includes(hostname)
-    || request.headers.has("forwarded")
-    || request.headers.has("x-forwarded-for")
-    || request.headers.has("x-forwarded-host")
   ) {
     return NextResponse.json(
       {
@@ -42,6 +39,8 @@ export async function GET(
       "glw-research-sidecar-v1",
     scope:
       "colorado-research-canary-only",
+    networkBoundary:
+      "127.0.0.1-bind-required",
     workflowId:
       GLW_RESEARCH_SIDECAR_WORKFLOW_ID,
     sourceSha:
