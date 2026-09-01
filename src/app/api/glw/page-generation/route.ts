@@ -9,9 +9,12 @@ import { listIntegrationProfiles } from "@/modules/foundation/integration-profil
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
-import { resolveOrCreateGenesisWordPressHierarchy } from "@/modules/foundation/wordpress-hierarchy-authority";
+
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
+import { attachGenesisWordPressFeaturedImage } from "@/modules/foundation/wordpress-media-writer";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
+import { generateGenesisFeaturedImageWithCampaignReferences } from "@/modules/glw/reference-aware-image-service";
+import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-target-hierarchy";
 import {
   createGlwN8nMcpDispatcher,
   createGlwN8nMcpExecutionReader,
@@ -27,7 +30,7 @@ import {
   adaptProductForGeneration,
   adaptSiteForGeneration,
   buildLocalGlwGenerationPreview,
-  getGlwState,
+
   type GlwGenerationRequest,
   type GlwGenerationRequestInput,
 } from "@/modules/glw/page-generation";
@@ -47,6 +50,22 @@ function isTerminal(status: string): boolean {
 async function recoverExecution(job: GlwPageExecutionRecord): Promise<GlwPageExecutionRecord> {
   if (!job.externalExecutionId) return job;
   return service.pollToTerminal(job.jobId, executionReader);
+}
+
+function buildGenesisImagePrompt(input: {
+  request: GlwGenerationRequest;
+  siteName: string;
+}): string {
+  const location = [input.request.cityName, input.request.stateName]
+    .filter(Boolean)
+    .join(", ");
+  return [
+    `Photorealistic commercial installation featuring ${input.request.productTopic}.`,
+    location ? `The setting should feel appropriate for a commercial project in ${location}.` : "Use a premium commercial architectural environment.",
+    `Create the image for ${input.siteName} as a polished website hero visual.`,
+    input.request.imageDirection?.trim() || "",
+    "Show the product clearly and realistically with professional lighting, believable materials, correct scale, and useful negative space.",
+  ].join(" ");
 }
 
 async function finalizeContentReadyExecution(input: {
@@ -86,8 +105,47 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  const operation = input.request.plannedOperation.startsWith("CREATE_") ? "CREATE" : "UPDATE";
-  if (operation === "UPDATE" && !input.request.wordpressObjectId) {
+  const targetHierarchy = await resolveGlwWordPressTargetHierarchy({
+    request: input.request,
+    site: input.siteRecord,
+  });
+
+  if (!targetHierarchy.ok) {
+    const timestamp = new Date().toISOString();
+
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      errorCode: targetHierarchy.errorCode,
+      errorMessage: targetHierarchy.errorMessage,
+      updatedAt: timestamp,
+      completedAt: timestamp,
+    });
+  }
+
+  const persistedDraftId = input.job.wordpressStatus === "draft"
+    ? input.job.wordpressObjectId
+    : null;
+
+  const hierarchyObjectId =
+    input.request.pageType === "state_service"
+      ? targetHierarchy.wordpressObjectId
+      : null;
+
+  const requestedOperation = input.request.plannedOperation.startsWith("CREATE_")
+    ? "CREATE"
+    : "UPDATE";
+
+  const operation =
+    persistedDraftId || hierarchyObjectId
+      ? "UPDATE"
+      : requestedOperation;
+
+  const updateObjectId =
+    persistedDraftId
+    ?? hierarchyObjectId
+    ?? input.request.wordpressObjectId;
+
+  if (operation === "UPDATE" && !updateObjectId) {
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
       errorCode: "UPDATE_AUTHORITY_REQUIRED",
@@ -97,39 +155,7 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  let parentId: number | undefined;
-  if (input.request.pageType === "city_service") {
-    const state = getGlwState(input.request.stateCode);
-    const pathSegments = input.request.canonicalPath.split("/").map((segment) => segment.trim()).filter(Boolean);
-    const productSlug = pathSegments[0] ?? "";
-    if (!state || !productSlug) {
-      return glwPageExecutionRepository.update(input.job.jobId, {
-        status: "FAILED",
-        errorCode: "WORDPRESS_HIERARCHY_INVALID_TARGET",
-        errorMessage: "Genesis could not derive the canonical product/state hierarchy for this city target.",
-        completedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    }
-    const hierarchy = await resolveOrCreateGenesisWordPressHierarchy({
-      site: input.siteRecord,
-      productSlug,
-      productTitle: input.request.productTopic,
-      stateSlug: state.slug,
-      stateTitle: state.name,
-    });
-    if (!hierarchy.ok) {
-      const timestamp = new Date().toISOString();
-      return glwPageExecutionRepository.update(input.job.jobId, {
-        status: "FAILED",
-        errorCode: `WORDPRESS_HIERARCHY_${hierarchy.state.toUpperCase()}`,
-        errorMessage: hierarchy.message,
-        updatedAt: timestamp,
-        completedAt: timestamp,
-      });
-    }
-    parentId = hierarchy.leafParentId;
-  }
+  const parentId = targetHierarchy.parentId;
 
   const artifact = {
     title: input.job.generatedDraft.title,
@@ -140,7 +166,7 @@ async function finalizeContentReadyExecution(input: {
   };
   const result = operation === "CREATE"
     ? await writeGenesisWordPressDraft({ operation: "CREATE", site: input.siteRecord, artifact })
-    : await writeGenesisWordPressDraft({ operation: "UPDATE", site: input.siteRecord, wordpressObjectId: input.request.wordpressObjectId!, artifact });
+    : await writeGenesisWordPressDraft({ operation: "UPDATE", site: input.siteRecord, wordpressObjectId: updateObjectId!, artifact });
 
   const timestamp = new Date().toISOString();
   if (!result.ok) {
@@ -157,7 +183,71 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  return glwPageExecutionRepository.update(input.job.jobId, {
+  const draftJob = await glwPageExecutionRepository.update(input.job.jobId, {
+    status: "CONTENT_READY",
+    wordpressObjectId: result.wordpressObjectId,
+    wordpressUrl: result.wordpressUrl,
+    wordpressStatus: result.wordpressStatus,
+    disposition: result.operation === "CREATE" ? "CREATED" : "UPDATED",
+    qaStatus: "PASSED",
+    qaChecks: qa.checks,
+    qaFailureReasons: {},
+    wordCount: qa.wordCount,
+    featuredImagePresent: false,
+    errorCode: null,
+    errorMessage: null,
+    updatedAt: timestamp,
+    completedAt: null,
+  });
+
+  const imageResult = await generateGenesisFeaturedImageWithCampaignReferences({
+    prompt: buildGenesisImagePrompt({
+      request: input.request,
+      siteName: input.siteRecord.displayName,
+    }),
+    siteName: input.siteRecord.displayName,
+    productTopic: input.request.productTopic,
+    campaignId: input.request.campaignId ?? null,
+  });
+
+  if (!imageResult.ok) {
+    return glwPageExecutionRepository.update(draftJob.jobId, {
+      status: "CONTENT_READY",
+      errorCode: `IMAGE_${imageResult.state.toUpperCase()}`,
+      errorMessage: imageResult.message,
+      featuredImagePresent: false,
+      updatedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+  }
+
+  const location = [input.request.cityName, input.request.stateName]
+    .filter(Boolean)
+    .join(", ");
+  const mediaResult = await attachGenesisWordPressFeaturedImage({
+    site: input.siteRecord,
+    wordpressObjectId: result.wordpressObjectId,
+    canonicalSlug: input.request.canonicalPath,
+    contentHtml: input.job.generatedDraft.contentHtml,
+    image: imageResult.image,
+    title: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
+    altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
+    description: `Commercial hero image for ${input.request.productTopic}${location ? ` in ${location}` : ""} on ${input.siteRecord.displayName}.`,
+  });
+
+  if (!mediaResult.ok) {
+    return glwPageExecutionRepository.update(draftJob.jobId, {
+      status: "CONTENT_READY",
+      errorCode: `WORDPRESS_MEDIA_${mediaResult.state.toUpperCase()}`,
+      errorMessage: mediaResult.message,
+      featuredImagePresent: false,
+      updatedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+  }
+
+  const completedAt = new Date().toISOString();
+  return glwPageExecutionRepository.update(draftJob.jobId, {
     status: "COMPLETE",
     wordpressObjectId: result.wordpressObjectId,
     wordpressUrl: result.wordpressUrl,
@@ -167,10 +257,11 @@ async function finalizeContentReadyExecution(input: {
     qaChecks: qa.checks,
     qaFailureReasons: {},
     wordCount: qa.wordCount,
+    featuredImagePresent: true,
     errorCode: null,
     errorMessage: null,
-    updatedAt: timestamp,
-    completedAt: timestamp,
+    updatedAt: completedAt,
+    completedAt,
   });
 }
 
@@ -226,7 +317,7 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
     wordpressReadAuthority,
     localExecutions: await glwPageExecutionRepository.list(),
   });
-  const availability = resolveGlwTargetMutationAvailability(target);
+  const availability = resolveGlwTargetMutationAvailability(target, request.pageType);
   if (request.plannedOperation.startsWith("CREATE_") && !availability.createAvailable) {
     return { error: `An existing WordPress page was found for this canonical target${target.wordpressObjectId ? ` (ID ${target.wordpressObjectId})` : ""}. Creation was stopped before any WordPress changes.`, code: "CREATE_COLLISION", target, status: 409 } as const;
   }
@@ -283,13 +374,154 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const scope = resolveRequestScope(request);
   if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
-  const body = await request.json().catch(() => null) as { form?: GlwGenerationRequestInput; action?: "continue"; jobId?: string } | null;
+  const body = await request.json().catch(() => null) as { form?: GlwGenerationRequestInput; action?: "continue" | "recheck_qa"; jobId?: string } | null;
   if (!body?.form) return NextResponse.json({ error: "Generation request is required." }, { status: 400 });
 
   const resolved = await resolveAuthorizedPreview(body.form, scope.organizationId);
   if ("error" in resolved) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
   if ("issues" in resolved) return NextResponse.json({ issues: resolved.issues }, { status: resolved.status });
   const { siteRecord, request: generationRequest } = resolved;
+
+  if (body.action === "recheck_qa") {
+    const jobId = body.jobId?.trim() ?? "";
+    if (!jobId) {
+      return NextResponse.json(
+        { error: "jobId is required to recheck failed generated content." },
+        { status: 400 },
+      );
+    }
+
+    const existing = await glwPageExecutionRepository.getById(jobId);
+    if (!existing) {
+      return NextResponse.json(
+        { error: "GLW execution was not found." },
+        { status: 404 },
+      );
+    }
+
+    if (
+      existing.organizationId !== scope.organizationId
+      || existing.siteId !== generationRequest.siteId
+      || existing.productId !== generationRequest.productId
+      || existing.slug !== generationRequest.slug
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Existing job does not match the current authorized generation target.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (
+      existing.status !== "FAILED"
+      || existing.errorCode !== "GENERATED_CONTENT_QA_FAILED"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only an exact job failed by generated-content QA may be rechecked.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (!existing.generatedDraft) {
+      return NextResponse.json(
+        {
+          error:
+            "The failed QA job no longer contains its generated draft artifact.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const qa = evaluateGlwGeneratedContentQa({
+      artifact: existing.generatedDraft,
+      request: generationRequest,
+      siteDomain: siteRecord.domain,
+      minimumWordCount: 1500,
+    });
+
+    if (!qa.ok) {
+      const timestamp = new Date().toISOString();
+
+      const job = await glwPageExecutionRepository.update(jobId, {
+        qaStatus: "FAILED",
+        qaChecks: qa.checks,
+        qaFailureReasons: qa.failureReasons,
+        wordCount: qa.wordCount,
+        errorCode: "GENERATED_CONTENT_QA_FAILED",
+        errorMessage:
+          Object.values(qa.failureReasons).join(" ")
+          || "Generated content failed Genesis QA.",
+        updatedAt: timestamp,
+        completedAt: timestamp,
+      });
+
+      return NextResponse.json({
+        job,
+        qaRechecked: true,
+        qaPassed: false,
+        redispatched: false,
+        publicationPerformed: false,
+      });
+    }
+
+    const timestamp = new Date().toISOString();
+
+    const recovered = await glwPageExecutionRepository.update(jobId, {
+      status: "CONTENT_READY",
+      qaStatus: "COMPLETE",
+      qaChecks: qa.checks,
+      qaFailureReasons: {},
+      wordCount: qa.wordCount,
+      errorCode: null,
+      errorMessage: null,
+      updatedAt: timestamp,
+      completedAt: null,
+    });
+
+    const authority = await verifyMutationAuthority(
+      generationRequest,
+      siteRecord,
+    );
+
+    if ("error" in authority) {
+      return NextResponse.json(
+        {
+          ...authority,
+          job: recovered,
+          qaRechecked: true,
+          qaPassed: true,
+          redispatched: false,
+          publicationPerformed: false,
+        },
+        { status: authority.status },
+      );
+    }
+
+    const job = await finalizeContentReadyExecution({
+      job: recovered,
+      request: generationRequest,
+      siteRecord,
+    });
+
+    return NextResponse.json({
+      job,
+      qaRechecked: true,
+      qaPassed: true,
+      redispatched: false,
+      publicationPerformed: false,
+    }, {
+      status:
+        job.status === "COMPLETE"
+        || job.status === "FAILED"
+          ? 200
+          : 202,
+    });
+  }
 
   if (body.action === "continue") {
     const jobId = body.jobId?.trim() ?? "";
@@ -305,8 +537,10 @@ export async function POST(request: NextRequest) {
     try {
       const recovered = existing.status === "CONTENT_READY" ? existing : await recoverExecution(existing);
       if (recovered.status !== "CONTENT_READY") return NextResponse.json({ job: recovered }, { status: 202 });
-      const authority = await verifyMutationAuthority(generationRequest, siteRecord);
-      if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
+      if (!recovered.wordpressObjectId || recovered.wordpressStatus !== "draft") {
+        const authority = await verifyMutationAuthority(generationRequest, siteRecord);
+        if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
+      }
       const job = await finalizeContentReadyExecution({ job: recovered, request: generationRequest, siteRecord });
       return NextResponse.json({ job }, { status: job.status === "COMPLETE" || job.status === "FAILED" ? 200 : 202 });
     } catch (error) {

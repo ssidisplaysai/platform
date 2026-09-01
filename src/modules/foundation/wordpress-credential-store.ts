@@ -191,7 +191,6 @@ function decryptCredential(
 loadState();
 
 export function storeWordPressCredential(input: {
-  loadState();
   organizationId: string;
   siteId: string;
   username: string;

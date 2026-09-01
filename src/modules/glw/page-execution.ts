@@ -317,7 +317,8 @@ export function mapGenerationRequestToN8nDraft(
   const audience = "Commercial display buyers";
   const callToAction = "Request a quote";
   const category = request.productTopic;
-  const additionalInstructions = "Create a factual draft for editorial review. Do not publish publicly.";
+  const additionalInstructions = request.additionalInstructions?.trim()
+    || "Create a factual draft for editorial review. Do not publish publicly.";
   const wordCount = 1500;
 
   return {
