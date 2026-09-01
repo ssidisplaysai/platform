@@ -18,6 +18,10 @@ export const GLW_N8N_RESEARCH_WORKFLOW_NAME =
   "GLW Enrichment Research Provider v1";
 export const GLW_N8N_RESEARCH_WORKFLOW_ID =
   "E3ZgpwAu98DwpUzO";
+export const GLW_N8N_RESEARCH_WEBHOOK_HOST =
+  "ssiai.app.n8n.cloud";
+export const GLW_N8N_RESEARCH_WEBHOOK_PATH =
+  "/webhook/glw-enrichment-research-provider-v1";
 
 export type GlwAllowedInternalLink = {
   href: string;
@@ -27,6 +31,7 @@ export type GlwAllowedInternalLink = {
 
 export type GlwN8nResearchPayload = {
   workflowId: typeof GLW_N8N_RESEARCH_WORKFLOW_ID;
+  identity: GlwResearchExecutionRequest;
   request: GlwResearchExecutionRequest;
   researchRequirements: readonly GlwResearchRequirement[];
   upstreamAuthorityDomains: readonly string[];
@@ -78,16 +83,25 @@ function readConfiguration(
   if (!webhookUrl || !webhookSecret) return null;
 
   const url = new URL(webhookUrl);
-  if (
-    url.protocol !== "https:"
-    && url.hostname !== "localhost"
-    && url.hostname !== "127.0.0.1"
-  ) {
+  if (url.protocol !== "https:") {
     throw new Error(
-      "GLW n8n research webhook must use HTTPS outside localhost.",
+      "GLW n8n research webhook must use HTTPS.",
     );
   }
 
+  const hostname = url.hostname.toLowerCase();
+  if (
+    hostname !== GLW_N8N_RESEARCH_WEBHOOK_HOST
+    || url.pathname !== GLW_N8N_RESEARCH_WEBHOOK_PATH
+    || Boolean(url.username)
+    || Boolean(url.password)
+    || Boolean(url.search)
+    || Boolean(url.hash)
+  ) {
+    throw new Error(
+      "GLW n8n research webhook target does not match the approved endpoint.",
+    );
+  }
   const parsedTimeout = Number(
     environment.GLW_N8N_RESEARCH_TIMEOUT_MS
     ?? 120_000,
@@ -122,8 +136,8 @@ function createWebhookTransport(input: {
         {
           method: "POST",
           headers: {
-            Authorization:
-              `Bearer ${configuration.webhookSecret}`,
+            "X-Genesis-Research-Authorization":
+              configuration.webhookSecret,
             "Content-Type": "application/json",
             Accept: "application/json",
             "X-Genesis-Workflow-Id":
@@ -488,6 +502,7 @@ export function createGlwN8nResearchProvider(input?: {
 
       const payload: GlwN8nResearchPayload = {
         workflowId: GLW_N8N_RESEARCH_WORKFLOW_ID,
+        identity: { ...request },
         request: { ...request },
         researchRequirements:
           record.researchRequirements,

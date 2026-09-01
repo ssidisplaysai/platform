@@ -215,6 +215,113 @@ describe("GLW n8n research provider", () => {
       .not.toBe(GLW_N8N_MCP_RECOVERY_WORKFLOW_ID);
   });
 
+  test("fails closed when server-side auth is absent", async () => {
+    const fetchImpl = jest.fn<typeof fetch>();
+    const provider = createGlwN8nResearchProvider({
+      environment: {},
+      fetchImpl,
+    });
+
+    await expect(provider.research(request()))
+      .rejects.toThrow(/not configured/i);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  test("sends dedicated header auth without exposing it in the body", async () => {
+    const secret = "test-only-research-secret";
+    const fetchImpl = jest.fn<typeof fetch>(
+      async (_url, init) => {
+        const headers =
+          init?.headers as Record<string, string>;
+        expect(
+          headers["X-Genesis-Research-Authorization"],
+        ).toBe(secret);
+        expect(String(init?.body)).not.toContain(secret);
+        expect(init?.redirect).toBe("error");
+        return new Response(
+          JSON.stringify(acquisition()),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          },
+        );
+      },
+    );
+    const provider = createGlwN8nResearchProvider({
+      environment: {
+        GLW_N8N_RESEARCH_WEBHOOK_URL:
+          "https://ssiai.app.n8n.cloud/webhook/glw-enrichment-research-provider-v1",
+        GLW_N8N_RESEARCH_WEBHOOK_SECRET:
+          secret,
+      },
+      fetchImpl,
+      resolveAllowedInternalLinks: () => [
+        {
+          href: "/indoor-digital-sphere/",
+          anchorText: "Indoor LED Spheres",
+          authorityClass: "product",
+        },
+      ],
+    });
+
+    await expect(provider.research(request()))
+      .resolves.toMatchObject({
+        jobId: request().jobId,
+      });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test("does not expose auth in execution errors", async () => {
+    const secret = "test-only-error-secret";
+    const provider = createGlwN8nResearchProvider({
+      environment: {
+        GLW_N8N_RESEARCH_WEBHOOK_URL:
+          "https://ssiai.app.n8n.cloud/webhook/glw-enrichment-research-provider-v1",
+        GLW_N8N_RESEARCH_WEBHOOK_SECRET:
+          secret,
+      },
+      fetchImpl: async () => new Response(
+        JSON.stringify({ error: secret }),
+        { status: 401 },
+      ),
+    });
+
+    const error = await provider.research(request())
+      .catch((value: unknown) => value);
+    expect(String(error)).toContain("HTTP 401");
+    expect(String(error)).not.toContain(secret);
+  });
+
+  test.each([
+    "http://example.com/research",
+    "https://localhost/research",
+    "https://127.0.0.1/research",
+    "https://10.0.0.4/research",
+    "https://172.16.0.4/research",
+    "https://192.168.1.4/research",
+    "https://169.254.169.254/latest/meta-data/",
+    "https://metadata.google.internal/",
+    "https://service.internal/research",
+    "https://example.com/research",
+  ])("rejects prohibited webhook target %s", async (webhookUrl) => {
+    const fetchImpl = jest.fn<typeof fetch>();
+    const provider = createGlwN8nResearchProvider({
+      environment: {
+        GLW_N8N_RESEARCH_WEBHOOK_URL:
+          webhookUrl,
+        GLW_N8N_RESEARCH_WEBHOOK_SECRET:
+          "test-only-secret",
+      },
+      fetchImpl,
+    });
+
+    await expect(provider.research(request()))
+      .rejects.toThrow(/HTTPS|prohibited|approved endpoint/i);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   test("sends exact identity and bounded requirements", async () => {
     let observed: GlwN8nResearchPayload | null = null;
     const provider = providerFor(
@@ -230,6 +337,8 @@ describe("GLW n8n research provider", () => {
       .toBe(request().organizationId);
     expect(observed?.workflowId)
       .toBe(GLW_N8N_RESEARCH_WORKFLOW_ID);
+    expect(observed?.identity)
+      .toEqual(request());
     expect(observed?.request)
       .toEqual(request());
     expect(observed?.researchRequirements.length)
