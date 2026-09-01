@@ -41,16 +41,6 @@ export type GlwStateServiceResearchPlan = {
   emptyPlan: GlwEnrichmentPlan;
 };
 
-function slugToken(
-  value: string,
-): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export function buildGlwStateServiceResearchPlan(
   input: GlwStateServiceResearchPlanInput,
 ): GlwStateServiceResearchPlan {
@@ -58,15 +48,6 @@ export function buildGlwStateServiceResearchPlan(
     input.stateCode
       .trim()
       .toUpperCase();
-
-  const productToken =
-    slugToken(input.productTopic);
-
-  const stateToken =
-    slugToken(input.stateName);
-
-  void productToken;
-  void stateToken;
 
   const requirements:
     GlwResearchRequirement[] = [
