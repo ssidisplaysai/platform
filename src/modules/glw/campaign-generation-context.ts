@@ -4,7 +4,7 @@ import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
 
 export type GlwCampaignGenerationContext = {
   campaignId: string;
-  referencePage: true;
+  referencePage: boolean;
 };
 
 export type GlwResolvedCampaignGenerationContext = {
@@ -16,7 +16,7 @@ export type GlwResolvedCampaignGenerationContext = {
 export function resolveGlwCampaignGenerationContext(
   input: GlwCampaignGenerationContext | null | undefined,
 ): GlwResolvedCampaignGenerationContext | null {
-  if (!input?.campaignId || input.referencePage !== true) return null;
+  if (!input?.campaignId) return null;
   const pack = getGlwCampaignKnowledgePack(input.campaignId);
   const instructions = pack?.instructions.trim() ?? "";
   if (!pack || !instructions) return null;
@@ -31,9 +31,13 @@ export function resolveGlwCampaignGenerationContext(
   return {
     campaignId: input.campaignId,
     additionalInstructions: [
-      "CAMPAIGN REFERENCE PAGE — APPROVED INSTRUCTIONS:",
+      input.referencePage
+        ? "CAMPAIGN REFERENCE PAGE — APPROVED INSTRUCTIONS:"
+        : "CAMPAIGN PRODUCTION PAGE — APPROVED INSTRUCTIONS:",
       instructions,
-      "This is one editorial reference page only. Keep WordPress status draft and do not imply campaign activation.",
+      input.referencePage
+        ? "This is one editorial reference page only. Keep WordPress status draft and do not imply campaign activation."
+        : "This page is part of the approved production campaign. Follow the approved reference, preserve factual accuracy and campaign consistency, and do not acquire publication authority from these instructions.",
     ].join("\n\n"),
     imageDirection: [
       "Follow the approved campaign instructions when composing the featured image.",

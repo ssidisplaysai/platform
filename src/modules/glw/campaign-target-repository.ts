@@ -379,3 +379,148 @@ export function releaseExpiredGlwCampaignTargetLeases(
 
   return released;
 }
+export function attachGlwCampaignTargetJob(input: {
+  campaignId: string;
+  stateCode: string;
+  leaseId: string;
+  jobId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(
+    input.campaignId,
+    input.stateCode.trim().toUpperCase(),
+  );
+
+  const current = targetStore.get(targetKey);
+
+  if (
+    !current
+    || current.status !== "running"
+    || current.leaseId !== input.leaseId
+  ) {
+    throw new Error(
+      "Campaign target is not owned by the supplied execution lease.",
+    );
+  }
+
+  if (current.jobId && current.jobId !== input.jobId) {
+    throw new Error(
+      "Campaign target already has a different generation job.",
+    );
+  }
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    jobId: input.jobId,
+    updatedAt: new Date().toISOString(),
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+
+  return deepClone(updated);
+}
+
+export function markGlwCampaignTargetDraftReady(input: {
+  campaignId: string;
+  stateCode: string;
+  jobId: string;
+  wordpressObjectId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(
+    input.campaignId,
+    input.stateCode.trim().toUpperCase(),
+  );
+
+  const current = targetStore.get(targetKey);
+
+  if (
+    !current
+    || current.status !== "running"
+    || current.jobId !== input.jobId
+  ) {
+    throw new Error(
+      "Campaign target does not match the completed generation job.",
+    );
+  }
+
+  const timestamp = new Date().toISOString();
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "draft_ready",
+    wordpressObjectId: input.wordpressObjectId,
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: null,
+    updatedAt: timestamp,
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+
+  return deepClone(updated);
+}
+
+export function markGlwCampaignTargetFailed(input: {
+  campaignId: string;
+  stateCode: string;
+  leaseId?: string | null;
+  jobId?: string | null;
+  error: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(
+    input.campaignId,
+    input.stateCode.trim().toUpperCase(),
+  );
+
+  const current = targetStore.get(targetKey);
+
+  if (!current) {
+    throw new Error("Campaign target was not found.");
+  }
+
+  if (
+    input.leaseId
+    && current.leaseId
+    && current.leaseId !== input.leaseId
+  ) {
+    throw new Error(
+      "Campaign target failure does not match the active lease.",
+    );
+  }
+
+  if (
+    input.jobId
+    && current.jobId
+    && current.jobId !== input.jobId
+  ) {
+    throw new Error(
+      "Campaign target failure does not match the active job.",
+    );
+  }
+
+  const timestamp = new Date().toISOString();
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "failed",
+    jobId: input.jobId ?? current.jobId,
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: input.error.trim() || "Campaign generation failed.",
+    updatedAt: timestamp,
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+
+  return deepClone(updated);
+}
