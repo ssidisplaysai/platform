@@ -374,13 +374,154 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const scope = resolveRequestScope(request);
   if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
-  const body = await request.json().catch(() => null) as { form?: GlwGenerationRequestInput; action?: "continue"; jobId?: string } | null;
+  const body = await request.json().catch(() => null) as { form?: GlwGenerationRequestInput; action?: "continue" | "recheck_qa"; jobId?: string } | null;
   if (!body?.form) return NextResponse.json({ error: "Generation request is required." }, { status: 400 });
 
   const resolved = await resolveAuthorizedPreview(body.form, scope.organizationId);
   if ("error" in resolved) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
   if ("issues" in resolved) return NextResponse.json({ issues: resolved.issues }, { status: resolved.status });
   const { siteRecord, request: generationRequest } = resolved;
+
+  if (body.action === "recheck_qa") {
+    const jobId = body.jobId?.trim() ?? "";
+    if (!jobId) {
+      return NextResponse.json(
+        { error: "jobId is required to recheck failed generated content." },
+        { status: 400 },
+      );
+    }
+
+    const existing = await glwPageExecutionRepository.getById(jobId);
+    if (!existing) {
+      return NextResponse.json(
+        { error: "GLW execution was not found." },
+        { status: 404 },
+      );
+    }
+
+    if (
+      existing.organizationId !== scope.organizationId
+      || existing.siteId !== generationRequest.siteId
+      || existing.productId !== generationRequest.productId
+      || existing.slug !== generationRequest.slug
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Existing job does not match the current authorized generation target.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (
+      existing.status !== "FAILED"
+      || existing.errorCode !== "GENERATED_CONTENT_QA_FAILED"
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Only an exact job failed by generated-content QA may be rechecked.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (!existing.generatedDraft) {
+      return NextResponse.json(
+        {
+          error:
+            "The failed QA job no longer contains its generated draft artifact.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const qa = evaluateGlwGeneratedContentQa({
+      artifact: existing.generatedDraft,
+      request: generationRequest,
+      siteDomain: siteRecord.domain,
+      minimumWordCount: 1500,
+    });
+
+    if (!qa.ok) {
+      const timestamp = new Date().toISOString();
+
+      const job = await glwPageExecutionRepository.update(jobId, {
+        qaStatus: "FAILED",
+        qaChecks: qa.checks,
+        qaFailureReasons: qa.failureReasons,
+        wordCount: qa.wordCount,
+        errorCode: "GENERATED_CONTENT_QA_FAILED",
+        errorMessage:
+          Object.values(qa.failureReasons).join(" ")
+          || "Generated content failed Genesis QA.",
+        updatedAt: timestamp,
+        completedAt: timestamp,
+      });
+
+      return NextResponse.json({
+        job,
+        qaRechecked: true,
+        qaPassed: false,
+        redispatched: false,
+        publicationPerformed: false,
+      });
+    }
+
+    const timestamp = new Date().toISOString();
+
+    const recovered = await glwPageExecutionRepository.update(jobId, {
+      status: "CONTENT_READY",
+      qaStatus: "COMPLETE",
+      qaChecks: qa.checks,
+      qaFailureReasons: {},
+      wordCount: qa.wordCount,
+      errorCode: null,
+      errorMessage: null,
+      updatedAt: timestamp,
+      completedAt: null,
+    });
+
+    const authority = await verifyMutationAuthority(
+      generationRequest,
+      siteRecord,
+    );
+
+    if ("error" in authority) {
+      return NextResponse.json(
+        {
+          ...authority,
+          job: recovered,
+          qaRechecked: true,
+          qaPassed: true,
+          redispatched: false,
+          publicationPerformed: false,
+        },
+        { status: authority.status },
+      );
+    }
+
+    const job = await finalizeContentReadyExecution({
+      job: recovered,
+      request: generationRequest,
+      siteRecord,
+    });
+
+    return NextResponse.json({
+      job,
+      qaRechecked: true,
+      qaPassed: true,
+      redispatched: false,
+      publicationPerformed: false,
+    }, {
+      status:
+        job.status === "COMPLETE"
+        || job.status === "FAILED"
+          ? 200
+          : 202,
+    });
+  }
 
   if (body.action === "continue") {
     const jobId = body.jobId?.trim() ?? "";
