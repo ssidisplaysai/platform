@@ -1,5 +1,26 @@
 jest.mock("server-only", () => ({}));
 
+const originalPersistenceDirectory =
+  process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
+
+const testPersistenceDirectory =
+  `${process.cwd()}/.gcp-foundation-data-test-${process.env.JEST_WORKER_ID ?? "0"}-site-enrichment`;
+
+beforeAll(() => {
+  process.env.GCP_FOUNDATION_PERSISTENCE_DIR =
+    testPersistenceDirectory;
+});
+
+afterAll(() => {
+  if (originalPersistenceDirectory === undefined) {
+    delete process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
+    return;
+  }
+
+  process.env.GCP_FOUNDATION_PERSISTENCE_DIR =
+    originalPersistenceDirectory;
+});
+
 import {
   certifyGlwSiteEnrichmentPlan,
   getGlwSiteEnrichmentRecord,
