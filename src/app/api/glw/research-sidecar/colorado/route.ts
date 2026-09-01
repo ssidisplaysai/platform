@@ -26,9 +26,6 @@ function requireLoopback(
       "[::1]",
       "::1",
     ].includes(hostname)
-    || request.headers.has("forwarded")
-    || request.headers.has("x-forwarded-for")
-    || request.headers.has("x-forwarded-host")
   ) {
     throw new Error(
       "GLW research sidecar accepts loopback requests only.",
