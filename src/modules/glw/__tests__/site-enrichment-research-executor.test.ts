@@ -72,7 +72,7 @@ function initialize() {
       productId:
         executionRequest.productId,
       productTopic:
-        "Indoor LED Sphere",
+        "Indoor Digital Sphere",
       campaignId:
         executionRequest.campaignId,
       stateCode:
@@ -208,17 +208,7 @@ function completeProvider():
             href:
               "/indoor-digital-sphere/",
             anchorText:
-              "Indoor LED Spheres",
-          },
-          {
-            linkId:
-              "internal-geography",
-            kind:
-              "internal",
-            href:
-              "/colorado/",
-            anchorText:
-              "Colorado LED solutions",
+              "Indoor Digital Sphere",
           },
           {
             linkId:
@@ -264,11 +254,6 @@ function completeProvider():
           "link-internal-product": {
             linkIds: [
               "internal-product",
-            ],
-          },
-          "link-internal-geography": {
-            linkIds: [
-              "internal-geography",
             ],
           },
           "link-external-authority": {
@@ -323,7 +308,7 @@ describe(
 
         expect(
           result.record.plan.links.length,
-        ).toBe(4);
+        ).toBe(3);
 
         expect(
           result.wordpressMutationPerformed,
