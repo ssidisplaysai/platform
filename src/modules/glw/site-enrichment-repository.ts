@@ -368,6 +368,87 @@ export function updateGlwSiteEnrichmentResearch(
   return deepClone(updated);
 }
 
+export function applyGlwSiteEnrichmentResearchEvidence(
+  input: {
+    siteId: string;
+    canonicalPath: string;
+    researchRequirements:
+      readonly GlwResearchRequirement[];
+    plan: GlwEnrichmentPlan;
+    now?: Date;
+  },
+): GlwSiteEnrichmentRecord {
+  loadState();
+
+  const recordKey = key(
+    input.siteId,
+    input.canonicalPath,
+  );
+
+  const current =
+    recordStore.get(recordKey);
+
+  if (!current) {
+    throw new Error(
+      "Enrichment record was not found.",
+    );
+  }
+
+  if (current.status === "enriched") {
+    throw new Error(
+      "Certified enrichment cannot accept additional research evidence without a new enrichment revision.",
+    );
+  }
+
+  if (
+    input.plan.organizationId
+      !== current.organizationId
+    || input.plan.siteId
+      !== current.siteId
+    || input.plan.canonicalPath
+      !== current.canonicalPath
+  ) {
+    throw new Error(
+      "Research evidence plan does not match the persisted page identity.",
+    );
+  }
+
+  const researchRequirements =
+    deepClone(
+      input.researchRequirements,
+    );
+
+  const status:
+    GlwSiteEnrichmentRecordStatus =
+      allRequiredResearchFulfilled(
+        researchRequirements,
+      )
+        ? "research_ready"
+        : "research_pending";
+
+  const timestamp =
+    (input.now ?? new Date())
+      .toISOString();
+
+  const updated:
+    GlwSiteEnrichmentRecord = {
+      ...current,
+      researchRequirements,
+      plan: deepClone(input.plan),
+      status,
+      qa: null,
+      updatedAt: timestamp,
+    };
+
+  recordStore.set(
+    recordKey,
+    updated,
+  );
+
+  persistState();
+
+  return deepClone(updated);
+}
 export function certifyGlwSiteEnrichmentPlan(
   input: {
     siteId: string;
