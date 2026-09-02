@@ -309,10 +309,7 @@ export async function readGlwTargetPreflight(input: {
     productId: input.request.productId,
     productTopic: input.request.productTopic,
     stateCode: input.request.stateCode,
-    citySlug:
-      input.request.pageType === "state_service"
-        ? state?.slug ?? ""
-        : input.request.citySlug,
+    citySlug: input.request.citySlug,
     applicationPath: input.request.canonicalPath,
   });
   const common = {
@@ -501,6 +498,7 @@ export async function readGlwTargetPreflight(input: {
   if (leaf.state === "UNVERIFIED" || leaf.state === "AMBIGUOUS" || leaf.state === "UNSUPPORTED_STATUS") {
     return resolveGlwTargetPreflight({ identity, hierarchy, ...common });
   }
+
   return resolveGlwTargetPreflight({
     identity,
     wordpressPages: targetRead.pages,
