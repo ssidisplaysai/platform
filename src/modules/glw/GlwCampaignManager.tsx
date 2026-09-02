@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
@@ -154,8 +155,8 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
         <h2 className="text-lg font-semibold text-white">Campaigns</h2>
         <div className="mt-4 space-y-3">
-          {campaigns.length === 0 ? <p className="text-sm text-zinc-400">No campaigns configured yet.</p> : campaigns.map((campaign) => <article key={campaign.campaignId} className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
-            <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold text-white">{campaign.name}</h3><p className="mt-1 text-xs text-zinc-500">{campaign.stateCodes.length} states · {campaign.pagesPerDay}/day</p></div><span className="rounded-full border border-zinc-700 px-2 py-1 text-xs uppercase text-zinc-300">{campaign.status}</span></div>
+          {campaigns.length === 0 ? <p className="text-sm text-zinc-400">No campaigns configured yet.</p> : campaigns.map((campaign) => <article key={campaign.campaignId} className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4 transition hover:border-zinc-700">
+            <div className="flex items-start justify-between gap-3"><div><Link href={`/glw/campaigns/${campaign.campaignId}`} className="font-semibold text-white hover:text-red-300">{campaign.name}</Link><p className="mt-1 text-xs text-zinc-500">{campaign.stateCodes.length} states · {campaign.pagesPerDay}/day</p></div><span className="rounded-full border border-zinc-700 px-2 py-1 text-xs uppercase text-zinc-300">{campaign.status}</span></div>
             {(() => {
               const queue = queueSummaries[campaign.campaignId];
 
@@ -195,6 +196,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
               );
             })()}
 
+            <Link href={`/glw/campaigns/${campaign.campaignId}`} className="mt-3 inline-block text-xs uppercase tracking-wider text-red-400 hover:text-red-300">Open campaign</Link>
             {campaign.status === "draft" ? <GlwCampaignKnowledgePack campaign={campaign} organizationId={organizationId} /> : null}
           </article>)}
         </div>
