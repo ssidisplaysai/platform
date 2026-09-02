@@ -33,7 +33,7 @@ const mappedRequest = mapGenerationRequestToN8nDraft("glw-job-mcp", request);
 
 const LIVE_EXECUTE_WORKFLOW_SCHEMA = {
   required: ["workflowId", "executionMode"],
-  allowed: ["workflowId", "executionMode", "inputs"],
+  allowed: ["workflowId", "executionMode", "triggerNodeName", "inputs"],
   executionModes: ["manual", "production"],
   webhookMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
 } as const;
@@ -43,10 +43,11 @@ function validateLiveExecuteArguments(value: unknown): boolean {
   const input = value as Record<string, unknown>;
   if (Object.keys(input).some((key) => !LIVE_EXECUTE_WORKFLOW_SCHEMA.allowed.includes(key as never))) return false;
   if (typeof input.workflowId !== "string" || !LIVE_EXECUTE_WORKFLOW_SCHEMA.executionModes.includes(input.executionMode as never)) return false;
+  if (input.triggerNodeName !== "GLW MCP Recovery Webhook") return false;
   if (!input.inputs || typeof input.inputs !== "object" || Array.isArray(input.inputs)) return false;
   const inputs = input.inputs as Record<string, unknown>;
-  if (Object.keys(inputs).some((key) => !["type", "webhookData"].includes(key))) return false;
-  if (inputs.type !== "webhook" || !inputs.webhookData || typeof inputs.webhookData !== "object" || Array.isArray(inputs.webhookData)) return false;
+  if (Object.keys(inputs).some((key) => key !== "webhookData")) return false;
+  if (!inputs.webhookData || typeof inputs.webhookData !== "object" || Array.isArray(inputs.webhookData)) return false;
   const webhookData = inputs.webhookData as Record<string, unknown>;
   if (Object.keys(webhookData).some((key) => !["method", "query", "body", "headers"].includes(key))) return false;
   return LIVE_EXECUTE_WORKFLOW_SCHEMA.webhookMethods.includes(webhookData.method as never)
@@ -117,7 +118,7 @@ describe("GLW n8n MCP recovery adapter", () => {
       site: { ...mappedRequest.site, id: "site-led-display-warehouse-production" },
     });
 
-    expect(normalized.site.id).toBe("led-display-warehouse");
+    expect(normalized.site.id).toBe("site-led-display-warehouse-production");
     expect(normalized.jobId).toBe("12a099f9-0f42-4f01-a707-30b3b8f3a29c");
     expect(normalized.page).toMatchObject({ state: "Texas", city: "Austin", status: "draft" });
     expect(normalized.callbackUrl).toBe("");
@@ -194,8 +195,8 @@ describe("GLW n8n MCP recovery adapter", () => {
     expect(callTool).toHaveBeenCalledWith("execute_workflow", {
       workflowId: "9WTjTDXX0QNgF6Mw",
       executionMode: "production",
+      triggerNodeName: "GLW MCP Recovery Webhook",
       inputs: {
-        type: "webhook",
         webhookData: {
           method: "POST",
           body: expect.objectContaining({
@@ -212,10 +213,10 @@ describe("GLW n8n MCP recovery adapter", () => {
       },
     });
     expect(validateLiveExecuteArguments(callTool.mock.calls[0][1])).toBe(true);
-    expect(Object.keys(callTool.mock.calls[0][1])).toEqual(["workflowId", "executionMode", "inputs"]);
+    expect(Object.keys(callTool.mock.calls[0][1])).toEqual(["workflowId", "executionMode", "triggerNodeName", "inputs"]);
   });
 
-  test("live schema fixture rejects a missing webhook discriminator", () => {
+  test("live schema fixture rejects a missing webhook trigger name", () => {
     expect(validateLiveExecuteArguments({
       workflowId: "9WTjTDXX0QNgF6Mw",
       executionMode: "production",
@@ -223,11 +224,11 @@ describe("GLW n8n MCP recovery adapter", () => {
     })).toBe(false);
   });
 
-  test("live schema fixture rejects unsupported top-level arguments", () => {
+  test("live schema fixture rejects unsupported webhook input keys", () => {
     expect(validateLiveExecuteArguments({
       workflowId: "9WTjTDXX0QNgF6Mw",
       executionMode: "production",
-      triggerNodeName: "GLW Page Webhook",
+      triggerNodeName: "GLW MCP Recovery Webhook",
       inputs: { type: "webhook", webhookData: { method: "POST", body: {} } },
     })).toBe(false);
   });

@@ -243,8 +243,8 @@ export function createGlwN8nMcpDispatcher(input?: {
       const result = await callTool("execute_workflow", {
         workflowId: GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
         executionMode: "production",
+        triggerNodeName: "GLW MCP Recovery Webhook",
         inputs: {
-          type: "webhook",
           webhookData: {
             method: "POST",
             body: validatedRequest,
