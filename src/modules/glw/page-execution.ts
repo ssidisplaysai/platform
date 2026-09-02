@@ -476,7 +476,12 @@ function normalizeGeneratedText(value: string): string {
     .replace(/Ã‚Â°/g, "°")
     .replace(/Ã‚Â/g, "")
     .replace(/Ã¢â‚¬Å“/g, "“")
-    .replace(/Ã¢â‚¬Â/g, "”");
+    .replace(/Ã¢â‚¬Â/g, "”")
+    .replace(/â€™/g, "’")
+    .replace(/â€“/g, "–")
+    .replace(/â€”/g, "—")
+    .replace(/Â°/g, "°")
+    .replace(/Â/g, "");
 }
 
 function assertNoGeneratedMojibake(value: string): void {
