@@ -59,20 +59,12 @@ function collectTextIntegrityMarkers(text: string): string[] {
     const index = match.index ?? 0;
 
     if (value.startsWith(".")) {
-      const precedingCharacter =
-        index > 0
-          ? text[index - 1]
-          : "";
-
-      const followingCharacter =
-        text[index + value.length] ?? "";
+      const precedingCharacter = index > 0 ? text[index - 1] : "";
+      const followingCharacter = text[index + value.length] ?? "";
 
       // Dotted abbreviations such as U.S. contain ".S." but do not
       // represent a missing space between sentences.
-      if (
-        /[A-Za-z]/.test(precedingCharacter)
-        && followingCharacter === "."
-      ) {
+      if (/[A-Za-z]/.test(precedingCharacter) && followingCharacter === ".") {
         continue;
       }
     }
@@ -81,6 +73,32 @@ function collectTextIntegrityMarkers(text: string): string[] {
   }
 
   return [...markers];
+}
+
+function normalizeAnchorText(value: string): string {
+  return stripHtml(value).replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function hasRequiredStateProductLink(
+  html: string,
+  request: GlwGenerationRequest,
+): boolean {
+  if (request.pageType !== "state_service") return true;
+
+  const firstPathSegment = request.canonicalPath.split("/").filter(Boolean)[0] ?? "";
+  if (!firstPathSegment) return false;
+  const requiredHref = `/${firstPathSegment}/`;
+  const requiredAnchor = normalizeAnchorText(request.productTopic);
+  const anchorPattern = /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = anchorPattern.exec(html)) !== null) {
+    const href = (match[1] ?? "").trim();
+    const anchor = normalizeAnchorText(match[2] ?? "");
+    if (href === requiredHref && anchor === requiredAnchor) return true;
+  }
+
+  return false;
 }
 
 export function evaluateGlwGeneratedContentQa(input: {
@@ -112,6 +130,7 @@ export function evaluateGlwGeneratedContentQa(input: {
   const contentPresent = text.length > 0;
   const wordCountOk = wordCount >= minimumWordCount;
   const domainsOk = foreignDomains.length === 0;
+  const stateProductLinkOk = hasRequiredStateProductLink(html, input.request);
 
   const checks: Record<string, QaCheck> = {
     contentPresent: { ok: contentPresent, message: contentPresent ? "Generated content is present." : "Generated content is empty." },
@@ -122,6 +141,12 @@ export function evaluateGlwGeneratedContentQa(input: {
     expectedProduct: { ok: expectedProduct, message: expectedProduct ? "Expected product/topic is present." : `Expected product/topic is missing: ${input.request.productTopic}.` },
     expectedState: { ok: expectedState, message: expectedState ? "Expected state is present." : `Expected state is missing: ${input.request.stateName ?? ""}.` },
     expectedCity: { ok: expectedCity, message: expectedCity ? "Expected city is present." : `Expected city is missing: ${input.request.cityName ?? ""}.` },
+    stateProductAuthorityLink: {
+      ok: stateProductLinkOk,
+      message: stateProductLinkOk
+        ? "Required state-page product authority link is present."
+        : `State pages must link ${input.request.productTopic} to /${input.request.canonicalPath.split("/").filter(Boolean)[0] ?? ""}/.`,
+    },
   };
 
   const failureReasons = Object.fromEntries(
