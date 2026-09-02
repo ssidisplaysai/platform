@@ -135,5 +135,18 @@ describe("GLW selective page generation recovery", () => {
     expect(dispatch).toBeGreaterThan(authorityCheck);
     expect(source).toContain("Published WordPress targets cannot be updated under the draft-only release.");
     expect(source).toContain("Creation was stopped before any WordPress changes.");
+
+    expect(source).toContain("generationOnly: true");
+    expect(source).toContain("wordpressMutationPerformed: false");
+    expect(source).toContain('continuationRequired: job.status === "CONTENT_READY"');
+
+    const defaultDispatch = source.lastIndexOf("service.execute(generationRequest)");
+    const defaultFinalize = source.indexOf(
+      "finalizeContentReadyExecution",
+      defaultDispatch,
+    );
+
+    expect(defaultDispatch).toBeGreaterThan(authorityCheck);
+    expect(defaultFinalize).toBe(-1);
   });
 });

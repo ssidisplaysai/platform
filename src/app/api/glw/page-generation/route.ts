@@ -556,9 +556,21 @@ export async function POST(request: NextRequest) {
 
   try {
     const dispatchedJob = await service.execute(generationRequest);
-    const recoveredJob = isTerminal(dispatchedJob.status) ? dispatchedJob : await recoverExecution(dispatchedJob);
-    const job = recoveredJob.status === "CONTENT_READY" ? await finalizeContentReadyExecution({ job: recoveredJob, request: generationRequest, siteRecord }) : recoveredJob;
-    return NextResponse.json({ job }, { status: job.status === "COMPLETE" || job.status === "FAILED" ? 200 : 202 });
+    const job = isTerminal(dispatchedJob.status)
+      ? dispatchedJob
+      : await recoverExecution(dispatchedJob);
+
+    return NextResponse.json({
+      job,
+      generationOnly: true,
+      wordpressMutationPerformed: false,
+      continuationRequired: job.status === "CONTENT_READY",
+    }, {
+      status:
+        job.status === "COMPLETE" || job.status === "FAILED"
+          ? 200
+          : 202,
+    });
   } catch (error) {
     const status = error instanceof GlwDraftOnlyExecutionError ? 403 : 500;
     return NextResponse.json({ error: error instanceof Error ? error.message : "Draft execution failed." }, { status });
