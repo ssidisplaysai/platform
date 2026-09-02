@@ -7,7 +7,7 @@ import {
 import {
   assertGlwResearchMigrationScope,
   previewGlwResearchContractReconciliation,
-  type GlwResearchContractReconciliationPreview,
+  type GlwResearchContractReconciliation,
 } from "@/modules/glw/site-enrichment-contract-reconciler";
 import type {
   GlwStateServiceResearchPlanInput,
@@ -21,7 +21,7 @@ export type GlwCampaignResearchContractDryRunItem = {
   canonicalPath: string;
   status: GlwSiteEnrichmentRecord["status"];
   compatibility: GlwResearchContractCompatibility;
-  reconciliation: GlwResearchContractReconciliationPreview;
+  reconciliation: GlwResearchContractReconciliation;
 };
 
 export type GlwCampaignResearchContractDryRun = {
