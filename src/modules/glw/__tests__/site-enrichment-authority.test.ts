@@ -89,14 +89,7 @@ function validPlan(
         href:
           "/indoor-digital-sphere/",
         anchorText:
-          "Indoor Digital Spheres",
-      },
-      {
-        linkId: "internal-state",
-        kind: "internal",
-        href: "/colorado/",
-        anchorText:
-          "Colorado LED display solutions",
+          "Indoor Digital Sphere",
       },
       {
         linkId: "external-state",
@@ -139,6 +132,9 @@ describe(
         );
         expect(
           result.publicationReadyEligible,
+        ).toBe(true);
+        expect(
+          result.checks.internalLinks.ok,
         ).toBe(true);
       },
     );
@@ -235,14 +231,13 @@ describe(
     );
 
     test(
-      "requires at least two internal links",
+      "requires at least one internal link",
       () => {
         const plan = validPlan({
           links:
             validPlan().links.filter(
               (link) =>
-                link.linkId
-                !== "internal-state",
+                link.kind !== "internal",
             ),
         });
 
@@ -250,6 +245,32 @@ describe(
           evaluateGlwEnrichmentPlan(
             plan,
           );
+
+        expect(
+          result.checks.internalLinks.ok,
+        ).toBe(false);
+      },
+    );
+
+    test(
+      "rejects malformed internal links",
+      () => {
+        const plan = validPlan({
+          links: [
+            ...validPlan().links.filter(
+              (link) => link.kind !== "internal",
+            ),
+            {
+              linkId: "malformed-internal",
+              kind: "internal",
+              href: "//example.com/not-internal",
+              anchorText: "Malformed",
+            },
+          ],
+        });
+
+        const result =
+          evaluateGlwEnrichmentPlan(plan);
 
         expect(
           result.checks.internalLinks.ok,

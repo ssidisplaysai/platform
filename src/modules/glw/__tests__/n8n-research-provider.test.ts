@@ -142,7 +142,7 @@ function acquisition() {
         linkId: "internal-product",
         kind: "internal" as const,
         href: "/indoor-digital-sphere/",
-        anchorText: "Indoor LED Spheres",
+        anchorText: "Indoor Digital Sphere",
         sourceId: null,
       },
       {
@@ -191,7 +191,7 @@ function providerFor(
     resolveAllowedInternalLinks: () => [
       {
         href: "/indoor-digital-sphere/",
-        anchorText: "Indoor LED Spheres",
+        anchorText: "Indoor Digital Sphere",
         authorityClass: "product",
       },
     ],
@@ -260,7 +260,7 @@ describe("GLW n8n research provider", () => {
       resolveAllowedInternalLinks: () => [
         {
           href: "/indoor-digital-sphere/",
-          anchorText: "Indoor LED Spheres",
+          anchorText: "Indoor Digital Sphere",
           authorityClass: "product",
         },
       ],
@@ -342,7 +342,12 @@ describe("GLW n8n research provider", () => {
     expect(observed?.request)
       .toEqual(request());
     expect(observed?.researchRequirements.length)
-      .toBe(8);
+      .toBe(7);
+    expect(observed?.researchRequirements.some(
+      (requirement) =>
+        requirement.requirementId
+        === "link-internal-geography",
+    )).toBe(false);
     expect(observed?.upstreamAuthorityDomains)
       .toEqual(["ssidisplays.com"]);
     expect(observed?.allowedInternalLinks)
@@ -355,6 +360,32 @@ describe("GLW n8n research provider", () => {
       .not.toHaveProperty("wordpressMutation");
     expect(observed)
       .not.toHaveProperty("publication");
+  });
+
+  test("uses the Genesis internal-link authority by default", async () => {
+    let observed: GlwN8nResearchPayload | null = null;
+    const provider = createGlwN8nResearchProvider({
+      transport: transportFor(
+        acquisition(),
+        (payload) => {
+          observed = payload;
+        },
+      ),
+    });
+
+    await expect(provider.research(request()))
+      .resolves.toMatchObject({
+        jobId: request().jobId,
+      });
+
+    expect(observed?.allowedInternalLinks)
+      .toEqual([
+        {
+          href: "/indoor-digital-sphere/",
+          anchorText: "Indoor Digital Sphere",
+          authorityClass: "product",
+        },
+      ]);
   });
 
   test("rejects mismatched response identity", async () => {

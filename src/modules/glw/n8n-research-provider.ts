@@ -5,6 +5,7 @@ import type {
 } from "./site-enrichment-authority";
 import {
   resolveGlwAllowedInternalLinks,
+  type GlwAllowedInternalLink,
 } from "./site-internal-link-authority";
 import {
   getGlwSiteEnrichmentRecord,
@@ -16,6 +17,10 @@ import type {
   GlwResearchProvider,
 } from "./site-enrichment-research-executor";
 
+export type {
+  GlwAllowedInternalLink,
+} from "./site-internal-link-authority";
+
 export const GLW_N8N_RESEARCH_WORKFLOW_NAME =
   "GLW Enrichment Research Provider v1";
 export const GLW_N8N_RESEARCH_WORKFLOW_ID =
@@ -24,12 +29,6 @@ export const GLW_N8N_RESEARCH_WEBHOOK_HOST =
   "ssiai.app.n8n.cloud";
 export const GLW_N8N_RESEARCH_WEBHOOK_PATH =
   "/webhook/glw-enrichment-research-provider-v1";
-
-export type GlwAllowedInternalLink = {
-  href: string;
-  anchorText: string;
-  authorityClass: "product" | "geography";
-};
 
 export type GlwN8nResearchPayload = {
   workflowId: typeof GLW_N8N_RESEARCH_WORKFLOW_ID;
@@ -488,16 +487,9 @@ export function createGlwN8nResearchProvider(input?: {
       }
       assertRecordIdentity(request, record);
 
-
       const allowedInternalLinks =
         input?.resolveAllowedInternalLinks?.(request)
-        ?? resolveGlwAllowedInternalLinks({
-          organizationId: request.organizationId,
-          siteId: request.siteId,
-          productId: request.productId,
-          stateCode: request.stateCode,
-          canonicalPath: request.canonicalPath,
-        });
+        ?? resolveGlwAllowedInternalLinks(request);
 
       const payload: GlwN8nResearchPayload = {
         workflowId: GLW_N8N_RESEARCH_WORKFLOW_ID,

@@ -312,10 +312,10 @@ export function evaluateGlwEnrichmentPlan(
 
   const internalLinkCheck =
     check(
-      internalLinks.length >= 2
+      internalLinks.length >= 1
       && invalidInternalLinks.length === 0,
-      "Internal link plan contains at least two valid site-relative links.",
-      "At least two valid site-relative internal links are required.",
+      "Internal link plan contains at least one valid site-relative link.",
+      "At least one valid site-relative internal link is required.",
     );
 
   const externalAuthorityLinkCheck =
