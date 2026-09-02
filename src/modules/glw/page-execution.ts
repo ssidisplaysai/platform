@@ -234,7 +234,7 @@ export type GlwN8nExecutionReader = {
 };
 
 export const GLW_TERMINAL_READ_POLICY = {
-  maximumAttempts: 3,
+  maximumAttempts: 15,
   intervalMs: 5_000,
 } as const;
 
