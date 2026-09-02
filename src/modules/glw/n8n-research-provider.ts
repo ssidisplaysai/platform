@@ -232,6 +232,12 @@ function assertIdentity(
   }
 }
 
+function invalidSource(reason: string): never {
+  throw new Error(
+    `n8n research provider returned invalid_source:${reason}.`,
+  );
+}
+
 function assertSources(
   value: unknown,
 ): readonly GlwEnrichmentSource[] {
@@ -252,19 +258,23 @@ function assertSources(
     const sourceId = String(source.sourceId ?? "").trim();
     const url = String(source.url ?? "").trim();
     const domain = String(source.domain ?? "").trim();
-    if (
-      !sourceId
-      || ids.has(sourceId)
-      || !url.startsWith("https://")
-      || urlDomain(url) !== normalizedDomain(domain)
-      || !String(source.title ?? "").trim()
-      || !String(source.publisher ?? "").trim()
-      || !String(source.retrievedAt ?? "").trim()
-    ) {
-      throw new Error(
-        "n8n research provider returned an invalid source.",
-      );
+
+    if (!sourceId) invalidSource("missing_source_id");
+    if (ids.has(sourceId)) invalidSource("duplicate_source_id");
+    if (!url.startsWith("https://")) invalidSource("non_https_url");
+    if (urlDomain(url) !== normalizedDomain(domain)) {
+      invalidSource("domain_mismatch");
     }
+    if (!String(source.title ?? "").trim()) {
+      invalidSource("missing_title");
+    }
+    if (!String(source.publisher ?? "").trim()) {
+      invalidSource("missing_publisher");
+    }
+    if (!String(source.retrievedAt ?? "").trim()) {
+      invalidSource("missing_retrieved_at");
+    }
+
     ids.add(sourceId);
   }
 
