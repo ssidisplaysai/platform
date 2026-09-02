@@ -13,6 +13,9 @@ import {
   type GlwEnrichmentQaResult,
   type GlwEnrichmentSourceTier,
 } from "@/modules/glw/site-enrichment-authority";
+import {
+  evaluateGlwResearchContentSufficiency,
+} from "@/modules/glw/research-content-sufficiency";
 
 const PERSISTENCE_NAMESPACE =
   "glw-site-enrichment-repository";
@@ -144,6 +147,23 @@ function allRequiredResearchFulfilled(
   return requirements
     .filter((requirement) => requirement.required)
     .every(requirementFulfilled);
+}
+
+function researchContentSufficient(
+  plan: GlwEnrichmentPlan,
+): boolean {
+  return evaluateGlwResearchContentSufficiency({
+    sources: plan.sources,
+    claims: plan.claims,
+  }).sufficient;
+}
+
+function researchReady(input: {
+  requirements: readonly GlwResearchRequirement[];
+  plan: GlwEnrichmentPlan;
+}): boolean {
+  return allRequiredResearchFulfilled(input.requirements)
+    && researchContentSufficient(input.plan);
 }
 
 loadState();
@@ -343,9 +363,10 @@ export function updateGlwSiteEnrichmentResearch(
 
   const status:
     GlwSiteEnrichmentRecordStatus =
-      allRequiredResearchFulfilled(
-        researchRequirements,
-      )
+      researchReady({
+        requirements: researchRequirements,
+        plan: current.plan,
+      })
         ? "research_ready"
         : "research_pending";
 
@@ -420,9 +441,10 @@ export function applyGlwSiteEnrichmentResearchEvidence(
 
   const status:
     GlwSiteEnrichmentRecordStatus =
-      allRequiredResearchFulfilled(
-        researchRequirements,
-      )
+      researchReady({
+        requirements: researchRequirements,
+        plan: input.plan,
+      })
         ? "research_ready"
         : "research_pending";
 
@@ -483,6 +505,12 @@ export function certifyGlwSiteEnrichmentPlan(
     );
   }
 
+  if (!researchContentSufficient(current.plan)) {
+    throw new Error(
+      "Research content must be sufficient before enrichment certification.",
+    );
+  }
+
   if (
     input.plan.organizationId
       !== current.organizationId
@@ -493,6 +521,12 @@ export function certifyGlwSiteEnrichmentPlan(
   ) {
     throw new Error(
       "Enrichment plan does not match the persisted page identity.",
+    );
+  }
+
+  if (!researchContentSufficient(input.plan)) {
+    throw new Error(
+      "Enrichment plan is missing required research content sufficiency.",
     );
   }
 
