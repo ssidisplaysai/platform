@@ -524,7 +524,7 @@ describe("GLW async n8n result recovery", () => {
       fetchImpl: jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({ id: "123", status: "error", data: { resultData: { error: { message: "secret=unsafe" } } }),
+        json: async () => ({ id: "123", status: "error", data: { resultData: { error: { message: "secret=unsafe" } } } }),
       }),
     });
     await expect(reader.readExecution("123")).resolves.toMatchObject({
