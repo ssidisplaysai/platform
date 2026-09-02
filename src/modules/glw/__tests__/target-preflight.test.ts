@@ -263,6 +263,7 @@ describe("GLW canonical target preflight", () => {
 
     expect(target).toMatchObject({
       state: "ABSENT",
+      canonicalPath: "indoor-led-video-wall/california",
       canonicalSlug: "california",
       canonicalParentId: "124",
       hierarchy: {
@@ -318,6 +319,7 @@ describe("GLW canonical target preflight", () => {
       state: "EXISTS_PUBLISHED",
       wordpressObjectId: "9001",
       wordpressStatus: "publish",
+      canonicalPath: "indoor-led-video-wall/california",
       canonicalSlug: "california",
       canonicalParentId: "124",
     });

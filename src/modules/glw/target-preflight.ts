@@ -401,14 +401,17 @@ export async function readGlwTargetPreflight(input: {
   });
 
   if (input.request.pageType === "state_service") {
-    const identity = createGlwCanonicalTargetIdentity({
-      productId: input.request.productId,
-      productTopic: input.request.productTopic,
-      stateCode: input.request.stateCode,
-      citySlug: state.slug,
-      applicationPath: input.request.canonicalPath,
-      canonicalParentId: productParentId,
-    });
+    const identity = {
+      ...createGlwCanonicalTargetIdentity({
+        productId: input.request.productId,
+        productTopic: input.request.productTopic,
+        stateCode: input.request.stateCode,
+        citySlug: state.slug,
+        applicationPath: input.request.canonicalPath,
+        canonicalParentId: productParentId,
+      }),
+      canonicalPath: input.request.canonicalPath,
+    };
 
     const hierarchyBase: GlwHierarchyPreflight = {
       productParent,
