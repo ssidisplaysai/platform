@@ -2,20 +2,84 @@ import "server-only";
 
 import type {
   GlwResearchRequirement,
+  GlwResearchRequirementKind,
   GlwSiteEnrichmentRecord,
 } from "@/modules/glw/site-enrichment-repository";
+import type {
+  GlwEnrichmentSourceTier,
+} from "@/modules/glw/site-enrichment-authority";
 
 export const GLW_STATE_SERVICE_RESEARCH_CONTRACT_VERSION =
   "state-service-research-v1" as const;
 
+type RequirementContract = {
+  requirementId: string;
+  kind: GlwResearchRequirementKind;
+  required: boolean;
+  sourceTier: GlwEnrichmentSourceTier | null;
+  minimumCount: number;
+};
+
+const BASE_STATE_SERVICE_REQUIREMENTS:
+  readonly RequirementContract[] = [
+    {
+      requirementId: "source-product-first-party",
+      kind: "source",
+      required: true,
+      sourceTier: "first_party",
+      minimumCount: 1,
+    },
+    {
+      requirementId: "source-state-government",
+      kind: "source",
+      required: true,
+      sourceTier: "government",
+      minimumCount: 1,
+    },
+    {
+      requirementId: "source-state-tourism",
+      kind: "source",
+      required: true,
+      sourceTier: "tourism_board",
+      minimumCount: 1,
+    },
+    {
+      requirementId: "source-reputable-news",
+      kind: "source",
+      required: false,
+      sourceTier: "reputable_news",
+      minimumCount: 1,
+    },
+    {
+      requirementId: "link-internal-product",
+      kind: "internal_link",
+      required: true,
+      sourceTier: null,
+      minimumCount: 1,
+    },
+    {
+      requirementId: "link-external-authority",
+      kind: "external_link",
+      required: true,
+      sourceTier: "government",
+      minimumCount: 1,
+    },
+  ];
+
+const UPSTREAM_REQUIREMENT:
+  RequirementContract = {
+    requirementId: "link-upstream-source-of-truth",
+    kind: "upstream_link",
+    required: true,
+    sourceTier: "first_party",
+    minimumCount: 1,
+  };
+
 export const GLW_STATE_SERVICE_RESEARCH_REQUIREMENT_IDS = [
-  "source-product-first-party",
-  "source-state-government",
-  "source-state-tourism",
-  "source-reputable-news",
-  "link-internal-product",
-  "link-external-authority",
-  "link-upstream-source-of-truth",
+  ...BASE_STATE_SERVICE_REQUIREMENTS.map(
+    (requirement) => requirement.requirementId,
+  ),
+  UPSTREAM_REQUIREMENT.requirementId,
 ] as const;
 
 export type GlwResearchContractCompatibility = {
@@ -26,23 +90,25 @@ export type GlwResearchContractCompatibility = {
   missingRequirementIds: readonly string[];
   obsoleteRequirementIds: readonly string[];
   duplicateRequirementIds: readonly string[];
+  malformedRequirementIds: readonly string[];
 };
 
-function expectedRequirementIds(
+function expectedRequirements(
   record: Pick<
     GlwSiteEnrichmentRecord,
     "pageType" | "upstreamAuthorityDomains"
   >,
-): readonly string[] {
+): readonly RequirementContract[] {
   if (record.pageType !== "state_service") {
     return [];
   }
 
-  return GLW_STATE_SERVICE_RESEARCH_REQUIREMENT_IDS.filter(
-    (requirementId) =>
-      requirementId !== "link-upstream-source-of-truth"
-      || record.upstreamAuthorityDomains.length > 0,
-  );
+  return record.upstreamAuthorityDomains.length > 0
+    ? [
+        ...BASE_STATE_SERVICE_REQUIREMENTS,
+        UPSTREAM_REQUIREMENT,
+      ]
+    : BASE_STATE_SERVICE_REQUIREMENTS;
 }
 
 function duplicateIds(
@@ -61,13 +127,28 @@ function duplicateIds(
   return [...duplicates].sort();
 }
 
+function normalizedSourceTier(
+  requirement: GlwResearchRequirement,
+): GlwEnrichmentSourceTier | null {
+  return requirement.sourceTier ?? null;
+}
+
 export function evaluateGlwResearchContractCompatibility(
   record: Pick<
     GlwSiteEnrichmentRecord,
     "pageType" | "upstreamAuthorityDomains" | "researchRequirements"
   >,
 ): GlwResearchContractCompatibility {
-  const expected = expectedRequirementIds(record);
+  const expectedContracts = expectedRequirements(record);
+  const expected = expectedContracts.map(
+    (requirement) => requirement.requirementId,
+  );
+  const expectedById = new Map(
+    expectedContracts.map((requirement) => [
+      requirement.requirementId,
+      requirement,
+    ]),
+  );
   const actual = record.researchRequirements.map(
     (requirement) => requirement.requirementId,
   );
@@ -83,6 +164,24 @@ export function evaluateGlwResearchContractCompatibility(
   const duplicateRequirementIds = duplicateIds(
     record.researchRequirements,
   );
+  const malformedRequirementIds =
+    record.researchRequirements
+      .filter((requirement) => {
+        const expectedRequirement = expectedById.get(
+          requirement.requirementId,
+        );
+        if (!expectedRequirement) return false;
+
+        return (
+          requirement.kind !== expectedRequirement.kind
+          || requirement.required !== expectedRequirement.required
+          || normalizedSourceTier(requirement)
+            !== expectedRequirement.sourceTier
+          || requirement.minimumCount
+            !== expectedRequirement.minimumCount
+        );
+      })
+      .map((requirement) => requirement.requirementId);
 
   return {
     compatible:
@@ -90,6 +189,7 @@ export function evaluateGlwResearchContractCompatibility(
       && missingRequirementIds.length === 0
       && obsoleteRequirementIds.length === 0
       && duplicateRequirementIds.length === 0
+      && malformedRequirementIds.length === 0
       && actual.length === expected.length,
     contractVersion: GLW_STATE_SERVICE_RESEARCH_CONTRACT_VERSION,
     expectedRequirementIds: expected,
@@ -97,6 +197,7 @@ export function evaluateGlwResearchContractCompatibility(
     missingRequirementIds,
     obsoleteRequirementIds,
     duplicateRequirementIds,
+    malformedRequirementIds,
   };
 }
 
@@ -110,7 +211,7 @@ export function assertGlwResearchContractCompatible(
 
   if (!result.compatible) {
     throw new Error(
-      `Research contract mismatch (${result.contractVersion}); provider invocation blocked. Missing: ${result.missingRequirementIds.join(",") || "none"}; obsolete: ${result.obsoleteRequirementIds.join(",") || "none"}; duplicate: ${result.duplicateRequirementIds.join(",") || "none"}.`,
+      `Research contract mismatch (${result.contractVersion}); provider invocation blocked. Missing: ${result.missingRequirementIds.join(",") || "none"}; obsolete: ${result.obsoleteRequirementIds.join(",") || "none"}; duplicate: ${result.duplicateRequirementIds.join(",") || "none"}; malformed: ${result.malformedRequirementIds.join(",") || "none"}.`,
     );
   }
 }
