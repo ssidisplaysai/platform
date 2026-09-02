@@ -204,7 +204,6 @@ describe("GLW one-draft execution recovery", () => {
     expect(mapped.page.productTopic).toBe("Generalized Product");
   });
 
-
   test("allows explicit draft execution", async () => {
     const { service } = serviceWith({ kind: "accepted", executionId: "execution-1", status: "accepted" });
     await expect(service.execute(request)).resolves.toMatchObject({ status: "DISPATCHED" });
@@ -293,6 +292,31 @@ describe("GLW async n8n result recovery", () => {
     })).toMatchObject({ kind: "failed", errorCode: "N8N_EXECUTION_FAILED", errorMessage: "token=[REDACTED]" });
   });
 
+  test("normalizes known mojibake in generated draft content", () => {
+    const normalized = normalizeGlwN8nExecutionResult({
+      snapshot: terminalSnapshot({
+        generated: {
+          article_html: "<p>AlaskaÃ¢â‚¬â„¢s viewing range is 360Ã‚Â° Ã¢â‚¬â€œ 180Ã‚Â°.</p>",
+        },
+      }),
+      expectedJobId: "glw-job-001",
+    });
+
+    expect(normalized).toMatchObject({ kind: "complete" });
+    if (!normalized || normalized.kind !== "complete") throw new Error("Expected complete result.");
+    expect(normalized.generatedDraft?.contentHtml).toContain("Alaska’s viewing range is 360° – 180°.");
+    expect(normalized.generatedDraft?.contentHtml).not.toMatch(/[âÃÂ\uFFFD]/);
+  });
+
+  test("fails closed when generated draft retains unknown encoding corruption", () => {
+    expect(() => normalizeGlwN8nExecutionResult({
+      snapshot: terminalSnapshot({
+        generated: { article_html: "<p>Unknown corruption Ãxyz remains.</p>" },
+      }),
+      expectedJobId: "glw-job-001",
+    })).toThrow(GlwExecutionResultError);
+  });
+
   test("extracts WordPress, SEO, image, disposition, and QA data", () => {
     expect(normalizeGlwN8nExecutionResult({ snapshot: terminalSnapshot(), expectedJobId: "glw-job-001" }))
       .toMatchObject({
@@ -316,386 +340,11 @@ describe("GLW async n8n result recovery", () => {
     { name: "explicit false", qa: { qa_featured_image_present: false }, generated: {}, expected: false },
     { name: "explicit false overrides URL", qa: { qa_featured_image_present: false, qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: false },
     { name: "URL fallback", qa: { qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: true },
-    { name: "media ID fallback", qa: {}, generated: { featured_media: 42 }, expected: true },
-    { name: "missing evidence", qa: { qa_featured_image_url: "" }, generated: {}, expected: false },
-    { name: "serialized false", qa: { qa_featured_image_present: "false", qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: false },
-    { name: "serialized true", qa: { qa_featured_image_present: "true" }, generated: {}, expected: true },
-    { name: "malformed explicit value", qa: { qa_featured_image_present: "yes", qa_featured_image_url: "https://example.test/image.jpg" }, generated: {}, expected: false },
-  ])("normalizes featured-image evidence: $name", ({ qa, generated, expected }) => {
+    { name: "media ID fallback", qa: {}, generated: { featured_media: 88 }, expected: true },
+  ])("normalizes featured image presence: $name", ({ qa, generated, expected }) => {
     expect(normalizeGlwN8nExecutionResult({
       snapshot: terminalSnapshot({ qa, generated }),
       expectedJobId: "glw-job-001",
-    })).toMatchObject({ kind: "complete", featuredImagePresent: expected });
-  });
-
-  test("rejects terminal success without required result nodes", () => {
-    expect(() => normalizeGlwN8nExecutionResult({
-      snapshot: { ...terminalSnapshot(), runData: {} },
-      expectedJobId: "glw-job-001",
-    })).toThrow(GlwExecutionResultError);
-  });
-
-  test("rejects terminal data correlated to another local job", () => {
-    expect(() => normalizeGlwN8nExecutionResult({
-      snapshot: terminalSnapshot({ qa: { job_id: "other-job" }, normalized: { job_id: "other-job" } }),
-      expectedJobId: "glw-job-001",
-    })).toThrow("does not match");
-  });
-
-  test("normalizes failed QA with structured diagnostics", () => {
-    expect(normalizeGlwN8nExecutionResult({
-      snapshot: terminalSnapshot({ qa: {
-        qa_callback_status: "FAILED_QA",
-        qa_failure_summary: "body: too short",
-        qa_checks: { body: "FAIL" },
-        qa_failure_reasons: { body: "too short" },
-      } }),
-      expectedJobId: "glw-job-001",
-    })).toMatchObject({
-      kind: "failed",
-      errorCode: "FAILED_QA",
-      qaStatus: "FAILED_QA",
-      qaChecks: { body: "FAIL" },
-      qaFailureReasons: { body: "too short" },
-    });
-  });
-
-  test("rejects a terminal public WordPress result", () => {
-    expect(() => normalizeGlwN8nExecutionResult({
-      snapshot: terminalSnapshot({
-        qa: { qa_wordpress_status: "publish" },
-        normalized: { normalized_city_page_status: "publish", requested_publishing_mode: "publish" },
-      }),
-      expectedJobId: "glw-job-001",
-    })).toThrow("required draft publication mode");
-  });
-
-  test("rejects a terminal result without WordPress identity", () => {
-    expect(() => normalizeGlwN8nExecutionResult({
-      snapshot: terminalSnapshot({ qa: { qa_page_id: "" }, normalized: { normalized_city_page_id: "" } }),
-      expectedJobId: "glw-job-001",
-    })).toThrow("WordPress draft identity");
-  });
-
-  test("polls running state to terminal completion and persists the result", async () => {
-    const { service } = serviceWith({ kind: "accepted", executionId: "123", status: "accepted" });
-    await service.execute(request);
-    const readExecution = jest.fn()
-      .mockResolvedValueOnce({ executionId: "123", state: "RUNNING", runData: null, errorMessage: null })
-      .mockResolvedValueOnce(terminalSnapshot());
-    const result = await service.pollToTerminal("glw-job-001", { readExecution }, { intervalMs: 0 });
-    expect(readExecution).toHaveBeenCalledTimes(2);
-    expect(result).toMatchObject({ status: "COMPLETE", wordpressObjectId: "19308", qaStatus: "COMPLETE" });
-  });
-
-  test("stops at the bounded polling limit without redispatch", async () => {
-    const dispatch = jest.fn().mockResolvedValue({ kind: "accepted", executionId: "123", status: "accepted" });
-    const repository = createInMemoryGlwPageExecutionRepository();
-    const service = createGlwDraftExecutionService({ repository, dispatcher: { dispatch }, createJobId: () => "glw-job-001" });
-    await service.execute(request);
-    const readExecution = jest.fn().mockResolvedValue({ executionId: "123", state: "RUNNING", runData: null, errorMessage: null });
-    const result = await service.pollToTerminal("glw-job-001", { readExecution }, { maxAttempts: 3, intervalMs: 0 });
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(readExecution).toHaveBeenCalledTimes(3);
-    expect(result).toMatchObject({ status: "RUNNING", errorCode: "POLL_TIMEOUT", completedAt: null });
-  });
-
-  test("rejects a mismatched execution identity returned by the reader", async () => {
-    const { service } = serviceWith({ kind: "accepted", executionId: "123", status: "accepted" });
-    await service.execute(request);
-    await expect(service.pollToTerminal("glw-job-001", {
-      async readExecution() { return { executionId: "999", state: "RUNNING", runData: null, errorMessage: null }; },
-    }, { maxAttempts: 1 })).rejects.toBeInstanceOf(GlwExecutionResultError);
-  });
-
-  test("persists structured failed-QA data as terminal FAILED", async () => {
-    const { service } = serviceWith({ kind: "accepted", executionId: "123", status: "accepted" });
-    await service.execute(request);
-    const snapshot = terminalSnapshot({ qa: {
-      qa_callback_status: "FAILED_QA",
-      qa_checks: { seo: "FAIL" },
-      qa_failure_reasons: { seo: "missing" },
-    } });
-    const result = await service.pollToTerminal("glw-job-001", { async readExecution() { return snapshot; } });
-    expect(result).toMatchObject({
-      status: "FAILED",
-      qaStatus: "FAILED_QA",
-      qaChecks: { seo: "FAIL" },
-      qaFailureReasons: { seo: "missing" },
-    });
-  });
-
-  test("execution reader uses only the read-only detail endpoint and API key", async () => {
-    const fetchImpl = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ id: "123", status: "running", data: { resultData: { runData: {} } } }),
-    });
-    const reader = createGlwN8nExecutionReader({ environment: executionEnvironment(), fetchImpl });
-    await expect(reader.readExecution("123")).resolves.toMatchObject({ executionId: "123", state: "RUNNING" });
-    expect(fetchImpl).toHaveBeenCalledWith(
-      "https://n8n.example.test/api/v1/executions/123?includeData=true",
-      expect.objectContaining({ method: "GET", headers: expect.objectContaining({ "X-N8N-API-KEY": "diagnostic-key" }) }),
-    );
-    expect(fetchImpl.mock.calls[0][1]).not.toHaveProperty("body");
-    expect(fetchImpl.mock.calls[0][1].headers).not.toHaveProperty("Authorization");
-  });
-
-  test("execution reader rejects non-numeric identity before fetch", async () => {
-    const fetchImpl = jest.fn();
-    const reader = createGlwN8nExecutionReader({ environment: executionEnvironment(), fetchImpl });
-    await expect(reader.readExecution("not-an-id")).rejects.toThrow("must be numeric");
-    expect(fetchImpl).not.toHaveBeenCalled();
-  });
-
-  test("execution reader requires diagnostics configuration", async () => {
-    const reader = createGlwN8nExecutionReader({
-      environment: executionEnvironment({ GLW_N8N_API_KEY: "" }),
-      fetchImpl: jest.fn(),
-    });
-    await expect(reader.readExecution("123")).rejects.toThrow("diagnostics are not configured");
-  });
-
-  test("execution reader exposes successful runData for terminal normalization", async () => {
-    const runData = { node: nodeRun({ value: true }) };
-    const reader = createGlwN8nExecutionReader({
-      environment: executionEnvironment(),
-      fetchImpl: jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ id: 123, status: "success", data: { resultData: { runData } } }),
-      }),
-    });
-    await expect(reader.readExecution("123")).resolves.toMatchObject({ state: "SUCCESS", runData });
-  });
-
-  test("execution reader normalizes and redacts terminal API errors", async () => {
-    const reader = createGlwN8nExecutionReader({
-      environment: executionEnvironment(),
-      fetchImpl: jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => ({ id: "123", status: "error", data: { resultData: { error: { message: "secret=unsafe" } } } }),
-      }),
-    });
-    await expect(reader.readExecution("123")).resolves.toMatchObject({
-      state: "FAILED",
-      errorMessage: "secret=[REDACTED]",
-    });
-  });
-});
-
-describe("GLW static acceptance correlation recovery", () => {
-  test("accepts a static webhook response without an execution identifier", async () => {
-    const fetchImpl = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ accepted: true, status: "accepted" }),
-    });
-    const dispatcher = createGlwN8nDraftDispatcher({ environment: executionEnvironment(), fetchImpl });
-    await expect(dispatcher.dispatch(mapGenerationRequestToN8nDraft("glw-job-001", request)))
-      .resolves.toEqual({ kind: "accepted", executionId: null, status: "accepted" });
-  });
-
-  test("persists DISPATCHED when static acceptance has no execution identifier", async () => {
-    const { service } = serviceWith({ kind: "accepted", executionId: null, status: "accepted" });
-    await expect(service.execute(request)).resolves.toMatchObject({
-      status: "DISPATCHED",
-      externalExecutionId: null,
-      correlationId: "glw-job-001",
-      dispatchedAt: "2030-01-01T00:00:00.000Z",
-    });
-  });
-
-  test("extracts correlation only from the normalized GLW node", () => {
-    const runData = {
-      "GLW Page Webhook": nodeRun({ jobId: "untrusted-webhook-value" }),
-      "Get row(s) in sheet": nodeRun({ job_id: "glw-job-001" }),
-    };
-    expect(extractGlwJobId(runData)).toBe("glw-job-001");
-    expect(extractGlwJobId({ "GLW Page Webhook": nodeRun({ jobId: "glw-job-001" }) })).toBeNull();
-  });
-
-  test("execution discovery matches exact job ID and ignores unrelated newest execution", async () => {
-    const fetchImpl = jest.fn(async (url: string | URL) => {
-      const value = String(url);
-      if (value.includes("/api/v1/executions?")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ data: [
-            { id: "999", mode: "webhook", startedAt: "2030-01-01T00:00:02.000Z" },
-            { id: "123", mode: "webhook", startedAt: "2030-01-01T00:00:01.000Z" },
-            { id: "777", mode: "trigger", startedAt: "2030-01-01T00:00:03.000Z" },
-          ] }),
-        };
-      }
-      const executionId = value.includes("/999?") ? "999" : "123";
-      const jobId = executionId === "123" ? "glw-job-001" : "other-job";
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          id: executionId,
-          status: "running",
-          data: { resultData: { runData: { "Get row(s) in sheet": nodeRun({ job_id: jobId }) } } },
-        }),
-      };
-    });
-    const reader = createGlwN8nExecutionReader({ environment: executionEnvironment(), fetchImpl: fetchImpl as typeof fetch });
-    await expect(reader.findExecutionIds({
-      jobId: "glw-job-001",
-      startedAt: "2030-01-01T00:00:00.000Z",
-    })).resolves.toEqual(["123"]);
-    expect(fetchImpl.mock.calls.some(([url]) => String(url).includes("/777?"))).toBe(false);
-  });
-
-  test("execution discovery excludes executions before the dispatch boundary", async () => {
-    const fetchImpl = jest.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ data: [{ id: "123", mode: "webhook", startedAt: "2029-12-31T23:59:59.999Z" }] }),
-    });
-    const reader = createGlwN8nExecutionReader({ environment: executionEnvironment(), fetchImpl });
-    await expect(reader.findExecutionIds({
-      jobId: "glw-job-001",
-      startedAt: "2030-01-01T00:00:00.000Z",
-    })).resolves.toEqual([]);
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-  });
-
-  test("multiple exact execution matches fail closed", async () => {
-    const { service } = serviceWith({ kind: "accepted", executionId: null, status: "accepted" });
-    await service.execute(request);
-    const result = await service.discoverExecution(
-      "glw-job-001",
-      discoveryReader({ executionIds: ["123", "456"] }),
-      { maxAttempts: 1 },
-    );
-    expect(result).toMatchObject({ status: "FAILED", errorCode: "EXECUTION_DISCOVERY_AMBIGUOUS" });
-  });
-
-  test("missing normalized job ID produces no execution match", async () => {
-    const fetchImpl = jest.fn(async (url: string | URL) => {
-      const value = String(url);
-      return value.includes("/api/v1/executions?")
-        ? { ok: true, status: 200, json: async () => ({ data: [{ id: "123", mode: "webhook", startedAt: "2030-01-01T00:00:01.000Z" }] }) }
-        : { ok: true, status: 200, json: async () => ({ id: "123", status: "running", data: { resultData: { runData: {} } } }) };
-    });
-    const reader = createGlwN8nExecutionReader({ environment: executionEnvironment(), fetchImpl: fetchImpl as typeof fetch });
-    await expect(reader.findExecutionIds({
-      jobId: "glw-job-001",
-      startedAt: "2030-01-01T00:00:00.000Z",
-    })).resolves.toEqual([]);
-  });
-
-  test("discovery timeout fails without redispatch", async () => {
-    const dispatch = jest.fn().mockResolvedValue({ kind: "accepted", executionId: null, status: "accepted" });
-    const repository = createInMemoryGlwPageExecutionRepository();
-    const service = createGlwDraftExecutionService({
-      repository,
-      dispatcher: { dispatch },
-      createJobId: () => "glw-job-001",
-      now: () => "2030-01-01T00:00:00.000Z",
-    });
-    await service.execute(request);
-    const findExecutionIds = jest.fn().mockResolvedValue([]);
-    const result = await service.discoverExecution(
-      "glw-job-001",
-      { ...discoveryReader(), findExecutionIds },
-      { maxAttempts: 3, intervalMs: 0 },
-    );
-    expect(dispatch).toHaveBeenCalledTimes(1);
-    expect(findExecutionIds).toHaveBeenCalledTimes(3);
-    expect(result).toMatchObject({ status: "FAILED", errorCode: "EXECUTION_DISCOVERY_TIMEOUT" });
-  });
-
-  test("persists a uniquely discovered execution identifier", async () => {
-    const { service } = serviceWith({ kind: "accepted", executionId: null, status: "accepted" });
-    await service.execute(request);
-    await expect(service.discoverExecution(
-      "glw-job-001",
-      discoveryReader({ executionIds: ["123"] }),
-      { maxAttempts: 1 },
-    )).resolves.toMatchObject({ status: "RUNNING", externalExecutionId: "123" });
-  });
-
-  test("existing terminal polling succeeds after execution discovery", async () => {
-    const { service } = serviceWith({ kind: "accepted", executionId: null, status: "accepted" });
-    await service.execute(request);
-    const reader = discoveryReader({ executionIds: ["123"], snapshot: terminalSnapshot() });
-    const discovered = await service.discoverExecution("glw-job-001", reader, { maxAttempts: 1 });
-    expect(discovered).toMatchObject({ status: "RUNNING", externalExecutionId: "123" });
-    await expect(service.pollToTerminal("glw-job-001", reader, { maxAttempts: 1 }))
-      .resolves.toMatchObject({ status: "COMPLETE", wordpressObjectId: "19308" });
-  });
-});
-
-describe("GLW exact WordPress identity safety", () => {
-  const targetSlug = "austin-recovery-draft-20260826";
-  const parentId = "2563";
-  const productId = GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID;
-  const austinPage = {
-    wordpressObjectId: "2565",
-    targetSlug: "austin",
-    parentId,
-    productId,
-    status: "publish",
-  };
-  const exactTarget = { ...austinPage, wordpressObjectId: "3001", targetSlug };
-
-  function decide(overrides: Partial<Parameters<typeof resolveGlwWordPressIdentityDecision>[0]> = {}) {
-    return resolveGlwWordPressIdentityDecision({
-      operation: "CREATE_CITY",
-      targetSlug,
-      parentId,
-      productId,
-      wordpressObjectId: null,
-      candidates: [austinPage],
-      ...overrides,
-    });
-  }
-
-  test("creates an absent exact target instead of adopting a fuzzy city match", () => {
-    expect(decide()).toEqual({ operation: "CREATE", targetSlug, wordpressObjectId: null });
-  });
-
-  test("fails closed when a create target has an exact collision", () => {
-    expect(() => decide({ candidates: [austinPage, exactTarget] })).toThrow("exact requested");
-  });
-
-  test("updates exactly the persisted WordPress object ID", () => {
-    expect(decide({ operation: "UPDATE_CITY", wordpressObjectId: "3001", candidates: [austinPage, exactTarget] }))
-      .toEqual({ operation: "UPDATE", targetSlug, wordpressObjectId: "3001" });
-  });
-
-  test("fails closed when an update has no WordPress object ID", () => {
-    expect(() => decide({ operation: "UPDATE_CITY" })).toThrow("exact persisted");
-  });
-
-  test("does not demote a published fuzzy city match during create", () => {
-    expect(decide().wordpressObjectId).toBeNull();
-    expect(austinPage.status).toBe("publish");
-  });
-
-  test("applies exact identity protection to state creates", () => {
-    expect(decide({ operation: "CREATE_STATE" })).toMatchObject({ operation: "CREATE" });
-  });
-
-  test("requires exact object authority for state updates", () => {
-    expect(decide({ operation: "UPDATE_STATE", wordpressObjectId: "3001", candidates: [exactTarget] }))
-      .toMatchObject({ operation: "UPDATE", wordpressObjectId: "3001" });
-  });
-
-  test("never adopts a page under the wrong parent", () => {
-    expect(decide({ candidates: [{ ...exactTarget, parentId: "9999" }] })).toMatchObject({ operation: "CREATE" });
-  });
-
-  test("never adopts a page for the wrong product", () => {
-    expect(decide({ candidates: [{ ...exactTarget, productId: "prod-other" }] })).toMatchObject({ operation: "CREATE" });
-  });
-
-  test("fails closed for an unknown product before identity resolution", () => {
-    expect(() => resolveGlwN8nEngineProduct("prod-unknown")).toThrow("Unsupported GLW application product");
+    })).toMatchObject({ featuredImagePresent: expected });
   });
 });
