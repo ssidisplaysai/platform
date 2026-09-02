@@ -328,6 +328,77 @@ describe(
       },
     );
 
+    test.each([
+      ["zero claims", []],
+      ["product only", [
+        {
+          claimId: "product-claim",
+          claimClass: "product" as const,
+          statement: "Product claim.",
+          evidenceSourceIds: ["product-source"],
+        },
+      ]],
+      ["geography only", [
+        {
+          claimId: "geography-claim",
+          claimClass: "geography" as const,
+          statement: "Geography claim.",
+          evidenceSourceIds: ["state-source"],
+        },
+      ]],
+      ["product without first-party authority", [
+        {
+          claimId: "product-claim",
+          claimClass: "product" as const,
+          statement: "Product claim.",
+          evidenceSourceIds: ["state-source"],
+        },
+        {
+          claimId: "geography-claim",
+          claimClass: "geography" as const,
+          statement: "Geography claim.",
+          evidenceSourceIds: ["state-source"],
+        },
+      ]],
+      ["geography without qualified authority", [
+        {
+          claimId: "product-claim",
+          claimClass: "product" as const,
+          statement: "Product claim.",
+          evidenceSourceIds: ["product-source"],
+        },
+        {
+          claimId: "geography-claim",
+          claimClass: "geography" as const,
+          statement: "Geography claim.",
+          evidenceSourceIds: ["product-source"],
+        },
+      ]],
+    ])("remains research_pending with fulfilled requirements but insufficient content: %s", async (_label, claims) => {
+      initialize();
+      const baseProvider = completeProvider();
+      const provider: GlwResearchProvider = {
+        async research(input) {
+          const acquisition = await baseProvider.research(input);
+          return {
+            ...acquisition,
+            claims,
+          };
+        },
+      };
+
+      const result =
+        await executeGlwSiteEnrichmentResearch({
+          request: request(),
+          provider,
+        });
+
+      expect(result.record.status)
+        .toBe("research_pending");
+      expect(result.researchReady)
+        .toBe(false);
+    });
+
     test(
       "remains research_pending when required evidence is incomplete",
       async () => {
