@@ -398,15 +398,42 @@ describe("GLW n8n research provider", () => {
     ).rejects.toThrow(/mismatched execution identity/i);
   });
 
-  test("rejects invalid source domains", async () => {
+  test.each([
+    ["missing_source_id", (response: ReturnType<typeof acquisition>) => {
+      response.sources[0] = { ...response.sources[0], sourceId: "" };
+    }],
+    ["duplicate_source_id", (response: ReturnType<typeof acquisition>) => {
+      response.sources[1] = { ...response.sources[1], sourceId: response.sources[0].sourceId };
+    }],
+    ["non_https_url", (response: ReturnType<typeof acquisition>) => {
+      response.sources[0] = { ...response.sources[0], url: "http://ssidisplays.com/digital-spheres/" };
+    }],
+    ["domain_mismatch", (response: ReturnType<typeof acquisition>) => {
+      response.sources[0] = { ...response.sources[0], domain: "example.com" };
+    }],
+    ["missing_title", (response: ReturnType<typeof acquisition>) => {
+      response.sources[0] = { ...response.sources[0], title: "" };
+    }],
+    ["missing_publisher", (response: ReturnType<typeof acquisition>) => {
+      response.sources[0] = { ...response.sources[0], publisher: "" };
+    }],
+    ["missing_retrieved_at", (response: ReturnType<typeof acquisition>) => {
+      response.sources[0] = { ...response.sources[0], retrievedAt: "" };
+    }],
+  ])("reports safe source diagnostic %s", async (reason, mutate) => {
     const response = acquisition();
-    response.sources[0] = {
-      ...response.sources[0],
-      domain: "example.com",
-    };
+    mutate(response);
     await expect(
       providerFor(response).research(request()),
-    ).rejects.toThrow(/invalid source/i);
+    ).rejects.toThrow(`invalid_source:${reason}`);
+  });
+
+  test("accepts a valid provider acquisition after diagnostic hardening", async () => {
+    await expect(
+      providerFor(acquisition()).research(request()),
+    ).resolves.toMatchObject({
+      jobId: request().jobId,
+    });
   });
 
   test("rejects claims with unknown evidence", async () => {
