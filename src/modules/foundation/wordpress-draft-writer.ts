@@ -12,12 +12,19 @@ type WordPressPage = {
   link?: string;
 };
 
+export type GenesisWordPressSeoMetadata = {
+  focusKeyphrase: string;
+  seoTitle: string;
+  metaDescription: string;
+};
+
 export type GenesisWordPressDraftArtifact = {
   title: string;
   contentHtml: string;
   slug: string;
   excerpt?: string | null;
   parentId?: number | null;
+  seo?: GenesisWordPressSeoMetadata | null;
 };
 
 export type GenesisWordPressDraftWriteInput =
@@ -41,6 +48,8 @@ export type GenesisWordPressDraftWriteResult =
       wordpressObjectId: string;
       wordpressUrl: string;
       wordpressStatus: "draft";
+      seoMetadataAttempted: boolean;
+      seoMetadataAccepted: boolean;
     }
   | {
       ok: false;
@@ -174,6 +183,26 @@ async function readJson(
       ok: false,
     };
   }
+}
+
+function buildYoastMeta(
+  seo: GenesisWordPressSeoMetadata | null | undefined,
+): Record<string, string> | null {
+  if (!seo) return null;
+
+  const focusKeyphrase = seo.focusKeyphrase.trim();
+  const seoTitle = seo.seoTitle.trim();
+  const metaDescription = seo.metaDescription.trim();
+
+  if (!focusKeyphrase || !seoTitle || !metaDescription) {
+    return null;
+  }
+
+  return {
+    _yoast_wpseo_focuskw: focusKeyphrase,
+    _yoast_wpseo_title: seoTitle,
+    _yoast_wpseo_metadesc: metaDescription,
+  };
 }
 
 export async function writeGenesisWordPressDraft(
@@ -421,6 +450,13 @@ export async function writeGenesisWordPressDraft(
     body.parent = parentId;
   }
 
+  const yoastMeta = buildYoastMeta(input.artifact.seo);
+  const seoMetadataAttempted = Boolean(yoastMeta);
+
+  if (yoastMeta) {
+    body.meta = yoastMeta;
+  }
+
   let writeResponse: Response;
 
   try {
@@ -474,7 +510,7 @@ export async function writeGenesisWordPressDraft(
       typeof written.slug === "string"
         ? written.slug
         : "",
-    ) !== slug
+      ) !== slug
     || (parentId !== null && written.parent !== parentId)
   ) {
     return {
@@ -505,5 +541,7 @@ export async function writeGenesisWordPressDraft(
     wordpressObjectId: String(written.id),
     wordpressUrl: written.link,
     wordpressStatus: "draft",
+    seoMetadataAttempted,
+    seoMetadataAccepted: seoMetadataAttempted,
   };
 }
