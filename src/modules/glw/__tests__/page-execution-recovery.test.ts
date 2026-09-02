@@ -333,6 +333,22 @@ describe("GLW async n8n result recovery", () => {
     expect(normalized.generatedDraft?.contentHtml).not.toMatch(/[âÃÂ\uFFFD]/);
   });
 
+  test("normalizes residual Alaska-style mojibake in content-ready generated draft content", () => {
+    const normalized = normalizeGlwN8nExecutionResult({
+      snapshot: contentReadySnapshot({
+        contentReady: {
+          article_html: "<p>If youâ€™re in Alaska, viewing angles can span 160Â° â€“ 180Â° and mediaâ€”when tailored wellâ€”can perform strongly.</p>",
+        },
+      }),
+      expectedJobId: "glw-job-001",
+    });
+
+    expect(normalized).toMatchObject({ kind: "complete", disposition: "CONTENT_READY" });
+    if (!normalized || normalized.kind !== "complete") throw new Error("Expected complete result.");
+    expect(normalized.generatedDraft?.contentHtml).toContain("If you’re in Alaska, viewing angles can span 160° – 180° and media—when tailored well—can perform strongly.");
+    expect(normalized.generatedDraft?.contentHtml).not.toMatch(/[âÃÂ\uFFFD]/);
+  });
+
   test("fails closed when content-ready generated draft retains unknown encoding corruption", () => {
     expect(() => normalizeGlwN8nExecutionResult({
       snapshot: contentReadySnapshot({
