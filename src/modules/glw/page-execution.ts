@@ -467,27 +467,61 @@ function countHtmlWords(value: unknown): number | null {
   return text ? text.split(" ").length : null;
 }
 
+function normalizeGeneratedText(value: string): string {
+  return value
+    .replace(/Ã¢â‚¬â„¢/g, "’")
+    .replace(/Ã¢â‚¬â€œ/g, "–")
+    .replace(/Ã¢â‚¬â€/g, "—")
+    .replace(/Ã¢â‚¬â€/g, "—")
+    .replace(/Ã‚Â°/g, "°")
+    .replace(/Ã‚Â/g, "")
+    .replace(/Ã¢â‚¬Å“/g, "“")
+    .replace(/Ã¢â‚¬Â/g, "”");
+}
+
+function assertNoGeneratedMojibake(value: string): void {
+  if (/[âÃÂ\uFFFD]/.test(value)) {
+    throw new GlwExecutionResultError("Generated draft contains unresolved encoding corruption.");
+  }
+}
+
 function normalizeGeneratedDraft(
   generated: Record<string, unknown> | null,
 ): GlwGeneratedDraftArtifact | null {
   if (!generated) return null;
-  const title = optionalString(generated.page_title ?? generated.title);
-  const contentHtml = optionalString(generated.article_html ?? generated.content_html ?? generated.content);
+  const rawTitle = optionalString(generated.page_title ?? generated.title);
+  const rawContentHtml = optionalString(generated.article_html ?? generated.content_html ?? generated.content);
   const slug = optionalString(
     generated.desired_hierarchical_slug
       ?? generated.requested_target_path
       ?? generated.hierarchical_slug
       ?? generated.slug,
   );
-  if (!title || !contentHtml || !slug) return null;
+  if (!rawTitle || !rawContentHtml || !slug) return null;
+
+  const title = normalizeGeneratedText(rawTitle);
+  const contentHtml = normalizeGeneratedText(rawContentHtml);
+  const excerpt = optionalString(generated.excerpt ?? generated.meta_description ?? generated.metaDescription);
+  const seoTitle = optionalString(generated.seo_title ?? generated.meta_title);
+  const metaDescription = optionalString(generated.meta_description ?? generated.metaDescription);
+  const focusKeyphrase = optionalString(generated.focus_keyphrase ?? generated.focus_keyword);
+  const normalizedExcerpt = excerpt ? normalizeGeneratedText(excerpt) : null;
+  const normalizedSeoTitle = seoTitle ? normalizeGeneratedText(seoTitle) : null;
+  const normalizedMetaDescription = metaDescription ? normalizeGeneratedText(metaDescription) : null;
+  const normalizedFocusKeyphrase = focusKeyphrase ? normalizeGeneratedText(focusKeyphrase) : null;
+
+  for (const value of [title, contentHtml, normalizedExcerpt, normalizedSeoTitle, normalizedMetaDescription, normalizedFocusKeyphrase]) {
+    if (value) assertNoGeneratedMojibake(value);
+  }
+
   return {
     title,
     contentHtml,
     slug,
-    excerpt: optionalString(generated.excerpt ?? generated.meta_description ?? generated.metaDescription),
-    seoTitle: optionalString(generated.seo_title ?? generated.meta_title),
-    metaDescription: optionalString(generated.meta_description ?? generated.metaDescription),
-    focusKeyphrase: optionalString(generated.focus_keyphrase ?? generated.focus_keyword),
+    excerpt: normalizedExcerpt,
+    seoTitle: normalizedSeoTitle,
+    metaDescription: normalizedMetaDescription,
+    focusKeyphrase: normalizedFocusKeyphrase,
   };
 }
 
