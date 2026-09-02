@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { listGlwCampaignTargets, summarizeGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
+import { GlwCampaignOperatorControls } from "@/modules/glw/GlwCampaignOperatorControls";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -52,11 +53,18 @@ export default async function GlwCampaignDetailPage({ params }: RouteProps) {
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><p className="text-xs uppercase tracking-wider text-zinc-500">Failed</p><p className="mt-2 text-2xl font-bold text-white">{queue.failed}</p></div>
         </section>
 
+        <GlwCampaignOperatorControls
+          campaignId={campaign.campaignId}
+          organizationId={campaign.organizationId}
+          siteId={campaign.siteId}
+          campaignStatus={campaign.status}
+        />
+
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-lg font-semibold text-white">State Targets</h2>
-              <p className="mt-1 text-sm text-zinc-400">Read-only campaign queue view. Dispatch and publication remain separate protected actions.</p>
+              <p className="mt-1 text-sm text-zinc-400">Campaign queue view. Draft dispatch is explicit and publication remains a separate protected action.</p>
             </div>
             <p className="text-xs uppercase tracking-wider text-zinc-500">{targets.length} targets</p>
           </div>
