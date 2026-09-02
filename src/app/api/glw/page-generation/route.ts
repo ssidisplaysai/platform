@@ -13,6 +13,7 @@ import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpr
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { attachGenesisWordPressFeaturedImage } from "@/modules/foundation/wordpress-media-writer";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
+import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { generateGenesisFeaturedImageWithCampaignReferences } from "@/modules/glw/reference-aware-image-service";
 import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-target-hierarchy";
 import {
@@ -84,8 +85,13 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  const qa = evaluateGlwGeneratedContentQa({
+  const enrichment = enrichGlwGeneratedContentForSeo({
     artifact: input.job.generatedDraft,
+    request: input.request,
+  });
+
+  const qa = evaluateGlwGeneratedContentQa({
+    artifact: enrichment.artifact,
     request: input.request,
     siteDomain: input.siteRecord.domain,
     minimumWordCount: 1500,
@@ -94,6 +100,7 @@ async function finalizeContentReadyExecution(input: {
     const timestamp = new Date().toISOString();
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
+      generatedDraft: enrichment.artifact,
       errorCode: "GENERATED_CONTENT_QA_FAILED",
       errorMessage: Object.values(qa.failureReasons).join(" ") || "Generated content failed Genesis QA.",
       qaStatus: "FAILED",
@@ -115,6 +122,7 @@ async function finalizeContentReadyExecution(input: {
 
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
+      generatedDraft: enrichment.artifact,
       errorCode: targetHierarchy.errorCode,
       errorMessage: targetHierarchy.errorMessage,
       updatedAt: timestamp,
@@ -148,6 +156,7 @@ async function finalizeContentReadyExecution(input: {
   if (operation === "UPDATE" && !updateObjectId) {
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
+      generatedDraft: enrichment.artifact,
       errorCode: "UPDATE_AUTHORITY_REQUIRED",
       errorMessage: "Genesis requires an exact WordPress object ID before a draft update.",
       completedAt: new Date().toISOString(),
@@ -158,11 +167,12 @@ async function finalizeContentReadyExecution(input: {
   const parentId = targetHierarchy.parentId;
 
   const artifact = {
-    title: input.job.generatedDraft.title,
-    contentHtml: input.job.generatedDraft.contentHtml,
-    slug: input.job.generatedDraft.slug,
-    excerpt: input.job.generatedDraft.excerpt,
+    title: enrichment.artifact.title,
+    contentHtml: enrichment.artifact.contentHtml,
+    slug: enrichment.artifact.slug,
+    excerpt: enrichment.artifact.excerpt,
     parentId,
+    seo: enrichment.metadata,
   };
   const result = operation === "CREATE"
     ? await writeGenesisWordPressDraft({ operation: "CREATE", site: input.siteRecord, artifact })
@@ -172,6 +182,7 @@ async function finalizeContentReadyExecution(input: {
   if (!result.ok) {
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
+      generatedDraft: enrichment.artifact,
       errorCode: `WORDPRESS_${result.state.toUpperCase()}`,
       errorMessage: result.message,
       qaStatus: "PASSED",
@@ -185,6 +196,7 @@ async function finalizeContentReadyExecution(input: {
 
   const draftJob = await glwPageExecutionRepository.update(input.job.jobId, {
     status: "CONTENT_READY",
+    generatedDraft: enrichment.artifact,
     wordpressObjectId: result.wordpressObjectId,
     wordpressUrl: result.wordpressUrl,
     wordpressStatus: result.wordpressStatus,
@@ -228,7 +240,7 @@ async function finalizeContentReadyExecution(input: {
     site: input.siteRecord,
     wordpressObjectId: result.wordpressObjectId,
     canonicalSlug: input.request.canonicalPath,
-    contentHtml: input.job.generatedDraft.contentHtml,
+    contentHtml: enrichment.artifact.contentHtml,
     image: imageResult.image,
     title: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
     altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
@@ -374,205 +386,77 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const scope = resolveRequestScope(request);
   if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
-  const body = await request.json().catch(() => null) as { form?: GlwGenerationRequestInput; action?: "continue" | "recheck_qa"; jobId?: string } | null;
-  if (!body?.form) return NextResponse.json({ error: "Generation request is required." }, { status: 400 });
 
-  const resolved = await resolveAuthorizedPreview(body.form, scope.organizationId);
-  if ("error" in resolved) return NextResponse.json({ error: resolved.error }, { status: resolved.status });
-  if ("issues" in resolved) return NextResponse.json({ issues: resolved.issues }, { status: resolved.status });
-  const { siteRecord, request: generationRequest } = resolved;
+  const body = await request.json().catch(() => null) as {
+    form?: GlwGenerationRequestInput;
+    action?: "continue" | "recheck_qa";
+    jobId?: string;
+  } | null;
+  if (!body?.form) return NextResponse.json({ error: "Generation form is required." }, { status: 400 });
 
-  if (body.action === "recheck_qa") {
-    const jobId = body.jobId?.trim() ?? "";
-    if (!jobId) {
-      return NextResponse.json(
-        { error: "jobId is required to recheck failed generated content." },
-        { status: 400 },
-      );
-    }
-
-    const existing = await glwPageExecutionRepository.getById(jobId);
-    if (!existing) {
-      return NextResponse.json(
-        { error: "GLW execution was not found." },
-        { status: 404 },
-      );
-    }
-
-    if (
-      existing.organizationId !== scope.organizationId
-      || existing.siteId !== generationRequest.siteId
-      || existing.productId !== generationRequest.productId
-      || existing.slug !== generationRequest.slug
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Existing job does not match the current authorized generation target.",
-        },
-        { status: 409 },
-      );
-    }
-
-    if (
-      existing.status !== "FAILED"
-      || existing.errorCode !== "GENERATED_CONTENT_QA_FAILED"
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Only an exact job failed by generated-content QA may be rechecked.",
-        },
-        { status: 409 },
-      );
-    }
-
-    if (!existing.generatedDraft) {
-      return NextResponse.json(
-        {
-          error:
-            "The failed QA job no longer contains its generated draft artifact.",
-        },
-        { status: 409 },
-      );
-    }
-
-    const qa = evaluateGlwGeneratedContentQa({
-      artifact: existing.generatedDraft,
-      request: generationRequest,
-      siteDomain: siteRecord.domain,
-      minimumWordCount: 1500,
-    });
-
-    if (!qa.ok) {
-      const timestamp = new Date().toISOString();
-
-      const job = await glwPageExecutionRepository.update(jobId, {
-        qaStatus: "FAILED",
-        qaChecks: qa.checks,
-        qaFailureReasons: qa.failureReasons,
-        wordCount: qa.wordCount,
-        errorCode: "GENERATED_CONTENT_QA_FAILED",
-        errorMessage:
-          Object.values(qa.failureReasons).join(" ")
-          || "Generated content failed Genesis QA.",
-        updatedAt: timestamp,
-        completedAt: timestamp,
-      });
-
-      return NextResponse.json({
-        job,
-        qaRechecked: true,
-        qaPassed: false,
-        redispatched: false,
-        publicationPerformed: false,
-      });
-    }
-
-    const timestamp = new Date().toISOString();
-
-    const recovered = await glwPageExecutionRepository.update(jobId, {
-      status: "CONTENT_READY",
-      qaStatus: "COMPLETE",
-      qaChecks: qa.checks,
-      qaFailureReasons: {},
-      wordCount: qa.wordCount,
-      errorCode: null,
-      errorMessage: null,
-      updatedAt: timestamp,
-      completedAt: null,
-    });
-
-    const authority = await verifyMutationAuthority(
-      generationRequest,
-      siteRecord,
-    );
-
-    if ("error" in authority) {
-      return NextResponse.json(
-        {
-          ...authority,
-          job: recovered,
-          qaRechecked: true,
-          qaPassed: true,
-          redispatched: false,
-          publicationPerformed: false,
-        },
-        { status: authority.status },
-      );
-    }
-
-    const job = await finalizeContentReadyExecution({
-      job: recovered,
-      request: generationRequest,
-      siteRecord,
-    });
-
-    return NextResponse.json({
-      job,
-      qaRechecked: true,
-      qaPassed: true,
-      redispatched: false,
-      publicationPerformed: false,
-    }, {
-      status:
-        job.status === "COMPLETE"
-        || job.status === "FAILED"
-          ? 200
-          : 202,
-    });
+  const authorized = await resolveAuthorizedPreview(body.form, scope.organizationId);
+  if ("error" in authorized || "issues" in authorized) {
+    return NextResponse.json(authorized, { status: authorized.status });
   }
 
-  if (body.action === "continue") {
+  const mutationAuthority = await verifyMutationAuthority(authorized.request, authorized.siteRecord);
+  if (!("ok" in mutationAuthority)) {
+    return NextResponse.json(mutationAuthority, { status: mutationAuthority.status });
+  }
+
+  if (body.action === "continue" || body.action === "recheck_qa") {
     const jobId = body.jobId?.trim() ?? "";
-    if (!jobId) return NextResponse.json({ error: "jobId is required to continue an existing job." }, { status: 400 });
+    if (!jobId) return NextResponse.json({ error: "jobId is required for continuation." }, { status: 400 });
     const existing = await glwPageExecutionRepository.getById(jobId);
     if (!existing) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
-    if (existing.organizationId !== scope.organizationId || existing.siteId !== generationRequest.siteId || existing.productId !== generationRequest.productId || existing.slug !== generationRequest.slug) {
-      return NextResponse.json({ error: "Existing job does not match the current authorized generation target." }, { status: 409 });
+    if (existing.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (existing.siteId !== authorized.request.siteId || existing.productId !== authorized.request.productId || existing.slug !== authorized.request.canonicalPath) {
+      return NextResponse.json({ error: "Continuation form does not match the existing GLW execution identity." }, { status: 409 });
     }
-    if (existing.status === "COMPLETE" || existing.status === "FAILED") return NextResponse.json({ job: existing });
-    if (!existing.externalExecutionId) return NextResponse.json({ error: "Existing job has no external execution to recover." }, { status: 409 });
 
-    try {
-      const recovered = existing.status === "CONTENT_READY" ? existing : await recoverExecution(existing);
-      if (recovered.status !== "CONTENT_READY") return NextResponse.json({ job: recovered }, { status: 202 });
-      if (!recovered.wordpressObjectId || recovered.wordpressStatus !== "draft") {
-        const authority = await verifyMutationAuthority(generationRequest, siteRecord);
-        if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
+    if (body.action === "recheck_qa") {
+      if (existing.status !== "FAILED" || existing.errorCode !== "GENERATED_CONTENT_QA_FAILED") {
+        return NextResponse.json({ error: "Only a generated-content QA failure can be rechecked." }, { status: 409 });
       }
-      const job = await finalizeContentReadyExecution({ job: recovered, request: generationRequest, siteRecord });
-      return NextResponse.json({ job }, { status: job.status === "COMPLETE" || job.status === "FAILED" ? 200 : 202 });
-    } catch (error) {
-      return NextResponse.json({ job: existing, recoveryError: error instanceof Error ? error.message : "Execution continuation failed." }, { status: 202 });
+      const reset = await glwPageExecutionRepository.update(existing.jobId, {
+        status: "CONTENT_READY",
+        errorCode: null,
+        errorMessage: null,
+        completedAt: null,
+        updatedAt: new Date().toISOString(),
+      });
+      const finalized = await finalizeContentReadyExecution({ job: reset, request: authorized.request, siteRecord: authorized.siteRecord });
+      return NextResponse.json({ job: finalized });
     }
+
+    if (existing.status !== "CONTENT_READY") {
+      return NextResponse.json({ error: `Only CONTENT_READY executions can continue. Current status: ${existing.status}.`, job: existing }, { status: 409 });
+    }
+
+    const finalized = await finalizeContentReadyExecution({ job: existing, request: authorized.request, siteRecord: authorized.siteRecord });
+    return NextResponse.json({ job: finalized });
   }
 
-  const authority = await verifyMutationAuthority(generationRequest, siteRecord);
-  if ("error" in authority) return NextResponse.json(authority, { status: authority.status });
-
-  const configuration = getGlwN8nMcpConfigurationStatus();
-  if (!configuration.configured) return NextResponse.json({ error: "GLW n8n MCP execution is not configured.", configuration }, { status: 503 });
+  const mcpConfiguration = getGlwN8nMcpConfigurationStatus();
+  if (!mcpConfiguration.configured) {
+    return NextResponse.json({ error: "GLW n8n MCP dispatcher is not configured.", missing: mcpConfiguration.missing }, { status: 503 });
+  }
 
   try {
-    const dispatchedJob = await service.execute(generationRequest);
-    const job = isTerminal(dispatchedJob.status)
-      ? dispatchedJob
-      : await recoverExecution(dispatchedJob);
-
-    return NextResponse.json({
-      job,
-      generationOnly: true,
-      wordpressMutationPerformed: false,
-      continuationRequired: job.status === "CONTENT_READY",
-    }, {
-      status:
-        job.status === "COMPLETE" || job.status === "FAILED"
-          ? 200
-          : 202,
-    });
+    const job = await service.execute(authorized.request);
+    if (job.status === "CONTENT_READY") {
+      return NextResponse.json({
+        job,
+        generationOnly: true,
+        wordpressMutationPerformed: false,
+        continuationRequired: true,
+      }, { status: 202 });
+    }
+    return NextResponse.json({ job }, { status: isTerminal(job.status) ? 200 : 202 });
   } catch (error) {
-    const status = error instanceof GlwDraftOnlyExecutionError ? 403 : 500;
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Draft execution failed." }, { status });
+    if (error instanceof GlwDraftOnlyExecutionError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Generation failed." }, { status: 500 });
   }
 }
