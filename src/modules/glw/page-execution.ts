@@ -658,7 +658,7 @@ export function createGlwDraftExecutionService(input: {
       return input.repository.update(jobId, {
         status: contentReady ? "CONTENT_READY" : "COMPLETE",
         externalExecutionId: result.executionId,
-        wordpressObjectId: result.wordpressObjectId,
+        wordpressObjectId: contentReady ? existing.wordpressObjectId : result.wordpressObjectId,
         wordpressUrl: result.wordpressUrl,
         wordpressStatus: result.wordpressStatus,
         generatedDraft: result.generatedDraft ?? existing.generatedDraft,
@@ -829,7 +829,7 @@ export function createGlwDraftExecutionService(input: {
         publicationIntent: "draft",
         status: "QUEUED",
         externalExecutionId: null,
-        wordpressObjectId: null,
+        wordpressObjectId: request.wordpressObjectId,
         wordpressUrl: null,
         wordpressStatus: null,
         generatedDraft: null,
