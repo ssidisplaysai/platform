@@ -98,7 +98,8 @@ describe("GLW selective page generation recovery", () => {
     const source = readFileSync(resolve(process.cwd(), "src/modules/glw/GlwPageGenerationWorkspace.tsx"), "utf8");
     expect(source).toContain('aria-label="Generation operation"');
     expect(source).toContain('aria-label="WordPress object ID"');
-    expect(source).toContain("Update exact WordPress draft");
+    expect(source).toContain("Update exact draft");
+    expect(source).toContain("Update WordPress Draft");
     expect(source).toContain("execution.wordpressObjectId");
     expect(source).toContain("execution.wordpressUrl");
     expect(source).toContain("execution.qaStatus");
@@ -110,7 +111,8 @@ describe("GLW selective page generation recovery", () => {
   test("shows canonical target preflight and blocks unavailable mutations", () => {
     const source = readFileSync(resolve(process.cwd(), "src/modules/glw/GlwPageGenerationWorkspace.tsx"), "utf8");
     expect(source).toContain("/api/glw/target-preflight");
-    expect(source).toContain("Canonical WordPress target");
+    expect(source).toContain("WordPress Target");
+    expect(source).toContain("Canonical WordPress path");
     expect(source).toContain("targetPreflight.target.applicationPath");
     expect(source).toContain("targetPreflight.target.canonicalPath");
     expect(source).toContain("targetPreflight.target.wordpressObjectId");
@@ -125,10 +127,12 @@ describe("GLW selective page generation recovery", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
     const collisionGuard = source.indexOf('code: "CREATE_COLLISION"');
     const updateGuard = source.indexOf('code: "UPDATE_AUTHORITY_REQUIRED"');
-    const dispatch = source.indexOf("service.execute(preview.request)");
+    const authorityCheck = source.indexOf("const authority = await verifyMutationAuthority(generationRequest, siteRecord);");
+    const dispatch = source.indexOf("service.execute(generationRequest)");
     expect(collisionGuard).toBeGreaterThan(0);
     expect(updateGuard).toBeGreaterThan(collisionGuard);
-    expect(dispatch).toBeGreaterThan(updateGuard);
+    expect(authorityCheck).toBeGreaterThan(updateGuard);
+    expect(dispatch).toBeGreaterThan(authorityCheck);
     expect(source).toContain("Published WordPress targets cannot be updated under the draft-only release.");
     expect(source).toContain("Creation was stopped before any WordPress changes.");
   });
