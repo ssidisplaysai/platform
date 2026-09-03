@@ -21,7 +21,7 @@ import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-targ
 
 const HERO_FIGURE_STYLE = "max-width:900px;margin:24px auto;";
 const HERO_IMAGE_STYLE = "display:block;width:100%;height:auto;max-height:620px;object-fit:cover;";
-const LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT = 500;
+const LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT = 100;
 
 function resolveStateCode(value: string | null): string {
   const normalized = (value ?? "").trim();
@@ -372,7 +372,7 @@ export async function POST(request: NextRequest) {
       maintenanceMinimumWordCount: LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT,
       featuredImagePreserved: job.featuredImagePresent,
       heroImagePreservedInBody: heroPreserved,
-      heroImageRebuiltFromFeaturedMedia,
+      heroImageRebuiltFromFeaturedMedia: heroRebuiltFromFeaturedMedia,
       imageGenerationPerformed: false,
       publicationPerformed: false,
     });
