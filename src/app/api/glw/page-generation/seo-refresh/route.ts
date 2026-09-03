@@ -77,24 +77,28 @@ function rebuildGenerationForm(job: {
   };
 }
 
+function escapeHtmlAttribute(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 function extractHeroFigure(html: string): string | null {
   const match = html.match(/<figure\b[^>]*class=["'][^"']*page-hero-image[^"']*["'][^>]*>[\s\S]*?<\/figure>/i);
   return match?.[0] ?? null;
 }
 
-function preserveHeroFigure(baseHtml: string, currentWordPressHtml: string): { html: string; preserved: boolean } {
-  if (/class=["'][^"']*page-hero-image/i.test(baseHtml)) {
-    return { html: baseHtml, preserved: true };
-  }
-  const hero = extractHeroFigure(currentWordPressHtml);
-  if (!hero) return { html: baseHtml, preserved: false };
+function buildHeroFigure(input: { mediaUrl: string; altText: string }): string {
+  return `<figure class="page-hero-image"><img src="${escapeHtmlAttribute(input.mediaUrl)}" alt="${escapeHtmlAttribute(input.altText)}" loading="eager" fetchpriority="high" /></figure>`;
+}
+
+function insertHeroFigure(baseHtml: string, hero: string): string {
   if (/<\/h1>/i.test(baseHtml)) {
-    return {
-      html: baseHtml.replace(/<\/h1>/i, (match) => `${match}\n${hero}`),
-      preserved: true,
-    };
+    return baseHtml.replace(/<\/h1>/i, (match) => `${match}\n${hero}`);
   }
-  return { html: `${hero}\n${baseHtml}`, preserved: true };
+  return `${hero}\n${baseHtml}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -177,7 +181,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Authenticated WordPress read authority is required for SEO refresh." }, { status: 503 });
   }
 
-  let currentWordPressHtml = "";
+  let baseHtml = job.generatedDraft.contentHtml;
+  let heroPreserved = /class=["'][^"']*page-hero-image/i.test(baseHtml);
+  let heroRebuiltFromFeaturedMedia = false;
+
   try {
     const reader = createAuthenticatedWordPressReadAuthority({
       configuration: {
@@ -189,23 +196,58 @@ export async function POST(request: NextRequest) {
     });
     const pageRead = await reader.getJson({
       path: `/pages/${job.wordpressObjectId}`,
-      query: new URLSearchParams({ context: "edit", _fields: "id,status,content" }),
+      query: new URLSearchParams({ context: "edit", _fields: "id,status,content,featured_media" }),
     });
     if (!pageRead.ok || !pageRead.body || typeof pageRead.body !== "object" || Array.isArray(pageRead.body)) {
       return NextResponse.json({ error: "Current WordPress draft content could not be read before SEO refresh." }, { status: 409 });
     }
-    const page = pageRead.body as { id?: number; status?: string; content?: { raw?: string } };
+    const page = pageRead.body as {
+      id?: number;
+      status?: string;
+      featured_media?: number;
+      content?: { raw?: string };
+    };
     if (String(page.id ?? "") !== job.wordpressObjectId || page.status !== "draft") {
       return NextResponse.json({ error: "Current WordPress object is no longer the exact authorized draft." }, { status: 409 });
     }
-    currentWordPressHtml = page.content?.raw ?? "";
+
+    if (!heroPreserved) {
+      const currentWordPressHtml = page.content?.raw ?? "";
+      const existingHero = extractHeroFigure(currentWordPressHtml);
+      if (existingHero) {
+        baseHtml = insertHeroFigure(baseHtml, existingHero);
+        heroPreserved = true;
+      } else {
+        const featuredMediaId = Number(page.featured_media ?? 0);
+        if (Number.isSafeInteger(featuredMediaId) && featuredMediaId > 0) {
+          const mediaRead = await reader.getJson({
+            path: `/media/${featuredMediaId}`,
+            query: new URLSearchParams({ context: "edit", _fields: "id,source_url,alt_text" }),
+          });
+          if (mediaRead.ok && mediaRead.body && typeof mediaRead.body === "object" && !Array.isArray(mediaRead.body)) {
+            const media = mediaRead.body as { id?: number; source_url?: string; alt_text?: string };
+            const mediaUrl = String(media.source_url ?? "").trim();
+            if (media.id === featuredMediaId && mediaUrl) {
+              const location = preview.request.cityName?.trim() || preview.request.stateName?.trim() || "";
+              const fallbackAlt = `${preview.request.productTopic}${location ? ` in ${location}` : ""}`;
+              const hero = buildHeroFigure({
+                mediaUrl,
+                altText: String(media.alt_text ?? "").trim() || fallbackAlt,
+              });
+              baseHtml = insertHeroFigure(baseHtml, hero);
+              heroPreserved = true;
+              heroRebuiltFromFeaturedMedia = true;
+            }
+          }
+        }
+      }
+    }
   } catch {
     return NextResponse.json({ error: "Current WordPress draft content could not be read before SEO refresh." }, { status: 409 });
   }
 
-  const heroPreservation = preserveHeroFigure(job.generatedDraft.contentHtml, currentWordPressHtml);
   const enrichment = enrichGlwGeneratedContentForSeo({
-    artifact: { ...job.generatedDraft, contentHtml: heroPreservation.html },
+    artifact: { ...job.generatedDraft, contentHtml: baseHtml },
     request: preview.request,
   });
 
@@ -272,7 +314,8 @@ export async function POST(request: NextRequest) {
     approvedExternalDomains: enrichment.approvedExternalDomains,
     qaStatus: "COMPLETE",
     featuredImagePreserved: job.featuredImagePresent,
-    heroImagePreservedInBody: heroPreservation.preserved,
+    heroImagePreservedInBody: heroPreserved,
+    heroImageRebuiltFromFeaturedMedia: heroRebuiltFromFeaturedMedia,
     imageGenerationPerformed: false,
     publicationPerformed: false,
   });
