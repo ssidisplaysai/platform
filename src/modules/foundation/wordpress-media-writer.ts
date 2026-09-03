@@ -74,7 +74,7 @@ function escapeHtmlAttribute(value: string): string {
 function insertHeroImage(contentHtml: string, mediaUrl: string, altText: string): string {
   const escapedUrl = escapeHtmlAttribute(mediaUrl);
   const escapedAlt = escapeHtmlAttribute(altText);
-  const figure = `<figure class="page-hero-image"><img src="${escapedUrl}" alt="${escapedAlt}" loading="eager" fetchpriority="high" /></figure>`;
+  const figure = `<figure class="page-hero-image" style="max-width:900px;margin:24px auto 32px;"><img src="${escapedUrl}" alt="${escapedAlt}" loading="eager" fetchpriority="high" style="display:block;width:100%;height:auto;max-height:620px;object-fit:cover;border-radius:2px;" /></figure>`;
   if (contentHtml.includes(mediaUrl) || /class=["'][^"']*page-hero-image/i.test(contentHtml)) {
     return contentHtml;
   }
