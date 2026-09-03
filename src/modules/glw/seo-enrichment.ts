@@ -122,8 +122,18 @@ function ensureProductAuthorityLink(html: string, request: GlwGenerationRequest)
   const escapedTopic = request.productTopic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const exactAnchorPattern = new RegExp(`<a\\b[^>]*href\\s*=\\s*["']${escapedHref}["'][^>]*>\\s*${escapedTopic}\\s*<\\/a>`, "i");
   if (exactAnchorPattern.test(html)) return { html, inserted: false };
-  const fragment = `<p>Explore our <a href="${href}">${escapeHtml(request.productTopic)}</a> solutions for additional product specifications, turnkey package details, and display options.</p>`;
-  return { html: insertContextually(html, fragment, { sectionPatterns: [/choosing the right/i, /what is an indoor digital sphere/i, /benefits of indoor digital spheres/i], paragraphPatterns: [/product specifications/i, /display options/i, /pixel pitch/i] }), inserted: true };
+
+  const mismatchedAnchorPattern = new RegExp(`<a\\b([^>]*?)href\\s*=\\s*["']${escapedHref}["']([^>]*)>[\\s\\S]*?<\\/a>`, "gi");
+  const correctedAnchor = `<a href="${href}">${escapeHtml(request.productTopic)}</a>`;
+  let replaced = false;
+  const healedHtml = html.replace(mismatchedAnchorPattern, () => {
+    replaced = true;
+    return correctedAnchor;
+  });
+  if (replaced && exactAnchorPattern.test(healedHtml)) return { html: healedHtml, inserted: true };
+
+  const fragment = `<p>Explore our ${correctedAnchor} solutions for additional product specifications, turnkey package details, and display options.</p>`;
+  return { html: insertContextually(healedHtml, fragment, { sectionPatterns: [/choosing the right/i, /what is an indoor digital sphere/i, /benefits of indoor digital spheres/i], paragraphPatterns: [/product specifications/i, /display options/i, /pixel pitch/i] }), inserted: true };
 }
 function ensureRelatedProductLinks(html: string, request: GlwGenerationRequest): { html: string; inserted: number } { if (request.pageType !== "state_service") return { html, inserted: 0 }; let nextHtml = html; let inserted = 0; for (const related of RELATED_PRODUCT_LINKS) { if (inserted >= 2) break; const normalized = normalizeHtmlForSearch(nextHtml); if (normalized.includes(`href=\"${related.href.toLowerCase()}\"`) || normalized.includes(`href='${related.href.toLowerCase()}'`)) continue; const contextPresent = [...related.sectionPatterns, ...related.paragraphPatterns].some((pattern) => pattern.test(nextHtml)); if (!contextPresent) continue; const fragment = `<p>${escapeHtml(related.sentence)} <a href="${related.href}">${escapeHtml(related.label)}</a>.</p>`; nextHtml = insertContextually(nextHtml, fragment, { sectionPatterns: related.sectionPatterns, paragraphPatterns: related.paragraphPatterns }); inserted += 1; } return { html: nextHtml, inserted }; }
 function ensureManagedLink(html: string, managed: GlwManagedLink): { html: string; inserted: boolean } { const fragment = `<p>${escapeHtml(managed.sentence)} <a href="${managed.href}" target="_blank" rel="noopener noreferrer">${escapeHtml(managed.label)}</a>.</p>`; return { html: insertContextually(html, fragment, { sectionPatterns: managed.sectionPatterns, paragraphPatterns: managed.paragraphPatterns }), inserted: true }; }
