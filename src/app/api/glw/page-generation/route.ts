@@ -12,6 +12,7 @@ import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpr
 
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { attachGenesisWordPressFeaturedImage } from "@/modules/foundation/wordpress-media-writer";
+import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-service";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { generateGenesisFeaturedImageWithCampaignReferences } from "@/modules/glw/reference-aware-image-service";
@@ -43,6 +44,7 @@ const service = createGlwDraftExecutionService({
   executionTransport: "N8N_MCP",
 });
 const executionReader = createGlwN8nMcpExecutionReader();
+const GLW_GENERATION_MINIMUM_WORD_COUNT = 1500;
 
 function isTerminal(status: string): boolean {
   return status === "COMPLETE" || status === "FAILED";
@@ -90,18 +92,63 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  const enrichment = enrichGlwGeneratedContentForSeo({
+  let enrichment = enrichGlwGeneratedContentForSeo({
     artifact: input.job.generatedDraft,
     request: input.request,
   });
 
-  const qa = evaluateGlwGeneratedContentQa({
+  let qa = evaluateGlwGeneratedContentQa({
     artifact: enrichment.artifact,
     request: input.request,
     siteDomain: input.siteRecord.domain,
-    minimumWordCount: 1500,
+    minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
     additionalAllowedDomains: enrichment.approvedExternalDomains,
   });
+
+  const eligibleForBoundedRepair =
+    !qa.ok
+    && recoverableQaFailure
+    && input.request.pageType === "state_service"
+    && qa.wordCount < GLW_GENERATION_MINIMUM_WORD_COUNT;
+
+  if (eligibleForBoundedRepair) {
+    const repair = await repairGlwStateContentToMinimum({
+      artifact: enrichment.artifact,
+      request: input.request,
+      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      currentWordCount: qa.wordCount,
+    });
+
+    if (!repair.ok) {
+      const timestamp = new Date().toISOString();
+      return glwPageExecutionRepository.update(input.job.jobId, {
+        status: "FAILED",
+        generatedDraft: enrichment.artifact,
+        errorCode: `CONTENT_REPAIR_${repair.state.toUpperCase()}`,
+        errorMessage: repair.message,
+        qaStatus: "FAILED",
+        qaChecks: qa.checks,
+        qaFailureReasons: qa.failureReasons,
+        wordCount: qa.wordCount,
+        updatedAt: timestamp,
+        completedAt: timestamp,
+      });
+    }
+
+    enrichment = enrichGlwGeneratedContentForSeo({
+      artifact: repair.artifact,
+      request: input.request,
+    });
+
+    qa = evaluateGlwGeneratedContentQa({
+      artifact: enrichment.artifact,
+      request: input.request,
+      siteDomain: input.siteRecord.domain,
+      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      additionalAllowedDomains: enrichment.approvedExternalDomains,
+    });
+  }
+
   if (!qa.ok) {
     const timestamp = new Date().toISOString();
     return glwPageExecutionRepository.update(input.job.jobId, {
@@ -404,15 +451,15 @@ export async function POST(request: NextRequest) {
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (!matchesExactContinuationTarget({ job: currentJob, request: preview.request })) {
-      return NextResponse.json({ error: "Continuation form does not match the exact persisted GLW job target." }, { status: 409 });
+      return NextResponse.json({ error: "Continuation request does not match the exact persisted GLW target." }, { status: 409 });
     }
 
-    const recoverableQaFailure =
+    const exactRecoverableQaFailure =
       currentJob.status === "FAILED"
       && currentJob.errorCode === "GENERATED_CONTENT_QA_FAILED"
       && Boolean(currentJob.generatedDraft);
 
-    if (!recoverableQaFailure) {
+    if (!exactRecoverableQaFailure) {
       const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
       if ("error" in authority) {
         return NextResponse.json(authority, { status: authority.status });
