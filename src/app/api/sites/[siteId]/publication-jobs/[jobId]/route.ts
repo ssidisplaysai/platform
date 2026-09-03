@@ -115,7 +115,26 @@ async function buildPreflight(request: NextRequest, context: Context) {
   const content = contentVerification(contentHtml);
   const seo = proposedExactJobSeo(job);
   const featuredMediaId = Number(page.featured_media ?? 0);
-  const seoReady = Boolean(seo.focusKeyphrase && seo.seoTitle && seo.metaDescription);
+  const typeRead = await authority.getJson({
+    path: "/types/page",
+    query: new URLSearchParams({ context: "edit" }),
+  });
+  const typeBody = typeRead.ok && typeRead.body && typeof typeRead.body === "object" && !Array.isArray(typeRead.body)
+    ? typeRead.body as { schema?: { properties?: { meta?: { properties?: Record<string, unknown> } } } }
+    : null;
+  const registeredMeta = typeBody?.schema?.properties?.meta?.properties ?? {};
+  const requiredYoastKeys = [
+    "_yoast_wpseo_focuskw",
+    "_yoast_wpseo_title",
+    "_yoast_wpseo_metadesc",
+  ];
+  const yoastWriteSupported = requiredYoastKeys.every((key) => key in registeredMeta);
+  const seoReady = Boolean(
+    seo.focusKeyphrase
+    && seo.seoTitle
+    && seo.metaDescription
+    && yoastWriteSupported
+  );
   const ready = siteGuard.allowed && productGuard.allowed && jobGateReasons.length === 0 && exactIdentity && collisionFree && content.ready && content.wordCount >= 1500 && featuredMediaId > 0 && seoReady;
 
   return {
@@ -137,7 +156,13 @@ async function buildPreflight(request: NextRequest, context: Context) {
       identity: { ready: exactIdentity, collisionFree },
       content: { ...content, minimumWordCount: 1500 },
       media: { ready: featuredMediaId > 0 && job.featuredImagePresent === true, featuredMediaId },
-      seo: { ready: seoReady },
+      seo: {
+        ready: seoReady,
+        yoastWriteSupported,
+        reason: yoastWriteSupported
+          ? null
+          : "SSI WordPress does not register the required Yoast meta keys for REST writes.",
+      },
     },
   } as const;
 }
@@ -222,6 +247,70 @@ export async function POST(request: NextRequest, context: Context) {
 
   const published = await publishGenesisWordPressDraft({ site: preflight.site, wordpressObjectId: preflight.job.wordpressObjectId });
   if (!published.ok) return NextResponse.json({ error: published.message, state: published.state }, { status: 409 });
-  await reconcileGlwPageExecutionPublished({ jobId: preflight.job.jobId, wordpressObjectId: preflight.job.wordpressObjectId, wordpressUrl: published.wordpressUrl });
-  return NextResponse.json({ ok: true, jobId: preflight.job.jobId, wordpressObjectId: published.wordpressObjectId, wordpressStatus: published.wordpressStatus, wordpressUrl: published.wordpressUrl, seoVerified: true, contentPreserved: true, featuredMediaPreserved: true, publicationPerformed: published.publicationPerformed });
+
+  const finalRead = await preflight.authority.getJson({
+    path: `/pages/${preflight.job.wordpressObjectId}`,
+    query: new URLSearchParams({ context: "edit", _fields: "id,slug,parent,status,link,content,featured_media,meta" }),
+  });
+  const finalPage = finalRead.ok && finalRead.body && typeof finalRead.body === "object" && !Array.isArray(finalRead.body)
+    ? finalRead.body as ExactJobWordPressPage
+    : null;
+  const finalMeta = finalPage?.meta ?? {};
+  const finalVerified = Boolean(
+    finalPage
+    && verifyExactJobPage({ page: finalPage, expectedObjectId: preflight.job.wordpressObjectId, expectedSlug: preflight.expectedSlug, expectedParentId: preflight.expectedParentId, expectedStatus: "publish" })
+    && finalPage.content?.raw === originalContent
+    && finalPage.featured_media === originalFeaturedMedia
+    && finalMeta._yoast_wpseo_focuskw === preflight.seo.focusKeyphrase
+    && finalMeta._yoast_wpseo_title === preflight.seo.seoTitle
+    && finalMeta._yoast_wpseo_metadesc === preflight.seo.metaDescription
+  );
+  if (!finalVerified) {
+    return NextResponse.json({ error: "Published WordPress identity, content, media, or Yoast verification failed. Execution state was not transitioned." }, { status: 409 });
+  }
+
+  const canonicalUrl = new URL(`/${preflight.job.slug}/`, preflight.site.canonicalUrl ?? `https://${preflight.site.domain}`).toString();
+  let publicResponse: Response;
+  try {
+    publicResponse = await fetch(canonicalUrl, {
+      method: "GET",
+      cache: "no-store",
+      redirect: "follow",
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch {
+    return NextResponse.json({ error: "Canonical public URL verification failed. Execution state was not transitioned." }, { status: 409 });
+  }
+  if (!publicResponse.ok || new URL(publicResponse.url).pathname !== new URL(canonicalUrl).pathname) {
+    return NextResponse.json({ error: "Canonical public URL did not resolve to the expected published path. Execution state was not transitioned." }, { status: 409 });
+  }
+
+  const verifiedAt = new Date().toISOString();
+  await reconcileGlwPageExecutionPublished({
+    jobId: preflight.job.jobId,
+    wordpressObjectId: preflight.job.wordpressObjectId,
+    wordpressUrl: canonicalUrl,
+    publicationVerification: {
+      verifiedAt,
+      wordpressObjectId: preflight.job.wordpressObjectId,
+      slug: preflight.expectedSlug,
+      parentId: preflight.expectedParentId,
+      status: "publish",
+      featuredMediaId: originalFeaturedMedia,
+      contentPreserved: true,
+      yoastMetadataRetained: true,
+      canonicalUrl,
+      publicHttpStatus: publicResponse.status,
+    },
+  });
+  return NextResponse.json({
+    ok: true,
+    jobId: preflight.job.jobId,
+    seoMutation: { accepted: true, verified: true },
+    prePublicationVerification: { id: preflight.job.wordpressObjectId, slug: preflight.expectedSlug, parent: preflight.expectedParentId, status: "draft", contentPreserved: true, featuredMediaId: originalFeaturedMedia },
+    publicationResponse: { wordpressObjectId: published.wordpressObjectId, wordpressStatus: published.wordpressStatus, publicationPerformed: published.publicationPerformed },
+    authoritativePostPublicationVerification: { id: finalPage.id, slug: finalPage.slug, parent: finalPage.parent, status: finalPage.status, featuredMediaId: finalPage.featured_media, contentPreserved: true, yoastMetadataRetained: true },
+    publicCanonicalUrl: { url: canonicalUrl, httpStatus: publicResponse.status, resolvedUrl: publicResponse.url },
+    persistedExecution: { wordpressStatus: "publish", wordpressUrl: canonicalUrl, publicationVerifiedAt: verifiedAt },
+  });
 }

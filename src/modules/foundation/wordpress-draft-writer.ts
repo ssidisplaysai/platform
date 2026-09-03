@@ -10,6 +10,7 @@ type WordPressPage = {
   parent?: number;
   status?: string;
   link?: string;
+  meta?: Record<string, unknown>;
 };
 
 export type GenesisWordPressSeoMetadata = {
@@ -549,6 +550,12 @@ export async function writeGenesisWordPressDraft(
     wordpressUrl: written.link,
     wordpressStatus: "draft",
     seoMetadataAttempted,
-    seoMetadataAccepted: seoMetadataAttempted,
+    seoMetadataAccepted: Boolean(
+      yoastMeta
+      && written.meta
+      && Object.entries(yoastMeta).every(
+        ([key, value]) => written.meta?.[key] === value,
+      )
+    ),
   };
 }

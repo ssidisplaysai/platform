@@ -75,6 +75,7 @@ export async function reconcileGlwPageExecutionPublished(input: {
   jobId: string;
   wordpressObjectId: string;
   wordpressUrl: string | null;
+  publicationVerification?: Readonly<Record<string, unknown>>;
 }): Promise<GlwPageExecutionRecord> {
   const record = await glwPageExecutionRepository.getById(input.jobId);
 
@@ -92,6 +93,12 @@ export async function reconcileGlwPageExecutionPublished(input: {
   return glwPageExecutionRepository.update(input.jobId, {
     wordpressStatus: "publish",
     wordpressUrl: input.wordpressUrl,
+    qaChecks: input.publicationVerification
+      ? {
+          ...(record.qaChecks ?? {}),
+          publicationVerification: input.publicationVerification,
+        }
+      : record.qaChecks,
     updatedAt: new Date().toISOString(),
   });
 }
