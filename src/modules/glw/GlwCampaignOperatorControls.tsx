@@ -72,6 +72,10 @@ type SeoRefreshRunPayload = {
   error?: string;
 };
 
+type SeoRefreshRunRecord = SeoRefreshRunPayload & {
+  completedAt: string;
+};
+
 type Props = {
   campaignId: string;
   organizationId: string;
@@ -87,6 +91,7 @@ export function GlwCampaignOperatorControls({
 }: Props) {
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
   const [seoPreview, setSeoPreview] = useState<SeoRefreshPreviewPayload | null>(null);
+  const [seoRun, setSeoRun] = useState<SeoRefreshRunRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(false);
   const [refreshingSeo, setRefreshingSeo] = useState(false);
@@ -104,7 +109,6 @@ export function GlwCampaignOperatorControls({
 
   async function loadScheduler() {
     setLoading(true);
-    setError(null);
 
     const [schedulerResponse, seoResponse] = await Promise.all([
       fetch(`/api/glw/campaigns/${campaignId}/scheduler`, {
@@ -215,6 +219,11 @@ export function GlwCampaignOperatorControls({
       return;
     }
 
+    setSeoRun({
+      ...payload,
+      completedAt: new Date().toLocaleString(),
+    });
+
     const failedStates = payload.results
       .filter((entry) => !entry.ok)
       .map((entry) => `${entry.stateCode}: ${entry.error ?? "unknown error"}`);
@@ -278,6 +287,51 @@ export function GlwCampaignOperatorControls({
             >
               {refreshingSeo ? "Refreshing SEO..." : "Refresh SEO on Draft-Ready Pages"}
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {seoRun ? (
+        <div className="mt-5 rounded-xl border border-zinc-700 bg-zinc-950/80 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-zinc-500">SEO Maintenance Results</p>
+              <p className="mt-1 text-sm text-zinc-300">Last run: {seoRun.completedAt}</p>
+            </div>
+            <div className="flex gap-2 text-xs uppercase">
+              <span className="rounded-full border border-emerald-800 px-3 py-1 text-emerald-300">Succeeded {seoRun.succeeded}</span>
+              <span className="rounded-full border border-red-900 px-3 py-1 text-red-300">Failed {seoRun.failed}</span>
+            </div>
+          </div>
+
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-xs">
+              <thead className="border-b border-zinc-800 uppercase tracking-wider text-zinc-500">
+                <tr>
+                  <th className="px-2 py-2">State</th>
+                  <th className="px-2 py-2">Result</th>
+                  <th className="px-2 py-2">WordPress</th>
+                  <th className="px-2 py-2">Job</th>
+                  <th className="px-2 py-2">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {seoRun.results.map((entry) => (
+                  <tr key={`${entry.stateCode}-${entry.jobId}`} className="border-b border-zinc-900 text-zinc-300">
+                    <td className="px-2 py-2 font-semibold text-white">{entry.stateCode}</td>
+                    <td className={`px-2 py-2 font-semibold ${entry.ok ? "text-emerald-300" : "text-red-300"}`}>{entry.ok ? "PASS" : "FAIL"}</td>
+                    <td className="px-2 py-2 font-mono text-zinc-400">{entry.wordpressObjectId ?? "—"}</td>
+                    <td className="px-2 py-2 font-mono text-zinc-500">{entry.jobId}</td>
+                    <td className="px-2 py-2 text-zinc-400">{entry.error ?? "SEO enrichment updated"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 text-xs text-zinc-300">Image generation: <span className="font-semibold text-white">{seoRun.imageGenerationPerformed ? "YES" : "NO"}</span></div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3 text-xs text-zinc-300">Publication: <span className="font-semibold text-white">{seoRun.publicationPerformed ? "YES" : "NO"}</span></div>
           </div>
         </div>
       ) : null}
