@@ -10,6 +10,11 @@ export type GlwGeneratedContentQaResult = {
   wordCount: number;
 };
 
+const GLW_CERTIFIED_EXTERNAL_DOMAINS = new Set([
+  "ssidisplays.com",
+  "energy.gov",
+]);
+
 function stripHtml(value: string): string {
   return value
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
@@ -41,6 +46,20 @@ function collectHttpDomains(html: string): string[] {
     if (domain) domains.add(domain);
   }
   return [...domains];
+}
+
+function domainMatches(domain: string, allowedDomain: string): boolean {
+  return domain === allowedDomain || domain.endsWith(`.${allowedDomain}`);
+}
+
+function isAllowedAbsoluteLinkDomain(domain: string, siteDomain: string): boolean {
+  if (siteDomain && domainMatches(domain, siteDomain)) return true;
+
+  for (const certifiedDomain of GLW_CERTIFIED_EXTERNAL_DOMAINS) {
+    if (domainMatches(domain, certifiedDomain)) return true;
+  }
+
+  return false;
 }
 
 function includesExpected(text: string, value: string | null | undefined): boolean {
@@ -114,9 +133,9 @@ export function evaluateGlwGeneratedContentQa(input: {
   const minimumWordCount = input.minimumWordCount ?? 1500;
   const allowedDomain = normalizeDomain(input.siteDomain);
   const linkedDomains = collectHttpDomains(html);
-  const foreignDomains = allowedDomain
-    ? linkedDomains.filter((domain) => domain !== allowedDomain && !domain.endsWith(`.${allowedDomain}`))
-    : linkedDomains;
+  const foreignDomains = linkedDomains.filter(
+    (domain) => !isAllowedAbsoluteLinkDomain(domain, allowedDomain),
+  );
 
   const mojibakePattern = /[âÃÂ\uFFFD]/g;
   const mojibakeMatches = text.match(mojibakePattern) ?? [];
@@ -135,7 +154,7 @@ export function evaluateGlwGeneratedContentQa(input: {
   const checks: Record<string, QaCheck> = {
     contentPresent: { ok: contentPresent, message: contentPresent ? "Generated content is present." : "Generated content is empty." },
     minimumWordCount: { ok: wordCountOk, message: `${wordCount} words generated; minimum is ${minimumWordCount}.` },
-    siteDomainIsolation: { ok: domainsOk, message: domainsOk ? "All absolute links remain on the configured site domain." : `Foreign absolute link domains found: ${foreignDomains.join(", ")}.` },
+    siteDomainIsolation: { ok: domainsOk, message: domainsOk ? "Absolute links are limited to the site domain and certified SEO authority domains." : `Unapproved absolute link domains found: ${foreignDomains.join(", ")}.` },
     encodingIntegrity: { ok: mojibakeOk, message: mojibakeOk ? "No known mojibake markers detected." : `Detected ${mojibakeMatches.length} mojibake marker(s).` },
     textIntegrity: { ok: textIntegrityOk, message: textIntegrityOk ? "No known spacing or word-join corruption detected." : `Detected text-integrity markers: ${textIntegrityMarkers.slice(0, 12).join(", ")}.` },
     expectedProduct: { ok: expectedProduct, message: expectedProduct ? "Expected product/topic is present." : `Expected product/topic is missing: ${input.request.productTopic}.` },
