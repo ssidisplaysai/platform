@@ -4,6 +4,7 @@ import {
   createIntegrationProfile,
   evaluateProfileReadiness,
   getIntegrationProfileById,
+  updateIntegrationProfile,
   upsertProfileAssignment,
 } from "./integration-profile-repository";
 import {
@@ -148,7 +149,7 @@ const SSI_PROFILES: readonly NewIntegrationProfileInput[] = [
     openGraphReference: "ogref-ssi-default-v1",
     slugStrategyReference: "slugstrategy-ssi-hierarchy-v1",
     canonicalPolicyReference: "canonical-policy-site-primary",
-    yoastPolicyReference: "yoast-ssi-default",
+    yoastPolicyReference: "wordpress-rest:/ssi/v1/yoast-update",
   }),
   profile("publishing", SSI_PROFILE_IDS.publishing, "SSI Publishing Default", {
     wordpressProfileReference: SSI_PROFILE_IDS.wordpress,
@@ -300,12 +301,20 @@ export function configureSsiSiteStudio() {
   });
 
   for (const input of SSI_PROFILES) {
-    if (!getIntegrationProfileById(input.profileId)) {
+    const existingProfile = getIntegrationProfileById(input.profileId);
+    if (!existingProfile) {
       const created = createIntegrationProfile(input);
       if (!created.validation.valid || !created.profile) {
         throw new Error(
           `SSI ${input.profileType} profile validation failed: ${created.validation.issues.map((issue) => issue.message).join("; ")}`,
         );
+      }
+    } else if (input.profileType === "seo") {
+      const updated = updateIntegrationProfile(input.profileId, {
+        references: input.references,
+      });
+      if (!updated.validation.valid || !updated.profile) {
+        throw new Error("SSI SEO profile endpoint configuration failed.");
       }
     }
 

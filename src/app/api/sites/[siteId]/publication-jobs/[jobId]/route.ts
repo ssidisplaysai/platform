@@ -21,8 +21,8 @@ import {
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { evaluatePublishingGuard } from "@/modules/foundation/site-publishing-guard";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
-import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { publishGenesisWordPressDraft } from "@/modules/foundation/wordpress-publish-writer";
+import { createWordPressSeoWriter } from "@/modules/foundation/wordpress-seo-writer";
 import {
   glwPageExecutionRepository,
   reconcileGlwPageExecutionPublished,
@@ -115,20 +115,11 @@ async function buildPreflight(request: NextRequest, context: Context) {
   const content = contentVerification(contentHtml);
   const seo = proposedExactJobSeo(job);
   const featuredMediaId = Number(page.featured_media ?? 0);
-  const typeRead = await authority.getJson({
-    path: "/types/page",
-    query: new URLSearchParams({ context: "edit" }),
-  });
-  const typeBody = typeRead.ok && typeRead.body && typeof typeRead.body === "object" && !Array.isArray(typeRead.body)
-    ? typeRead.body as { schema?: { properties?: { meta?: { properties?: Record<string, unknown> } } } }
+  const seoWriter = createWordPressSeoWriter(site);
+  const seoCapability = seoWriter && job.wordpressObjectId
+    ? await seoWriter.inspect(Number(job.wordpressObjectId))
     : null;
-  const registeredMeta = typeBody?.schema?.properties?.meta?.properties ?? {};
-  const requiredYoastKeys = [
-    "_yoast_wpseo_focuskw",
-    "_yoast_wpseo_title",
-    "_yoast_wpseo_metadesc",
-  ];
-  const yoastWriteSupported = requiredYoastKeys.every((key) => key in registeredMeta);
+  const yoastWriteSupported = seoCapability?.ready === true;
   const seoReady = Boolean(
     seo.focusKeyphrase
     && seo.seoTitle
@@ -144,6 +135,7 @@ async function buildPreflight(request: NextRequest, context: Context) {
     job,
     page,
     authority,
+    seoWriter,
     expectedSlug,
     expectedParentId,
     featuredMediaId,
@@ -161,7 +153,7 @@ async function buildPreflight(request: NextRequest, context: Context) {
         yoastWriteSupported,
         reason: yoastWriteSupported
           ? null
-          : "SSI WordPress does not register the required Yoast meta keys for REST writes.",
+          : "The configured site SEO endpoint does not provide authenticated GET and POST verification.",
       },
     },
   } as const;
@@ -180,7 +172,7 @@ function response(preflight: Exclude<Awaited<ReturnType<typeof buildPreflight>>,
     collisionResult: preflight.gates.identity.collisionFree ? "EXACT_UNIQUE_DRAFT" : "COLLISION_OR_IDENTITY_MISMATCH",
     gates: preflight.gates,
     proposedYoast: preflight.seo,
-    exactFirstMutation: "POST exact WordPress page ID with unchanged title/content/excerpt/slug/parent and proposed Yoast meta; featured_media omitted and therefore preserved.",
+    exactFirstMutation: "POST only post_id, focuskw, title, and metadesc to the configured authenticated site SEO endpoint; no page fields are sent.",
     exactPublicationMutation: "POST exact WordPress page ID with {status: publish} only after SEO readback succeeds.",
     publicationPerformed: false,
   };
@@ -207,39 +199,22 @@ export async function POST(request: NextRequest, context: Context) {
 
   const originalContent = preflight.page.content?.raw ?? "";
   const originalFeaturedMedia = preflight.featuredMediaId;
-  const seoWrite = await writeGenesisWordPressDraft({
-    operation: "UPDATE",
-    site: preflight.site,
-    wordpressObjectId: preflight.job.wordpressObjectId,
-    artifact: {
-      title: preflight.page.title?.raw ?? preflight.job.title,
-      contentHtml: originalContent,
-      slug: preflight.expectedSlug,
-      excerpt: preflight.page.excerpt?.raw ?? preflight.job.generatedDraft?.excerpt,
-      parentId: Number(preflight.expectedParentId),
-      seo: preflight.seo,
-    },
-  });
-  if (!seoWrite.ok || !seoWrite.seoMetadataAccepted) {
-    return NextResponse.json({ error: seoWrite.ok ? "WordPress did not accept exact Yoast metadata." : seoWrite.message }, { status: 409 });
+  if (!preflight.seoWriter) {
+    return NextResponse.json({ error: "Configured site SEO writer is unavailable." }, { status: 409 });
   }
-
-  const seoRead = await preflight.authority.getJson({
-    path: `/pages/${preflight.job.wordpressObjectId}`,
-    query: new URLSearchParams({ context: "edit", _fields: "id,slug,parent,status,content,featured_media,meta" }),
-  });
-  const seoPage = seoRead.ok && seoRead.body && typeof seoRead.body === "object" && !Array.isArray(seoRead.body)
-    ? seoRead.body as ExactJobWordPressPage
-    : null;
-  const meta = seoPage?.meta ?? {};
+  const seoWrite = await preflight.seoWriter.write(
+    Number(preflight.job.wordpressObjectId),
+    preflight.seo,
+  );
+  const seoRead = await preflight.seoWriter.read(Number(preflight.job.wordpressObjectId));
   const seoVerified = Boolean(
-    seoPage
-    && verifyExactJobPage({ page: seoPage, expectedObjectId: preflight.job.wordpressObjectId, expectedSlug: preflight.expectedSlug, expectedParentId: preflight.expectedParentId, expectedStatus: "draft" })
-    && seoPage.content?.raw === originalContent
-    && seoPage.featured_media === originalFeaturedMedia
-    && meta._yoast_wpseo_focuskw === preflight.seo.focusKeyphrase
-    && meta._yoast_wpseo_title === preflight.seo.seoTitle
-    && meta._yoast_wpseo_metadesc === preflight.seo.metaDescription
+    seoWrite.ok
+    && seoRead.ok
+    && preflight.seoWriter.exact(
+      seoRead.stored,
+      Number(preflight.job.wordpressObjectId),
+      preflight.seo,
+    )
   );
   if (!seoVerified) {
     return NextResponse.json({ error: "Exact draft, content, media, or Yoast readback verification failed. Publication was not attempted." }, { status: 409 });
@@ -255,15 +230,14 @@ export async function POST(request: NextRequest, context: Context) {
   const finalPage = finalRead.ok && finalRead.body && typeof finalRead.body === "object" && !Array.isArray(finalRead.body)
     ? finalRead.body as ExactJobWordPressPage
     : null;
-  const finalMeta = finalPage?.meta ?? {};
+  const finalSeoRead = await preflight.seoWriter.read(Number(preflight.job.wordpressObjectId));
   const finalVerified = Boolean(
     finalPage
     && verifyExactJobPage({ page: finalPage, expectedObjectId: preflight.job.wordpressObjectId, expectedSlug: preflight.expectedSlug, expectedParentId: preflight.expectedParentId, expectedStatus: "publish" })
     && finalPage.content?.raw === originalContent
     && finalPage.featured_media === originalFeaturedMedia
-    && finalMeta._yoast_wpseo_focuskw === preflight.seo.focusKeyphrase
-    && finalMeta._yoast_wpseo_title === preflight.seo.seoTitle
-    && finalMeta._yoast_wpseo_metadesc === preflight.seo.metaDescription
+    && finalSeoRead.ok
+    && preflight.seoWriter.exact(finalSeoRead.stored, Number(preflight.job.wordpressObjectId), preflight.seo)
   );
   if (!finalVerified) {
     return NextResponse.json({ error: "Published WordPress identity, content, media, or Yoast verification failed. Execution state was not transitioned." }, { status: 409 });
