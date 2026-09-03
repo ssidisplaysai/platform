@@ -52,11 +52,19 @@ function domainMatches(domain: string, allowedDomain: string): boolean {
   return domain === allowedDomain || domain.endsWith(`.${allowedDomain}`);
 }
 
-function isAllowedAbsoluteLinkDomain(domain: string, siteDomain: string): boolean {
+function isAllowedAbsoluteLinkDomain(
+  domain: string,
+  siteDomain: string,
+  additionalAllowedDomains: readonly string[],
+): boolean {
   if (siteDomain && domainMatches(domain, siteDomain)) return true;
 
   for (const certifiedDomain of GLW_CERTIFIED_EXTERNAL_DOMAINS) {
     if (domainMatches(domain, certifiedDomain)) return true;
+  }
+
+  for (const allowedDomain of additionalAllowedDomains) {
+    if (domainMatches(domain, normalizeDomain(allowedDomain))) return true;
   }
 
   return false;
@@ -70,9 +78,6 @@ function includesExpected(text: string, value: string | null | undefined): boole
 function collectTextIntegrityMarkers(text: string): string[] {
   const markers = new Set<string>();
 
-  // These are syntax-level spacing defects rather than vocabulary guesses.
-  // Keep periods restricted to uppercase starts so hostnames such as
-  // ssidisplays.com remain valid while sentence joins such as matters.Next fail.
   for (const match of text.matchAll(/(?:[!?;,][A-Za-z]|\.[A-Z])/g)) {
     const value = match[0];
     const index = match.index ?? 0;
@@ -81,8 +86,6 @@ function collectTextIntegrityMarkers(text: string): string[] {
       const precedingCharacter = index > 0 ? text[index - 1] : "";
       const followingCharacter = text[index + value.length] ?? "";
 
-      // Dotted abbreviations such as U.S. contain ".S." but do not
-      // represent a missing space between sentences.
       if (/[A-Za-z]/.test(precedingCharacter) && followingCharacter === ".") {
         continue;
       }
@@ -125,6 +128,7 @@ export function evaluateGlwGeneratedContentQa(input: {
   request: GlwGenerationRequest;
   siteDomain: string | null | undefined;
   minimumWordCount?: number;
+  additionalAllowedDomains?: readonly string[];
 }): GlwGeneratedContentQaResult {
   const html = input.artifact.contentHtml ?? "";
   const text = stripHtml(html);
@@ -133,8 +137,9 @@ export function evaluateGlwGeneratedContentQa(input: {
   const minimumWordCount = input.minimumWordCount ?? 1500;
   const allowedDomain = normalizeDomain(input.siteDomain);
   const linkedDomains = collectHttpDomains(html);
+  const additionalAllowedDomains = input.additionalAllowedDomains ?? [];
   const foreignDomains = linkedDomains.filter(
-    (domain) => !isAllowedAbsoluteLinkDomain(domain, allowedDomain),
+    (domain) => !isAllowedAbsoluteLinkDomain(domain, allowedDomain, additionalAllowedDomains),
   );
 
   const mojibakePattern = /[âÃÂ\uFFFD]/g;
@@ -154,7 +159,7 @@ export function evaluateGlwGeneratedContentQa(input: {
   const checks: Record<string, QaCheck> = {
     contentPresent: { ok: contentPresent, message: contentPresent ? "Generated content is present." : "Generated content is empty." },
     minimumWordCount: { ok: wordCountOk, message: `${wordCount} words generated; minimum is ${minimumWordCount}.` },
-    siteDomainIsolation: { ok: domainsOk, message: domainsOk ? "Absolute links are limited to the site domain and certified SEO authority domains." : `Unapproved absolute link domains found: ${foreignDomains.join(", ")}.` },
+    siteDomainIsolation: { ok: domainsOk, message: domainsOk ? "Absolute links are limited to the site domain and approved SEO authority domains." : `Unapproved absolute link domains found: ${foreignDomains.join(", ")}.` },
     encodingIntegrity: { ok: mojibakeOk, message: mojibakeOk ? "No known mojibake markers detected." : `Detected ${mojibakeMatches.length} mojibake marker(s).` },
     textIntegrity: { ok: textIntegrityOk, message: textIntegrityOk ? "No known spacing or word-join corruption detected." : `Detected text-integrity markers: ${textIntegrityMarkers.slice(0, 12).join(", ")}.` },
     expectedProduct: { ok: expectedProduct, message: expectedProduct ? "Expected product/topic is present." : `Expected product/topic is missing: ${input.request.productTopic}.` },
