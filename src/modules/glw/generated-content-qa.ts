@@ -97,6 +97,24 @@ function collectTextIntegrityMarkers(text: string): string[] {
   return [...markers];
 }
 
+function collectMojibakeMarkers(text: string): string[] {
+  const markers = new Set<string>();
+  const suspiciousSequences = [
+    /\uFFFD/g,
+    /Ã[\u0080-\u00BF]/g,
+    /Â[\u0080-\u00BF]/g,
+    /â(?:€|€™|€œ|€�|€“|€”|€¦|€¢|„¢|„¬|„¢)/g,
+  ];
+
+  for (const pattern of suspiciousSequences) {
+    for (const match of text.matchAll(pattern)) {
+      markers.add(match[0]);
+    }
+  }
+
+  return [...markers];
+}
+
 function normalizeAnchorText(value: string): string {
   return stripHtml(value).replace(/\s+/g, " ").trim().toLowerCase();
 }
@@ -142,9 +160,8 @@ export function evaluateGlwGeneratedContentQa(input: {
     (domain) => !isAllowedAbsoluteLinkDomain(domain, allowedDomain, additionalAllowedDomains),
   );
 
-  const mojibakePattern = /[âÃÂ\uFFFD]/g;
-  const mojibakeMatches = text.match(mojibakePattern) ?? [];
-  const mojibakeOk = mojibakeMatches.length === 0;
+  const mojibakeMarkers = collectMojibakeMarkers(text);
+  const mojibakeOk = mojibakeMarkers.length === 0;
   const textIntegrityMarkers = collectTextIntegrityMarkers(text);
   const textIntegrityOk = textIntegrityMarkers.length === 0;
 
@@ -160,7 +177,7 @@ export function evaluateGlwGeneratedContentQa(input: {
     contentPresent: { ok: contentPresent, message: contentPresent ? "Generated content is present." : "Generated content is empty." },
     minimumWordCount: { ok: wordCountOk, message: `${wordCount} words generated; minimum is ${minimumWordCount}.` },
     siteDomainIsolation: { ok: domainsOk, message: domainsOk ? "Absolute links are limited to the site domain and approved SEO authority domains." : `Unapproved absolute link domains found: ${foreignDomains.join(", ")}.` },
-    encodingIntegrity: { ok: mojibakeOk, message: mojibakeOk ? "No known mojibake markers detected." : `Detected ${mojibakeMatches.length} mojibake marker(s).` },
+    encodingIntegrity: { ok: mojibakeOk, message: mojibakeOk ? "No known mojibake markers detected." : `Detected mojibake marker(s): ${mojibakeMarkers.slice(0, 12).join(", ")}.` },
     textIntegrity: { ok: textIntegrityOk, message: textIntegrityOk ? "No known spacing or word-join corruption detected." : `Detected text-integrity markers: ${textIntegrityMarkers.slice(0, 12).join(", ")}.` },
     expectedProduct: { ok: expectedProduct, message: expectedProduct ? "Expected product/topic is present." : `Expected product/topic is missing: ${input.request.productTopic}.` },
     expectedState: { ok: expectedState, message: expectedState ? "Expected state is present." : `Expected state is missing: ${input.request.stateName ?? ""}.` },
