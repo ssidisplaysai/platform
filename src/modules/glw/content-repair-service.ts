@@ -91,58 +91,29 @@ function insertRepairBeforeClosingContainer(html: string, fragment: string): str
   return `${html.trimEnd()}\n${fragment}`;
 }
 
-export async function repairGlwStateContentToMinimum(input: {
-  artifact: GlwGeneratedDraftArtifact;
-  request: GlwGenerationRequest;
-  minimumWordCount: number;
-  currentWordCount: number;
-}): Promise<GlwContentRepairResult> {
-  if (input.request.pageType !== "state_service") {
-    return { ok: true, artifact: input.artifact, repaired: false };
-  }
-  if (input.currentWordCount >= input.minimumWordCount) {
-    return { ok: true, artifact: input.artifact, repaired: false };
-  }
+function ensureDeterministicProductAuthorityLink(html: string, href: string, productTopic: string): string {
+  if (hasExactProductAuthorityLink(html, href, productTopic)) return html;
+  const fragment = `<p>Explore our <a href="${href}">${productTopic}</a> solutions for additional product specifications, turnkey package details, and display options.</p>`;
+  return insertRepairBeforeClosingContainer(html, fragment);
+}
 
-  const apiKey = resolveApiKey();
-  if (!apiKey) {
-    return {
-      ok: false,
-      state: "not_configured",
-      message: "Genesis content repair requires GENESIS_OPENAI_API_KEY or OPENAI_API_KEY.",
-    };
-  }
-
-  const deficit = Math.max(0, input.minimumWordCount - input.currentWordCount);
-  const targetAddedWords = Math.min(Math.max(deficit + 260, 320), 1200);
-  const stateName = input.request.stateName?.trim() || input.request.stateCode;
-  const productPath = `/${input.request.canonicalPath.split("/").filter(Boolean)[0]}/`;
-  const prompt = [
-    "Write an additive repair section for an existing commercial state landing page.",
-    "Do not rewrite, summarize, replace, shorten, or repeat the existing page. Return only NEW HTML that can be appended to the existing page.",
-    `Product: ${input.request.productTopic}.`,
-    `State: ${stateName}.`,
-    `Existing body is approximately ${input.currentWordCount} words and must exceed ${input.minimumWordCount} words after the new section is appended.`,
-    `Write approximately ${targetAddedWords} useful new words in two to five focused sections using h2/h3, p, ul, and li as appropriate.`,
-    "Preserve factual restraint. Do not invent pricing, certifications, dimensions, customers, installations, inventory, delivery times, warranties, or state-specific facts that are not already supported.",
-    "Keep the content commercial and useful, focused on planning, venue fit, installation coordination, content strategy, serviceability, procurement, buyer evaluation, and operational considerations.",
-    `The returned HTML must contain one contextual anchor whose exact href is ${productPath} and whose anchor text is exactly ${input.request.productTopic}.`,
-    "Do not include any absolute-domain links. Do not include html, head, body, main, or article wrapper tags.",
-    "Return only the additive HTML fragment. No Markdown fences, no commentary, no JSON.",
-  ].join("\n\n");
-
+async function requestRepairFragment(input: {
+  apiKey: string;
+  model: string;
+  prompt: string;
+}): Promise<GlwContentRepairResult | { ok: true; fragment: string }> {
   let response: Response;
   try {
     response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         Accept: "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${input.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: resolveModel(),
-        input: prompt,
+        model: input.model,
+        input: input.prompt,
         max_output_tokens: 6000,
       }),
       cache: "no-store",
@@ -175,50 +146,123 @@ export async function repairGlwStateContentToMinimum(input: {
     };
   }
 
-  const repairFragment = stripFence(extractOutputText(body));
-  if (!repairFragment || !/<(?:p|h[1-6]|ul|ol|table)\b/i.test(repairFragment)) {
+  const fragment = stripFence(extractOutputText(body));
+  if (!fragment || !/<(?:p|h[1-6]|ul|ol|table)\b/i.test(fragment)) {
     return {
       ok: false,
       state: "invalid_response",
       message: "The bounded content-repair provider returned no usable HTML fragment.",
     };
   }
-  if (/<(?:html|head|body|main|article)\b/i.test(repairFragment)) {
+  if (/<(?:html|head|body|main|article)\b/i.test(fragment)) {
     return {
       ok: false,
       state: "invalid_response",
       message: "The bounded content-repair provider returned a replacement document instead of an additive fragment.",
     };
   }
-  if (/href\s*=\s*[\"']https?:\/\//i.test(repairFragment)) {
+  if (/href\s*=\s*[\"']https?:\/\//i.test(fragment)) {
     return {
       ok: false,
       state: "invalid_response",
       message: "The bounded content-repair provider introduced an unapproved absolute-domain link.",
     };
   }
-  if (!hasExactProductAuthorityLink(repairFragment, productPath, input.request.productTopic)) {
+
+  return { ok: true, fragment };
+}
+
+export async function repairGlwStateContentToMinimum(input: {
+  artifact: GlwGeneratedDraftArtifact;
+  request: GlwGenerationRequest;
+  minimumWordCount: number;
+  currentWordCount: number;
+}): Promise<GlwContentRepairResult> {
+  if (input.request.pageType !== "state_service") {
+    return { ok: true, artifact: input.artifact, repaired: false };
+  }
+
+  const productPath = `/${input.request.canonicalPath.split("/").filter(Boolean)[0]}/`;
+  let contentHtml = ensureDeterministicProductAuthorityLink(
+    input.artifact.contentHtml,
+    productPath,
+    input.request.productTopic,
+  );
+  let currentWordCount = countWords(contentHtml);
+
+  if (currentWordCount >= input.minimumWordCount) {
     return {
-      ok: false,
-      state: "invalid_response",
-      message: "The bounded content-repair provider did not return the required exact product authority link.",
+      ok: true,
+      repaired: contentHtml !== input.artifact.contentHtml,
+      artifact: {
+        ...input.artifact,
+        contentHtml,
+      },
     };
   }
 
-  const contentHtml = insertRepairBeforeClosingContainer(input.artifact.contentHtml, repairFragment);
-  if (!containsOriginalCore(contentHtml, input.artifact.contentHtml)) {
+  const apiKey = resolveApiKey();
+  if (!apiKey) {
     return {
       ok: false,
-      state: "invalid_response",
-      message: "The bounded content repair did not preserve the existing page body.",
+      state: "not_configured",
+      message: "Genesis content repair requires GENESIS_OPENAI_API_KEY or OPENAI_API_KEY.",
     };
   }
-  const repairedWordCount = countWords(contentHtml);
-  if (repairedWordCount < input.minimumWordCount) {
+
+  const stateName = input.request.stateName?.trim() || input.request.stateCode;
+  const model = resolveModel();
+
+  for (let pass = 1; pass <= 2 && currentWordCount < input.minimumWordCount; pass += 1) {
+    const deficit = Math.max(0, input.minimumWordCount - currentWordCount);
+    const targetAddedWords = Math.min(Math.max(deficit + (pass === 1 ? 320 : 180), pass === 1 ? 360 : 220), 1400);
+    const prompt = [
+      "Write an additive repair section for an existing commercial state landing page.",
+      "Do not rewrite, summarize, replace, shorten, or repeat the existing page. Return only NEW HTML that can be appended to the existing page.",
+      `Product: ${input.request.productTopic}.`,
+      `State: ${stateName}.`,
+      `The page currently contains approximately ${currentWordCount} words and must exceed ${input.minimumWordCount} words after this additive section is appended.`,
+      `Write approximately ${targetAddedWords} useful new words in two to five focused sections using h2/h3, p, ul, and li as appropriate.`,
+      "Preserve factual restraint. Do not invent pricing, certifications, dimensions, customers, installations, inventory, delivery times, warranties, or unsupported state-specific facts.",
+      "Keep the content commercial and useful, focused on planning, venue fit, installation coordination, content strategy, serviceability, procurement, buyer evaluation, and operational considerations.",
+      "Do not include any absolute-domain links. Do not include html, head, body, main, or article wrapper tags.",
+      "Do not include the product authority link; Genesis inserts and validates that link deterministically.",
+      "Return only the additive HTML fragment. No Markdown fences, no commentary, no JSON.",
+    ].join("\n\n");
+
+    const repair = await requestRepairFragment({ apiKey, model, prompt });
+    if (!repair.ok) return repair;
+
+    contentHtml = insertRepairBeforeClosingContainer(contentHtml, repair.fragment);
+    if (!containsOriginalCore(contentHtml, input.artifact.contentHtml)) {
+      return {
+        ok: false,
+        state: "invalid_response",
+        message: "The bounded content repair did not preserve the existing page body.",
+      };
+    }
+
+    contentHtml = ensureDeterministicProductAuthorityLink(
+      contentHtml,
+      productPath,
+      input.request.productTopic,
+    );
+    currentWordCount = countWords(contentHtml);
+  }
+
+  if (currentWordCount < input.minimumWordCount) {
     return {
       ok: false,
       state: "invalid_response",
-      message: `The bounded content repair produced ${repairedWordCount} words; minimum is ${input.minimumWordCount}.`,
+      message: `The bounded content repair produced ${currentWordCount} words; minimum is ${input.minimumWordCount}.`,
+    };
+  }
+
+  if (!hasExactProductAuthorityLink(contentHtml, productPath, input.request.productTopic)) {
+    return {
+      ok: false,
+      state: "invalid_response",
+      message: "Genesis could not establish the required exact product authority link after bounded repair.",
     };
   }
 
