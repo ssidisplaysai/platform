@@ -163,6 +163,7 @@ export function initializeGlwCampaignTargets(input: {
 
   return listGlwCampaignTargets(input.campaignId);
 }
+
 export type GlwCampaignTargetQueueSummary = {
   total: number;
   referenceComplete: number;
@@ -220,9 +221,6 @@ export function previewGlwCampaignTargetLease(input: {
 
   const targets = listGlwCampaignTargets(input.campaignId);
 
-  // dispatchDate is durable accounting authority. Once a target
-  // consumes a daily slot, later recovery/requeue/failure must not
-  // make that slot available again for the same dispatch date.
   const alreadyDispatchedToday = targets.filter(
     (target) =>
       target.dispatchDate === input.dispatchDate,
@@ -350,9 +348,6 @@ export function releaseExpiredGlwCampaignTargetLeases(
       current.campaignId !== campaignId
       || current.status !== "running"
       || !current.leaseExpiresAt
-      // A target with an accepted generation job must be reconciled
-      // against that exact job. It must never return to the generic
-      // queue and become eligible for duplicate dispatch.
       || Boolean(current.jobId)
     ) {
       continue;
@@ -385,6 +380,7 @@ export function releaseExpiredGlwCampaignTargetLeases(
 
   return released;
 }
+
 export function requireGlwCampaignTargetResumeAuthority(input: {
   campaignId: string;
   stateCode: string;
@@ -422,6 +418,7 @@ export function requireGlwCampaignTargetResumeAuthority(input: {
 
   return deepClone(current);
 }
+
 export function attachGlwCampaignTargetJob(input: {
   campaignId: string;
   stateCode: string;
@@ -553,6 +550,43 @@ export function markGlwFailedCampaignTargetDraftReady(input: {
   return deepClone(updated);
 }
 
+export function markGlwCampaignTargetPublished(input: {
+  campaignId: string;
+  stateCode: string;
+  wordpressObjectId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(
+    input.campaignId,
+    input.stateCode.trim().toUpperCase(),
+  );
+
+  const current = targetStore.get(targetKey);
+
+  if (
+    !current
+    || current.status !== "draft_ready"
+    || current.wordpressObjectId !== input.wordpressObjectId
+  ) {
+    throw new Error(
+      "Campaign target is not an exact draft-ready WordPress target.",
+    );
+  }
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "published",
+    lastError: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+
+  return deepClone(updated);
+}
+
 export function markGlwCampaignTargetFailed(input: {
   campaignId: string;
   stateCode: string;
@@ -599,10 +633,10 @@ export function markGlwCampaignTargetFailed(input: {
     ...current,
     status: "failed",
     jobId: input.jobId ?? current.jobId,
+    lastError: input.error,
     leaseId: null,
     leasedAt: null,
     leaseExpiresAt: null,
-    lastError: input.error.trim() || "Campaign generation failed.",
     updatedAt: timestamp,
   };
 
