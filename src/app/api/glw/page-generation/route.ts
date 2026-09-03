@@ -48,16 +48,6 @@ function isTerminal(status: string): boolean {
   return status === "COMPLETE" || status === "FAILED";
 }
 
-function isRecoverableGeneratedContentQaFailure(
-  job: GlwPageExecutionRecord,
-): boolean {
-  return (
-    job.status === "FAILED"
-    && job.errorCode === "GENERATED_CONTENT_QA_FAILED"
-    && Boolean(job.generatedDraft)
-  );
-}
-
 async function recoverExecution(job: GlwPageExecutionRecord): Promise<GlwPageExecutionRecord> {
   if (!job.externalExecutionId) return job;
   return service.pollToTerminal(job.jobId, executionReader);
@@ -84,7 +74,11 @@ async function finalizeContentReadyExecution(input: {
   request: GlwGenerationRequest;
   siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
 }): Promise<GlwPageExecutionRecord> {
-  const recoverableQaFailure = isRecoverableGeneratedContentQaFailure(input.job);
+  const recoverableQaFailure =
+    input.job.status === "FAILED"
+    && input.job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+    && Boolean(input.job.generatedDraft);
+
   if (input.job.status !== "CONTENT_READY" && !recoverableQaFailure) return input.job;
   if (!input.job.generatedDraft) {
     return glwPageExecutionRepository.update(input.job.jobId, {
@@ -366,6 +360,16 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
   return { targetPreflight, mutationAvailability } as const;
 }
 
+function matchesExactContinuationTarget(input: {
+  job: GlwPageExecutionRecord;
+  request: GlwGenerationRequest;
+}): boolean {
+  return input.job.siteId === input.request.siteId
+    && input.job.productId === input.request.productId
+    && input.job.slug === input.request.canonicalPath.replace(/^\//, "").replace(/\/$/, "")
+    && input.job.publicationIntent === "draft";
+}
+
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -390,11 +394,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(preview, { status: preview.status });
   }
 
-  const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
-  if ("error" in authority) {
-    return NextResponse.json(authority, { status: authority.status });
-  }
-
   const action = body.action?.trim() ?? "generate";
 
   if (action === "continue") {
@@ -404,6 +403,21 @@ export async function POST(request: NextRequest) {
     const currentJob = await glwPageExecutionRepository.getById(jobId);
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!matchesExactContinuationTarget({ job: currentJob, request: preview.request })) {
+      return NextResponse.json({ error: "Continuation form does not match the exact persisted GLW job target." }, { status: 409 });
+    }
+
+    const recoverableQaFailure =
+      currentJob.status === "FAILED"
+      && currentJob.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      && Boolean(currentJob.generatedDraft);
+
+    if (!recoverableQaFailure) {
+      const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
+      if ("error" in authority) {
+        return NextResponse.json(authority, { status: authority.status });
+      }
+    }
 
     let refreshed = currentJob;
     if (!isTerminal(currentJob.status) && currentJob.status !== "CONTENT_READY") {
@@ -425,6 +439,11 @@ export async function POST(request: NextRequest) {
 
   if (action !== "generate") {
     return NextResponse.json({ error: "Unsupported generation action." }, { status: 400 });
+  }
+
+  const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
+  if ("error" in authority) {
+    return NextResponse.json(authority, { status: authority.status });
   }
 
   try {
