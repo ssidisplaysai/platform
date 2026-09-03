@@ -49,11 +49,19 @@ function isWordPressPage(value: unknown): value is WordPressPage {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
+function describePage(page: WordPressPage): string {
+  const id = typeof page.id === "number" ? String(page.id) : "missing";
+  const status = typeof page.status === "string" && page.status.trim() ? page.status : "missing";
+  const slug = typeof page.slug === "string" && page.slug.trim() ? page.slug : "missing";
+  const parent = typeof page.parent === "number" ? String(page.parent) : "missing";
+  return `id=${id}, status=${status}, slug=${slug}, parent=${parent}`;
+}
+
 async function readPage(input: {
   apiBaseUrl: string;
   authorization: string;
   wordpressObjectId: number;
-}): Promise<{ ok: true; page: WordPressPage } | { ok: false }> {
+}): Promise<{ ok: true; page: WordPressPage } | { ok: false; status?: number }> {
   try {
     const response = await fetch(
       `${input.apiBaseUrl}/pages/${input.wordpressObjectId}?context=edit&_fields=id,slug,parent,status,link`,
@@ -68,7 +76,7 @@ async function readPage(input: {
       },
     );
 
-    if (!response.ok) return { ok: false };
+    if (!response.ok) return { ok: false, status: response.status };
     const body = await response.json();
     return isWordPressPage(body) ? { ok: true, page: body } : { ok: false };
   } catch {
@@ -107,11 +115,11 @@ export async function publishGenesisWordPressDraft(input: {
   const authorization = createAuthorizationHeader(credential.username, credential.applicationPassword);
   const before = await readPage({ apiBaseUrl, authorization, wordpressObjectId });
   if (!before.ok) {
-    return { ok: false, state: "read_failed", message: "Genesis could not authoritatively read the exact WordPress object before publication." };
+    return { ok: false, state: "read_failed", message: `Genesis could not authoritatively read the exact WordPress object before publication${before.status ? ` (HTTP ${before.status})` : ""}.` };
   }
 
   if (before.page.id !== wordpressObjectId) {
-    return { ok: false, state: "identity_mismatch", message: "WordPress returned a different object identity before publication." };
+    return { ok: false, state: "identity_mismatch", message: `WordPress returned a different object identity before publication (${describePage(before.page)}).` };
   }
 
   if (before.page.status === "publish") {
@@ -126,7 +134,7 @@ export async function publishGenesisWordPressDraft(input: {
   }
 
   if (before.page.status !== "draft") {
-    return { ok: false, state: "identity_mismatch", message: `Genesis only publishes exact WordPress drafts; current status is ${before.page.status ?? "unknown"}.` };
+    return { ok: false, state: "identity_mismatch", message: `Genesis only publishes exact WordPress drafts; before-read returned ${describePage(before.page)}.` };
   }
 
   let writeResponse: Response;
@@ -152,11 +160,15 @@ export async function publishGenesisWordPressDraft(input: {
 
   const after = await readPage({ apiBaseUrl, authorization, wordpressObjectId });
   if (!after.ok) {
-    return { ok: false, state: "verification_failed", message: "Genesis could not verify the WordPress object after publication." };
+    return { ok: false, state: "verification_failed", message: `Genesis could not verify the WordPress object after publication${after.status ? ` (HTTP ${after.status})` : ""}.` };
   }
 
   if (after.page.id !== wordpressObjectId || after.page.status !== "publish") {
-    return { ok: false, state: "verification_failed", message: "WordPress did not verify the exact object as published after mutation." };
+    return {
+      ok: false,
+      state: "verification_failed",
+      message: `WordPress post-write verification mismatch. Expected id=${wordpressObjectId}, status=publish; received ${describePage(after.page)}.`,
+    };
   }
 
   return {
