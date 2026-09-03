@@ -106,8 +106,16 @@ export function resolveGlwTargetMutationAvailability(
   preflight: GlwTargetPreflightResult,
   pageType: GlwGenerationRequest["pageType"] = "city_service",
 ): GlwTargetMutationAvailability {
-  const createOperation = pageType === "state_service" ? "CREATE_STATE" : "CREATE_CITY";
-  const updateOperation = pageType === "state_service" ? "UPDATE_STATE" : "UPDATE_CITY";
+  const createOperation = pageType === "general_service"
+    ? "CREATE_GENERAL"
+    : pageType === "state_service"
+      ? "CREATE_STATE"
+      : "CREATE_CITY";
+  const updateOperation = pageType === "general_service"
+    ? "UPDATE_GENERAL"
+    : pageType === "state_service"
+      ? "UPDATE_STATE"
+      : "UPDATE_CITY";
   if (preflight.state === "EXISTS_DRAFT") {
     return {
       createAvailable: false,
@@ -319,6 +327,45 @@ export async function readGlwTargetPreflight(input: {
     cityName: input.request.cityName ?? "",
     localExecutions: input.localExecutions,
   };
+  if (input.request.pageType === "general_service" && input.wordpressReadAuthority) {
+    const identity = {
+      ...createGlwCanonicalTargetIdentity({
+        productId: input.request.productId,
+        productTopic: input.request.productTopic,
+        stateCode: "",
+        citySlug: input.request.canonicalPath,
+        applicationPath: input.request.canonicalPath,
+        canonicalParentId: "0",
+      }),
+      canonicalPath: input.request.canonicalPath,
+    };
+    const response = await input.wordpressReadAuthority.getJson({
+      path: "/pages",
+      query: new URLSearchParams({
+        slug: identity.canonicalSlug,
+        parent: "0",
+        context: "edit",
+        status: "publish,draft,pending,private,future",
+        per_page: "100",
+        _fields: "id,slug,parent,status,link,title",
+      }),
+    });
+    if (!response.ok || !Array.isArray(response.body)) {
+      return resolveGlwTargetPreflight({ identity, ...common });
+    }
+    const exact = (response.body as GlwWordPressTargetPage[]).filter(
+      (page) => page.slug === identity.canonicalSlug && page.parent === 0,
+    );
+    if (exact.length > 1) {
+      return resolveGlwTargetPreflight({ identity, ...common });
+    }
+    return resolveGlwTargetPreflight({
+      identity,
+      wordpressPages: exact,
+      inventoryComplete: true,
+      ...common,
+    });
+  }
   if (!input.wordpressReadAuthority || !state || (input.request.pageType !== "city_service" && input.request.pageType !== "state_service")) {
     return resolveGlwTargetPreflight({ identity: initialIdentity, ...common });
   }

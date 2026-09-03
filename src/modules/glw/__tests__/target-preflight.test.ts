@@ -69,6 +69,37 @@ function request(citySlug = "dallas") {
 }
 
 describe("GLW canonical target preflight", () => {
+  test("authoritatively preflights a flat general-service target at parent zero", async () => {
+    const generalRequest = {
+      ...request(),
+      pageType: "general_service" as const,
+      stateCode: "",
+      stateName: null,
+      citySlug: "",
+      cityName: null,
+      slug: "irvine-fan-cooled-projector-enclosures",
+      canonicalPath: "irvine-fan-cooled-projector-enclosures",
+      plannedOperation: "CREATE_GENERAL" as const,
+    };
+    const authority = authorityFromBodies([[]]);
+    const target = await readGlwTargetPreflight({
+      request: generalRequest,
+      wordpressReadAuthority: authority,
+      localExecutions: [],
+    });
+    expect(target).toMatchObject({
+      state: "ABSENT",
+      canonicalSlug: "irvine-fan-cooled-projector-enclosures",
+      canonicalParentId: "0",
+      source: "WORDPRESS_READ",
+      confidence: "AUTHORITATIVE",
+    });
+    expect(resolveGlwTargetMutationAvailability(target, "general_service")).toMatchObject({
+      createAvailable: true,
+      plannedOperation: "CREATE_GENERAL",
+    });
+  });
+
   test("maps the application path to canonical target identity", () => {
     expect(identity).toMatchObject({
       applicationPath: "indoor-led-video-wall/texas/dallas",

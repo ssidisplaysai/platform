@@ -119,6 +119,10 @@ function collectMojibakeMarkers(text: string): string[] {
     if (text.includes(sequence)) markers.add(sequence);
   }
 
+  for (const match of text.matchAll(/[âÃÂ]/g)) {
+    markers.add(match[0]);
+  }
+
   return [...markers];
 }
 

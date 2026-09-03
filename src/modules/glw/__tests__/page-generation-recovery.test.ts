@@ -125,22 +125,15 @@ describe("GLW selective page generation recovery", () => {
 
   test("blocks canonical collisions and published updates before dispatch", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
-    const collisionGuard = source.indexOf('code: "CREATE_COLLISION"');
-    const updateGuard = source.indexOf('code: "UPDATE_AUTHORITY_REQUIRED"');
-    const authorityCheck = source.indexOf("const authority = await verifyMutationAuthority(generationRequest, siteRecord);");
-    const dispatch = source.indexOf("service.execute(generationRequest)");
-    expect(collisionGuard).toBeGreaterThan(0);
-    expect(updateGuard).toBeGreaterThan(collisionGuard);
-    expect(authorityCheck).toBeGreaterThan(updateGuard);
+    const mutationGuard = source.indexOf('code: "WORDPRESS_MUTATION_NOT_AUTHORIZED"');
+    const authorityCheck = source.indexOf("const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);");
+    const dispatch = source.indexOf("service.execute(preview.request)");
+    expect(mutationGuard).toBeGreaterThan(0);
+    expect(authorityCheck).toBeGreaterThan(mutationGuard);
     expect(dispatch).toBeGreaterThan(authorityCheck);
-    expect(source).toContain("Published WordPress targets cannot be updated under the draft-only release.");
-    expect(source).toContain("Creation was stopped before any WordPress changes.");
+    expect(source.slice(dispatch)).toContain("publicationPerformed: false");
 
-    expect(source).toContain("generationOnly: true");
-    expect(source).toContain("wordpressMutationPerformed: false");
-    expect(source).toContain('continuationRequired: job.status === "CONTENT_READY"');
-
-    const defaultDispatch = source.lastIndexOf("service.execute(generationRequest)");
+    const defaultDispatch = source.lastIndexOf("service.execute(preview.request)");
     const defaultFinalize = source.indexOf(
       "finalizeContentReadyExecution",
       defaultDispatch,

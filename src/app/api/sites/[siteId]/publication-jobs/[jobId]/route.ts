@@ -84,21 +84,25 @@ async function buildPreflight(request: NextRequest, context: Context) {
   });
 
   const segments = job.slug.split("/").filter(Boolean);
-  const [productSlug, stateSlug, expectedSlug] = segments;
-  if (!productSlug || !stateSlug || !expectedSlug || segments.length !== 3) {
-    return { error: "Job canonical path is not an exact product/state/city hierarchy.", status: 409 } as const;
+  if (segments.length !== 1 && segments.length !== 3) {
+    return { error: "Job canonical path is not a supported flat or product/state/city hierarchy.", status: 409 } as const;
   }
-  const productPages = (await readPages(authority, new URLSearchParams({ slug: productSlug, parent: "0", context: "edit", status: "any", _fields: "id,slug,parent,status" })))
-    .filter((page) => page.slug === productSlug && page.parent === 0);
-  if (productPages.length !== 1 || !productPages[0].id) {
-    return { error: "Canonical product parent is not uniquely verified.", status: 409 } as const;
+  const expectedSlug = segments[segments.length - 1];
+  let expectedParentId = "0";
+  if (segments.length === 3) {
+    const [productSlug, stateSlug] = segments;
+    const productPages = (await readPages(authority, new URLSearchParams({ slug: productSlug, parent: "0", context: "edit", status: "any", _fields: "id,slug,parent,status" })))
+      .filter((page) => page.slug === productSlug && page.parent === 0);
+    if (productPages.length !== 1 || !productPages[0].id) {
+      return { error: "Canonical product parent is not uniquely verified.", status: 409 } as const;
+    }
+    const statePages = (await readPages(authority, new URLSearchParams({ slug: stateSlug, parent: String(productPages[0].id), context: "edit", status: "any", _fields: "id,slug,parent,status" })))
+      .filter((page) => page.slug === stateSlug && page.parent === productPages[0].id);
+    if (statePages.length !== 1 || !statePages[0].id) {
+      return { error: "Canonical state parent is not uniquely verified.", status: 409 } as const;
+    }
+    expectedParentId = String(statePages[0].id);
   }
-  const statePages = (await readPages(authority, new URLSearchParams({ slug: stateSlug, parent: String(productPages[0].id), context: "edit", status: "any", _fields: "id,slug,parent,status" })))
-    .filter((page) => page.slug === stateSlug && page.parent === productPages[0].id);
-  if (statePages.length !== 1 || !statePages[0].id) {
-    return { error: "Canonical state parent is not uniquely verified.", status: 409 } as const;
-  }
-  const expectedParentId = String(statePages[0].id);
   const pageRead = await authority.getJson({
     path: `/pages/${job.wordpressObjectId}`,
     query: new URLSearchParams({ context: "edit", _fields: "id,slug,parent,status,link,title,excerpt,content,featured_media,meta" }),

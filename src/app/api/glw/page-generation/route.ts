@@ -20,7 +20,6 @@ import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-targ
 import {
   createGlwN8nMcpDispatcher,
   createGlwN8nMcpExecutionReader,
-  getGlwN8nMcpConfigurationStatus,
 } from "@/modules/glw/n8n-mcp-adapter";
 import {
   createGlwDraftExecutionService,
@@ -71,6 +70,37 @@ function buildGenesisImagePrompt(input: {
   ].join(" ");
 }
 
+function prepareGeneratedContentForSite(input: {
+  artifact: NonNullable<GlwPageExecutionRecord["generatedDraft"]>;
+  request: GlwGenerationRequest;
+  siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
+}) {
+  if (input.siteRecord.domain === "leddisplaywarehouse.com") {
+    return enrichGlwGeneratedContentForSeo({
+      artifact: input.artifact,
+      request: input.request,
+    });
+  }
+
+  return {
+    artifact: input.artifact,
+    metadata: {
+      focusKeyphrase: input.artifact.focusKeyphrase?.trim() || input.request.productTopic,
+      seoTitle: input.artifact.seoTitle?.trim() || input.request.seoTitle,
+      metaDescription: input.artifact.metaDescription?.trim() || input.request.metaDescription,
+    },
+    inserted: {
+      productAuthorityLink: false,
+      relatedProductLinks: 0,
+      corporateLink: false,
+      outboundAuthorityLink: false,
+      localAuthorityLink: false,
+      weatherAuthorityLink: false,
+    },
+    approvedExternalDomains: [] as string[],
+  };
+}
+
 async function finalizeContentReadyExecution(input: {
   job: GlwPageExecutionRecord;
   request: GlwGenerationRequest;
@@ -93,9 +123,10 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  let enrichment = enrichGlwGeneratedContentForSeo({
+  let enrichment = prepareGeneratedContentForSite({
     artifact: input.job.generatedDraft,
     request: input.request,
+    siteRecord: input.siteRecord,
   });
 
   let qa = evaluateGlwGeneratedContentQa({
@@ -136,9 +167,10 @@ async function finalizeContentReadyExecution(input: {
       });
     }
 
-    enrichment = enrichGlwGeneratedContentForSeo({
+    enrichment = prepareGeneratedContentForSite({
       artifact: repair.artifact,
       request: input.request,
+      siteRecord: input.siteRecord,
     });
 
     qa = evaluateGlwGeneratedContentQa({
@@ -226,7 +258,9 @@ async function finalizeContentReadyExecution(input: {
     slug: enrichment.artifact.slug,
     excerpt: enrichment.artifact.excerpt,
     parentId,
-    seo: enrichment.metadata,
+    seo: input.siteRecord.domain === "leddisplaywarehouse.com"
+      ? enrichment.metadata
+      : null,
   };
   const result = operation === "CREATE"
     ? await writeGenesisWordPressDraft({ operation: "CREATE", site: input.siteRecord, artifact })
@@ -380,27 +414,25 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
 
   const targetPreflight = await readGlwTargetPreflight({
     request,
-    site: siteRecord,
     wordpressReadAuthority,
+    localExecutions: await glwPageExecutionRepository.list(),
   });
 
-  if (!targetPreflight.ok) {
-    return {
-      error: targetPreflight.errorMessage,
-      code: targetPreflight.errorCode,
-      status: 409,
-    } as const;
-  }
-
-  const mutationAvailability = resolveGlwTargetMutationAvailability({
-    request,
+  const mutationAvailability = resolveGlwTargetMutationAvailability(
     targetPreflight,
-  });
+    request.pageType,
+  );
+  const createRequested = request.plannedOperation.startsWith("CREATE_");
+  const exactUpdateId = request.wordpressObjectId
+    && mutationAvailability.wordpressObjectId === request.wordpressObjectId;
+  const allowed = createRequested
+    ? mutationAvailability.createAvailable
+    : mutationAvailability.updateAvailable && exactUpdateId;
 
-  if (!mutationAvailability.allowed) {
+  if (!allowed || mutationAvailability.plannedOperation !== request.plannedOperation) {
     return {
-      error: mutationAvailability.reason,
-      code: mutationAvailability.code,
+      error: mutationAvailability.message,
+      code: "WORDPRESS_MUTATION_NOT_AUTHORIZED",
       status: 409,
     } as const;
   }
@@ -499,7 +531,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const job = await service.dispatch(preview.request);
+    const job = await service.execute(preview.request);
     return NextResponse.json({
       ok: true,
       job,
@@ -510,10 +542,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: error.message,
-          code: error.code,
+          code: "DRAFT_ONLY_EXECUTION_REJECTED",
           publicationPerformed: false,
         },
-        { status: error.status },
+        { status: 403 },
       );
     }
 
