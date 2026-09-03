@@ -39,7 +39,7 @@ function escapeHtml(value: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -54,8 +54,70 @@ function appendBeforeClosingContainer(html: string, fragment: string): string {
       return `${html.slice(0, index)}${fragment}\n${html.slice(index)}`;
     }
   }
-
   return `${html.trimEnd()}\n${fragment}`;
+}
+
+function insertAfterMatchingParagraph(html: string, fragment: string, patterns: readonly RegExp[]): { html: string; insertedContextually: boolean } {
+  for (const pattern of patterns) {
+    const paragraphPattern = new RegExp(`<p\\b[^>]*>[\\s\\S]*?${pattern.source}[\\s\\S]*?<\\/p>`, "i");
+    const match = html.match(paragraphPattern);
+    if (match && typeof match.index === "number") {
+      const end = match.index + match[0].length;
+      return {
+        html: `${html.slice(0, end)}\n${fragment}${html.slice(end)}`,
+        insertedContextually: true,
+      };
+    }
+  }
+  return { html, insertedContextually: false };
+}
+
+function insertAfterMatchingSection(html: string, fragment: string, patterns: readonly RegExp[]): { html: string; insertedContextually: boolean } {
+  for (const pattern of patterns) {
+    const headingPattern = new RegExp(`<h[2-4]\\b[^>]*>[\\s\\S]*?${pattern.source}[\\s\\S]*?<\\/h[2-4]>`, "i");
+    const headingMatch = html.match(headingPattern);
+    if (!headingMatch || typeof headingMatch.index !== "number") continue;
+
+    const start = headingMatch.index + headingMatch[0].length;
+    const tail = html.slice(start);
+    const nextHeading = tail.search(/<h[2-4]\b/i);
+    const sectionEnd = nextHeading >= 0 ? start + nextHeading : html.length;
+    const sectionHtml = html.slice(start, sectionEnd);
+    const paragraphMatches = [...sectionHtml.matchAll(/<p\b[^>]*>[\s\S]*?<\/p>/gi)];
+
+    if (paragraphMatches.length > 0) {
+      const lastParagraph = paragraphMatches[paragraphMatches.length - 1];
+      const end = start + (lastParagraph.index ?? 0) + lastParagraph[0].length;
+      return {
+        html: `${html.slice(0, end)}\n${fragment}${html.slice(end)}`,
+        insertedContextually: true,
+      };
+    }
+
+    return {
+      html: `${html.slice(0, start)}\n${fragment}${html.slice(start)}`,
+      insertedContextually: true,
+    };
+  }
+
+  return { html, insertedContextually: false };
+}
+
+function insertContextually(
+  html: string,
+  fragment: string,
+  options: {
+    sectionPatterns?: readonly RegExp[];
+    paragraphPatterns?: readonly RegExp[];
+  },
+): string {
+  const bySection = insertAfterMatchingSection(html, fragment, options.sectionPatterns ?? []);
+  if (bySection.insertedContextually) return bySection.html;
+
+  const byParagraph = insertAfterMatchingParagraph(html, fragment, options.paragraphPatterns ?? []);
+  if (byParagraph.insertedContextually) return byParagraph.html;
+
+  return appendBeforeClosingContainer(html, fragment);
 }
 
 function buildFocusKeyphrase(request: GlwGenerationRequest): string {
@@ -66,7 +128,6 @@ function buildFocusKeyphrase(request: GlwGenerationRequest): string {
 function buildSeoTitle(request: GlwGenerationRequest): string {
   const configured = request.seoTitle?.trim();
   if (configured) return configured;
-
   const location = request.cityName?.trim() || request.stateName?.trim() || "";
   return `${request.productTopic}${location ? ` in ${location}` : ""} | ${request.siteName}`;
 }
@@ -74,28 +135,29 @@ function buildSeoTitle(request: GlwGenerationRequest): string {
 function buildMetaDescription(request: GlwGenerationRequest): string {
   const configured = request.metaDescription?.trim();
   if (configured) return configured;
-
   const location = request.cityName?.trim() || request.stateName?.trim() || "your market";
   return `Explore turnkey ${request.productTopic.toLowerCase()} solutions in ${location} from ${request.siteName}, including display options, controls, installation planning, and support.`;
 }
 
 function ensureProductAuthorityLink(html: string, request: GlwGenerationRequest): { html: string; inserted: boolean } {
   if (request.pageType !== "state_service") return { html, inserted: false };
-
   const firstPathSegment = request.canonicalPath.split("/").filter(Boolean)[0] ?? "";
   if (!firstPathSegment) return { html, inserted: false };
 
   const href = `/${firstPathSegment}/`;
   const normalized = normalizeHtmlForSearch(html);
-  const exactHref = `href="${href.toLowerCase()}"`;
-  const singleHref = `href='${href.toLowerCase()}'`;
-
-  if (normalized.includes(exactHref) || normalized.includes(singleHref)) {
+  if (normalized.includes(`href=\"${href.toLowerCase()}\"`) || normalized.includes(`href='${href.toLowerCase()}'`)) {
     return { html, inserted: false };
   }
 
   const fragment = `<p>Explore our <a href="${href}">${escapeHtml(request.productTopic)}</a> solutions for additional product specifications, turnkey package details, and display options.</p>`;
-  return { html: appendBeforeClosingContainer(html, fragment), inserted: true };
+  return {
+    html: insertContextually(html, fragment, {
+      sectionPatterns: [/choosing the right/i, /what is an indoor digital sphere/i, /benefits of indoor digital spheres/i],
+      paragraphPatterns: [/product specifications/i, /display options/i, /pixel pitch/i],
+    }),
+    inserted: true,
+  };
 }
 
 function ensureCorporateLink(html: string): { html: string; inserted: boolean } {
@@ -105,7 +167,13 @@ function ensureCorporateLink(html: string): { html: string; inserted: boolean } 
   }
 
   const fragment = `<p>For custom engineering, integration, and broader display-system support, visit <a href="https://ssidisplays.com/" target="_blank" rel="noopener noreferrer">Screen Solutions International</a>.</p>`;
-  return { html: appendBeforeClosingContainer(html, fragment), inserted: true };
+  return {
+    html: insertContextually(html, fragment, {
+      sectionPatterns: [/integration/i, /installation and implementation/i, /plan your/i, /ready to transform/i],
+      paragraphPatterns: [/engineering/i, /integration/i, /implementation/i, /support/i],
+    }),
+    inserted: true,
+  };
 }
 
 function ensureOutboundAuthorityLink(html: string): { html: string; inserted: boolean } {
@@ -115,25 +183,34 @@ function ensureOutboundAuthorityLink(html: string): { html: string; inserted: bo
   }
 
   const fragment = `<p>For facility teams evaluating electrical planning and energy use, the <a href="https://www.energy.gov/energysaver" target="_blank" rel="noopener noreferrer">U.S. Department of Energy Energy Saver</a> provides additional efficiency guidance.</p>`;
-  return { html: appendBeforeClosingContainer(html, fragment), inserted: true };
+  return {
+    html: insertContextually(html, fragment, {
+      sectionPatterns: [/installation and implementation/i, /pre-installation planning/i, /material and performance/i],
+      paragraphPatterns: [/electrical/i, /power supply/i, /energy use/i, /power and cabling/i],
+    }),
+    inserted: true,
+  };
 }
 
 function ensureStateAuthorityLink(html: string, request: GlwGenerationRequest): { html: string; inserted: boolean; domain: string | null } {
   if (request.pageType !== "state_service") return { html, inserted: false, domain: null };
-
   const authority = STATE_AUTHORITY_LINKS[request.stateCode];
   if (!authority) return { html, inserted: false, domain: null };
 
   const normalized = normalizeHtmlForSearch(html);
+  const domain = new URL(authority.href).hostname;
   if (normalized.includes(authority.href.toLowerCase())) {
-    return { html, inserted: false, domain: new URL(authority.href).hostname };
+    return { html, inserted: false, domain };
   }
 
   const fragment = `<p>${escapeHtml(authority.sentence)} <a href="${authority.href}" target="_blank" rel="noopener noreferrer">${escapeHtml(authority.label)}</a>.</p>`;
   return {
-    html: appendBeforeClosingContainer(html, fragment),
+    html: insertContextually(html, fragment, {
+      sectionPatterns: [/popular local applications/i, /use cases/i, /plan your/i, /buying criteria/i],
+      paragraphPatterns: [/businesses/i, /commercial/i, /facilities/i, /events/i],
+    }),
     inserted: true,
-    domain: new URL(authority.href).hostname,
+    domain,
   };
 }
 
@@ -150,7 +227,14 @@ function ensureWeatherAuthorityLink(html: string, request: GlwGenerationRequest)
 
   const stateName = request.stateName?.trim() || "the project area";
   const fragment = `<p>When installation planning depends on local environmental conditions in ${escapeHtml(stateName)}, consult the <a href="https://www.weather.gov/" target="_blank" rel="noopener noreferrer">National Weather Service</a> for official weather and climate information.</p>`;
-  return { html: appendBeforeClosingContainer(html, fragment), inserted: true, domain: "weather.gov" };
+  return {
+    html: insertContextually(html, fragment, {
+      sectionPatterns: [/lighting and environmental/i, /material and performance/i, /maintenance and longevity/i],
+      paragraphPatterns: [/environmental conditions/i, /humidity/i, /temperature/i, /climate/i],
+    }),
+    inserted: true,
+    domain: "weather.gov",
+  };
 }
 
 export function enrichGlwGeneratedContentForSeo(input: {
