@@ -6,6 +6,7 @@ import { listIntegrationProfiles } from "@/modules/foundation/integration-profil
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { listProducts } from "@/modules/foundation/product-repository";
 import { listSites } from "@/modules/foundation/site-repository";
+import { GlwExistingDraftSeoRefresh } from "./GlwExistingDraftSeoRefresh";
 import { GlwPageGenerationWorkspace } from "./GlwPageGenerationWorkspace";
 import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
 import { adaptProductForGeneration, adaptSiteForGeneration } from "./page-generation";
@@ -31,11 +32,6 @@ export function GlwPagesCenter({
         ) ?? null
       : null;
 
-  /*
-   * The URL identifies a requested workspace only.
-   * Genesis accepts it only when the persisted site exists
-   * and belongs to the requested organization.
-   */
   const effectiveOrganizationId =
     requestedSite?.organizationId ??
     context.selectedOrganizationId;
@@ -129,6 +125,14 @@ export function GlwPagesCenter({
           </p>
         </article>
       </section>
+
+      {effectiveSiteId ? (
+        <GlwExistingDraftSeoRefresh
+          organizationId={effectiveOrganizationId}
+          siteId={effectiveSiteId}
+          defaultJobId="c0f2922e-d7b9-48e7-81a6-c4c79b4a938a"
+        />
+      ) : null}
 
       <GlwPageGenerationWorkspace
         sites={availableSites}
