@@ -21,6 +21,14 @@ type GlwRelatedProductLink = {
   paragraphPatterns: readonly RegExp[];
 };
 
+type GlwManagedLink = {
+  href: string;
+  label: string;
+  sentence: string;
+  sectionPatterns: readonly RegExp[];
+  paragraphPatterns: readonly RegExp[];
+};
+
 export type GlwSeoEnrichmentResult = {
   artifact: GlwGeneratedDraftArtifact;
   metadata: GlwSeoMetadata;
@@ -160,6 +168,16 @@ function insertContextually(
   return appendBeforeClosingContainer(html, fragment);
 }
 
+function removeManagedParagraphs(html: string, hrefs: readonly string[]): string {
+  let nextHtml = html;
+  for (const href of hrefs) {
+    const escapedHref = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const paragraphPattern = new RegExp(`<p\\b[^>]*>[\\s\\S]*?href\\s*=\\s*[\"']${escapedHref}[\"'][\\s\\S]*?<\\/p>\\s*`, "gi");
+    nextHtml = nextHtml.replace(paragraphPattern, "");
+  }
+  return nextHtml;
+}
+
 function buildFocusKeyphrase(request: GlwGenerationRequest): string {
   const location = request.cityName?.trim() || request.stateName?.trim() || "";
   return [request.productTopic.trim(), location].filter(Boolean).join(" ");
@@ -228,80 +246,14 @@ function ensureRelatedProductLinks(html: string, request: GlwGenerationRequest):
   return { html: nextHtml, inserted };
 }
 
-function ensureCorporateLink(html: string): { html: string; inserted: boolean } {
-  const normalized = normalizeHtmlForSearch(html);
-  if (normalized.includes("href=\"https://ssidisplays.com") || normalized.includes("href='https://ssidisplays.com")) {
-    return { html, inserted: false };
-  }
-
-  const fragment = `<p>For custom engineering, integration, and broader display-system support, visit <a href="https://ssidisplays.com/" target="_blank" rel="noopener noreferrer">Screen Solutions International</a>.</p>`;
+function ensureManagedLink(html: string, managed: GlwManagedLink): { html: string; inserted: boolean } {
+  const fragment = `<p>${escapeHtml(managed.sentence)} <a href="${managed.href}" target="_blank" rel="noopener noreferrer">${escapeHtml(managed.label)}</a>.</p>`;
   return {
     html: insertContextually(html, fragment, {
-      sectionPatterns: [/integration/i, /installation and implementation/i, /plan your/i, /ready to transform/i],
-      paragraphPatterns: [/engineering/i, /integration/i, /implementation/i, /support/i],
+      sectionPatterns: managed.sectionPatterns,
+      paragraphPatterns: managed.paragraphPatterns,
     }),
     inserted: true,
-  };
-}
-
-function ensureOutboundAuthorityLink(html: string): { html: string; inserted: boolean } {
-  const normalized = normalizeHtmlForSearch(html);
-  if (normalized.includes("href=\"https://www.energy.gov/") || normalized.includes("href='https://www.energy.gov/")) {
-    return { html, inserted: false };
-  }
-
-  const fragment = `<p>For facility teams evaluating electrical planning and energy use, the <a href="https://www.energy.gov/energysaver" target="_blank" rel="noopener noreferrer">U.S. Department of Energy Energy Saver</a> provides additional efficiency guidance.</p>`;
-  return {
-    html: insertContextually(html, fragment, {
-      sectionPatterns: [/installation and implementation/i, /pre-installation planning/i, /material and performance/i],
-      paragraphPatterns: [/electrical/i, /power supply/i, /energy use/i, /power and cabling/i],
-    }),
-    inserted: true,
-  };
-}
-
-function ensureStateAuthorityLink(html: string, request: GlwGenerationRequest): { html: string; inserted: boolean; domain: string | null } {
-  if (request.pageType !== "state_service") return { html, inserted: false, domain: null };
-  const authority = STATE_AUTHORITY_LINKS[request.stateCode];
-  if (!authority) return { html, inserted: false, domain: null };
-
-  const normalized = normalizeHtmlForSearch(html);
-  const domain = new URL(authority.href).hostname;
-  if (normalized.includes(authority.href.toLowerCase())) {
-    return { html, inserted: false, domain };
-  }
-
-  const fragment = `<p>${escapeHtml(authority.sentence)} <a href="${authority.href}" target="_blank" rel="noopener noreferrer">${escapeHtml(authority.label)}</a>.</p>`;
-  return {
-    html: insertContextually(html, fragment, {
-      sectionPatterns: [/popular local applications/i, /use cases/i, /plan your/i, /buying criteria/i],
-      paragraphPatterns: [/businesses/i, /commercial/i, /facilities/i, /events/i],
-    }),
-    inserted: true,
-    domain,
-  };
-}
-
-function ensureWeatherAuthorityLink(html: string, request: GlwGenerationRequest): { html: string; inserted: boolean; domain: string | null } {
-  if (request.pageType !== "state_service") return { html, inserted: false, domain: null };
-
-  const normalized = normalizeHtmlForSearch(html);
-  const weatherContextPresent = /weather|climate|humidity|temperature|outdoor|environmental/i.test(html);
-  if (!weatherContextPresent) return { html, inserted: false, domain: null };
-
-  if (normalized.includes("href=\"https://www.weather.gov/") || normalized.includes("href='https://www.weather.gov/")) {
-    return { html, inserted: false, domain: "weather.gov" };
-  }
-
-  const stateName = request.stateName?.trim() || "the project area";
-  const fragment = `<p>When installation planning depends on local environmental conditions in ${escapeHtml(stateName)}, consult the <a href="https://www.weather.gov/" target="_blank" rel="noopener noreferrer">National Weather Service</a> for official weather and climate information.</p>`;
-  return {
-    html: insertContextually(html, fragment, {
-      sectionPatterns: [/lighting and environmental/i, /material and performance/i, /maintenance and longevity/i],
-      paragraphPatterns: [/environmental conditions/i, /humidity/i, /temperature/i, /climate/i],
-    }),
-    inserted: true,
-    domain: "weather.gov",
   };
 }
 
@@ -317,23 +269,71 @@ export function enrichGlwGeneratedContentForSeo(input: {
   const relatedProducts = ensureRelatedProductLinks(html, input.request);
   html = relatedProducts.html;
 
-  const corporate = ensureCorporateLink(html);
-  html = corporate.html;
+  const stateAuthority = input.request.pageType === "state_service"
+    ? STATE_AUTHORITY_LINKS[input.request.stateCode]
+    : undefined;
+  const weatherContextPresent = input.request.pageType === "state_service"
+    && /weather|climate|humidity|temperature|outdoor|environmental/i.test(html);
 
-  const outbound = ensureOutboundAuthorityLink(html);
-  html = outbound.html;
+  const managedLinks: GlwManagedLink[] = [
+    {
+      href: "https://ssidisplays.com/",
+      label: "Screen Solutions International",
+      sentence: "For custom engineering, integration, and broader display-system support, visit Screen Solutions International",
+      sectionPatterns: [/integration/i, /installation and implementation/i, /plan your/i, /ready to transform/i],
+      paragraphPatterns: [/engineering/i, /integration/i, /implementation/i, /support/i],
+    },
+    {
+      href: "https://www.energy.gov/energysaver",
+      label: "U.S. Department of Energy Energy Saver",
+      sentence: "For facility teams evaluating electrical planning and energy use, the U.S. Department of Energy Energy Saver provides additional efficiency guidance",
+      sectionPatterns: [/installation and implementation/i, /pre-installation planning/i, /material and performance/i],
+      paragraphPatterns: [/electrical/i, /power supply/i, /energy use/i, /power and cabling/i],
+    },
+  ];
 
-  const localAuthority = ensureStateAuthorityLink(html, input.request);
-  html = localAuthority.html;
+  if (stateAuthority) {
+    managedLinks.push({
+      href: stateAuthority.href,
+      label: stateAuthority.label,
+      sentence: stateAuthority.sentence,
+      sectionPatterns: [/popular local applications/i, /use cases/i, /plan your/i, /buying criteria/i],
+      paragraphPatterns: [/businesses/i, /commercial/i, /facilities/i, /events/i],
+    });
+  }
 
-  const weatherAuthority = ensureWeatherAuthorityLink(html, input.request);
-  html = weatherAuthority.html;
+  if (weatherContextPresent) {
+    const stateName = input.request.stateName?.trim() || "the project area";
+    managedLinks.push({
+      href: "https://www.weather.gov/",
+      label: "National Weather Service",
+      sentence: `When installation planning depends on local environmental conditions in ${stateName}, consult the National Weather Service for official weather and climate information`,
+      sectionPatterns: [/lighting and environmental/i, /material and performance/i, /maintenance and longevity/i],
+      paragraphPatterns: [/environmental conditions/i, /humidity/i, /temperature/i, /climate/i],
+    });
+  }
+
+  html = removeManagedParagraphs(html, managedLinks.map((link) => link.href));
+
+  let corporateInserted = false;
+  let outboundInserted = false;
+  let localAuthorityInserted = false;
+  let weatherAuthorityInserted = false;
+
+  for (const managed of managedLinks) {
+    const result = ensureManagedLink(html, managed);
+    html = result.html;
+    if (managed.href === "https://ssidisplays.com/") corporateInserted = result.inserted;
+    else if (managed.href === "https://www.energy.gov/energysaver") outboundInserted = result.inserted;
+    else if (managed.href === "https://www.weather.gov/") weatherAuthorityInserted = result.inserted;
+    else localAuthorityInserted = result.inserted;
+  }
 
   const approvedExternalDomains = [
     "ssidisplays.com",
     "energy.gov",
-    localAuthority.domain,
-    weatherAuthority.domain,
+    stateAuthority ? new URL(stateAuthority.href).hostname : null,
+    weatherContextPresent ? "weather.gov" : null,
   ].filter((value): value is string => Boolean(value));
 
   return {
@@ -349,10 +349,10 @@ export function enrichGlwGeneratedContentForSeo(input: {
     inserted: {
       productAuthorityLink: product.inserted,
       relatedProductLinks: relatedProducts.inserted,
-      corporateLink: corporate.inserted,
-      outboundAuthorityLink: outbound.inserted,
-      localAuthorityLink: localAuthority.inserted,
-      weatherAuthorityLink: weatherAuthority.inserted,
+      corporateLink: corporateInserted,
+      outboundAuthorityLink: outboundInserted,
+      localAuthorityLink: localAuthorityInserted,
+      weatherAuthorityLink: weatherAuthorityInserted,
     },
     approvedExternalDomains,
   };
