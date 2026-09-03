@@ -48,6 +48,16 @@ function isTerminal(status: string): boolean {
   return status === "COMPLETE" || status === "FAILED";
 }
 
+function isRecoverableGeneratedContentQaFailure(
+  job: GlwPageExecutionRecord,
+): boolean {
+  return (
+    job.status === "FAILED"
+    && job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+    && Boolean(job.generatedDraft)
+  );
+}
+
 async function recoverExecution(job: GlwPageExecutionRecord): Promise<GlwPageExecutionRecord> {
   if (!job.externalExecutionId) return job;
   return service.pollToTerminal(job.jobId, executionReader);
@@ -74,7 +84,8 @@ async function finalizeContentReadyExecution(input: {
   request: GlwGenerationRequest;
   siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
 }): Promise<GlwPageExecutionRecord> {
-  if (input.job.status !== "CONTENT_READY") return input.job;
+  const recoverableQaFailure = isRecoverableGeneratedContentQaFailure(input.job);
+  if (input.job.status !== "CONTENT_READY" && !recoverableQaFailure) return input.job;
   if (!input.job.generatedDraft) {
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
@@ -420,17 +431,31 @@ export async function POST(request: NextRequest) {
     const job = await service.dispatch(preview.request);
     return NextResponse.json({
       ok: true,
-      generationOnly: true,
-      continuationRequired: true,
-      wordpressMutationPerformed: false,
-      publicationPerformed: false,
       job,
+      publicationPerformed: false,
     });
   } catch (error) {
     if (error instanceof GlwDraftOnlyExecutionError) {
-      return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          publicationPerformed: false,
+        },
+        { status: error.status },
+      );
     }
-    return NextResponse.json({ error: error instanceof Error ? error.message : "GLW generation dispatch failed." }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "GLW generation dispatch failed.",
+        publicationPerformed: false,
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -444,21 +469,16 @@ export async function GET(request: NextRequest) {
   }
 
   const jobId = request.nextUrl.searchParams.get("jobId")?.trim() ?? "";
-  if (!jobId) {
-    return NextResponse.json({
-      transport: getGlwN8nMcpConfigurationStatus(),
-      jobs: await glwPageExecutionRepository.listByOrganization(scope.organizationId),
-    });
-  }
+  if (!jobId) return NextResponse.json({ error: "Exact GLW jobId is required." }, { status: 400 });
 
-  const job = await glwPageExecutionRepository.getById(jobId);
-  if (!job) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
-  if (job.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const currentJob = await glwPageExecutionRepository.getById(jobId);
+  if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+  if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const refresh = request.nextUrl.searchParams.get("refresh") === "true";
-  const refreshed = refresh && !isTerminal(job.status) && job.status !== "CONTENT_READY"
-    ? await recoverExecution(job)
-    : job;
+  const job = refresh && !isTerminal(currentJob.status)
+    ? await recoverExecution(currentJob)
+    : currentJob;
 
-  return NextResponse.json({ job: refreshed });
+  return NextResponse.json({ job });
 }
