@@ -8,6 +8,7 @@ import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
+import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import {
   buildLocalGlwGenerationPreview,
   type GlwGenerationRequestInput,
@@ -15,6 +16,28 @@ import {
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-target-hierarchy";
+
+function resolveStateCode(value: string | null): string {
+  const normalized = (value ?? "").trim();
+  if (!normalized) return "";
+
+  const upper = normalized.toUpperCase();
+  const byCode = GLW_CAMPAIGN_US_STATES.find((state) => state.code === upper);
+  if (byCode) return byCode.code;
+
+  const lower = normalized.toLowerCase();
+  return GLW_CAMPAIGN_US_STATES.find((state) =>
+    state.name.toLowerCase() === lower || state.slug === lower,
+  )?.code ?? "";
+}
+
+function resolveCitySlug(value: string | null): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 function rebuildGenerationForm(job: {
   siteId: string;
@@ -26,13 +49,12 @@ function rebuildGenerationForm(job: {
   seoTitle: string;
   metaDescription: string;
   wordpressObjectId: string | null;
-  productTopic: string;
 }): GlwGenerationRequestInput {
-  const normalizedState = (job.state ?? "").trim().toUpperCase();
-  const normalizedCity = (job.city ?? "").trim();
-  const pageType = normalizedCity
+  const stateCode = resolveStateCode(job.state);
+  const citySlug = resolveCitySlug(job.city);
+  const pageType = citySlug
     ? "city_service"
-    : normalizedState
+    : stateCode
       ? "state_service"
       : "general_service";
 
@@ -46,8 +68,8 @@ function rebuildGenerationForm(job: {
     siteId: job.siteId,
     productId: job.productId,
     pageType,
-    stateCode: normalizedState,
-    citySlug: normalizedCity,
+    stateCode,
+    citySlug,
     slug: job.slug,
     title: job.title,
     seoTitle: job.seoTitle,
@@ -146,6 +168,13 @@ export async function POST(request: NextRequest) {
       {
         error: "Persisted generation request could not be reconstructed for SEO refresh.",
         issues: preview.validation.issues,
+        reconstructed: {
+          pageType: form.pageType,
+          stateCode: form.stateCode,
+          citySlug: form.citySlug,
+          slug: form.slug,
+          wordpressObjectId: form.wordpressObjectId,
+        },
       },
       { status: 409 },
     );
