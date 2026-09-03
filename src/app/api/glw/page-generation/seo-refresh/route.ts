@@ -8,10 +8,57 @@ import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
-import { buildLocalGlwGenerationPreview } from "@/modules/glw/page-generation";
+import {
+  buildLocalGlwGenerationPreview,
+  type GlwGenerationRequestInput,
+} from "@/modules/glw/page-generation";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-target-hierarchy";
+
+function rebuildGenerationForm(job: {
+  siteId: string;
+  productId: string;
+  state: string | null;
+  city: string | null;
+  slug: string;
+  title: string;
+  seoTitle: string;
+  metaDescription: string;
+  wordpressObjectId: string | null;
+  productTopic: string;
+}): GlwGenerationRequestInput {
+  const normalizedState = (job.state ?? "").trim().toUpperCase();
+  const normalizedCity = (job.city ?? "").trim();
+  const pageType = normalizedCity
+    ? "city_service"
+    : normalizedState
+      ? "state_service"
+      : "general_service";
+
+  const plannedOperation = pageType === "city_service"
+    ? "UPDATE_CITY"
+    : pageType === "state_service"
+      ? "UPDATE_STATE"
+      : "UPDATE_GENERAL";
+
+  return {
+    siteId: job.siteId,
+    productId: job.productId,
+    pageType,
+    stateCode: normalizedState,
+    citySlug: normalizedCity,
+    slug: job.slug,
+    title: job.title,
+    seoTitle: job.seoTitle,
+    metaDescription: job.metaDescription,
+    publicationIntent: "draft",
+    plannedOperation,
+    wordpressObjectId: job.wordpressObjectId,
+    additionalInstructions: "",
+    imageDirection: "",
+  };
+}
 
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
@@ -67,8 +114,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Configured site and product are required." }, { status: 400 });
   }
 
+  const form = rebuildGenerationForm(job);
+
   const preview = buildLocalGlwGenerationPreview({
-    form: job.request,
+    form,
     sites: [{
       siteId: siteRecord.siteId,
       organizationId: siteRecord.organizationId,
@@ -93,7 +142,13 @@ export async function POST(request: NextRequest) {
   });
 
   if (!preview.validation.valid || !preview.request) {
-    return NextResponse.json({ error: "Persisted generation request is no longer valid." }, { status: 409 });
+    return NextResponse.json(
+      {
+        error: "Persisted generation request could not be reconstructed for SEO refresh.",
+        issues: preview.validation.issues,
+      },
+      { status: 409 },
+    );
   }
 
   const enrichment = enrichGlwGeneratedContentForSeo({
