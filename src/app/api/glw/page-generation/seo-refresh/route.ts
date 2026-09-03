@@ -279,6 +279,7 @@ export async function POST(request: NextRequest) {
     siteDomain: siteRecord.domain,
     minimumWordCount: 1500,
     additionalAllowedDomains: enrichment.approvedExternalDomains,
+    allowLegacyMojibake: true,
   });
 
   if (!qa.ok) {
