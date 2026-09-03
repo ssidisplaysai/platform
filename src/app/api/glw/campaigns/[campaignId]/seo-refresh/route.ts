@@ -18,6 +18,14 @@ type RefreshResult = {
   error?: string;
 };
 
+type SeoRefreshFailurePayload = {
+  error?: string;
+  qa?: {
+    failureReasons?: Readonly<Record<string, string>>;
+  };
+  wordpressObjectId?: string;
+};
+
 function buildHeaders(request: NextRequest): HeadersInit {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -29,6 +37,16 @@ function buildHeaders(request: NextRequest): HeadersInit {
   }
 
   return headers;
+}
+
+function buildFailureDetail(payload: SeoRefreshFailurePayload | null, status: number): string {
+  const base = payload?.error ?? `SEO refresh failed with HTTP ${status}.`;
+  const failureReasons = payload?.qa?.failureReasons ?? {};
+  const details = Object.entries(failureReasons)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(" | ");
+
+  return details ? `${base} ${details}` : base;
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
@@ -100,7 +118,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       cache: "no-store",
     });
 
-    const payload = await response.json().catch(() => null) as { error?: string; wordpressObjectId?: string } | null;
+    const payload = await response.json().catch(() => null) as SeoRefreshFailurePayload | null;
 
     if (!response.ok || !payload) {
       results.push({
@@ -108,7 +126,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         jobId: target.jobId as string,
         wordpressObjectId: target.wordpressObjectId,
         ok: false,
-        error: payload?.error ?? `SEO refresh failed with HTTP ${response.status}.`,
+        error: buildFailureDetail(payload, response.status),
       });
       continue;
     }
