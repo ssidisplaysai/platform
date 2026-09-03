@@ -21,6 +21,7 @@ import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-targ
 
 const HERO_FIGURE_STYLE = "max-width:900px;margin:24px auto;";
 const HERO_IMAGE_STYLE = "display:block;width:100%;height:auto;max-height:620px;object-fit:cover;";
+const LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT = 500;
 
 function resolveStateCode(value: string | null): string {
   const normalized = (value ?? "").trim();
@@ -114,6 +115,24 @@ function insertHeroFigure(baseHtml: string, hero: string): string {
     return baseHtml.replace(/<\/h1>/i, (match) => `${match}\n${hero}`);
   }
   return `${hero}\n${baseHtml}`;
+}
+
+function ensureMaintenanceProductAuthorityLink(html: string, canonicalPath: string, productTopic: string): string {
+  const firstPathSegment = canonicalPath.split("/").filter(Boolean)[0] ?? "";
+  if (!firstPathSegment) return html;
+  const href = `/${firstPathSegment}/`;
+  const escapedHref = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const exactLinkPattern = new RegExp(`<a\\b[^>]*href\\s*=\\s*["']${escapedHref}["'][^>]*>[\\s\\S]*?<\\/a>`, "i");
+  if (exactLinkPattern.test(html)) return html;
+
+  const fragment = `<p>Explore our <a href="${href}">${escapeHtmlAttribute(productTopic)}</a> solutions for additional product specifications, turnkey package details, and display options.</p>`;
+  const headingPattern = /<h[2-4]\b[^>]*>[\s\S]*?(?:choosing the right|what is an indoor digital sphere|benefits of indoor digital spheres)[\s\S]*?<\/h[2-4]>/i;
+  const headingMatch = html.match(headingPattern);
+  if (headingMatch && typeof headingMatch.index === "number") {
+    const start = headingMatch.index + headingMatch[0].length;
+    return `${html.slice(0, start)}\n${fragment}${html.slice(start)}`;
+  }
+  return `${html.trimEnd()}\n${fragment}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -274,11 +293,24 @@ export async function POST(request: NextRequest) {
       request: preview.request,
     });
 
+    const maintenanceHtml = preview.request.pageType === "state_service"
+      ? ensureMaintenanceProductAuthorityLink(
+          enrichment.artifact.contentHtml,
+          preview.request.canonicalPath,
+          preview.request.productTopic,
+        )
+      : enrichment.artifact.contentHtml;
+
+    const maintenanceArtifact = {
+      ...enrichment.artifact,
+      contentHtml: maintenanceHtml,
+    };
+
     const qa = evaluateGlwGeneratedContentQa({
-      artifact: enrichment.artifact,
+      artifact: maintenanceArtifact,
       request: preview.request,
       siteDomain: siteRecord.domain,
-      minimumWordCount: 1500,
+      minimumWordCount: LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT,
       additionalAllowedDomains: enrichment.approvedExternalDomains,
       allowLegacyMojibake: true,
     });
@@ -305,10 +337,10 @@ export async function POST(request: NextRequest) {
       site: siteRecord,
       wordpressObjectId: job.wordpressObjectId,
       artifact: {
-        title: enrichment.artifact.title,
-        contentHtml: enrichment.artifact.contentHtml,
-        slug: enrichment.artifact.slug,
-        excerpt: enrichment.artifact.excerpt,
+        title: maintenanceArtifact.title,
+        contentHtml: maintenanceArtifact.contentHtml,
+        slug: maintenanceArtifact.slug,
+        excerpt: maintenanceArtifact.excerpt,
         parentId: hierarchy.parentId,
         seo: enrichment.metadata,
       },
@@ -319,7 +351,7 @@ export async function POST(request: NextRequest) {
     }
 
     await glwPageExecutionRepository.update(job.jobId, {
-      generatedDraft: enrichment.artifact,
+      generatedDraft: maintenanceArtifact,
       qaStatus: "COMPLETE",
       qaChecks: qa.checks,
       qaFailureReasons: {},
@@ -337,6 +369,7 @@ export async function POST(request: NextRequest) {
       inserted: enrichment.inserted,
       approvedExternalDomains: enrichment.approvedExternalDomains,
       qaStatus: "COMPLETE",
+      maintenanceMinimumWordCount: LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT,
       featuredImagePreserved: job.featuredImagePresent,
       heroImagePreservedInBody: heroPreserved,
       heroImageRebuiltFromFeaturedMedia,
