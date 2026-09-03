@@ -103,6 +103,8 @@ describe("Genesis WordPress draft writer", () => {
       wordpressObjectId: "501",
       wordpressUrl: "https://example.com/austin/",
       wordpressStatus: "draft",
+      seoMetadataAttempted: false,
+      seoMetadataAccepted: false,
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);

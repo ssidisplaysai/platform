@@ -273,3 +273,16 @@ export function hasStoredWordPressCredential(
     credentialStore.has(reference),
   );
 }
+
+export function findStoredWordPressCredentialReferenceForSite(input: {
+  organizationId: string;
+  siteId: string;
+}): string | null {
+  loadState();
+  const record = Array.from(credentialStore.values()).find(
+    (credential) =>
+      credential.organizationId === input.organizationId
+      && credential.siteId === input.siteId,
+  );
+  return record?.reference ?? null;
+}

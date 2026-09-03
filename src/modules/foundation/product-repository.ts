@@ -284,6 +284,20 @@ export function listManufacturers(): readonly ProductManufacturer[] {
   return Array.from(manufacturerStore.values());
 }
 
+export function createManufacturer(
+  manufacturer: ProductManufacturer,
+): ProductManufacturer {
+  const existing = manufacturerStore.get(manufacturer.manufacturerId);
+  if (existing) return deepClone(existing);
+
+  manufacturerStore.set(
+    manufacturer.manufacturerId,
+    deepClone(manufacturer),
+  );
+  persistCurrentState();
+  return deepClone(manufacturer);
+}
+
 export function createProduct(input: NewProductInput): {
   validation: ProductValidationResult;
   product: ProductConfiguration | null;

@@ -158,11 +158,18 @@ async function readJson(
     }
 > {
   try {
-    const response = await fetch(url, {
+    const authoritativeUrl = new URL(url);
+    authoritativeUrl.searchParams.set(
+      "_genesis_read_nonce",
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    const response = await fetch(authoritativeUrl, {
       method: "GET",
       headers: {
         Accept: "application/json",
         Authorization: authorization,
+        "Cache-Control": "no-cache, no-store, max-age=0",
+        Pragma: "no-cache",
       },
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
