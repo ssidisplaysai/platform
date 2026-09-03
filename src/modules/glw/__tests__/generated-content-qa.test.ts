@@ -40,6 +40,29 @@ function artifact(contentHtml: string): GlwGeneratedDraftArtifact {
 }
 
 describe("evaluateGlwGeneratedContentQa", () => {
+  test("requires the selected canonical Product Intelligence reference", () => {
+    const cleanSentence = "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
+    const required = {
+      url: "https://ssidisplays.com/accent-rear-projection-film/",
+      anchorText: "Accent Rear Projection Film",
+    };
+    const missing = evaluateGlwGeneratedContentQa({
+      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>${cleanSentence.repeat(170)}</p>`),
+      request,
+      siteDomain: "ssidisplays.com",
+      requiredCanonicalProductLink: required,
+    });
+    expect(missing.checks.canonicalProductReference.ok).toBe(false);
+
+    const present = evaluateGlwGeneratedContentQa({
+      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>${cleanSentence.repeat(170)}</p><a href="${required.url}">${required.anchorText}</a>`),
+      request,
+      siteDomain: "ssidisplays.com",
+      requiredCanonicalProductLink: required,
+    });
+    expect(present.checks.canonicalProductReference.ok).toBe(true);
+  });
+
   test("fails closed on bare mojibake lead bytes", () => {
     const cleanSentence = "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
     const result = evaluateGlwGeneratedContentQa({

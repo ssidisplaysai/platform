@@ -13,7 +13,9 @@ type WordPressPage = {
 
 type WordPressMedia = {
   id?: number;
+  media_type?: string;
   source_url?: string;
+  alt_text?: string;
   guid?: { rendered?: string };
 };
 
@@ -23,6 +25,7 @@ export type GenesisWordPressMediaWriteResult =
       mediaId: string;
       mediaUrl: string;
       featuredImagePresent: true;
+      provenance?: "PRODUCT_INTELLIGENCE" | "GENERATED_MEDIA";
     }
   | {
       ok: false;
@@ -94,6 +97,74 @@ async function cleanupMedia(apiBaseUrl: string, authorization: string, mediaId: 
     });
   } catch {
     // Best-effort cleanup only. The primary failure is returned to the caller.
+  }
+}
+
+export async function attachGenesisWordPressExistingFeaturedImage(input: {
+  site: SiteConfiguration;
+  wordpressObjectId: string;
+  contentHtml: string;
+  wordpressMediaId: number;
+  expectedMediaUrl: string;
+  altText: string;
+}): Promise<GenesisWordPressMediaWriteResult> {
+  const configuredApiBaseUrl = input.site.integrations.wordpressApiBaseUrl;
+  const credentialReference = input.site.integrations.wordpressCredentialReference;
+  const pageId = normalizeObjectId(input.wordpressObjectId);
+  if (!configuredApiBaseUrl || !credentialReference || !pageId || !Number.isSafeInteger(input.wordpressMediaId) || input.wordpressMediaId <= 0) {
+    return { ok: false, state: "invalid_target", message: "Genesis requires exact page and existing media identities." };
+  }
+  const credential = resolveWordPressCredentialReference(credentialReference);
+  if (!credential) return { ok: false, state: "credential_unavailable", message: "The configured WordPress credential reference could not be resolved." };
+  let apiBaseUrl: string;
+  try {
+    apiBaseUrl = normalizeWordPressApiBaseUrl(configuredApiBaseUrl);
+  } catch {
+    return { ok: false, state: "invalid_target", message: "The configured WordPress API target is invalid." };
+  }
+  const authorization = createAuthorizationHeader(credential.username, credential.applicationPassword);
+  const readHeaders = {
+    Accept: "application/json",
+    Authorization: authorization,
+    "Cache-Control": "no-cache, no-store, max-age=0",
+    Pragma: "no-cache",
+  };
+  try {
+    const nonce = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const [pageResponse, mediaResponse] = await Promise.all([
+      fetch(`${apiBaseUrl}/pages/${pageId}?context=edit&_fields=id,status,featured_media,content&_genesis_read_nonce=${nonce}`, { method: "GET", headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(10_000) }),
+      fetch(`${apiBaseUrl}/media/${input.wordpressMediaId}?context=edit&_fields=id,media_type,source_url,alt_text&_genesis_read_nonce=${nonce}`, { method: "GET", headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(10_000) }),
+    ]);
+    if (!pageResponse.ok || !mediaResponse.ok) return { ok: false, state: "read_failed", message: "Genesis could not verify the exact draft and existing product media." };
+    const page = await pageResponse.json() as WordPressPage;
+    const media = await mediaResponse.json() as WordPressMedia;
+    if (page.id !== pageId) return { ok: false, state: "invalid_target", message: "WordPress returned a different page identity before existing-media mutation." };
+    if (page.status === "publish") return { ok: false, state: "published_target", message: "Genesis will not attach existing media to an already-published page." };
+    if (page.status !== "draft") return { ok: false, state: "invalid_target", message: "Existing media can only be attached to the exact authorized draft." };
+    const expectedMediaHost = new URL(input.expectedMediaUrl).hostname.replace(/^www\./, "");
+    const destinationHost = new URL(apiBaseUrl).hostname.replace(/^www\./, "");
+    if (media.id !== input.wordpressMediaId || media.media_type !== "image" || media.source_url !== input.expectedMediaUrl) {
+      return { ok: false, state: "invalid_target", message: "Existing media did not match the selected Product Intelligence authority." };
+    }
+    if (expectedMediaHost !== destinationHost) {
+      return { ok: false, state: "invalid_target", message: "Existing media did not belong to the destination WordPress site." };
+    }
+    const content = insertHeroImage(input.contentHtml.trim(), input.expectedMediaUrl, input.altText.trim() || media.alt_text || "Product image");
+    const attachResponse = await fetch(`${apiBaseUrl}/pages/${pageId}`, {
+      method: "POST",
+      headers: { Accept: "application/json", Authorization: authorization, "Content-Type": "application/json" },
+      body: JSON.stringify({ content, featured_media: input.wordpressMediaId, status: "draft" }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!attachResponse.ok) return { ok: false, state: "attachment_failed", message: `WordPress existing-media assignment failed with HTTP ${attachResponse.status}.` };
+    const attached = await attachResponse.json() as WordPressPage;
+    if (attached.id !== pageId || attached.status !== "draft" || attached.featured_media !== input.wordpressMediaId) {
+      return { ok: false, state: "verification_failed", message: "WordPress did not confirm the exact draft and existing Product Intelligence media identity." };
+    }
+    return { ok: true, mediaId: String(input.wordpressMediaId), mediaUrl: input.expectedMediaUrl, featuredImagePresent: true, provenance: "PRODUCT_INTELLIGENCE" };
+  } catch {
+    return { ok: false, state: "read_failed", message: "Genesis could not complete existing product media verification." };
   }
 }
 
@@ -181,7 +252,7 @@ export async function attachGenesisWordPressFeaturedImage(input: {
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Content-Type": input.image.mimeType,
       },
-      body: input.image.bytes,
+      body: Uint8Array.from(input.image.bytes).buffer,
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),
     });
@@ -277,5 +348,6 @@ export async function attachGenesisWordPressFeaturedImage(input: {
     mediaId: String(mediaId),
     mediaUrl,
     featuredImagePresent: true,
+    provenance: "GENERATED_MEDIA",
   };
 }

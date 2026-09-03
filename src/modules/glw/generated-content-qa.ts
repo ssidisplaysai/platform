@@ -159,6 +159,10 @@ export function evaluateGlwGeneratedContentQa(input: {
   minimumWordCount?: number;
   additionalAllowedDomains?: readonly string[];
   allowLegacyMojibake?: boolean;
+  requiredCanonicalProductLink?: {
+    url: string;
+    anchorText: string;
+  } | null;
 }): GlwGeneratedContentQaResult {
   const html = input.artifact.contentHtml ?? "";
   const text = stripHtml(html);
@@ -185,6 +189,11 @@ export function evaluateGlwGeneratedContentQa(input: {
   const wordCountOk = wordCount >= minimumWordCount;
   const domainsOk = foreignDomains.length === 0;
   const stateProductLinkOk = hasRequiredStateProductLink(html, input.request);
+  const canonicalProductLinkOk = !input.requiredCanonicalProductLink
+    || [...html.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)].some((match) =>
+      match[1] === input.requiredCanonicalProductLink?.url
+      && normalizeAnchorText(match[2] ?? "") === normalizeAnchorText(input.requiredCanonicalProductLink?.anchorText ?? ""),
+    );
 
   const checks: Record<string, QaCheck> = {
     contentPresent: { ok: contentPresent, message: contentPresent ? "Generated content is present." : "Generated content is empty." },
@@ -207,6 +216,12 @@ export function evaluateGlwGeneratedContentQa(input: {
       message: stateProductLinkOk
         ? "Required state-page product authority link is present."
         : `State pages must link ${input.request.productTopic} to /${input.request.canonicalPath.split("/").filter(Boolean)[0] ?? ""}/.`,
+    },
+    canonicalProductReference: {
+      ok: canonicalProductLinkOk,
+      message: canonicalProductLinkOk
+        ? "Selected canonical Product Intelligence reference is rendered."
+        : `Missing selected canonical product reference: ${input.requiredCanonicalProductLink?.url ?? "unknown"}.`,
     },
   };
 

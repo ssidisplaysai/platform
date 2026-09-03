@@ -142,4 +142,13 @@ describe("GLW selective page generation recovery", () => {
     expect(defaultDispatch).toBeGreaterThan(authorityCheck);
     expect(defaultFinalize).toBe(-1);
   });
+
+  test("preserves structured Product Intelligence evidence through completion", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("productAuthority:");
+    expect(source).toContain("internalLinks:");
+    expect(source).toContain("externalReferences:");
+    expect(source).toContain("mediaAuthority:");
+    expect(source).toContain("qaChecks: draftJob.qaChecks");
+  });
 });
