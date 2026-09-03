@@ -95,6 +95,7 @@ async function finalizeContentReadyExecution(input: {
     request: input.request,
     siteDomain: input.siteRecord.domain,
     minimumWordCount: 1500,
+    additionalAllowedDomains: enrichment.approvedExternalDomains,
   });
   if (!qa.ok) {
     const timestamp = new Date().toISOString();
@@ -318,145 +319,146 @@ async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord
     });
   } catch {
     return {
-      error: "The configured WordPress read target is invalid.",
+      error: "Authenticated WordPress read authority could not be initialized.",
       code: "WORDPRESS_READ_AUTHORITY_INVALID",
       status: 503,
     } as const;
   }
 
-  const target = await readGlwTargetPreflight({
+  const targetPreflight = await readGlwTargetPreflight({
     request,
+    site: siteRecord,
     wordpressReadAuthority,
-    localExecutions: await glwPageExecutionRepository.list(),
   });
-  const availability = resolveGlwTargetMutationAvailability(target, request.pageType);
-  if (request.plannedOperation.startsWith("CREATE_") && !availability.createAvailable) {
-    return { error: `An existing WordPress page was found for this canonical target${target.wordpressObjectId ? ` (ID ${target.wordpressObjectId})` : ""}. Creation was stopped before any WordPress changes.`, code: "CREATE_COLLISION", target, status: 409 } as const;
-  }
-  if (request.plannedOperation.startsWith("UPDATE_") && (!availability.updateAvailable || request.wordpressObjectId !== target.wordpressObjectId)) {
-    return { error: target.state === "EXISTS_PUBLISHED" ? "Published WordPress targets cannot be updated under the draft-only release." : "Exact draft update authority could not be verified.", code: "UPDATE_AUTHORITY_REQUIRED", target, status: 409 } as const;
-  }
-  return { ok: true } as const;
-}
 
-export async function GET(request: NextRequest) {
-  const auth = authorizeRequest(request, "sites:read");
-  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  const scope = resolveRequestScope(request);
-  if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
-
-  const jobId = request.nextUrl.searchParams.get("jobId")?.trim() ?? "";
-  if (!jobId) {
-    const siteId = request.nextUrl.searchParams.get("siteId")?.trim() ?? "";
-    const productId = request.nextUrl.searchParams.get("productId")?.trim() ?? "";
-    const slug = request.nextUrl.searchParams.get("slug")?.trim() ?? "";
-    if (!siteId || !productId || !slug) {
-      return NextResponse.json({ error: "jobId or exact siteId, productId, and slug target is required." }, { status: 400 });
-    }
-    const jobs = await glwPageExecutionRepository.list();
-    const recoverable = jobs
-      .filter((candidate) =>
-        candidate.organizationId === scope.organizationId
-        && candidate.siteId === siteId
-        && candidate.productId === productId
-        && candidate.slug === slug
-        && !isTerminal(candidate.status)
-        && Boolean(candidate.externalExecutionId))
-      .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0] ?? null;
-    return NextResponse.json({ job: recoverable });
+  if (!targetPreflight.ok) {
+    return {
+      error: targetPreflight.errorMessage,
+      code: targetPreflight.errorCode,
+      status: 409,
+    } as const;
   }
 
-  const job = await glwPageExecutionRepository.getById(jobId);
-  if (job && job.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  if (!job) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
-  if (request.nextUrl.searchParams.get("refresh") === "true" && !isTerminal(job.status)) {
-    try {
-      const refreshedJob = await recoverExecution(job);
-      if (refreshedJob.status !== "CONTENT_READY") return NextResponse.json({ job: refreshedJob });
-      return NextResponse.json({ job: refreshedJob, recoveryError: "Generated content is ready. Use Continue Existing Job to perform the authorized Genesis WordPress draft mutation." }, { status: 202 });
-    } catch (error) {
-      return NextResponse.json({ job, recoveryError: error instanceof Error ? error.message : "Execution recovery failed." }, { status: 202 });
-    }
+  const mutationAvailability = resolveGlwTargetMutationAvailability({
+    request,
+    targetPreflight,
+  });
+
+  if (!mutationAvailability.allowed) {
+    return {
+      error: mutationAvailability.reason,
+      code: mutationAvailability.code,
+      status: 409,
+    } as const;
   }
-  return NextResponse.json({ job });
+
+  return { targetPreflight, mutationAvailability } as const;
 }
 
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
   const scope = resolveRequestScope(request);
-  if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
+  if (!hasOrganizationScope(scope)) {
+    return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
+  }
 
   const body = await request.json().catch(() => null) as {
     form?: GlwGenerationRequestInput;
-    action?: "continue" | "recheck_qa";
+    action?: string;
     jobId?: string;
   } | null;
-  if (!body?.form) return NextResponse.json({ error: "Generation form is required." }, { status: 400 });
 
-  const authorized = await resolveAuthorizedPreview(body.form, scope.organizationId);
-  if ("error" in authorized || "issues" in authorized) {
-    return NextResponse.json(authorized, { status: authorized.status });
+  if (!body?.form) {
+    return NextResponse.json({ error: "Generation form is required." }, { status: 400 });
   }
 
-  const mutationAuthority = await verifyMutationAuthority(authorized.request, authorized.siteRecord);
-  if (!("ok" in mutationAuthority)) {
-    return NextResponse.json(mutationAuthority, { status: mutationAuthority.status });
+  const preview = await resolveAuthorizedPreview(body.form, scope.organizationId);
+  if ("error" in preview || "issues" in preview) {
+    return NextResponse.json(preview, { status: preview.status });
   }
 
-  if (body.action === "continue" || body.action === "recheck_qa") {
+  const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
+  if ("error" in authority) {
+    return NextResponse.json(authority, { status: authority.status });
+  }
+
+  const action = body.action?.trim() ?? "generate";
+
+  if (action === "continue") {
     const jobId = body.jobId?.trim() ?? "";
-    if (!jobId) return NextResponse.json({ error: "jobId is required for continuation." }, { status: 400 });
-    const existing = await glwPageExecutionRepository.getById(jobId);
-    if (!existing) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
-    if (existing.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    if (existing.siteId !== authorized.request.siteId || existing.productId !== authorized.request.productId || existing.slug !== authorized.request.canonicalPath) {
-      return NextResponse.json({ error: "Continuation form does not match the existing GLW execution identity." }, { status: 409 });
+    if (!jobId) return NextResponse.json({ error: "Exact GLW jobId is required for continuation." }, { status: 400 });
+
+    const currentJob = await glwPageExecutionRepository.getById(jobId);
+    if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+    if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    let refreshed = currentJob;
+    if (!isTerminal(currentJob.status) && currentJob.status !== "CONTENT_READY") {
+      refreshed = await recoverExecution(currentJob);
     }
 
-    if (body.action === "recheck_qa") {
-      if (existing.status !== "FAILED" || existing.errorCode !== "GENERATED_CONTENT_QA_FAILED") {
-        return NextResponse.json({ error: "Only a generated-content QA failure can be rechecked." }, { status: 409 });
-      }
-      const reset = await glwPageExecutionRepository.update(existing.jobId, {
-        status: "CONTENT_READY",
-        errorCode: null,
-        errorMessage: null,
-        completedAt: null,
-        updatedAt: new Date().toISOString(),
-      });
-      const finalized = await finalizeContentReadyExecution({ job: reset, request: authorized.request, siteRecord: authorized.siteRecord });
-      return NextResponse.json({ job: finalized });
-    }
+    const finalized = await finalizeContentReadyExecution({
+      job: refreshed,
+      request: preview.request,
+      siteRecord: preview.siteRecord,
+    });
 
-    if (existing.status !== "CONTENT_READY") {
-      return NextResponse.json({ error: `Only CONTENT_READY executions can continue. Current status: ${existing.status}.`, job: existing }, { status: 409 });
-    }
-
-    const finalized = await finalizeContentReadyExecution({ job: existing, request: authorized.request, siteRecord: authorized.siteRecord });
-    return NextResponse.json({ job: finalized });
+    return NextResponse.json({
+      ok: finalized.status === "COMPLETE",
+      job: finalized,
+      publicationPerformed: false,
+    });
   }
 
-  const mcpConfiguration = getGlwN8nMcpConfigurationStatus();
-  if (!mcpConfiguration.configured) {
-    return NextResponse.json({ error: "GLW n8n MCP dispatcher is not configured.", missing: mcpConfiguration.missing }, { status: 503 });
+  if (action !== "generate") {
+    return NextResponse.json({ error: "Unsupported generation action." }, { status: 400 });
   }
 
   try {
-    const job = await service.execute(authorized.request);
-    if (job.status === "CONTENT_READY") {
-      return NextResponse.json({
-        job,
-        generationOnly: true,
-        wordpressMutationPerformed: false,
-        continuationRequired: true,
-      }, { status: 202 });
-    }
-    return NextResponse.json({ job }, { status: isTerminal(job.status) ? 200 : 202 });
+    const job = await service.dispatch(preview.request);
+    return NextResponse.json({
+      ok: true,
+      generationOnly: true,
+      continuationRequired: true,
+      wordpressMutationPerformed: false,
+      publicationPerformed: false,
+      job,
+    });
   } catch (error) {
     if (error instanceof GlwDraftOnlyExecutionError) {
-      return NextResponse.json({ error: error.message }, { status: 409 });
+      return NextResponse.json({ error: error.message, code: error.code }, { status: 409 });
     }
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Generation failed." }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "GLW generation dispatch failed." }, { status: 500 });
   }
+}
+
+export async function GET(request: NextRequest) {
+  const auth = authorizeRequest(request, "sites:read");
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) {
+    return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
+  }
+
+  const jobId = request.nextUrl.searchParams.get("jobId")?.trim() ?? "";
+  if (!jobId) {
+    return NextResponse.json({
+      transport: getGlwN8nMcpConfigurationStatus(),
+      jobs: await glwPageExecutionRepository.listByOrganization(scope.organizationId),
+    });
+  }
+
+  const job = await glwPageExecutionRepository.getById(jobId);
+  if (!job) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+  if (job.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const refresh = request.nextUrl.searchParams.get("refresh") === "true";
+  const refreshed = refresh && !isTerminal(job.status) && job.status !== "CONTENT_READY"
+    ? await recoverExecution(job)
+    : job;
+
+  return NextResponse.json({ job: refreshed });
 }
