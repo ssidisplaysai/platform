@@ -18,6 +18,8 @@ export type GenesisWordPressPublishResult =
       wordpressObjectId: string;
       wordpressUrl: string;
       wordpressStatus: "publish";
+      publicationPerformed: boolean;
+      alreadyPublished: boolean;
     }
   | {
       ok: false;
@@ -27,7 +29,6 @@ export type GenesisWordPressPublishResult =
         | "invalid_target"
         | "read_failed"
         | "identity_mismatch"
-        | "already_published"
         | "write_failed"
         | "verification_failed";
       message: string;
@@ -114,7 +115,18 @@ export async function publishGenesisWordPressDraft(input: {
   }
 
   if (before.page.status === "publish") {
-    return { ok: false, state: "already_published", message: "The exact WordPress object is already published." };
+    if (!before.page.link) {
+      return { ok: false, state: "verification_failed", message: "The exact WordPress object is published but WordPress did not return a canonical link." };
+    }
+
+    return {
+      ok: true,
+      wordpressObjectId: String(wordpressObjectId),
+      wordpressUrl: before.page.link,
+      wordpressStatus: "publish",
+      publicationPerformed: false,
+      alreadyPublished: true,
+    };
   }
 
   if (before.page.status !== "draft") {
@@ -156,5 +168,7 @@ export async function publishGenesisWordPressDraft(input: {
     wordpressObjectId: String(wordpressObjectId),
     wordpressUrl: after.page.link,
     wordpressStatus: "publish",
+    publicationPerformed: true,
+    alreadyPublished: false,
   };
 }
