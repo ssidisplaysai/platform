@@ -19,6 +19,9 @@ import { glwPageExecutionRepository } from "@/modules/glw/page-execution-reposit
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-target-hierarchy";
 
+const HERO_FIGURE_STYLE = "max-width:900px;margin:24px auto;";
+const HERO_IMAGE_STYLE = "display:block;width:100%;height:auto;max-height:620px;object-fit:cover;";
+
 function resolveStateCode(value: string | null): string {
   const normalized = (value ?? "").trim();
   if (!normalized) return "";
@@ -90,8 +93,20 @@ function extractHeroFigure(html: string): string | null {
   return match?.[0] ?? null;
 }
 
+function normalizeHeroFigure(hero: string): string {
+  let normalized = hero.replace(/<figure\b([^>]*)>/i, (_match, attributes: string) => {
+    const withoutStyle = attributes.replace(/\sstyle=["'][^"']*["']/i, "");
+    return `<figure${withoutStyle} style="${HERO_FIGURE_STYLE}">`;
+  });
+  normalized = normalized.replace(/<img\b([^>]*)>/i, (_match, attributes: string) => {
+    const withoutStyle = attributes.replace(/\sstyle=["'][^"']*["']/i, "");
+    return `<img${withoutStyle} style="${HERO_IMAGE_STYLE}">`;
+  });
+  return normalized;
+}
+
 function buildHeroFigure(input: { mediaUrl: string; altText: string }): string {
-  return `<figure class="page-hero-image"><img src="${escapeHtmlAttribute(input.mediaUrl)}" alt="${escapeHtmlAttribute(input.altText)}" loading="eager" fetchpriority="high" /></figure>`;
+  return `<figure class="page-hero-image" style="${HERO_FIGURE_STYLE}"><img src="${escapeHtmlAttribute(input.mediaUrl)}" alt="${escapeHtmlAttribute(input.altText)}" loading="eager" fetchpriority="high" style="${HERO_IMAGE_STYLE}" /></figure>`;
 }
 
 function insertHeroFigure(baseHtml: string, hero: string): string {
@@ -185,6 +200,13 @@ export async function POST(request: NextRequest) {
   let heroPreserved = /class=["'][^"']*page-hero-image/i.test(baseHtml);
   let heroRebuiltFromFeaturedMedia = false;
 
+  if (heroPreserved) {
+    const persistedHero = extractHeroFigure(baseHtml);
+    if (persistedHero) {
+      baseHtml = baseHtml.replace(persistedHero, normalizeHeroFigure(persistedHero));
+    }
+  }
+
   try {
     const reader = createAuthenticatedWordPressReadAuthority({
       configuration: {
@@ -215,7 +237,7 @@ export async function POST(request: NextRequest) {
       const currentWordPressHtml = page.content?.raw ?? "";
       const existingHero = extractHeroFigure(currentWordPressHtml);
       if (existingHero) {
-        baseHtml = insertHeroFigure(baseHtml, existingHero);
+        baseHtml = insertHeroFigure(baseHtml, normalizeHeroFigure(existingHero));
         heroPreserved = true;
       } else {
         const featuredMediaId = Number(page.featured_media ?? 0);
@@ -315,7 +337,7 @@ export async function POST(request: NextRequest) {
     qaStatus: "COMPLETE",
     featuredImagePreserved: job.featuredImagePresent,
     heroImagePreservedInBody: heroPreserved,
-    heroImageRebuiltFromFeaturedMedia: heroRebuiltFromFeaturedMedia,
+    heroImageRebuiltFromFeaturedMedia,
     imageGenerationPerformed: false,
     publicationPerformed: false,
   });
