@@ -43,6 +43,7 @@ export type AuthenticatedWordPressGetFetcher = (
   init: {
     method: "GET";
     headers: Record<string, string>;
+    cache: "no-store";
     signal: AbortSignal;
   },
 ) => Promise<FetchResponse>;
@@ -121,7 +122,12 @@ export function createAuthenticatedWordPressReadAuthority(input: {
           };
         }
 
-        const queryString = query ? `?${query.toString()}` : "";
+        const authoritativeQuery = new URLSearchParams(query);
+        authoritativeQuery.set(
+          "_genesis_read_nonce",
+          `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        );
+        const queryString = `?${authoritativeQuery.toString()}`;
 
         const response = await fetcher(
           `${apiBaseUrl}${normalizedPath}${queryString}`,
@@ -130,7 +136,10 @@ export function createAuthenticatedWordPressReadAuthority(input: {
             headers: {
               Accept: "application/json",
               Authorization: authorization,
+              "Cache-Control": "no-cache, no-store, max-age=0",
+              Pragma: "no-cache",
             },
+            cache: "no-store",
             signal: controller.signal,
           },
         );

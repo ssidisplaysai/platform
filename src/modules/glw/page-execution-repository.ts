@@ -70,3 +70,28 @@ export const glwPageExecutionRepository: GlwPageExecutionRepository = {
     return deepClone(updated);
   },
 };
+
+export async function reconcileGlwPageExecutionPublished(input: {
+  jobId: string;
+  wordpressObjectId: string;
+  wordpressUrl: string | null;
+}): Promise<GlwPageExecutionRecord> {
+  const record = await glwPageExecutionRepository.getById(input.jobId);
+
+  if (
+    !record
+    || record.status !== "COMPLETE"
+    || record.wordpressStatus !== "draft"
+    || record.wordpressObjectId !== input.wordpressObjectId
+  ) {
+    throw new Error(
+      "Execution publication reconciliation requires the exact completed draft record.",
+    );
+  }
+
+  return glwPageExecutionRepository.update(input.jobId, {
+    wordpressStatus: "publish",
+    wordpressUrl: input.wordpressUrl,
+    updatedAt: new Date().toISOString(),
+  });
+}

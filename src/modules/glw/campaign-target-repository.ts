@@ -587,6 +587,40 @@ export function markGlwCampaignTargetPublished(input: {
   return deepClone(updated);
 }
 
+export function reconcileGlwCampaignTargetPublished(input: {
+  campaignId: string;
+  stateCode: string;
+  jobId: string;
+  wordpressObjectId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(input.campaignId, input.stateCode);
+  const current = targetStore.get(targetKey);
+
+  if (
+    !current
+    || current.status !== "draft_ready"
+    || current.jobId !== input.jobId
+    || current.wordpressObjectId !== input.wordpressObjectId
+  ) {
+    throw new Error(
+      "Campaign publication reconciliation requires the exact persisted draft-ready target.",
+    );
+  }
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "published",
+    lastError: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
 export function markGlwCampaignTargetFailed(input: {
   campaignId: string;
   stateCode: string;

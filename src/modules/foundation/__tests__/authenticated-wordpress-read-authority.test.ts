@@ -86,7 +86,13 @@ describe("Genesis authenticated WordPress read authority", () => {
     expect(url).toContain("/wp-json/wp/v2/pages?");
     expect(url).toContain("context=edit");
     expect(url).toContain("status=any");
+    expect(url).toMatch(/[?&]_genesis_read_nonce=[^&]+/);
     expect(init.headers.Authorization).toMatch(/^Basic /);
+    expect(init.headers["Cache-Control"]).toBe(
+      "no-cache, no-store, max-age=0",
+    );
+    expect(init.headers.Pragma).toBe("no-cache");
+    expect(init.cache).toBe("no-store");
   });
 
   test("returns bounded WordPress pagination metadata", async () => {

@@ -63,13 +63,20 @@ async function readPage(input: {
   wordpressObjectId: number;
 }): Promise<{ ok: true; page: WordPressPage } | { ok: false; status?: number }> {
   try {
+    const query = new URLSearchParams({
+      context: "edit",
+      _fields: "id,slug,parent,status,link",
+      _genesis_read_nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    });
     const response = await fetch(
-      `${input.apiBaseUrl}/pages/${input.wordpressObjectId}?context=edit&_fields=id,slug,parent,status,link`,
+      `${input.apiBaseUrl}/pages/${input.wordpressObjectId}?${query.toString()}`,
       {
         method: "GET",
         headers: {
           Accept: "application/json",
           Authorization: input.authorization,
+          "Cache-Control": "no-cache, no-store, max-age=0",
+          Pragma: "no-cache",
         },
         cache: "no-store",
         signal: AbortSignal.timeout(10_000),
@@ -163,11 +170,16 @@ export async function publishGenesisWordPressDraft(input: {
     return { ok: false, state: "verification_failed", message: `Genesis could not verify the WordPress object after publication${after.status ? ` (HTTP ${after.status})` : ""}.` };
   }
 
-  if (after.page.id !== wordpressObjectId || after.page.status !== "publish") {
+  if (
+    after.page.id !== wordpressObjectId
+    || after.page.status !== "publish"
+    || after.page.slug !== before.page.slug
+    || after.page.parent !== before.page.parent
+  ) {
     return {
       ok: false,
       state: "verification_failed",
-      message: `WordPress post-write verification mismatch. Expected id=${wordpressObjectId}, status=publish; received ${describePage(after.page)}.`,
+      message: `WordPress post-write verification mismatch. Expected id=${wordpressObjectId}, status=publish, slug=${before.page.slug ?? "missing"}, parent=${before.page.parent ?? "missing"}; received ${describePage(after.page)}.`,
     };
   }
 

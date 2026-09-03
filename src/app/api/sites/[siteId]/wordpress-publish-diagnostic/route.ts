@@ -105,16 +105,28 @@ export async function POST(
 
   const authorization = createAuthorizationHeader(credential.username, credential.applicationPassword);
   const pageUrl = `${apiBaseUrl}/pages/${wordpressObjectId}`;
-  const readUrl = `${pageUrl}?context=edit&_fields=id,slug,parent,status,link`;
-
-  let beforeResponse: Response;
-  try {
-    beforeResponse = await fetch(readUrl, {
+  const readPage = () => {
+    const query = new URLSearchParams({
+      context: "edit",
+      _fields: "id,slug,parent,status,link",
+      _genesis_read_nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    });
+    return fetch(`${pageUrl}?${query.toString()}`, {
       method: "GET",
-      headers: { Accept: "application/json", Authorization: authorization },
+      headers: {
+        Accept: "application/json",
+        Authorization: authorization,
+        "Cache-Control": "no-cache, no-store, max-age=0",
+        Pragma: "no-cache",
+      },
       cache: "no-store",
       signal: AbortSignal.timeout(10_000),
     });
+  };
+
+  let beforeResponse: Response;
+  try {
+    beforeResponse = await readPage();
   } catch {
     return NextResponse.json({ error: "Pre-read request failed." }, { status: 502 });
   }
@@ -168,12 +180,7 @@ export async function POST(
 
   let afterResponse: Response;
   try {
-    afterResponse = await fetch(readUrl, {
-      method: "GET",
-      headers: { Accept: "application/json", Authorization: authorization },
-      cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
-    });
+    afterResponse = await readPage();
   } catch {
     return NextResponse.json({
       diagnosticPerformed: true,
