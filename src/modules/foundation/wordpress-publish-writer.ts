@@ -16,7 +16,7 @@ export type GenesisWordPressPublishResult =
   | {
       ok: true;
       wordpressObjectId: string;
-      wordpressUrl: string;
+      wordpressUrl: string | null;
       wordpressStatus: "publish";
       publicationPerformed: boolean;
       alreadyPublished: boolean;
@@ -115,14 +115,10 @@ export async function publishGenesisWordPressDraft(input: {
   }
 
   if (before.page.status === "publish") {
-    if (!before.page.link) {
-      return { ok: false, state: "verification_failed", message: "The exact WordPress object is published but WordPress did not return a canonical link." };
-    }
-
     return {
       ok: true,
       wordpressObjectId: String(wordpressObjectId),
-      wordpressUrl: before.page.link,
+      wordpressUrl: typeof before.page.link === "string" && before.page.link.trim() ? before.page.link : null,
       wordpressStatus: "publish",
       publicationPerformed: false,
       alreadyPublished: true,
@@ -159,14 +155,14 @@ export async function publishGenesisWordPressDraft(input: {
     return { ok: false, state: "verification_failed", message: "Genesis could not verify the WordPress object after publication." };
   }
 
-  if (after.page.id !== wordpressObjectId || after.page.status !== "publish" || !after.page.link) {
+  if (after.page.id !== wordpressObjectId || after.page.status !== "publish") {
     return { ok: false, state: "verification_failed", message: "WordPress did not verify the exact object as published after mutation." };
   }
 
   return {
     ok: true,
     wordpressObjectId: String(wordpressObjectId),
-    wordpressUrl: after.page.link,
+    wordpressUrl: typeof after.page.link === "string" && after.page.link.trim() ? after.page.link : null,
     wordpressStatus: "publish",
     publicationPerformed: true,
     alreadyPublished: false,
