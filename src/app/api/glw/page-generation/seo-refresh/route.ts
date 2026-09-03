@@ -4,8 +4,10 @@ import {
   hasOrganizationScope,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
+import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
@@ -20,11 +22,9 @@ import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-targ
 function resolveStateCode(value: string | null): string {
   const normalized = (value ?? "").trim();
   if (!normalized) return "";
-
   const upper = normalized.toUpperCase();
   const byCode = GLW_CAMPAIGN_US_STATES.find((state) => state.code === upper);
   if (byCode) return byCode.code;
-
   const lower = normalized.toLowerCase();
   return GLW_CAMPAIGN_US_STATES.find((state) =>
     state.name.toLowerCase() === lower || state.slug === lower,
@@ -52,12 +52,7 @@ function rebuildGenerationForm(job: {
 }): GlwGenerationRequestInput {
   const stateCode = resolveStateCode(job.state);
   const citySlug = resolveCitySlug(job.city);
-  const pageType = citySlug
-    ? "city_service"
-    : stateCode
-      ? "state_service"
-      : "general_service";
-
+  const pageType = citySlug ? "city_service" : stateCode ? "state_service" : "general_service";
   const plannedOperation = pageType === "city_service"
     ? "UPDATE_CITY"
     : pageType === "state_service"
@@ -82,50 +77,49 @@ function rebuildGenerationForm(job: {
   };
 }
 
+function extractHeroFigure(html: string): string | null {
+  const match = html.match(/<figure\b[^>]*class=["'][^"']*page-hero-image[^"']*["'][^>]*>[\s\S]*?<\/figure>/i);
+  return match?.[0] ?? null;
+}
+
+function preserveHeroFigure(baseHtml: string, currentWordPressHtml: string): { html: string; preserved: boolean } {
+  if (/class=["'][^"']*page-hero-image/i.test(baseHtml)) {
+    return { html: baseHtml, preserved: true };
+  }
+  const hero = extractHeroFigure(currentWordPressHtml);
+  if (!hero) return { html: baseHtml, preserved: false };
+  if (/<\/h1>/i.test(baseHtml)) {
+    return {
+      html: baseHtml.replace(/<\/h1>/i, (match) => `${match}\n${hero}`),
+      preserved: true,
+    };
+  }
+  return { html: `${hero}\n${baseHtml}`, preserved: true };
+}
+
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
-  }
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const scope = resolveRequestScope(request);
   if (!hasOrganizationScope(scope)) {
     return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
   }
 
-  const body = await request.json().catch(() => null) as {
-    jobId?: string;
-    confirm?: string;
-  } | null;
-
+  const body = await request.json().catch(() => null) as { jobId?: string; confirm?: string } | null;
   if (body?.confirm !== "REFRESH_EXISTING_DRAFT_SEO") {
-    return NextResponse.json(
-      { error: "Explicit REFRESH_EXISTING_DRAFT_SEO confirmation is required." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Explicit REFRESH_EXISTING_DRAFT_SEO confirmation is required." }, { status: 400 });
   }
 
   const jobId = body.jobId?.trim() ?? "";
-  if (!jobId) {
-    return NextResponse.json({ error: "Exact GLW jobId is required." }, { status: 400 });
-  }
+  if (!jobId) return NextResponse.json({ error: "Exact GLW jobId is required." }, { status: 400 });
 
   const job = await glwPageExecutionRepository.getById(jobId);
-  if (!job) {
-    return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
-  }
-
-  if (job.organizationId !== scope.organizationId) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
+  if (!job) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+  if (job.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (job.status !== "COMPLETE" || job.wordpressStatus !== "draft" || !job.wordpressObjectId) {
-    return NextResponse.json(
-      { error: "SEO refresh requires an exact COMPLETE WordPress draft execution." },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: "SEO refresh requires an exact COMPLETE WordPress draft execution." }, { status: 409 });
   }
-
   if (!job.generatedDraft) {
     return NextResponse.json({ error: "Generated draft artifact is unavailable." }, { status: 409 });
   }
@@ -137,7 +131,6 @@ export async function POST(request: NextRequest) {
   }
 
   const form = rebuildGenerationForm(job);
-
   const preview = buildLocalGlwGenerationPreview({
     form,
     sites: [{
@@ -164,24 +157,55 @@ export async function POST(request: NextRequest) {
   });
 
   if (!preview.validation.valid || !preview.request) {
-    return NextResponse.json(
-      {
-        error: "Persisted generation request could not be reconstructed for SEO refresh.",
-        issues: preview.validation.issues,
-        reconstructed: {
-          pageType: form.pageType,
-          stateCode: form.stateCode,
-          citySlug: form.citySlug,
-          slug: form.slug,
-          wordpressObjectId: form.wordpressObjectId,
-        },
+    return NextResponse.json({
+      error: "Persisted generation request could not be reconstructed for SEO refresh.",
+      issues: preview.validation.issues,
+      reconstructed: {
+        pageType: form.pageType,
+        stateCode: form.stateCode,
+        citySlug: form.citySlug,
+        slug: form.slug,
+        wordpressObjectId: form.wordpressObjectId,
       },
-      { status: 409 },
-    );
+    }, { status: 409 });
   }
 
+  const apiBaseUrl = siteRecord.integrations.wordpressApiBaseUrl?.trim() ?? "";
+  const credentialReference = siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
+  const credential = resolveWordPressCredentialReference(credentialReference);
+  if (!apiBaseUrl || !credential) {
+    return NextResponse.json({ error: "Authenticated WordPress read authority is required for SEO refresh." }, { status: 503 });
+  }
+
+  let currentWordPressHtml = "";
+  try {
+    const reader = createAuthenticatedWordPressReadAuthority({
+      configuration: {
+        apiBaseUrl,
+        username: credential.username,
+        applicationPassword: credential.applicationPassword,
+        timeoutMs: 30_000,
+      },
+    });
+    const pageRead = await reader.getJson({
+      path: `/pages/${job.wordpressObjectId}`,
+      query: new URLSearchParams({ context: "edit", _fields: "id,status,content" }),
+    });
+    if (!pageRead.ok || !pageRead.body || typeof pageRead.body !== "object" || Array.isArray(pageRead.body)) {
+      return NextResponse.json({ error: "Current WordPress draft content could not be read before SEO refresh." }, { status: 409 });
+    }
+    const page = pageRead.body as { id?: number; status?: string; content?: { raw?: string } };
+    if (String(page.id ?? "") !== job.wordpressObjectId || page.status !== "draft") {
+      return NextResponse.json({ error: "Current WordPress object is no longer the exact authorized draft." }, { status: 409 });
+    }
+    currentWordPressHtml = page.content?.raw ?? "";
+  } catch {
+    return NextResponse.json({ error: "Current WordPress draft content could not be read before SEO refresh." }, { status: 409 });
+  }
+
+  const heroPreservation = preserveHeroFigure(job.generatedDraft.contentHtml, currentWordPressHtml);
   const enrichment = enrichGlwGeneratedContentForSeo({
-    artifact: job.generatedDraft,
+    artifact: { ...job.generatedDraft, contentHtml: heroPreservation.html },
     request: preview.request,
   });
 
@@ -190,28 +214,16 @@ export async function POST(request: NextRequest) {
     request: preview.request,
     siteDomain: siteRecord.domain,
     minimumWordCount: 1500,
+    additionalAllowedDomains: enrichment.approvedExternalDomains,
   });
 
   if (!qa.ok) {
-    return NextResponse.json(
-      {
-        error: "SEO-enriched artifact failed GLW content QA.",
-        qa,
-      },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: "SEO-enriched artifact failed GLW content QA.", qa }, { status: 409 });
   }
 
-  const hierarchy = await resolveGlwWordPressTargetHierarchy({
-    request: preview.request,
-    site: siteRecord,
-  });
-
+  const hierarchy = await resolveGlwWordPressTargetHierarchy({ request: preview.request, site: siteRecord });
   if (!hierarchy.ok) {
-    return NextResponse.json(
-      { error: hierarchy.errorMessage, code: hierarchy.errorCode },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: hierarchy.errorMessage, code: hierarchy.errorCode }, { status: 409 });
   }
 
   if (
@@ -219,10 +231,7 @@ export async function POST(request: NextRequest) {
     && hierarchy.wordpressObjectId
     && hierarchy.wordpressObjectId !== job.wordpressObjectId
   ) {
-    return NextResponse.json(
-      { error: "Exact WordPress hierarchy target no longer matches the completed GLW job." },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: "Exact WordPress hierarchy target no longer matches the completed GLW job." }, { status: 409 });
   }
 
   const writeResult = await writeGenesisWordPressDraft({
@@ -240,10 +249,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!writeResult.ok) {
-    return NextResponse.json(
-      { error: writeResult.message, state: writeResult.state },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: writeResult.message, state: writeResult.state }, { status: 409 });
   }
 
   await glwPageExecutionRepository.update(job.jobId, {
@@ -263,8 +269,10 @@ export async function POST(request: NextRequest) {
     seoMetadataAttempted: writeResult.seoMetadataAttempted,
     seoMetadataAccepted: writeResult.seoMetadataAccepted,
     inserted: enrichment.inserted,
+    approvedExternalDomains: enrichment.approvedExternalDomains,
     qaStatus: "COMPLETE",
     featuredImagePreserved: job.featuredImagePresent,
+    heroImagePreservedInBody: heroPreservation.preserved,
     imageGenerationPerformed: false,
     publicationPerformed: false,
   });
