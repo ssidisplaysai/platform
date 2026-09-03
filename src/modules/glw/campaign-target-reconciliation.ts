@@ -29,6 +29,7 @@ export function resolveGlwCampaignTargetRecoveryAction(
 
   return "none";
 }
+
 export type GlwCampaignJobReconciliationDecision =
   | {
       action: "wait";
@@ -45,15 +46,33 @@ export type GlwCampaignJobReconciliationDecision =
       error: string;
     };
 
+function isRecoverableContentFailure(job: {
+  status: string;
+  errorCode?: string | null;
+  generatedDraft?: unknown;
+}): boolean {
+  return job.status === "FAILED"
+    && Boolean(job.generatedDraft)
+    && (
+      job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      || job.errorCode?.startsWith("CONTENT_REPAIR_") === true
+    );
+}
+
 export function resolveGlwCampaignJobReconciliationDecision(
   job: {
     status: string;
     wordpressObjectId?: string | number | null;
     wordpressStatus?: string | null;
     error?: string | null;
+    errorCode?: string | null;
+    generatedDraft?: unknown;
   },
 ): GlwCampaignJobReconciliationDecision {
-  if (job.status === "CONTENT_READY") {
+  if (
+    job.status === "CONTENT_READY"
+    || isRecoverableContentFailure(job)
+  ) {
     return {
       action: "continue",
     };
