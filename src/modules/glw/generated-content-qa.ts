@@ -100,16 +100,23 @@ function collectTextIntegrityMarkers(text: string): string[] {
 function collectMojibakeMarkers(text: string): string[] {
   const markers = new Set<string>();
   const suspiciousSequences = [
-    /\uFFFD/g,
-    /Ã[\u0080-\u00BF]/g,
-    /Â[\u0080-\u00BF]/g,
-    /â(?:€|€™|€œ|€�|€“|€”|€¦|€¢|„¢|„¬|„¢)/g,
+    "\uFFFD",
+    "â€™",
+    "â€˜",
+    "â€œ",
+    "â€�",
+    "â€“",
+    "â€”",
+    "â€¦",
+    "Â©",
+    "Â®",
+    "Â°",
+    "Â·",
+    "Â ",
   ];
 
-  for (const pattern of suspiciousSequences) {
-    for (const match of text.matchAll(pattern)) {
-      markers.add(match[0]);
-    }
+  for (const sequence of suspiciousSequences) {
+    if (text.includes(sequence)) markers.add(sequence);
   }
 
   return [...markers];
