@@ -118,7 +118,9 @@ function ensureProductAuthorityLink(html: string, request: GlwGenerationRequest)
   const firstPathSegment = request.canonicalPath.split("/").filter(Boolean)[0] ?? "";
   if (!firstPathSegment) return { html, inserted: false };
   const href = `/${firstPathSegment}/`;
-  const exactAnchorPattern = new RegExp(`<a\\b[^>]*href\\s*=\\s*["']${href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'][^>]*>[\\s\\S]*?<\\/a>`, "i");
+  const escapedHref = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escapedTopic = request.productTopic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const exactAnchorPattern = new RegExp(`<a\\b[^>]*href\\s*=\\s*["']${escapedHref}["'][^>]*>\\s*${escapedTopic}\\s*<\\/a>`, "i");
   if (exactAnchorPattern.test(html)) return { html, inserted: false };
   const fragment = `<p>Explore our <a href="${href}">${escapeHtml(request.productTopic)}</a> solutions for additional product specifications, turnkey package details, and display options.</p>`;
   return { html: insertContextually(html, fragment, { sectionPatterns: [/choosing the right/i, /what is an indoor digital sphere/i, /benefits of indoor digital spheres/i], paragraphPatterns: [/product specifications/i, /display options/i, /pixel pitch/i] }), inserted: true };
