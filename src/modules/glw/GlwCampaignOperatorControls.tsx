@@ -41,6 +41,23 @@ type DispatchPayload = {
   error?: string;
 };
 
+type ReconcilePayload = {
+  campaignId: string;
+  reconciledTargetCount: number;
+  results: readonly {
+    stateCode: string;
+    jobId: string;
+    action: string;
+    wordpressObjectId?: string | null;
+    generationStatus?: string;
+    httpStatus?: number;
+    error?: string;
+  }[];
+  publicationIntent: "draft";
+  publicationPerformed: boolean;
+  error?: string;
+};
+
 type SeoRefreshPreviewPayload = {
   campaignId: string;
   eligibleCount: number;
@@ -94,6 +111,7 @@ export function GlwCampaignOperatorControls({
   const [seoRun, setSeoRun] = useState<SeoRefreshRunRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
   const [refreshingSeo, setRefreshingSeo] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +209,51 @@ export function GlwCampaignOperatorControls({
     window.location.reload();
   }
 
+  async function reconcileCampaign() {
+    const confirmed = window.confirm(
+      "Reconcile all existing running or recoverable failed draft jobs for this campaign? Exact jobs only. Publication remains blocked.",
+    );
+
+    if (!confirmed) return;
+
+    setReconciling(true);
+    setMessage(null);
+    setError(null);
+
+    const response = await fetch(`/api/glw/campaigns/${campaignId}/reconcile`, {
+      method: "POST",
+      headers: requestHeaders(true),
+      body: JSON.stringify({ confirm: "RECONCILE_EXISTING_DRAFT_BATCH" }),
+      cache: "no-store",
+    });
+
+    const payload = await response.json().catch(() => null) as ReconcilePayload | null;
+
+    if (!response.ok || !payload) {
+      setError(payload?.error ?? `Campaign reconciliation failed (HTTP ${response.status}).`);
+      setReconciling(false);
+      return;
+    }
+
+    const draftReady = payload.results.filter((entry) => entry.action === "draft_ready").length;
+    const waiting = payload.results.filter((entry) => entry.action === "wait").length;
+    const failed = payload.results.filter((entry) => entry.action === "failed" || entry.action === "error" || entry.action === "continue_error").length;
+
+    if (failed > 0) {
+      const details = payload.results
+        .filter((entry) => entry.action === "failed" || entry.action === "error" || entry.action === "continue_error")
+        .map((entry) => `${entry.stateCode}: ${entry.error ?? entry.action}`)
+        .join(" | ");
+      setError(`Campaign reconciliation completed with ${draftReady} draft-ready, ${waiting} waiting, and ${failed} requiring review. ${details}`);
+    } else {
+      setMessage(`Campaign reconciliation complete: ${draftReady} draft-ready, ${waiting} still waiting. Publication: ${payload.publicationPerformed ? "YES" : "NO"}.`);
+    }
+
+    setReconciling(false);
+    await loadScheduler();
+    window.location.reload();
+  }
+
   async function refreshCampaignSeo() {
     if (!seoPreview || seoPreview.eligibleCount < 1) return;
 
@@ -254,14 +317,24 @@ export function GlwCampaignOperatorControls({
             Review today&apos;s scheduler allowance and explicitly dispatch the next bounded draft-only batch. Publication remains a separate protected action.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void loadScheduler()}
-          disabled={loading || dispatching || refreshingSeo}
-          className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {loading ? "Refreshing..." : "Refresh Preview"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void reconcileCampaign()}
+            disabled={loading || dispatching || reconciling || refreshingSeo}
+            className="rounded-lg border border-sky-700 bg-sky-950/30 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-sky-200 transition hover:border-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {reconciling ? "Reconciling..." : "Reconcile Campaign"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void loadScheduler()}
+            disabled={loading || dispatching || reconciling || refreshingSeo}
+            className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {loading ? "Refreshing..." : "Refresh Preview"}
+          </button>
+        </div>
       </div>
 
       {error ? <p className="mt-4 rounded-lg border border-red-900/60 bg-red-950/30 p-3 text-sm text-red-300">{error}</p> : null}
@@ -282,7 +355,7 @@ export function GlwCampaignOperatorControls({
             <button
               type="button"
               onClick={() => void refreshCampaignSeo()}
-              disabled={refreshingSeo || dispatching || seoPreview.eligibleCount < 1}
+              disabled={refreshingSeo || dispatching || reconciling || seoPreview.eligibleCount < 1}
               className="rounded-lg border border-emerald-700 bg-emerald-950/30 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {refreshingSeo ? "Refreshing SEO..." : "Refresh SEO on Draft-Ready Pages"}
@@ -358,7 +431,7 @@ export function GlwCampaignOperatorControls({
           <button
             type="button"
             onClick={() => void runNextBatch()}
-            disabled={dispatching || refreshingSeo || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length < 1}
+            disabled={dispatching || reconciling || refreshingSeo || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length < 1}
             className="mt-5 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {dispatching ? "Dispatching..." : "Run Next Draft Batch"}
