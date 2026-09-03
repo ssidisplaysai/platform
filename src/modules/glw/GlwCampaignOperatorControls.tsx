@@ -89,6 +89,10 @@ type PublishRunPayload = {
   error?: string;
 };
 
+type PublishRunRecord = PublishRunPayload & {
+  completedAt: string;
+};
+
 type SeoRefreshPreviewPayload = {
   campaignId: string;
   eligibleCount: number;
@@ -139,6 +143,7 @@ export function GlwCampaignOperatorControls({
 }: Props) {
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
   const [publishPreview, setPublishPreview] = useState<PublishPreviewPayload | null>(null);
+  const [publishRun, setPublishRun] = useState<PublishRunRecord | null>(null);
   const [seoPreview, setSeoPreview] = useState<SeoRefreshPreviewPayload | null>(null);
   const [seoRun, setSeoRun] = useState<SeoRefreshRunRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -234,7 +239,6 @@ export function GlwCampaignOperatorControls({
     setMessage(`Draft batch dispatched: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
     setDispatching(false);
     await loadScheduler();
-    window.location.reload();
   }
 
   async function reconcileCampaign() {
@@ -277,7 +281,6 @@ export function GlwCampaignOperatorControls({
 
     setReconciling(false);
     await loadScheduler();
-    window.location.reload();
   }
 
   async function publishDraftReady() {
@@ -290,6 +293,7 @@ export function GlwCampaignOperatorControls({
     if (!confirmed) return;
 
     setPublishing(true);
+    setPublishRun(null);
     setMessage(null);
     setError(null);
 
@@ -310,6 +314,11 @@ export function GlwCampaignOperatorControls({
       return;
     }
 
+    setPublishRun({
+      ...payload,
+      completedAt: new Date().toLocaleString(),
+    });
+
     if (payload.failed > 0) {
       const details = payload.results
         .filter((entry) => !entry.ok)
@@ -322,7 +331,6 @@ export function GlwCampaignOperatorControls({
 
     setPublishing(false);
     await loadScheduler();
-    window.location.reload();
   }
 
   async function refreshCampaignSeo() {
@@ -388,6 +396,43 @@ export function GlwCampaignOperatorControls({
 
       {error ? <p className="mt-4 rounded-lg border border-red-900/60 bg-red-950/30 p-3 text-sm text-red-300">{error}</p> : null}
       {message ? <p className="mt-4 rounded-lg border border-emerald-900/60 bg-emerald-950/30 p-3 text-sm text-emerald-300">{message}</p> : null}
+
+      {publishRun ? (
+        <div className="mt-5 rounded-xl border border-zinc-700 bg-zinc-950/80 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wider text-zinc-500">Publication Results</p>
+              <p className="mt-1 text-sm text-zinc-300">Last run: {publishRun.completedAt}</p>
+            </div>
+            <div className="flex gap-2 text-xs uppercase">
+              <span className="rounded-full border border-emerald-800 px-3 py-1 text-emerald-300">Published {publishRun.succeeded}</span>
+              <span className="rounded-full border border-red-900 px-3 py-1 text-red-300">Failed {publishRun.failed}</span>
+            </div>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-xs">
+              <thead className="border-b border-zinc-800 uppercase tracking-wider text-zinc-500">
+                <tr>
+                  <th className="px-2 py-2">State</th>
+                  <th className="px-2 py-2">Result</th>
+                  <th className="px-2 py-2">WordPress</th>
+                  <th className="px-2 py-2">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {publishRun.results.map((entry) => (
+                  <tr key={`${entry.stateCode}-${entry.wordpressObjectId}`} className="border-b border-zinc-900 text-zinc-300">
+                    <td className="px-2 py-2 font-semibold text-white">{entry.stateCode}</td>
+                    <td className={`px-2 py-2 font-semibold ${entry.ok ? "text-emerald-300" : "text-red-300"}`}>{entry.ok ? "PUBLISHED" : "FAILED"}</td>
+                    <td className="px-2 py-2 font-mono text-zinc-400">{entry.wordpressObjectId}</td>
+                    <td className="px-2 py-2 text-zinc-400">{entry.ok ? (entry.wordpressUrl ?? "Published and verified") : (entry.error ?? entry.state ?? "Publish failed")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       {publishPreview ? (
         <div className="mt-5 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4">
