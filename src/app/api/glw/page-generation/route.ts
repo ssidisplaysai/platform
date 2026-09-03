@@ -78,7 +78,8 @@ async function finalizeContentReadyExecution(input: {
 }): Promise<GlwPageExecutionRecord> {
   const recoverableQaFailure =
     input.job.status === "FAILED"
-    && input.job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+    && (input.job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      || input.job.errorCode?.startsWith("CONTENT_REPAIR_") === true)
     && Boolean(input.job.generatedDraft);
 
   if (input.job.status !== "CONTENT_READY" && !recoverableQaFailure) return input.job;
@@ -342,7 +343,7 @@ async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organiz
   const product = adaptProductForGeneration(productRecord, site.siteId);
   const preview = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
   if (!preview.validation.valid || !preview.request) return { issues: preview.validation.issues, status: 400 } as const;
-  if (preview.request.publicationIntent !== "draft") return { error: "Public publish is blocked. Select draft intent.", status: 403 } as const;
+  if (preview.request.publicationIntent !== "draft") return { error: "Public publish is blocked. Select draft intent." , status: 403 } as const;
   return { siteRecord, request: preview.request } as const;
 }
 
@@ -417,6 +418,13 @@ function matchesExactContinuationTarget(input: {
     && input.job.publicationIntent === "draft";
 }
 
+function isExactRecoverableContentFailure(job: GlwPageExecutionRecord): boolean {
+  return job.status === "FAILED"
+    && (job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      || job.errorCode?.startsWith("CONTENT_REPAIR_") === true)
+    && Boolean(job.generatedDraft);
+}
+
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -454,12 +462,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Continuation request does not match the exact persisted GLW target." }, { status: 409 });
     }
 
-    const exactRecoverableQaFailure =
-      currentJob.status === "FAILED"
-      && currentJob.errorCode === "GENERATED_CONTENT_QA_FAILED"
-      && Boolean(currentJob.generatedDraft);
+    const exactRecoverableContentFailure = isExactRecoverableContentFailure(currentJob);
 
-    if (!exactRecoverableQaFailure) {
+    if (!exactRecoverableContentFailure) {
       const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
       if ("error" in authority) {
         return NextResponse.json(authority, { status: authority.status });
