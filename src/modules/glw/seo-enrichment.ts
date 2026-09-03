@@ -13,11 +13,20 @@ type GlwAuthorityLink = {
   sentence: string;
 };
 
+type GlwRelatedProductLink = {
+  href: string;
+  label: string;
+  sentence: string;
+  sectionPatterns: readonly RegExp[];
+  paragraphPatterns: readonly RegExp[];
+};
+
 export type GlwSeoEnrichmentResult = {
   artifact: GlwGeneratedDraftArtifact;
   metadata: GlwSeoMetadata;
   inserted: {
     productAuthorityLink: boolean;
+    relatedProductLinks: number;
     corporateLink: boolean;
     outboundAuthorityLink: boolean;
     localAuthorityLink: boolean;
@@ -33,6 +42,37 @@ const STATE_AUTHORITY_LINKS: Readonly<Record<string, GlwAuthorityLink>> = {
     sentence: "For organizations planning facilities, events, and commercial investments in Connecticut, the Connecticut Department of Economic and Community Development provides statewide business and development resources.",
   },
 };
+
+const RELATED_PRODUCT_LINKS: readonly GlwRelatedProductLink[] = [
+  {
+    href: "/outdoor-digital-sphere/",
+    label: "Outdoor Digital Sphere",
+    sentence: "For exterior venues or projects that need weather-rated spherical LED, compare our outdoor digital sphere solutions.",
+    sectionPatterns: [/lighting and environmental/i, /material and performance/i, /use cases/i],
+    paragraphPatterns: [/outdoor/i, /weather/i, /environmental/i, /exterior/i],
+  },
+  {
+    href: "/indoor-led-video-wall/",
+    label: "Indoor LED Video Wall",
+    sentence: "For applications better suited to a traditional large-format surface, explore our indoor LED video wall options.",
+    sectionPatterns: [/comparison table/i, /choosing the right/i, /buying criteria/i],
+    paragraphPatterns: [/flat display/i, /video wall/i, /traditional display/i, /large-format/i],
+  },
+  {
+    href: "/transparent-oled-display/",
+    label: "Transparent OLED Display",
+    sentence: "For retail and architectural applications where transparency is part of the experience, see our transparent OLED display solutions.",
+    sectionPatterns: [/popular local applications/i, /use cases/i, /future trends/i],
+    paragraphPatterns: [/retail/i, /transparent/i, /architectural/i, /window/i],
+  },
+  {
+    href: "/outdoor-digital-kiosk/",
+    label: "Outdoor Digital Kiosk",
+    sentence: "For interactive wayfinding, self-service, or public-facing information, our outdoor digital kiosk options can complement a broader display deployment.",
+    sectionPatterns: [/use cases/i, /popular local applications/i, /interactive/i],
+    paragraphPatterns: [/wayfinding/i, /interactive/i, /self-service/i, /kiosk/i],
+  },
+];
 
 function escapeHtml(value: string): string {
   return value
@@ -160,6 +200,34 @@ function ensureProductAuthorityLink(html: string, request: GlwGenerationRequest)
   };
 }
 
+function ensureRelatedProductLinks(html: string, request: GlwGenerationRequest): { html: string; inserted: number } {
+  if (request.pageType !== "state_service") return { html, inserted: 0 };
+
+  let nextHtml = html;
+  let inserted = 0;
+
+  for (const related of RELATED_PRODUCT_LINKS) {
+    if (inserted >= 2) break;
+
+    const normalized = normalizeHtmlForSearch(nextHtml);
+    if (normalized.includes(`href=\"${related.href.toLowerCase()}\"`) || normalized.includes(`href='${related.href.toLowerCase()}'`)) {
+      continue;
+    }
+
+    const contextPresent = [...related.sectionPatterns, ...related.paragraphPatterns].some((pattern) => pattern.test(nextHtml));
+    if (!contextPresent) continue;
+
+    const fragment = `<p>${escapeHtml(related.sentence)} <a href="${related.href}">${escapeHtml(related.label)}</a>.</p>`;
+    nextHtml = insertContextually(nextHtml, fragment, {
+      sectionPatterns: related.sectionPatterns,
+      paragraphPatterns: related.paragraphPatterns,
+    });
+    inserted += 1;
+  }
+
+  return { html: nextHtml, inserted };
+}
+
 function ensureCorporateLink(html: string): { html: string; inserted: boolean } {
   const normalized = normalizeHtmlForSearch(html);
   if (normalized.includes("href=\"https://ssidisplays.com") || normalized.includes("href='https://ssidisplays.com")) {
@@ -246,6 +314,9 @@ export function enrichGlwGeneratedContentForSeo(input: {
   const product = ensureProductAuthorityLink(html, input.request);
   html = product.html;
 
+  const relatedProducts = ensureRelatedProductLinks(html, input.request);
+  html = relatedProducts.html;
+
   const corporate = ensureCorporateLink(html);
   html = corporate.html;
 
@@ -277,6 +348,7 @@ export function enrichGlwGeneratedContentForSeo(input: {
     },
     inserted: {
       productAuthorityLink: product.inserted,
+      relatedProductLinks: relatedProducts.inserted,
       corporateLink: corporate.inserted,
       outboundAuthorityLink: outbound.inserted,
       localAuthorityLink: localAuthority.inserted,
