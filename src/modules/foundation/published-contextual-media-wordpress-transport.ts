@@ -33,6 +33,7 @@ export function createPublishedContextualMediaWordPressTransport(site: SiteConfi
   const auth = authorization(credential.username, credential.applicationPassword);
   const readHeaders = { Accept: "application/json", Authorization: auth, "Cache-Control": "no-cache, no-store, max-age=0", Pragma: "no-cache" };
   const uploadedUrls = new Map<number, string>();
+  const targetCollections = new Map<number, "pages" | "posts">();
 
   async function scanRestrictedType(postType: string, mediaId: number, mediaUrl: string): Promise<"CLEAR" | "REFERENCED" | "INCOMPLETE"> {
     for (let offset = 0; offset < 10_000; offset += 100) {
@@ -49,11 +50,16 @@ export function createPublishedContextualMediaWordPressTransport(site: SiteConfi
   }
 
   async function readPage(pageId: number): Promise<PublishedContextualPage | null> {
-    const response = await fetch(`${apiBase}/pages/${pageId}?context=edit&_fields=id,slug,status,parent,featured_media,title,content,yoast_head_json&_contextual=${crypto.randomUUID()}`, { headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(15_000) });
-    if (!response.ok) return null;
-    const page = await response.json() as WordPressPage;
-    if (!page.id || !page.slug || !page.status || !page.title?.raw || typeof page.content?.raw !== "string") return null;
-    return { id: page.id, slug: page.slug, status: page.status, parent: Number(page.parent ?? 0), featuredMediaId: Number(page.featured_media ?? 0), content: page.content.raw, canonicalUrl: String(page.yoast_head_json?.canonical ?? ""), robots: page.yoast_head_json?.robots ?? {}, title: page.title.raw };
+    for (const collection of ["pages", "posts"] as const) {
+      const response = await fetch(`${apiBase}/${collection}/${pageId}?context=edit&_fields=id,slug,status,parent,featured_media,title,content,yoast_head_json&_contextual=${crypto.randomUUID()}`, { headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+      if (response.status === 404) continue;
+      if (!response.ok) return null;
+      const page = await response.json() as WordPressPage;
+      if (!page.id || !page.slug || !page.status || !page.title?.raw || typeof page.content?.raw !== "string") return null;
+      targetCollections.set(pageId, collection);
+      return { id: page.id, slug: page.slug, status: page.status, parent: Number(page.parent ?? 0), featuredMediaId: Number(page.featured_media ?? 0), content: page.content.raw, canonicalUrl: String(page.yoast_head_json?.canonical ?? ""), robots: page.yoast_head_json?.robots ?? {}, title: page.title.raw };
+    }
+    return null;
   }
 
   async function readMedia(mediaId: number): Promise<ContextualMediaRecord | null> {
@@ -68,9 +74,12 @@ export function createPublishedContextualMediaWordPressTransport(site: SiteConfi
   return {
     readPage,
     async verifyTargetAuthority(page) {
-      const candidatesResponse = await fetch(`${apiBase}/pages?slug=${encodeURIComponent(page.slug)}&context=edit&status=any&per_page=100&_fields=id,slug,status&_contextual=${crypto.randomUUID()}`, { headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(15_000) });
-      if (!candidatesResponse.ok) return false;
-      const candidates = await candidatesResponse.json() as WordPressPage[];
+      const candidates: WordPressPage[] = [];
+      for (const collection of ["pages", "posts"] as const) {
+        const candidatesResponse = await fetch(`${apiBase}/${collection}?slug=${encodeURIComponent(page.slug)}&context=edit&status=any&per_page=100&_fields=id,slug,status&_contextual=${crypto.randomUUID()}`, { headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(15_000) });
+        if (!candidatesResponse.ok) return false;
+        candidates.push(...await candidatesResponse.json() as WordPressPage[]);
+      }
       if (candidates.length !== 1 || candidates[0].id !== page.id || candidates[0].status !== "publish") return false;
       const redirectUrl = new URL(`${origin}/wp-json/ssi/v1/redirect`);
       redirectUrl.searchParams.set("source", new URL(page.canonicalUrl).pathname);
@@ -95,7 +104,9 @@ export function createPublishedContextualMediaWordPressTransport(site: SiteConfi
       return response.ok;
     },
     async writePublishedPageContent(pageId, input) {
-      const response = await fetch(`${apiBase}/pages/${pageId}`, { method: "POST", headers: { ...readHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ content: input.content, featured_media: input.featuredMediaId }), cache: "no-store", signal: AbortSignal.timeout(20_000) });
+      const collection = targetCollections.get(pageId);
+      if (!collection) return false;
+      const response = await fetch(`${apiBase}/${collection}/${pageId}`, { method: "POST", headers: { ...readHeaders, "Content-Type": "application/json" }, body: JSON.stringify({ content: input.content, featured_media: input.featuredMediaId }), cache: "no-store", signal: AbortSignal.timeout(20_000) });
       return response.ok;
     },
     async fetchPublicHtml(canonicalUrl) {
