@@ -33,7 +33,7 @@ export async function POST(
   try {
     const site = getSiteById(siteId) ?? ensureSsiSiteRecord();
     const connection = await new FoundationSiteConnectionTestAdapter().testConnection(site);
-    if (connection.status !== "success") {
+    if (connection.status !== "passed") {
       return NextResponse.json({ error: "Authenticated SSI WordPress connection verification failed." }, { status: 409 });
     }
     const result = configureSsiSiteStudio();

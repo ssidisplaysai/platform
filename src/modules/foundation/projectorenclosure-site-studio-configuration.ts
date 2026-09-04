@@ -22,11 +22,15 @@ import type {
   IntegrationProfileReferenceSet,
   IntegrationProfileType,
   NewIntegrationProfileInput,
+  NewProductInput,
   PermissionAction,
+  ProductConfiguration,
+  UpdateProductInput,
 } from "./types";
 
 export const PROJECTOR_ENCLOSURE_SITE_ID = "site-ssi-projectorenclosure";
 export const PROJECTOR_ENCLOSURE_PRODUCT_ID = "prod-ssi-fan-cooled-projector-enclosures";
+export const HOMELINE_PRODUCT_ID = "prod-ssi-homeline-projector-enclosure";
 
 export const PROJECTOR_ENCLOSURE_PROFILE_IDS = {
   brand: "profile-brand-projectorenclosure-default",
@@ -103,6 +107,89 @@ const PROFILES: readonly NewIntegrationProfileInput[] = [
 
 const permissions = new Set<PermissionAction>(["sites:manage_integrations", "products:evaluate_readiness"]);
 const sourceUrl = "https://projectorenclosure.com/fan-cooled-projector-enclosures/";
+const homelineSourceUrl = "https://projectorenclosure.com/homeline-projector-enclosure/";
+
+function homelineSpecifications() {
+  const sourceReference = "wordpress-page:11852";
+  const common = { sourceReference, evidenceReference: homelineSourceUrl, confidence: 1, visibility: "public" as const };
+  return [
+    { specificationId: "spec-homeline-construction", specificationGroup: "Construction", key: "construction", displayLabel: "Construction", rawValue: "Steel enclosure body", normalizedValue: "Steel", unit: null, sortOrder: 1, ...common },
+    { specificationId: "spec-homeline-weight", specificationGroup: "Physical", key: "weight", displayLabel: "Weight", rawValue: "49 lb", normalizedValue: "49", unit: "lb", sortOrder: 2, ...common },
+    { specificationId: "spec-homeline-exterior-dimensions", specificationGroup: "Physical", key: "exterior_dimensions", displayLabel: "Exterior Dimensions", rawValue: "23.66 x 22.60 x 10.83 in", normalizedValue: null, unit: "in", sortOrder: 3, ...common },
+    { specificationId: "spec-homeline-projector-height", specificationGroup: "Projector Fit", key: "maximum_projector_height", displayLabel: "Maximum Projector Height", rawValue: "Under 7.5 in", normalizedValue: "7.5", unit: "in", sortOrder: 4, ...common },
+    { specificationId: "spec-homeline-projector-depth", specificationGroup: "Projector Fit", key: "maximum_projector_depth", displayLabel: "Maximum Projector Depth", rawValue: "Under 16 in", normalizedValue: "16", unit: "in", sortOrder: 5, ...common },
+    { specificationId: "spec-homeline-projector-width", specificationGroup: "Projector Fit", key: "maximum_projector_width", displayLabel: "Maximum Projector Width", rawValue: "20 in or less", normalizedValue: "20", unit: "in", sortOrder: 6, ...common },
+    { specificationId: "spec-homeline-cooling", specificationGroup: "Protection", key: "cooling_method", displayLabel: "Cooling", rawValue: "Temperature-controlled fan cooling", normalizedValue: "Temperature-Controlled Fan Cooling", unit: null, sortOrder: 7, ...common },
+    { specificationId: "spec-homeline-wired-cord", specificationGroup: "Power", key: "wired_power_cord", displayLabel: "Wired Cord", rawValue: "Included", normalizedValue: "Included", unit: null, sortOrder: 8, ...common },
+    { specificationId: "spec-homeline-internal-outlet", specificationGroup: "Power", key: "internal_outlet", displayLabel: "Internal Outlet", rawValue: "Included", normalizedValue: "Included", unit: null, sortOrder: 9, ...common },
+    { specificationId: "spec-homeline-internal-breaker", specificationGroup: "Power", key: "internal_breaker", displayLabel: "Internal Breaker", rawValue: "Included", normalizedValue: "Included", unit: null, sortOrder: 10, ...common },
+    { specificationId: "spec-homeline-environments", specificationGroup: "Application", key: "intended_environments", displayLabel: "Intended Environments", rawValue: "Home theater; covered patio; garage; backyard; mild environments", normalizedValue: null, unit: null, sortOrder: 11, ...common },
+    { specificationId: "spec-homeline-mapping-uses", specificationGroup: "Application", key: "projection_mapping_uses", displayLabel: "Projection Mapping Uses", rawValue: "DIY; house projection mapping; Halloween; Christmas; seasonal projection mapping", normalizedValue: null, unit: null, sortOrder: 12, ...common },
+    { specificationId: "spec-homeline-warranty", specificationGroup: "Warranty", key: "manufacturer_warranty", displayLabel: "Manufacturer Warranty", rawValue: "One year", normalizedValue: "1", unit: "year", sortOrder: 13, ...common },
+    { specificationId: "spec-homeline-compatibility-policy", specificationGroup: "Projector Fit", key: "compatibility_policy", displayLabel: "Compatibility Policy", rawValue: "Verify projector dimensions, lens position, intake and exhaust locations, cable routing, and required clearance before purchase.", normalizedValue: null, unit: null, sortOrder: 14, ...common },
+  ];
+}
+
+export function buildHomelineProductInput(normalizedAt: string): NewProductInput {
+  return {
+    organizationId: "ssi", productName: "Homeline Projector Enclosure", displayName: "Homeline Projector Enclosure",
+    slug: "homeline-projector-enclosure", sku: "SSI-HOMELINE-PE", modelNumber: null,
+    shortDescription: "Consumer fan-cooled steel projector enclosure for home theater, covered patio, garage, backyard, and mild-environment projection mapping setups.",
+    fullDescription: "Owner-approved Homeline projector protection with a documented consumer-projector fit envelope, temperature-controlled fan cooling, integrated power components, and residential projection-mapping uses.",
+    productType: "projector_enclosure", productFamily: "Consumer Fan-Cooled Projector Enclosure", categoryIds: ["cat-ssi-projector-enclosures"],
+    manufacturerId: "mfr-ssi-projector-enclosures", brandReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.brand,
+    primarySiteId: PROJECTOR_ENCLOSURE_SITE_ID, assignedSiteIds: [PROJECTOR_ENCLOSURE_SITE_ID],
+    siteAssignments: [{ siteId: PROJECTOR_ENCLOSURE_SITE_ID, enabledForSite: true, siteSpecificSlug: "homeline-projector-enclosure",
+      siteSpecificDisplayName: "Homeline Projector Enclosure", siteSpecificShortDescription: null, visibility: "public_candidate", featured: false,
+      sortOrder: 1, categoryIds: ["cat-ssi-projector-enclosures"], defaultContentType: "product_update", publicationStatus: "ready",
+      seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
+      imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image, pricingDisplayMode: "hidden", lastReadinessEvaluation: normalizedAt, lastPublicationReference: null }],
+    media: { primaryImageReference: "wordpress-media:11972", galleryImageReferences: [], videoReferences: [] },
+    documents: { technicalDrawingReferences: [], specSheetReferences: [], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
+    specifications: homelineSpecifications(), seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo,
+    promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt, businessGenomeObjectReference: null,
+    sourceEvidenceReference: `wordpress-page:11852:${homelineSourceUrl}`,
+    authorityProvenance: { sourceType: "OWNER_APPROVED_CANONICAL_PRODUCT", authorityReference: "owner-approved-sku:SSI-HOMELINE-PE", normalizationVersion: "homeline-owner-approved-v1", normalizedAt },
+    notes: "Owner-approved canonical product authority. Do not infer IP rating, direct-weather exposure, voltage, universal compatibility, security, service-panel, mounting, harsh-weather, or unattended-operation claims.",
+  };
+}
+
+export function buildHomelineProductUpdate(input: NewProductInput): UpdateProductInput {
+  return {
+    productName: input.productName,
+    displayName: input.displayName,
+    slug: input.slug,
+    sku: input.sku,
+    modelNumber: input.modelNumber,
+    shortDescription: input.shortDescription,
+    fullDescription: input.fullDescription,
+    productType: input.productType,
+    productFamily: input.productFamily,
+    categoryIds: input.categoryIds,
+    manufacturerId: input.manufacturerId,
+    brandReference: input.brandReference,
+    primarySiteId: input.primarySiteId,
+    assignedSiteIds: input.assignedSiteIds,
+    siteAssignments: input.siteAssignments,
+    media: input.media,
+    documents: input.documents,
+    specifications: input.specifications,
+    seoProfileReference: input.seoProfileReference,
+    promptProfileReference: input.promptProfileReference,
+    sourceEvidenceReference: input.sourceEvidenceReference,
+    authorityProvenance: input.authorityProvenance,
+    notes: input.notes,
+    lifecycleState: "active",
+    catalogStatus: "ready",
+    enabled: true,
+    visibility: "public_candidate",
+  };
+}
+
+export function homelineProductRequiresUpdate(product: ProductConfiguration, patch: UpdateProductInput): boolean {
+  const current = product as unknown as Record<string, unknown>;
+  return Object.entries(patch).some(([key, value]) => JSON.stringify(current[key]) !== JSON.stringify(value));
+}
 
 export function configureProjectorEnclosureSiteStudio() {
   const site = getSiteById(PROJECTOR_ENCLOSURE_SITE_ID);
@@ -142,7 +229,7 @@ export function configureProjectorEnclosureSiteStudio() {
       primarySiteId: PROJECTOR_ENCLOSURE_SITE_ID, assignedSiteIds: [PROJECTOR_ENCLOSURE_SITE_ID],
       siteAssignments: [{ siteId: PROJECTOR_ENCLOSURE_SITE_ID, enabledForSite: true, siteSpecificSlug: "fan-cooled-projector-enclosures",
         siteSpecificDisplayName: "Fan Cooled Projector Enclosures", siteSpecificShortDescription: null, visibility: "public_candidate", featured: false,
-        sortOrder: 0, categoryIds: ["cat-ssi-projector-enclosures"], defaultContentType: "product", publicationStatus: "ready",
+        sortOrder: 0, categoryIds: ["cat-ssi-projector-enclosures"], defaultContentType: "product_update", publicationStatus: "ready",
         seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
         imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image, pricingDisplayMode: "hidden", lastReadinessEvaluation: new Date().toISOString(), lastPublicationReference: null }],
       media: { primaryImageReference: "wordpress-media:10757", galleryImageReferences: [], videoReferences: [] },
@@ -157,6 +244,17 @@ export function configureProjectorEnclosureSiteStudio() {
     product = created.product;
   }
 
+  let homelineProduct = getProductById(HOMELINE_PRODUCT_ID);
+  const homelineNormalizedAt = homelineProduct?.authorityProvenance?.normalizationVersion === "homeline-owner-approved-v1"
+    ? homelineProduct.authorityProvenance.normalizedAt
+    : new Date().toISOString();
+  const homelineInput = buildHomelineProductInput(homelineNormalizedAt);
+  if (!homelineProduct) {
+    const created = createProduct(homelineInput);
+    if (!created.validation.valid || !created.product) throw new Error("Homeline product creation failed.");
+    homelineProduct = created.product;
+  }
+
   const siteResult = updateSite(PROJECTOR_ENCLOSURE_SITE_ID, { enabled: true, lifecycleState: "active", healthStatus: "healthy", publishingStatus: "ready",
     integrations: { ...site.integrations, workflowReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.workflow },
     profiles: { promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt, imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image,
@@ -165,10 +263,16 @@ export function configureProjectorEnclosureSiteStudio() {
   const productResult = updateProduct(PROJECTOR_ENCLOSURE_PRODUCT_ID, { lifecycleState: "active", catalogStatus: "ready", enabled: true,
     visibility: "public_candidate", seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt });
   if (!productResult.validation.valid || !productResult.product) throw new Error("ProjectorEnclosure product activation failed.");
+  const homelinePatch = buildHomelineProductUpdate(homelineInput);
+  const homelineResult = homelineProductRequiresUpdate(homelineProduct, homelinePatch)
+    ? updateProduct(HOMELINE_PRODUCT_ID, homelinePatch)
+    : { validation: { valid: true, issues: [] }, product: homelineProduct };
+  if (!homelineResult.validation.valid || !homelineResult.product) throw new Error("Homeline product activation failed.");
 
   return {
-    site: siteResult.site, product: productResult.product, profileReadiness,
+    site: siteResult.site, product: productResult.product, homelineProduct: homelineResult.product, profileReadiness,
     siteReadiness: evaluateSiteReadiness({ site: siteResult.site, organizationActive: true, requiredPermission: "sites:manage_integrations", permissions, intent: "publish", requireWorkflowReference: true }),
     productReadiness: evaluateProductReadiness({ product: productResult.product, requiredPermission: "products:evaluate_readiness", permissions }),
+    homelineProductReadiness: evaluateProductReadiness({ product: homelineResult.product, requiredPermission: "products:evaluate_readiness", permissions }),
   };
 }

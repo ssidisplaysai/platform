@@ -979,6 +979,13 @@ export type ProductSiteAssignment = {
   lastPublicationReference: string | null;
 };
 
+export type ProductAuthorityProvenance = {
+  sourceType: "WORKBOOK_IMPORTED" | "OWNER_APPROVED_CANONICAL_PRODUCT";
+  authorityReference: string;
+  normalizationVersion: string;
+  normalizedAt: string;
+};
+
 export type ProductConfiguration = {
   productId: string;
   organizationId: string;
@@ -1009,6 +1016,7 @@ export type ProductConfiguration = {
   promptProfileReference: string | null;
   businessGenomeObjectReference: string | null;
   sourceEvidenceReference: string | null;
+  authorityProvenance?: ProductAuthorityProvenance | null;
   createdAt: string;
   updatedAt: string;
   publishedAt: string | null;

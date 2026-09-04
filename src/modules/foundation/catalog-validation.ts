@@ -21,6 +21,27 @@ function hasSecretKeyword(input: string): boolean {
   return normalized.includes("password") || normalized.includes("secret") || normalized.includes("apikey");
 }
 
+function validateAuthorityProvenance(
+  provenance: ProductConfiguration["authorityProvenance"],
+  sourceEvidenceReference: string | null | undefined,
+  issues: ProductValidationIssue[],
+): void {
+  if (!provenance) return;
+  if (isBlank(provenance.authorityReference)) {
+    issues.push({ field: "authorityProvenance.authorityReference", message: "Authority reference is required." });
+  }
+  if (isBlank(provenance.normalizationVersion)) {
+    issues.push({ field: "authorityProvenance.normalizationVersion", message: "Normalization version is required." });
+  }
+  if (Number.isNaN(Date.parse(provenance.normalizedAt))) {
+    issues.push({ field: "authorityProvenance.normalizedAt", message: "Normalization timestamp must be ISO-compatible." });
+  }
+  if (provenance.sourceType === "OWNER_APPROVED_CANONICAL_PRODUCT"
+    && !/^wordpress-page:[1-9]\d*:https:\/\//.test(sourceEvidenceReference ?? "")) {
+    issues.push({ field: "sourceEvidenceReference", message: "Owner-approved canonical products require exact WordPress page evidence." });
+  }
+}
+
 export function validateCategoryHierarchy(categories: readonly ProductCategory[]): ProductValidationResult {
   const issues: ProductValidationIssue[] = [];
   const categoryIds = new Set(categories.map((category) => category.categoryId));
@@ -78,6 +99,7 @@ export function validateNewProductInput(input: NewProductInput): ProductValidati
   if (!input.primarySiteId) {
     issues.push({ field: "primarySiteId", message: "Primary site assignment is required." });
   }
+  validateAuthorityProvenance(input.authorityProvenance, input.sourceEvidenceReference, issues);
 
   const payloadText = JSON.stringify(input);
   if (hasSecretKeyword(payloadText)) {
@@ -113,6 +135,7 @@ export function validateUpdateProductInput(
   if (patch.sku !== undefined && isBlank(patch.sku)) {
     issues.push({ field: "sku", message: "SKU cannot be blank." });
   }
+  validateAuthorityProvenance(patch.authorityProvenance, patch.sourceEvidenceReference ?? existing.sourceEvidenceReference, issues);
 
   const payloadText = JSON.stringify(patch);
   if (hasSecretKeyword(payloadText)) {

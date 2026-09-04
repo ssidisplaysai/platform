@@ -15,12 +15,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ si
   const site = getSiteById(siteId);
   if (!site) return NextResponse.json({ error: "ProjectorEnclosure site was not found." }, { status: 404 });
   const connection = await new FoundationSiteConnectionTestAdapter().testConnection(site);
-  if (connection.status !== "success") return NextResponse.json({ error: "Authenticated ProjectorEnclosure WordPress connection failed." }, { status: 409 });
+  if (connection.status !== "passed") return NextResponse.json({ error: "Authenticated ProjectorEnclosure WordPress connection failed." }, { status: 409 });
   try {
     const result = configureProjectorEnclosureSiteStudio();
-    return NextResponse.json({ configured: result.siteReadiness.ready && result.productReadiness.ready,
+    return NextResponse.json({ configured: result.siteReadiness.ready && result.productReadiness.ready && result.homelineProductReadiness.ready,
       profileIds: PROJECTOR_ENCLOSURE_PROFILE_IDS, profileReadiness: result.profileReadiness,
-      siteReadiness: result.siteReadiness, productReadiness: result.productReadiness, wordpressMutationPerformed: false });
+      siteReadiness: result.siteReadiness, productReadiness: result.productReadiness,
+      homelineProduct: { productId: result.homelineProduct.productId, sku: result.homelineProduct.sku },
+      homelineProductReadiness: result.homelineProductReadiness, wordpressMutationPerformed: false });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "ProjectorEnclosure configuration failed." }, { status: 409 });
   }
