@@ -29,6 +29,7 @@ import {
   type GlwPageExecutionRecord,
 } from "@/modules/glw/page-execution";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { applyProjectorEnclosureHouseMappingCanary } from "@/modules/glw/projectorenclosure-house-mapping-canary";
 import {
   adaptProductForGeneration,
   adaptSiteForGeneration,
@@ -186,7 +187,10 @@ async function finalizeContentReadyExecution(input: {
     : [];
 
   let enrichment = prepareGeneratedContentForSite({
-    artifact: input.job.generatedDraft,
+    artifact: applyProjectorEnclosureHouseMappingCanary({
+      request: input.request,
+      artifact: input.job.generatedDraft,
+    }),
     request: input.request,
     siteRecord: input.siteRecord,
     keywordOwners,
@@ -653,11 +657,20 @@ export async function POST(request: NextRequest) {
       refreshed = await recoverExecution(currentJob);
     }
 
-    const finalized = await finalizeContentReadyExecution({
-      job: refreshed,
-      request: preview.request,
-      siteRecord: preview.siteRecord,
-    });
+    let finalized;
+    try {
+      finalized = await finalizeContentReadyExecution({
+        job: refreshed,
+        request: preview.request,
+        siteRecord: preview.siteRecord,
+      });
+    } catch (error) {
+      return NextResponse.json({
+        error: error instanceof Error ? error.message : "Content finalization failed.",
+        code: "CONTENT_FINALIZATION_EXCEPTION",
+        publicationPerformed: false,
+      }, { status: 500 });
+    }
 
     return NextResponse.json({
       ok: finalized.status === "COMPLETE",
