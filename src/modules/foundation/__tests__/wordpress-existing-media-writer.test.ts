@@ -4,7 +4,7 @@ jest.mock("../wordpress-credential-resolver", () => ({
   resolveWordPressCredentialReference: jest.fn(() => ({ username: "publisher", applicationPassword: "password" })),
 }));
 
-import { attachGenesisWordPressExistingFeaturedImage } from "../wordpress-media-writer";
+import { attachGenesisWordPressExistingFeaturedImage, attachGenesisWordPressFeaturedImage } from "../wordpress-media-writer";
 import type { SiteConfiguration } from "../types";
 
 const site = {
@@ -84,4 +84,23 @@ test.each([
 
   expect(fetchMock).toHaveBeenCalledTimes(2);
   expect(fetchMock.mock.calls.some(([, init]) => init?.method === "POST")).toBe(false);
+});
+
+test("generated-media writer still rejects a published page before upload", async () => {
+  const fetchMock = jest.fn().mockResolvedValueOnce(response({ id: 99, status: "publish", featured_media: 77, content: { raw: "<h1>Page</h1>" } }));
+  global.fetch = fetchMock as typeof fetch;
+
+  await expect(attachGenesisWordPressFeaturedImage({
+    site,
+    wordpressObjectId: "99",
+    canonicalSlug: "published-page",
+    contentHtml: "<h1>Page</h1><p>Body</p>",
+    image: { bytes: Buffer.from("image"), mimeType: "image/jpeg", fileExtension: "jpg" },
+    title: "Contextual image",
+    altText: "Contextual image",
+    description: "Generated contextual image",
+  })).resolves.toMatchObject({ ok: false, state: "published_target" });
+
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith("/media"))).toBe(false);
 });
