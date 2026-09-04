@@ -21,6 +21,7 @@ function authorization(username: string, password: string): string {
   return `Basic ${Buffer.from(`${username}:${password}`, "utf8").toString("base64")}`;
 }
 function extension(value: string): string { return value.replace(/[^a-z0-9]/gi, "").toLowerCase() || "jpg"; }
+function xml(value: string): string { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;"); }
 
 export function createPublishedContextualMediaWordPressTransport(site: SiteConfiguration): PublishedContextualMediaTransport | null {
   const reference = site.integrations.wordpressCredentialReference;
@@ -32,6 +33,20 @@ export function createPublishedContextualMediaWordPressTransport(site: SiteConfi
   const auth = authorization(credential.username, credential.applicationPassword);
   const readHeaders = { Accept: "application/json", Authorization: auth, "Cache-Control": "no-cache, no-store, max-age=0", Pragma: "no-cache" };
   const uploadedUrls = new Map<number, string>();
+
+  async function scanRestrictedType(postType: string, mediaId: number, mediaUrl: string): Promise<"CLEAR" | "REFERENCED" | "INCOMPLETE"> {
+    for (let offset = 0; offset < 10_000; offset += 100) {
+      const payload = `<?xml version="1.0"?><methodCall><methodName>wp.getPosts</methodName><params><param><value><int>0</int></value></param><param><value><string>${xml(credential.username)}</string></value></param><param><value><string>${xml(credential.applicationPassword)}</string></value></param><param><value><struct><member><name>post_type</name><value><string>${xml(postType)}</string></value></member><member><name>post_status</name><value><string>any</string></value></member><member><name>number</name><value><int>100</int></value></member><member><name>offset</name><value><int>${offset}</int></value></member></struct></value></param><param><value><array><data><value><string>post_id</string></value><value><string>post_content</string></value><value><string>post_thumbnail</string></value><value><string>custom_fields</string></value></data></array></value></param></params></methodCall>`;
+      const response = await fetch(`${origin}/xmlrpc.php`, { method: "POST", headers: { "Content-Type": "text/xml" }, body: payload, cache: "no-store", signal: AbortSignal.timeout(20_000) });
+      if (!response.ok) return "INCOMPLETE";
+      const responseXml = await response.text();
+      if (responseXml.includes("<fault>")) return "INCOMPLETE";
+      if (responseXml.includes(mediaUrl) || new RegExp(`(?:>|&quot;|:)${mediaId}(?:<|&quot;|,|})`).test(responseXml)) return "REFERENCED";
+      const recordCount = (responseXml.match(/<name>post_id<\/name>/g) ?? []).length;
+      if (recordCount < 100) return "CLEAR";
+    }
+    return "INCOMPLETE";
+  }
 
   async function readPage(pageId: number): Promise<PublishedContextualPage | null> {
     const response = await fetch(`${apiBase}/pages/${pageId}?context=edit&_fields=id,slug,status,parent,featured_media,title,content,yoast_head_json&_contextual=${crypto.randomUUID()}`, { headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(15_000) });
@@ -96,8 +111,10 @@ export function createPublishedContextualMediaWordPressTransport(site: SiteConfi
       const references = new Set<number>();
       const typesResponse = await fetch(`${apiBase}/types?context=edit&_contextual=${crypto.randomUUID()}`, { headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(20_000) });
       if (!typesResponse.ok) return [-1];
-      const types = await typesResponse.json() as Record<string, { rest_base?: string; viewable?: boolean }>;
-      const restBases = [...new Set(Object.values(types).filter((type) => type.viewable && type.rest_base && type.rest_base !== "media").map((type) => type.rest_base!))];
+      const types = await typesResponse.json() as Record<string, { rest_base?: string }>;
+      const restBases = [...new Set(Object.values(types)
+        .map((type) => type.rest_base ?? "")
+        .filter((restBase) => restBase !== "media" && /^[a-z0-9_-]+$/i.test(restBase)))];
       if (restBases.length === 0) return [-1];
       const escapedUrl = mediaUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const exactAttribute = new RegExp(`(?:src|href)=["']${escapedUrl}["']`, "i");
@@ -105,6 +122,14 @@ export function createPublishedContextualMediaWordPressTransport(site: SiteConfi
         for (let page = 1; page <= 100; page += 1) {
           const response = await fetch(`${apiBase}/${type}?context=edit&status=any&per_page=100&page=${page}&_fields=id,featured_media,content&_contextual=${crypto.randomUUID()}`, { headers: readHeaders, cache: "no-store", signal: AbortSignal.timeout(20_000) });
           if (response.status === 400) break;
+          if (response.status === 401 || response.status === 403) {
+            const postType = Object.entries(types).find(([, value]) => value.rest_base === type)?.[0];
+            if (!postType) return [-1];
+            const fallback = await scanRestrictedType(postType, mediaId, mediaUrl);
+            if (fallback === "INCOMPLETE") return [-1];
+            if (fallback === "REFERENCED") references.add(-2);
+            break;
+          }
           if (!response.ok) return [-1];
           const records = await response.json() as WordPressPage[];
           for (const record of records) {

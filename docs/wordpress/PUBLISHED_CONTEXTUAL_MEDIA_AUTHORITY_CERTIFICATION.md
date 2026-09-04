@@ -39,7 +39,7 @@ Run a second synthetic transaction whose public acceptance deliberately fails.
 
 1. Require page content restoration before any media cleanup request.
 2. Require exact original content hash and featured-media ID after restoration.
-3. Scan pages and posts for the generated media ID and URL.
+3. Scan every simple REST-visible content collection for the generated media ID and exact URL attributes. For content types that reject REST edit-context enumeration, use authenticated read-only `wp.getPosts` XML-RPC fallback. Any fault, truncation, or inaccessible collection makes the scan incomplete and blocks deletion.
 4. Delete the generated media only when the scan returns zero references, it is not featured media, and it was uploaded by this transaction.
 5. Require the evidence state `ROLLED_BACK` and `generatedMediaDeleted=true`.
 6. Repeat with a simulated or approved retained reference; require `ORPHAN_CLEANUP_REQUIRED` and no deletion.
