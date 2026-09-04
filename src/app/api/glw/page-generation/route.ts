@@ -6,6 +6,7 @@ import {
 } from "@/modules/foundation/api-auth";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
+import { loadProjectorEnclosureSeoAuthority, type ProjectorEnclosureKeywordOwner, type ProjectorEnclosureSeoSelection } from "@/modules/foundation/projectorenclosure-seo-authority";
 import { getProductById, listProducts } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
@@ -75,18 +76,44 @@ function prepareGeneratedContentForSite(input: {
   artifact: NonNullable<GlwPageExecutionRecord["generatedDraft"]>;
   request: GlwGenerationRequest;
   siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
+  keywordOwners: readonly ProjectorEnclosureKeywordOwner[];
 }) {
   if (input.siteRecord.domain === "leddisplaywarehouse.com") {
-    return enrichGlwGeneratedContentForSeo({
+    return {
+      ...enrichGlwGeneratedContentForSeo({
       artifact: input.artifact,
       request: input.request,
-    });
+      }),
+      seoAuthority: null,
+    };
   }
+
+  const seoAuthority: ProjectorEnclosureSeoSelection | null = input.siteRecord.domain === "projectorenclosure.com"
+    && input.request.projectorEnclosureSeoAuthority
+    ? loadProjectorEnclosureSeoAuthority().select({
+        ...input.request.projectorEnclosureSeoAuthority,
+        existingOwners: input.keywordOwners,
+        geographyValidated: Boolean(
+          input.request.wordpressObjectId
+          && input.request.plannedOperation.startsWith("UPDATE_")
+          && (input.request.pageType === "city_service" || input.request.pageType === "state_service")
+        ),
+        verifiedSecondaryKeywords: [],
+        verifiedCompatibilityKeywords: [],
+        verifiedElectricalKeywords: [],
+        canonicalUrl: input.siteRecord.canonicalUrl
+          ? new URL(input.request.canonicalPath.replace(/^\/+/, ""), `${input.siteRecord.canonicalUrl.replace(/\/$/, "")}/`).toString()
+          : input.request.canonicalPath,
+        pageType: input.request.pageType,
+        city: input.request.cityName,
+        state: input.request.stateName,
+      })
+    : null;
 
   return {
     artifact: input.artifact,
     metadata: {
-      focusKeyphrase: input.artifact.focusKeyphrase?.trim() || input.request.productTopic,
+      focusKeyphrase: seoAuthority?.primaryKeyword?.keyword || input.artifact.focusKeyphrase?.trim() || input.request.productTopic,
       seoTitle: input.artifact.seoTitle?.trim() || input.request.seoTitle,
       metaDescription: input.artifact.metaDescription?.trim() || input.request.metaDescription,
     },
@@ -99,6 +126,7 @@ function prepareGeneratedContentForSite(input: {
       weatherAuthorityLink: false,
     },
     approvedExternalDomains: [] as string[],
+    seoAuthority,
   };
 }
 
@@ -140,12 +168,40 @@ async function finalizeContentReadyExecution(input: {
     product: productRecord,
     products: listProducts(),
   });
+  const keywordOwners: ProjectorEnclosureKeywordOwner[] = input.request.projectorEnclosureSeoAuthority
+    ? (await glwPageExecutionRepository.list())
+        .filter((record) => record.siteId === input.request.siteId && record.wordpressUrl && record.focusKeyphrase)
+        .map((record) => {
+          const authorityEvidence = record.qaChecks?.seoAuthority;
+          const pageTarget = authorityEvidence && typeof authorityEvidence === "object" && !Array.isArray(authorityEvidence)
+            && typeof (authorityEvidence as { pageTarget?: unknown }).pageTarget === "string"
+            ? String((authorityEvidence as { pageTarget: string }).pageTarget)
+            : "General Projector Enclosures";
+          return {
+            canonicalUrl: record.wordpressUrl!,
+            primaryKeyword: record.focusKeyphrase!,
+            pageTarget,
+          };
+        })
+    : [];
 
   let enrichment = prepareGeneratedContentForSite({
     artifact: input.job.generatedDraft,
     request: input.request,
     siteRecord: input.siteRecord,
+    keywordOwners,
   });
+  if (enrichment.seoAuthority && !enrichment.seoAuthority.eligible) {
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      errorCode: "SEO_AUTHORITY_INELIGIBLE",
+      errorMessage: enrichment.seoAuthority.selectionRationale,
+      qaStatus: "FAILED",
+      qaChecks: { seoAuthority: enrichment.seoAuthority },
+      completedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }
   const renderedAuthority = renderSiteStudioAuthorityLinks({
     html: enrichment.artifact.contentHtml,
     authority: productAuthority,
@@ -203,6 +259,7 @@ async function finalizeContentReadyExecution(input: {
       artifact: repair.artifact,
       request: input.request,
       siteRecord: input.siteRecord,
+      keywordOwners,
     });
 
     qa = evaluateGlwGeneratedContentQa({
@@ -351,6 +408,25 @@ async function finalizeContentReadyExecution(input: {
         selectedProvenance: productAuthority.selectedMedia?.provenance ?? "GENERATED_MEDIA",
         generatedMediaReason: productAuthority.generatedMediaReason,
       },
+      seoAuthority: enrichment.seoAuthority
+        ? {
+            eligible: enrichment.seoAuthority.eligible,
+            primaryKeyword: enrichment.seoAuthority.primaryKeyword?.keyword ?? null,
+            secondaryKeywords: enrichment.seoAuthority.secondaryKeywords.map((keyword) => keyword.keyword),
+            cluster: "cluster" in (enrichment.seoAuthority.primaryKeyword ?? {})
+              ? (enrichment.seoAuthority.primaryKeyword as { cluster: string }).cluster
+              : null,
+            intent: enrichment.seoAuthority.intent,
+            buyerStage: enrichment.seoAuthority.buyerStage,
+            pageTarget: enrichment.seoAuthority.pageTarget,
+            recommendedRole: enrichment.seoAuthority.recommendedRole,
+            geographicVariant: enrichment.seoAuthority.geographicVariant?.keyword ?? null,
+            relatedPageTargets: enrichment.seoAuthority.relatedPageTargets,
+            selectionRationale: enrichment.seoAuthority.selectionRationale,
+            cannibalization: enrichment.seoAuthority.cannibalization,
+            provenance: enrichment.seoAuthority.provenance,
+          }
+        : null,
     },
     qaFailureReasons: {},
     wordCount: qa.wordCount,

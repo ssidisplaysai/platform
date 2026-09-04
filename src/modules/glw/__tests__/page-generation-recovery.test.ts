@@ -151,4 +151,20 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain("mediaAuthority:");
     expect(source).toContain("qaChecks: draftJob.qaChecks");
   });
+
+  test("persists guarded ProjectorEnclosure workbook SEO authority evidence", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("loadProjectorEnclosureSeoAuthority().select");
+    expect(source).toContain("projectorEnclosureSeoAuthority");
+    expect(source).toContain("await glwPageExecutionRepository.list()");
+    expect(source).toContain("existingOwners: input.keywordOwners");
+    expect(source).toContain('input.request.plannedOperation.startsWith("UPDATE_")');
+    expect(source).toContain("verifiedCompatibilityKeywords: []");
+    expect(source).toContain("verifiedElectricalKeywords: []");
+    expect(source).toContain("primaryKeyword: enrichment.seoAuthority.primaryKeyword?.keyword");
+    expect(source).toContain("selectionRationale: enrichment.seoAuthority.selectionRationale");
+    expect(source).toContain("cannibalization: enrichment.seoAuthority.cannibalization");
+    expect(source).toContain("provenance: enrichment.seoAuthority.provenance");
+    expect(source).toContain('errorCode: "SEO_AUTHORITY_INELIGIBLE"');
+  });
 });

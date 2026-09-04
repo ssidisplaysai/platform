@@ -90,6 +90,7 @@ const PROFILES: readonly NewIntegrationProfileInput[] = [
     metaStrategyReference: "metastrategy-projectorenclosure-product-market-v1", schemaReference: "schemaref-projectorenclosure-service-page-v1",
     openGraphReference: "ogref-projectorenclosure-default-v1", slugStrategyReference: "slugstrategy-projectorenclosure-flat-market-v1",
     canonicalPolicyReference: "canonical-policy-site-primary", yoastPolicyReference: "wordpress-rest:/ssi/v1/yoast-update",
+    assetReference: "resources/seo-authority/projectorenclosure/Projector_Enclosure_Master_Keyword_Universe.xlsx",
   }),
   profile("publishing", PROJECTOR_ENCLOSURE_PROFILE_IDS.publishing, "ProjectorEnclosure Publishing", {
     wordpressProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.wordpress,

@@ -6,6 +6,8 @@ import type {
 
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 
+import type { ProjectorEnclosureSeoRequestContext } from "@/modules/foundation/projectorenclosure-seo-authority";
+
 export type GlwPageType = "general_service" | "state_service" | "city_service";
 export type GlwPublicationIntent = "draft" | "publish";
 export type GlwLocalPlannedOperation =
@@ -273,6 +275,7 @@ export type GlwGenerationRequestInput = {
   additionalInstructions?: string;
   imageDirection?: string;
   campaignId?: string;
+  projectorEnclosureSeoAuthority?: ProjectorEnclosureSeoRequestContext;
 };
 
 export type GlwGenerationRequest = GlwGenerationRequestInput & {
