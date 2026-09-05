@@ -15,6 +15,7 @@ import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft
 import { attachGenesisWordPressExistingFeaturedImage, attachGenesisWordPressFeaturedImage } from "@/modules/foundation/wordpress-media-writer";
 import { renderSiteStudioAuthorityLinks, resolveSiteStudioProductAuthority } from "@/modules/foundation/site-studio-product-authority";
 import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-service";
+import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { generateGenesisFeaturedImageWithCampaignReferences } from "@/modules/glw/reference-aware-image-service";
@@ -208,11 +209,17 @@ async function finalizeContentReadyExecution(input: {
         })
     : [];
 
-  let enrichment = prepareGeneratedContentForSite({
-    artifact: applyProjectorEnclosureHouseMappingCanary({
+  const campaignReferenceRepair =
+    repairGlwCampaignReferenceCityArtifact({
+      artifact: applyProjectorEnclosureHouseMappingCanary({
+        request: input.request,
+        artifact: input.job.generatedDraft,
+      }),
       request: input.request,
-      artifact: input.job.generatedDraft,
-    }),
+    });
+
+  let enrichment = prepareGeneratedContentForSite({
+    artifact: campaignReferenceRepair.artifact,
     request: input.request,
     siteRecord: input.siteRecord,
     keywordOwners,
