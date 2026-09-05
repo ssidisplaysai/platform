@@ -85,6 +85,64 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
     [liveSites, selectedSiteId],
   );
 
+  // GLW_INITIAL_ROUTE_CONTEXT_SYNC
+  useEffect(() => {
+    if (pathname !== "/glw/campaigns") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("organizationId") || params.get("siteId")) {
+      return;
+    }
+
+    const persistedOrganizationId =
+      localStorage.getItem(ORGANIZATION_STORAGE_KEY);
+    const persistedSiteId =
+      localStorage.getItem(SITE_STORAGE_KEY);
+
+    const persistedSite =
+      persistedOrganizationId && persistedSiteId
+        ? liveSites.find(
+            (site) =>
+              site.id === persistedSiteId &&
+              site.organizationId === persistedOrganizationId,
+          )
+        : null;
+
+    const organizationId =
+      persistedSite?.organizationId ?? selectedOrganizationId;
+    const siteId =
+      persistedSite?.id ?? selectedSiteId;
+
+    if (!organizationId || !siteId) {
+      return;
+    }
+
+    const validSite = liveSites.some(
+      (site) =>
+        site.id === siteId &&
+        site.organizationId === organizationId,
+    );
+
+    if (!validSite) {
+      return;
+    }
+
+    params.set("organizationId", organizationId);
+    params.set("siteId", siteId);
+
+    window.location.replace(
+      `${window.location.pathname}?${params.toString()}`,
+    );
+  }, [
+    pathname,
+    liveSites,
+    selectedOrganizationId,
+    selectedSiteId,
+  ]);
+
   // SITE_STUDIO_HANDOFF_ORGANIZATION_SYNC
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
