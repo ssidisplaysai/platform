@@ -332,22 +332,67 @@ useEffect(() => {
     };
   }, [selectedOrganizationId]);
 
-  function handleOrganizationChange(nextOrganizationId: string) {
+  async function handleOrganizationChange(
+    nextOrganizationId: string,
+  ) {
     setSelectedOrganizationId(nextOrganizationId);
-    const nextSite = liveSites.find(
-      (site) => site.organizationId === nextOrganizationId,
+    setSiteSelectionMessage(null);
+
+    localStorage.setItem(
+      ORGANIZATION_STORAGE_KEY,
+      nextOrganizationId,
     );
 
-    if (nextSite) {
-      setSelectedSiteId(nextSite.id);
-      setSiteSelectionMessage(null);
-      return;
+    try {
+      const response = await fetch("/api/sites", {
+        method: "GET",
+        headers: {
+          "x-gcp-roles": "ops_manager",
+          "x-gcp-organization-id": nextOrganizationId,
+        },
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        setSelectedSiteId("");
+        localStorage.removeItem(SITE_STORAGE_KEY);
+        setSiteSelectionMessage(
+          `Unable to load sites for this organization (${response.status}).`,
+        );
+        return;
+      }
+
+      const payload = (await response.json()) as {
+        sites?: readonly SiteConfiguration[];
+      };
+
+      const nextSite = payload.sites?.[0] ?? null;
+
+      if (!nextSite) {
+        setSelectedSiteId("");
+        localStorage.removeItem(SITE_STORAGE_KEY);
+        setSiteSelectionMessage(
+          "No configured sites are currently available for the selected organization.",
+        );
+        return;
+      }
+
+      setSelectedSiteId(nextSite.siteId);
+      localStorage.setItem(SITE_STORAGE_KEY, nextSite.siteId);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("organizationId", nextOrganizationId);
+      params.set("siteId", nextSite.siteId);
+
+      window.location.href =
+        `${window.location.pathname}?${params.toString()}`;
+    } catch {
+      setSelectedSiteId("");
+      localStorage.removeItem(SITE_STORAGE_KEY);
+      setSiteSelectionMessage(
+        "Unable to load sites for this organization.",
+      );
     }
-
-    setSelectedSiteId("");
-    setSiteSelectionMessage(
-      "No configured sites are currently available for the selected organization.",
-    );
   }
 
   function handleSiteChange(nextSiteId: string) {
