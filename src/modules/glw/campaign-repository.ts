@@ -65,9 +65,22 @@ function campaignId(input: NewGlwCampaignInput): string {
   return `campaign-${input.organizationId}-${input.siteId}-${safe}`;
 }
 
+function normalizeStateCode(value: string): string {
+  return value.trim().toUpperCase();
+}
+
+function normalizeCitySlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function validate(input: NewGlwCampaignInput): string[] {
   const errors: string[] = [];
   const validStates = new Set(GLW_CAMPAIGN_ALL_STATE_CODES);
+  const stateCodes = input.stateCodes.map(normalizeStateCode);
 
   if (!input.organizationId.trim()) errors.push("Organization is required.");
   if (!input.siteId.trim()) errors.push("Site is required.");
@@ -76,12 +89,58 @@ function validate(input: NewGlwCampaignInput): string[] {
   if (input.pagesPerDay < 1 || input.pagesPerDay > 100) {
     errors.push("Pages per day must be between 1 and 100.");
   }
-  if (input.stateCodes.length < 1) errors.push("At least one state is required.");
-  if (new Set(input.stateCodes).size !== input.stateCodes.length) {
+  if (stateCodes.length < 1) errors.push("At least one state is required.");
+  if (new Set(stateCodes).size !== stateCodes.length) {
     errors.push("State targets must be unique.");
   }
-  if (input.stateCodes.some((code) => !validStates.has(code))) {
+  if (stateCodes.some((code) => !validStates.has(code))) {
     errors.push("Campaign includes an invalid state code.");
+  }
+
+  const cityTargets = input.cityTargets ?? [];
+
+  if (input.pageType === "state_service") {
+    if (cityTargets.length > 0) {
+      errors.push("State campaigns cannot include city targets.");
+    }
+  } else if (input.pageType === "city_service") {
+    if (cityTargets.length < 1) {
+      errors.push("City campaigns require at least one city target.");
+    }
+
+    const identities = cityTargets.map((target) => {
+      const stateCode = normalizeStateCode(target.stateCode);
+      const citySlug = normalizeCitySlug(target.citySlug);
+      const cityName = target.cityName.trim();
+
+      if (!validStates.has(stateCode)) {
+        errors.push(`City target ${target.citySlug || "<blank>"} includes an invalid state code.`);
+      }
+      if (!citySlug) {
+        errors.push("City target slug is required.");
+      }
+      if (!cityName) {
+        errors.push(`City target ${citySlug || "<blank>"} requires a city name.`);
+      }
+      if (!stateCodes.includes(stateCode)) {
+        errors.push(`City target ${citySlug || "<blank>"} is outside the campaign state set.`);
+      }
+
+      return `${stateCode}::${citySlug}`;
+    });
+
+    if (new Set(identities).size !== identities.length) {
+      errors.push("City targets must be unique by state and city slug.");
+    }
+
+    const cityStateCodes = Array.from(
+      new Set(cityTargets.map((target) => normalizeStateCode(target.stateCode))),
+    ).sort();
+    const campaignStateCodes = Array.from(new Set(stateCodes)).sort();
+
+    if (cityStateCodes.join(",") !== campaignStateCodes.join(",")) {
+      errors.push("City campaign stateCodes must exactly match the states represented by cityTargets.");
+    }
   }
 
   return errors;
@@ -113,7 +172,16 @@ export function createGlwCampaign(input: NewGlwCampaignInput): {
     productId: input.productId.trim(),
     name: input.name.trim(),
     pageType: input.pageType,
-    stateCodes: [...input.stateCodes],
+    stateCodes: input.stateCodes.map(normalizeStateCode),
+    ...(input.pageType === "city_service"
+      ? {
+          cityTargets: (input.cityTargets ?? []).map((target) => ({
+            stateCode: normalizeStateCode(target.stateCode),
+            citySlug: normalizeCitySlug(target.citySlug),
+            cityName: target.cityName.trim(),
+          })),
+        }
+      : {}),
     pagesPerDay: input.pagesPerDay,
     publicationPolicy: input.publicationPolicy,
     imageRequired: input.imageRequired,
