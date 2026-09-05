@@ -9,6 +9,9 @@ import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
+import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
+import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
+import { listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import {
@@ -53,7 +56,7 @@ function rebuildGenerationForm(job: {
   seoTitle: string;
   metaDescription: string;
   wordpressObjectId: string | null;
-}): GlwGenerationRequestInput {
+}, campaignId?: string): GlwGenerationRequestInput {
   const stateCode = resolveStateCode(job.state);
   const citySlug = resolveCitySlug(job.city);
   const pageType = citySlug ? "city_service" : stateCode ? "state_service" : "general_service";
@@ -78,6 +81,7 @@ function rebuildGenerationForm(job: {
     wordpressObjectId: job.wordpressObjectId,
     additionalInstructions: "",
     imageDirection: "",
+    campaignId,
   };
 }
 
@@ -169,7 +173,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Configured site and product are required." }, { status: 400 });
     }
 
-    const form = rebuildGenerationForm(job);
+    const owningCampaign = listGlwCampaigns().find((campaign) =>
+      listGlwCampaignTargets(campaign.campaignId).some((target) => target.jobId === job.jobId),
+    );
+    const form = rebuildGenerationForm(job, owningCampaign?.campaignId);
     const preview = buildLocalGlwGenerationPreview({
       form,
       sites: [{
@@ -288,8 +295,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Current WordPress draft content could not be read before SEO refresh." }, { status: 409 });
     }
 
-    const enrichment = enrichGlwGeneratedContentForSeo({
+    const campaignRepair = repairGlwCampaignReferenceCityArtifact({
       artifact: { ...job.generatedDraft, contentHtml: baseHtml },
+      request: preview.request,
+    });
+    const enrichment = enrichGlwGeneratedContentForSeo({
+      artifact: campaignRepair.artifact,
       request: preview.request,
     });
 

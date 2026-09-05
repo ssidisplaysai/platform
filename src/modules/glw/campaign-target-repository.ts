@@ -315,6 +315,7 @@ export function previewGlwCampaignTargetLease(input: {
   campaignId: string;
   pagesPerDay: number;
   dispatchDate: string;
+  maxTargets?: number;
   now?: Date;
 }): {
   allowance: number;
@@ -355,7 +356,7 @@ export function previewGlwCampaignTargetLease(input: {
       if (stateOrder !== 0) return stateOrder;
       return (a.citySlug ?? "").localeCompare(b.citySlug ?? "");
     })
-    .slice(0, allowance);
+    .slice(0, Math.min(allowance, input.maxTargets ?? allowance));
 
   return {
     allowance,
@@ -369,6 +370,7 @@ export function leaseGlwCampaignTargets(input: {
   pagesPerDay: number;
   dispatchDate: string;
   leaseId: string;
+  maxTargets?: number;
   leaseDurationMs?: number;
   now?: Date;
 }): readonly GlwCampaignTarget[] {
@@ -379,6 +381,7 @@ export function leaseGlwCampaignTargets(input: {
     campaignId: input.campaignId,
     pagesPerDay: input.pagesPerDay,
     dispatchDate: input.dispatchDate,
+    maxTargets: input.maxTargets,
     now,
   });
 

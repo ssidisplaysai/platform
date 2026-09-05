@@ -253,10 +253,13 @@ export async function POST(
 
   const isExactResume =
     body?.confirm === "RESUME_EXISTING_DRAFT_TARGETS";
+  const isExactFreshDispatch =
+    body?.confirm === "RUN_EXACT_DRAFT_TARGETS";
 
   if (
     body?.confirm !== "RUN_DRAFT_BATCH"
     && !isExactResume
+    && !isExactFreshDispatch
   ) {
     return NextResponse.json(
       {
@@ -372,6 +375,51 @@ export async function POST(
         });
       });
     }
+  } else if (isExactFreshDispatch) {
+    const requestedTargets = (body?.targets ?? [])
+      .map((target) => ({
+        stateCode: target.stateCode?.trim().toUpperCase() ?? "",
+        citySlug: normalizeCitySlug(target.citySlug),
+      }))
+      .filter((target) => target.stateCode);
+
+    if (requestedTargets.length === 0) {
+      return NextResponse.json(
+        { error: "At least one exact queued target is required." },
+        { status: 400 },
+      );
+    }
+
+    const preview = previewGlwCampaignTargetLease({
+      campaignId: campaign.campaignId,
+      pagesPerDay: campaign.pagesPerDay,
+      dispatchDate,
+      maxTargets: requestedTargets.length,
+    });
+    const selectedIdentities = preview.selected.map((target) =>
+      `${target.stateCode}::${target.citySlug ?? ""}`,
+    );
+    const requestedIdentities = requestedTargets.map((target) =>
+      `${target.stateCode}::${target.citySlug ?? ""}`,
+    );
+
+    if (
+      selectedIdentities.length !== requestedIdentities.length
+      || selectedIdentities.some((identity, index) => identity !== requestedIdentities[index])
+    ) {
+      return NextResponse.json(
+        { error: "Exact dispatch targets must match the next deterministic queued targets." },
+        { status: 409 },
+      );
+    }
+
+    leased = leaseGlwCampaignTargets({
+      campaignId: campaign.campaignId,
+      pagesPerDay: campaign.pagesPerDay,
+      dispatchDate,
+      leaseId,
+      maxTargets: requestedTargets.length,
+    });
   } else {
     leased = leaseGlwCampaignTargets({
       campaignId: campaign.campaignId,
@@ -485,7 +533,9 @@ export async function POST(
     executionMode:
       isExactResume
         ? "exact_existing_target_resume"
-        : "new_daily_batch",
+        : isExactFreshDispatch
+          ? "exact_new_target_batch"
+          : "new_daily_batch",
     publicationIntent: "draft",
     publicationPerformed: false,
   });

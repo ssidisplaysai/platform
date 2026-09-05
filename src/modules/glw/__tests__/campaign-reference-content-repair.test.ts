@@ -193,4 +193,30 @@ describe("campaign reference city content repair", () => {
     expect(repairGlwCampaignReferenceCityArtifact({ artifact, request: buildRequest({ ...peBase, citySlug: "irvine", cityName: "Irvine" }) })).toEqual({ artifact, repaired: false });
     expect(repairGlwCampaignReferenceCityArtifact({ artifact, request: buildRequest({ ...peBase, campaignId: "campaign-led-display-warehouse-other", citySlug: "anaheim", cityName: "Anaheim" }) })).toEqual({ artifact, repaired: false });
   });
+
+  test("removes unsupported quantitative claims from the exact LDW state campaign", () => {
+    const artifact = {
+      ...buildArtifact(),
+      contentHtml: "<p>A 360-degree canvas.</p><p>360°, multidirectional. Typically 170–178°, front-facing.</p><p>Review your maintenance plan for 24/7 support options, remote diagnostics, and guaranteed service windows.</p>",
+    };
+    const result = repairGlwCampaignReferenceCityArtifact({
+      artifact,
+      request: buildRequest({
+        campaignId: "campaign-led-display-warehouse-site-led-display-warehouse-production-indoor-led-sphere-50-states",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-indoor-digital-sphere",
+        productTopic: "Indoor Digital Sphere",
+        pageType: "state_service",
+        stateCode: "TN",
+        stateName: "Tennessee",
+        citySlug: "",
+        cityName: null,
+      }),
+    });
+
+    expect(result.repaired).toBe(true);
+    expect(result.artifact.contentHtml).not.toMatch(/360-degree|360°|170–178°|24\/7 support|remote diagnostics|guaranteed service windows/);
+    expect(result.artifact.contentHtml).toContain("confirm project-specific sightlines");
+    expect(result.artifact.contentHtml).toContain("service expectations");
+  });
 });

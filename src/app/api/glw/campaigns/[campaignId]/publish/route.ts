@@ -33,6 +33,17 @@ export async function GET(
     return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
   }
 
+  if (campaign.publicationPolicy === "draft_only") {
+    return NextResponse.json({
+      campaignId,
+      eligibleCount: 0,
+      eligible: [],
+      policyBlocked: true,
+      policyReason: "Campaign publication policy is draft_only.",
+      publicationPerformed: false,
+    });
+  }
+
   const eligible = listGlwCampaignTargets(campaignId)
     .filter((target) => target.status === "draft_ready" && Boolean(target.wordpressObjectId))
     .sort((a, b) => a.stateCode.localeCompare(b.stateCode))
@@ -72,6 +83,17 @@ export async function POST(
 
   if (!campaign || campaign.organizationId !== scope.organizationId || (scope.siteId && campaign.siteId !== scope.siteId)) {
     return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
+  }
+
+  if (campaign.publicationPolicy === "draft_only") {
+    return NextResponse.json(
+      {
+        error: "Campaign publication policy is draft_only.",
+        policyBlocked: true,
+        publicationPerformed: false,
+      },
+      { status: 409 },
+    );
   }
 
   const site = getSiteById(campaign.siteId);

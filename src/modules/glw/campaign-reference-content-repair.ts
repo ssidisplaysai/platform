@@ -16,6 +16,27 @@ const SSI_ACCENT_PRODUCT_ID =
 const SSI_SITE_ID =
   "site-ssi-screen-solutions-international";
 
+const LDW_SPHERE_STATE_CAMPAIGN_ID =
+  "campaign-led-display-warehouse-site-led-display-warehouse-production-indoor-led-sphere-50-states";
+
+function isLdwSphereStateCampaignRequest(request: GlwGenerationRequest): boolean {
+  return request.campaignId === LDW_SPHERE_STATE_CAMPAIGN_ID
+    && request.siteId === "site-led-display-warehouse-production"
+    && request.productId === "prod-indoor-digital-sphere"
+    && request.pageType === "state_service";
+}
+
+function repairLdwSphereStateClaims(artifact: GlwGeneratedDraftArtifact): GlwGeneratedDraftArtifact {
+  return {
+    ...artifact,
+    contentHtml: artifact.contentHtml
+      .replaceAll("360-degree canvas", "curved visual canvas")
+      .replaceAll("360°, multidirectional", "Viewable from multiple positions; confirm project-specific sightlines")
+      .replaceAll("Typically 170–178°, front-facing", "Front-facing; confirm model-specific viewing characteristics")
+      .replaceAll("Review your maintenance plan for 24/7 support options, remote diagnostics, and guaranteed service windows", "Review your maintenance plan, response responsibilities, and service expectations"),
+  };
+}
+
 function isSsiAccentCampaignCityRequest(
   request: GlwGenerationRequest,
 ): boolean {
@@ -190,6 +211,14 @@ export function repairGlwCampaignReferenceCityArtifact(input: {
   artifact: GlwGeneratedDraftArtifact;
   request: GlwGenerationRequest;
 }): GlwCampaignReferenceRepairResult {
+  if (isLdwSphereStateCampaignRequest(input.request)) {
+    const artifact = repairLdwSphereStateClaims(input.artifact);
+    return {
+      artifact,
+      repaired: artifact.contentHtml !== input.artifact.contentHtml,
+    };
+  }
+
   const isSsiRequest = isSsiAccentCampaignCityRequest(input.request);
   const isPeRequest = isPeFanCooledStarterCampaignRequest(input.request);
 
