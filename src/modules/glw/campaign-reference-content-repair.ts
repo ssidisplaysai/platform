@@ -6,11 +6,24 @@ export type GlwCampaignReferenceRepairResult = {
   repaired: boolean;
 };
 
-function isCampaignReferenceCityRequest(request: GlwGenerationRequest): boolean {
+const SSI_ACCENT_TEXAS_CITY_CAMPAIGN_ID =
+  "campaign-ssi-site-ssi-screen-solutions-international-ssi-accent-rear-projection-film-texas-cities";
+
+const SSI_ACCENT_PRODUCT_ID =
+  "prod-ssi-accent-rear-projection-film";
+
+const SSI_SITE_ID =
+  "site-ssi-screen-solutions-international";
+
+function isSsiAccentCampaignCityRequest(
+  request: GlwGenerationRequest,
+): boolean {
   return Boolean(
-    request.campaignId?.trim()
+    request.campaignId === SSI_ACCENT_TEXAS_CITY_CAMPAIGN_ID
+      && request.productId === SSI_ACCENT_PRODUCT_ID
+      && request.siteId === SSI_SITE_ID
       && request.pageType === "city_service"
-      && request.additionalInstructions?.includes("CAMPAIGN REFERENCE PAGE"),
+      && request.stateCode === "TX",
   );
 }
 
@@ -92,7 +105,7 @@ export function repairGlwCampaignReferenceCityArtifact(input: {
   artifact: GlwGeneratedDraftArtifact;
   request: GlwGenerationRequest;
 }): GlwCampaignReferenceRepairResult {
-  if (!isCampaignReferenceCityRequest(input.request)) {
+  if (!isSsiAccentCampaignCityRequest(input.request)) {
     return { artifact: input.artifact, repaired: false };
   }
 

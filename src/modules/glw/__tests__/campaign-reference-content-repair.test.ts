@@ -85,6 +85,56 @@ describe("campaign reference city content repair", () => {
     expect(result.artifact.contentHtml).toContain("does not claim that Accent Rear Projection Film is approved");
     expect(result.artifact.contentHtml).toContain("does not mean SSI Displays has a local office");
   });
+  test("rewrites an SSI Accent production campaign city draft", () => {
+    const result = repairGlwCampaignReferenceCityArtifact({
+      artifact: buildArtifact(),
+      request: buildRequest({
+        citySlug: "el-paso",
+        cityName: "El Paso",
+        slug: "accent-rear-projection-film/texas/el-paso",
+        canonicalPath: "accent-rear-projection-film/texas/el-paso",
+        title: "Accent Rear Projection Film in El Paso",
+        seoTitle: "Accent Rear Projection Film in El Paso | SSI Displays",
+        metaDescription: "Explore Accent Rear Projection Film solutions for commercial projects in El Paso from SSI Displays.",
+        additionalInstructions:
+          "PRODUCTION CAMPAIGN PAGE - USE APPROVED REFERENCE AND CAMPAIGN GUIDANCE.",
+      }),
+    });
+
+    expect(result.repaired).toBe(true);
+    expect(result.artifact.slug).toBe(
+      "accent-rear-projection-film/texas/el-paso",
+    );
+    expect(result.artifact.contentHtml).toContain(
+      "Accent Rear Projection Film",
+    );
+    expect(result.artifact.contentHtml).toContain("El Paso");
+    expect(result.artifact.contentHtml).toContain("Texas");
+    expect(countWords(result.artifact.contentHtml))
+      .toBeGreaterThanOrEqual(1500);
+    expect(result.artifact.contentHtml).not.toContain("â");
+    expect(result.artifact.contentHtml).not.toContain(
+      "local expertise",
+    );
+    expect(result.artifact.contentHtml).not.toContain(
+      "optically clear polymers",
+    );
+  });
+
+  test("does not rewrite another city campaign", () => {
+    const artifact = buildArtifact();
+
+    const result = repairGlwCampaignReferenceCityArtifact({
+      artifact,
+      request: buildRequest({
+        campaignId: "campaign-other-product-texas-cities",
+        productId: "prod-other-product",
+      }),
+    });
+
+    expect(result.repaired).toBe(false);
+    expect(result.artifact).toBe(artifact);
+  });
 
   test("does not rewrite a normal city generation request", () => {
     const artifact = buildArtifact();
