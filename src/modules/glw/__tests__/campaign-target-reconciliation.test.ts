@@ -71,6 +71,48 @@ describe("GLW campaign target reconciliation", () => {
     });
   });
 
+  test("recoverable content failure requires exact continuation", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "FAILED",
+        errorCode: "GENERATED_CONTENT_QA_FAILED",
+        generatedDraft: { contentHtml: "<p>draft</p>" },
+      }),
+    ).toEqual({
+      action: "continue",
+    });
+  });
+
+  test.each([
+    "WORDPRESS_HIERARCHY_READ_FAILED",
+    "WORDPRESS_HIERARCHY_WRITE_FAILED",
+    "WORDPRESS_READ_FAILED",
+    "WORDPRESS_WRITE_FAILED",
+  ])("recoverable WordPress failure %s requires exact continuation", (errorCode) => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "FAILED",
+        errorCode,
+        generatedDraft: { contentHtml: "<p>draft</p>" },
+      }),
+    ).toEqual({
+      action: "continue",
+    });
+  });
+
+  test("WordPress failure without generated draft remains failed", () => {
+    expect(
+      resolveGlwCampaignJobReconciliationDecision({
+        status: "FAILED",
+        errorCode: "WORDPRESS_WRITE_FAILED",
+        error: "WordPress failed.",
+      }),
+    ).toEqual({
+      action: "failed",
+      error: "WordPress failed.",
+    });
+  });
+
   test("complete verified draft becomes draft-ready", () => {
     expect(
       resolveGlwCampaignJobReconciliationDecision({
