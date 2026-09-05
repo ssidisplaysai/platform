@@ -13,6 +13,8 @@ import {
   createProduct,
   getProductById,
   listCategories,
+  listManufacturers,
+  reloadProductRepositoryFromPersistence,
   updateProduct,
 } from "./product-repository";
 import { evaluateProductReadiness } from "./product-readiness";
@@ -191,6 +193,85 @@ export function homelineProductRequiresUpdate(product: ProductConfiguration, pat
   return Object.entries(patch).some(([key, value]) => JSON.stringify(current[key]) !== JSON.stringify(value));
 }
 
+export function buildFanCooledProductInput(normalizedAt: string): NewProductInput {
+  const common = { sourceReference: "wordpress-page:10541", evidenceReference: sourceUrl, confidence: 1, visibility: "public" as const };
+  return {
+    organizationId: "ssi", productName: "Fan Cooled Projector Enclosures", displayName: "Fan Cooled Projector Enclosures",
+    slug: "fan-cooled-projector-enclosures", sku: "WP-PROJECTORENCLOSURE-10541", modelNumber: null,
+    shortDescription: "Fan-cooled projector protection for indoor, covered outdoor, and mild-environment commercial AV installations.",
+    fullDescription: "Projector enclosures with built-in fan cooling, durable metal construction, and removable or hinged access panels.",
+    productType: "projector_enclosure", productFamily: "Fan Cooled Projector Enclosures", categoryIds: ["cat-ssi-projector-enclosures"],
+    manufacturerId: "mfr-ssi-projector-enclosures", brandReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.brand,
+    primarySiteId: PROJECTOR_ENCLOSURE_SITE_ID, assignedSiteIds: [PROJECTOR_ENCLOSURE_SITE_ID],
+    siteAssignments: [{ siteId: PROJECTOR_ENCLOSURE_SITE_ID, enabledForSite: true, siteSpecificSlug: "fan-cooled-projector-enclosures",
+      siteSpecificDisplayName: "Fan Cooled Projector Enclosures", siteSpecificShortDescription: null, visibility: "public_candidate", featured: false,
+      sortOrder: 0, categoryIds: ["cat-ssi-projector-enclosures"], defaultContentType: "product_update", publicationStatus: "ready",
+      seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
+      imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image, pricingDisplayMode: "hidden", lastReadinessEvaluation: normalizedAt, lastPublicationReference: null }],
+    media: { primaryImageReference: "wordpress-media:10757", galleryImageReferences: [], videoReferences: [] },
+    documents: { technicalDrawingReferences: [], specSheetReferences: [], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
+    specifications: [
+      { specificationId: "spec-projectorenclosure-cooling", specificationGroup: "Protection", key: "cooling_method", displayLabel: "Cooling Method", rawValue: "Built-In Fan Cooling", normalizedValue: "Fan Cooled", unit: null, sortOrder: 1, ...common },
+      { specificationId: "spec-projectorenclosure-construction", specificationGroup: "Construction", key: "construction", displayLabel: "Construction", rawValue: "Durable Metal Construction", normalizedValue: "Metal", unit: null, sortOrder: 2, ...common },
+      { specificationId: "spec-projectorenclosure-access", specificationGroup: "Service", key: "service_access", displayLabel: "Service Access", rawValue: "Removable or hinged access panels", normalizedValue: null, unit: null, sortOrder: 3, ...common },
+    ],
+    seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
+    businessGenomeObjectReference: null, sourceEvidenceReference: `wordpress-page:10541:${sourceUrl}`,
+    authorityProvenance: { sourceType: "OWNER_APPROVED_CANONICAL_PRODUCT", authorityReference: "wordpress-page:10541", normalizationVersion: "fan-cooled-canonical-source-v1", normalizedAt },
+    notes: "Canonical WordPress page 10541 authority. Do not infer ratings, weather guarantees, security, compatibility, thermal sizing, filters, insulation, mounting, or other unverified features.",
+  };
+}
+
+function fanCooledProductMatchesAuthority(product: ProductConfiguration): boolean {
+  const specifications = product.specifications.map((specification) => ({
+    key: specification.key,
+    rawValue: specification.rawValue,
+    normalizedValue: specification.normalizedValue,
+    sourceReference: specification.sourceReference,
+    evidenceReference: specification.evidenceReference,
+  }));
+  return product.organizationId === "ssi"
+    && product.productId === PROJECTOR_ENCLOSURE_PRODUCT_ID
+    && product.productName === "Fan Cooled Projector Enclosures"
+    && product.slug === "fan-cooled-projector-enclosures"
+    && product.sku === "WP-PROJECTORENCLOSURE-10541"
+    && product.primarySiteId === PROJECTOR_ENCLOSURE_SITE_ID
+    && product.assignedSiteIds.length === 1
+    && product.assignedSiteIds[0] === PROJECTOR_ENCLOSURE_SITE_ID
+    && product.media.primaryImageReference === "wordpress-media:10757"
+    && product.sourceEvidenceReference === `wordpress-page:10541:${sourceUrl}`
+    && product.authorityProvenance?.sourceType === "OWNER_APPROVED_CANONICAL_PRODUCT"
+    && product.authorityProvenance.authorityReference === "wordpress-page:10541"
+    && product.authorityProvenance.normalizationVersion === "fan-cooled-canonical-source-v1"
+    && product.lifecycleState === "active"
+    && product.catalogStatus === "ready"
+    && product.enabled
+    && product.visibility === "public_candidate"
+    && JSON.stringify(specifications) === JSON.stringify([
+      { key: "cooling_method", rawValue: "Built-In Fan Cooling", normalizedValue: "Fan Cooled", sourceReference: "wordpress-page:10541", evidenceReference: sourceUrl },
+      { key: "construction", rawValue: "Durable Metal Construction", normalizedValue: "Metal", sourceReference: "wordpress-page:10541", evidenceReference: sourceUrl },
+      { key: "service_access", rawValue: "Removable or hinged access panels", normalizedValue: null, sourceReference: "wordpress-page:10541", evidenceReference: sourceUrl },
+    ]);
+}
+
+export function restoreMissingFanCooledProductAuthority(normalizedAt: string): { product: ProductConfiguration; created: boolean } {
+  reloadProductRepositoryFromPersistence();
+  const existing = getProductById(PROJECTOR_ENCLOSURE_PRODUCT_ID);
+  if (existing) {
+    if (!fanCooledProductMatchesAuthority(existing)) throw new Error("Existing Fan Cooled product does not match canonical authority.");
+    return { product: existing, created: false };
+  }
+  const categories = listCategories().filter((category) => category.categoryId === "cat-ssi-projector-enclosures");
+  const manufacturers = listManufacturers().filter((manufacturer) => manufacturer.manufacturerId === "mfr-ssi-projector-enclosures");
+  if (categories.length !== 1 || categories[0].organizationId !== "ssi" || categories[0].name !== "Projector Enclosures" || categories[0].slug !== "projector-enclosures") throw new Error("Exact ProjectorEnclosure category authority is required.");
+  if (manufacturers.length !== 1 || manufacturers[0].organizationId !== "ssi" || manufacturers[0].name !== "Screen Solutions International" || manufacturers[0].website !== "https://projectorenclosure.com") throw new Error("Exact ProjectorEnclosure manufacturer authority is required.");
+  const created = createProduct(buildFanCooledProductInput(normalizedAt));
+  if (!created.validation.valid || !created.product) throw new Error("Fan Cooled product authority creation failed.");
+  const activated = updateProduct(PROJECTOR_ENCLOSURE_PRODUCT_ID, { lifecycleState: "active", catalogStatus: "ready", enabled: true, visibility: "public_candidate" });
+  if (!activated.validation.valid || !activated.product) throw new Error("Fan Cooled product authority activation failed.");
+  return { product: activated.product, created: true };
+}
+
 export function configureProjectorEnclosureSiteStudio() {
   const site = getSiteById(PROJECTOR_ENCLOSURE_SITE_ID);
   if (!site?.integrations.wordpressCredentialReference) throw new Error("ProjectorEnclosure site-owned credential is required.");
@@ -218,31 +299,7 @@ export function configureProjectorEnclosureSiteStudio() {
     if (!category.validation.valid) throw new Error("ProjectorEnclosure category validation failed.");
   }
 
-  let product = getProductById(PROJECTOR_ENCLOSURE_PRODUCT_ID);
-  if (!product) {
-    const created = createProduct({ organizationId: "ssi", productName: "Fan Cooled Projector Enclosures", displayName: "Fan Cooled Projector Enclosures",
-      slug: "fan-cooled-projector-enclosures", sku: "WP-PROJECTORENCLOSURE-10541", modelNumber: null,
-      shortDescription: "Fan-cooled projector protection for indoor, covered outdoor, and mild-environment commercial AV installations.",
-      fullDescription: "Projector enclosures with integrated fan cooling, durable metal construction, and service-friendly access for controlled or semi-protected installations.",
-      productType: "projector_enclosure", productFamily: "Fan Cooled Projector Enclosures", categoryIds: ["cat-ssi-projector-enclosures"],
-      manufacturerId: "mfr-ssi-projector-enclosures", brandReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.brand,
-      primarySiteId: PROJECTOR_ENCLOSURE_SITE_ID, assignedSiteIds: [PROJECTOR_ENCLOSURE_SITE_ID],
-      siteAssignments: [{ siteId: PROJECTOR_ENCLOSURE_SITE_ID, enabledForSite: true, siteSpecificSlug: "fan-cooled-projector-enclosures",
-        siteSpecificDisplayName: "Fan Cooled Projector Enclosures", siteSpecificShortDescription: null, visibility: "public_candidate", featured: false,
-        sortOrder: 0, categoryIds: ["cat-ssi-projector-enclosures"], defaultContentType: "product_update", publicationStatus: "ready",
-        seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
-        imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image, pricingDisplayMode: "hidden", lastReadinessEvaluation: new Date().toISOString(), lastPublicationReference: null }],
-      media: { primaryImageReference: "wordpress-media:10757", galleryImageReferences: [], videoReferences: [] },
-      documents: { technicalDrawingReferences: [], specSheetReferences: [], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
-      specifications: [
-        { specificationId: "spec-projectorenclosure-cooling", specificationGroup: "Protection", key: "cooling_method", displayLabel: "Cooling Method", rawValue: "Built-In Fan Cooling", normalizedValue: "Fan Cooled", unit: null, sortOrder: 1, sourceReference: "wordpress-page:10541", evidenceReference: sourceUrl, confidence: 1, visibility: "public" },
-        { specificationId: "spec-projectorenclosure-construction", specificationGroup: "Construction", key: "construction", displayLabel: "Construction", rawValue: "Durable Metal Construction", normalizedValue: "Metal", unit: null, sortOrder: 2, sourceReference: "wordpress-page:10541", evidenceReference: sourceUrl, confidence: 1, visibility: "public" },
-        { specificationId: "spec-projectorenclosure-access", specificationGroup: "Service", key: "service_access", displayLabel: "Service Access", rawValue: "Removable or hinged access panels", normalizedValue: null, unit: null, sortOrder: 3, sourceReference: "wordpress-page:10541", evidenceReference: sourceUrl, confidence: 1, visibility: "public" },
-      ], seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
-      businessGenomeObjectReference: null, sourceEvidenceReference: `wordpress-page:10541:${sourceUrl}`, notes: "Authenticated ProjectorEnclosure WordPress authority." });
-    if (!created.validation.valid || !created.product) throw new Error("ProjectorEnclosure product creation failed.");
-    product = created.product;
-  }
+  restoreMissingFanCooledProductAuthority(new Date().toISOString());
 
   let homelineProduct = getProductById(HOMELINE_PRODUCT_ID);
   const homelineNormalizedAt = homelineProduct?.authorityProvenance?.normalizationVersion === "homeline-owner-approved-v1"

@@ -89,6 +89,10 @@ function loadStateFromPersistence(): void {
   stateRevision = loaded.revision;
 }
 
+export function reloadProductRepositoryFromPersistence(): void {
+  loadStateFromPersistence();
+}
+
 function persistCurrentState(): void {
   const saved = savePersistedState<ProductRepositoryState>({
     namespace: PERSISTENCE_NAMESPACE,
