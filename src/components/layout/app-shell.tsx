@@ -11,6 +11,19 @@ import type { SiteConfiguration, SiteContext } from "@/modules/foundation/types"
 const ORGANIZATION_STORAGE_KEY = "gcp.selectedOrganizationId";
 const SITE_STORAGE_KEY = "gcp.selectedSiteId";
 
+const COLLAPSIBLE_NAVIGATION_LABELS = new Set([
+  "Companies",
+  "Categories",
+  "Manufacturers",
+  "Inventory",
+  "Customers",
+  "Quotes",
+  "Sales Orders",
+  "Work Orders",
+  "Production Jobs",
+  "Operations",
+]);
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const foundationContext = useMemo(() => createFoundationContext(), []);
@@ -43,6 +56,7 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
   );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
+  const [moreNavOpen, setMoreNavOpen] = useState(false);
 
   const visibleNavigationItems = useMemo(
     () => getVisibleNavigationItems(FOUNDATION_NAVIGATION_ITEMS, permissions),
@@ -364,23 +378,70 @@ useEffect(() => {
           </section>
 
           <nav className="mt-8 space-y-2">
-            {visibleNavigationItems.map((item) => {
-              const active = pathname === item.href;
+            {visibleNavigationItems
+              .filter((item) => !COLLAPSIBLE_NAVIGATION_LABELS.has(item.label))
+              .map((item) => {
+                const active = pathname === item.href;
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`block w-full rounded-lg px-4 py-3 text-left text-sm transition ${
-                    active
-                      ? "bg-red-600 text-white"
-                      : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={`block w-full rounded-lg px-4 py-3 text-left text-sm transition ${
+                      active
+                        ? "bg-red-600 text-white"
+                        : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setMoreNavOpen((open) => !open)}
+                className="flex w-full items-center justify-between rounded-lg border border-zinc-800 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-800 hover:text-white"
+              >
+                <span className="flex items-center gap-2">
+                  <span>More</span>
+                  <span className="text-[10px] uppercase tracking-wider text-zinc-600">
+                    In Development
+                  </span>
+                </span>
+
+                <span className="text-xs text-zinc-500">
+                  {moreNavOpen ? "-" : "+"}
+                </span>
+              </button>
+
+              {moreNavOpen ? (
+                <div className="mt-2 space-y-1 border-l border-zinc-800 pl-3">
+                  {visibleNavigationItems
+                    .filter((item) =>
+                      COLLAPSIBLE_NAVIGATION_LABELS.has(item.label),
+                    )
+                    .map((item) => {
+                      const active = pathname === item.href;
+
+                      return (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          className={`block w-full rounded-lg px-3 py-2 text-left text-xs transition ${
+                            active
+                              ? "bg-red-600 text-white"
+                              : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                </div>
+              ) : null}
+            </div>
           </nav>
         </aside>
 
