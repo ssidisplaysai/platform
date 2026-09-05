@@ -27,6 +27,14 @@ type Context = {
   params: Promise<{ campaignId: string }>;
 };
 
+function normalizeCitySlug(value?: string | null): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 function resolveDispatchDate(
   request: NextRequest,
 ): string {
@@ -66,6 +74,16 @@ function findScopedCampaign(input: {
         || candidate.siteId === input.siteId
       ),
   ) ?? null;
+}
+
+function targetIdentity(target: {
+  stateCode: string;
+  citySlug?: string | null;
+}) {
+  return {
+    stateCode: target.stateCode,
+    citySlug: target.citySlug ?? null,
+  };
 }
 
 export async function GET(
@@ -147,6 +165,7 @@ export async function GET(
   return NextResponse.json({
     campaign: {
       campaignId: campaign.campaignId,
+      pageType: campaign.pageType,
       status: campaign.status,
       pagesPerDay: campaign.pagesPerDay,
       publicationPolicy:
@@ -163,6 +182,8 @@ export async function GET(
         (target) => ({
           targetId: target.targetId,
           stateCode: target.stateCode,
+          citySlug: target.citySlug ?? null,
+          cityName: target.cityName ?? null,
           status: target.status,
         }),
       ),
@@ -224,6 +245,10 @@ export async function POST(
   const body = await request.json().catch(() => null) as {
     confirm?: string;
     stateCodes?: string[];
+    targets?: Array<{
+      stateCode?: string;
+      citySlug?: string;
+    }>;
   } | null;
 
   const isExactResume =
@@ -248,53 +273,105 @@ export async function POST(
   let leased;
 
   if (isExactResume) {
-    const requestedStates = Array.from(
-      new Set(
-        (body?.stateCodes ?? [])
-          .map((stateCode) => stateCode.trim().toUpperCase())
-          .filter(Boolean),
-      ),
-    );
-
-    if (requestedStates.length === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "Exact stateCodes are required for existing-target resume.",
-        },
-        { status: 400 },
-      );
-    }
-
     const campaignTargets = listGlwCampaignTargets(
       campaign.campaignId,
     );
 
-    leased = requestedStates.map((stateCode) => {
-      const target = campaignTargets.find(
-        (candidate) => candidate.stateCode === stateCode,
+    if (campaign.pageType === "city_service") {
+      const requestedTargets = Array.from(
+        new Map(
+          (body?.targets ?? [])
+            .map((target) => ({
+              stateCode: target.stateCode?.trim().toUpperCase() ?? "",
+              citySlug: normalizeCitySlug(target.citySlug),
+            }))
+            .filter((target) => target.stateCode && target.citySlug)
+            .map((target) => [
+              `${target.stateCode}::${target.citySlug}`,
+              target,
+            ]),
+        ).values(),
       );
 
-      if (!target) {
-        throw new Error(
-          `Campaign target ${stateCode} was not found.`,
+      if (requestedTargets.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Exact stateCode and citySlug targets are required for city-target resume.",
+          },
+          { status: 400 },
         );
       }
 
-      const action =
-        resolveGlwCampaignTargetRecoveryAction(target);
-
-      if (action !== "resume_exact_target") {
-        throw new Error(
-          `Campaign target ${stateCode} is not eligible for exact resume.`,
+      leased = requestedTargets.map((requested) => {
+        const target = campaignTargets.find(
+          (candidate) =>
+            candidate.stateCode === requested.stateCode
+            && candidate.citySlug === requested.citySlug,
         );
-      }
 
-      return requireGlwCampaignTargetResumeAuthority({
-        campaignId: campaign.campaignId,
-        stateCode,
+        if (!target) {
+          throw new Error(
+            `Campaign target ${requested.stateCode}::${requested.citySlug} was not found.`,
+          );
+        }
+
+        const action = resolveGlwCampaignTargetRecoveryAction(target);
+        if (action !== "resume_exact_target") {
+          throw new Error(
+            `Campaign target ${requested.stateCode}::${requested.citySlug} is not eligible for exact resume.`,
+          );
+        }
+
+        return requireGlwCampaignTargetResumeAuthority({
+          campaignId: campaign.campaignId,
+          stateCode: requested.stateCode,
+          citySlug: requested.citySlug,
+        });
       });
-    });
+    } else {
+      const requestedStates = Array.from(
+        new Set(
+          (body?.stateCodes ?? [])
+            .map((stateCode) => stateCode.trim().toUpperCase())
+            .filter(Boolean),
+        ),
+      );
+
+      if (requestedStates.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Exact stateCodes are required for existing-target resume.",
+          },
+          { status: 400 },
+        );
+      }
+
+      leased = requestedStates.map((stateCode) => {
+        const target = campaignTargets.find(
+          (candidate) => candidate.stateCode === stateCode && !candidate.citySlug,
+        );
+
+        if (!target) {
+          throw new Error(
+            `Campaign target ${stateCode} was not found.`,
+          );
+        }
+
+        const action = resolveGlwCampaignTargetRecoveryAction(target);
+        if (action !== "resume_exact_target") {
+          throw new Error(
+            `Campaign target ${stateCode} is not eligible for exact resume.`,
+          );
+        }
+
+        return requireGlwCampaignTargetResumeAuthority({
+          campaignId: campaign.campaignId,
+          stateCode,
+        });
+      });
+    }
   } else {
     leased = leaseGlwCampaignTargets({
       campaignId: campaign.campaignId,
@@ -312,10 +389,9 @@ export async function POST(
         buildGlwCampaignProductionGenerationForm({
           campaign,
           stateCode: target.stateCode,
+          citySlug: target.citySlug,
         });
 
-      // Hard safety assertion: campaign execution is not allowed
-      // to acquire publication authority in this executor.
       if (form.publicationIntent !== "draft") {
         throw new Error(
           "Production campaign executor rejected non-draft publication intent.",
@@ -360,6 +436,7 @@ export async function POST(
       attachGlwCampaignTargetJob({
         campaignId: campaign.campaignId,
         stateCode: target.stateCode,
+        citySlug: target.citySlug,
         leaseId:
           isExactResume
             ? target.leaseId!
@@ -368,7 +445,8 @@ export async function POST(
       });
 
       results.push({
-        stateCode: target.stateCode,
+        ...targetIdentity(target),
+        cityName: target.cityName ?? null,
         targetId: target.targetId,
         status: "dispatched",
         jobId,
@@ -376,13 +454,9 @@ export async function POST(
           payload?.job?.status ?? null,
       });
     } catch (error) {
-      // The target remains running under its lease here.
-      // We intentionally do not automatically requeue or retry
-      // because the generation endpoint may have accepted a job
-      // before a network/response failure. Recovery authority is
-      // the next certification slice.
       results.push({
-        stateCode: target.stateCode,
+        ...targetIdentity(target),
+        cityName: target.cityName ?? null,
         targetId: target.targetId,
         status: "dispatch_error",
         error:
