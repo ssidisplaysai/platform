@@ -278,6 +278,21 @@ useEffect(() => {
     );
   }
 
+  function handleSiteChange(nextSiteId: string) {
+    setSelectedSiteId(nextSiteId);
+    setSiteSelectionMessage(null);
+    localStorage.setItem(SITE_STORAGE_KEY, nextSiteId);
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (selectedOrganizationId) {
+      params.set("organizationId", selectedOrganizationId);
+    }
+
+    params.set("siteId", nextSiteId);
+    window.location.href = `${window.location.pathname}?${params.toString()}`;
+  }
+
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="flex min-h-screen flex-col xl:flex-row">
@@ -313,10 +328,7 @@ useEffect(() => {
             </label>
             <select
               value={selectedSiteId}
-              onChange={(event) => {
-                setSelectedSiteId(event.target.value);
-                setSiteSelectionMessage(null);
-              }}
+              onChange={(event) => handleSiteChange(event.target.value)}
               className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500"
             >
               <option value="">Select a site context</option>

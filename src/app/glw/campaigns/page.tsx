@@ -38,7 +38,9 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
     (product) => product.organizationId === organizationId,
   );
   const campaigns = listGlwCampaigns().filter(
-    (campaign) => campaign.organizationId === organizationId,
+    (campaign) =>
+      campaign.organizationId === organizationId &&
+      (!requestedSiteId || campaign.siteId === requestedSiteId),
   );
 
   return (
