@@ -136,17 +136,43 @@ function hasRequiredStateProductLink(
 ): boolean {
   if (request.pageType !== "state_service") return true;
 
-  const firstPathSegment = request.canonicalPath.split("/").filter(Boolean)[0] ?? "";
+  const firstPathSegment =
+    request.canonicalPath.split("/").filter(Boolean)[0] ?? "";
+
   if (!firstPathSegment) return false;
-  const requiredHref = `/${firstPathSegment}/`;
+
+  const requiredPath = `/${firstPathSegment}/`;
   const requiredAnchor = normalizeAnchorText(request.productTopic);
-  const anchorPattern = /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  const siteDomain = normalizeDomain(request.siteDomain);
+  const anchorPattern =
+    /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+
   let match: RegExpExecArray | null;
 
   while ((match = anchorPattern.exec(html)) !== null) {
     const href = (match[1] ?? "").trim();
     const anchor = normalizeAnchorText(match[2] ?? "");
-    if (href === requiredHref && anchor === requiredAnchor) return true;
+
+    if (anchor !== requiredAnchor) {
+      continue;
+    }
+
+    if (href === requiredPath) {
+      return true;
+    }
+
+    try {
+      const absolute = new URL(href);
+
+      if (
+        normalizeDomain(absolute.hostname) === siteDomain
+        && absolute.pathname === requiredPath
+      ) {
+        return true;
+      }
+    } catch {
+      // Relative hrefs are handled by the exact path check above.
+    }
   }
 
   return false;

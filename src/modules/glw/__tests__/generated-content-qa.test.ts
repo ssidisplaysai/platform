@@ -222,6 +222,51 @@ describe("evaluateGlwGeneratedContentQa", () => {
     expect(passing.checks.stateProductAuthorityLink.ok).toBe(true);
   });
 
+  test("accepts the same-site absolute canonical product link for state_service pages", () => {
+    const stateRequest: GlwGenerationRequest = {
+      ...request,
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-indoor-digital-sphere",
+      pageType: "state_service",
+      stateCode: "AK",
+      citySlug: "",
+      slug: "indoor-digital-sphere/alaska",
+      canonicalPath: "indoor-digital-sphere/alaska",
+      organizationId: "led-display-warehouse",
+      siteName: "LED Display Warehouse",
+      siteDomain: "leddisplaywarehouse.com",
+      siteCanonicalUrl: "https://leddisplaywarehouse.com",
+      wordpressApiBaseUrl: "https://leddisplaywarehouse.com/wp-json/wp/v2",
+      productTopic: "Indoor Digital Sphere",
+      stateName: "Alaska",
+      cityName: null,
+      title: "Indoor Digital Sphere in Alaska",
+      seoTitle: "Indoor Digital Sphere in Alaska | LED Display Warehouse",
+      metaDescription: "Indoor Digital Sphere solutions in Alaska.",
+      plannedOperation: "UPDATE_STATE",
+      wordpressObjectId: "19829",
+    };
+
+    const cleanSentence =
+      "Indoor Digital Sphere solutions for Alaska commercial display environments. ";
+
+    const result = evaluateGlwGeneratedContentQa({
+      artifact: {
+        ...artifact(
+          `<h1>Indoor Digital Sphere in Alaska</h1><p>${cleanSentence.repeat(220)}</p><a href="https://leddisplaywarehouse.com/indoor-digital-sphere/">Indoor Digital Sphere</a>`,
+        ),
+        title: "Indoor Digital Sphere in Alaska",
+        slug: "indoor-digital-sphere/alaska",
+      },
+      request: stateRequest,
+      siteDomain: "leddisplaywarehouse.com",
+      minimumWordCount: 1500,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.checks.stateProductAuthorityLink.ok).toBe(true);
+  });
+
   test("rejects the right href with the wrong state-page product anchor", () => {
     const stateRequest: GlwGenerationRequest = {
       ...request,
