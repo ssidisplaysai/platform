@@ -1,6 +1,7 @@
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import type { GlwGeneratedDraftArtifact } from "@/modules/glw/page-execution";
 import type { GlwGenerationRequest } from "@/modules/glw/page-generation";
+import { PE_FAN_COOLED_STARTER_CAMPAIGN_ID } from "@/modules/glw/projectorenclosure-campaign-authority";
 
 function countWords(html: string): number {
   const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
@@ -148,5 +149,48 @@ describe("campaign reference city content repair", () => {
 
     expect(result.repaired).toBe(false);
     expect(result.artifact).toBe(artifact);
+  });
+
+  test("rewrites only approved PE starter cities with product-authority-constrained content", () => {
+    const request = buildRequest({
+      campaignId: PE_FAN_COOLED_STARTER_CAMPAIGN_ID,
+      siteId: "site-ssi-projectorenclosure",
+      siteName: "Projector Enclosure",
+      siteDomain: "projectorenclosure.com",
+      siteCanonicalUrl: "https://projectorenclosure.com",
+      wordpressApiBaseUrl: "https://projectorenclosure.com/wp-json/wp/v2",
+      productId: "prod-ssi-fan-cooled-projector-enclosures",
+      productTopic: "Fan Cooled Projector Enclosures",
+      stateCode: "CA",
+      stateName: "California",
+      citySlug: "anaheim",
+      cityName: "Anaheim",
+      slug: "fan-cooled-projector-enclosures/california/anaheim",
+      canonicalPath: "fan-cooled-projector-enclosures/california/anaheim",
+      title: "Fan Cooled Projector Enclosures in Anaheim",
+      seoTitle: "Fan Cooled Projector Enclosures in Anaheim | Projector Enclosure",
+      metaDescription: "Plan a Fan Cooled Projector Enclosures project in Anaheim with verified product authority.",
+    });
+    const result = repairGlwCampaignReferenceCityArtifact({ artifact: buildArtifact(), request });
+
+    expect(result.repaired).toBe(true);
+    expect(result.artifact.contentHtml).toContain("Built-In Fan Cooling");
+    expect(result.artifact.contentHtml).toContain("Durable Metal Construction");
+    expect(result.artifact.contentHtml).toContain("removable or hinged access panels");
+    expect(result.artifact.contentHtml).toContain("Anaheim");
+    expect(result.artifact.contentHtml).toContain("California");
+    expect(result.artifact.contentHtml).toContain('href="https://projectorenclosure.com/fan-cooled-projector-enclosures/"');
+    expect(countWords(result.artifact.contentHtml)).toBeGreaterThanOrEqual(1500);
+    for (const forbidden of ["IP rating", "weatherproof", "waterproof", "air conditioning", "thermostat", "temperature rating", "local installer", "local office", "in stock in Anaheim"]) {
+      expect(result.artifact.contentHtml).not.toContain(forbidden);
+    }
+  });
+
+  test("does not rewrite Irvine or another campaign through PE authority", () => {
+    const artifact = buildArtifact();
+    const peBase = { campaignId: PE_FAN_COOLED_STARTER_CAMPAIGN_ID, siteId: "site-ssi-projectorenclosure", productId: "prod-ssi-fan-cooled-projector-enclosures", productTopic: "Fan Cooled Projector Enclosures", stateCode: "CA", stateName: "California" };
+
+    expect(repairGlwCampaignReferenceCityArtifact({ artifact, request: buildRequest({ ...peBase, citySlug: "irvine", cityName: "Irvine" }) })).toEqual({ artifact, repaired: false });
+    expect(repairGlwCampaignReferenceCityArtifact({ artifact, request: buildRequest({ ...peBase, campaignId: "campaign-led-display-warehouse-other", citySlug: "anaheim", cityName: "Anaheim" }) })).toEqual({ artifact, repaired: false });
   });
 });

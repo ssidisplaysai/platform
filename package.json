@@ -12,6 +12,7 @@
     "test:watch": "jest --watch",
     "typecheck:production": "tsc --noEmit -p tsconfig.production.json",
     "certify:glw": "node scripts/certify-glw.mjs",
+    "glw:campaign-health": "npx tsx scripts/glw-campaign-health.mts",
     "evidence-ir:process-zach": "npx tsx src/evidence-ir/process-zach-evidence.mts",
     "evidence-ir:process-madison": "npx tsx src/evidence-ir/process-madison-evidence.mts"
   },

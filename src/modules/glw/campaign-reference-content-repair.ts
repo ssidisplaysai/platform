@@ -1,5 +1,6 @@
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
 import type { GlwGenerationRequest } from "./page-generation";
+import { isPeFanCooledStarterCampaignRequest } from "./projectorenclosure-campaign-authority";
 
 export type GlwCampaignReferenceRepairResult = {
   artifact: GlwGeneratedDraftArtifact;
@@ -101,16 +102,105 @@ function buildAuthorityConstrainedReferenceHtml(request: GlwGenerationRequest): 
   ].join("\n");
 }
 
+function buildPeFanCooledAuthorityHtml(request: GlwGenerationRequest): string {
+  const product = escapeHtml(request.productTopic);
+  const city = escapeHtml(request.cityName ?? "the target city");
+  const state = escapeHtml(request.stateName ?? request.stateCode);
+  const site = escapeHtml(request.siteName);
+  const authorityUrl = "https://projectorenclosure.com/fan-cooled-projector-enclosures/";
+
+  return [
+    `<h1>${product} in ${city}</h1>`,
+    `<p>${site} provides ${product} for projector protection planning in ${city}, ${state}. The verified product authority identifies three relevant characteristics: Built-In Fan Cooling, Durable Metal Construction, and removable or hinged access panels. Those facts establish a useful starting point for project review, but they do not replace confirmation of projector dimensions, environmental conditions, installation responsibilities, or the requirements of the specific venue.</p>`,
+    `<p>This guide helps buyers, integrators, contractors, and facility teams organize a request without inventing specifications. Every installation should be evaluated from documented field conditions and current product information. Review the <a href="${authorityUrl}">canonical ${product} product page</a> and ask ${site} to confirm the configuration proposed for the project before purchasing or construction decisions are finalized.</p>`,
+
+    `<h2>Start With the Project Requirement</h2>`,
+    `<p>Begin by recording why the projector needs an enclosure and where the assembly is expected to operate. Describe the venue, the intended projector location, the operating schedule, the audience area, and the parties responsible for the projection system. Note whether the work is part of a new installation, a renovation, a replacement, or an upgrade to an existing system. This context helps the project team separate confirmed needs from assumptions and gives ${site} a practical basis for review.</p>`,
+    `<p>A city-focused planning page does not establish inventory, personnel, facilities, completed projects, delivery timing, or code approval in ${city}. Geographic relevance comes from organizing the details that a project team in ${city} should verify. Availability, shipping, installation support, and regulatory obligations must be confirmed for the actual order and site rather than inferred from the page title.</p>`,
+
+    `<h2>Document the Projector</h2>`,
+    `<p>Provide the exact projector manufacturer and model whenever it is known. Include current manufacturer drawings, the orientation proposed by the system designer, lens information, cable locations, control connections, service points, and any accessories expected to remain attached. If a projector has not been selected, state that clearly. An enclosure decision should not be based on an approximate description when the final equipment may differ in size, layout, service needs, or operating requirements.</p>`,
+    `<p>Field measurements and equipment documentation serve different purposes. Field measurements describe the available location, while manufacturer documentation describes the projector itself. Keep both sets of information in the project record. A photograph can clarify surroundings, but it should not replace dimensions or technical drawings. Ask the responsible audiovisual professional to identify any projector-specific requirements that must be maintained inside an enclosure.</p>`,
+
+    `<h2>Measure the Available Location</h2>`,
+    `<p>Record the width, height, and depth available at the proposed location, along with nearby walls, ceilings, beams, screens, structures, furnishings, and access routes. Identify which dimensions are field verified and which are taken from design documents. Note anything that could obstruct doors or access panels. Durable Metal Construction does not remove the need to coordinate the enclosure footprint and access clearances with the surrounding work.</p>`,
+    `<p>Also document how the enclosure and projector can be brought to the installation point. Doorways, stairs, lifts, roof access, finished surfaces, occupied areas, and restricted work hours may affect planning. Assign responsibility for verifying support conditions and attachment methods to the qualified project professional. This page does not specify structural loads, mounting hardware, anchorage, or a universal installation method.</p>`,
+
+    `<h2>Review the Operating Environment</h2>`,
+    `<p>Describe whether the proposed location is indoors, outdoors, sheltered, exposed, conditioned, dusty, humid, hot, cold, or subject to changing weather. Record nearby heat sources, water sources, airborne contaminants, direct sun, cleaning activity, and other conditions that the project team considers relevant. These observations should be provided to ${site} for configuration review. No environmental suitability should be assumed from the product name alone.</p>`,
+    `<p>Built-In Fan Cooling is a verified product characteristic. It is not, by itself, a promise that every projector will operate correctly in every environment. The project team should provide the projector documentation, operating schedule, location details, and environmental information needed for review. Final operating suitability depends on the selected equipment, enclosure configuration, field conditions, installation, and maintenance practices.</p>`,
+
+    `<h2>Plan Airflow Without Guesswork</h2>`,
+    `<p>Keep proposed intake and discharge areas visible in drawings and photographs, and identify surrounding objects that could interfere with air movement. Do not place finishes, storage, signage, landscaping, or temporary equipment around the enclosure without reviewing their effect on the approved configuration. The exact airflow path and clearances should come from current product guidance and the project-specific review, not from a generic distance invented for a location page.</p>`,
+    `<p>Projector operation and enclosure operation should be coordinated as one system. Record expected hours of use, shutdown practices, seasonal changes, and who will monitor the equipment after handoff. If operating conditions change later, the responsible team should reassess the installation rather than assuming the original review covers every future use. Keep the final approved documentation available to operations personnel.</p>`,
+
+    `<h2>Coordinate Service Access</h2>`,
+    `<p>Removable or hinged access panels are part of the verified product authority. During layout, identify where those panels need to move and what technicians must reach during inspection or projector service. Nearby construction should not make approved access impractical. Drawings should show the enclosure in relation to walls, structure, screens, cable routes, and other installed systems so conflicts can be addressed before fabrication or installation.</p>`,
+    `<p>Define who may open the enclosure and which work belongs to the audiovisual integrator, facilities team, electrical contractor, enclosure supplier, or another qualified party. Service planning should account for safe access to the location and for protection of surrounding finishes and occupied areas. Do not infer tool requirements, maintenance intervals, filter schedules, replacement procedures, or warranty terms unless current documentation confirms them.</p>`,
+
+    `<h2>Coordinate Power, Signal, and Controls</h2>`,
+    `<p>List the power, signal, control, and network connections required by the projector and related equipment. Show where those services originate and how they reach the proposed enclosure location. The electrical design, cable types, penetrations, routing, strain relief, separation, protection, and code compliance remain project-specific responsibilities. Confirm interfaces before work is installed so the enclosure location does not conflict with the approved system design.</p>`,
+    `<p>If the projector is part of a managed system, identify how operators will start, stop, monitor, and troubleshoot it. Record where source equipment and control hardware will be located and who will support them. The enclosure should be included in commissioning discussions, but this page does not claim that controls, monitoring hardware, network services, electrical components, or integration labor are included with ${product}.</p>`,
+
+    `<h2>Assign Design and Installation Responsibilities</h2>`,
+    `<p>A commercial project may involve an owner, architect, engineer, general contractor, audiovisual integrator, electrical contractor, structural professional, installer, and facilities team. The exact group varies, but each relevant responsibility should have a named owner. Clarify who verifies dimensions, selects the projector, approves the location, designs support, supplies power and signal, coordinates access, installs the enclosure, commissions the system, and maintains it after turnover.</p>`,
+    `<p>${site} can review the product requirement and available project information, while qualified project professionals remain responsible for their respective design and installation scopes. Do not interpret general planning guidance as engineering approval, permit approval, code interpretation, or a substitute for site-specific professional judgment. Written decisions and approved documents should be retained with the project record.</p>`,
+
+    `<h2>Prepare a Useful Request for Review</h2>`,
+    `<ul>`,
+    `<li>Identify ${product} and link the request to the canonical product authority.</li>`,
+    `<li>Provide the ${city}, ${state} project location and describe the venue.</li>`,
+    `<li>Provide the exact projector manufacturer and model, or state that selection is pending.</li>`,
+    `<li>Attach projector drawings and relevant project drawings when available.</li>`,
+    `<li>Provide field-verified dimensions and photographs of the proposed location.</li>`,
+    `<li>Describe environmental conditions without assigning unsupported ratings.</li>`,
+    `<li>Show surrounding obstructions and the space available for access panels.</li>`,
+    `<li>Describe power, signal, control, structural, and access coordination needs.</li>`,
+    `<li>Identify the parties responsible for installation, commissioning, and maintenance.</li>`,
+    `<li>Ask for written confirmation of material specifications important to the project.</li>`,
+    `</ul>`,
+
+    `<h2>Review Verified Product Characteristics</h2>`,
+    `<p>The current product authority supports three concise facts. Built-In Fan Cooling describes the cooling method. Durable Metal Construction describes the construction at a general level. Removable or hinged access panels describe the service-access approach. These facts can be repeated in planning materials, but they should not be expanded into unverified dimensions, materials, finishes, ratings, performance values, certifications, accessories, warranties, or environmental claims.</p>`,
+    `<p>When a project depends on a detail beyond those three facts, ask for current written documentation for the exact configuration being proposed. Examples include overall size, projector capacity, finish, hardware, electrical provisions, filtration, environmental protection, sound, security, mounting, lead time, shipping, and warranty. The absence of a claim on this page means it remains to be confirmed; it should not be filled in from another product or an older project.</p>`,
+
+    `<h2>Compare Options Consistently</h2>`,
+    `<p>If the team is considering multiple enclosure options, create a comparison based on the same project inputs. Use the selected projector, location, environmental description, access requirements, support concept, integration scope, schedule, and documented product facts for every option. This produces a more useful decision record than comparing marketing phrases that may describe different configurations or assumptions.</p>`,
+    `<p>Separate confirmed facts, pending questions, and project-team decisions in the comparison. A confirmed fact should cite current documentation. A pending question should name the person responsible for obtaining an answer. A project decision should record who approved it and when. This discipline is especially useful when procurement, design, and installation are handled by different organizations.</p>`,
+
+    `<h2>Plan Delivery and Installation</h2>`,
+    `<p>Before ordering, identify the requested schedule and the milestones that depend on the enclosure. Ask ${site} to confirm current availability and order requirements rather than assuming timing from a prior purchase. Coordinate receiving, inspection, storage, transport to the installation point, and protection of the product while other work continues. Report shipping damage or discrepancies through the applicable documented process.</p>`,
+    `<p>The installer should work from the approved product information and coordinated project drawings. Verify the final location before installation and resolve conflicts with structure, electrical work, signal routes, finishes, and service access. Any field change that affects the approved arrangement should be reviewed by the responsible parties. This page does not authorize modification of the enclosure or projector.</p>`,
+
+    `<h2>Commission the Complete System</h2>`,
+    `<p>Commissioning should verify the installed condition against approved project documents. Confirm that the correct projector and enclosure are present, access remains available, surrounding work is complete, connections are coordinated, and operating responsibilities have been assigned. Follow current manufacturer and supplier instructions for startup and inspection. Record issues and their resolution before project handoff.</p>`,
+    `<p>Provide the owner or operator with the documentation needed to understand the installed system. Include relevant product information, projector documentation, approved drawings, responsible contacts, and records of project-specific decisions. Training and handoff scope should be agreed by the project team. The existence of this planning guide does not establish an included commissioning or maintenance service.</p>`,
+
+    `<h2>Maintain Documented Authority</h2>`,
+    `<p>After handoff, keep product and project records associated with the installed equipment. When the projector, operating schedule, surroundings, or environmental conditions change, review whether the original enclosure decision remains appropriate. Replacement parts, cleaning, inspections, and service procedures should follow current approved guidance for the exact product and installation.</p>`,
+    `<p>Online pages can change over time, so material decisions should rely on documentation current at the time of review. Contact ${site} when a specification, configuration, service procedure, or replacement requirement is unclear. Preserving a short written trail of questions and answers helps future operators distinguish verified product authority from assumptions made during early planning.</p>`,
+
+    `<h2>Request a ${product} Review for ${city}</h2>`,
+    `<p>For a project in ${city}, ${state}, send ${site} the projector identity, location dimensions, photographs, drawings, environmental description, schedule, and responsibility list. Refer to the verified Built-In Fan Cooling, Durable Metal Construction, and removable or hinged access panels only as documented starting points. Ask for written confirmation of every additional characteristic that matters to design, procurement, installation, operation, or maintenance.</p>`,
+    `<p>A careful request gives the review team enough context to identify missing information without pretending that a city page can settle project-specific engineering questions. Use the <a href="${authorityUrl}">official ${product} authority page</a> as the product reference, preserve the resulting documentation, and keep the installation in draft planning until the responsible parties have resolved the applicable technical and commercial requirements.</p>`,
+  ].join("\n");
+}
+
 export function repairGlwCampaignReferenceCityArtifact(input: {
   artifact: GlwGeneratedDraftArtifact;
   request: GlwGenerationRequest;
 }): GlwCampaignReferenceRepairResult {
-  if (!isSsiAccentCampaignCityRequest(input.request)) {
+  const isSsiRequest = isSsiAccentCampaignCityRequest(input.request);
+  const isPeRequest = isPeFanCooledStarterCampaignRequest(input.request);
+
+  if (!isSsiRequest && !isPeRequest) {
     return { artifact: input.artifact, repaired: false };
   }
 
   const city = input.request.cityName ?? input.request.stateName ?? "your project";
-  const contentHtml = buildAuthorityConstrainedReferenceHtml(input.request);
+  const contentHtml = isPeRequest
+    ? buildPeFanCooledAuthorityHtml(input.request)
+    : buildAuthorityConstrainedReferenceHtml(input.request);
 
   return {
     repaired: contentHtml !== input.artifact.contentHtml,
