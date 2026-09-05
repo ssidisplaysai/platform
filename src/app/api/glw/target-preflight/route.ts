@@ -43,9 +43,19 @@ export async function GET(request: NextRequest) {
   const wordpressCredentialReference =
     siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
 
-  const credential = resolveWordPressCredentialReference(
-    wordpressCredentialReference,
-  );
+  let credential: ReturnType<typeof resolveWordPressCredentialReference> = null;
+  try {
+    credential = resolveWordPressCredentialReference(
+      wordpressCredentialReference,
+    );
+  } catch (error) {
+    if (
+      !(error instanceof Error)
+      || !error.message.startsWith("GENESIS_CREDENTIAL_MASTER_KEY")
+    ) {
+      throw error;
+    }
+  }
 
   const wordpressReadAuthority =
     wordpressApiBaseUrl && credential
