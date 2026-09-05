@@ -26,6 +26,18 @@ function platformHeaders(
   };
 }
 
+function targetIdentity(target: {
+  stateCode: string;
+  citySlug?: string | null;
+  cityName?: string | null;
+}) {
+  return {
+    stateCode: target.stateCode,
+    citySlug: target.citySlug ?? null,
+    cityName: target.cityName ?? null,
+  };
+}
+
 export async function POST(
   request: NextRequest,
   context: {
@@ -120,7 +132,7 @@ export async function POST(
 
       if (!job) {
         results.push({
-          stateCode: target.stateCode,
+          ...targetIdentity(target),
           jobId,
           action: "error",
           error:
@@ -141,6 +153,7 @@ export async function POST(
           buildGlwCampaignProductionGenerationForm({
             campaign,
             stateCode: target.stateCode,
+            citySlug: target.citySlug,
           });
 
         if (form.publicationIntent !== "draft") {
@@ -174,7 +187,7 @@ export async function POST(
 
         if (!continueResponse.ok) {
           results.push({
-            stateCode: target.stateCode,
+            ...targetIdentity(target),
             jobId,
             action: "continue_error",
             httpStatus: continueResponse.status,
@@ -196,25 +209,22 @@ export async function POST(
       }
 
       if (decision.action === "draft_ready") {
+        const updateInput = {
+          campaignId,
+          stateCode: target.stateCode,
+          citySlug: target.citySlug,
+          jobId,
+          wordpressObjectId:
+            decision.wordpressObjectId,
+        };
+
         const updated =
           target.status === "failed"
-            ? markGlwFailedCampaignTargetDraftReady({
-                campaignId,
-                stateCode: target.stateCode,
-                jobId,
-                wordpressObjectId:
-                  decision.wordpressObjectId,
-              })
-            : markGlwCampaignTargetDraftReady({
-                campaignId,
-                stateCode: target.stateCode,
-                jobId,
-                wordpressObjectId:
-                  decision.wordpressObjectId,
-              });
+            ? markGlwFailedCampaignTargetDraftReady(updateInput)
+            : markGlwCampaignTargetDraftReady(updateInput);
 
         results.push({
-          stateCode: target.stateCode,
+          ...targetIdentity(target),
           jobId,
           action: "draft_ready",
           wordpressObjectId:
@@ -229,12 +239,13 @@ export async function POST(
           markGlwCampaignTargetFailed({
             campaignId,
             stateCode: target.stateCode,
+            citySlug: target.citySlug,
             jobId,
             error: decision.error,
           });
 
         results.push({
-          stateCode: target.stateCode,
+          ...targetIdentity(target),
           jobId,
           action: "failed",
           error: updated.lastError,
@@ -244,7 +255,7 @@ export async function POST(
       }
 
       results.push({
-        stateCode: target.stateCode,
+        ...targetIdentity(target),
         jobId,
         action: "wait",
         generationStatus: job.status,
@@ -252,7 +263,7 @@ export async function POST(
     }
     catch (error) {
       results.push({
-        stateCode: target.stateCode,
+        ...targetIdentity(target),
         jobId,
         action: "error",
         error:
