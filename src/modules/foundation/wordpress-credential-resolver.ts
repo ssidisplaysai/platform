@@ -13,6 +13,32 @@ function normalizePassword(value: string): string {
   return value.replace(/\s+/g, "");
 }
 
+function resolveExactCredentialOverride(
+  reference: string,
+  environment: NodeJS.ProcessEnv,
+): ResolvedWordPressCredential | null {
+  const overrideReference =
+    environment.GENESIS_WORDPRESS_CREDENTIAL_OVERRIDE_REFERENCE?.trim();
+
+  if (!overrideReference || overrideReference !== reference) {
+    return null;
+  }
+
+  const username =
+    environment.GENESIS_WORDPRESS_CREDENTIAL_OVERRIDE_USERNAME?.trim();
+  const applicationPassword =
+    environment.GENESIS_WORDPRESS_CREDENTIAL_OVERRIDE_APPLICATION_PASSWORD?.trim();
+
+  if (!username || !applicationPassword) {
+    return null;
+  }
+
+  return {
+    username,
+    applicationPassword: normalizePassword(applicationPassword),
+  };
+}
+
 function candidatePrefixes(
   reference: string,
 ): readonly string[] {
@@ -54,8 +80,27 @@ export function resolveWordPressCredentialReference(
   const normalizedReference = reference.trim();
 
   if (normalizedReference.startsWith("credref-wp-")) {
-    return resolveStoredWordPressCredential(
+    try {
+      const stored = resolveStoredWordPressCredential(
+        normalizedReference,
+      );
+      if (stored) {
+        return stored;
+      }
+    } catch (error) {
+      const override = resolveExactCredentialOverride(
+        normalizedReference,
+        environment,
+      );
+      if (override) {
+        return override;
+      }
+      throw error;
+    }
+
+    return resolveExactCredentialOverride(
       normalizedReference,
+      environment,
     );
   }
 
