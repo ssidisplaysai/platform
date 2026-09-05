@@ -1,7 +1,7 @@
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 
 describe("WordPress credential resolver sidecar override", () => {
-  test("uses an exact transient override when stored credential decryption is unavailable", () => {
+  test("uses an exact transient override when the stored credential is unavailable", () => {
     const reference = "credref-wp-test-sidecar-override";
     const environment = {
       GENESIS_WORDPRESS_CREDENTIAL_OVERRIDE_REFERENCE: reference,
@@ -24,11 +24,11 @@ describe("WordPress credential resolver sidecar override", () => {
       GENESIS_WORDPRESS_CREDENTIAL_OVERRIDE_APPLICATION_PASSWORD: "abcdefgh",
     } as NodeJS.ProcessEnv;
 
-    expect(() =>
+    expect(
       resolveWordPressCredentialReference(
         "credref-wp-test-sidecar-override",
         environment,
       ),
-    ).toThrow("GENESIS_CREDENTIAL_MASTER_KEY is not configured");
+    ).toBeNull();
   });
 });
