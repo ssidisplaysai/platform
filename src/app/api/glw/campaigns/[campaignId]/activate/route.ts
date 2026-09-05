@@ -12,6 +12,7 @@ import {
 import { getGlwCampaignReferenceApproval } from "@/modules/glw/campaign-reference-approval-repository";
 import {
   initializeGlwCampaignTargets,
+  initializeGlwCityCampaignTargets,
   listGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
@@ -20,6 +21,14 @@ import { glwPageExecutionRepository } from "@/modules/glw/page-execution-reposit
 type Context = {
   params: Promise<{ campaignId: string }>;
 };
+
+function normalizeCitySlug(value?: string | null): string {
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 export async function GET(
   request: NextRequest,
@@ -61,10 +70,7 @@ export async function GET(
 
   const targets = listGlwCampaignTargets(campaign.campaignId);
 
-  return NextResponse.json({
-    campaign,
-    targets,
-  });
+  return NextResponse.json({ campaign, targets });
 }
 
 export async function POST(
@@ -131,28 +137,25 @@ export async function POST(
     );
   }
 
-  const referenceStateCode = "CA";
+  const body = await request.json().catch(() => null) as {
+    referenceStateCode?: string;
+    referenceCitySlug?: string;
+  } | null;
+
+  const isCityCampaign = campaign.pageType === "city_service";
+  const referenceStateCode = isCityCampaign
+    ? body?.referenceStateCode?.trim().toUpperCase() ?? ""
+    : "CA";
+  const referenceCitySlug = isCityCampaign
+    ? normalizeCitySlug(body?.referenceCitySlug)
+    : null;
 
   if (!campaign.stateCodes.includes(referenceStateCode)) {
     return NextResponse.json(
       {
-        error:
-          "California must be included as the approved reference target for this campaign.",
-      },
-      { status: 409 },
-    );
-  }
-
-  const approval = getGlwCampaignReferenceApproval(
-    campaign.campaignId,
-    referenceStateCode,
-  );
-
-  if (!approval) {
-    return NextResponse.json(
-      {
-        error:
-          "Campaign activation requires an approved California reference.",
+        error: isCityCampaign
+          ? "City campaign activation requires a reference state included in the campaign."
+          : "California must be included as the approved reference target for this campaign.",
       },
       { status: 409 },
     );
@@ -169,6 +172,41 @@ export async function POST(
     );
   }
 
+  const cityTarget = isCityCampaign
+    ? campaign.cityTargets?.find(
+        (candidate) =>
+          candidate.stateCode === referenceStateCode
+          && normalizeCitySlug(candidate.citySlug) === referenceCitySlug,
+      ) ?? null
+    : null;
+
+  if (isCityCampaign && (!referenceCitySlug || !cityTarget)) {
+    return NextResponse.json(
+      {
+        error:
+          "City campaign activation requires an exact reference city included in the campaign.",
+      },
+      { status: 409 },
+    );
+  }
+
+  const approval = getGlwCampaignReferenceApproval(
+    campaign.campaignId,
+    referenceStateCode,
+    referenceCitySlug,
+  );
+
+  if (!approval) {
+    return NextResponse.json(
+      {
+        error: isCityCampaign
+          ? "Campaign activation requires an approved city reference."
+          : "Campaign activation requires an approved California reference.",
+      },
+      { status: 409 },
+    );
+  }
+
   const referenceJob =
     await glwPageExecutionRepository.getById(approval.jobId);
 
@@ -178,6 +216,7 @@ export async function POST(
     || referenceJob.siteId !== campaign.siteId
     || referenceJob.productId !== campaign.productId
     || referenceJob.state !== state.name
+    || (isCityCampaign && referenceJob.city !== cityTarget?.cityName)
     || referenceJob.status !== "COMPLETE"
     || referenceJob.qaStatus !== "COMPLETE"
     || referenceJob.wordpressStatus !== "draft"
@@ -197,16 +236,30 @@ export async function POST(
     );
   }
 
-  const targets = initializeGlwCampaignTargets({
-    campaignId: campaign.campaignId,
-    organizationId: campaign.organizationId,
-    siteId: campaign.siteId,
-    productId: campaign.productId,
-    stateCodes: campaign.stateCodes,
-    referenceStateCode,
-    referenceJobId: referenceJob.jobId,
-    referenceWordpressObjectId: referenceJob.wordpressObjectId,
-  });
+  const targets = isCityCampaign
+    ? initializeGlwCityCampaignTargets({
+        campaignId: campaign.campaignId,
+        organizationId: campaign.organizationId,
+        siteId: campaign.siteId,
+        productId: campaign.productId,
+        cityTargets: campaign.cityTargets ?? [],
+        referenceTarget: {
+          stateCode: referenceStateCode,
+          citySlug: referenceCitySlug!,
+        },
+        referenceJobId: referenceJob.jobId,
+        referenceWordpressObjectId: referenceJob.wordpressObjectId,
+      })
+    : initializeGlwCampaignTargets({
+        campaignId: campaign.campaignId,
+        organizationId: campaign.organizationId,
+        siteId: campaign.siteId,
+        productId: campaign.productId,
+        stateCodes: campaign.stateCodes,
+        referenceStateCode,
+        referenceJobId: referenceJob.jobId,
+        referenceWordpressObjectId: referenceJob.wordpressObjectId,
+      });
 
   const referenceTargets = targets.filter(
     (target) => target.status === "reference_complete",
@@ -216,11 +269,20 @@ export async function POST(
     (target) => target.status === "queued",
   );
 
+  const expectedTargetCount = isCityCampaign
+    ? campaign.cityTargets?.length ?? 0
+    : campaign.stateCodes.length;
+
+  const referenceIdentityMatches = isCityCampaign
+    ? referenceTargets[0]?.stateCode === referenceStateCode
+      && referenceTargets[0]?.citySlug === referenceCitySlug
+    : referenceTargets[0]?.stateCode === referenceStateCode;
+
   if (
-    targets.length !== campaign.stateCodes.length
+    targets.length !== expectedTargetCount
     || referenceTargets.length !== 1
-    || referenceTargets[0]?.stateCode !== referenceStateCode
-    || queuedTargets.length !== campaign.stateCodes.length - 1
+    || !referenceIdentityMatches
+    || queuedTargets.length !== expectedTargetCount - 1
   ) {
     return NextResponse.json(
       {
@@ -247,6 +309,8 @@ export async function POST(
     targets,
     activation: {
       referenceStateCode,
+      referenceCitySlug,
+      referenceCityName: cityTarget?.cityName ?? null,
       referenceJobId: referenceJob.jobId,
       referenceWordpressObjectId:
         referenceJob.wordpressObjectId,
