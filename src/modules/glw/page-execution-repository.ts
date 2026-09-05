@@ -36,6 +36,15 @@ const loaded = loadPersistedState<RepositoryState>({
 applyState(loaded.state);
 stateRevision = loaded.revision;
 
+function reloadState() {
+  const current = loadPersistedState<RepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: () => ({ records: [] }),
+  });
+  applyState(current.state);
+  stateRevision = current.revision;
+}
+
 function persistState() {
   const saved = savePersistedState({
     namespace: PERSISTENCE_NAMESPACE,
@@ -47,6 +56,7 @@ function persistState() {
 
 export const glwPageExecutionRepository: GlwPageExecutionRepository = {
   async create(record) {
+    reloadState();
     if (recordStore.has(record.jobId)) {
       throw new Error(`GLW job already exists: ${record.jobId}`);
     }
@@ -55,13 +65,16 @@ export const glwPageExecutionRepository: GlwPageExecutionRepository = {
     return deepClone(record);
   },
   async getById(jobId) {
+    reloadState();
     const record = recordStore.get(jobId);
     return record ? deepClone(record) : null;
   },
   async list() {
+    reloadState();
     return Array.from(recordStore.values(), (record) => deepClone(record));
   },
   async update(jobId, patch) {
+    reloadState();
     const record = recordStore.get(jobId);
     if (!record) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
     const updated = { ...record, ...deepClone(patch), jobId };

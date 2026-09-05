@@ -72,6 +72,19 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function normalizeRenderedText(value: string): string {
+  return value
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 async function validPublicUrl(url: URL): Promise<boolean> {
   try {
     const response = await fetch(url, {
@@ -247,10 +260,16 @@ export function renderSiteStudioAuthorityLinks(input: {
   const selected = input.authority.selectedInternalLinks;
   if (selected.length === 0) return { html: input.html, rendered: [] };
   const canonical = selected[0];
-  if (input.html.includes(`href="${canonical.url}"`) || input.html.includes(`href='${canonical.url}'`)) {
+  const canonicalUrl = escapeHtml(canonical.url);
+  const canonicalAlreadyRendered = [...input.html.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)]
+    .some((match) =>
+      match[1] === canonicalUrl
+      && normalizeRenderedText(match[2] ?? "") === normalizeRenderedText(canonical.anchorText),
+    );
+  if (canonicalAlreadyRendered) {
     return { html: input.html, rendered: [canonical] };
   }
-  const sentence = `<p>For product details and supporting specifications, review <a href="${escapeHtml(canonical.url)}">${escapeHtml(canonical.anchorText)}</a>.</p>`;
+  const sentence = `<p>For product details and supporting specifications, review <a href="${canonicalUrl}">${escapeHtml(canonical.anchorText)}</a>.</p>`;
   const firstParagraph = input.html.match(/<p\b[^>]*>[\s\S]*?<\/p>/i);
   if (!firstParagraph || typeof firstParagraph.index !== "number") {
     return { html: `${sentence}\n${input.html}`, rendered: [canonical] };

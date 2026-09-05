@@ -24,6 +24,23 @@ function isRecoverableReferenceStatus(status: string): boolean {
     || status === "RUNNING";
 }
 
+function isContinuableReferenceJob(job: {
+  status: string;
+  errorCode: string | null;
+  generatedDraft: unknown;
+}): boolean {
+  if (job.status === "CONTENT_READY") return true;
+  if (job.status !== "FAILED" || !job.generatedDraft || !job.errorCode) return false;
+  return job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+    || job.errorCode.startsWith("CONTENT_REPAIR_")
+    || new Set([
+      "WORDPRESS_HIERARCHY_READ_FAILED",
+      "WORDPRESS_HIERARCHY_WRITE_FAILED",
+      "WORDPRESS_READ_FAILED",
+      "WORDPRESS_WRITE_FAILED",
+    ]).has(job.errorCode);
+}
+
 function normalizeCitySlug(value?: string | null): string {
   return (value ?? "")
     .trim()
@@ -455,7 +472,7 @@ export async function POST(request: NextRequest, context: Context) {
       );
     }
 
-    if (existing.status !== "CONTENT_READY") {
+    if (!isContinuableReferenceJob(existing)) {
       return NextResponse.json(
         {
           error: "Existing reference job is not ready for WordPress continuation.",

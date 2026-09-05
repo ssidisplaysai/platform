@@ -110,6 +110,26 @@ describe("Site Studio Product Intelligence authority", () => {
     expect(second.html).toBe(first.html);
   });
 
+  test("adds the exact canonical anchor when the URL exists with different text", () => {
+    const canonical = {
+      kind: "canonical_product" as const,
+      url: "https://destination.example/exact-product/",
+      anchorText: "Exact Product",
+      source: "PRODUCT_INTELLIGENCE" as const,
+      destinationValid: true,
+      external: false,
+    };
+    const authority = { selectedInternalLinks: [canonical] } as SiteStudioProductAuthority;
+
+    const rendered = renderSiteStudioAuthorityLinks({
+      html: '<p>Review <a href="https://destination.example/exact-product/">Exact Products</a>.</p>',
+      authority,
+    });
+
+    expect(rendered.html).toContain('<a href="https://destination.example/exact-product/">Exact Product</a>');
+    expect(renderSiteStudioAuthorityLinks({ html: rendered.html, authority }).html).toBe(rendered.html);
+  });
+
   test("escapes canonical authority before rendering HTML", () => {
     const canonical = {
       kind: "canonical_product" as const,
