@@ -18,6 +18,10 @@ import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-ser
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { generateGenesisFeaturedImageWithCampaignReferences } from "@/modules/glw/reference-aware-image-service";
+import {
+  renderGlwAllowedInternalLinks,
+  resolveGlwAllowedInternalLinks,
+} from "@/modules/glw/site-internal-link-authority";
 import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-target-hierarchy";
 import {
   createGlwN8nMcpDispatcher,
@@ -195,6 +199,41 @@ async function finalizeContentReadyExecution(input: {
     siteRecord: input.siteRecord,
     keywordOwners,
   });
+  const normalizedCanonicalPath =
+    `/${input.request.canonicalPath
+      .split("/")
+      .filter(Boolean)
+      .join("/")}/`;
+
+  const approvedCampaignInternalLinks =
+    resolveGlwAllowedInternalLinks({
+      organizationId:
+        input.request.organizationId,
+      siteId:
+        input.request.siteId,
+      productId:
+        input.request.productId,
+      stateCode:
+        input.request.stateCode ?? "",
+      canonicalPath:
+        normalizedCanonicalPath,
+    });
+
+  const renderedCampaignInternalLinks =
+    renderGlwAllowedInternalLinks({
+      html: enrichment.artifact.contentHtml,
+      links: approvedCampaignInternalLinks,
+    });
+
+  enrichment = {
+    ...enrichment,
+    artifact: {
+      ...enrichment.artifact,
+      contentHtml:
+        renderedCampaignInternalLinks.html,
+    },
+  };
+
   if (enrichment.seoAuthority && !enrichment.seoAuthority.eligible) {
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",

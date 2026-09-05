@@ -167,4 +167,39 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain("provenance: enrichment.seoAuthority.provenance");
     expect(source).toContain('errorCode: "SEO_AUTHORITY_INELIGIBLE"');
   });
+
+  test("renders approved GLW campaign internal links before generated-content QA", () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/app/api/glw/page-generation/route.ts",
+      ),
+      "utf8",
+    );
+
+    const resolveAuthority =
+      source.indexOf(
+        "resolveGlwAllowedInternalLinks({",
+      );
+
+    const renderAuthority =
+      source.indexOf(
+        "renderGlwAllowedInternalLinks({",
+      );
+
+    const generatedQa =
+      source.indexOf(
+        "evaluateGlwGeneratedContentQa({",
+        renderAuthority,
+      );
+
+    expect(resolveAuthority).toBeGreaterThan(0);
+    expect(renderAuthority).toBeGreaterThan(
+      resolveAuthority,
+    );
+    expect(generatedQa).toBeGreaterThan(
+      renderAuthority,
+    );
+  });
+
 });
