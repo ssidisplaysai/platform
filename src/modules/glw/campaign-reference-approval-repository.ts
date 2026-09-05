@@ -11,6 +11,7 @@ const PERSISTENCE_NAMESPACE = "glw-campaign-reference-approval-repository";
 export type GlwCampaignReferenceApproval = {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
   approvedAt: string;
@@ -23,8 +24,23 @@ type RepositoryState = {
 let stateRevision = 0;
 const approvalStore = new Map<string, GlwCampaignReferenceApproval>();
 
-function key(campaignId: string, stateCode: string): string {
-  return `${campaignId}::${stateCode.toUpperCase()}`;
+function normalizeCitySlug(value?: string | null): string | null {
+  const normalized = value
+    ?.trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") ?? "";
+  return normalized || null;
+}
+
+function key(
+  campaignId: string,
+  stateCode: string,
+  citySlug?: string | null,
+): string {
+  const base = `${campaignId}::${stateCode.trim().toUpperCase()}`;
+  const city = normalizeCitySlug(citySlug);
+  return city ? `${base}::${city}` : base;
 }
 
 function applyState(state: RepositoryState): void {
@@ -32,7 +48,7 @@ function applyState(state: RepositoryState): void {
 
   for (const approval of state.approvals) {
     approvalStore.set(
-      key(approval.campaignId, approval.stateCode),
+      key(approval.campaignId, approval.stateCode, approval.citySlug),
       deepClone(approval),
     );
   }
@@ -68,27 +84,30 @@ function persistState(): void {
 export function getGlwCampaignReferenceApproval(
   campaignId: string,
   stateCode: string,
+  citySlug?: string | null,
 ): GlwCampaignReferenceApproval | null {
-  const approval = approvalStore.get(key(campaignId, stateCode));
+  const approval = approvalStore.get(key(campaignId, stateCode, citySlug));
   return approval ? deepClone(approval) : null;
 }
 
 export function approveGlwCampaignReference(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
 }): GlwCampaignReferenceApproval {
   const approval: GlwCampaignReferenceApproval = {
     campaignId: input.campaignId,
     stateCode: input.stateCode.trim().toUpperCase(),
+    citySlug: normalizeCitySlug(input.citySlug),
     jobId: input.jobId,
     wordpressObjectId: input.wordpressObjectId,
     approvedAt: new Date().toISOString(),
   };
 
   approvalStore.set(
-    key(approval.campaignId, approval.stateCode),
+    key(approval.campaignId, approval.stateCode, approval.citySlug),
     approval,
   );
 
