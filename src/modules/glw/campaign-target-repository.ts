@@ -5,6 +5,7 @@ import {
   loadPersistedState,
   savePersistedState,
 } from "@/modules/foundation/foundation-persistence";
+import type { GlwCampaignCityTarget } from "@/modules/glw/campaign-types";
 
 const PERSISTENCE_NAMESPACE = "glw-campaign-target-repository";
 
@@ -24,6 +25,8 @@ export type GlwCampaignTarget = {
   siteId: string;
   productId: string;
   stateCode: string;
+  citySlug?: string | null;
+  cityName?: string | null;
   status: GlwCampaignTargetStatus;
   jobId: string | null;
   wordpressObjectId: string | null;
@@ -44,8 +47,27 @@ type RepositoryState = {
 const targetStore = new Map<string, GlwCampaignTarget>();
 let stateRevision = 0;
 
-function key(campaignId: string, stateCode: string): string {
-  return `${campaignId}::${stateCode.trim().toUpperCase()}`;
+function normalizeCitySlug(value?: string | null): string | null {
+  const normalized = value
+    ?.trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") ?? "";
+  return normalized || null;
+}
+
+function key(
+  campaignId: string,
+  stateCode: string,
+  citySlug?: string | null,
+): string {
+  const base = `${campaignId}::${stateCode.trim().toUpperCase()}`;
+  const city = normalizeCitySlug(citySlug);
+  return city ? `${base}::${city}` : base;
+}
+
+function keyForTarget(target: Pick<GlwCampaignTarget, "campaignId" | "stateCode" | "citySlug">): string {
+  return key(target.campaignId, target.stateCode, target.citySlug);
 }
 
 function applyState(state: RepositoryState): void {
@@ -53,7 +75,7 @@ function applyState(state: RepositoryState): void {
 
   for (const target of state.targets) {
     targetStore.set(
-      key(target.campaignId, target.stateCode),
+      keyForTarget(target),
       deepClone(target),
     );
   }
@@ -138,6 +160,8 @@ export function initializeGlwCampaignTargets(input: {
       siteId: input.siteId,
       productId: input.productId,
       stateCode,
+      citySlug: null,
+      cityName: null,
       status: isReference ? "reference_complete" : "queued",
       jobId: isReference ? input.referenceJobId : null,
       wordpressObjectId: isReference
@@ -153,10 +177,91 @@ export function initializeGlwCampaignTargets(input: {
       updatedAt: timestamp,
     };
 
-    targetStore.set(
-      key(input.campaignId, stateCode),
-      target,
-    );
+    targetStore.set(keyForTarget(target), target);
+  }
+
+  persistState();
+
+  return listGlwCampaignTargets(input.campaignId);
+}
+
+export function initializeGlwCityCampaignTargets(input: {
+  campaignId: string;
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  cityTargets: readonly GlwCampaignCityTarget[];
+  referenceTarget: {
+    stateCode: string;
+    citySlug: string;
+  };
+  referenceJobId: string;
+  referenceWordpressObjectId: string;
+}): readonly GlwCampaignTarget[] {
+  loadState();
+
+  const existing = listGlwCampaignTargets(input.campaignId);
+
+  if (existing.length > 0) {
+    if (existing.length !== input.cityTargets.length) {
+      throw new Error(
+        "Campaign target queue already exists with an unexpected target count.",
+      );
+    }
+
+    return existing;
+  }
+
+  const timestamp = new Date().toISOString();
+  const referenceStateCode = input.referenceTarget.stateCode.trim().toUpperCase();
+  const referenceCitySlug = normalizeCitySlug(input.referenceTarget.citySlug);
+
+  if (!referenceCitySlug) {
+    throw new Error("City campaign reference target requires a city slug.");
+  }
+
+  for (const rawTarget of input.cityTargets) {
+    const stateCode = rawTarget.stateCode.trim().toUpperCase();
+    const citySlug = normalizeCitySlug(rawTarget.citySlug);
+    const cityName = rawTarget.cityName.trim();
+
+    if (!citySlug || !cityName) {
+      throw new Error("City campaign target requires a city slug and city name.");
+    }
+
+    const isReference =
+      stateCode === referenceStateCode
+      && citySlug === referenceCitySlug;
+
+    const target: GlwCampaignTarget = {
+      targetId: `target-${input.campaignId}-${stateCode.toLowerCase()}-${citySlug}`,
+      campaignId: input.campaignId,
+      organizationId: input.organizationId,
+      siteId: input.siteId,
+      productId: input.productId,
+      stateCode,
+      citySlug,
+      cityName,
+      status: isReference ? "reference_complete" : "queued",
+      jobId: isReference ? input.referenceJobId : null,
+      wordpressObjectId: isReference
+        ? input.referenceWordpressObjectId
+        : null,
+      attemptCount: isReference ? 1 : 0,
+      lastError: null,
+      leaseId: null,
+      leasedAt: null,
+      leaseExpiresAt: null,
+      dispatchDate: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+
+    const targetKey = keyForTarget(target);
+    if (targetStore.has(targetKey)) {
+      throw new Error("City campaign target identity is duplicated.");
+    }
+    targetStore.set(targetKey, target);
   }
 
   persistState();
@@ -245,10 +350,11 @@ export function previewGlwCampaignTargetLease(input: {
 
       return !Number.isFinite(expiresAt) || expiresAt <= nowMs;
     })
-    .sort(
-      (a, b) =>
-        a.stateCode.localeCompare(b.stateCode),
-    )
+    .sort((a, b) => {
+      const stateOrder = a.stateCode.localeCompare(b.stateCode);
+      if (stateOrder !== 0) return stateOrder;
+      return (a.citySlug ?? "").localeCompare(b.citySlug ?? "");
+    })
     .slice(0, allowance);
 
   return {
@@ -288,11 +394,7 @@ export function leaseGlwCampaignTargets(input: {
   const leased: GlwCampaignTarget[] = [];
 
   for (const selected of preview.selected) {
-    const targetKey = key(
-      selected.campaignId,
-      selected.stateCode,
-    );
-
+    const targetKey = keyForTarget(selected);
     const current = targetStore.get(targetKey);
 
     if (!current || current.status !== "queued") {
@@ -360,7 +462,7 @@ export function releaseExpiredGlwCampaignTargetLeases(
     }
 
     targetStore.set(
-      key(current.campaignId, current.stateCode),
+      keyForTarget(current),
       {
         ...current,
         status: "queued",
@@ -384,12 +486,14 @@ export function releaseExpiredGlwCampaignTargetLeases(
 export function requireGlwCampaignTargetResumeAuthority(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
 }): GlwCampaignTarget {
   loadState();
 
   const targetKey = key(
     input.campaignId,
-    input.stateCode.trim().toUpperCase(),
+    input.stateCode,
+    input.citySlug,
   );
 
   const current = targetStore.get(targetKey);
@@ -422,6 +526,7 @@ export function requireGlwCampaignTargetResumeAuthority(input: {
 export function attachGlwCampaignTargetJob(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   leaseId: string;
   jobId: string;
 }): GlwCampaignTarget {
@@ -429,7 +534,8 @@ export function attachGlwCampaignTargetJob(input: {
 
   const targetKey = key(
     input.campaignId,
-    input.stateCode.trim().toUpperCase(),
+    input.stateCode,
+    input.citySlug,
   );
 
   const current = targetStore.get(targetKey);
@@ -465,6 +571,7 @@ export function attachGlwCampaignTargetJob(input: {
 export function markGlwCampaignTargetDraftReady(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
 }): GlwCampaignTarget {
@@ -472,7 +579,8 @@ export function markGlwCampaignTargetDraftReady(input: {
 
   const targetKey = key(
     input.campaignId,
-    input.stateCode.trim().toUpperCase(),
+    input.stateCode,
+    input.citySlug,
   );
 
   const current = targetStore.get(targetKey);
@@ -509,6 +617,7 @@ export function markGlwCampaignTargetDraftReady(input: {
 export function markGlwFailedCampaignTargetDraftReady(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
 }): GlwCampaignTarget {
@@ -516,7 +625,8 @@ export function markGlwFailedCampaignTargetDraftReady(input: {
 
   const targetKey = key(
     input.campaignId,
-    input.stateCode.trim().toUpperCase(),
+    input.stateCode,
+    input.citySlug,
   );
 
   const current = targetStore.get(targetKey);
@@ -553,13 +663,15 @@ export function markGlwFailedCampaignTargetDraftReady(input: {
 export function markGlwCampaignTargetPublished(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   wordpressObjectId: string;
 }): GlwCampaignTarget {
   loadState();
 
   const targetKey = key(
     input.campaignId,
-    input.stateCode.trim().toUpperCase(),
+    input.stateCode,
+    input.citySlug,
   );
 
   const current = targetStore.get(targetKey);
@@ -590,12 +702,17 @@ export function markGlwCampaignTargetPublished(input: {
 export function reconcileGlwCampaignTargetPublished(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
 }): GlwCampaignTarget {
   loadState();
 
-  const targetKey = key(input.campaignId, input.stateCode);
+  const targetKey = key(
+    input.campaignId,
+    input.stateCode,
+    input.citySlug,
+  );
   const current = targetStore.get(targetKey);
 
   if (
@@ -624,6 +741,7 @@ export function reconcileGlwCampaignTargetPublished(input: {
 export function markGlwCampaignTargetFailed(input: {
   campaignId: string;
   stateCode: string;
+  citySlug?: string | null;
   leaseId?: string | null;
   jobId?: string | null;
   error: string;
@@ -632,7 +750,8 @@ export function markGlwCampaignTargetFailed(input: {
 
   const targetKey = key(
     input.campaignId,
-    input.stateCode.trim().toUpperCase(),
+    input.stateCode,
+    input.citySlug,
   );
 
   const current = targetStore.get(targetKey);
