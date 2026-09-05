@@ -12,9 +12,18 @@ import {
   createDefaultGlwGenerationInput,
 } from "@/modules/glw/page-generation";
 
+function normalizeCitySlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export function buildGlwCampaignProductionGenerationForm(input: {
   campaign: GlwCampaign;
   stateCode: string;
+  citySlug?: string | null;
 }) {
   const stateCode = input.stateCode.trim().toUpperCase();
 
@@ -45,24 +54,69 @@ export function buildGlwCampaignProductionGenerationForm(input: {
 
   const site = adaptSiteForGeneration(siteRecord, profileCount);
   const product = adaptProductForGeneration(productRecord, site.siteId);
-  const form = createDefaultGlwGenerationInput(
-    site,
-    product,
-    "state_service",
-    stateCode,
-    "",
-  );
 
-  const title = `${product.topic} in ${state.name}`;
-  form.title = title;
-  form.seoTitle = `${title} | ${site.name}`;
-  form.metaDescription = `Explore ${product.topic} solutions for commercial projects in ${state.name} from ${site.name}.`;
+  let form;
+  let target;
+
+  if (input.campaign.pageType === "city_service") {
+    const citySlug = normalizeCitySlug(input.citySlug ?? "");
+    if (!citySlug) {
+      throw new Error("City campaign target requires a city slug.");
+    }
+
+    const cityTarget = input.campaign.cityTargets?.find(
+      (candidate) =>
+        candidate.stateCode === stateCode
+        && normalizeCitySlug(candidate.citySlug) === citySlug,
+    );
+
+    if (!cityTarget) {
+      throw new Error("City campaign target is outside the campaign geography.");
+    }
+
+    form = createDefaultGlwGenerationInput(
+      site,
+      product,
+      "city_service",
+      stateCode,
+      citySlug,
+    );
+
+    const title = `${product.topic} in ${cityTarget.cityName}`;
+    form.title = title;
+    form.seoTitle = `${title} | ${site.name}`;
+    form.metaDescription = `Explore ${product.topic} solutions in ${cityTarget.cityName}, ${state.name} from ${site.name}.`;
+    form.plannedOperation = "CREATE_CITY";
+    target = {
+      state,
+      citySlug,
+      cityName: cityTarget.cityName,
+    };
+  } else {
+    form = createDefaultGlwGenerationInput(
+      site,
+      product,
+      "state_service",
+      stateCode,
+      "",
+    );
+
+    const title = `${product.topic} in ${state.name}`;
+    form.title = title;
+    form.seoTitle = `${title} | ${site.name}`;
+    form.metaDescription = `Explore ${product.topic} solutions for commercial projects in ${state.name} from ${site.name}.`;
+    form.plannedOperation = "CREATE_STATE";
+    target = {
+      state,
+      citySlug: null,
+      cityName: null,
+    };
+  }
 
   // Production campaign execution remains draft-only until publication authority
   // is separately certified. The campaign publication policy is intentionally not
   // allowed to override this boundary.
   form.publicationIntent = "draft";
-  form.plannedOperation = "CREATE_STATE";
 
   const generationContext = resolveGlwCampaignGenerationContext({
     campaignId: input.campaign.campaignId,
@@ -78,7 +132,7 @@ export function buildGlwCampaignProductionGenerationForm(input: {
   form.campaignId = input.campaign.campaignId;
 
   return {
-    state,
+    ...target,
     form,
   };
 }
