@@ -59,6 +59,27 @@ function isRecoverableContentFailure(job: {
     );
 }
 
+function isRecoverableWordPressFailure(job: {
+  status: string;
+  errorCode?: string | null;
+  generatedDraft?: unknown;
+}): boolean {
+  if (
+    job.status !== "FAILED"
+    || !job.generatedDraft
+    || !job.errorCode
+  ) {
+    return false;
+  }
+
+  return new Set([
+    "WORDPRESS_HIERARCHY_READ_FAILED",
+    "WORDPRESS_HIERARCHY_WRITE_FAILED",
+    "WORDPRESS_READ_FAILED",
+    "WORDPRESS_WRITE_FAILED",
+  ]).has(job.errorCode);
+}
+
 export function resolveGlwCampaignJobReconciliationDecision(
   job: {
     status: string;
@@ -72,6 +93,7 @@ export function resolveGlwCampaignJobReconciliationDecision(
   if (
     job.status === "CONTENT_READY"
     || isRecoverableContentFailure(job)
+    || isRecoverableWordPressFailure(job)
   ) {
     return {
       action: "continue",
