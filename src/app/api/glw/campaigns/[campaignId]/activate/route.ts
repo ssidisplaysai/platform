@@ -15,6 +15,10 @@ import {
   initializeGlwCityCampaignTargets,
   listGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
+import {
+  applyRecoveredCityCampaignTargetAdoption,
+  planRecoveredCityCampaignTargetAdoption,
+} from "@/modules/glw/campaign-recovered-target-adoption";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 
@@ -236,7 +240,7 @@ export async function POST(
     );
   }
 
-  const targets = isCityCampaign
+  const initializedTargets = isCityCampaign
     ? initializeGlwCityCampaignTargets({
         campaignId: campaign.campaignId,
         organizationId: campaign.organizationId,
@@ -261,12 +265,49 @@ export async function POST(
         referenceWordpressObjectId: referenceJob.wordpressObjectId,
       });
 
+  let recoveredTargetCount = 0;
+  let targets = initializedTargets;
+
+  if (isCityCampaign) {
+    const localExecutions = await glwPageExecutionRepository.list();
+    const recovered = planRecoveredCityCampaignTargetAdoption({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      productId: campaign.productId,
+      cityTargets: campaign.cityTargets ?? [],
+      referenceTarget: {
+        stateCode: referenceStateCode,
+        citySlug: referenceCitySlug!,
+      },
+      executions: localExecutions,
+      imageRequired: campaign.imageRequired,
+    });
+
+    recoveredTargetCount = recovered.length;
+    targets = applyRecoveredCityCampaignTargetAdoption({
+      campaignId: campaign.campaignId,
+      dispositions: recovered,
+    });
+  }
+
   const referenceTargets = targets.filter(
     (target) => target.status === "reference_complete",
   );
 
   const queuedTargets = targets.filter(
     (target) => target.status === "queued",
+  );
+
+  const draftReadyTargets = targets.filter(
+    (target) => target.status === "draft_ready",
+  );
+
+  const publishedTargets = targets.filter(
+    (target) => target.status === "published",
+  );
+
+  const skippedTargets = targets.filter(
+    (target) => target.status === "skipped",
   );
 
   const expectedTargetCount = isCityCampaign
@@ -278,11 +319,20 @@ export async function POST(
       && referenceTargets[0]?.citySlug === referenceCitySlug
     : referenceTargets[0]?.stateCode === referenceStateCode;
 
+  const allCityTargetsAccountedFor = isCityCampaign
+    ? referenceTargets.length
+      + queuedTargets.length
+      + draftReadyTargets.length
+      + publishedTargets.length
+      + skippedTargets.length === expectedTargetCount
+    : true;
+
   if (
     targets.length !== expectedTargetCount
     || referenceTargets.length !== 1
     || !referenceIdentityMatches
-    || queuedTargets.length !== expectedTargetCount - 1
+    || !allCityTargetsAccountedFor
+    || (!isCityCampaign && queuedTargets.length !== expectedTargetCount - 1)
   ) {
     return NextResponse.json(
       {
@@ -316,7 +366,11 @@ export async function POST(
         referenceJob.wordpressObjectId,
       totalTargets: targets.length,
       referenceComplete: referenceTargets.length,
+      recovered: recoveredTargetCount,
       queued: queuedTargets.length,
+      draftReady: draftReadyTargets.length,
+      published: publishedTargets.length,
+      skipped: skippedTargets.length,
       pagesPerDay: activation.campaign.pagesPerDay,
       publicationPolicy:
         activation.campaign.publicationPolicy,
