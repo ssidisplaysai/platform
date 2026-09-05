@@ -141,7 +141,19 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
         <h2 className="text-lg font-semibold text-white">New Campaign</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          <label className="text-sm text-zinc-300">Site<select value={selectedSiteId} onChange={(event) => { setSelectedSiteId(event.target.value); setProductId(""); }} className="mt-2 h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white">{sites.map((site) => <option key={site.siteId} value={site.siteId}>{site.displayName}</option>)}</select></label>
+          <label className="text-sm text-zinc-300">Site<select value={selectedSiteId} onChange={(event) => {
+            const nextSiteId = event.target.value;
+
+            setSelectedSiteId(nextSiteId);
+            setProductId("");
+
+            const params = new URLSearchParams(window.location.search);
+            params.set("organizationId", organizationId);
+            params.set("siteId", nextSiteId);
+
+            window.location.href =
+              `${window.location.pathname}?${params.toString()}`;
+          }} className="mt-2 h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white">{sites.map((site) => <option key={site.siteId} value={site.siteId}>{site.displayName}</option>)}</select></label>
           <label className="text-sm text-zinc-300">Product / Service<select value={productId} onChange={(event) => setProductId(event.target.value)} className="mt-2 h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white"><option value="">Select product</option>{availableProducts.map((product) => <option key={product.productId} value={product.productId}>{product.displayName}</option>)}</select></label>
           <label className="text-sm text-zinc-300 md:col-span-2">Campaign Name<input value={name} onChange={(event) => setName(event.target.value)} placeholder="Indoor LED Sphere - 50 State Overview" className="mt-2 h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white" /></label>
           <label className="text-sm text-zinc-300">Geography<select value={allStates ? "all" : "custom"} onChange={(event) => setAllStates(event.target.value === "all")} className="mt-2 h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white"><option value="all">All 50 U.S. States</option><option value="custom" disabled>Custom selection - next slice</option></select></label>
