@@ -146,7 +146,25 @@ async function finalizeContentReadyExecution(input: {
       || input.job.errorCode?.startsWith("CONTENT_REPAIR_") === true)
     && Boolean(input.job.generatedDraft);
 
-  if (input.job.status !== "CONTENT_READY" && !recoverableQaFailure) return input.job;
+
+  const recoverableWordPressFailure =
+    input.job.status === "FAILED"
+    && Boolean(input.job.generatedDraft)
+    && Boolean(
+      input.job.errorCode
+      && new Set([
+        "WORDPRESS_HIERARCHY_READ_FAILED",
+        "WORDPRESS_HIERARCHY_WRITE_FAILED",
+        "WORDPRESS_READ_FAILED",
+        "WORDPRESS_WRITE_FAILED",
+      ]).has(input.job.errorCode),
+    );
+
+  if (
+    input.job.status !== "CONTENT_READY"
+    && !recoverableQaFailure
+    && !recoverableWordPressFailure
+  ) return input.job;
   if (!input.job.generatedDraft) {
     return glwPageExecutionRepository.update(input.job.jobId, {
       status: "FAILED",
@@ -644,6 +662,22 @@ function isExactRecoverableContentFailure(job: GlwPageExecutionRecord): boolean 
     && Boolean(job.generatedDraft);
 }
 
+function isExactRecoverableWordPressFailure(
+  job: GlwPageExecutionRecord,
+): boolean {
+  return job.status === "FAILED"
+    && Boolean(job.generatedDraft)
+    && Boolean(
+      job.errorCode
+      && new Set([
+        "WORDPRESS_HIERARCHY_READ_FAILED",
+        "WORDPRESS_HIERARCHY_WRITE_FAILED",
+        "WORDPRESS_READ_FAILED",
+        "WORDPRESS_WRITE_FAILED",
+      ]).has(job.errorCode),
+    );
+}
+
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -682,10 +716,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Continuation request does not match the exact persisted GLW target." }, { status: 409 });
     }
 
-    const exactRecoverableContentFailure = isExactRecoverableContentFailure(currentJob);
+    const exactRecoverableContentFailure =
+      isExactRecoverableContentFailure(currentJob);
 
-    if (!exactRecoverableContentFailure) {
-      const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);
+    const exactRecoverableWordPressFailure =
+      isExactRecoverableWordPressFailure(currentJob);
+
+    if (
+      !exactRecoverableContentFailure
+      && !exactRecoverableWordPressFailure
+    ) {
+      const authority = await verifyMutationAuthority(
+        preview.request,
+        preview.siteRecord,
+      );
       if ("error" in authority) {
         return NextResponse.json(authority, { status: authority.status });
       }
