@@ -118,6 +118,7 @@ export function parseContentSignals(html: string, origin = "https://projectorenc
   const links = [...new Set([...html.matchAll(/<a\b[^>]*href=["']([^"']+)["']/gi)].map((match) => decodeEntities(match[1].trim())).filter(Boolean))];
   const mediaUrls = [...new Set([...html.matchAll(/<(?:img|source)\b[^>]*(?:src|srcset)=["']([^"']+)["']/gi)].flatMap((match) => match[1].split(",").map((entry) => entry.trim().split(/\s+/)[0])).filter(Boolean))];
   const text = stripHtml(html);
+  const rawSemanticRegions = scanRawAuthoritySemanticClaims(html);
   return {
     headings,
     internalLinks: links.filter((url) => url.startsWith(origin) || url.startsWith("/")),
@@ -125,18 +126,59 @@ export function parseContentSignals(html: string, origin = "https://projectorenc
     mediaUrls,
     wordCount: text ? text.split(/\s+/).length : 0,
     text,
+    rawSemanticRegions,
   };
 }
 
 export function detectClaimFlags(text: string): string[] {
   const rules: readonly [string, RegExp][] = [
-    ["ENVIRONMENTAL_ABSOLUTE", /weatherproof|waterproof|IP[- ]rat|sealed from elements|all-weather|rain-proof|snow-proof|direct-sun rated|coastal rated/i],
-    ["SECURITY_CLAIM", /lockable|tamper[- ]resistant|anti-theft|deter(?:s|red)? theft|deter(?:s|red)? vandalism|reinforced housing/i],
-    ["PERFORMANCE_CLAIM", /guaranteed|maintain(?:s)? (?:safe|optimal)|prevents? overheating|extend(?:s)? projector life|uninterrupted|outstanding performance|perfect match/i],
+    ["ENVIRONMENTAL_ABSOLUTE", /weatherproof|waterproof|IP[- ]rat|sealed from elements|all-weather|rain-proof|snow-proof|direct-sun rated|coastal rated|(?:any|every) environment|most demanding environments|extreme weather|built for any environment/i],
+    ["SECURITY_CLAIM", /lockable|tamper[- ]resistant|anti-theft|secure\s*(?:&|and)\s*vandal resistant|vandal resistant|deter(?:s|red)? theft|deter(?:s|red)? vandalism|reinforced housing/i],
+    ["PERFORMANCE_CLAIM", /guaranteed|maintain(?:s)? (?:safe|optimal)|prevents? overheating|extend(?:s)? projector life|uninterrupted|outstanding performance|perfect match|trusted by professionals|trusted by industry leaders|years of experience|enclosures installed|quality you can trust|expert support/i],
     ["COMPATIBILITY_CLAIM", /universal compatibility|fits? (?:all|every) projectors?|any projector model/i],
-    ["PRODUCT_FEATURE_CLAIM", /service panels?|mounting hardware|built-in heater|specific materials?|custom-built/i],
+    ["PRODUCT_FEATURE_CLAIM", /service panels?|mounting hardware|built-in heater|specific materials?|custom-built|climate controlled|custom sizes available|easy installation|made in (?:the )?usa|built in usa|universal outlets|air-conditioned cooling|dual breakers|low-noise enclosure/i],
   ];
   return rules.filter(([, pattern]) => pattern.test(text)).map(([flag]) => flag);
+}
+
+export type RawAuthoritySemanticRegion = {
+  source: "HTML_COMMENT" | "CSS_COMMENT" | "JAVASCRIPT_COMMENT" | "HIDDEN_TEXT" | "SEMANTIC_ATTRIBUTE";
+  classification: "NON_RENDERED_CLAIM" | "CODE_ONLY_NONCLAIM" | "STRUCTURAL_COMMENT";
+  text: string;
+  claimFlags: readonly string[];
+};
+
+export function scanRawAuthoritySemanticClaims(html: string): readonly RawAuthoritySemanticRegion[] {
+  const regions: RawAuthoritySemanticRegion[] = [];
+  const add = (source: RawAuthoritySemanticRegion["source"], value: string) => {
+    const text = decodeEntities(value.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+    if (!text) return;
+    const claimFlags = detectClaimFlags(text);
+    regions.push({
+      source,
+      classification: claimFlags.length > 0
+        ? "NON_RENDERED_CLAIM"
+        : source === "HTML_COMMENT" || source === "CSS_COMMENT"
+          ? "STRUCTURAL_COMMENT"
+          : "CODE_ONLY_NONCLAIM",
+      text,
+      claimFlags,
+    });
+  };
+
+  for (const match of html.matchAll(/<!--([\s\S]*?)-->/g)) add("HTML_COMMENT", match[1]);
+  for (const style of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
+    for (const match of style[1].matchAll(/\/\*([\s\S]*?)\*\//g)) add("CSS_COMMENT", match[1]);
+  }
+  for (const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)) {
+    for (const match of script[1].matchAll(/\/\*([\s\S]*?)\*\/|(?:^|\n)\s*\/\/([^\n]*)/g)) add("JAVASCRIPT_COMMENT", match[1] ?? match[2] ?? "");
+  }
+  for (const hidden of html.matchAll(/<([a-z0-9]+)\b(?=[^>]*(?:\bhidden\b|aria-hidden=["']true["']|style=["'][^"']*(?:display\s*:\s*none|visibility\s*:\s*hidden)))[^>]*>([\s\S]*?)<\/\1>/gi)) add("HIDDEN_TEXT", hidden[2]);
+  for (const tag of html.matchAll(/<[a-z0-9]+\b([^>]*)>/gi)) {
+    for (const attribute of tag[1].matchAll(/\b(?:title|alt|aria-label|data-(?:title|label|description|copy))=["']([^"']+)["']/gi)) add("SEMANTIC_ATTRIBUTE", attribute[1]);
+  }
+
+  return regions;
 }
 
 export function inferIntent(input: { sourceId: number; title: string; slug: string; yoastFocus: string; text: string }): { intent: string; confidence: OwnershipConfidence } {

@@ -1,6 +1,6 @@
 jest.mock("server-only", () => ({}));
 
-import { classifyDisposition, contentSha256, contentTokenOverlap, createSnapshotId, detectClaimFlags, findOwnershipConflicts, inferIntent, mapProductAuthority, parseContentSignals, scoreOpportunity, type SitewideInventoryAsset } from "../projectorenclosure-sitewide-planner";
+import { classifyDisposition, contentSha256, contentTokenOverlap, createSnapshotId, detectClaimFlags, findOwnershipConflicts, inferIntent, mapProductAuthority, parseContentSignals, scanRawAuthoritySemanticClaims, scoreOpportunity, type SitewideInventoryAsset } from "../projectorenclosure-sitewide-planner";
 
 describe("ProjectorEnclosure sitewide planner", () => {
   test("parses headings, links, media, words, and stable hashes", () => {
@@ -13,6 +13,26 @@ describe("ProjectorEnclosure sitewide planner", () => {
     expect(detectClaimFlags("Weatherproof IP-rated lockable enclosure fits every projector")).toEqual(["ENVIRONMENTAL_ABSOLUTE", "SECURITY_CLAIM", "COMPATIBILITY_CLAIM"]);
     expect(mapProductAuthority({ title: "Homeline", slug: "homeline-projector-enclosure", text: "fan-cooled" })).toEqual({ productIds: ["prod-ssi-homeline-projector-enclosure", "prod-ssi-fan-cooled-projector-enclosures"], state: "VERIFIED" });
     expect(mapProductAuthority({ title: "Defender", slug: "defender", text: "commercial" }).state).toBe("PRODUCT_AUTHORITY_MISSING");
+    expect(detectClaimFlags("Climate Controlled, Secure & Vandal Resistant, Trusted by Industry Leaders")).toEqual(["SECURITY_CLAIM", "PERFORMANCE_CLAIM", "PRODUCT_FEATURE_CLAIM"]);
+  });
+
+  test("detects semantic claims in comments without flagging ordinary code comments", () => {
+    const regions = scanRawAuthoritySemanticClaims(`
+      <style>
+        /* Keeps "Perform in Any Environment" at the same line spacing. */
+        /* Align compact card labels. */
+        .card { display: grid; }
+      </style>
+      <script>/* Initialize navigation state. */</script>
+      <div hidden>Universal Compatibility</div>
+    `);
+
+    expect(regions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: "CSS_COMMENT", classification: "NON_RENDERED_CLAIM", claimFlags: ["ENVIRONMENTAL_ABSOLUTE"] }),
+      expect.objectContaining({ source: "CSS_COMMENT", classification: "STRUCTURAL_COMMENT", claimFlags: [] }),
+      expect.objectContaining({ source: "JAVASCRIPT_COMMENT", classification: "CODE_ONLY_NONCLAIM", claimFlags: [] }),
+      expect.objectContaining({ source: "HIDDEN_TEXT", classification: "NON_RENDERED_CLAIM", claimFlags: ["COMPATIBILITY_CLAIM"] }),
+    ]));
   });
 
   test("preserves certified ownership and classifies deterministic remediation", () => {
