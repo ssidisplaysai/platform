@@ -147,7 +147,7 @@ export function buildHomelineProductInput(normalizedAt: string): NewProductInput
       seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
       imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image, pricingDisplayMode: "hidden", lastReadinessEvaluation: normalizedAt, lastPublicationReference: null }],
     media: { primaryImageReference: "wordpress-media:11972", galleryImageReferences: [], videoReferences: [] },
-    documents: { technicalDrawingReferences: [], specSheetReferences: [], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
+    documents: { technicalDrawingReferences: [], specSheetReferences: ["owner-pdf:xs-integrator-overview-specifications:sha256:56e60725e53b152474ed7deb1ee63babaf171229fde310ba35a557b976387c37"], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
     specifications: homelineSpecifications(), seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo,
     promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt, businessGenomeObjectReference: null,
     sourceEvidenceReference: `wordpress-page:11852:${homelineSourceUrl}`,
@@ -209,7 +209,7 @@ export function buildFanCooledProductInput(normalizedAt: string): NewProductInpu
       seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt,
       imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image, pricingDisplayMode: "hidden", lastReadinessEvaluation: normalizedAt, lastPublicationReference: null }],
     media: { primaryImageReference: "wordpress-media:10757", galleryImageReferences: [], videoReferences: [] },
-    documents: { technicalDrawingReferences: [], specSheetReferences: [], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
+    documents: { technicalDrawingReferences: [], specSheetReferences: ["owner-pdf:2025-integrator-overview-specifications:sha256:9f92b0b583415e9e3a98278dc597264802603555253ea265a8c0577bb78dc5f6"], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
     specifications: [
       { specificationId: "spec-projectorenclosure-cooling", specificationGroup: "Protection", key: "cooling_method", displayLabel: "Cooling Method", rawValue: "Built-In Fan Cooling", normalizedValue: "Fan Cooled", unit: null, sortOrder: 1, ...common },
       { specificationId: "spec-projectorenclosure-construction", specificationGroup: "Construction", key: "construction", displayLabel: "Construction", rawValue: "Durable Metal Construction", normalizedValue: "Metal", unit: null, sortOrder: 2, ...common },
@@ -317,8 +317,10 @@ export function configureProjectorEnclosureSiteStudio() {
     profiles: { promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt, imageProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.image,
       seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, brandProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.brand, analyticsProfileReference: null } });
   if (!siteResult.validation.valid || !siteResult.site) throw new Error("ProjectorEnclosure site activation failed.");
+  const fanCooledAuthority = buildFanCooledProductInput(getProductById(PROJECTOR_ENCLOSURE_PRODUCT_ID)?.authorityProvenance?.normalizedAt ?? new Date().toISOString());
   const productResult = updateProduct(PROJECTOR_ENCLOSURE_PRODUCT_ID, { lifecycleState: "active", catalogStatus: "ready", enabled: true,
-    visibility: "public_candidate", seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt });
+    visibility: "public_candidate", documents: fanCooledAuthority.documents,
+    seoProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.seo, promptProfileReference: PROJECTOR_ENCLOSURE_PROFILE_IDS.prompt });
   if (!productResult.validation.valid || !productResult.product) throw new Error("ProjectorEnclosure product activation failed.");
   const homelinePatch = buildHomelineProductUpdate(homelineInput);
   const homelineResult = homelineProductRequiresUpdate(homelineProduct, homelinePatch)

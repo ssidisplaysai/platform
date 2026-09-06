@@ -49,6 +49,7 @@ describe("ProjectorEnclosure Fan Cooled product authority", () => {
       primarySiteId: "site-ssi-projectorenclosure",
       assignedSiteIds: ["site-ssi-projectorenclosure"],
       media: { primaryImageReference: "wordpress-media:10757" },
+      documents: { specSheetReferences: ["owner-pdf:2025-integrator-overview-specifications:sha256:9f92b0b583415e9e3a98278dc597264802603555253ea265a8c0577bb78dc5f6"] },
       sourceEvidenceReference: "wordpress-page:10541:https://projectorenclosure.com/fan-cooled-projector-enclosures/",
       authorityProvenance: { sourceType: "OWNER_APPROVED_CANONICAL_PRODUCT", authorityReference: "wordpress-page:10541", normalizationVersion: "fan-cooled-canonical-source-v1", normalizedAt },
     });
@@ -57,6 +58,11 @@ describe("ProjectorEnclosure Fan Cooled product authority", () => {
       expect.objectContaining({ key: "construction", rawValue: "Durable Metal Construction", normalizedValue: "Metal", sourceReference: "wordpress-page:10541" }),
       expect.objectContaining({ key: "service_access", rawValue: "Removable or hinged access panels", sourceReference: "wordpress-page:10541" }),
     ]);
+  });
+
+  test("keeps the XS authority document attached only to Homeline", () => {
+    expect(buildFanCooledProductInput(normalizedAt).documents.specSheetReferences).not.toContain(expect.stringContaining("xs-integrator"));
+    expect(buildHomelineProductInput(normalizedAt).documents.specSheetReferences).toEqual([expect.stringContaining("xs-integrator-overview-specifications")]);
   });
 
   test("does not promote unsupported generated-page claims", () => {
