@@ -59,4 +59,13 @@ describe("Elementor authority registry", () => {
     expect(applyRegisteredMediaReplacements(authority, applied, "rollback")).toBe(original);
     expect(() => applyRegisteredMediaReplacements(authority, `${original}\n${authority.registeredMediaReplacements![0].before}`, "apply")).toThrow("REGISTERED_MEDIA_REGION_MISMATCH");
   });
+
+  test("matches the exact multiline legacy image markup on page 12596", () => {
+    const authority = ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12596)!.leaves.find((leaf) => leaf.elementId === "f3694b0")!;
+    const liveMarkup = authority.registeredMediaReplacements!.map((replacement) => `            <img\n              ${replacement.before}\n            >`).join("\n");
+    expect((liveMarkup.match(/IMG-HERE/g) ?? [])).toHaveLength(5);
+    const applied = applyRegisteredMediaReplacements(authority, liveMarkup, "apply");
+    expect(applied).not.toContain("IMG-HERE");
+    expect(applyRegisteredMediaReplacements(authority, applied, "rollback")).toBe(liveMarkup);
+  });
 });
