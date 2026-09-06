@@ -20,10 +20,18 @@ Owner confirmation establishes `Homeline` as the market-facing identity for `XS 
 | `integrator-lock-owner-pdf-page-3.png` | 3 | image 5 | `d127ba7ee44882fa4621f4e6dbec187493c3f6c28e25fca97713388a83dd6fe5` | lock detail |
 | `integrator-open-interior-owner-pdf-page-4.png` | 4 | image 1 | `ff88d3a3bfb941c4c2ac2fbd5782632751f67239415248d25dee6c117e5778e8` | insulation and projector-shelf detail |
 
+## WordPress media identities
+
+| Authority | Media ID | Canonical source URL | Stored original |
+| --- | ---: | --- | --- |
+| Unistrut mounting | 12997 | `https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-unistrut-mounting-owner-pdf-page-3.png` | byte-identical |
+| Sealed doorway/interior | 12998 | `https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-sealed-door-interior-owner-pdf-page-3.png` | byte-identical |
+| Lock detail | 12999 | `https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-lock-owner-pdf-page-3.png` | byte-identical |
+
 The page-4 interior corroborates WordPress media `11972`, the canonical Homeline image. Under the owner-confirmed alias, that media may represent the XS Integrator/Homeline member, but not every Integrator size.
 
 ## Fail-closed notes
 
 - Family facts and size-specific facts are separate in `projectorenclosure-integrator-authority.ts`.
 - The source wording describes the enclosure as both fan-cooled and closed-loop sealed. Autonomous cooling-topology claims remain blocked until reconciled.
-- The normalized PDF images are not WordPress media attachments. Three feature roles still require a bounded owner-supplied product-media upload before page 12596 can reference them.
+- WordPress-generated derivatives are separate identities and do not replace the checksummed uploaded originals as provenance authority.

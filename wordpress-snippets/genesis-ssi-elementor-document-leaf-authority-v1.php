@@ -24,7 +24,19 @@ function genesis_ssi_elementor_leaf_v1_registry() {
             'siteId' => 'site-ssi-projectorenclosure',
             'hostname' => 'projectorenclosure.com',
             'version' => GENESIS_SSI_ELEMENTOR_LEAF_V1_REGISTRY_VERSION,
-            'leaves' => array('bc00420' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'rollback'))),
+            'leaves' => array(
+                'bc00420' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'rollback')),
+                'f3694b0' => array(
+                    'widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array(),
+                    'mediaReplacements' => array(
+                        array('before' => '<img src="IMG-HERE" alt="Integrator Series Unistrut mounting system" >', 'after' => '<img src="https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-unistrut-mounting-owner-pdf-page-3.png" alt="Integrator Series top and bottom Unistrut mounting detail" >', 'mediaId' => 12997, 'url' => 'https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-unistrut-mounting-owner-pdf-page-3.png'),
+                        array('before' => '<img src="IMG-HERE" alt="Weather-protected Integrator projector enclosure" >', 'after' => '<img src="https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-sealed-door-interior-owner-pdf-page-3.png" alt="Integrator Series sealed doorway and insulated interior" >', 'mediaId' => 12998, 'url' => 'https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-sealed-door-interior-owner-pdf-page-3.png'),
+                        array('before' => '<img src="IMG-HERE" alt="Integrator Series vandal-resistant locking system" >', 'after' => '<img src="https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-lock-owner-pdf-page-3.png" alt="Integrator Series enclosure lock detail" >', 'mediaId' => 12999, 'url' => 'https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-lock-owner-pdf-page-3.png'),
+                        array('before' => '<img src="IMG-HERE" alt="Fully insulated Integrator projector enclosure" >', 'after' => '<img src="https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg" alt="XS Integrator and Homeline open interior showing insulation" >', 'mediaId' => 11972, 'url' => 'https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg'),
+                        array('before' => '<img src="IMG-HERE" alt="Integrated adjustable projector shelf" >', 'after' => '<img src="https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg" alt="XS Integrator and Homeline open interior showing projector shelf" >', 'mediaId' => 11972, 'url' => 'https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg'),
+                    ),
+                ),
+            ),
         ),
         12608 => array(
             'siteId' => 'site-ssi-projectorenclosure',
@@ -169,6 +181,9 @@ function genesis_ssi_elementor_leaf_v1_read(WP_REST_Request $request) {
 
 function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
     $params = $request->get_json_params();
+    if (is_array($params) && array_key_exists('mutation_class', $params)) {
+        return genesis_ssi_elementor_leaf_v1_write_registered_media($params);
+    }
     if (is_array($params) && array_key_exists('changes', $params)) {
         return genesis_ssi_elementor_leaf_v1_write_many($params);
     }
@@ -211,6 +226,51 @@ function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
         'pageSettingsSha256' => $readback['pageSettingsHash'],
         'globalReferencesSha256' => $readback['globalReferencesHash'],
     ));
+}
+
+function genesis_ssi_elementor_leaf_v1_write_registered_media($params) {
+    $keys = is_array($params) ? array_keys($params) : array();
+    sort($keys);
+    if ($keys !== array('action', 'element_id', 'expected_document_sha256', 'expected_leaf_sha256', 'leaf', 'mutation_class', 'page_id') || ($params['mutation_class'] ?? '') !== 'REGISTERED_MEDIA_REFERENCE_REPLACEMENT' || ($params['leaf'] ?? '') !== 'settings.html' || !in_array($params['action'] ?? '', array('apply', 'rollback'), true)) {
+        return new WP_Error('genesis_elementor_media_invalid_request', 'Exact registered media replacement request is required.', array('status' => 400));
+    }
+    $page_id = absint($params['page_id']);
+    $element_id = sanitize_key((string) $params['element_id']);
+    $context = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id);
+    if (is_wp_error($context)) return $context;
+    $replacements = $context['authority']['leaf']['mediaReplacements'] ?? null;
+    if (!is_array($replacements) || count($replacements) !== 5) return new WP_Error('genesis_elementor_media_target_forbidden', 'Five exact registered media replacements are required.', array('status' => 403));
+    if (!hash_equals($context['documentHash'], (string) $params['expected_document_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_document', 'Document hash conflict.', array('status' => 409));
+    if (!hash_equals($context['leafHash'], (string) $params['expected_leaf_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_leaf', 'Leaf hash conflict.', array('status' => 409));
+    $before_value = $context['element']['settings']['html'];
+    $after_value = $before_value;
+    foreach ($replacements as $replacement) {
+        $source = $params['action'] === 'apply' ? $replacement['before'] : $replacement['after'];
+        $destination = $params['action'] === 'apply' ? $replacement['after'] : $replacement['before'];
+        if (substr_count($after_value, $source) !== 1 || substr_count($after_value, $destination) !== 0) return new WP_Error('genesis_elementor_media_region_mismatch', 'Every registered media region must resolve exactly once.', array('status' => 409));
+        if ($params['action'] === 'apply') {
+            $media_url = wp_get_attachment_url($replacement['mediaId']);
+            if ($media_url !== $replacement['url'] || get_post_mime_type($replacement['mediaId']) !== 'image/png' && $replacement['mediaId'] !== 11972) return new WP_Error('genesis_elementor_media_identity_mismatch', 'Registered WordPress media identity did not match.', array('status' => 409));
+            if (preg_replace('/^www\./', '', strtolower((string) wp_parse_url($media_url, PHP_URL_HOST))) !== GENESIS_SSI_ELEMENTOR_LEAF_V1_HOST) return new WP_Error('genesis_elementor_media_cross_site', 'Registered media must belong to this site.', array('status' => 403));
+        }
+        $after_value = str_replace($source, $destination, $after_value, $count);
+        if ($count !== 1) return new WP_Error('genesis_elementor_media_region_mismatch', 'Registered media replacement count mismatch.', array('status' => 409));
+    }
+    if (genesis_ssi_elementor_leaf_v1_regions($before_value, '/<style\b[\s\S]*?<\/style>/i') !== genesis_ssi_elementor_leaf_v1_regions($after_value, '/<style\b[\s\S]*?<\/style>/i') || genesis_ssi_elementor_leaf_v1_regions($before_value, '/<script\b[\s\S]*?<\/script>/i') !== genesis_ssi_elementor_leaf_v1_regions($after_value, '/<script\b[\s\S]*?<\/script>/i') || genesis_ssi_elementor_leaf_v1_regions($before_value, '/<a\b[\s\S]*?<\/a>/i') !== genesis_ssi_elementor_leaf_v1_regions($after_value, '/<a\b[\s\S]*?<\/a>/i')) return new WP_Error('genesis_elementor_media_protected_region', 'Copy, links, scripts, and styles are immutable.', array('status' => 403));
+    $before_structure = $context['structure'];
+    $before_setting_hashes = $context['settingHashes'];
+    $target_path = '';
+    foreach ($context['structure'] as $row) if ($row['id'] === $element_id) $target_path = $row['path'] . '/settings.html';
+    $context['element']['settings']['html'] = $after_value;
+    $saved = $context['document']->save(array('elements' => $context['tree']));
+    if (!$saved) return new WP_Error('genesis_elementor_leaf_save_failed', 'Elementor document save failed.', array('status' => 500));
+    $readback = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id);
+    if (is_wp_error($readback) || $readback['leafHash'] !== genesis_ssi_elementor_leaf_v1_hash($after_value) || $readback['hierarchyHash'] !== genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($before_structure)) || $readback['pageSettingsHash'] !== $context['pageSettingsHash'] || $readback['globalReferencesHash'] !== $context['globalReferencesHash']) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact registered media readback failed.', array('status' => 500));
+    foreach ($before_setting_hashes as $path => $leaf_hash) {
+        if ($path === $target_path) continue;
+        if (!isset($readback['settingHashes'][$path]) || $readback['settingHashes'][$path] !== $leaf_hash) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target setting leaf changed.', array('status' => 500));
+    }
+    return rest_ensure_response(array('ok' => true, 'state' => 'SAVED', 'mutationClass' => 'REGISTERED_MEDIA_REFERENCE_REPLACEMENT', 'action' => $params['action'], 'saveAuthority' => 'Elementor\\Core\\Base\\Document::save', 'saveCount' => 1, 'pageId' => $page_id, 'elementId' => $element_id, 'changedMediaRegions' => count($replacements), 'documentSha256' => $readback['documentHash'], 'leafSha256' => $readback['leafHash'], 'postContentSha256' => $readback['postContentHash'], 'elementCount' => count($readback['structure']), 'hierarchySha256' => $readback['hierarchyHash'], 'pageSettingsSha256' => $readback['pageSettingsHash'], 'globalReferencesSha256' => $readback['globalReferencesHash']));
 }
 
 function genesis_ssi_elementor_leaf_v1_write_many($params) {

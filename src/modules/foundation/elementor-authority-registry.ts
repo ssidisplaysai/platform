@@ -1,6 +1,14 @@
 export const ELEMENTOR_AUTHORITY_REGISTRY_VERSION = "genesis-elementor-authority-v1" as const;
 
-export type ElementorMutationClass = "SEMANTIC_HTML" | "INERT_CERTIFICATION";
+export type ElementorMutationClass = "SEMANTIC_HTML" | "INERT_CERTIFICATION" | "REGISTERED_MEDIA_REFERENCE_REPLACEMENT";
+
+export type RegisteredMediaReplacement = {
+  before: string;
+  after: string;
+  mediaId: number;
+  mediaUrl: string;
+  altText: string;
+};
 
 export type ElementorLeafAuthority = {
   elementId: string;
@@ -11,6 +19,7 @@ export type ElementorLeafAuthority = {
   allowScripts: false;
   allowStyles: false;
   allowMediaMutation: false;
+  registeredMediaReplacements?: readonly RegisteredMediaReplacement[];
 };
 
 export type ElementorDocumentAuthority = {
@@ -50,7 +59,20 @@ export const ELEMENTOR_AUTHORITY_REGISTRY: readonly ElementorDocumentAuthority[]
     hostname: "projectorenclosure.com",
     wordpressObjectId: 12596,
     registryVersion: ELEMENTOR_AUTHORITY_REGISTRY_VERSION,
-    leaves: [htmlLeaf("bc00420", ["INERT_CERTIFICATION"])],
+    leaves: [
+      htmlLeaf("bc00420", ["INERT_CERTIFICATION"]),
+      {
+        ...htmlLeaf("f3694b0", ["REGISTERED_MEDIA_REFERENCE_REPLACEMENT"]),
+        allowMediaMutation: true,
+        registeredMediaReplacements: [
+          { before: '<img src="IMG-HERE" alt="Integrator Series Unistrut mounting system" >', after: '<img src="https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-unistrut-mounting-owner-pdf-page-3.png" alt="Integrator Series top and bottom Unistrut mounting detail" >', mediaId: 12997, mediaUrl: "https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-unistrut-mounting-owner-pdf-page-3.png", altText: "Integrator Series top and bottom Unistrut mounting detail" },
+          { before: '<img src="IMG-HERE" alt="Weather-protected Integrator projector enclosure" >', after: '<img src="https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-sealed-door-interior-owner-pdf-page-3.png" alt="Integrator Series sealed doorway and insulated interior" >', mediaId: 12998, mediaUrl: "https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-sealed-door-interior-owner-pdf-page-3.png", altText: "Integrator Series sealed doorway and insulated interior" },
+          { before: '<img src="IMG-HERE" alt="Integrator Series vandal-resistant locking system" >', after: '<img src="https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-lock-owner-pdf-page-3.png" alt="Integrator Series enclosure lock detail" >', mediaId: 12999, mediaUrl: "https://projectorenclosure.com/wp-content/uploads/2026/09/integrator-lock-owner-pdf-page-3.png", altText: "Integrator Series enclosure lock detail" },
+          { before: '<img src="IMG-HERE" alt="Fully insulated Integrator projector enclosure" >', after: '<img src="https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg" alt="XS Integrator and Homeline open interior showing insulation" >', mediaId: 11972, mediaUrl: "https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg", altText: "XS Integrator and Homeline open interior showing insulation" },
+          { before: '<img src="IMG-HERE" alt="Integrated adjustable projector shelf" >', after: '<img src="https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg" alt="XS Integrator and Homeline open interior showing projector shelf" >', mediaId: 11972, mediaUrl: "https://projectorenclosure.com/wp-content/uploads/2026/06/homeline-1-7-scaled.jpg", altText: "XS Integrator and Homeline open interior showing projector shelf" },
+        ],
+      },
+    ],
   },
   {
     siteId: "site-ssi-projectorenclosure",
@@ -99,4 +121,16 @@ export function preservesProtectedElementorRegions(input: {
   if (!input.authority.allowStyles && JSON.stringify(regions(input.before, /<style\b[\s\S]*?<\/style>/gi)) !== JSON.stringify(regions(input.replacement, /<style\b[\s\S]*?<\/style>/gi))) return false;
   if (!input.authority.allowMediaMutation && JSON.stringify(regions(input.before, /<(?:img|video|audio|source|picture)\b[^>]*>/gi)) !== JSON.stringify(regions(input.replacement, /<(?:img|video|audio|source|picture)\b[^>]*>/gi))) return false;
   return true;
+}
+
+export function applyRegisteredMediaReplacements(authority: ElementorLeafAuthority, value: string, action: "apply" | "rollback"): string {
+  if (!authority.mutationClasses.includes("REGISTERED_MEDIA_REFERENCE_REPLACEMENT") || authority.registeredMediaReplacements?.length !== 5) throw new Error("REGISTERED_MEDIA_AUTHORITY_REQUIRED");
+  let result = value;
+  for (const replacement of authority.registeredMediaReplacements) {
+    const source = action === "apply" ? replacement.before : replacement.after;
+    const destination = action === "apply" ? replacement.after : replacement.before;
+    if (result.split(source).length - 1 !== 1 || result.includes(destination)) throw new Error("REGISTERED_MEDIA_REGION_MISMATCH");
+    result = result.replace(source, destination);
+  }
+  return result;
 }

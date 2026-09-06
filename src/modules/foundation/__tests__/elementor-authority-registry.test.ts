@@ -1,5 +1,6 @@
 import {
   authorizeElementorLeaf,
+  applyRegisteredMediaReplacements,
   ELEMENTOR_AUTHORITY_REGISTRY,
   ELEMENTOR_AUTHORITY_REGISTRY_VERSION,
   preservesProtectedElementorRegions,
@@ -42,7 +43,20 @@ describe("Elementor authority registry", () => {
     expect(ELEMENTOR_AUTHORITY_REGISTRY).toHaveLength(3);
     expect(ELEMENTOR_AUTHORITY_REGISTRY[0].leaves.map((leaf) => leaf.elementId)).toEqual(["98e1f56", "0ce76cb", "e87d71c", "94e8256"]);
     expect(JSON.stringify(ELEMENTOR_AUTHORITY_REGISTRY)).not.toMatch(/\*|ALL_ELEMENTOR_PAGES/);
-    expect(ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12596)?.leaves).toEqual([expect.objectContaining({ elementId: "bc00420", mutationClasses: ["INERT_CERTIFICATION"] })]);
+    expect(ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12596)?.leaves).toEqual([
+      expect.objectContaining({ elementId: "bc00420", mutationClasses: ["INERT_CERTIFICATION"] }),
+      expect.objectContaining({ elementId: "f3694b0", mutationClasses: ["REGISTERED_MEDIA_REFERENCE_REPLACEMENT"], registeredMediaReplacements: expect.any(Array) }),
+    ]);
     expect(ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12608)?.leaves).toEqual([expect.objectContaining({ elementId: "be422a0", mutationClasses: ["INERT_CERTIFICATION"] })]);
+  });
+
+  test("applies and rolls back exactly five server-registered media regions", () => {
+    const authority = ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12596)!.leaves.find((leaf) => leaf.elementId === "f3694b0")!;
+    const original = authority.registeredMediaReplacements!.map((replacement) => replacement.before).join("\n");
+    const applied = applyRegisteredMediaReplacements(authority, original, "apply");
+    expect(applied).not.toContain("IMG-HERE");
+    expect(authority.registeredMediaReplacements!.every((replacement) => applied.includes(replacement.mediaUrl) && applied.includes(replacement.altText))).toBe(true);
+    expect(applyRegisteredMediaReplacements(authority, applied, "rollback")).toBe(original);
+    expect(() => applyRegisteredMediaReplacements(authority, `${original}\n${authority.registeredMediaReplacements![0].before}`, "apply")).toThrow("REGISTERED_MEDIA_REGION_MISMATCH");
   });
 });

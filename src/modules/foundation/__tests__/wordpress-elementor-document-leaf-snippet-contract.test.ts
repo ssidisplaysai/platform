@@ -39,7 +39,7 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("count(array_unique($requested_ids)) !== count($requested_ids)");
     expect(source).toContain("$requested_ids !== $expected_order");
     expect(source).toContain("foreach ($params['changes'] as $change)");
-    expect(source.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(2);
+    expect(source.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(3);
     expect(source).toContain("'saveCount' => 1");
     expect(source).toContain("'changedElementIds' => $requested_ids");
   });
@@ -69,5 +69,19 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("$readback['pageSettingsHash'] !== $context['pageSettingsHash']");
     expect(source).toContain("$readback['globalReferencesHash'] !== $context['globalReferencesHash']");
     expect(source).not.toMatch(/\$params\[['\"](?:registry|authority|allowed_ids|widgetType|maxBytes)['\"]\]/);
+  });
+
+  test("implements exact registered media replacement without request-defined URLs or copy", () => {
+    const mediaHandler = source.slice(source.indexOf("function genesis_ssi_elementor_leaf_v1_write_registered_media"), source.indexOf("function genesis_ssi_elementor_leaf_v1_write_many"));
+    expect(source).toContain("REGISTERED_MEDIA_REFERENCE_REPLACEMENT");
+    expect(source).toContain("'f3694b0' => array(");
+    expect(source).toContain("'mediaReplacements' => array(");
+    expect(source).toContain("count($replacements) !== 5");
+    expect(source).toContain("wp_get_attachment_url($replacement['mediaId'])");
+    expect(source).toContain("genesis_elementor_media_identity_mismatch");
+    expect(source).toContain("genesis_elementor_media_region_mismatch");
+    expect(source).toContain("genesis_elementor_media_protected_region");
+    expect(source).toContain("'saveCount' => 1");
+    expect(mediaHandler).not.toMatch(/\$params\[['\"](?:url|mediaId|alt|before|after|replacement)['\"]\]/);
   });
 });
