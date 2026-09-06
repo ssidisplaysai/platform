@@ -25,6 +25,8 @@ A future atomic request may contain one expected document hash and exactly one e
 
 The server must validate every page, element, widget, leaf, document hash, and leaf hash before changing memory. It must then perform one `Document::save(['elements' => $tree])`, compare the complete parsed hierarchy, require all non-target leaves unchanged, and retain the exact pre-save `_elementor_data` and post_content snapshot for rollback through the same document save pathway.
 
+The source artifact implements this contract when POST receives `page_id`, `expected_document_sha256`, `reason`, and a deterministically ordered `changes` array. The installed snippet must be updated to this source revision and its multi-leaf mode certified before the real Home remediation can proceed.
+
 ## Certification
 
 Install the snippet, then use widget `98e1f56` with one inert HTML comment marker. Record exact Elementor and post_content hashes before/after. Verify REST rendered content and public `/`, invoke the existing Elementor files authority if needed, then restore through the same endpoint. Exact original document and post_content hashes are mandatory.

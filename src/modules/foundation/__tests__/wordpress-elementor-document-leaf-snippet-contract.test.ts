@@ -25,4 +25,14 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("genesis_elementor_leaf_collateral_change");
     expect(source).not.toMatch(/eval\s*\(|file_get_contents|unlink|glob\s*\(|update_option|activate_plugin|switch_theme/i);
   });
+
+  test("validates all multi-leaf changes before one document save", () => {
+    expect(source).toContain("genesis_ssi_elementor_leaf_v1_write_many($params)");
+    expect(source).toContain("count(array_unique($requested_ids)) !== count($requested_ids)");
+    expect(source).toContain("$requested_ids !== $expected_order");
+    expect(source).toContain("foreach ($params['changes'] as $change)");
+    expect(source.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(2);
+    expect(source).toContain("'saveCount' => 1");
+    expect(source).toContain("'changedElementIds' => $requested_ids");
+  });
 });
