@@ -12,7 +12,11 @@ describe("ProjectorEnclosure sitewide planner", () => {
   test("detects unsupported claim families and maps verified product authority", () => {
     expect(detectClaimFlags("Weatherproof IP-rated lockable enclosure fits every projector")).toEqual(["ENVIRONMENTAL_ABSOLUTE", "SECURITY_CLAIM", "COMPATIBILITY_CLAIM"]);
     expect(mapProductAuthority({ title: "Homeline", slug: "homeline-projector-enclosure", text: "fan-cooled" })).toEqual({ productIds: ["prod-ssi-homeline-projector-enclosure", "prod-ssi-fan-cooled-projector-enclosures"], state: "VERIFIED" });
-    expect(mapProductAuthority({ title: "Defender", slug: "defender", text: "commercial" }).state).toBe("PRODUCT_AUTHORITY_MISSING");
+    expect(mapProductAuthority({ title: "Defender", slug: "defender", text: "commercial" })).toEqual({ productIds: ["prod-ssi-defender-series-projector-enclosure"], state: "VERIFIED" });
+    expect(mapProductAuthority({ title: "Hush Projector Enclosures", slug: "hush-projector-enclosures", text: "fan-cooled" })).toEqual({ productIds: ["prod-ssi-hush-projector-enclosures"], state: "VERIFIED" });
+    expect(mapProductAuthority({ title: "UST Defender", slug: "ust-defender", text: "climate controlled" }).state).toBe("PRODUCT_AUTHORITY_MISSING");
+    expect(mapProductAuthority({ title: "UST Hush", slug: "ust-hush", text: "hush" })).toEqual({ productIds: ["prod-ssi-ust-hush-projector-enclosure"], state: "PARTIAL" });
+    expect(mapProductAuthority({ title: "Projector Cages", slug: "projector-cages", text: "locking" })).toEqual({ productIds: ["prod-ssi-projector-cages"], state: "PARTIAL" });
     expect(detectClaimFlags("Climate Controlled, Secure & Vandal Resistant, Trusted by Industry Leaders")).toEqual(["SECURITY_CLAIM", "PERFORMANCE_CLAIM", "PRODUCT_FEATURE_CLAIM"]);
   });
 

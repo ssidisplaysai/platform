@@ -14,7 +14,7 @@ describe("ProjectorEnclosure Integrator owner authority", () => {
     expect(INTEGRATOR_AUTHORITY_FACTS.every((fact) => fact.source.startsWith("owner-pdf:") && fact.page > 0 && fact.confidence === 1)).toBe(true);
     expect(INTEGRATOR_AUTHORITY_FACTS.filter((fact) => fact.key === "dimensions_lwh").map((fact) => fact.scope)).toEqual(["XS_INTEGRATOR_HOMELINE", "SMALL", "MEDIUM", "LARGE"]);
     expect(INTEGRATOR_AUTHORITY_FACTS.find((fact) => fact.key === "usable_space_lwh")?.scope).toBe("XS_INTEGRATOR_HOMELINE");
-    expect(INTEGRATOR_AUTHORITY_CONFLICTS[0].policy).toBe("BLOCK_AUTONOMOUS_CLAIM_GENERATION_UNTIL_RECONCILED");
+    expect(INTEGRATOR_AUTHORITY_CONFLICTS[0]).toMatchObject({ policy: "RESOLVED_BY_OWNER_INTEGRATOR_IS_FAN_COOLED", controllingValue: "FAN_COOLED", resolvedBy: "owner-resolution:integrator-cooling" });
   });
 
   test("records immutable source checksums and clears all five visual positions", () => {

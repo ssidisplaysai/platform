@@ -70,7 +70,9 @@ export const INTEGRATOR_AUTHORITY_CONFLICTS = Object.freeze([
     conflictId: "integrator-cooling-topology-wording",
     sources: [`${INTEGRATOR_SOURCE_DOCUMENTS.family2025.id}:page:1`, `${INTEGRATOR_SOURCE_DOCUMENTS.family2025.id}:page:2`],
     statement: "The document describes the family as both fan-cooled and closed-loop sealed.",
-    policy: "BLOCK_AUTONOMOUS_CLAIM_GENERATION_UNTIL_RECONCILED",
+    policy: "RESOLVED_BY_OWNER_INTEGRATOR_IS_FAN_COOLED",
+    controllingValue: "FAN_COOLED",
+    resolvedBy: "owner-resolution:integrator-cooling",
   },
 ] as const);
 

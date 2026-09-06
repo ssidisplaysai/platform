@@ -2,7 +2,7 @@ import type { VisualAuthorityReference } from "./visual-product-authority";
 
 export const PROJECTORENCLOSURE_OWNER_SOURCE_AUTHORITY_VERSION = "projectorenclosure-owner-source-authority-v1" as const;
 
-export type OwnerSourceClass = "OWNER_DOCUMENT" | "OWNER_SIGNOFF" | "OWNER_SPECIFICATION" | "OWNER_MEASUREMENT" | "OWNER_PHOTOGRAPH" | "OWNER_ARCHIVE" | "UNKNOWN_OWNER_SOURCE";
+export type OwnerSourceClass = "OWNER_DIRECT_AUTHORITY" | "OWNER_DOCUMENT" | "OWNER_SIGNOFF" | "OWNER_SPECIFICATION" | "OWNER_MEASUREMENT" | "OWNER_PHOTOGRAPH" | "OWNER_ARCHIVE" | "UNKNOWN_OWNER_SOURCE";
 export type OwnerSourceProduct = "HUSH" | "DEFENDER" | "CLIMATE_CONTROLLED" | "UST_HUSH" | "PROJECTOR_CAGE" | "INTEGRATOR" | "HOMELINE_XS";
 export type OwnerFactClass = "IDENTITY" | "MODEL" | "DIMENSIONS" | "WEIGHT" | "CONSTRUCTION" | "COOLING_METHOD" | "AIRFLOW" | "SERVICE_ACCESS" | "DOOR_ACCESS" | "MOUNTING" | "PROJECTOR_FIT" | "ELECTRICAL" | "POWER" | "OPERATING_CONDITIONS" | "ENVIRONMENTAL_LIMITS" | "SECURITY" | "LOCKING" | "INSULATION" | "AC_CLIMATE_CONTROL" | "INSTALLATION" | "COMPATIBILITY" | "OPTIONS" | "CUSTOMIZATION" | "WARRANTY" | "OTHER_VERIFIED_FACT";
 export type OwnerFactDisposition = "NEW_VERIFIED" | "CONFIRMS_EXISTING" | "DUPLICATE" | "CONFLICT" | "AMBIGUOUS" | "STALE_OR_SUPERSEDED" | "INSUFFICIENT_EVIDENCE";
@@ -41,9 +41,35 @@ export type OwnerAuthorityConflict = {
   fact: string;
   sourceA: string;
   sourceB: string | null;
-  disposition: "OWNER_DECISION_REQUIRED" | "IDENTITY_AMBIGUOUS" | "PRESERVE_BOTH_SCOPES";
+  disposition: "OWNER_DECISION_REQUIRED" | "IDENTITY_AMBIGUOUS" | "PRESERVE_BOTH_SCOPES" | "RESOLVED_BY_OWNER" | "RESOLVED_BY_SOURCE_PRECEDENCE";
+  controllingValue?: string;
+  resolvedBy?: string;
   remediationImpact: string;
 };
+
+export type OwnerAuthorityResolution = {
+  resolutionId: string;
+  sourceClass: "OWNER_DIRECT_AUTHORITY";
+  product: OwnerSourceProduct;
+  factClass: OwnerFactClass;
+  key: string;
+  controllingValue: string;
+  ownerAuthorityStatus: "CONTROLLING";
+  recordedAt: string;
+  supersedes: readonly string[];
+  prohibitedExtrapolations: readonly string[];
+};
+
+export const PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP = "2026-09-06T16:43:12.613Z" as const;
+export const PROJECTORENCLOSURE_OWNER_RESOLUTIONS: readonly OwnerAuthorityResolution[] = Object.freeze([
+  { resolutionId: "owner-resolution:defender-ip65-equivalent", sourceClass: "OWNER_DIRECT_AUTHORITY", product: "DEFENDER", factClass: "ENVIRONMENTAL_LIMITS", key: "ip_rating", controllingValue: "IP65 Equivalent", ownerAuthorityStatus: "CONTROLLING", recordedAt: PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP, supersedes: ["owner-pdf:defender-series-specifications:page:1:IP55 Equivalent"], prohibitedExtrapolations: ["no certified IP65 claim", "no tested-to-IP65 claim", "no independent-certification claim", "no direct-rain permission inferred"] },
+  { resolutionId: "owner-resolution:defender-model-prefix", sourceClass: "OWNER_DIRECT_AUTHORITY", product: "DEFENDER", factClass: "MODEL", key: "canonical_model_prefix", controllingValue: "ENC-CC-*", ownerAuthorityStatus: "CONTROLLING", recordedAt: PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP, supersedes: ["owner-image:Climate Controlled Projector Enclosure.png:ENC-AC"], prohibitedExtrapolations: ["ENC-AC is not a current alias", "no model-specific alias inferred"] },
+  { resolutionId: "owner-resolution:hush-size-precedence", sourceClass: "OWNER_DIRECT_AUTHORITY", product: "HUSH", factClass: "PROJECTOR_FIT", key: "controlling_size_source", controllingValue: "owner-pdf:hush-enclosures:page:1:sizes-table", ownerAuthorityStatus: "CONTROLLING", recordedAt: PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP, supersedes: ["owner-image:Hush Projector Enclosure.png:size-table"], prohibitedExtrapolations: ["no shared dimensions across Hush models", "no facts inferred from conflicting PNG table"] },
+  { resolutionId: "owner-resolution:homeline-xs-exterior-dimensions", sourceClass: "OWNER_DIRECT_AUTHORITY", product: "HOMELINE_XS", factClass: "DIMENSIONS", key: "exterior_dimensions", controllingValue: "23.66 x 22.6 x 10.83 in", ownerAuthorityStatus: "CONTROLLING", recordedAt: PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP, supersedes: ["owner-pdf:xs-integrator-overview-specifications:page:1:22.6x19.69x10.83"], prohibitedExtrapolations: ["do not relabel superseded dimensions as internal or usable", "do not apply to Small, Medium, Large, Large+, or Custom Integrator"] },
+  { resolutionId: "owner-resolution:integrator-cooling", sourceClass: "OWNER_DIRECT_AUTHORITY", product: "INTEGRATOR", factClass: "COOLING_METHOD", key: "cooling_family", controllingValue: "FAN_COOLED", ownerAuthorityStatus: "CONTROLLING", recordedAt: PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP, supersedes: ["owner-pdf:2025-integrator-overview-specifications:page:1:closed-loop wording"], prohibitedExtrapolations: ["do not describe Integrator as closed-loop", "no identical model dimensions inferred"] },
+  { resolutionId: "owner-resolution:hush-cooling", sourceClass: "OWNER_DIRECT_AUTHORITY", product: "HUSH", factClass: "COOLING_METHOD", key: "cooling_family", controllingValue: "FAN_COOLED", ownerAuthorityStatus: "CONTROLLING", recordedAt: PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP, supersedes: [], prohibitedExtrapolations: ["do not describe Hush as closed-loop", "no identical model dimensions inferred"] },
+  { resolutionId: "owner-resolution:defender-cooling", sourceClass: "OWNER_DIRECT_AUTHORITY", product: "DEFENDER", factClass: "COOLING_METHOD", key: "cooling_family", controllingValue: "CLOSED_LOOP_SEALED_CLIMATE_CONTROLLED", ownerAuthorityStatus: "CONTROLLING", recordedAt: PROJECTORENCLOSURE_OWNER_RESOLUTION_TIMESTAMP, supersedes: [], prohibitedExtrapolations: ["do not describe Defender as standard fan-cooled", "no identical AC, heating, electrical, or fitment values inferred"] },
+]);
 
 const source = (record: OwnerSourceRecord): OwnerSourceRecord => Object.freeze(record);
 export const PROJECTORENCLOSURE_OWNER_SOURCES: readonly OwnerSourceRecord[] = Object.freeze([
@@ -102,22 +128,22 @@ export const PROJECTORENCLOSURE_OWNER_VISUALS: readonly VisualAuthorityReference
 ]);
 
 export const PROJECTORENCLOSURE_OWNER_CONFLICTS: readonly OwnerAuthorityConflict[] = Object.freeze([
-  { conflictId: "defender-ip-rating", product: "DEFENDER", fact: "IP rating", sourceA: "owner-pdf:defender-series-specifications:page:1:IP55 Equivalent", sourceB: "owner-image:Climate Controlled Projector Enclosure.png:IP65 Equivalent", disposition: "OWNER_DECISION_REQUIRED", remediationImpact: "Block autonomous IP-rating and weatherproof claims." },
-  { conflictId: "defender-model-prefix", product: "DEFENDER", fact: "model prefix", sourceA: "owner-pdf:defender-series-specifications:page:1:ENC-CC", sourceB: "owner-image:Climate Controlled Projector Enclosure.png:ENC-AC", disposition: "OWNER_DECISION_REQUIRED", remediationImpact: "Use source-specific model IDs only until owner resolves naming." },
-  { conflictId: "hush-size-table", product: "HUSH", fact: "available model dimensions", sourceA: "owner-pdf:hush-enclosures:page:1", sourceB: "owner-image:Hush Projector Enclosure.png", disposition: "OWNER_DECISION_REQUIRED", remediationImpact: "Block size-table remediation; family-level cooling, electrical, insulation, and sound facts remain usable." },
-  { conflictId: "ust-cc-filename-identity", product: "UST_HUSH", fact: "product identity", sourceA: "owner-local:Downloads/UST CC Enclosure Sign-Off.pdf:filename", sourceB: "owner-pdf:ust-hush-drawing-a:page:1:title-block", disposition: "IDENTITY_AMBIGUOUS", remediationImpact: "Do not infer climate-controlled UST authority; both internal title blocks identify UST Hush." },
-  { conflictId: "homeline-xs-exterior-dimensions", product: "HOMELINE_XS", fact: "exterior dimensions", sourceA: "owner-pdf:homeline-spec-sheet:page:1:23.66x22.6x10.83", sourceB: "owner-pdf:xs-integrator-overview-specifications:page:1:22.6x19.69x10.83", disposition: "OWNER_DECISION_REQUIRED", remediationImpact: "Block autonomous exterior-dimension claims for the Homeline/XS alias." },
+  { conflictId: "defender-ip-rating", product: "DEFENDER", fact: "IP rating", sourceA: "owner-pdf:defender-series-specifications:page:1:IP55 Equivalent", sourceB: "owner-image:Climate Controlled Projector Enclosure.png:IP65 Equivalent", disposition: "RESOLVED_BY_OWNER", controllingValue: "IP65 Equivalent", resolvedBy: "owner-resolution:defender-ip65-equivalent", remediationImpact: "IP65 Equivalent is controlling; certification and direct-rain claims remain prohibited." },
+  { conflictId: "defender-model-prefix", product: "DEFENDER", fact: "model prefix", sourceA: "owner-pdf:defender-series-specifications:page:1:ENC-CC", sourceB: "owner-image:Climate Controlled Projector Enclosure.png:ENC-AC", disposition: "RESOLVED_BY_OWNER", controllingValue: "ENC-CC-*", resolvedBy: "owner-resolution:defender-model-prefix", remediationImpact: "ENC-AC remains historical/conflicting nomenclature only." },
+  { conflictId: "hush-size-table", product: "HUSH", fact: "available model dimensions", sourceA: "owner-pdf:hush-enclosures:page:1", sourceB: "owner-image:Hush Projector Enclosure.png", disposition: "RESOLVED_BY_OWNER", controllingValue: "owner-pdf:hush-enclosures:page:1:sizes-table", resolvedBy: "owner-resolution:hush-size-precedence", remediationImpact: "Specification PDF controls dimensions; PNG remains visual authority only." },
+  { conflictId: "ust-cc-filename-identity", product: "UST_HUSH", fact: "product identity", sourceA: "owner-local:Downloads/UST CC Enclosure Sign-Off.pdf:filename", sourceB: "owner-pdf:ust-hush-drawing-a:page:1:title-block", disposition: "RESOLVED_BY_SOURCE_PRECEDENCE", controllingValue: "UST Hush Projector Enclosure", resolvedBy: "internal-engineering-title-blocks", remediationImpact: "No UST Defender authority is established." },
+  { conflictId: "homeline-xs-exterior-dimensions", product: "HOMELINE_XS", fact: "exterior dimensions", sourceA: "owner-pdf:homeline-spec-sheet:page:1:23.66x22.6x10.83", sourceB: "owner-pdf:xs-integrator-overview-specifications:page:1:22.6x19.69x10.83", disposition: "RESOLVED_BY_OWNER", controllingValue: "23.66 x 22.6 x 10.83 in", resolvedBy: "owner-resolution:homeline-xs-exterior-dimensions", remediationImpact: "Controlling dimensions apply only to Homeline/XS Integrator." },
   { conflictId: "homeline-marketing-environment", product: "HOMELINE_XS", fact: "weather sealing and insulation", sourceA: "owner-pdf:homeline-marketing-sheet:page:1", sourceB: "owner-approved-homeline-product-policy:no-weather-or-sealing-inference", disposition: "OWNER_DECISION_REQUIRED", remediationImpact: "Existing conservative product policy remains controlling; marketing claims cannot unlock remediation." },
 ]);
 
 export const PROJECTORENCLOSURE_FAMILY_AUTHORITY = Object.freeze({
-  HUSH: { status: "CONFLICTED_AUTHORITY", established: ["identity", "thermostatic fan cooling", "120 V", "sub 10 dBA", "insulation", "internal outlets and breakers"], missing: ["resolved model dimensions", "test method for sound output", "verified installation limits"] },
-  DEFENDER: { status: "CONFLICTED_AUTHORITY", established: ["family identity", "model-specific dimensions", "power", "weights", "door openings", "AC/heating capacity", "working temperature", "one-year AC warranty"], missing: ["resolved IP rating", "resolved model prefix", "approved environmental claim language"] },
-  CLIMATE_CONTROLLED: { status: "CONFLICTED_AUTHORITY", established: ["Defender climate-control role", "model-specific AC and heating data", "working temperature"], missing: ["resolved IP rating", "resolved environmental limits", "UST climate-controlled identity"] },
+  HUSH: { status: "VERIFIED_PRODUCT_AUTHORITY", established: ["identity", "FAN_COOLED", "controlling model size table", "120 V", "sub 10 dBA", "insulation", "internal outlets and breakers"], missing: ["test method for sound output", "verified installation limits"] },
+  DEFENDER: { status: "VERIFIED_PRODUCT_AUTHORITY", established: ["family identity", "CLOSED_LOOP_SEALED_CLIMATE_CONTROLLED", "IP65 Equivalent", "ENC-CC-* model prefix", "model-specific dimensions", "power", "weights", "door openings", "AC/heating capacity", "working temperature", "one-year AC warranty"], missing: ["certification evidence", "direct-rain installation permission", "model-specific projector fitment"] },
+  CLIMATE_CONTROLLED: { status: "VERIFIED_PRODUCT_AUTHORITY", established: ["Defender closed-loop sealed climate-control role", "IP65 Equivalent", "model-specific AC and heating data", "working temperature"], missing: ["certification evidence", "UST Defender identity", "model-specific projector fitment"] },
   UST_HUSH: { status: "PARTIAL_PRODUCT_AUTHORITY", established: ["UST Hush identity", "dimensional drawing", "product geometry"], missing: ["model number", "cooling", "electrical", "sound", "installation and fit policy"] },
   PROJECTOR_CAGE: { status: "PARTIAL_PRODUCT_AUTHORITY", established: ["Large Projector Cage ceiling-mount identity", "product geometry visual"], missing: ["model IDs", "dimensions", "construction specification", "locking/security performance", "mount compatibility"] },
-  INTEGRATOR: { status: "CONFLICTED_AUTHORITY", established: ["family facts from registered sources", "Small ENC-FC-SM drawing and dimensions", "Small mounting details"], missing: ["resolved cooling-topology wording"] },
-  HOMELINE_XS: { status: "CONFLICTED_AUTHORITY", established: ["owner-confirmed alias", "fit envelope", "power components", "exact product photographs"], missing: ["resolved exterior dimensions", "resolved weather/insulation claims"] },
+  INTEGRATOR: { status: "VERIFIED_PRODUCT_AUTHORITY", established: ["FAN_COOLED family topology", "family facts from registered sources", "Small ENC-FC-SM drawing and dimensions", "Small mounting details"], missing: ["model-specific facts for unlisted variants"] },
+  HOMELINE_XS: { status: "VERIFIED_PRODUCT_AUTHORITY", established: ["owner-confirmed alias", "23.66 x 22.6 x 10.83 in exterior dimensions", "fit envelope", "power components", "exact product photographs"], missing: ["resolved weather/insulation marketing claims"] },
 } as const satisfies Record<OwnerSourceProduct, { status: FamilyAuthorityStatus; established: readonly string[]; missing: readonly string[] }>);
 
 export function validateOwnerSourceAuthorityRegistry(): readonly string[] {
@@ -133,6 +159,11 @@ export function validateOwnerSourceAuthorityRegistry(): readonly string[] {
   for (const item of PROJECTORENCLOSURE_OWNER_FACTS) {
     if (!sourceIds.has(item.sourceId)) issues.push(`UNKNOWN_FACT_SOURCE:${item.factId}`);
     if (!item.evidenceLocation.trim()) issues.push(`MISSING_EVIDENCE_LOCATION:${item.factId}`);
+  }
+  const resolutionIds = new Set(PROJECTORENCLOSURE_OWNER_RESOLUTIONS.map((item) => item.resolutionId));
+  for (const conflict of PROJECTORENCLOSURE_OWNER_CONFLICTS.filter((item) => item.disposition === "RESOLVED_BY_OWNER")) {
+    if (!conflict.resolvedBy || !resolutionIds.has(conflict.resolvedBy)) issues.push(`UNKNOWN_CONFLICT_RESOLUTION:${conflict.conflictId}`);
+    if (!conflict.controllingValue) issues.push(`MISSING_CONTROLLING_VALUE:${conflict.conflictId}`);
   }
   return issues;
 }

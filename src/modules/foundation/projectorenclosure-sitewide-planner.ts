@@ -201,11 +201,18 @@ export function inferIntent(input: { sourceId: number; title: string; slug: stri
 
 export function mapProductAuthority(input: { title: string; slug: string; text: string }): { productIds: string[]; state: SitewideInventoryAsset["productAuthorityState"] } {
   const source = `${input.title} ${input.slug} ${input.text}`.toLowerCase();
+  const identity = `${input.title} ${input.slug}`.toLowerCase();
   const productIds: string[] = [];
+  if (/ust.*defender|defender.*ust/.test(identity)) return { productIds: [], state: "PRODUCT_AUTHORITY_MISSING" };
+  if (/ust.*hush|hush.*ust|ultra.short.throw.*hush/.test(identity)) return { productIds: ["prod-ssi-ust-hush-projector-enclosure"], state: "PARTIAL" };
+  if (/hush/.test(identity)) return { productIds: ["prod-ssi-hush-projector-enclosures"], state: "VERIFIED" };
+  if (/defender|climate.control/.test(identity)) return { productIds: ["prod-ssi-defender-series-projector-enclosure"], state: "VERIFIED" };
+  if (/integrator/.test(identity)) return { productIds: ["prod-ssi-integrator-series-projector-enclosure"], state: "VERIFIED" };
+  if (/projector.cage/.test(identity)) return { productIds: ["prod-ssi-projector-cages"], state: "PARTIAL" };
   if (/homeline/.test(source)) productIds.push("prod-ssi-homeline-projector-enclosure");
   if (/fan.cool/.test(source)) productIds.push("prod-ssi-fan-cooled-projector-enclosures");
   if (productIds.length > 0) return { productIds: [...new Set(productIds)], state: "VERIFIED" };
-  if (/integrator|defender|hush|climate.control|projector cage|\bust\b/.test(source)) return { productIds: [], state: "PRODUCT_AUTHORITY_MISSING" };
+  if (/\bust\b/.test(source)) return { productIds: [], state: "PRODUCT_AUTHORITY_MISSING" };
   if (/projector enclosure|projection mapping/.test(source)) return { productIds: [], state: "PARTIAL" };
   return { productIds: [], state: "NOT_APPLICABLE" };
 }
