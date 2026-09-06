@@ -5,9 +5,44 @@
  */
 
 const GENESIS_SSI_ELEMENTOR_LEAF_V1_HOST = 'projectorenclosure.com';
-const GENESIS_SSI_ELEMENTOR_LEAF_V1_PAGE_ID = 3810;
-const GENESIS_SSI_ELEMENTOR_LEAF_V1_MAX_BYTES = 100000;
-const GENESIS_SSI_ELEMENTOR_LEAF_V1_ALLOWED_IDS = array('98e1f56', '0ce76cb', 'e87d71c', '94e8256');
+const GENESIS_SSI_ELEMENTOR_LEAF_V1_REGISTRY_VERSION = 'genesis-elementor-authority-v1';
+
+function genesis_ssi_elementor_leaf_v1_registry() {
+    return array(
+        3810 => array(
+            'siteId' => 'site-ssi-projectorenclosure',
+            'hostname' => 'projectorenclosure.com',
+            'version' => GENESIS_SSI_ELEMENTOR_LEAF_V1_REGISTRY_VERSION,
+            'leaves' => array(
+                '98e1f56' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'remediation', 'rollback')),
+                '0ce76cb' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'remediation', 'rollback')),
+                'e87d71c' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'remediation', 'rollback')),
+                '94e8256' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'remediation', 'rollback')),
+            ),
+        ),
+        12596 => array(
+            'siteId' => 'site-ssi-projectorenclosure',
+            'hostname' => 'projectorenclosure.com',
+            'version' => GENESIS_SSI_ELEMENTOR_LEAF_V1_REGISTRY_VERSION,
+            'leaves' => array('bc00420' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'rollback'))),
+        ),
+        12608 => array(
+            'siteId' => 'site-ssi-projectorenclosure',
+            'hostname' => 'projectorenclosure.com',
+            'version' => GENESIS_SSI_ELEMENTOR_LEAF_V1_REGISTRY_VERSION,
+            'leaves' => array('be422a0' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'rollback'))),
+        ),
+    );
+}
+
+function genesis_ssi_elementor_leaf_v1_authority($page_id, $element_id, $reason = null) {
+    $registry = genesis_ssi_elementor_leaf_v1_registry();
+    if (!isset($registry[$page_id]) || !isset($registry[$page_id]['leaves'][$element_id])) return null;
+    $document = $registry[$page_id];
+    $leaf = $document['leaves'][$element_id];
+    if ($document['hostname'] !== GENESIS_SSI_ELEMENTOR_LEAF_V1_HOST || ($reason !== null && !in_array($reason, $leaf['reasons'], true))) return null;
+    return array('document' => $document, 'leaf' => $leaf);
+}
 
 function genesis_ssi_elementor_leaf_v1_permission() {
     if (!is_user_logged_in()) return new WP_Error('genesis_elementor_leaf_unauthorized', 'Authentication is required.', array('status' => 401));
@@ -47,10 +82,40 @@ function genesis_ssi_elementor_leaf_v1_find(&$nodes, $element_id, &$matches) {
     }
 }
 
-function genesis_ssi_elementor_leaf_v1_context($page_id, $element_id) {
-    if ($page_id !== GENESIS_SSI_ELEMENTOR_LEAF_V1_PAGE_ID || !in_array($element_id, GENESIS_SSI_ELEMENTOR_LEAF_V1_ALLOWED_IDS, true)) {
-        return new WP_Error('genesis_elementor_leaf_target_forbidden', 'Only approved page 3810 HTML widgets are available.', array('status' => 403));
+function genesis_ssi_elementor_leaf_v1_setting_hashes($nodes, $path = array()) {
+    $hashes = array();
+    foreach ($nodes as $position => $node) {
+        $id = isset($node['id']) ? (string) $node['id'] : (string) $position;
+        $next = array_merge($path, array($id));
+        foreach (($node['settings'] ?? array()) as $key => $value) {
+            if (is_string($value)) $hashes[implode('/', $next) . '/settings.' . $key] = genesis_ssi_elementor_leaf_v1_hash($value);
+        }
+        if (!empty($node['elements']) && is_array($node['elements'])) $hashes = array_merge($hashes, genesis_ssi_elementor_leaf_v1_setting_hashes($node['elements'], $next));
     }
+    ksort($hashes);
+    return $hashes;
+}
+
+function genesis_ssi_elementor_leaf_v1_regions($value, $pattern) {
+    preg_match_all($pattern, (string) $value, $matches);
+    return $matches[0];
+}
+
+function genesis_ssi_elementor_leaf_v1_replacement_allowed($before, $after) {
+    $patterns = array(
+        '/<script\b[\s\S]*?<\/script>/i',
+        '/<style\b[\s\S]*?<\/style>/i',
+        '/<(?:img|video|audio|source|picture)\b[^>]*>/i',
+    );
+    foreach ($patterns as $pattern) {
+        if (genesis_ssi_elementor_leaf_v1_regions($before, $pattern) !== genesis_ssi_elementor_leaf_v1_regions($after, $pattern)) return false;
+    }
+    return true;
+}
+
+function genesis_ssi_elementor_leaf_v1_context($page_id, $element_id, $reason = null) {
+    $authority = genesis_ssi_elementor_leaf_v1_authority($page_id, $element_id, $reason);
+    if ($authority === null) return new WP_Error('genesis_elementor_leaf_target_forbidden', 'The exact page, element, leaf, and mutation class must be registered.', array('status' => 403));
     if (!current_user_can('edit_post', $page_id)) return new WP_Error('genesis_elementor_leaf_page_forbidden', 'Exact page edit permission is required.', array('status' => 403));
     if (!class_exists('Elementor\\Plugin')) return new WP_Error('genesis_elementor_leaf_unavailable', 'Elementor is unavailable.', array('status' => 503));
     if (get_post_meta($page_id, '_elementor_edit_mode', true) !== 'builder') return new WP_Error('genesis_elementor_leaf_not_builder', 'Page is not Elementor-managed.', array('status' => 409));
@@ -63,7 +128,7 @@ function genesis_ssi_elementor_leaf_v1_context($page_id, $element_id) {
     genesis_ssi_elementor_leaf_v1_find($tree, $element_id, $matches);
     if (count($matches) !== 1) return new WP_Error('genesis_elementor_leaf_non_unique', 'Element ID must resolve exactly once.', array('status' => 409));
     $element =& $matches[0];
-    if (($element['elType'] ?? '') !== 'widget' || ($element['widgetType'] ?? '') !== 'html') return new WP_Error('genesis_elementor_leaf_wrong_widget', 'Only Elementor HTML widgets are mutable.', array('status' => 409));
+    if (($element['elType'] ?? '') !== 'widget' || ($element['widgetType'] ?? '') !== $authority['leaf']['widgetType']) return new WP_Error('genesis_elementor_leaf_wrong_widget', 'Registered widget type mismatch.', array('status' => 409));
     if (!isset($element['settings']['html']) || !is_string($element['settings']['html'])) return new WP_Error('genesis_elementor_leaf_missing', 'settings.html is unavailable.', array('status' => 409));
     $structure = genesis_ssi_elementor_leaf_v1_structure($tree);
     return array(
@@ -75,6 +140,10 @@ function genesis_ssi_elementor_leaf_v1_context($page_id, $element_id) {
         'structure' => $structure,
         'hierarchyHash' => genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($structure)),
         'postContentHash' => genesis_ssi_elementor_leaf_v1_hash(get_post_field('post_content', $page_id, 'raw')),
+        'pageSettingsHash' => genesis_ssi_elementor_leaf_v1_hash(wp_json_encode(get_post_meta($page_id, '_elementor_page_settings', true))),
+        'globalReferencesHash' => genesis_ssi_elementor_leaf_v1_hash(wp_json_encode(array_filter($structure, function ($row) { return ($row['widgetType'] ?? '') === 'global'; }))),
+        'settingHashes' => genesis_ssi_elementor_leaf_v1_setting_hashes($tree),
+        'authority' => $authority,
     );
 }
 
@@ -109,34 +178,24 @@ function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
     if ($keys !== $expected || ($params['leaf'] ?? '') !== 'settings.html' || !is_string($params['replacement'] ?? null)) {
         return new WP_Error('genesis_elementor_leaf_invalid_request', 'Exact document-leaf request is required.', array('status' => 400));
     }
-    if (!in_array($params['reason'], array('certification', 'rollback', 'remediation'), true)) return new WP_Error('genesis_elementor_leaf_invalid_reason', 'Reason is not approved.', array('status' => 400));
-    if (strlen($params['replacement']) > GENESIS_SSI_ELEMENTOR_LEAF_V1_MAX_BYTES) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the byte limit.', array('status' => 413));
     $page_id = absint($params['page_id']);
     $element_id = sanitize_key((string) $params['element_id']);
-    $context = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id);
+    $context = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id, $params['reason']);
     if (is_wp_error($context)) return $context;
+    if (strlen($params['replacement']) > $context['authority']['leaf']['maxBytes']) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the registered byte limit.', array('status' => 413));
+    if (!genesis_ssi_elementor_leaf_v1_replacement_allowed($context['element']['settings']['html'], $params['replacement'])) return new WP_Error('genesis_elementor_leaf_protected_region', 'Scripts, styles, and media are immutable for this authority.', array('status' => 403));
     if (!hash_equals($context['documentHash'], (string) $params['expected_document_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_document', 'Document hash conflict.', array('status' => 409));
     if (!hash_equals($context['leafHash'], (string) $params['expected_leaf_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_leaf', 'Leaf hash conflict.', array('status' => 409));
     $before_structure = $context['structure'];
     $before_other_leaves = array();
-    foreach (GENESIS_SSI_ELEMENTOR_LEAF_V1_ALLOWED_IDS as $id) {
-        if ($id === $element_id) continue;
-        $matches = array();
-        genesis_ssi_elementor_leaf_v1_find($context['tree'], $id, $matches);
-        if (count($matches) !== 1 || ($matches[0]['widgetType'] ?? '') !== 'html' || !is_string($matches[0]['settings']['html'] ?? null)) return new WP_Error('genesis_elementor_leaf_structure_mismatch', 'Approved widget structure is incomplete.', array('status' => 409));
-        $before_other_leaves[$id] = genesis_ssi_elementor_leaf_v1_hash($matches[0]['settings']['html']);
-    }
+    foreach ($context['settingHashes'] as $path => $leaf_hash) if ($path !== $context['structure'][array_search($element_id, array_column($context['structure'], 'id'), true)]['path'] . '/settings.html') $before_other_leaves[$path] = $leaf_hash;
     $context['element']['settings']['html'] = $params['replacement'];
     $saved = $context['document']->save(array('elements' => $context['tree']));
     if (!$saved) return new WP_Error('genesis_elementor_leaf_save_failed', 'Elementor document save failed.', array('status' => 500));
     $readback = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id);
     if (is_wp_error($readback)) return $readback;
-    if ($readback['leafHash'] !== genesis_ssi_elementor_leaf_v1_hash($params['replacement']) || $readback['hierarchyHash'] !== genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($before_structure))) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact Elementor readback failed.', array('status' => 500));
-    foreach ($before_other_leaves as $id => $leaf_hash) {
-        $matches = array();
-        genesis_ssi_elementor_leaf_v1_find($readback['tree'], $id, $matches);
-        if (count($matches) !== 1 || genesis_ssi_elementor_leaf_v1_hash($matches[0]['settings']['html']) !== $leaf_hash) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target HTML leaf changed.', array('status' => 500));
-    }
+    if ($readback['leafHash'] !== genesis_ssi_elementor_leaf_v1_hash($params['replacement']) || $readback['hierarchyHash'] !== genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($before_structure)) || $readback['pageSettingsHash'] !== $context['pageSettingsHash'] || $readback['globalReferencesHash'] !== $context['globalReferencesHash']) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact Elementor readback failed.', array('status' => 500));
+    foreach ($before_other_leaves as $path => $leaf_hash) if (!isset($readback['settingHashes'][$path]) || $readback['settingHashes'][$path] !== $leaf_hash) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target setting leaf changed.', array('status' => 500));
     return rest_ensure_response(array(
         'ok' => true,
         'state' => 'SAVED',
@@ -149,6 +208,8 @@ function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
         'postContentSha256' => $readback['postContentHash'],
         'elementCount' => count($readback['structure']),
         'hierarchySha256' => $readback['hierarchyHash'],
+        'pageSettingsSha256' => $readback['pageSettingsHash'],
+        'globalReferencesSha256' => $readback['globalReferencesHash'],
     ));
 }
 
@@ -158,9 +219,11 @@ function genesis_ssi_elementor_leaf_v1_write_many($params) {
     if ($keys !== array('changes', 'expected_document_sha256', 'page_id', 'reason') || !is_array($params['changes']) || $params['changes'] === array()) {
         return new WP_Error('genesis_elementor_leaves_invalid_request', 'Exact multi-leaf request is required.', array('status' => 400));
     }
-    if (!in_array($params['reason'], array('rollback', 'remediation'), true)) return new WP_Error('genesis_elementor_leaf_invalid_reason', 'Reason is not approved.', array('status' => 400));
-    if (count($params['changes']) > count(GENESIS_SSI_ELEMENTOR_LEAF_V1_ALLOWED_IDS)) return new WP_Error('genesis_elementor_leaves_too_many', 'Too many leaf changes.', array('status' => 400));
     $page_id = absint($params['page_id']);
+    $registry = genesis_ssi_elementor_leaf_v1_registry();
+    if (!isset($registry[$page_id])) return new WP_Error('genesis_elementor_leaf_target_forbidden', 'Page is not registered.', array('status' => 403));
+    $allowed_ids = array_keys($registry[$page_id]['leaves']);
+    if (count($params['changes']) > count($allowed_ids)) return new WP_Error('genesis_elementor_leaves_too_many', 'Too many leaf changes.', array('status' => 400));
     $requested_ids = array();
     foreach ($params['changes'] as $change) {
         $change_keys = is_array($change) ? array_keys($change) : array();
@@ -168,20 +231,21 @@ function genesis_ssi_elementor_leaf_v1_write_many($params) {
         if ($change_keys !== array('element_id', 'expected_leaf_sha256', 'leaf', 'replacement') || ($change['leaf'] ?? '') !== 'settings.html' || !is_string($change['replacement'] ?? null)) {
             return new WP_Error('genesis_elementor_leaves_invalid_change', 'Every change must identify one exact HTML leaf.', array('status' => 400));
         }
-        if (strlen($change['replacement']) > GENESIS_SSI_ELEMENTOR_LEAF_V1_MAX_BYTES) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the byte limit.', array('status' => 413));
         $requested_ids[] = sanitize_key((string) $change['element_id']);
     }
     if (count(array_unique($requested_ids)) !== count($requested_ids)) return new WP_Error('genesis_elementor_leaves_duplicate', 'Element IDs must be unique.', array('status' => 409));
-    $expected_order = array_values(array_filter(GENESIS_SSI_ELEMENTOR_LEAF_V1_ALLOWED_IDS, function ($id) use ($requested_ids) { return in_array($id, $requested_ids, true); }));
+    $expected_order = array_values(array_filter($allowed_ids, function ($id) use ($requested_ids) { return in_array($id, $requested_ids, true); }));
     if ($requested_ids !== $expected_order) return new WP_Error('genesis_elementor_leaves_order', 'Changes must follow the approved deterministic widget order.', array('status' => 409));
 
-    $context = genesis_ssi_elementor_leaf_v1_context($page_id, $requested_ids[0]);
+    $context = genesis_ssi_elementor_leaf_v1_context($page_id, $requested_ids[0], $params['reason']);
     if (is_wp_error($context)) return $context;
     if (!hash_equals($context['documentHash'], (string) $params['expected_document_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_document', 'Document hash conflict.', array('status' => 409));
     $before_structure = $context['structure'];
+    $before_setting_hashes = $context['settingHashes'];
     $before_leaf_hashes = array();
     $targets = array();
-    foreach (GENESIS_SSI_ELEMENTOR_LEAF_V1_ALLOWED_IDS as $id) {
+    $target_paths = array();
+    foreach ($allowed_ids as $id) {
         $matches = array();
         genesis_ssi_elementor_leaf_v1_find($context['tree'], $id, $matches);
         if (count($matches) !== 1 || ($matches[0]['elType'] ?? '') !== 'widget' || ($matches[0]['widgetType'] ?? '') !== 'html' || !is_string($matches[0]['settings']['html'] ?? null)) {
@@ -189,10 +253,14 @@ function genesis_ssi_elementor_leaf_v1_write_many($params) {
         }
         $before_leaf_hashes[$id] = genesis_ssi_elementor_leaf_v1_hash($matches[0]['settings']['html']);
         $targets[$id] =& $matches[0];
+        foreach ($context['structure'] as $row) if ($row['id'] === $id) $target_paths[$id] = $row['path'] . '/settings.html';
     }
     foreach ($params['changes'] as $change) {
         $id = sanitize_key((string) $change['element_id']);
-        if (!isset($targets[$id])) return new WP_Error('genesis_elementor_leaf_target_forbidden', 'Only approved page 3810 HTML widgets are available.', array('status' => 403));
+        $authority = genesis_ssi_elementor_leaf_v1_authority($page_id, $id, $params['reason']);
+        if (!isset($targets[$id]) || $authority === null) return new WP_Error('genesis_elementor_leaf_target_forbidden', 'Exact registered authority is required.', array('status' => 403));
+        if (strlen($change['replacement']) > $authority['leaf']['maxBytes']) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the registered byte limit.', array('status' => 413));
+        if (!genesis_ssi_elementor_leaf_v1_replacement_allowed($targets[$id]['settings']['html'], $change['replacement'])) return new WP_Error('genesis_elementor_leaf_protected_region', 'Scripts, styles, and media are immutable for this authority.', array('status' => 403));
         if (!hash_equals($before_leaf_hashes[$id], (string) $change['expected_leaf_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_leaf', 'Leaf hash conflict.', array('status' => 409));
     }
     foreach ($params['changes'] as $change) {
@@ -203,14 +271,18 @@ function genesis_ssi_elementor_leaf_v1_write_many($params) {
     if (!$saved) return new WP_Error('genesis_elementor_leaf_save_failed', 'Elementor document save failed.', array('status' => 500));
 
     $readback = genesis_ssi_elementor_leaf_v1_context($page_id, $requested_ids[0]);
-    if (is_wp_error($readback) || $readback['hierarchyHash'] !== genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($before_structure))) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact Elementor readback failed.', array('status' => 500));
+    if (is_wp_error($readback) || $readback['hierarchyHash'] !== genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($before_structure)) || $readback['pageSettingsHash'] !== $context['pageSettingsHash'] || $readback['globalReferencesHash'] !== $context['globalReferencesHash']) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact Elementor readback failed.', array('status' => 500));
     $after_leaf_hashes = array();
-    foreach (GENESIS_SSI_ELEMENTOR_LEAF_V1_ALLOWED_IDS as $id) {
+    foreach ($allowed_ids as $id) {
         $matches = array();
         genesis_ssi_elementor_leaf_v1_find($readback['tree'], $id, $matches);
         if (count($matches) !== 1) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact Elementor readback failed.', array('status' => 500));
         $after_leaf_hashes[$id] = genesis_ssi_elementor_leaf_v1_hash($matches[0]['settings']['html']);
         if (!in_array($id, $requested_ids, true) && $after_leaf_hashes[$id] !== $before_leaf_hashes[$id]) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target HTML leaf changed.', array('status' => 500));
+    }
+    foreach ($before_setting_hashes as $path => $leaf_hash) {
+        if (in_array($path, array_values($target_paths), true)) continue;
+        if (!isset($readback['settingHashes'][$path]) || $readback['settingHashes'][$path] !== $leaf_hash) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target setting leaf changed.', array('status' => 500));
     }
     return rest_ensure_response(array(
         'ok' => true,
@@ -224,6 +296,8 @@ function genesis_ssi_elementor_leaf_v1_write_many($params) {
         'postContentSha256' => $readback['postContentHash'],
         'elementCount' => count($readback['structure']),
         'hierarchySha256' => $readback['hierarchyHash'],
+        'pageSettingsSha256' => $readback['pageSettingsHash'],
+        'globalReferencesSha256' => $readback['globalReferencesHash'],
     ));
 }
 

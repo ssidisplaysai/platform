@@ -12,4 +12,14 @@ describe("rendering authority classifier", () => {
   test("allows an Elementor authority change to proceed to later gates", () => {
     expect(() => requireOperativeAuthorityMutation({ classification: "MULTI_AUTHORITY", postContentChanged: false, elementorDocumentChanged: true, publicContentChanged: true })).not.toThrow();
   });
+
+  test("recognizes direct WordPress content after normal rendering filters add markup", () => {
+    const renderedContent = `<h2>Fan-Cooled Projector Enclosures for Retail Projection Mapping</h2><p>${"Planning guidance for retail installations. ".repeat(4)}</p>`;
+    const publicHtml = `<main><h2 class="entry-heading">Fan-Cooled Projector Enclosures for Retail Projection Mapping</h2><p>${"Planning guidance for retail installations. ".repeat(4)}</p></main>`;
+    expect(classifyRenderingAuthority({ postContent: renderedContent, renderedContent, publicHtml, elementorData: null, elementorEditMode: null })).toBe("POST_CONTENT_DIRECT");
+  });
+
+  test("uses UNRESOLVED instead of inferring an unsupported authority", () => {
+    expect(classifyRenderingAuthority({ postContent: "source", renderedContent: "rendered", publicHtml: "different", elementorData: null, elementorEditMode: null })).toBe("UNRESOLVED");
+  });
 });
