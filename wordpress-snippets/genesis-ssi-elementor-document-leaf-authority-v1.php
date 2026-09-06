@@ -20,6 +20,27 @@ function genesis_ssi_elementor_leaf_v1_registry() {
                 '94e8256' => array('widgetType' => 'html', 'leaf' => 'settings.html', 'maxBytes' => 100000, 'reasons' => array('certification', 'remediation', 'rollback')),
             ),
         ),
+        12575 => array(
+            'siteId' => 'site-ssi-projectorenclosure',
+            'hostname' => 'projectorenclosure.com',
+            'version' => GENESIS_SSI_ELEMENTOR_LEAF_V1_REGISTRY_VERSION,
+            'leaves' => array(
+                '2d677b8' => array(
+                    'widgetType' => 'html',
+                    'leaf' => 'settings.html',
+                    'maxBytes' => 100000,
+                    'reasons' => array('certification', 'remediation', 'rollback'),
+                    'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION'),
+                    'semanticPolicy' => array(
+                        'allowedTextTags' => array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td', 'th', 'span', 'strong', 'em', 'a'),
+                        'allowedAnchorUnwrapHrefs' => array('/applications/', '/stadiums-arenas/', '/education/', '/houses-of-worship/', '/museums-exhibits/', '/outdoor-entertainment/', '/trade-shows-events/', '/resources/', '/spec-sheets/', '/cad-files/', '/installation-guides/', '/faq/', '/case-studies/'),
+                        'allowedHrefReplacements' => array(),
+                        'certificationMarker' => '<!-- GENESIS-SEMANTIC-HTML-CERT-12575 -->',
+                        'rollbackLeafSha256' => 'a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b',
+                    ),
+                ),
+            ),
+        ),
         12596 => array(
             'siteId' => 'site-ssi-projectorenclosure',
             'hostname' => 'projectorenclosure.com',
@@ -125,6 +146,87 @@ function genesis_ssi_elementor_leaf_v1_replacement_allowed($before, $after) {
     return true;
 }
 
+function genesis_ssi_elementor_leaf_v1_semantic_unwrap($value, $hrefs) {
+    foreach ($hrefs as $href) {
+        $quoted = preg_quote($href, '/');
+        $value = preg_replace('/<a\b([^>]*)href=(["\'])' . $quoted . '\2([^>]*)>([\s\S]*?)<\/a>/i', '$4', $value);
+    }
+    return $value;
+}
+
+function genesis_ssi_elementor_leaf_v1_semantic_node($node, $policy) {
+    if ($node->nodeType === XML_TEXT_NODE) {
+        $parent = strtolower((string) ($node->parentNode ? $node->parentNode->nodeName : ''));
+        if (in_array($parent, $policy['allowedTextTags'], true) && trim($node->nodeValue) !== '') return array('text' => '__GENESIS_TEXT__');
+        return array('text' => (string) $node->nodeValue);
+    }
+    if ($node->nodeType === XML_COMMENT_NODE) return array('comment' => (string) $node->nodeValue);
+    if ($node->nodeType !== XML_ELEMENT_NODE) return null;
+    $tag = strtolower((string) $node->nodeName);
+    $attributes = array();
+    foreach ($node->attributes as $attribute) {
+        $name = strtolower((string) $attribute->nodeName);
+        if (preg_match('/^on[a-z]+$/', $name) || in_array($name, array('srcdoc', 'data-code'), true)) return false;
+        $value = (string) $attribute->nodeValue;
+        if ($name === 'href') {
+            foreach ($policy['allowedHrefReplacements'] as $replacement) {
+                if ($value === $replacement['before'] || $value === $replacement['after']) $value = '__GENESIS_REGISTERED_HREF__';
+            }
+        }
+        $attributes[$name] = $value;
+    }
+    ksort($attributes);
+    $children = array();
+    foreach ($node->childNodes as $child) {
+        $normalized = genesis_ssi_elementor_leaf_v1_semantic_node($child, $policy);
+        if ($normalized === false) return false;
+        if ($normalized !== null) $children[] = $normalized;
+    }
+    return array('tag' => $tag, 'attributes' => $attributes, 'children' => $children);
+}
+
+function genesis_ssi_elementor_leaf_v1_semantic_canonical($value, $policy, $reason) {
+    $marker = $policy['certificationMarker'];
+    $value = str_replace($marker, '', (string) $value);
+    $value = genesis_ssi_elementor_leaf_v1_semantic_unwrap($value, $policy['allowedAnchorUnwrapHrefs']);
+    if (!class_exists('DOMDocument')) return false;
+    $document = new DOMDocument('1.0', 'UTF-8');
+    $previous = libxml_use_internal_errors(true);
+    $loaded = $document->loadHTML('<?xml encoding="UTF-8"><div id="genesis-semantic-root">' . $value . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous);
+    if (!$loaded) return false;
+    $root = $document->documentElement;
+    if (!$root) return false;
+    return genesis_ssi_elementor_leaf_v1_semantic_node($root, $policy);
+}
+
+function genesis_ssi_elementor_leaf_v1_semantic_allowed($before, $after, $authority, $reason) {
+    $policy = $authority['leaf']['semanticPolicy'] ?? null;
+    if (!is_array($policy) || !in_array('SEMANTIC_HTML', $authority['leaf']['mutationClasses'] ?? array(), true)) return false;
+    if (!genesis_ssi_elementor_leaf_v1_replacement_allowed($before, $after)) return false;
+    $marker = $policy['certificationMarker'];
+    $before_markers = substr_count($before, $marker);
+    $after_markers = substr_count($after, $marker);
+    if ($reason === 'certification' && $after_markers !== $before_markers + 1) return false;
+    if ($reason === 'rollback' && ($after_markers !== $before_markers - 1 || genesis_ssi_elementor_leaf_v1_hash($after) !== $policy['rollbackLeafSha256'])) return false;
+    if ($reason === 'remediation' && $after_markers !== $before_markers) return false;
+    foreach ($policy['allowedAnchorUnwrapHrefs'] as $href) {
+        $pattern = '/<a\b[^>]*href=(["\'])' . preg_quote($href, '/') . '\1/i';
+        preg_match_all($pattern, $before, $before_matches);
+        preg_match_all($pattern, $after, $after_matches);
+        if (count($after_matches[0]) > count($before_matches[0])) return false;
+        if (count($after_matches[0]) < count($before_matches[0])) {
+            $child_pattern = '/<a\b[^>]*href=(["\'])' . preg_quote($href, '/') . '\1[^>]*>([\s\S]*?)<\/a>/i';
+            preg_match_all($child_pattern, $before, $child_matches);
+            foreach ($child_matches[2] as $child) if (strpos($after, $child) === false) return false;
+        }
+    }
+    $before_tree = genesis_ssi_elementor_leaf_v1_semantic_canonical($before, $policy, $reason);
+    $after_tree = genesis_ssi_elementor_leaf_v1_semantic_canonical($after, $policy, $reason);
+    return $before_tree !== false && $before_tree === $after_tree;
+}
+
 function genesis_ssi_elementor_leaf_v1_context($page_id, $element_id, $reason = null) {
     $authority = genesis_ssi_elementor_leaf_v1_authority($page_id, $element_id, $reason);
     if ($authority === null) return new WP_Error('genesis_elementor_leaf_target_forbidden', 'The exact page, element, leaf, and mutation class must be registered.', array('status' => 403));
@@ -181,6 +283,9 @@ function genesis_ssi_elementor_leaf_v1_read(WP_REST_Request $request) {
 
 function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
     $params = $request->get_json_params();
+    if (is_array($params) && ($params['mutation_class'] ?? '') === 'SEMANTIC_HTML') {
+        return genesis_ssi_elementor_leaf_v1_write_semantic($params);
+    }
     if (is_array($params) && array_key_exists('mutation_class', $params)) {
         return genesis_ssi_elementor_leaf_v1_write_registered_media($params);
     }
@@ -197,6 +302,7 @@ function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
     $element_id = sanitize_key((string) $params['element_id']);
     $context = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id, $params['reason']);
     if (is_wp_error($context)) return $context;
+    if (isset($context['authority']['leaf']['semanticPolicy'])) return new WP_Error('genesis_elementor_semantic_class_required', 'Registered semantic leaves require the SEMANTIC_HTML mutation class.', array('status' => 403));
     if (strlen($params['replacement']) > $context['authority']['leaf']['maxBytes']) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the registered byte limit.', array('status' => 413));
     if (!genesis_ssi_elementor_leaf_v1_replacement_allowed($context['element']['settings']['html'], $params['replacement'])) return new WP_Error('genesis_elementor_leaf_protected_region', 'Scripts, styles, and media are immutable for this authority.', array('status' => 403));
     if (!hash_equals($context['documentHash'], (string) $params['expected_document_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_document', 'Document hash conflict.', array('status' => 409));
@@ -226,6 +332,37 @@ function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
         'pageSettingsSha256' => $readback['pageSettingsHash'],
         'globalReferencesSha256' => $readback['globalReferencesHash'],
     ));
+}
+
+function genesis_ssi_elementor_leaf_v1_write_semantic($params) {
+    $keys = is_array($params) ? array_keys($params) : array();
+    sort($keys);
+    if ($keys !== array('element_id', 'expected_document_sha256', 'expected_leaf_sha256', 'leaf', 'mutation_class', 'page_id', 'reason', 'replacement') || ($params['mutation_class'] ?? '') !== 'SEMANTIC_HTML' || ($params['leaf'] ?? '') !== 'settings.html' || !is_string($params['replacement'] ?? null) || !in_array($params['reason'] ?? '', array('certification', 'remediation', 'rollback'), true)) {
+        return new WP_Error('genesis_elementor_semantic_invalid_request', 'Exact registered semantic HTML request is required.', array('status' => 400));
+    }
+    $page_id = absint($params['page_id']);
+    $element_id = sanitize_key((string) $params['element_id']);
+    $context = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id, $params['reason']);
+    if (is_wp_error($context)) return $context;
+    if (strlen($params['replacement']) > $context['authority']['leaf']['maxBytes']) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the registered byte limit.', array('status' => 413));
+    if (!hash_equals($context['documentHash'], (string) $params['expected_document_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_document', 'Document hash conflict.', array('status' => 409));
+    if (!hash_equals($context['leafHash'], (string) $params['expected_leaf_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_leaf', 'Leaf hash conflict.', array('status' => 409));
+    $before_value = $context['element']['settings']['html'];
+    if (!genesis_ssi_elementor_leaf_v1_semantic_allowed($before_value, $params['replacement'], $context['authority'], $params['reason'])) return new WP_Error('genesis_elementor_semantic_diff_forbidden', 'Semantic HTML diff exceeds registered text, anchor, or certification authority.', array('status' => 403));
+    $before_structure = $context['structure'];
+    $before_setting_hashes = $context['settingHashes'];
+    $target_path = '';
+    foreach ($context['structure'] as $row) if ($row['id'] === $element_id) $target_path = $row['path'] . '/settings.html';
+    $context['element']['settings']['html'] = $params['replacement'];
+    $saved = $context['document']->save(array('elements' => $context['tree']));
+    if (!$saved) return new WP_Error('genesis_elementor_leaf_save_failed', 'Elementor document save failed.', array('status' => 500));
+    $readback = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id);
+    if (is_wp_error($readback) || $readback['leafHash'] !== genesis_ssi_elementor_leaf_v1_hash($params['replacement']) || $readback['hierarchyHash'] !== genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($before_structure)) || $readback['pageSettingsHash'] !== $context['pageSettingsHash'] || $readback['globalReferencesHash'] !== $context['globalReferencesHash']) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact semantic HTML readback failed.', array('status' => 500));
+    foreach ($before_setting_hashes as $path => $leaf_hash) {
+        if ($path === $target_path) continue;
+        if (!isset($readback['settingHashes'][$path]) || $readback['settingHashes'][$path] !== $leaf_hash) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target setting leaf changed.', array('status' => 500));
+    }
+    return rest_ensure_response(array('ok' => true, 'state' => 'SAVED', 'mutationClass' => 'SEMANTIC_HTML', 'reason' => $params['reason'], 'saveAuthority' => 'Elementor\Core\Base\Document::save', 'saveCount' => 1, 'pageId' => $page_id, 'elementId' => $element_id, 'leaf' => 'settings.html', 'documentSha256' => $readback['documentHash'], 'leafSha256' => $readback['leafHash'], 'postContentSha256' => $readback['postContentHash'], 'elementCount' => count($readback['structure']), 'hierarchySha256' => $readback['hierarchyHash'], 'pageSettingsSha256' => $readback['pageSettingsHash'], 'globalReferencesSha256' => $readback['globalReferencesHash']));
 }
 
 function genesis_ssi_elementor_leaf_v1_write_registered_media($params) {
@@ -319,6 +456,7 @@ function genesis_ssi_elementor_leaf_v1_write_many($params) {
         $id = sanitize_key((string) $change['element_id']);
         $authority = genesis_ssi_elementor_leaf_v1_authority($page_id, $id, $params['reason']);
         if (!isset($targets[$id]) || $authority === null) return new WP_Error('genesis_elementor_leaf_target_forbidden', 'Exact registered authority is required.', array('status' => 403));
+        if (isset($authority['leaf']['semanticPolicy'])) return new WP_Error('genesis_elementor_semantic_class_required', 'Registered semantic leaves require the SEMANTIC_HTML mutation class.', array('status' => 403));
         if (strlen($change['replacement']) > $authority['leaf']['maxBytes']) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the registered byte limit.', array('status' => 413));
         if (!genesis_ssi_elementor_leaf_v1_replacement_allowed($targets[$id]['settings']['html'], $change['replacement'])) return new WP_Error('genesis_elementor_leaf_protected_region', 'Scripts, styles, and media are immutable for this authority.', array('status' => 403));
         if (!hash_equals($before_leaf_hashes[$id], (string) $change['expected_leaf_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_leaf', 'Leaf hash conflict.', array('status' => 409));

@@ -12,6 +12,8 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("3810 => array(");
     expect(source).toContain("12596 => array(");
     expect(source).toContain("12608 => array(");
+    expect(source).toContain("12575 => array(");
+    expect(source).toContain("'2d677b8' => array(");
     for (const elementId of ["98e1f56", "0ce76cb", "e87d71c", "94e8256"]) expect(source).toContain(`'${elementId}' => array(`);
     expect(source).toContain("($params['leaf'] ?? '') !== 'settings.html'");
     expect(source).toContain("($element['widgetType'] ?? '') !== $authority['leaf']['widgetType']");
@@ -39,7 +41,7 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("count(array_unique($requested_ids)) !== count($requested_ids)");
     expect(source).toContain("$requested_ids !== $expected_order");
     expect(source).toContain("foreach ($params['changes'] as $change)");
-    expect(source.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(3);
+    expect(source.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(4);
     expect(source).toContain("'saveCount' => 1");
     expect(source).toContain("'changedElementIds' => $requested_ids");
   });
@@ -83,5 +85,19 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("genesis_elementor_media_protected_region");
     expect(source).toContain("'saveCount' => 1");
     expect(mediaHandler).not.toMatch(/\$params\[['\"](?:url|mediaId|alt|before|after|replacement)['\"]\]/);
+  });
+
+  test("implements registered semantic HTML without arbitrary structure or links", () => {
+    const semanticHandler = source.slice(source.indexOf("function genesis_ssi_elementor_leaf_v1_write_semantic"), source.indexOf("function genesis_ssi_elementor_leaf_v1_write_registered_media"));
+    expect(source).toContain("'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION')");
+    expect(source).toContain("GENESIS-SEMANTIC-HTML-CERT-12575");
+    expect(source).toContain("a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b");
+    expect(source).toContain("genesis_ssi_elementor_leaf_v1_semantic_allowed");
+    expect(source).toContain("DOMDocument");
+    expect(source).toContain("genesis_elementor_semantic_diff_forbidden");
+    expect(source.match(/genesis_elementor_semantic_class_required/g)).toHaveLength(2);
+    expect(semanticHandler).toContain("'saveCount' => 1");
+    expect(semanticHandler).not.toMatch(/wp_cache_flush|rocket_clean_domain|w3tc_flush_all|litespeed_purge_all/);
+    expect(semanticHandler).not.toMatch(/\$params\[['"](?:allowedTextTags|allowedAnchorUnwrapHrefs|allowedHrefReplacements|semanticPolicy)['"]\]/);
   });
 });

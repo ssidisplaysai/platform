@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 export const ELEMENTOR_AUTHORITY_REGISTRY_VERSION = "genesis-elementor-authority-v1" as const;
 
 export type ElementorMutationClass = "SEMANTIC_HTML" | "INERT_CERTIFICATION" | "REGISTERED_MEDIA_REFERENCE_REPLACEMENT";
@@ -20,6 +22,13 @@ export type ElementorLeafAuthority = {
   allowStyles: false;
   allowMediaMutation: false;
   registeredMediaReplacements?: readonly RegisteredMediaReplacement[];
+  semanticPolicy?: {
+    allowedTextTags: readonly string[];
+    allowedAnchorUnwrapHrefs: readonly string[];
+    allowedHrefReplacements: readonly { before: string; after: string }[];
+    certificationMarker: string;
+    rollbackLeafSha256: string;
+  };
 };
 
 export type ElementorDocumentAuthority = {
@@ -44,6 +53,14 @@ const htmlLeaf = (
   allowMediaMutation: false,
 });
 
+const defenderSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPolicy"]> = {
+  allowedTextTags: ["h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "td", "th", "span", "strong", "em", "a"],
+  allowedAnchorUnwrapHrefs: ["/applications/", "/stadiums-arenas/", "/education/", "/houses-of-worship/", "/museums-exhibits/", "/outdoor-entertainment/", "/trade-shows-events/", "/resources/", "/spec-sheets/", "/cad-files/", "/installation-guides/", "/faq/", "/case-studies/"],
+  allowedHrefReplacements: [],
+  certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575 -->",
+  rollbackLeafSha256: "a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b",
+};
+
 export const ELEMENTOR_AUTHORITY_REGISTRY: readonly ElementorDocumentAuthority[] = [
   {
     siteId: "site-ssi-projectorenclosure",
@@ -53,6 +70,13 @@ export const ELEMENTOR_AUTHORITY_REGISTRY: readonly ElementorDocumentAuthority[]
     leaves: ["98e1f56", "0ce76cb", "e87d71c", "94e8256"].map((id) =>
       htmlLeaf(id, ["SEMANTIC_HTML", "INERT_CERTIFICATION"]),
     ),
+  },
+  {
+    siteId: "site-ssi-projectorenclosure",
+    hostname: "projectorenclosure.com",
+    wordpressObjectId: 12575,
+    registryVersion: ELEMENTOR_AUTHORITY_REGISTRY_VERSION,
+    leaves: [{ ...htmlLeaf("2d677b8", ["SEMANTIC_HTML", "INERT_CERTIFICATION"]), semanticPolicy: defenderSemanticPolicy }],
   },
   {
     siteId: "site-ssi-projectorenclosure",
@@ -133,4 +157,58 @@ export function applyRegisteredMediaReplacements(authority: ElementorLeafAuthori
     result = result.replace(source, destination);
   }
   return result;
+}
+
+function normalizeSemanticHtml(value: string, authority: ElementorLeafAuthority, reason: "certification" | "remediation" | "rollback"): string | null {
+  const policy = authority.semanticPolicy;
+  if (!policy) return null;
+  let normalized = value.replace(/<!--([\s\S]*?)-->/g, (comment, body: string) => {
+    if (comment === policy.certificationMarker && (reason === "certification" || reason === "rollback")) return "";
+    return `<!--${body}-->`;
+  });
+  for (const href of policy.allowedAnchorUnwrapHrefs) {
+    const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    normalized = normalized.replace(new RegExp(`<a\\b([^>]*)href=(["'])${escaped}\\2([^>]*)>([\\s\\S]*?)<\\/a>`, "gi"), "$4");
+  }
+  for (const replacement of policy.allowedHrefReplacements) normalized = normalized.split(replacement.before).join("__GENESIS_REGISTERED_HREF__").split(replacement.after).join("__GENESIS_REGISTERED_HREF__");
+  let denied = false;
+  normalized = normalized.replace(/<([a-z][a-z0-9:-]*)\b([^>]*)>/gi, (tag, name: string, attributes: string) => {
+    const lower = name.toLowerCase();
+    if (/^(?:script|style|img|video|audio|source|picture|iframe|form|input|button|select|textarea)$/.test(lower)) return tag;
+    if (/\bon[a-z]+\s*=|\bsrcdoc\s*=|\bdata-code\s*=/i.test(attributes)) denied = true;
+    const normalizedAttributes = attributes.replace(/\s+/g, " ").trim();
+    return `<${lower}${normalizedAttributes ? ` ${normalizedAttributes}` : ""}>`;
+  });
+  if (denied) return null;
+  const allowed = new Set(policy.allowedTextTags);
+  const stack: string[] = [];
+  normalized = normalized.replace(/<\/?([a-z][a-z0-9:-]*)\b[^>]*>|([^<]+)/gi, (token, name: string | undefined, text: string | undefined) => {
+    if (name) {
+      const lower = name.toLowerCase();
+      if (token.startsWith("</")) stack.pop(); else if (!token.endsWith("/>") && !/^(?:area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/.test(lower)) stack.push(lower);
+      return token;
+    }
+    return allowed.has(stack.at(-1) ?? "") && text?.trim() ? "__GENESIS_TEXT__" : token;
+  });
+  return normalized;
+}
+
+export function permitsSemanticHtmlReplacement(input: { authority: ElementorLeafAuthority; before: string; replacement: string; reason: "certification" | "remediation" | "rollback" }): boolean {
+  if (!input.authority.mutationClasses.includes("SEMANTIC_HTML") || !preservesProtectedElementorRegions(input)) return false;
+  const policy = input.authority.semanticPolicy;
+  if (!policy) return false;
+  const markerCount = (value: string) => value.split(policy.certificationMarker).length - 1;
+  if (input.reason === "certification" && markerCount(input.replacement) !== markerCount(input.before) + 1) return false;
+  if (input.reason === "rollback" && (markerCount(input.replacement) !== markerCount(input.before) - 1 || createHash("sha256").update(input.replacement).digest("hex") !== policy.rollbackLeafSha256)) return false;
+  if (input.reason === "remediation" && markerCount(input.replacement) !== markerCount(input.before)) return false;
+  for (const href of policy.allowedAnchorUnwrapHrefs) {
+    const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const count = (value: string) => (value.match(new RegExp(`<a\\b[^>]*href=["']${escaped}["']`, "gi")) ?? []).length;
+    if (count(input.replacement) > count(input.before)) return false;
+    const beforeChildren = [...input.before.matchAll(new RegExp(`<a\\b[^>]*href=["']${escaped}["'][^>]*>([\\s\\S]*?)<\\/a>`, "gi"))].map((match) => match[1]);
+    if (count(input.replacement) < count(input.before) && beforeChildren.some((child) => !input.replacement.includes(child))) return false;
+  }
+  const before = normalizeSemanticHtml(input.before, input.authority, input.reason);
+  const after = normalizeSemanticHtml(input.replacement, input.authority, input.reason);
+  return before !== null && before === after;
 }
