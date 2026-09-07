@@ -18,6 +18,12 @@ export const FOUNDATION_NAVIGATION_ITEMS: readonly NavigationItem[] = [
     requiredPermissions: ["workspace:view"],
   },
   {
+    id: "glw-campaign-launchpad",
+    label: "Campaign Launchpad",
+    href: "/glw/campaign-launchpad",
+    requiredPermissions: ["sites:read", "products:read"],
+  },
+  {
     id: "companies",
     label: "Companies",
     href: "/companies",
