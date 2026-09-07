@@ -4,6 +4,7 @@ import {
   applyRegisteredMediaReplacements,
   ELEMENTOR_AUTHORITY_REGISTRY,
   ELEMENTOR_AUTHORITY_REGISTRY_VERSION,
+  permitsAtomicSemanticHtmlReplacement,
   permitsSemanticHtmlReplacement,
   preservesProtectedElementorRegions,
 } from "../elementor-authority-registry";
@@ -50,19 +51,30 @@ describe("Elementor authority registry", () => {
       expect.objectContaining({ elementId: "f3694b0", mutationClasses: ["REGISTERED_MEDIA_REFERENCE_REPLACEMENT"], registeredMediaReplacements: expect.any(Array) }),
     ]);
     expect(ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12608)?.leaves).toEqual([expect.objectContaining({ elementId: "be422a0", mutationClasses: ["INERT_CERTIFICATION"] })]);
-    expect(ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12575)?.leaves).toEqual([
+    const defenderAuthority = ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12575)!;
+    expect(defenderAuthority.leaves).toEqual([
       expect.objectContaining({ elementId: "2d677b8", mutationClasses: ["SEMANTIC_HTML", "INERT_CERTIFICATION"], semanticPolicy: expect.objectContaining({ certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575 -->" }) }),
+      expect.objectContaining({ elementId: "59b7de5", atomicOnly: true, mutationClasses: ["SEMANTIC_HTML", "INERT_CERTIFICATION"], semanticPolicy: expect.objectContaining({ certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5 -->", rollbackLeafSha256: "f493affb8a71b593e32a393a7beec2291b666b19022b4c38a3da2eed27b8b2eb" }) }),
+      expect.objectContaining({ elementId: "accc44a", atomicOnly: true, mutationClasses: ["SEMANTIC_HTML", "INERT_CERTIFICATION"], semanticPolicy: expect.objectContaining({ certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A -->", rollbackLeafSha256: "c087df9b11701908fb052e533edfaba10d29b61dde9983a14bc052e69d0a6ee8" }) }),
     ]);
+    expect(defenderAuthority.atomicSemanticAuthority).toEqual({ mutationClass: "SEMANTIC_HTML_ATOMIC", orderedElementIds: ["2d677b8", "59b7de5", "accc44a"], reasons: ["certification", "remediation", "rollback"] });
   });
 
   test("permits bounded semantic text, certification, and registered anchor unwraps", () => {
-    const authority = ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12575)!.leaves[0];
-    const before = '<section class="hero"><h2>Old heading</h2><p>Old copy <a class="link" href="/applications/">Applications</a></p><img src="hero.jpg" alt="Defender"></section>';
-    const changed = '<section class="hero"><h2>New heading</h2><p>New copy Applications</p><img src="hero.jpg" alt="Defender"></section>';
-    expect(permitsSemanticHtmlReplacement({ authority, before, replacement: changed, reason: "remediation" })).toBe(true);
-    expect(permitsSemanticHtmlReplacement({ authority, before, replacement: `${before}${authority.semanticPolicy!.certificationMarker}`, reason: "certification" })).toBe(true);
-    const rollbackAuthority = { ...authority, semanticPolicy: { ...authority.semanticPolicy!, rollbackLeafSha256: createHash("sha256").update(before).digest("hex") } };
-    expect(permitsSemanticHtmlReplacement({ authority: rollbackAuthority, before: `${before}${authority.semanticPolicy!.certificationMarker}`, replacement: before, reason: "rollback" })).toBe(true);
+    const authorities = ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12575)!.leaves;
+    const mainAuthority = authorities[0];
+    const mainBefore = '<section class="hero"><h2>Old heading</h2><p>Old copy</p><img src="hero.jpg" alt="Defender"></section>';
+    const mainChanged = '<section class="hero"><h2>New heading</h2><p>New copy</p><img src="hero.jpg" alt="Defender"></section>';
+    expect(permitsSemanticHtmlReplacement({ authority: mainAuthority, before: mainBefore, replacement: mainChanged, reason: "remediation" })).toBe(true);
+    expect(permitsSemanticHtmlReplacement({ authority: mainAuthority, before: mainBefore, replacement: `${mainBefore}${mainAuthority.semanticPolicy!.certificationMarker}`, reason: "certification" })).toBe(true);
+    const rollbackAuthority = { ...mainAuthority, semanticPolicy: { ...mainAuthority.semanticPolicy!, rollbackLeafSha256: createHash("sha256").update(mainBefore).digest("hex") } };
+    expect(permitsSemanticHtmlReplacement({ authority: rollbackAuthority, before: `${mainBefore}${mainAuthority.semanticPolicy!.certificationMarker}`, replacement: mainBefore, reason: "rollback" })).toBe(true);
+
+    const navigationAuthority = authorities[2];
+    const navigationBefore = '<section><a class="link" href="/applications/"><h3>Applications</h3></a><p>Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.</p></section>';
+    const navigationChanged = '<section><h3>Applications</h3><p>Projector enclosure planning for patios, resorts, theaters, parks, and outdoor venues.</p></section>';
+    expect(permitsSemanticHtmlReplacement({ authority: navigationAuthority, before: navigationBefore, replacement: navigationChanged, reason: "remediation" })).toBe(true);
+    expect(permitsSemanticHtmlReplacement({ authority: navigationAuthority, before: navigationBefore, replacement: navigationBefore.replace("Weatherproof projector systems", "Arbitrary marketing"), reason: "remediation" })).toBe(false);
   });
 
   test("rejects unregistered structural, attribute, code, media, and link changes", () => {
@@ -80,6 +92,23 @@ describe("Elementor authority registry", () => {
       before.replace("<section", '<section onclick="bad()"'),
       before.replace("</section>", "<form></form></section>"),
     ]) expect(permitsSemanticHtmlReplacement({ authority, before, replacement, reason: "remediation" })).toBe(false);
+  });
+
+  test("requires the complete ordered three-leaf set and rejects a mixed-invalid atomic transaction", () => {
+    const main = '<section><h1>Defender</h1></section>';
+    const features = '<section><h2>Engineered for Any Environment</h2></section>';
+    const navigation = '<section><a href="/applications/"><h3>Applications</h3></a><p>Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.</p></section>';
+    const markers = ["<!-- GENESIS-SEMANTIC-HTML-CERT-12575 -->", "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5 -->", "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A -->"];
+    const changes = [main, features, navigation].map((before, index) => ({ elementId: ["2d677b8", "59b7de5", "accc44a"][index], leafPath: "settings.html", before, replacement: `${before}${markers[index]}` }));
+    const atomic = { siteId: "site-ssi-projectorenclosure", hostname: "projectorenclosure.com", wordpressObjectId: 12575, mutationClass: "SEMANTIC_HTML_ATOMIC", reason: "certification" as const, changes };
+    expect(permitsAtomicSemanticHtmlReplacement(atomic)).toBe(true);
+    expect(permitsAtomicSemanticHtmlReplacement({ ...atomic, wordpressObjectId: 12596 })).toBe(false);
+    expect(permitsAtomicSemanticHtmlReplacement({ ...atomic, mutationClass: "SEMANTIC_HTML" })).toBe(false);
+    expect(permitsAtomicSemanticHtmlReplacement({ ...atomic, changes: changes.slice(0, 2) })).toBe(false);
+    expect(permitsAtomicSemanticHtmlReplacement({ ...atomic, changes: [...changes, changes[2]] })).toBe(false);
+    expect(permitsAtomicSemanticHtmlReplacement({ ...atomic, changes: [changes[1], changes[0], changes[2]] })).toBe(false);
+    expect(permitsAtomicSemanticHtmlReplacement({ ...atomic, changes: [changes[0], changes[0], changes[2]] })).toBe(false);
+    expect(permitsAtomicSemanticHtmlReplacement({ ...atomic, changes: [changes[0], changes[1], { ...changes[2], replacement: navigation.replace('/applications/', 'https://example.com/') + markers[2] }] })).toBe(false);
   });
 
   test("applies and rolls back exactly five server-registered media regions", () => {

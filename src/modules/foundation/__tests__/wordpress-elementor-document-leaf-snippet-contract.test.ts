@@ -14,6 +14,8 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("12608 => array(");
     expect(source).toContain("12575 => array(");
     expect(source).toContain("'2d677b8' => array(");
+    expect(source).toContain("'59b7de5' => array(");
+    expect(source).toContain("'accc44a' => array(");
     for (const elementId of ["98e1f56", "0ce76cb", "e87d71c", "94e8256"]) expect(source).toContain(`'${elementId}' => array(`);
     expect(source).toContain("($params['leaf'] ?? '') !== 'settings.html'");
     expect(source).toContain("($element['widgetType'] ?? '') !== $authority['leaf']['widgetType']");
@@ -41,7 +43,7 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("count(array_unique($requested_ids)) !== count($requested_ids)");
     expect(source).toContain("$requested_ids !== $expected_order");
     expect(source).toContain("foreach ($params['changes'] as $change)");
-    expect(source.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(4);
+    expect(source.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(5);
     expect(source).toContain("'saveCount' => 1");
     expect(source).toContain("'changedElementIds' => $requested_ids");
   });
@@ -91,6 +93,8 @@ describe("Genesis Elementor document-leaf authority", () => {
     const semanticHandler = source.slice(source.indexOf("function genesis_ssi_elementor_leaf_v1_write_semantic"), source.indexOf("function genesis_ssi_elementor_leaf_v1_write_registered_media"));
     expect(source).toContain("'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION')");
     expect(source).toContain("GENESIS-SEMANTIC-HTML-CERT-12575");
+    expect(source).toContain("GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5");
+    expect(source).toContain("GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A");
     expect(source).toContain("a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b");
     expect(source).toContain("genesis_ssi_elementor_leaf_v1_semantic_allowed");
     expect(source).toContain("DOMDocument");
@@ -99,5 +103,34 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(semanticHandler).toContain("'saveCount' => 1");
     expect(semanticHandler).not.toMatch(/wp_cache_flush|rocket_clean_domain|w3tc_flush_all|litespeed_purge_all/);
     expect(semanticHandler).not.toMatch(/\$params\[['"](?:allowedTextTags|allowedAnchorUnwrapHrefs|allowedHrefReplacements|semanticPolicy)['"]\]/);
+  });
+
+  test("validates the exact three-leaf semantic transaction before one atomic save", () => {
+    const atomicHandler = source.slice(source.indexOf("function genesis_ssi_elementor_leaf_v1_write_semantic_atomic"), source.indexOf("function genesis_ssi_elementor_leaf_v1_write_registered_media"));
+    expect(source).toContain("'mutationClass' => 'SEMANTIC_HTML_ATOMIC'");
+    expect(source).toContain("'orderedElementIds' => array('2d677b8', '59b7de5', 'accc44a')");
+    expect(atomicHandler).toContain("count($params['changes']) !== count($expected_ids)");
+    expect(atomicHandler).toContain("sanitize_key((string) $change['element_id']) !== $expected_ids[$index]");
+    expect(atomicHandler).toContain("genesis_ssi_elementor_leaf_v1_semantic_allowed");
+    expect(atomicHandler).toContain("genesis_elementor_leaf_stale_document");
+    expect(atomicHandler).toContain("genesis_elementor_leaf_stale_leaf");
+    expect(atomicHandler).toContain("genesis_elementor_leaf_oversized");
+    expect(atomicHandler.match(/document']->save\(array\('elements' => \$context\['tree'\]\)\)/g)).toHaveLength(1);
+    expect(atomicHandler.indexOf("genesis_ssi_elementor_leaf_v1_semantic_allowed")).toBeLessThan(atomicHandler.indexOf("$targets[$id]['settings']['html'] = $change['replacement']"));
+    expect(atomicHandler.indexOf("$targets[$id]['settings']['html'] = $change['replacement']")).toBeLessThan(atomicHandler.indexOf("document']->save"));
+    expect(atomicHandler).toContain("'changedElementIds' => $expected_ids");
+    expect(atomicHandler).toContain("'leafSha256' => $after_leaf_hashes");
+    expect(atomicHandler).not.toMatch(/wp_cache_flush|rocket_clean_domain|w3tc_flush_all|litespeed_purge_all/);
+  });
+
+  test("denies legacy single-leaf and generic multi-leaf bypasses for atomic-only semantic leaves", () => {
+    const semanticHandler = source.slice(source.indexOf("function genesis_ssi_elementor_leaf_v1_write_semantic"), source.indexOf("function genesis_ssi_elementor_leaf_v1_write_semantic_atomic"));
+    const genericHandler = source.slice(source.indexOf("function genesis_ssi_elementor_leaf_v1_write_many"), source.indexOf("add_action('rest_api_init'"));
+    expect(source.match(/'atomicOnly' => true/g)).toHaveLength(2);
+    expect(source.slice(source.indexOf("'2d677b8' => array("), source.indexOf("'59b7de5' => array("))).not.toContain("'atomicOnly' => true");
+    expect(source.slice(source.indexOf("'59b7de5' => array("), source.indexOf("'accc44a' => array("))).toContain("'atomicOnly' => true");
+    expect(source.slice(source.indexOf("'accc44a' => array("), source.indexOf("'atomicSemanticAuthority' => array("))).toContain("'atomicOnly' => true");
+    expect(semanticHandler).toContain("genesis_elementor_semantic_atomic_required");
+    expect(genericHandler).toContain("genesis_elementor_semantic_class_required");
   });
 });

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 export const ELEMENTOR_AUTHORITY_REGISTRY_VERSION = "genesis-elementor-authority-v1" as const;
 
-export type ElementorMutationClass = "SEMANTIC_HTML" | "INERT_CERTIFICATION" | "REGISTERED_MEDIA_REFERENCE_REPLACEMENT";
+export type ElementorMutationClass = "SEMANTIC_HTML" | "SEMANTIC_HTML_ATOMIC" | "INERT_CERTIFICATION" | "REGISTERED_MEDIA_REFERENCE_REPLACEMENT";
 
 export type RegisteredMediaReplacement = {
   before: string;
@@ -21,9 +21,11 @@ export type ElementorLeafAuthority = {
   allowScripts: false;
   allowStyles: false;
   allowMediaMutation: false;
+  atomicOnly?: true;
   registeredMediaReplacements?: readonly RegisteredMediaReplacement[];
   semanticPolicy?: {
     allowedTextTags: readonly string[];
+    allowedTextReplacements: readonly { before: string; after: string }[];
     allowedAnchorUnwrapHrefs: readonly string[];
     allowedHrefReplacements: readonly { before: string; after: string }[];
     certificationMarker: string;
@@ -37,6 +39,11 @@ export type ElementorDocumentAuthority = {
   wordpressObjectId: number;
   registryVersion: typeof ELEMENTOR_AUTHORITY_REGISTRY_VERSION;
   leaves: readonly ElementorLeafAuthority[];
+  atomicSemanticAuthority?: {
+    mutationClass: "SEMANTIC_HTML_ATOMIC";
+    orderedElementIds: readonly string[];
+    reasons: readonly ["certification", "remediation", "rollback"];
+  };
 };
 
 const htmlLeaf = (
@@ -53,12 +60,31 @@ const htmlLeaf = (
   allowMediaMutation: false,
 });
 
-const defenderSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPolicy"]> = {
+const defenderMainSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPolicy"]> = {
   allowedTextTags: ["h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "td", "th", "span", "strong", "em", "a"],
-  allowedAnchorUnwrapHrefs: ["/applications/", "/stadiums-arenas/", "/education/", "/houses-of-worship/", "/museums-exhibits/", "/outdoor-entertainment/", "/trade-shows-events/", "/resources/", "/spec-sheets/", "/cad-files/", "/installation-guides/", "/faq/", "/case-studies/"],
+  allowedTextReplacements: [],
+  allowedAnchorUnwrapHrefs: [],
   allowedHrefReplacements: [],
   certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575 -->",
   rollbackLeafSha256: "a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b",
+};
+
+const defenderFeaturesSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPolicy"]> = {
+  allowedTextTags: [],
+  allowedTextReplacements: [{ before: "Engineered for Any Environment", after: "Engineered for Project-Specific Environments" }],
+  allowedAnchorUnwrapHrefs: [],
+  allowedHrefReplacements: [],
+  certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5 -->",
+  rollbackLeafSha256: "f493affb8a71b593e32a393a7beec2291b666b19022b4c38a3da2eed27b8b2eb",
+};
+
+const defenderNavigationSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPolicy"]> = {
+  allowedTextTags: [],
+  allowedTextReplacements: [{ before: "Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.", after: "Projector enclosure planning for patios, resorts, theaters, parks, and outdoor venues." }],
+  allowedAnchorUnwrapHrefs: ["/applications/", "/stadiums-arenas/", "/education/", "/houses-of-worship/", "/museums-exhibits/", "/outdoor-entertainment/", "/trade-shows-events/", "/resources/", "/spec-sheets/", "/cad-files/", "/installation-guides/", "/faq/", "/case-studies/"],
+  allowedHrefReplacements: [],
+  certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A -->",
+  rollbackLeafSha256: "c087df9b11701908fb052e533edfaba10d29b61dde9983a14bc052e69d0a6ee8",
 };
 
 export const ELEMENTOR_AUTHORITY_REGISTRY: readonly ElementorDocumentAuthority[] = [
@@ -76,7 +102,16 @@ export const ELEMENTOR_AUTHORITY_REGISTRY: readonly ElementorDocumentAuthority[]
     hostname: "projectorenclosure.com",
     wordpressObjectId: 12575,
     registryVersion: ELEMENTOR_AUTHORITY_REGISTRY_VERSION,
-    leaves: [{ ...htmlLeaf("2d677b8", ["SEMANTIC_HTML", "INERT_CERTIFICATION"]), semanticPolicy: defenderSemanticPolicy }],
+    leaves: [
+      { ...htmlLeaf("2d677b8", ["SEMANTIC_HTML", "INERT_CERTIFICATION"]), semanticPolicy: defenderMainSemanticPolicy },
+      { ...htmlLeaf("59b7de5", ["SEMANTIC_HTML", "INERT_CERTIFICATION"]), atomicOnly: true, semanticPolicy: defenderFeaturesSemanticPolicy },
+      { ...htmlLeaf("accc44a", ["SEMANTIC_HTML", "INERT_CERTIFICATION"]), atomicOnly: true, semanticPolicy: defenderNavigationSemanticPolicy },
+    ],
+    atomicSemanticAuthority: {
+      mutationClass: "SEMANTIC_HTML_ATOMIC",
+      orderedElementIds: ["2d677b8", "59b7de5", "accc44a"],
+      reasons: ["certification", "remediation", "rollback"],
+    },
   },
   {
     siteId: "site-ssi-projectorenclosure",
@@ -188,6 +223,8 @@ function normalizeSemanticHtml(value: string, authority: ElementorLeafAuthority,
       if (token.startsWith("</")) stack.pop(); else if (!token.endsWith("/>") && !/^(?:area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/.test(lower)) stack.push(lower);
       return token;
     }
+    const normalizedText = text?.replace(/\s+/g, " ").trim();
+    if (normalizedText && policy.allowedTextReplacements.some((replacement) => normalizedText === replacement.before || normalizedText === replacement.after)) return "__GENESIS_REGISTERED_TEXT__";
     return allowed.has(stack.at(-1) ?? "") && text?.trim() ? "__GENESIS_TEXT__" : token;
   });
   return normalized;
@@ -205,10 +242,33 @@ export function permitsSemanticHtmlReplacement(input: { authority: ElementorLeaf
     const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const count = (value: string) => (value.match(new RegExp(`<a\\b[^>]*href=["']${escaped}["']`, "gi")) ?? []).length;
     if (count(input.replacement) > count(input.before)) return false;
-    const beforeChildren = [...input.before.matchAll(new RegExp(`<a\\b[^>]*href=["']${escaped}["'][^>]*>([\\s\\S]*?)<\\/a>`, "gi"))].map((match) => match[1]);
-    if (count(input.replacement) < count(input.before) && beforeChildren.some((child) => !input.replacement.includes(child))) return false;
   }
   const before = normalizeSemanticHtml(input.before, input.authority, input.reason);
   const after = normalizeSemanticHtml(input.replacement, input.authority, input.reason);
   return before !== null && before === after;
+}
+
+export function permitsAtomicSemanticHtmlReplacement(input: {
+  siteId: string;
+  hostname: string;
+  wordpressObjectId: number;
+  mutationClass: string;
+  reason: "certification" | "remediation" | "rollback";
+  changes: readonly { elementId: string; leafPath: string; before: string; replacement: string }[];
+}): boolean {
+  const document = ELEMENTOR_AUTHORITY_REGISTRY.find((candidate) =>
+    candidate.siteId === input.siteId
+    && candidate.hostname === input.hostname.replace(/^www\./, "").toLowerCase()
+    && candidate.wordpressObjectId === input.wordpressObjectId,
+  );
+  const atomic = document?.atomicSemanticAuthority;
+  if (!document || !atomic || input.mutationClass !== atomic.mutationClass || !atomic.reasons.includes(input.reason)) return false;
+  if (input.changes.length !== atomic.orderedElementIds.length) return false;
+  return input.changes.every((change, index) => {
+    if (change.elementId !== atomic.orderedElementIds[index] || change.leafPath !== "settings.html") return false;
+    const authority = document.leaves.find((leaf) => leaf.elementId === change.elementId && leaf.leafPath === change.leafPath);
+    return Boolean(authority)
+      && Buffer.byteLength(change.replacement, "utf8") <= authority!.maxReplacementBytes
+      && permitsSemanticHtmlReplacement({ authority: authority!, before: change.before, replacement: change.replacement, reason: input.reason });
+  });
 }

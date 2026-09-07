@@ -33,12 +33,50 @@ function genesis_ssi_elementor_leaf_v1_registry() {
                     'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION'),
                     'semanticPolicy' => array(
                         'allowedTextTags' => array('h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'td', 'th', 'span', 'strong', 'em', 'a'),
-                        'allowedAnchorUnwrapHrefs' => array('/applications/', '/stadiums-arenas/', '/education/', '/houses-of-worship/', '/museums-exhibits/', '/outdoor-entertainment/', '/trade-shows-events/', '/resources/', '/spec-sheets/', '/cad-files/', '/installation-guides/', '/faq/', '/case-studies/'),
+                        'allowedTextReplacements' => array(),
+                        'allowedAnchorUnwrapHrefs' => array(),
                         'allowedHrefReplacements' => array(),
                         'certificationMarker' => '<!-- GENESIS-SEMANTIC-HTML-CERT-12575 -->',
                         'rollbackLeafSha256' => 'a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b',
                     ),
                 ),
+                '59b7de5' => array(
+                    'widgetType' => 'html',
+                    'leaf' => 'settings.html',
+                    'maxBytes' => 100000,
+                    'atomicOnly' => true,
+                    'reasons' => array('certification', 'remediation', 'rollback'),
+                    'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION'),
+                    'semanticPolicy' => array(
+                        'allowedTextTags' => array(),
+                        'allowedTextReplacements' => array(array('before' => 'Engineered for Any Environment', 'after' => 'Engineered for Project-Specific Environments')),
+                        'allowedAnchorUnwrapHrefs' => array(),
+                        'allowedHrefReplacements' => array(),
+                        'certificationMarker' => '<!-- GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5 -->',
+                        'rollbackLeafSha256' => 'f493affb8a71b593e32a393a7beec2291b666b19022b4c38a3da2eed27b8b2eb',
+                    ),
+                ),
+                'accc44a' => array(
+                    'widgetType' => 'html',
+                    'leaf' => 'settings.html',
+                    'maxBytes' => 100000,
+                    'atomicOnly' => true,
+                    'reasons' => array('certification', 'remediation', 'rollback'),
+                    'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION'),
+                    'semanticPolicy' => array(
+                        'allowedTextTags' => array(),
+                        'allowedTextReplacements' => array(array('before' => 'Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.', 'after' => 'Projector enclosure planning for patios, resorts, theaters, parks, and outdoor venues.')),
+                        'allowedAnchorUnwrapHrefs' => array('/applications/', '/stadiums-arenas/', '/education/', '/houses-of-worship/', '/museums-exhibits/', '/outdoor-entertainment/', '/trade-shows-events/', '/resources/', '/spec-sheets/', '/cad-files/', '/installation-guides/', '/faq/', '/case-studies/'),
+                        'allowedHrefReplacements' => array(),
+                        'certificationMarker' => '<!-- GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A -->',
+                        'rollbackLeafSha256' => 'c087df9b11701908fb052e533edfaba10d29b61dde9983a14bc052e69d0a6ee8',
+                    ),
+                ),
+            ),
+            'atomicSemanticAuthority' => array(
+                'mutationClass' => 'SEMANTIC_HTML_ATOMIC',
+                'orderedElementIds' => array('2d677b8', '59b7de5', 'accc44a'),
+                'reasons' => array('certification', 'remediation', 'rollback'),
             ),
         ),
         12596 => array(
@@ -157,6 +195,10 @@ function genesis_ssi_elementor_leaf_v1_semantic_unwrap($value, $hrefs) {
 function genesis_ssi_elementor_leaf_v1_semantic_node($node, $policy) {
     if ($node->nodeType === XML_TEXT_NODE) {
         $parent = strtolower((string) ($node->parentNode ? $node->parentNode->nodeName : ''));
+        $normalized_text = preg_replace('/\s+/u', ' ', trim((string) $node->nodeValue));
+        foreach (($policy['allowedTextReplacements'] ?? array()) as $replacement) {
+            if ($normalized_text === $replacement['before'] || $normalized_text === $replacement['after']) return array('text' => '__GENESIS_REGISTERED_TEXT__');
+        }
         if (in_array($parent, $policy['allowedTextTags'], true) && trim($node->nodeValue) !== '') return array('text' => '__GENESIS_TEXT__');
         return array('text' => (string) $node->nodeValue);
     }
@@ -216,11 +258,6 @@ function genesis_ssi_elementor_leaf_v1_semantic_allowed($before, $after, $author
         preg_match_all($pattern, $before, $before_matches);
         preg_match_all($pattern, $after, $after_matches);
         if (count($after_matches[0]) > count($before_matches[0])) return false;
-        if (count($after_matches[0]) < count($before_matches[0])) {
-            $child_pattern = '/<a\b[^>]*href=(["\'])' . preg_quote($href, '/') . '\1[^>]*>([\s\S]*?)<\/a>/i';
-            preg_match_all($child_pattern, $before, $child_matches);
-            foreach ($child_matches[2] as $child) if (strpos($after, $child) === false) return false;
-        }
     }
     $before_tree = genesis_ssi_elementor_leaf_v1_semantic_canonical($before, $policy, $reason);
     $after_tree = genesis_ssi_elementor_leaf_v1_semantic_canonical($after, $policy, $reason);
@@ -283,6 +320,9 @@ function genesis_ssi_elementor_leaf_v1_read(WP_REST_Request $request) {
 
 function genesis_ssi_elementor_leaf_v1_write(WP_REST_Request $request) {
     $params = $request->get_json_params();
+    if (is_array($params) && ($params['mutation_class'] ?? '') === 'SEMANTIC_HTML_ATOMIC') {
+        return genesis_ssi_elementor_leaf_v1_write_semantic_atomic($params);
+    }
     if (is_array($params) && ($params['mutation_class'] ?? '') === 'SEMANTIC_HTML') {
         return genesis_ssi_elementor_leaf_v1_write_semantic($params);
     }
@@ -344,6 +384,7 @@ function genesis_ssi_elementor_leaf_v1_write_semantic($params) {
     $element_id = sanitize_key((string) $params['element_id']);
     $context = genesis_ssi_elementor_leaf_v1_context($page_id, $element_id, $params['reason']);
     if (is_wp_error($context)) return $context;
+    if (!empty($context['authority']['leaf']['atomicOnly'])) return new WP_Error('genesis_elementor_semantic_atomic_required', 'This registered semantic leaf is writable only through the complete atomic target set.', array('status' => 403));
     if (strlen($params['replacement']) > $context['authority']['leaf']['maxBytes']) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the registered byte limit.', array('status' => 413));
     if (!hash_equals($context['documentHash'], (string) $params['expected_document_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_document', 'Document hash conflict.', array('status' => 409));
     if (!hash_equals($context['leafHash'], (string) $params['expected_leaf_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_leaf', 'Leaf hash conflict.', array('status' => 409));
@@ -363,6 +404,75 @@ function genesis_ssi_elementor_leaf_v1_write_semantic($params) {
         if (!isset($readback['settingHashes'][$path]) || $readback['settingHashes'][$path] !== $leaf_hash) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target setting leaf changed.', array('status' => 500));
     }
     return rest_ensure_response(array('ok' => true, 'state' => 'SAVED', 'mutationClass' => 'SEMANTIC_HTML', 'reason' => $params['reason'], 'saveAuthority' => 'Elementor\Core\Base\Document::save', 'saveCount' => 1, 'pageId' => $page_id, 'elementId' => $element_id, 'leaf' => 'settings.html', 'documentSha256' => $readback['documentHash'], 'leafSha256' => $readback['leafHash'], 'postContentSha256' => $readback['postContentHash'], 'elementCount' => count($readback['structure']), 'hierarchySha256' => $readback['hierarchyHash'], 'pageSettingsSha256' => $readback['pageSettingsHash'], 'globalReferencesSha256' => $readback['globalReferencesHash']));
+}
+
+function genesis_ssi_elementor_leaf_v1_write_semantic_atomic($params) {
+    $keys = is_array($params) ? array_keys($params) : array();
+    sort($keys);
+    if ($keys !== array('changes', 'expected_document_sha256', 'mutation_class', 'page_id', 'reason') || ($params['mutation_class'] ?? '') !== 'SEMANTIC_HTML_ATOMIC' || !is_array($params['changes']) || !in_array($params['reason'] ?? '', array('certification', 'remediation', 'rollback'), true)) {
+        return new WP_Error('genesis_elementor_semantic_atomic_invalid_request', 'Exact atomic semantic HTML request is required.', array('status' => 400));
+    }
+    $page_id = absint($params['page_id']);
+    $registry = genesis_ssi_elementor_leaf_v1_registry();
+    $atomic = $registry[$page_id]['atomicSemanticAuthority'] ?? null;
+    if (!is_array($atomic) || ($atomic['mutationClass'] ?? '') !== 'SEMANTIC_HTML_ATOMIC' || !in_array($params['reason'], $atomic['reasons'] ?? array(), true)) {
+        return new WP_Error('genesis_elementor_semantic_atomic_target_forbidden', 'Atomic semantic authority is not registered for this page.', array('status' => 403));
+    }
+    $expected_ids = $atomic['orderedElementIds'];
+    if (count($params['changes']) !== count($expected_ids)) return new WP_Error('genesis_elementor_semantic_atomic_target_set', 'The complete registered atomic target set is required.', array('status' => 400));
+    foreach ($params['changes'] as $index => $change) {
+        $change_keys = is_array($change) ? array_keys($change) : array();
+        sort($change_keys);
+        if ($change_keys !== array('element_id', 'expected_leaf_sha256', 'leaf', 'replacement') || ($change['leaf'] ?? '') !== 'settings.html' || !is_string($change['replacement'] ?? null)) {
+            return new WP_Error('genesis_elementor_semantic_atomic_invalid_change', 'Every atomic change must identify one exact HTML leaf.', array('status' => 400));
+        }
+        if (sanitize_key((string) $change['element_id']) !== $expected_ids[$index]) return new WP_Error('genesis_elementor_semantic_atomic_order', 'Atomic changes must match the complete registered order.', array('status' => 409));
+    }
+    $context = genesis_ssi_elementor_leaf_v1_context($page_id, $expected_ids[0], $params['reason']);
+    if (is_wp_error($context)) return $context;
+    if (!hash_equals($context['documentHash'], (string) $params['expected_document_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_document', 'Document hash conflict.', array('status' => 409));
+    $before_structure = $context['structure'];
+    $before_setting_hashes = $context['settingHashes'];
+    $targets = array();
+    $target_paths = array();
+    $before_leaf_hashes = array();
+    foreach ($expected_ids as $id) {
+        $matches = array();
+        genesis_ssi_elementor_leaf_v1_find($context['tree'], $id, $matches);
+        if (count($matches) !== 1 || ($matches[0]['elType'] ?? '') !== 'widget' || ($matches[0]['widgetType'] ?? '') !== 'html' || !is_string($matches[0]['settings']['html'] ?? null)) return new WP_Error('genesis_elementor_leaf_structure_mismatch', 'Registered atomic widget structure is incomplete.', array('status' => 409));
+        $targets[$id] =& $matches[0];
+        $before_leaf_hashes[$id] = genesis_ssi_elementor_leaf_v1_hash($matches[0]['settings']['html']);
+        foreach ($context['structure'] as $row) if ($row['id'] === $id) $target_paths[$id] = $row['path'] . '/settings.html';
+    }
+    foreach ($params['changes'] as $change) {
+        $id = sanitize_key((string) $change['element_id']);
+        $authority = genesis_ssi_elementor_leaf_v1_authority($page_id, $id, $params['reason']);
+        if ($authority === null || !isset($authority['leaf']['semanticPolicy'])) return new WP_Error('genesis_elementor_semantic_atomic_target_forbidden', 'Every atomic target requires registered semantic authority.', array('status' => 403));
+        if (strlen($change['replacement']) > $authority['leaf']['maxBytes']) return new WP_Error('genesis_elementor_leaf_oversized', 'Replacement exceeds the registered byte limit.', array('status' => 413));
+        if (!hash_equals($before_leaf_hashes[$id], (string) $change['expected_leaf_sha256'])) return new WP_Error('genesis_elementor_leaf_stale_leaf', 'Leaf hash conflict.', array('status' => 409));
+        if (!genesis_ssi_elementor_leaf_v1_semantic_allowed($targets[$id]['settings']['html'], $change['replacement'], $authority, $params['reason'])) return new WP_Error('genesis_elementor_semantic_diff_forbidden', 'One or more atomic semantic diffs exceed registered authority.', array('status' => 403));
+    }
+    foreach ($params['changes'] as $change) {
+        $id = sanitize_key((string) $change['element_id']);
+        $targets[$id]['settings']['html'] = $change['replacement'];
+    }
+    $saved = $context['document']->save(array('elements' => $context['tree']));
+    if (!$saved) return new WP_Error('genesis_elementor_leaf_save_failed', 'Elementor atomic document save failed.', array('status' => 500));
+    $readback = genesis_ssi_elementor_leaf_v1_context($page_id, $expected_ids[0]);
+    if (is_wp_error($readback) || $readback['hierarchyHash'] !== genesis_ssi_elementor_leaf_v1_hash(wp_json_encode($before_structure)) || $readback['pageSettingsHash'] !== $context['pageSettingsHash'] || $readback['globalReferencesHash'] !== $context['globalReferencesHash']) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact atomic semantic readback failed.', array('status' => 500));
+    $after_leaf_hashes = array();
+    foreach ($params['changes'] as $change) {
+        $id = sanitize_key((string) $change['element_id']);
+        $matches = array();
+        genesis_ssi_elementor_leaf_v1_find($readback['tree'], $id, $matches);
+        if (count($matches) !== 1 || genesis_ssi_elementor_leaf_v1_hash($matches[0]['settings']['html']) !== genesis_ssi_elementor_leaf_v1_hash($change['replacement'])) return new WP_Error('genesis_elementor_leaf_readback_failed', 'Exact atomic target readback failed.', array('status' => 500));
+        $after_leaf_hashes[$id] = genesis_ssi_elementor_leaf_v1_hash($matches[0]['settings']['html']);
+    }
+    foreach ($before_setting_hashes as $path => $leaf_hash) {
+        if (in_array($path, array_values($target_paths), true)) continue;
+        if (!isset($readback['settingHashes'][$path]) || $readback['settingHashes'][$path] !== $leaf_hash) return new WP_Error('genesis_elementor_leaf_collateral_change', 'A non-target setting leaf changed.', array('status' => 500));
+    }
+    return rest_ensure_response(array('ok' => true, 'state' => 'SAVED', 'mutationClass' => 'SEMANTIC_HTML_ATOMIC', 'reason' => $params['reason'], 'saveAuthority' => 'Elementor\Core\Base\Document::save', 'saveCount' => 1, 'pageId' => $page_id, 'changedElementIds' => $expected_ids, 'documentSha256' => $readback['documentHash'], 'leafSha256' => $after_leaf_hashes, 'postContentSha256' => $readback['postContentHash'], 'elementCount' => count($readback['structure']), 'hierarchySha256' => $readback['hierarchyHash'], 'pageSettingsSha256' => $readback['pageSettingsHash'], 'globalReferencesSha256' => $readback['globalReferencesHash']));
 }
 
 function genesis_ssi_elementor_leaf_v1_write_registered_media($params) {
