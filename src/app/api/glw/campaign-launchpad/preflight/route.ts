@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { CompanyRepository } from "@/core/repositories/CompanyRepository";
 import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { resolvePermissions } from "@/modules/foundation/permissions";
 import { listProducts } from "@/modules/foundation/product-repository";
 import { listSites } from "@/modules/foundation/site-repository";
 import {
@@ -64,8 +66,13 @@ export async function POST(request: NextRequest) {
     const preflight = await buildGlwCampaignLaunchpadPreflight({
       request: parsed.input,
       organizationId: scope.organizationId,
+      organizationActive: CompanyRepository.getById(scope.organizationId)?.status === "active",
+      permissions: resolvePermissions(auth.roles),
       sites,
       products,
+      executionAuthority: { status: "CHECKED", records: localExecutions },
+      campaignAuthority: { status: "UNAVAILABLE" },
+      intentAuthority: { status: "UNAVAILABLE" },
       readTarget: async (target, site, product): Promise<GlwTargetPreflightResult> => {
         try {
           const requestInput = createGlwLaunchpadGenerationForm(

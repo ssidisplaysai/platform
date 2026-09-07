@@ -31,6 +31,15 @@ function displayValue(value: string | number | null): string {
 export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchpadPreflight }) {
   const ready = preflight.readiness === "READY" || preflight.readiness === "READY_WITH_REVIEW";
   const campaignSizes = [25, 50, 100, 250].filter((size) => size <= preflight.maximumSafeReach);
+  const exclusionGroups = [
+    ["EXISTING_COVERAGE", "Already Covered"],
+    ["EXECUTION_OWNED", "Owned by Execution"],
+    ["CAMPAIGN_OWNED", "Owned by Campaign"],
+    ["CANNIBALIZATION_CONFLICT", "Cannibalization Conflict"],
+    ["AUTHORITY_BLOCKED", "Authority Required"],
+    ["UNSUPPORTED", "Unsupported"],
+    ["UNRECONCILED", "Unreconciled"],
+  ] as const;
   return (
     <section aria-label="Campaign Preflight" className="space-y-5 border-t border-zinc-800 pt-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -47,9 +56,13 @@ export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchp
       <div className="grid gap-px overflow-hidden border border-zinc-800 bg-zinc-800 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["Potential reach", preflight.potentialReach],
-          ["Maximum safe reach", preflight.maximumSafeReach],
           ["Existing coverage", preflight.existingCoverage],
+          ["Execution ownership", preflight.counts.executionOwnedCount],
+          ["Campaign ownership", preflight.existingCampaignConflicts],
+          ["Cannibalization conflicts", preflight.cannibalizationConflicts],
           ["Authority blocked", preflight.authorityBlockedTargets],
+          ["Unreconciled", preflight.counts.unreconciledCount],
+          ["Maximum safe reach", preflight.maximumSafeReach],
         ].map(([label, value]) => (
           <div key={label} className="bg-zinc-950 p-4">
             <p className="text-xs uppercase text-zinc-500">{label}</p>
@@ -83,14 +96,47 @@ export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchp
         </section>
       </div>
 
-      {preflight.blockers.length > 0 ? (
+      {preflight.readinessBlockers.length > 0 ? (
         <section className="border border-amber-600/40 bg-amber-950/20 p-5">
-          <h3 className="text-sm font-semibold text-amber-200">Review required</h3>
+          <h3 className="text-sm font-semibold text-amber-200">Campaign readiness blockers</h3>
           <ul className="mt-3 space-y-2 text-sm text-amber-100">
-            {preflight.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}
+            {preflight.readinessBlockers.map((blocker) => (
+              <li key={`${blocker.scope}-${blocker.code}`} className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                <span>{blocker.message}</span>
+                <span className="text-xs text-amber-300/70">{displayValue(blocker.scope)} / {displayValue(blocker.code)}</span>
+              </li>
+            ))}
           </ul>
         </section>
       ) : null}
+
+      <details className="border border-zinc-800 bg-zinc-900/50 p-5">
+        <summary className="cursor-pointer text-sm font-semibold text-white">Excluded Targets ({preflight.excludedTargets.length})</summary>
+        <div className="mt-4 space-y-4">
+          {exclusionGroups.map(([group, label]) => {
+            const exclusions = preflight.excludedTargets.filter((target) => target.group === group);
+            return (
+              <section key={group}>
+                <h4 className="text-xs uppercase text-zinc-500">{label} ({exclusions.length})</h4>
+                {exclusions.length > 0 ? (
+                  <ul className="mt-2 divide-y divide-zinc-800 border border-zinc-800">
+                    {exclusions.slice(0, 25).map((target) => (
+                      <li key={`${group}-${target.canonicalPath}`} className="p-3 text-sm">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:justify-between">
+                          <span className="font-medium text-zinc-200">{target.target}</span>
+                          {target.campaignId ? <span className="text-xs text-zinc-500">Campaign: {target.campaignId}</span> : null}
+                          {target.jobId ? <span className="text-xs text-zinc-500">Job: {target.jobId}</span> : null}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-zinc-400">{target.reason}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
+            );
+          })}
+        </div>
+      </details>
 
       <section className="border border-zinc-800 bg-zinc-900/50 p-5">
         <h3 className="text-sm font-semibold text-white">Campaign size</h3>
@@ -98,7 +144,9 @@ export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchp
           <button type="button" disabled={preflight.recommendedInitialBatch === 0} className="border border-red-500 bg-red-600 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-zinc-800 disabled:text-zinc-500">Recommended Launch ({preflight.recommendedInitialBatch})</button>
           {campaignSizes.map((size) => <button key={size} type="button" className="border border-zinc-700 px-3 py-2 text-sm text-zinc-200">Top {size}</button>)}
           <button type="button" disabled={preflight.maximumSafeReach === 0} className="border border-zinc-700 px-3 py-2 text-sm text-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-600">Full Safe Reach ({preflight.maximumSafeReach})</button>
-          <button type="button" disabled className="border border-zinc-800 px-3 py-2 text-sm text-zinc-600">Custom</button>
+          <label className="flex items-center gap-2 text-sm text-zinc-300">Custom
+            <input aria-label="Custom campaign size" type="number" min={1} max={Math.max(1, preflight.maximumSafeReach)} disabled={preflight.maximumSafeReach === 0} className="h-10 w-24 border border-zinc-700 bg-zinc-950 px-3 disabled:cursor-not-allowed disabled:text-zinc-600" />
+          </label>
         </div>
       </section>
 
@@ -108,12 +156,14 @@ export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchp
           <p>Target authority: {preflight.technicalDetails.targetAuthority}</p>
           <p>Source mode: {preflight.technicalDetails.sourceMode}</p>
           <p>Eligible target structures: {preflight.targets.length}</p>
-          <p>Campaign ownership analysis: {displayValue(preflight.existingCampaignConflicts)}</p>
+          <p>Campaign ownership authority: {preflight.diagnostics.campaignAuthorityAvailable ? "AVAILABLE" : "UNAVAILABLE"}</p>
+          <p>Broader intent authority: {preflight.diagnostics.broaderIntentAuthorityAvailable ? "AVAILABLE" : "UNAVAILABLE"}</p>
+          <p>Diagnostic exact canonical conflicts: {preflight.diagnostics.exactCanonicalConflictCount}</p>
         </div>
       </details>
 
       <div className="flex flex-col items-start gap-2 border-t border-zinc-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-400">Campaign execution will be enabled after Launchpad preflight certification.</p>
+        <p className="text-sm text-zinc-400">Launch execution will be enabled after preflight authority certification.</p>
         <button type="button" disabled className="min-h-11 border border-zinc-700 bg-zinc-800 px-5 text-sm font-semibold text-zinc-500 disabled:cursor-not-allowed">Launch Campaign</button>
       </div>
     </section>
