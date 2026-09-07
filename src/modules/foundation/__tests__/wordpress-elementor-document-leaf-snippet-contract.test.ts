@@ -106,6 +106,8 @@ describe("Genesis Elementor document-leaf authority", () => {
     ]) expect(source).toContain(value);
     expect(source).toContain("a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b");
     expect(source).toContain("genesis_ssi_elementor_leaf_v1_semantic_allowed");
+    expect(source).toContain("if ($reason !== 'certification') $value = genesis_ssi_elementor_leaf_v1_semantic_unwrap");
+    expect(source).toContain("if ($reason !== 'certification') {");
     expect(source).toContain("DOMDocument");
     expect(source).toContain("genesis_elementor_semantic_diff_forbidden");
     expect(source.match(/genesis_elementor_semantic_class_required/g)).toHaveLength(2);

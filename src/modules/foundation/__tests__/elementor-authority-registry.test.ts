@@ -83,6 +83,7 @@ describe("Elementor authority registry", () => {
     const featuresBefore = "<section><p>Integrated heating, cooling and evaporation with thermostat control to maintain optimal performance.</p><table><tr><td>ENC-AC-SM</td><td>ENC-AC-MD</td><td>ENC-AC-LG</td><td>ENC-AC-LG+</td><td>ENC-AC-XL</td></tr></table></section>";
     const featuresAfter = "<section><p>Integrated heating, cooling and evaporation with thermostat control for regulated enclosure temperature management.</p><table><tr><td>ENC-CC-SM</td><td>ENC-CC-MD</td><td>ENC-CC-LG</td><td>ENC-CC-LG+</td><td>ENC-CC-XL</td></tr></table></section>";
     expect(permitsSemanticHtmlReplacement({ authority: featuresAuthority, before: featuresBefore, replacement: featuresAfter, reason: "remediation" })).toBe(true);
+    expect(permitsSemanticHtmlReplacement({ authority: featuresAuthority, before: featuresBefore, replacement: `${featuresAfter}${featuresAuthority.semanticPolicy!.certificationMarker}`, reason: "certification" })).toBe(false);
     for (const replacement of [
       featuresAfter.replace("ENC-CC-SM", "ENC-CC-MD"),
       featuresAfter.replace("ENC-CC-XL", "ENC-CC-XXL"),

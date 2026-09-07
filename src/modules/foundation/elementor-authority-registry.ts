@@ -212,9 +212,11 @@ function normalizeSemanticHtml(value: string, authority: ElementorLeafAuthority,
     if (comment === policy.certificationMarker && (reason === "certification" || reason === "rollback")) return "";
     return `<!--${body}-->`;
   });
-  for (const href of policy.allowedAnchorUnwrapHrefs) {
-    const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    normalized = normalized.replace(new RegExp(`<a\\b([^>]*)href=(["'])${escaped}\\2([^>]*)>([\\s\\S]*?)<\\/a>`, "gi"), "$4");
+  if (reason !== "certification") {
+    for (const href of policy.allowedAnchorUnwrapHrefs) {
+      const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      normalized = normalized.replace(new RegExp(`<a\\b([^>]*)href=(["'])${escaped}\\2([^>]*)>([\\s\\S]*?)<\\/a>`, "gi"), "$4");
+    }
   }
   for (const replacement of policy.allowedHrefReplacements) normalized = normalized.split(replacement.before).join("__GENESIS_REGISTERED_HREF__").split(replacement.after).join("__GENESIS_REGISTERED_HREF__");
   let denied = false;
@@ -235,7 +237,7 @@ function normalizeSemanticHtml(value: string, authority: ElementorLeafAuthority,
       return token;
     }
     const normalizedText = text?.replace(/\s+/g, " ").trim();
-    const registeredTextIndex = normalizedText ? policy.allowedTextReplacements.findIndex((replacement) => normalizedText === replacement.before || normalizedText === replacement.after) : -1;
+    const registeredTextIndex = reason !== "certification" && normalizedText ? policy.allowedTextReplacements.findIndex((replacement) => normalizedText === replacement.before || normalizedText === replacement.after) : -1;
     if (registeredTextIndex >= 0) return `__GENESIS_REGISTERED_TEXT_${registeredTextIndex}__`;
     return allowed.has(stack.at(-1) ?? "") && text?.trim() ? "__GENESIS_TEXT__" : token;
   });

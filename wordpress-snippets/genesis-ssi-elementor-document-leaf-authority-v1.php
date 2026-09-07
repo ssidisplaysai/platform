@@ -203,12 +203,14 @@ function genesis_ssi_elementor_leaf_v1_semantic_unwrap($value, $hrefs) {
     return $value;
 }
 
-function genesis_ssi_elementor_leaf_v1_semantic_node($node, $policy) {
+function genesis_ssi_elementor_leaf_v1_semantic_node($node, $policy, $reason) {
     if ($node->nodeType === XML_TEXT_NODE) {
         $parent = strtolower((string) ($node->parentNode ? $node->parentNode->nodeName : ''));
         $normalized_text = preg_replace('/\s+/u', ' ', trim((string) $node->nodeValue));
-        foreach (($policy['allowedTextReplacements'] ?? array()) as $index => $replacement) {
-            if ($normalized_text === $replacement['before'] || $normalized_text === $replacement['after']) return array('text' => '__GENESIS_REGISTERED_TEXT_' . $index . '__');
+        if ($reason !== 'certification') {
+            foreach (($policy['allowedTextReplacements'] ?? array()) as $index => $replacement) {
+                if ($normalized_text === $replacement['before'] || $normalized_text === $replacement['after']) return array('text' => '__GENESIS_REGISTERED_TEXT_' . $index . '__');
+            }
         }
         if (in_array($parent, $policy['allowedTextTags'], true) && trim($node->nodeValue) !== '') return array('text' => '__GENESIS_TEXT__');
         return array('text' => (string) $node->nodeValue);
@@ -231,7 +233,7 @@ function genesis_ssi_elementor_leaf_v1_semantic_node($node, $policy) {
     ksort($attributes);
     $children = array();
     foreach ($node->childNodes as $child) {
-        $normalized = genesis_ssi_elementor_leaf_v1_semantic_node($child, $policy);
+        $normalized = genesis_ssi_elementor_leaf_v1_semantic_node($child, $policy, $reason);
         if ($normalized === false) return false;
         if ($normalized !== null) $children[] = $normalized;
     }
@@ -241,7 +243,7 @@ function genesis_ssi_elementor_leaf_v1_semantic_node($node, $policy) {
 function genesis_ssi_elementor_leaf_v1_semantic_canonical($value, $policy, $reason) {
     $marker = $policy['certificationMarker'];
     $value = str_replace($marker, '', (string) $value);
-    $value = genesis_ssi_elementor_leaf_v1_semantic_unwrap($value, $policy['allowedAnchorUnwrapHrefs']);
+    if ($reason !== 'certification') $value = genesis_ssi_elementor_leaf_v1_semantic_unwrap($value, $policy['allowedAnchorUnwrapHrefs']);
     if (!class_exists('DOMDocument')) return false;
     $document = new DOMDocument('1.0', 'UTF-8');
     $previous = libxml_use_internal_errors(true);
@@ -251,7 +253,7 @@ function genesis_ssi_elementor_leaf_v1_semantic_canonical($value, $policy, $reas
     if (!$loaded) return false;
     $root = $document->documentElement;
     if (!$root) return false;
-    return genesis_ssi_elementor_leaf_v1_semantic_node($root, $policy);
+    return genesis_ssi_elementor_leaf_v1_semantic_node($root, $policy, $reason);
 }
 
 function genesis_ssi_elementor_leaf_v1_semantic_allowed($before, $after, $authority, $reason) {
