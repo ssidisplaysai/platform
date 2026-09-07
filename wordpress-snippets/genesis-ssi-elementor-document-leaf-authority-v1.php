@@ -256,6 +256,11 @@ function genesis_ssi_elementor_leaf_v1_semantic_canonical($value, $policy, $reas
     return genesis_ssi_elementor_leaf_v1_semantic_node($root, $policy, $reason);
 }
 
+function genesis_ssi_elementor_leaf_v1_semantic_text_nodes($value) {
+    preg_match_all('/(?:^|>)([^<]+)(?=<|$)/', (string) $value, $matches);
+    return array_values(array_filter(array_map(function ($text) { return preg_replace('/\s+/u', ' ', trim($text)); }, $matches[1]), function ($text) { return $text !== ''; }));
+}
+
 function genesis_ssi_elementor_leaf_v1_semantic_allowed($before, $after, $authority, $reason) {
     $policy = $authority['leaf']['semanticPolicy'] ?? null;
     if (!is_array($policy) || !in_array('SEMANTIC_HTML', $authority['leaf']['mutationClasses'] ?? array(), true)) return false;
@@ -264,13 +269,22 @@ function genesis_ssi_elementor_leaf_v1_semantic_allowed($before, $after, $author
     $before_markers = substr_count($before, $marker);
     $after_markers = substr_count($after, $marker);
     if ($reason === 'certification' && $after_markers !== $before_markers + 1) return false;
-    if ($reason === 'rollback' && ($after_markers !== $before_markers - 1 || genesis_ssi_elementor_leaf_v1_hash($after) !== $policy['rollbackLeafSha256'])) return false;
+    if ($reason === 'rollback' && (genesis_ssi_elementor_leaf_v1_hash($after) !== $policy['rollbackLeafSha256'] || !in_array($after_markers, array($before_markers, $before_markers - 1), true))) return false;
     if ($reason === 'remediation' && $after_markers !== $before_markers) return false;
+    if ($reason === 'remediation') {
+        $before_text = genesis_ssi_elementor_leaf_v1_semantic_text_nodes($before);
+        $after_text = genesis_ssi_elementor_leaf_v1_semantic_text_nodes($after);
+        foreach (($policy['allowedTextReplacements'] ?? array()) as $replacement) {
+            $count = count(array_keys($before_text, $replacement['before'], true));
+            if ($count > 0 && (count(array_keys($after_text, $replacement['before'], true)) !== 0 || count(array_keys($after_text, $replacement['after'], true)) !== $count)) return false;
+        }
+    }
     foreach ($policy['allowedAnchorUnwrapHrefs'] as $href) {
         $pattern = '/<a\b[^>]*href=(["\'])' . preg_quote($href, '/') . '\1/i';
         preg_match_all($pattern, $before, $before_matches);
         preg_match_all($pattern, $after, $after_matches);
         if (count($after_matches[0]) > count($before_matches[0])) return false;
+        if ($reason === 'remediation' && count($before_matches[0]) > 0 && count($after_matches[0]) !== 0) return false;
     }
     $before_tree = genesis_ssi_elementor_leaf_v1_semantic_canonical($before, $policy, $reason);
     $after_tree = genesis_ssi_elementor_leaf_v1_semantic_canonical($after, $policy, $reason);

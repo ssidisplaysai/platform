@@ -244,18 +244,31 @@ function normalizeSemanticHtml(value: string, authority: ElementorLeafAuthority,
   return normalized;
 }
 
+function normalizedTextNodes(value: string): readonly string[] {
+  return [...value.matchAll(/(?:^|>)([^<]+)(?=<|$)/g)].map((match) => match[1].replace(/\s+/g, " ").trim()).filter(Boolean);
+}
+
 export function permitsSemanticHtmlReplacement(input: { authority: ElementorLeafAuthority; before: string; replacement: string; reason: "certification" | "remediation" | "rollback" }): boolean {
   if (!input.authority.mutationClasses.includes("SEMANTIC_HTML") || !preservesProtectedElementorRegions(input)) return false;
   const policy = input.authority.semanticPolicy;
   if (!policy) return false;
   const markerCount = (value: string) => value.split(policy.certificationMarker).length - 1;
   if (input.reason === "certification" && markerCount(input.replacement) !== markerCount(input.before) + 1) return false;
-  if (input.reason === "rollback" && (markerCount(input.replacement) !== markerCount(input.before) - 1 || createHash("sha256").update(input.replacement).digest("hex") !== policy.rollbackLeafSha256)) return false;
+  if (input.reason === "rollback" && (createHash("sha256").update(input.replacement).digest("hex") !== policy.rollbackLeafSha256 || ![markerCount(input.before), markerCount(input.before) - 1].includes(markerCount(input.replacement)))) return false;
   if (input.reason === "remediation" && markerCount(input.replacement) !== markerCount(input.before)) return false;
+  if (input.reason === "remediation") {
+    const beforeText = normalizedTextNodes(input.before);
+    const afterText = normalizedTextNodes(input.replacement);
+    for (const registered of policy.allowedTextReplacements) {
+      const count = beforeText.filter((text) => text === registered.before).length;
+      if (count > 0 && (afterText.filter((text) => text === registered.before).length !== 0 || afterText.filter((text) => text === registered.after).length !== count)) return false;
+    }
+  }
   for (const href of policy.allowedAnchorUnwrapHrefs) {
     const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const count = (value: string) => (value.match(new RegExp(`<a\\b[^>]*href=["']${escaped}["']`, "gi")) ?? []).length;
     if (count(input.replacement) > count(input.before)) return false;
+    if (input.reason === "remediation" && count(input.before) > 0 && count(input.replacement) !== 0) return false;
   }
   const before = normalizeSemanticHtml(input.before, input.authority, input.reason);
   const after = normalizeSemanticHtml(input.replacement, input.authority, input.reason);

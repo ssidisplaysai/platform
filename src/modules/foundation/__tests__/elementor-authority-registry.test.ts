@@ -84,6 +84,7 @@ describe("Elementor authority registry", () => {
     const featuresAfter = "<section><p>Integrated heating, cooling and evaporation with thermostat control for regulated enclosure temperature management.</p><table><tr><td>ENC-CC-SM</td><td>ENC-CC-MD</td><td>ENC-CC-LG</td><td>ENC-CC-LG+</td><td>ENC-CC-XL</td></tr></table></section>";
     expect(permitsSemanticHtmlReplacement({ authority: featuresAuthority, before: featuresBefore, replacement: featuresAfter, reason: "remediation" })).toBe(true);
     expect(permitsSemanticHtmlReplacement({ authority: featuresAuthority, before: featuresBefore, replacement: `${featuresAfter}${featuresAuthority.semanticPolicy!.certificationMarker}`, reason: "certification" })).toBe(false);
+    expect(permitsSemanticHtmlReplacement({ authority: featuresAuthority, before: featuresBefore, replacement: featuresBefore.replace("ENC-AC-SM", "ENC-CC-SM"), reason: "remediation" })).toBe(false);
     for (const replacement of [
       featuresAfter.replace("ENC-CC-SM", "ENC-CC-MD"),
       featuresAfter.replace("ENC-CC-XL", "ENC-CC-XXL"),
@@ -98,6 +99,8 @@ describe("Elementor authority registry", () => {
     const navigationAfter = "<section><p>Supports temperature management for projector installations within model-specific operating requirements.</p></section>";
     expect(permitsSemanticHtmlReplacement({ authority: navigationAuthority, before: navigationBefore, replacement: navigationAfter, reason: "remediation" })).toBe(true);
     expect(permitsSemanticHtmlReplacement({ authority: navigationAuthority, before: navigationBefore, replacement: navigationBefore.replace("consistent projection performance", "guaranteed projection performance"), reason: "remediation" })).toBe(false);
+    const exactRollbackAuthority = { ...featuresAuthority, semanticPolicy: { ...featuresAuthority.semanticPolicy!, rollbackLeafSha256: createHash("sha256").update(featuresBefore).digest("hex") } };
+    expect(permitsSemanticHtmlReplacement({ authority: exactRollbackAuthority, before: featuresAfter, replacement: featuresBefore, reason: "rollback" })).toBe(true);
   });
 
   test("rejects unregistered structural, attribute, code, media, and link changes", () => {
