@@ -122,6 +122,34 @@ describe("campaign reference city content repair", () => {
     );
   });
 
+  test("rewrites only the approved SSI Accent multi-state campaign", () => {
+    const request = buildRequest({
+      campaignId: "campaign-ssi-site-ssi-screen-solutions-international-ssi-accent-rear-projection-film-multi-state-benchmark",
+      pageType: "state_service",
+      stateCode: "CA",
+      stateName: "California",
+      citySlug: "",
+      cityName: null,
+      slug: "accent-rear-projection-film/california",
+      canonicalPath: "accent-rear-projection-film/california",
+      title: "Accent Rear Projection Film in California",
+      seoTitle: "Accent Rear Projection Film in California | SSI Displays",
+    });
+    const result = repairGlwCampaignReferenceCityArtifact({ artifact: buildArtifact(), request });
+
+    expect(result.repaired).toBe(true);
+    expect(result.artifact.contentHtml).toContain("California");
+    expect(result.artifact.contentHtml).toContain('href="https://ssidisplays.com/accent-rear-projection-film/"');
+    expect(result.artifact.contentHtml).not.toContain("the target city");
+    expect(countWords(result.artifact.contentHtml)).toBeGreaterThanOrEqual(1500);
+
+    const outsideAuthority = repairGlwCampaignReferenceCityArtifact({
+      artifact: buildArtifact(),
+      request: { ...request, campaignId: "campaign-other", stateCode: "WA", stateName: "Washington" },
+    });
+    expect(outsideAuthority.repaired).toBe(false);
+  });
+
   test("does not rewrite another city campaign", () => {
     const artifact = buildArtifact();
 

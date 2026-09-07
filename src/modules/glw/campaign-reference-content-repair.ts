@@ -1,6 +1,6 @@
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
 import type { GlwGenerationRequest } from "./page-generation";
-import { isPeFanCooledStarterCampaignRequest } from "./projectorenclosure-campaign-authority";
+import { isPeFanCooledCampaignRequest } from "./projectorenclosure-campaign-authority";
 
 export type GlwCampaignReferenceRepairResult = {
   artifact: GlwGeneratedDraftArtifact;
@@ -9,6 +9,11 @@ export type GlwCampaignReferenceRepairResult = {
 
 const SSI_ACCENT_TEXAS_CITY_CAMPAIGN_ID =
   "campaign-ssi-site-ssi-screen-solutions-international-ssi-accent-rear-projection-film-texas-cities";
+const SSI_ACCENT_MULTI_STATE_CAMPAIGN_ID =
+  "campaign-ssi-site-ssi-screen-solutions-international-ssi-accent-rear-projection-film-multi-state-benchmark";
+const SSI_ACCENT_MULTI_STATE_CODES = new Set([
+  "AZ", "CA", "CO", "CT", "FL", "GA", "IL", "NC", "NY", "TN",
+]);
 
 const SSI_ACCENT_PRODUCT_ID =
   "prod-ssi-accent-rear-projection-film";
@@ -37,16 +42,16 @@ function repairLdwSphereStateClaims(artifact: GlwGeneratedDraftArtifact): GlwGen
   };
 }
 
-function isSsiAccentCampaignCityRequest(
+function isSsiAccentCampaignRequest(
   request: GlwGenerationRequest,
 ): boolean {
-  return Boolean(
-    request.campaignId === SSI_ACCENT_TEXAS_CITY_CAMPAIGN_ID
-      && request.productId === SSI_ACCENT_PRODUCT_ID
-      && request.siteId === SSI_SITE_ID
-      && request.pageType === "city_service"
-      && request.stateCode === "TX",
-  );
+  if (request.productId !== SSI_ACCENT_PRODUCT_ID || request.siteId !== SSI_SITE_ID) return false;
+  if (request.campaignId === SSI_ACCENT_TEXAS_CITY_CAMPAIGN_ID) {
+    return request.pageType === "city_service" && request.stateCode === "TX";
+  }
+  return request.campaignId === SSI_ACCENT_MULTI_STATE_CAMPAIGN_ID
+    && request.pageType === "state_service"
+    && SSI_ACCENT_MULTI_STATE_CODES.has(request.stateCode);
 }
 
 function escapeHtml(value: string): string {
@@ -60,13 +65,15 @@ function escapeHtml(value: string): string {
 
 function buildAuthorityConstrainedReferenceHtml(request: GlwGenerationRequest): string {
   const product = escapeHtml(request.productTopic);
-  const city = escapeHtml(request.cityName ?? "the target city");
+  const city = escapeHtml(request.cityName ?? request.stateName ?? "the target market");
   const state = escapeHtml(request.stateName ?? request.stateCode);
+  const location = request.cityName ? `${city}, ${state}` : state;
   const site = escapeHtml(request.siteName);
+  const authorityUrl = "https://ssidisplays.com/accent-rear-projection-film/";
 
   return [
     `<h1>${product} in ${city}</h1>`,
-    `<p>${site} provides ${product} for commercial projects in ${city}, ${state}. This page is intended to help project teams organize the questions, measurements, responsibilities, and purchasing information that should be resolved before a rear projection film order is finalized. Because project conditions vary, the page does not assume a particular projector, glazing condition, installation method, viewing environment, or performance specification. Those details should be confirmed against the actual project requirements and approved product documentation.</p>`,
+    `<p>${site} provides ${product} for commercial projects in ${location}. This page is intended to help project teams organize the questions, measurements, responsibilities, and purchasing information that should be resolved before a rear projection film order is finalized. Because project conditions vary, the page does not assume a particular projector, glazing condition, installation method, viewing environment, or performance specification. Those details should be confirmed against the actual project requirements and approved product documentation.</p>`,
 
     `<h2>Planning a ${product} Project in ${city}</h2>`,
     `<p>A useful starting point is to define what the project team wants the finished display area to accomplish. Record the intended display location, the approximate visible area, who will view the content, when the display will operate, and what surrounding architectural elements must remain accessible. If the project involves glass, acrylic, partitions, windows, or another transparent surface, document the exact surface type rather than assuming that every surface should be handled the same way. The purpose of this early planning is not to select technical specifications by guesswork; it is to give ${site} enough project information to help identify the appropriate next steps.</p>`,
@@ -95,7 +102,7 @@ function buildAuthorityConstrainedReferenceHtml(request: GlwGenerationRequest): 
     `<h2>Commercial Procurement Checklist</h2>`,
     `<ul>`,
     `<li>Confirm the exact product name: ${product}.</li>`,
-    `<li>Identify the project as a ${city}, ${state} requirement.</li>`,
+    `<li>Identify the project as a ${location} requirement.</li>`,
     `<li>Provide verified field dimensions for every intended display area.</li>`,
     `<li>Provide drawings, photographs, or elevations when they are available.</li>`,
     `<li>List the exact projector model if projection equipment has already been selected.</li>`,
@@ -119,7 +126,7 @@ function buildAuthorityConstrainedReferenceHtml(request: GlwGenerationRequest): 
     `<p>For projects that are still early in design, it is acceptable to say that some answers are not known yet. A clear list of open questions is more useful than filling those gaps with assumed specifications. The project can then move from concept to quotation to final coordination as verified information becomes available.</p>`,
 
     `<h2>Request a ${product} Quote for ${city}</h2>`,
-    `<p>For a ${city}, ${state} project involving ${product}, contact ${site} with the available dimensions, drawings, photographs, projector information, schedule, and application description. The goal of the initial review is to establish the exact project requirement and identify any information that still needs confirmation before ordering. This keeps the purchasing process grounded in documented product authority and actual field conditions while giving the project team a clear path toward quotation and technical coordination.</p>`,
+    `<p>For a ${location} project involving ${product}, contact ${site} with the available dimensions, drawings, photographs, projector information, schedule, and application description. Review <a href="${authorityUrl}">${product}</a> as the official product page and request confirmation for every project-specific requirement. The goal of the initial review is to establish the exact project requirement and identify any information that still needs confirmation before ordering. This keeps the purchasing process grounded in documented product authority and actual field conditions while giving the project team a clear path toward quotation and technical coordination.</p>`,
   ].join("\n");
 }
 
@@ -219,8 +226,8 @@ export function repairGlwCampaignReferenceCityArtifact(input: {
     };
   }
 
-  const isSsiRequest = isSsiAccentCampaignCityRequest(input.request);
-  const isPeRequest = isPeFanCooledStarterCampaignRequest(input.request);
+  const isSsiRequest = isSsiAccentCampaignRequest(input.request);
+  const isPeRequest = isPeFanCooledCampaignRequest(input.request);
 
   if (!isSsiRequest && !isPeRequest) {
     return { artifact: input.artifact, repaired: false };
