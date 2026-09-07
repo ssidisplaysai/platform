@@ -71,7 +71,15 @@ const defenderMainSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPo
 
 const defenderFeaturesSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPolicy"]> = {
   allowedTextTags: [],
-  allowedTextReplacements: [{ before: "Engineered for Any Environment", after: "Engineered for Project-Specific Environments" }],
+  allowedTextReplacements: [
+    { before: "Engineered for Any Environment", after: "Engineered for Project-Specific Environments" },
+    { before: "Integrated heating, cooling and evaporation with thermostat control to maintain optimal performance.", after: "Integrated heating, cooling and evaporation with thermostat control for regulated enclosure temperature management." },
+    { before: "ENC-AC-SM", after: "ENC-CC-SM" },
+    { before: "ENC-AC-MD", after: "ENC-CC-MD" },
+    { before: "ENC-AC-LG", after: "ENC-CC-LG" },
+    { before: "ENC-AC-LG+", after: "ENC-CC-LG+" },
+    { before: "ENC-AC-XL", after: "ENC-CC-XL" },
+  ],
   allowedAnchorUnwrapHrefs: [],
   allowedHrefReplacements: [],
   certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5 -->",
@@ -80,7 +88,10 @@ const defenderFeaturesSemanticPolicy: NonNullable<ElementorLeafAuthority["semant
 
 const defenderNavigationSemanticPolicy: NonNullable<ElementorLeafAuthority["semanticPolicy"]> = {
   allowedTextTags: [],
-  allowedTextReplacements: [{ before: "Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.", after: "Projector enclosure planning for patios, resorts, theaters, parks, and outdoor venues." }],
+  allowedTextReplacements: [
+    { before: "Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.", after: "Projector enclosure planning for patios, resorts, theaters, parks, and outdoor venues." },
+    { before: "Maintains optimal operating temperatures for consistent projection performance.", after: "Supports temperature management for projector installations within model-specific operating requirements." },
+  ],
   allowedAnchorUnwrapHrefs: ["/applications/", "/stadiums-arenas/", "/education/", "/houses-of-worship/", "/museums-exhibits/", "/outdoor-entertainment/", "/trade-shows-events/", "/resources/", "/spec-sheets/", "/cad-files/", "/installation-guides/", "/faq/", "/case-studies/"],
   allowedHrefReplacements: [],
   certificationMarker: "<!-- GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A -->",
@@ -224,7 +235,8 @@ function normalizeSemanticHtml(value: string, authority: ElementorLeafAuthority,
       return token;
     }
     const normalizedText = text?.replace(/\s+/g, " ").trim();
-    if (normalizedText && policy.allowedTextReplacements.some((replacement) => normalizedText === replacement.before || normalizedText === replacement.after)) return "__GENESIS_REGISTERED_TEXT__";
+    const registeredTextIndex = normalizedText ? policy.allowedTextReplacements.findIndex((replacement) => normalizedText === replacement.before || normalizedText === replacement.after) : -1;
+    if (registeredTextIndex >= 0) return `__GENESIS_REGISTERED_TEXT_${registeredTextIndex}__`;
     return allowed.has(stack.at(-1) ?? "") && text?.trim() ? "__GENESIS_TEXT__" : token;
   });
   return normalized;

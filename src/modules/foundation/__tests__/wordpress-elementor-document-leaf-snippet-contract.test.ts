@@ -95,6 +95,15 @@ describe("Genesis Elementor document-leaf authority", () => {
     expect(source).toContain("GENESIS-SEMANTIC-HTML-CERT-12575");
     expect(source).toContain("GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5");
     expect(source).toContain("GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A");
+    for (const value of [
+      "thermostat control for regulated enclosure temperature management",
+      "Supports temperature management for projector installations within model-specific operating requirements.",
+      "array('before' => 'ENC-AC-SM', 'after' => 'ENC-CC-SM')",
+      "array('before' => 'ENC-AC-MD', 'after' => 'ENC-CC-MD')",
+      "array('before' => 'ENC-AC-LG', 'after' => 'ENC-CC-LG')",
+      "array('before' => 'ENC-AC-LG+', 'after' => 'ENC-CC-LG+')",
+      "array('before' => 'ENC-AC-XL', 'after' => 'ENC-CC-XL')",
+    ]) expect(source).toContain(value);
     expect(source).toContain("a7816bf54ece6edee0ed03e9f471f39a4aaf15195daef6141d028dc5684db70b");
     expect(source).toContain("genesis_ssi_elementor_leaf_v1_semantic_allowed");
     expect(source).toContain("DOMDocument");

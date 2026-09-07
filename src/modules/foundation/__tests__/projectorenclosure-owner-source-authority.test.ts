@@ -23,6 +23,10 @@ describe("ProjectorEnclosure owner-source authority", () => {
   test("preserves conflicts while recording controlling owner and source-precedence resolutions", () => {
     expect(PROJECTORENCLOSURE_OWNER_CONFLICTS.map((conflict) => conflict.conflictId)).toEqual(expect.arrayContaining(["defender-ip-rating", "hush-size-table", "ust-cc-filename-identity", "homeline-xs-exterior-dimensions"]));
     expect(PROJECTORENCLOSURE_OWNER_CONFLICTS.find((conflict) => conflict.conflictId === "defender-ip-rating")).toMatchObject({ disposition: "RESOLVED_BY_OWNER", controllingValue: "IP65 Equivalent" });
+    expect(PROJECTORENCLOSURE_OWNER_RESOLUTIONS.find((resolution) => resolution.resolutionId === "owner-resolution:defender-model-prefix")).toMatchObject({
+      controllingValue: "ENC-AC-SM->ENC-CC-SM; ENC-AC-MD->ENC-CC-MD; ENC-AC-LG->ENC-CC-LG; ENC-AC-LG+->ENC-CC-LG+; ENC-AC-XL->ENC-CC-XL",
+      prohibitedExtrapolations: ["ENC-AC is not a current alias after remediation", "no mapping for any unlisted model"],
+    });
     expect(PROJECTORENCLOSURE_OWNER_CONFLICTS.find((conflict) => conflict.conflictId === "ust-cc-filename-identity")).toMatchObject({ disposition: "RESOLVED_BY_SOURCE_PRECEDENCE", controllingValue: "UST Hush Projector Enclosure" });
     expect(PROJECTORENCLOSURE_OWNER_CONFLICTS.find((conflict) => conflict.conflictId === "homeline-marketing-environment")?.disposition).toBe("OWNER_DECISION_REQUIRED");
     expect(PROJECTORENCLOSURE_OWNER_RESOLUTIONS).toHaveLength(7);

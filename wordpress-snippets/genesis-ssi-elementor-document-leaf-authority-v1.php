@@ -49,7 +49,15 @@ function genesis_ssi_elementor_leaf_v1_registry() {
                     'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION'),
                     'semanticPolicy' => array(
                         'allowedTextTags' => array(),
-                        'allowedTextReplacements' => array(array('before' => 'Engineered for Any Environment', 'after' => 'Engineered for Project-Specific Environments')),
+                        'allowedTextReplacements' => array(
+                            array('before' => 'Engineered for Any Environment', 'after' => 'Engineered for Project-Specific Environments'),
+                            array('before' => 'Integrated heating, cooling and evaporation with thermostat control to maintain optimal performance.', 'after' => 'Integrated heating, cooling and evaporation with thermostat control for regulated enclosure temperature management.'),
+                            array('before' => 'ENC-AC-SM', 'after' => 'ENC-CC-SM'),
+                            array('before' => 'ENC-AC-MD', 'after' => 'ENC-CC-MD'),
+                            array('before' => 'ENC-AC-LG', 'after' => 'ENC-CC-LG'),
+                            array('before' => 'ENC-AC-LG+', 'after' => 'ENC-CC-LG+'),
+                            array('before' => 'ENC-AC-XL', 'after' => 'ENC-CC-XL'),
+                        ),
                         'allowedAnchorUnwrapHrefs' => array(),
                         'allowedHrefReplacements' => array(),
                         'certificationMarker' => '<!-- GENESIS-SEMANTIC-HTML-CERT-12575-59B7DE5 -->',
@@ -65,7 +73,10 @@ function genesis_ssi_elementor_leaf_v1_registry() {
                     'mutationClasses' => array('SEMANTIC_HTML', 'INERT_CERTIFICATION'),
                     'semanticPolicy' => array(
                         'allowedTextTags' => array(),
-                        'allowedTextReplacements' => array(array('before' => 'Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.', 'after' => 'Projector enclosure planning for patios, resorts, theaters, parks, and outdoor venues.')),
+                        'allowedTextReplacements' => array(
+                            array('before' => 'Weatherproof projector systems for patios, resorts, theaters, parks, and outdoor venues.', 'after' => 'Projector enclosure planning for patios, resorts, theaters, parks, and outdoor venues.'),
+                            array('before' => 'Maintains optimal operating temperatures for consistent projection performance.', 'after' => 'Supports temperature management for projector installations within model-specific operating requirements.'),
+                        ),
                         'allowedAnchorUnwrapHrefs' => array('/applications/', '/stadiums-arenas/', '/education/', '/houses-of-worship/', '/museums-exhibits/', '/outdoor-entertainment/', '/trade-shows-events/', '/resources/', '/spec-sheets/', '/cad-files/', '/installation-guides/', '/faq/', '/case-studies/'),
                         'allowedHrefReplacements' => array(),
                         'certificationMarker' => '<!-- GENESIS-SEMANTIC-HTML-CERT-12575-ACCC44A -->',
@@ -196,8 +207,8 @@ function genesis_ssi_elementor_leaf_v1_semantic_node($node, $policy) {
     if ($node->nodeType === XML_TEXT_NODE) {
         $parent = strtolower((string) ($node->parentNode ? $node->parentNode->nodeName : ''));
         $normalized_text = preg_replace('/\s+/u', ' ', trim((string) $node->nodeValue));
-        foreach (($policy['allowedTextReplacements'] ?? array()) as $replacement) {
-            if ($normalized_text === $replacement['before'] || $normalized_text === $replacement['after']) return array('text' => '__GENESIS_REGISTERED_TEXT__');
+        foreach (($policy['allowedTextReplacements'] ?? array()) as $index => $replacement) {
+            if ($normalized_text === $replacement['before'] || $normalized_text === $replacement['after']) return array('text' => '__GENESIS_REGISTERED_TEXT_' . $index . '__');
         }
         if (in_array($parent, $policy['allowedTextTags'], true) && trim($node->nodeValue) !== '') return array('text' => '__GENESIS_TEXT__');
         return array('text' => (string) $node->nodeValue);

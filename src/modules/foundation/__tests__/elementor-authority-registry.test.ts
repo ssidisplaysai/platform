@@ -77,6 +77,28 @@ describe("Elementor authority registry", () => {
     expect(permitsSemanticHtmlReplacement({ authority: navigationAuthority, before: navigationBefore, replacement: navigationBefore.replace("Weatherproof projector systems", "Arbitrary marketing"), reason: "remediation" })).toBe(false);
   });
 
+  test("permits only owner-confirmed Defender model and performance substitutions", () => {
+    const authorities = ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12575)!.leaves;
+    const featuresAuthority = authorities[1];
+    const featuresBefore = "<section><p>Integrated heating, cooling and evaporation with thermostat control to maintain optimal performance.</p><table><tr><td>ENC-AC-SM</td><td>ENC-AC-MD</td><td>ENC-AC-LG</td><td>ENC-AC-LG+</td><td>ENC-AC-XL</td></tr></table></section>";
+    const featuresAfter = "<section><p>Integrated heating, cooling and evaporation with thermostat control for regulated enclosure temperature management.</p><table><tr><td>ENC-CC-SM</td><td>ENC-CC-MD</td><td>ENC-CC-LG</td><td>ENC-CC-LG+</td><td>ENC-CC-XL</td></tr></table></section>";
+    expect(permitsSemanticHtmlReplacement({ authority: featuresAuthority, before: featuresBefore, replacement: featuresAfter, reason: "remediation" })).toBe(true);
+    for (const replacement of [
+      featuresAfter.replace("ENC-CC-SM", "ENC-CC-MD"),
+      featuresAfter.replace("ENC-CC-XL", "ENC-CC-XXL"),
+      featuresAfter.replace("regulated enclosure temperature management", "guaranteed optimal performance"),
+      featuresAfter.replace("<table>", '<table style="color:red">'),
+      `${featuresAfter}<script>alert(1)</script>`,
+      `${featuresAfter}<img src="changed.jpg" alt="changed">`,
+    ]) expect(permitsSemanticHtmlReplacement({ authority: featuresAuthority, before: featuresBefore, replacement, reason: "remediation" })).toBe(false);
+
+    const navigationAuthority = authorities[2];
+    const navigationBefore = "<section><p>Maintains optimal operating temperatures for consistent projection performance.</p></section>";
+    const navigationAfter = "<section><p>Supports temperature management for projector installations within model-specific operating requirements.</p></section>";
+    expect(permitsSemanticHtmlReplacement({ authority: navigationAuthority, before: navigationBefore, replacement: navigationAfter, reason: "remediation" })).toBe(true);
+    expect(permitsSemanticHtmlReplacement({ authority: navigationAuthority, before: navigationBefore, replacement: navigationBefore.replace("consistent projection performance", "guaranteed projection performance"), reason: "remediation" })).toBe(false);
+  });
+
   test("rejects unregistered structural, attribute, code, media, and link changes", () => {
     const authority = ELEMENTOR_AUTHORITY_REGISTRY.find((entry) => entry.wordpressObjectId === 12575)!.leaves[0];
     const before = '<section class="hero"><p>Copy <a href="/applications/">Applications</a></p><img src="hero.jpg" alt="Defender"><style>.a{color:red}</style><script>ok()</script></section>';
