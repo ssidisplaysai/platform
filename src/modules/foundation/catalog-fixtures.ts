@@ -3,6 +3,7 @@ import type {
   ProductConfiguration,
   ProductManufacturer,
 } from "./types";
+import { buildLdwIndoorDigitalSphereSpecifications } from "./ldw-indoor-digital-sphere-authority";
 
 const CREATED_AT = "2026-07-29T00:00:00.000Z";
 
@@ -301,11 +302,17 @@ export const FOUNDATION_PRODUCTS: readonly ProductConfiguration[] = [
       installationGuideReferences: [],
       warrantyDocumentReferences: [],
     },
-    specifications: [],
+    specifications: buildLdwIndoorDigitalSphereSpecifications(),
     seoProfileReference: null,
     promptProfileReference: null,
     businessGenomeObjectReference: null,
-    sourceEvidenceReference: null,
+    sourceEvidenceReference: "ssi-product-browser:category:8:https://ssidisplays.com/product-browser/",
+    authorityProvenance: {
+      sourceType: "VERIFIED_FIRST_PARTY_PRODUCT_AUTHORITY",
+      authorityReference: "ssi-product-browser:category:8",
+      normalizationVersion: "ssi-product-browser-indoor-digital-spheres-v1",
+      normalizedAt: "2026-09-07T23:29:26.779Z",
+    },
     createdAt: CREATED_AT,
     updatedAt: CREATED_AT,
     publishedAt: null,

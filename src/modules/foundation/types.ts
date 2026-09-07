@@ -980,7 +980,7 @@ export type ProductSiteAssignment = {
 };
 
 export type ProductAuthorityProvenance = {
-  sourceType: "WORKBOOK_IMPORTED" | "OWNER_APPROVED_CANONICAL_PRODUCT";
+  sourceType: "WORKBOOK_IMPORTED" | "OWNER_APPROVED_CANONICAL_PRODUCT" | "VERIFIED_FIRST_PARTY_PRODUCT_AUTHORITY";
   authorityReference: string;
   normalizationVersion: string;
   normalizedAt: string;

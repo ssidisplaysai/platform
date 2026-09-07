@@ -40,6 +40,12 @@ function validateAuthorityProvenance(
     && !/^wordpress-page:[1-9]\d*:https:\/\//.test(sourceEvidenceReference ?? "")) {
     issues.push({ field: "sourceEvidenceReference", message: "Owner-approved canonical products require exact WordPress page evidence." });
   }
+  if (provenance.sourceType === "VERIFIED_FIRST_PARTY_PRODUCT_AUTHORITY") {
+    const category = provenance.authorityReference.match(/^ssi-product-browser:category:([1-9]\d*)$/)?.[1];
+    if (!category || sourceEvidenceReference !== `ssi-product-browser:category:${category}:https://ssidisplays.com/product-browser/`) {
+      issues.push({ field: "sourceEvidenceReference", message: "Verified Product Browser authority requires an exact matching SSI category reference." });
+    }
+  }
 }
 
 export function validateCategoryHierarchy(categories: readonly ProductCategory[]): ProductValidationResult {
