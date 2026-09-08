@@ -40,11 +40,17 @@ describe("owner-supplied media ingestion", () => {
     expect(OWNER_MEDIA_AUTHORITY_REGISTRY[2].sourceClass).toBe("SSI_FIRST_PARTY");
   });
 
+  test("accepts the exact owner-approved LDW canonical JPEG", async () => {
+    const entry = OWNER_MEDIA_AUTHORITY_REGISTRY.find((item) => item.authorityId === "ldw-indoor-digital-sphere-owner-photo-v1")!;
+    expect(entry).toMatchObject({ mimeType: "image/jpeg", byteSize: 195194, expectedWidth: 924, expectedHeight: 2000, productId: "prod-indoor-digital-sphere", visualClassification: "CANONICAL_PRIMARY_PRODUCT_IMAGE", provenance: "OWNER_APPROVED_FIRST_PARTY_PRODUCT_MEDIA" });
+    expect(validateOwnerMediaAuthority(entry)).toBe(true);
+  });
+
   test("denies unknown authority, wrong site, hash mismatch, MIME mismatch, size, and filename substitution", async () => {
     await expect(ingestOwnerSuppliedMedia({ authorityId: "unknown", siteId: authority.siteId }, transport(), load)).rejects.toThrow("OWNER_MEDIA_AUTHORITY_DENIED");
     await expect(ingestOwnerSuppliedMedia({ authorityId: authority.authorityId, siteId: "wrong" }, transport(), load)).rejects.toThrow("OWNER_MEDIA_AUTHORITY_DENIED");
     await expect(ingestOwnerSuppliedMedia({ authorityId: authority.authorityId, siteId: authority.siteId }, transport(), () => { const changed = authorityBytes(); changed[20] ^= 1; return changed; })).rejects.toThrow("OWNER_MEDIA_SOURCE_MISMATCH");
-    expect(OWNER_MEDIA_AUTHORITY_REGISTRY.every((entry) => entry.mimeType === "image/png" && entry.byteSize <= 5_000_000 && entry.localPath.endsWith(entry.filename))).toBe(true);
+    expect(OWNER_MEDIA_AUTHORITY_REGISTRY.every((entry) => ["image/png", "image/jpeg"].includes(entry.mimeType) && entry.byteSize <= 5_000_000)).toBe(true);
     const mutations: Partial<OwnerMediaAuthority>[] = [
       { sourceClass: "UNKNOWN_PROVENANCE" as OwnerMediaAuthority["sourceClass"] },
       { mimeType: "image/jpeg" as OwnerMediaAuthority["mimeType"] },

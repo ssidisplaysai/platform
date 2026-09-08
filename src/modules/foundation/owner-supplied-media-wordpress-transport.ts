@@ -10,6 +10,7 @@ type WordPressMedia = { id?: number; status?: string; mime_type?: string; source
 type WordPressContent = { id?: number; featured_media?: number; content?: { raw?: string } };
 
 function basic(username: string, password: string): string { return `Basic ${Buffer.from(`${username}:${password}`, "utf8").toString("base64")}`; }
+function wordpressFilename(value: string): string { return value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/-+/g, "-").replace(/-\./g, ".").replace(/^-+|-+$/g, ""); }
 function mediaRecord(media: WordPressMedia): OwnerMediaRecord | null {
   const id = Number(media.id ?? 0), url = String(media.source_url ?? media.guid?.rendered ?? "");
   if (!Number.isSafeInteger(id) || id <= 0 || !url) return null;
@@ -18,7 +19,11 @@ function mediaRecord(media: WordPressMedia): OwnerMediaRecord | null {
 
 export function createOwnerSuppliedMediaWordPressTransport(site: SiteConfiguration): OwnerMediaTransport | null {
   const credential = resolveWordPressCredentialReference(site.integrations.wordpressCredentialReference);
-  if (!credential || !site.integrations.wordpressApiBaseUrl || site.siteId !== "site-ssi-projectorenclosure" || site.domain.replace(/^www\./, "") !== "projectorenclosure.com") return null;
+  const exactSite = new Map([
+    ["site-ssi-projectorenclosure", "projectorenclosure.com"],
+    ["site-led-display-warehouse-production", "leddisplaywarehouse.com"],
+  ]).get(site.siteId);
+  if (!credential || !site.integrations.wordpressApiBaseUrl || !exactSite || site.domain.toLowerCase().replace(/^www\./, "") !== exactSite) return null;
   const apiBase = normalizeWordPressApiBaseUrl(site.integrations.wordpressApiBaseUrl), origin = new URL(apiBase).origin, hostname = new URL(origin).hostname.replace(/^www\./, ""), authorization = basic(credential.username, credential.applicationPassword), created = new Set<number>(), headers = { Accept: "application/json", Authorization: authorization, "Cache-Control": "no-cache, no-store", Pragma: "no-cache" };
 
   async function read(mediaId: number): Promise<OwnerMediaRecord | null> {
@@ -53,7 +58,7 @@ export function createOwnerSuppliedMediaWordPressTransport(site: SiteConfigurati
         const items = await response.json() as WordPressMedia[];
         for (const item of items) {
           const record = mediaRecord(item); if (!record) continue;
-          if (decodeURIComponent(basename(new URL(record.url).pathname)) !== authority.filename) continue;
+          if (decodeURIComponent(basename(new URL(record.url).pathname)) !== wordpressFilename(authority.filename)) continue;
           if (record.title === authority.title && record.altText === authority.altText && record.mimeType === authority.mimeType) return record;
           ambiguous = true;
         }

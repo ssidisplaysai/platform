@@ -11,18 +11,20 @@ export type OwnerMediaSourceClass = "OWNER_SUPPLIED" | "SSI_FIRST_PARTY" | "VERI
 
 export type OwnerMediaAuthority = {
   authorityId: string;
-  siteId: "site-ssi-projectorenclosure";
-  hostname: "projectorenclosure.com";
+  siteId: "site-ssi-projectorenclosure" | "site-led-display-warehouse-production";
+  hostname: "projectorenclosure.com" | "leddisplaywarehouse.com";
   sourceClass: OwnerMediaSourceClass;
-  provenance: "OWNER_SUPPLIED_SSI_FIRST_PARTY";
+  provenance: "OWNER_SUPPLIED_SSI_FIRST_PARTY" | "OWNER_APPROVED_FIRST_PARTY_PRODUCT_MEDIA";
   localPath: string;
   sha256: string;
-  mimeType: "image/png";
+  mimeType: "image/png" | "image/jpeg";
   byteSize: number;
+  expectedWidth?: number;
+  expectedHeight?: number;
   filename: string;
-  productId: "prod-ssi-integrator-series-projector-enclosure";
-  productFamily: "family-ssi-integrator-series";
-  visualClassification: "VERIFIED_PRODUCT_DETAIL_IMAGE";
+  productId: "prod-ssi-integrator-series-projector-enclosure" | "prod-indoor-digital-sphere";
+  productFamily: "family-ssi-integrator-series" | "family-digital-spheres";
+  visualClassification: "VERIFIED_PRODUCT_DETAIL_IMAGE" | "CANONICAL_PRIMARY_PRODUCT_IMAGE";
   title: string;
   altText: string;
   allowedPurpose: string;
@@ -35,6 +37,7 @@ export const OWNER_MEDIA_AUTHORITY_REGISTRY: readonly OwnerMediaAuthority[] = [
   { authorityId: "integrator-unistrut-owner-pdf-p3", siteId: "site-ssi-projectorenclosure", hostname: "projectorenclosure.com", sourceClass: "OWNER_SUPPLIED", provenance: "OWNER_SUPPLIED_SSI_FIRST_PARTY", localPath: `${basePath}/integrator-unistrut-mounting-owner-pdf-page-3.png`, sha256: "6fd6a066fabdda02e6a84a7a39d69ae3d2dce244d027702e58f6120287579865", mimeType: "image/png", byteSize: 256491, filename: "integrator-unistrut-mounting-owner-pdf-page-3.png", productId: "prod-ssi-integrator-series-projector-enclosure", productFamily: "family-ssi-integrator-series", visualClassification: "VERIFIED_PRODUCT_DETAIL_IMAGE", title: "Integrator Series Unistrut Mounting Detail", altText: "Integrator Series top and bottom Unistrut mounting detail", allowedPurpose: "Integrator mounting feature detail", uploadAuthorizationState: "APPROVED", sourceAuthorityReference: "owner-pdf:2025-integrator-overview-specifications:page:3:image:1" },
   { authorityId: "integrator-sealed-door-owner-pdf-p3", siteId: "site-ssi-projectorenclosure", hostname: "projectorenclosure.com", sourceClass: "OWNER_SUPPLIED", provenance: "OWNER_SUPPLIED_SSI_FIRST_PARTY", localPath: `${basePath}/integrator-sealed-door-interior-owner-pdf-page-3.png`, sha256: "ba3ff2dea08b7b192919199f270a8aa6da3ecaea2a01af36f601d4e1b66e495b", mimeType: "image/png", byteSize: 269288, filename: "integrator-sealed-door-interior-owner-pdf-page-3.png", productId: "prod-ssi-integrator-series-projector-enclosure", productFamily: "family-ssi-integrator-series", visualClassification: "VERIFIED_PRODUCT_DETAIL_IMAGE", title: "Integrator Series Sealed Door Interior", altText: "Integrator Series sealed doorway and insulated interior", allowedPurpose: "Integrator sealed doorway and interior feature detail", uploadAuthorizationState: "APPROVED", sourceAuthorityReference: "owner-pdf:2025-integrator-overview-specifications:page:3:image:2" },
   { authorityId: "integrator-lock-owner-pdf-p3", siteId: "site-ssi-projectorenclosure", hostname: "projectorenclosure.com", sourceClass: "SSI_FIRST_PARTY", provenance: "OWNER_SUPPLIED_SSI_FIRST_PARTY", localPath: `${basePath}/integrator-lock-owner-pdf-page-3.png`, sha256: "d127ba7ee44882fa4621f4e6dbec187493c3f6c28e25fca97713388a83dd6fe5", mimeType: "image/png", byteSize: 227274, filename: "integrator-lock-owner-pdf-page-3.png", productId: "prod-ssi-integrator-series-projector-enclosure", productFamily: "family-ssi-integrator-series", visualClassification: "VERIFIED_PRODUCT_DETAIL_IMAGE", title: "Integrator Series Enclosure Lock Detail", altText: "Integrator Series enclosure lock detail", allowedPurpose: "Integrator lock feature detail", uploadAuthorizationState: "APPROVED", sourceAuthorityReference: "owner-pdf:2025-integrator-overview-specifications:page:3:image:5" },
+  { authorityId: "ldw-indoor-digital-sphere-owner-photo-v1", siteId: "site-led-display-warehouse-production", hostname: "leddisplaywarehouse.com", sourceClass: "OWNER_SUPPLIED", provenance: "OWNER_APPROVED_FIRST_PARTY_PRODUCT_MEDIA", localPath: "C:/Users/rober/Documents/Stoner Platform/platform-glw/Assets/shared image (72).jpg", sha256: "2bce78447d2f13421bd10a83b4b5bd46b8a7d0992a49563c925a1e76569b7a5e", mimeType: "image/jpeg", byteSize: 195194, expectedWidth: 924, expectedHeight: 2000, filename: "shared image (72).jpg", productId: "prod-indoor-digital-sphere", productFamily: "family-digital-spheres", visualClassification: "CANONICAL_PRIMARY_PRODUCT_IMAGE", title: "Indoor Digital Sphere", altText: "Operating Indoor Digital Sphere display", allowedPurpose: "Canonical primary product image for the Indoor Digital Sphere product family", uploadAuthorizationState: "APPROVED", sourceAuthorityReference: "owner-decision:ldw-indoor-digital-sphere-canonical-image:sha256:2bce78447d2f13421bd10a83b4b5bd46b8a7d0992a49563c925a1e76569b7a5e" },
 ] as const;
 
 export type OwnerMediaRecord = { id: number; url: string; mimeType: string; title: string; altText: string; status: string; width: number; height: number };
@@ -65,7 +68,7 @@ export function resetOwnerMediaEvidenceForTests(): void { resetPersistedState<Ev
 export function validateOwnerMediaAuthority(authority: OwnerMediaAuthority): boolean {
   return (["OWNER_SUPPLIED", "SSI_FIRST_PARTY", "VERIFIED_FACTORY_ASSET", "VERIFIED_INTERNAL_ASSET"] as const).includes(authority.sourceClass)
     && authority.uploadAuthorizationState === "APPROVED"
-    && authority.mimeType === "image/png"
+    && (authority.mimeType === "image/png" ? authority.filename.toLowerCase().endsWith(".png") : authority.mimeType === "image/jpeg" && /\.jpe?g$/i.test(authority.filename))
     && authority.byteSize > 0
     && authority.byteSize <= OWNER_MEDIA_MAX_BYTES
     && basename(authority.localPath) === authority.filename
@@ -79,12 +82,15 @@ export async function ingestOwnerSuppliedMedia(input: { authorityId: string; sit
   if (!authority || input.siteId !== authority.siteId || transport.hostname !== authority.hostname) throw new Error("OWNER_MEDIA_AUTHORITY_DENIED");
   if (!validateOwnerMediaAuthority(authority)) throw new Error("OWNER_MEDIA_REGISTRY_INVALID");
   const bytes = loadBytes(authority.localPath);
-  if (bytes.length !== authority.byteSize || hash(bytes) !== authority.sha256 || bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") throw new Error("OWNER_MEDIA_SOURCE_MISMATCH");
+  const signatureMatches = authority.mimeType === "image/png"
+    ? bytes.subarray(0, 8).toString("hex") === "89504e470d0a1a0a"
+    : bytes.subarray(0, 3).toString("hex") === "ffd8ff";
+  if (bytes.length !== authority.byteSize || hash(bytes) !== authority.sha256 || !signatureMatches) throw new Error("OWNER_MEDIA_SOURCE_MISMATCH");
   const existingEvidence = listOwnerMediaEvidence().find((record) => record.authorityId === authority.authorityId && record.mediaId && record.sourceUrl);
   const existing = existingEvidence ? await transport.read(existingEvidence.mediaId!) : await transport.findExact(authority);
   if (existing) {
     const resultBytes = await transport.readBytes(existing.url);
-    if (!resultBytes || hash(resultBytes) !== authority.sha256 || existing.altText !== authority.altText || existing.title !== authority.title || new URL(existing.url).hostname.replace(/^www\./, "") !== authority.hostname) throw new Error("OWNER_MEDIA_EXISTING_IDENTITY_AMBIGUOUS");
+    if (!resultBytes || hash(resultBytes) !== authority.sha256 || existing.altText !== authority.altText || existing.title !== authority.title || (authority.expectedWidth && existing.width !== authority.expectedWidth) || (authority.expectedHeight && existing.height !== authority.expectedHeight) || new URL(existing.url).hostname.replace(/^www\./, "") !== authority.hostname) throw new Error("OWNER_MEDIA_EXISTING_IDENTITY_AMBIGUOUS");
     const evidence: OwnerMediaEvidence = { authorityId: authority.authorityId, state: "REUSED_EXISTING", mediaId: existing.id, sourceUrl: existing.url, sourceSha256: authority.sha256, resultingSha256: hash(resultBytes), transformationStatus: "BYTE_IDENTICAL", createdByTransaction: false, failure: null, recordedAt: new Date().toISOString() };
     saveEvidence(evidence); return evidence;
   }
@@ -94,7 +100,7 @@ export async function ingestOwnerSuppliedMedia(input: { authorityId: string; sit
     if (new URL(uploaded.url).hostname.replace(/^www\./, "") !== authority.hostname || uploaded.mimeType !== authority.mimeType) throw new Error("OWNER_MEDIA_RETURNED_IDENTITY_INVALID");
     if (!await transport.updateMetadata(uploaded.id, authority)) throw new Error("OWNER_MEDIA_METADATA_FAILED");
     const verified = await transport.read(uploaded.id), resultBytes = await transport.readBytes(uploaded.url);
-    if (!verified || verified.id !== uploaded.id || verified.url !== uploaded.url || verified.title !== authority.title || verified.altText !== authority.altText || !resultBytes) throw new Error("OWNER_MEDIA_READBACK_FAILED");
+    if (!verified || verified.id !== uploaded.id || verified.url !== uploaded.url || verified.title !== authority.title || verified.altText !== authority.altText || (authority.expectedWidth && verified.width !== authority.expectedWidth) || (authority.expectedHeight && verified.height !== authority.expectedHeight) || !resultBytes) throw new Error("OWNER_MEDIA_READBACK_FAILED");
     const resultingSha256 = hash(resultBytes), evidence: OwnerMediaEvidence = { authorityId: authority.authorityId, state: "UPLOADED_NEW", mediaId: uploaded.id, sourceUrl: uploaded.url, sourceSha256: authority.sha256, resultingSha256, transformationStatus: resultingSha256 === authority.sha256 ? "BYTE_IDENTICAL" : "TRANSFORMED", createdByTransaction: true, failure: null, recordedAt: new Date().toISOString() };
     saveEvidence(evidence); return evidence;
   } catch (error) {

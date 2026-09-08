@@ -6,12 +6,14 @@ import { createOwnerSuppliedMediaWordPressTransport } from "../owner-supplied-me
 import type { SiteConfiguration } from "../types";
 
 const site = { siteId: "site-ssi-projectorenclosure", domain: "projectorenclosure.com", integrations: { wordpressApiBaseUrl: "https://projectorenclosure.com/wp-json/wp/v2", wordpressCredentialReference: "credential-ref" } } as SiteConfiguration;
+const ldwSite = { ...site, siteId: "site-led-display-warehouse-production", domain: "LEDDisplayWarehouse.com", integrations: { ...site.integrations, wordpressApiBaseUrl: "https://leddisplaywarehouse.com/wp-json/wp/v2" } } as SiteConfiguration;
 
 describe("owner-supplied media WordPress transport", () => {
   afterEach(() => jest.restoreAllMocks());
 
   test("binds the transport to the exact site", () => {
     expect(createOwnerSuppliedMediaWordPressTransport(site)?.hostname).toBe("projectorenclosure.com");
+    expect(createOwnerSuppliedMediaWordPressTransport(ldwSite)?.hostname).toBe("leddisplaywarehouse.com");
     expect(createOwnerSuppliedMediaWordPressTransport({ ...site, siteId: "other" })).toBeNull();
     expect(createOwnerSuppliedMediaWordPressTransport({ ...site, domain: "example.com" })).toBeNull();
   });
@@ -41,6 +43,12 @@ describe("owner-supplied media WordPress transport", () => {
     jest.spyOn(global, "fetch").mockResolvedValue(Response.json([{ id: 3, status: "inherit", mime_type: "image/png", source_url: `https://projectorenclosure.com/wp-content/uploads/${OWNER_MEDIA_AUTHORITY_REGISTRY[0].filename}`, title: { raw: "Wrong" }, alt_text: "Wrong", media_details: {} }]));
     const transport = createOwnerSuppliedMediaWordPressTransport(site)!;
     await expect(transport.findExact(OWNER_MEDIA_AUTHORITY_REGISTRY[0])).rejects.toThrow("OWNER_MEDIA_EXISTING_IDENTITY_AMBIGUOUS");
+  });
+
+  test("reuses an exact LDW attachment after WordPress filename sanitization", async () => {
+    const authority = OWNER_MEDIA_AUTHORITY_REGISTRY.find((item) => item.authorityId === "ldw-indoor-digital-sphere-owner-photo-v1")!;
+    jest.spyOn(global, "fetch").mockResolvedValue(Response.json([{ id: 20076, status: "inherit", mime_type: "image/jpeg", source_url: "https://leddisplaywarehouse.com/wp-content/uploads/2026/09/shared-image-72.jpg", title: { raw: authority.title }, alt_text: authority.altText, media_details: { width: 924, height: 2000 } }]));
+    await expect(createOwnerSuppliedMediaWordPressTransport(ldwSite)?.findExact(authority)).resolves.toMatchObject({ id: 20076 });
   });
 
   test("rejects arbitrary remote byte reads", async () => {

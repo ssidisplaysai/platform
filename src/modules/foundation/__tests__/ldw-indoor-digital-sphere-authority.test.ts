@@ -5,6 +5,7 @@ import {
 } from "../ldw-indoor-digital-sphere-authority";
 import { validateUpdateProductInput } from "../catalog-validation";
 import { FOUNDATION_PRODUCTS } from "../catalog-fixtures";
+import { evaluateProductReadiness } from "../product-readiness";
 
 describe("LDW Indoor Digital Sphere Product Browser authority", () => {
   test("preserves all first-party model rows without collapsing model scope", () => {
@@ -51,5 +52,30 @@ describe("LDW Indoor Digital Sphere Product Browser authority", () => {
         normalizedAt: "2026-09-07T23:29:26.779Z",
       },
     }).valid).toBe(false);
+  });
+
+  test("binds the exact owner-approved WordPress image and launch profiles", () => {
+    const product = FOUNDATION_PRODUCTS.find((item) => item.productId === "prod-indoor-digital-sphere")!;
+    expect(product).toMatchObject({
+      enabled: true,
+      lifecycleState: "active",
+      catalogStatus: "ready",
+      media: { primaryImageReference: "wordpress-media:20076" },
+      seoProfileReference: "profile-seo-ledw-default",
+      promptProfileReference: "profile-prompt-commercial-product",
+    });
+    expect(product.siteAssignments).toEqual([
+      expect.objectContaining({
+        siteId: "site-led-display-warehouse-production",
+        enabledForSite: true,
+        publicationStatus: "ready",
+        imageProfileReference: "profile-image-apple-product",
+      }),
+    ]);
+    expect(evaluateProductReadiness({
+      product,
+      requiredPermission: "products:evaluate_readiness",
+      permissions: new Set(["products:evaluate_readiness"]),
+    })).toMatchObject({ ready: true, status: "ready", blockingReasons: [] });
   });
 });
