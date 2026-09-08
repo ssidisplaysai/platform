@@ -199,7 +199,9 @@ export function createConfiguredAtomicRuntimeCampaignLaunchAdapter(input: {
         const launchBody = await launchResponse.json();
         const result = mapAtomicRuntimeLaunchResult(request, launchBody);
         if (!launchResponse.ok && result.state === "FAILED") throw new Error((launchBody as AtomicRuntimeResponse).error ?? "Atomic campaign launch failed.");
-        if (result.campaignId) onProgress("REFERENCE_BOOTSTRAP");
+        if (["CAMPAIGN_CREATED", "REFERENCE_GENERATION_STARTED", "REFERENCE_REVIEW_REQUIRED"].includes(result.state)) {
+          onProgress("REFERENCE_BOOTSTRAP");
+        }
         return result;
       } finally {
         active = false;

@@ -90,6 +90,17 @@ describe("Campaign Launchpad launch adapters", () => {
     expect(mapAtomicRuntimeLaunchResult(request, runtime)).toMatchObject({ state, campaignId });
   });
 
+  test("does not claim reference bootstrap for an idempotent existing campaign", async () => {
+    const fetchImpl = jest.fn()
+      .mockResolvedValueOnce(response({ preflight: currentPreflight() }))
+      .mockResolvedValueOnce(response({ ...created, state: "ALREADY_EXISTS" }));
+    const progress: string[] = [];
+    const result = await createConfiguredAtomicRuntimeCampaignLaunchAdapter({ organizationId: "org-1", requestRoles: ["admin"], fetchImpl })
+      .launch(request, (state) => progress.push(state));
+    expect(result.state).toBe("ALREADY_EXISTS");
+    expect(progress).toEqual(["REVALIDATING", "RESERVING_TARGETS"]);
+  });
+
   test("rejects unsupported target classes before any request", async () => {
     const fetchImpl = jest.fn();
     const adapter = createConfiguredAtomicRuntimeCampaignLaunchAdapter({ organizationId: "org-1", requestRoles: ["admin"], fetchImpl });
