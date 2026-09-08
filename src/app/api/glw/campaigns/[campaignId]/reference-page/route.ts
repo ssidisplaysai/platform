@@ -11,6 +11,7 @@ import {
 import { resolveGlwCampaignGenerationContext } from "@/modules/glw/campaign-generation-context";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
+import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchReferenceFailure, recordGlwCampaignLaunchReferenceReviewRequired, recordGlwCampaignLaunchReferenceStarted } from "@/modules/glw/campaign-launch-authority";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
@@ -336,6 +337,7 @@ export async function PATCH(request: NextRequest, context: Context) {
     jobId: job.jobId,
     wordpressObjectId: job.wordpressObjectId,
   });
+  recordGlwCampaignLaunchReferenceApproved(campaign.campaignId, job.jobId);
 
   return NextResponse.json({
     state: target.state,
@@ -503,6 +505,15 @@ export async function POST(request: NextRequest, context: Context) {
   const payload = await generationResponse.json().catch(
     () => ({ error: "Reference generation returned malformed JSON." }),
   );
+
+  const launchJob = (payload as { job?: { jobId?: string; status?: string; errorMessage?: string | null } }).job;
+  if (launchJob?.status === "COMPLETE" && launchJob.jobId) {
+    recordGlwCampaignLaunchReferenceReviewRequired(campaign.campaignId, launchJob.jobId);
+  } else if (launchJob?.status === "FAILED") {
+    recordGlwCampaignLaunchReferenceFailure(campaign.campaignId, launchJob.errorMessage ?? "Reference generation failed.");
+  } else {
+    recordGlwCampaignLaunchReferenceStarted(campaign.campaignId, launchJob?.jobId ?? null);
+  }
 
   return NextResponse.json(
     {

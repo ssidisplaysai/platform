@@ -56,7 +56,7 @@ function persistState(): void {
 
 loadState();
 
-function campaignId(input: NewGlwCampaignInput): string {
+export function createGlwCampaignId(input: NewGlwCampaignInput): string {
   const safe = input.name
     .trim()
     .toLowerCase()
@@ -159,7 +159,7 @@ export function createGlwCampaign(input: NewGlwCampaignInput): {
   const errors = validate(input);
   if (errors.length > 0) return { campaign: null, errors };
 
-  const id = campaignId(input);
+  const id = createGlwCampaignId(input);
   if (campaignStore.has(id)) {
     return { campaign: null, errors: ["A campaign with this identity already exists."] };
   }

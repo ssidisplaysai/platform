@@ -22,6 +22,7 @@ import {
   requireGlwCampaignTargetResumeAuthority,
   summarizeGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
+import { recordGlwCampaignLaunchDispatch } from "@/modules/glw/campaign-launch-authority";
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -514,6 +515,11 @@ export async function POST(
       });
     }
   }
+
+  recordGlwCampaignLaunchDispatch(
+    campaign.campaignId,
+    results.filter((entry) => entry.status === "dispatch_error").length,
+  );
 
   return NextResponse.json({
     campaignId: campaign.campaignId,

@@ -21,6 +21,7 @@ import {
 } from "@/modules/glw/campaign-recovered-target-adoption";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { recordGlwCampaignLaunchActivated, requireGlwCampaignLaunchReservationOwnership } from "@/modules/glw/campaign-launch-authority";
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -123,6 +124,20 @@ export async function POST(
 
   if (campaign.status === "active") {
     const targets = listGlwCampaignTargets(campaign.campaignId);
+
+    try {
+      recordGlwCampaignLaunchActivated(campaign, targets);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          error: error instanceof Error ? error.message : "Campaign activation journal recovery failed.",
+          campaign,
+          targets,
+          activationRecoveryRequired: true,
+        },
+        { status: 503 },
+      );
+    }
 
     return NextResponse.json({
       campaign,
@@ -240,6 +255,8 @@ export async function POST(
     );
   }
 
+  requireGlwCampaignLaunchReservationOwnership(campaign);
+
   const initializedTargets = isCityCampaign
     ? initializeGlwCityCampaignTargets({
         campaignId: campaign.campaignId,
@@ -351,6 +368,20 @@ export async function POST(
         errors: activation.errors,
       },
       { status: 409 },
+    );
+  }
+
+  try {
+    recordGlwCampaignLaunchActivated(activation.campaign, targets);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Campaign activated but launch journal recovery is required.",
+        campaign: activation.campaign,
+        targets,
+        activationRecoveryRequired: true,
+      },
+      { status: 503 },
     );
   }
 

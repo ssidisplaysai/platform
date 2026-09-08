@@ -122,6 +122,11 @@ export function listGlwCampaignTargets(
     .map((target) => deepClone(target));
 }
 
+export function listAllGlwCampaignTargets(): readonly GlwCampaignTarget[] {
+  loadState();
+  return Array.from(targetStore.values(), (target) => deepClone(target));
+}
+
 export function initializeGlwCampaignTargets(input: {
   campaignId: string;
   organizationId: string;
