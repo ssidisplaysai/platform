@@ -26,4 +26,34 @@ Analyze remains read-only and operator-visible. The configured adapter first rep
 
 The UI covers confirmation, immediate revalidation, atomic reservation, and reference bootstrap progress. Durable outcomes distinguish campaign creation at `REFERENCE_PENDING`, existing idempotent campaigns, reference review, active/dispatch states, and recovery required. A reference-review result means the campaign exists and awaits the existing manual review flow, not that launch failed. Recovery results preserve the campaign ID and warn that another campaign must not be created. Atomic target conflicts state that no new cohort was partially reserved and offer Analyze Again. Metrics unavailable from the current read model are shown as unavailable rather than inferred.
 
-Production launch remains disabled. Both capability resolvers reject execution under `NODE_ENV=production`. Isolated development can enable the real adapter with `GLW_LAUNCHPAD_ATOMIC_LAUNCH=true`, or the non-mutating visual fixture with `GLW_LAUNCHPAD_SYNTHETIC_LAUNCH=true`. The synthetic adapter exists only to certify UX behavior and never calls a launch endpoint. The atomic endpoint creates a draft campaign and durable reference-pending journal state; it does not publish, dispatch, or bypass existing manual reference approval.
+The atomic endpoint creates a draft campaign and durable reference-pending journal state; it does not publish, dispatch, or bypass existing manual reference approval. Isolated development can enable the real adapter with `GLW_LAUNCHPAD_ATOMIC_LAUNCH=true`, or the non-mutating visual fixture with `GLW_LAUNCHPAD_SYNTHETIC_LAUNCH=true`. The synthetic adapter exists only to certify UX behavior and never calls a launch endpoint.
+
+## Production promotion guard
+
+Production campaign launch is owner-controlled, default-off, and bound to one immutable deployed release. UI availability and the authenticated launch API use the same server-only authority. The API checks it after authentication and organization scope validation and again immediately before atomic mutation. Client request fields, browser state, and public environment variables cannot enable launch.
+
+Promotion requires all of the following values in the production process environment:
+
+- `GLW_CAMPAIGN_LAUNCH_PRODUCTION_ENABLED=true`
+- `GLW_CAMPAIGN_LAUNCH_CERTIFIED_RELEASE=<exact 40-character Git SHA approved by the owner>`
+- `GIT_COMMIT=<exact 40-character Git SHA injected and verified by the immutable production launcher>`
+
+Both release values are normalized to lowercase and must match exactly. Symbolic or ambiguous values such as `latest`, `current`, `any`, `*`, branch names, abbreviated SHAs, malformed SHAs, and missing values fail closed. Any enable value other than the exact lowercase string `true` also fails closed.
+
+The authenticated `GET /api/glw/campaign-launch` response includes a read-only `promotion` object with `available`, `state`, `reason`, `runningRelease`, and `certifiedRelease`. It performs no mutation. Expected states are `DISABLED`, `ENABLED_CERTIFIED_RELEASE`, `RELEASE_MISMATCH`, `CONFIGURATION_INVALID`, `UNAVAILABLE`, and `DEVELOPMENT_ENABLED`.
+
+### Enable and verify
+
+1. Deploy an immutable release containing the reviewed guard and certified atomic runtime.
+2. Independently verify that release's full Git SHA and record owner approval.
+3. Set `GLW_CAMPAIGN_LAUNCH_CERTIFIED_RELEASE` to that exact SHA and set `GLW_CAMPAIGN_LAUNCH_PRODUCTION_ENABLED=true` in the owner-controlled production environment.
+4. Restart through the normal immutable launcher. Do not alter launcher-provided `GIT_COMMIT`.
+5. Make an authenticated, organization-scoped `GET /api/glw/campaign-launch` request and require `promotion.state` to be `ENABLED_CERTIFIED_RELEASE`, `available` to be `true`, and both release values to equal the approved SHA.
+6. Open Launchpad, Analyze a known bounded cohort, and confirm the UI reports that launch will revalidate the cohort. Stop before confirmation when performing a non-mutating capability canary.
+7. For the first mutating canary, use a separately approved small cohort, preserve the response IDs, and verify the draft campaign, exact target ownership, reference-pending state, zero publication, and zero dispatch through existing read-only authority views.
+
+### Disable or roll back
+
+Set `GLW_CAMPAIGN_LAUNCH_PRODUCTION_ENABLED=false` (or remove it) and restart the production process. Confirm authenticated GET reports `DISABLED` before considering the guard closed. Deploying a different release without explicitly promoting its exact SHA produces `RELEASE_MISMATCH`, so rollback does not silently inherit promotion.
+
+Disabling the guard rejects new launch requests but does not delete or unwind campaigns, target reservations, launch journals, reference work, or recovery state already committed by the atomic authority. A request that has crossed the final promotion check can complete atomically. Handle its durable result through the existing idempotency, reference review, or recovery workflow; never create a replacement campaign merely because promotion was subsequently disabled.

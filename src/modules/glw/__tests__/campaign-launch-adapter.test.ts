@@ -5,7 +5,7 @@ import {
   createSyntheticCampaignLaunchAdapter,
   mapAtomicRuntimeLaunchResult,
 } from "../campaign-launch-adapter";
-import { resolveGlwAtomicLaunchExecutionCapability, resolveGlwLaunchExecutionCapability } from "../campaign-launch-capability";
+import { resolveGlwAtomicLaunchExecutionCapability, resolveGlwCampaignLaunchPromotion, resolveGlwLaunchExecutionCapability } from "../campaign-launch-capability";
 import { presentGlwLaunchResult, type GlwCampaignLaunchRequest } from "../campaign-launch-contract";
 import type { GlwCampaignLaunchpadPreflight } from "../campaign-launchpad";
 
@@ -44,6 +44,29 @@ describe("Campaign Launchpad launch adapters", () => {
     expect(resolveGlwLaunchExecutionCapability({ nodeEnvironment: "production", syntheticFlag: "true" })).toBe(false);
     expect(resolveGlwAtomicLaunchExecutionCapability({ nodeEnvironment: "production", atomicFlag: "true" })).toBe(false);
     expect(resolveGlwAtomicLaunchExecutionCapability({ nodeEnvironment: "development", atomicFlag: "true" })).toBe(true);
+  });
+
+  test.each([
+    [{}, "DISABLED"],
+    [{ productionEnabled: "false" }, "DISABLED"],
+    [{ productionEnabled: "yes" }, "CONFIGURATION_INVALID"],
+    [{ productionEnabled: "true" }, "CONFIGURATION_INVALID"],
+    [{ productionEnabled: "true", certifiedRelease: "latest", runningRelease: "a".repeat(40) }, "CONFIGURATION_INVALID"],
+    [{ productionEnabled: "true", certifiedRelease: "a".repeat(40) }, "UNAVAILABLE"],
+    [{ productionEnabled: "true", certifiedRelease: "a".repeat(40), runningRelease: "b".repeat(40) }, "RELEASE_MISMATCH"],
+  ])("fails closed for production promotion %#", (values, state) => {
+    expect(resolveGlwCampaignLaunchPromotion({ nodeEnvironment: "production", ...values })).toMatchObject({ available: false, state });
+  });
+
+  test("enables only an exact certified production release", () => {
+    const release = "4".repeat(40);
+    expect(resolveGlwCampaignLaunchPromotion({ nodeEnvironment: "production", productionEnabled: "true", certifiedRelease: release, runningRelease: release })).toEqual({
+      available: true,
+      state: "ENABLED_CERTIFIED_RELEASE",
+      reason: "Campaign Launch is available for this certified production release.",
+      runningRelease: release,
+      certifiedRelease: release,
+    });
   });
 
   test("disabled adapters perform no fetch", async () => {

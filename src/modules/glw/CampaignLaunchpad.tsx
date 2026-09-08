@@ -27,6 +27,7 @@ type Props = {
   existingProducts?: readonly { name: string; url: string }[];
   launchExecutionAvailable?: boolean;
   atomicLaunchAvailable?: boolean;
+  launchCapabilityReason?: string;
   launchAdapter?: GlwCampaignLaunchAdapter;
 };
 type PreflightResponse = { preflight?: GlwCampaignLaunchpadPreflight; error?: string };
@@ -35,13 +36,14 @@ function displayValue(value: string | number | null): string {
   return value === null ? "UNKNOWN" : String(value).replaceAll("_", " ");
 }
 
-export function CampaignPreflight({ preflight, selectedBatchSize = 0, onSelectBatchSize, onLaunch, launchAvailable = false, launchCapabilityAvailable = false, launchBusy = false }: {
+export function CampaignPreflight({ preflight, selectedBatchSize = 0, onSelectBatchSize, onLaunch, launchAvailable = false, launchCapabilityAvailable = false, launchCapabilityReason, launchBusy = false }: {
   preflight: GlwCampaignLaunchpadPreflight;
   selectedBatchSize?: number;
   onSelectBatchSize?: (size: number) => void;
   onLaunch?: () => void;
   launchAvailable?: boolean;
   launchCapabilityAvailable?: boolean;
+  launchCapabilityReason?: string;
   launchBusy?: boolean;
 }) {
   const ready = preflight.readiness === "READY" || preflight.readiness === "READY_WITH_REVIEW";
@@ -178,7 +180,7 @@ export function CampaignPreflight({ preflight, selectedBatchSize = 0, onSelectBa
       </details>
 
       <div className="flex flex-col items-start gap-2 border-t border-zinc-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-400">{launchCapabilityAvailable ? "Launch will revalidate this exact target cohort before any runtime action." : "Production launch remains disabled pending atomic runtime certification."}</p>
+        <p className="text-sm text-zinc-400">{launchCapabilityAvailable ? "Launch will revalidate this exact target cohort before any runtime action." : launchCapabilityReason ?? "Campaign launch is unavailable for this runtime."}</p>
         <button type="button" onClick={onLaunch} disabled={!launchAvailable || launchBusy || selectedBatchSize < 1} className="min-h-11 border border-red-500 bg-red-600 px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-zinc-800 disabled:text-zinc-500">Launch Campaign</button>
       </div>
     </section>
@@ -187,7 +189,7 @@ export function CampaignPreflight({ preflight, selectedBatchSize = 0, onSelectBa
 
 const ACTIVE_LAUNCH_STATES = new Set<GlwLaunchUiState>(["REVALIDATING", "CREATING_CAMPAIGN", "RESERVING_TARGETS", "REFERENCE_BOOTSTRAP", "STARTING"]);
 
-export function CampaignLaunchpad({ organizationId, requestRoles, existingProducts = [], launchExecutionAvailable = false, atomicLaunchAvailable = false, launchAdapter }: Props) {
+export function CampaignLaunchpad({ organizationId, requestRoles, existingProducts = [], launchExecutionAvailable = false, atomicLaunchAvailable = false, launchCapabilityReason, launchAdapter }: Props) {
   const [reach, setReach] = useState<GlwCampaignReach>("NATIONWIDE");
   const [productUrl, setProductUrl] = useState("");
   const [selectedProductUrl, setSelectedProductUrl] = useState("");
@@ -353,7 +355,7 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
           </details>
         ) : null}
 
-        {preflight ? <CampaignPreflight preflight={preflight} selectedBatchSize={selectedBatchSize} onSelectBatchSize={(size) => setSelectedBatchSize(Math.max(0, Math.min(size, preflight.maximumSafeReach)))} onLaunch={requestLaunch} launchAvailable={launchEligible} launchCapabilityAvailable={adapter.available} launchBusy={launchBusy} /> : (
+        {preflight ? <CampaignPreflight preflight={preflight} selectedBatchSize={selectedBatchSize} onSelectBatchSize={(size) => setSelectedBatchSize(Math.max(0, Math.min(size, preflight.maximumSafeReach)))} onLaunch={requestLaunch} launchAvailable={launchEligible} launchCapabilityAvailable={adapter.available} launchCapabilityReason={launchCapabilityReason} launchBusy={launchBusy} /> : (
           <section className="border-t border-zinc-800 pt-6 text-sm text-zinc-500">Campaign preflight will appear here after analysis.</section>
         )}
         {launchBusy ? <CampaignLaunchProgress state={launchState} /> : null}
