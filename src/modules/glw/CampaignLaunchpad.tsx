@@ -2,6 +2,9 @@
 
 import React from "react";
 import { useMemo, useState } from "react";
+import { createDisabledCampaignLaunchAdapter, createSyntheticCampaignLaunchAdapter, type GlwSyntheticLaunchScenario } from "./campaign-launch-adapter";
+import type { GlwCampaignLaunchAdapter, GlwCampaignLaunchRequest, GlwCampaignLaunchResult, GlwLaunchUiState } from "./campaign-launch-contract";
+import { CampaignLaunchConfirmation, CampaignLaunchOutcome, CampaignLaunchProgress } from "./CampaignLaunchExperience";
 import { GLW_CITIES, GLW_STATES } from "./page-generation";
 import type {
   GlwCampaignLaunchpadInput,
@@ -21,6 +24,8 @@ type Props = {
   organizationId: string;
   requestRoles: readonly string[];
   existingProducts?: readonly { name: string; url: string }[];
+  launchExecutionAvailable?: boolean;
+  launchAdapter?: GlwCampaignLaunchAdapter;
 };
 type PreflightResponse = { preflight?: GlwCampaignLaunchpadPreflight; error?: string };
 
@@ -28,7 +33,15 @@ function displayValue(value: string | number | null): string {
   return value === null ? "UNKNOWN" : String(value).replaceAll("_", " ");
 }
 
-export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchpadPreflight }) {
+export function CampaignPreflight({ preflight, selectedBatchSize = 0, onSelectBatchSize, onLaunch, launchAvailable = false, launchCapabilityAvailable = false, launchBusy = false }: {
+  preflight: GlwCampaignLaunchpadPreflight;
+  selectedBatchSize?: number;
+  onSelectBatchSize?: (size: number) => void;
+  onLaunch?: () => void;
+  launchAvailable?: boolean;
+  launchCapabilityAvailable?: boolean;
+  launchBusy?: boolean;
+}) {
   const ready = preflight.readiness === "READY" || preflight.readiness === "READY_WITH_REVIEW";
   const campaignSizes = [25, 50, 100, 250].filter((size) => size <= preflight.maximumSafeReach);
   const exclusionGroups = [
@@ -141,11 +154,11 @@ export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchp
       <section className="border border-zinc-800 bg-zinc-900/50 p-5">
         <h3 className="text-sm font-semibold text-white">Campaign size</h3>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" disabled={preflight.recommendedInitialBatch === 0} className="border border-red-500 bg-red-600 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-zinc-800 disabled:text-zinc-500">Recommended Launch ({preflight.recommendedInitialBatch})</button>
-          {campaignSizes.map((size) => <button key={size} type="button" className="border border-zinc-700 px-3 py-2 text-sm text-zinc-200">Top {size}</button>)}
-          <button type="button" disabled={preflight.maximumSafeReach === 0} className="border border-zinc-700 px-3 py-2 text-sm text-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-600">Full Safe Reach ({preflight.maximumSafeReach})</button>
+          <button type="button" onClick={() => onSelectBatchSize?.(preflight.recommendedInitialBatch)} disabled={preflight.recommendedInitialBatch === 0} className={`border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-zinc-800 disabled:text-zinc-500 ${selectedBatchSize === preflight.recommendedInitialBatch && selectedBatchSize > 0 ? "border-red-500 bg-red-600 text-white" : "border-zinc-700 text-zinc-200"}`}>Recommended Launch ({preflight.recommendedInitialBatch})</button>
+          {campaignSizes.map((size) => <button key={size} type="button" onClick={() => onSelectBatchSize?.(size)} className={`border px-3 py-2 text-sm ${selectedBatchSize === size ? "border-red-500 bg-red-600 text-white" : "border-zinc-700 text-zinc-200"}`}>Top {size}</button>)}
+          <button type="button" onClick={() => onSelectBatchSize?.(preflight.maximumSafeReach)} disabled={preflight.maximumSafeReach === 0} className={`border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:text-zinc-600 ${selectedBatchSize === preflight.maximumSafeReach && selectedBatchSize > 0 ? "border-red-500 bg-red-600 text-white" : "border-zinc-700 text-zinc-200"}`}>Full Safe Reach ({preflight.maximumSafeReach})</button>
           <label className="flex items-center gap-2 text-sm text-zinc-300">Custom
-            <input aria-label="Custom campaign size" type="number" min={1} max={Math.max(1, preflight.maximumSafeReach)} disabled={preflight.maximumSafeReach === 0} className="h-10 w-24 border border-zinc-700 bg-zinc-950 px-3 disabled:cursor-not-allowed disabled:text-zinc-600" />
+            <input aria-label="Custom campaign size" type="number" min={1} max={Math.max(1, preflight.maximumSafeReach)} value={selectedBatchSize || ""} onChange={(event) => onSelectBatchSize?.(Number(event.target.value))} disabled={preflight.maximumSafeReach === 0} className="h-10 w-24 border border-zinc-700 bg-zinc-950 px-3 disabled:cursor-not-allowed disabled:text-zinc-600" />
           </label>
         </div>
       </section>
@@ -163,14 +176,16 @@ export function CampaignPreflight({ preflight }: { preflight: GlwCampaignLaunchp
       </details>
 
       <div className="flex flex-col items-start gap-2 border-t border-zinc-800 pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-zinc-400">Launch execution will be enabled after preflight authority certification.</p>
-        <button type="button" disabled className="min-h-11 border border-zinc-700 bg-zinc-800 px-5 text-sm font-semibold text-zinc-500 disabled:cursor-not-allowed">Launch Campaign</button>
+        <p className="text-sm text-zinc-400">{launchCapabilityAvailable ? "Launch will revalidate this exact target cohort before any runtime action." : "Production launch remains disabled pending atomic runtime certification."}</p>
+        <button type="button" onClick={onLaunch} disabled={!launchAvailable || launchBusy || selectedBatchSize < 1} className="min-h-11 border border-red-500 bg-red-600 px-5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-zinc-800 disabled:text-zinc-500">Launch Campaign</button>
       </div>
     </section>
   );
 }
 
-export function CampaignLaunchpad({ organizationId, requestRoles, existingProducts = [] }: Props) {
+const ACTIVE_LAUNCH_STATES = new Set<GlwLaunchUiState>(["REVALIDATING", "CREATING_CAMPAIGN", "RESERVING_TARGETS", "REFERENCE_BOOTSTRAP", "STARTING"]);
+
+export function CampaignLaunchpad({ organizationId, requestRoles, existingProducts = [], launchExecutionAvailable = false, launchAdapter }: Props) {
   const [reach, setReach] = useState<GlwCampaignReach>("NATIONWIDE");
   const [productUrl, setProductUrl] = useState("");
   const [selectedProductUrl, setSelectedProductUrl] = useState("");
@@ -179,6 +194,15 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
   const [preflight, setPreflight] = useState<GlwCampaignLaunchpadPreflight | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedBatchSize, setSelectedBatchSize] = useState(0);
+  const [launchState, setLaunchState] = useState<GlwLaunchUiState>("IDLE");
+  const [launchRequest, setLaunchRequest] = useState<GlwCampaignLaunchRequest | null>(null);
+  const [launchResult, setLaunchResult] = useState<GlwCampaignLaunchResult | null>(null);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const [syntheticScenario, setSyntheticScenario] = useState<GlwSyntheticLaunchScenario>("SUCCESS");
+  const adapter = useMemo(() => launchAdapter ?? (launchExecutionAvailable
+    ? createSyntheticCampaignLaunchAdapter({ scenario: syntheticScenario, delay: () => new Promise((resolve) => setTimeout(resolve, 350)) })
+    : createDisabledCampaignLaunchAdapter()), [launchAdapter, launchExecutionAvailable, syntheticScenario]);
   const urlValid = useMemo(() => {
     try { const url = new URL(productUrl); return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password; }
     catch { return false; }
@@ -201,15 +225,79 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
       const body = await response.json() as PreflightResponse;
       if (!response.ok || !body.preflight) throw new Error(body.error ?? "Campaign analysis failed.");
       setPreflight(body.preflight);
+      setSelectedBatchSize(body.preflight.readiness === "READY" ? body.preflight.recommendedInitialBatch : 0);
+      setLaunchResult(null);
+      setLaunchState("IDLE");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Campaign analysis failed.");
     } finally { setLoading(false); }
   }
 
+  const safeTargets = preflight?.targetAssessments.filter((target) => target.safe && target.primaryDisposition === "SAFE") ?? [];
+  const launchEligible = Boolean(
+    preflight
+    && !launchResult
+    && preflight.readiness === "READY"
+    && preflight.maximumSafeReach > 0
+    && selectedBatchSize > 0
+    && selectedBatchSize <= preflight.maximumSafeReach
+    && selectedBatchSize <= safeTargets.length
+    && adapter.available
+  );
+  const launchBusy = ACTIVE_LAUNCH_STATES.has(launchState);
+
+  function requestLaunch() {
+    if (!preflight?.product || !launchEligible || launchBusy) return;
+    const selectedTargets = safeTargets.slice(0, selectedBatchSize).map((target) => ({ canonicalPath: target.canonicalPath, stateCode: target.stateCode, citySlug: target.citySlug, cityName: target.cityName }));
+    const request: GlwCampaignLaunchRequest = {
+      launchId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `launch-${Date.now()}`,
+      siteId: preflight.site.id,
+      productId: preflight.product.id,
+      reach: preflight.desiredReach,
+      productUrl,
+      selectedBatchSize,
+      selectedTargets,
+      acknowledgedPublicationPolicy: preflight.publicationPolicy,
+    };
+    setLaunchRequest(request);
+    setLaunchError(null);
+    setLaunchState("CONFIRMING");
+  }
+
+  async function confirmLaunch() {
+    if (!launchRequest || launchBusy) return;
+    setLaunchError(null);
+    try {
+      const result = await adapter.launch(launchRequest, setLaunchState);
+      setLaunchResult(result);
+      const terminal = result.state === "REFERENCE_REVIEW_REQUIRED"
+        ? "REVIEW_REQUIRED"
+        : result.state === "RECOVERY_REQUIRED"
+          ? "RECOVERY_REQUIRED"
+          : result.state === "DISPATCH_STARTED" || result.state === "CAMPAIGN_ACTIVE" || result.state === "ALREADY_EXISTS"
+            ? "SUCCESS"
+            : "FAILED";
+      setLaunchState(terminal);
+    } catch (cause) {
+      setLaunchError(cause instanceof Error ? cause.message : "Campaign launch failed.");
+      setLaunchState("FAILED");
+    }
+  }
+
+  function resetLaunchpad() {
+    setReach("NATIONWIDE"); setProductUrl(""); setSelectedProductUrl(""); setStateCodes([]); setMetro("");
+    setPreflight(null); setError(null); setSelectedBatchSize(0); setLaunchRequest(null); setLaunchResult(null); setLaunchError(null); setLaunchState("IDLE"); setSyntheticScenario("SUCCESS");
+  }
+
+  async function analyzeAgain() {
+    setLaunchResult(null); setLaunchRequest(null); setLaunchError(null); setLaunchState("IDLE");
+    await analyze();
+  }
+
   return (
     <section className="border border-zinc-800 bg-zinc-950 p-5 md:p-7">
       <div className="space-y-8">
-        <fieldset>
+        <fieldset disabled={launchBusy}>
           <legend className="text-xs uppercase tracking-[0.25em] text-red-400">1. Desired Reach</legend>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
             {REACH_OPTIONS.map((option) => (
@@ -242,23 +330,35 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
               </select>
             </label>
           ) : null}
-          <input id="campaign-product-url" type="url" inputMode="url" value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setSelectedProductUrl(""); setPreflight(null); setError(null); }} placeholder="https://www.example.com/product/" aria-invalid={productUrl.length > 0 && !urlValid} className="mt-3 h-12 w-full border border-zinc-700 bg-zinc-900 px-4 text-white outline-none focus:border-red-500" />
+          <input id="campaign-product-url" disabled={launchBusy} type="url" inputMode="url" value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setSelectedProductUrl(""); setPreflight(null); setError(null); }} placeholder="https://www.example.com/product/" aria-invalid={productUrl.length > 0 && !urlValid} className="mt-3 h-12 w-full border border-zinc-700 bg-zinc-900 px-4 text-white outline-none focus:border-red-500 disabled:opacity-50" />
           {productUrl && !urlValid ? <p className="mt-2 text-sm text-amber-300">Enter a valid HTTP or HTTPS product URL.</p> : null}
         </section>
 
         <section>
           <p className="text-xs uppercase tracking-[0.25em] text-red-400">3. Analyze</p>
-          <button type="button" onClick={analyze} disabled={!urlValid || !reachValid || loading} className="mt-3 min-h-12 w-full bg-red-600 px-5 text-sm font-bold text-white transition enabled:hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500 sm:w-auto">
+          <button type="button" onClick={analyze} disabled={!urlValid || !reachValid || loading || launchBusy} className="mt-3 min-h-12 w-full bg-red-600 px-5 text-sm font-bold text-white transition enabled:hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500 sm:w-auto">
             {loading ? "Analyzing campaign..." : "Analyze Campaign"}
           </button>
           {loading ? <p role="status" className="mt-3 text-sm text-zinc-400">Checking registered authority, existing coverage, and supported targets.</p> : null}
           {error ? <div role="alert" className="mt-4 border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-200">{error}</div> : null}
         </section>
 
-        {preflight ? <CampaignPreflight preflight={preflight} /> : (
+        {launchExecutionAvailable ? (
+          <details className="border border-cyan-700/40 bg-cyan-950/20 p-4 text-sm">
+            <summary className="cursor-pointer text-cyan-200">Synthetic launch fixture</summary>
+            <label className="mt-3 block text-zinc-300">Outcome<select aria-label="Synthetic launch outcome" value={syntheticScenario} onChange={(event) => setSyntheticScenario(event.target.value as GlwSyntheticLaunchScenario)} disabled={launchBusy} className="mt-2 h-10 w-full border border-zinc-700 bg-zinc-950 px-3 text-white"><option value="SUCCESS">Success</option><option value="STALE_PREFLIGHT">Stale preflight</option><option value="TARGET_CONFLICT">Target conflict</option><option value="ALREADY_EXISTS">Already exists</option><option value="REFERENCE_REVIEW_REQUIRED">Reference review required</option><option value="RECOVERY_REQUIRED">Recovery required</option><option value="DISPATCH_FAILED">Dispatch failure after persistence</option></select></label>
+            <p className="mt-2 text-xs text-cyan-300/70">Non-production UI fixture. No launch endpoint is called.</p>
+          </details>
+        ) : null}
+
+        {preflight ? <CampaignPreflight preflight={preflight} selectedBatchSize={selectedBatchSize} onSelectBatchSize={(size) => setSelectedBatchSize(Math.max(0, Math.min(size, preflight.maximumSafeReach)))} onLaunch={requestLaunch} launchAvailable={launchEligible} launchCapabilityAvailable={adapter.available} launchBusy={launchBusy} /> : (
           <section className="border-t border-zinc-800 pt-6 text-sm text-zinc-500">Campaign preflight will appear here after analysis.</section>
         )}
+        {launchBusy ? <CampaignLaunchProgress state={launchState} /> : null}
+        {launchError ? <div role="alert" className="border border-red-500/50 bg-red-950/30 p-4 text-sm text-red-200">{launchError}</div> : null}
+        {launchResult ? <CampaignLaunchOutcome result={launchResult} productName={preflight?.product?.name ?? "Unknown product"} reach={preflight?.desiredReach ?? reach} onAnalyzeAgain={analyzeAgain} onStartAnother={resetLaunchpad} /> : null}
       </div>
+      {launchState === "CONFIRMING" && launchRequest && preflight?.product ? <CampaignLaunchConfirmation request={launchRequest} siteName={preflight.site.name} productName={preflight.product.name} maximumSafeReach={preflight.maximumSafeReach} onCancel={() => { setLaunchState("IDLE"); setLaunchRequest(null); }} onConfirm={confirmLaunch} /> : null}
     </section>
   );
 }

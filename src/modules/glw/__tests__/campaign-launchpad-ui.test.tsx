@@ -38,6 +38,12 @@ describe("Campaign Launchpad UI", () => {
     expect(html).toContain("disabled");
   });
 
+  test("enables Launch only when the guarded synthetic capability and batch are present", () => {
+    const html = renderToStaticMarkup(<CampaignPreflight preflight={preflight} selectedBatchSize={25} launchAvailable onLaunch={jest.fn()} />);
+    expect(html).toMatch(/<button[^>]*>Launch Campaign<\/button>/);
+    expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>Launch Campaign<\/button>/);
+  });
+
   test("renders blocked authority and blocker detail", () => {
     const html = renderToStaticMarkup(<CampaignPreflight preflight={{ ...preflight, readiness: "AUTHORITY_REQUIRED", productAuthorityState: "REQUIRES_AUTHORITY", blockers: ["Product authority requires review."], readinessBlockers: [
       { code: "PRODUCT_DISABLED", scope: "PRODUCT", severity: "BLOCKING", message: "Product authority requires review.", authoritySource: "PRODUCT_READINESS", repairableByExistingWorkflow: true },
