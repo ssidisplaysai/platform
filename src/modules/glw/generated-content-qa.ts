@@ -24,6 +24,7 @@ function stripHtml(value: string): string {
     .replace(/&amp;/gi, "&")
     .replace(/&#39;|&apos;/gi, "'")
     .replace(/&quot;/gi, '"')
+    .replace(/&(?:#\d+|#x[\da-f]+|[a-z][a-z\d]+);/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

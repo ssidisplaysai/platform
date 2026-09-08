@@ -49,6 +49,7 @@ export async function GET(
     .sort((a, b) => a.stateCode.localeCompare(b.stateCode))
     .map((target) => ({
       stateCode: target.stateCode,
+      citySlug: target.citySlug ?? null,
       wordpressObjectId: target.wordpressObjectId!,
       jobId: target.jobId,
     }));
@@ -137,11 +138,13 @@ export async function POST(
       const updated = markGlwCampaignTargetPublished({
         campaignId,
         stateCode: target.stateCode,
+        citySlug: target.citySlug,
         wordpressObjectId,
       });
 
       results.push({
         stateCode: target.stateCode,
+        citySlug: target.citySlug ?? null,
         wordpressObjectId: updated.wordpressObjectId,
         wordpressUrl: published.wordpressUrl,
         ok: true,
@@ -149,6 +152,7 @@ export async function POST(
     } catch (error) {
       results.push({
         stateCode: target.stateCode,
+        citySlug: target.citySlug ?? null,
         wordpressObjectId,
         ok: false,
         error: error instanceof Error ? error.message : "Unknown campaign publication error.",

@@ -170,6 +170,26 @@ describe("evaluateGlwGeneratedContentQa", () => {
     expect(result.failureReasons.textIntegrity).toBeUndefined();
   });
 
+  test("allows valid named HTML entities but rejects literal semicolon word joins", () => {
+    const cleanSentence = "Accent Rear Projection Film solutions for Fort Worth Texas commercial glass applications. ";
+    const validEntities = evaluateGlwGeneratedContentQa({
+      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>Whether you&amp;rsquo;re planning work&amp;mdash;review the venue&amp;rsquo;s requirements. ${cleanSentence.repeat(170)}</p>`),
+      request,
+      siteDomain: "ssidisplays.com",
+      minimumWordCount: 1500,
+    });
+    expect(validEntities.checks.textIntegrity.ok).toBe(true);
+
+    const malformed = evaluateGlwGeneratedContentQa({
+      artifact: artifact(`<h1>Accent Rear Projection Film in Fort Worth</h1><p>Whether you;r planning;work with venue;s requirements. ${cleanSentence.repeat(170)}</p>`),
+      request,
+      siteDomain: "ssidisplays.com",
+      minimumWordCount: 1500,
+    });
+    expect(malformed.checks.textIntegrity.ok).toBe(false);
+    expect(malformed.checks.textIntegrity.message).toContain(";r");
+  });
+
   test("requires the exact internal product authority link for state_service pages", () => {
     const stateRequest: GlwGenerationRequest = {
       ...request,
