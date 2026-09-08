@@ -4,6 +4,7 @@ import {
   classifyGlwCannibalization,
   classifyGlwExecutionOwnership,
 } from "../launchpad-planning-authority";
+import { createGlwTargetIntentIdentity, type GlwTargetIntentOwnership } from "../target-intent-authority";
 
 function record(overrides: Partial<GlwPageExecutionRecord> = {}): GlwPageExecutionRecord {
   return {
@@ -28,6 +29,9 @@ const matrixCreate = {
   action: "CREATE_CITY" as const, productId: "product-1", stateCode: "TX", citySlug: "dallas",
   canonicalPath: "widget/texas/dallas", externalExecutionAllowed: false as const, reason: "Create Dallas.",
 };
+const intentIdentity = createGlwTargetIntentIdentity({ siteId: "site-1", productId: "product-1", stateCode: "TX", citySlug: "dallas" });
+const clearIntent: GlwTargetIntentOwnership = { classification: "CLEAR", identity: intentIdentity, campaignId: null, targetState: null, reason: "Checked clear.", authoritySource: "GLW_CAMPAIGN_TARGET_INTENT" };
+const unavailableIntent: GlwTargetIntentOwnership = { classification: "UNAVAILABLE", identity: intentIdentity, campaignId: null, targetState: null, reason: "Unavailable.", authoritySource: "GLW_CAMPAIGN_TARGET_INTENT" };
 
 describe("GLW Launchpad planning authority", () => {
   test("checked-empty execution authority returns no execution", () => {
@@ -49,19 +53,19 @@ describe("GLW Launchpad planning authority", () => {
   });
 
   test("checked campaign authority can independently report an exact owner", () => {
-    expect(classifyGlwCampaignOwnership({ canonicalPath: target.canonicalPath, authority: { status: "CHECKED", targets: { [target.canonicalPath]: { classification: "OWNED_BY_ACTIVE_CAMPAIGN", campaignId: "campaign-1", campaignState: "ACTIVE", targetState: "GENERATING", reason: "Campaign owns target.", authoritySource: "CAMPAIGN_PERSISTENCE" } } } })).toMatchObject({ classification: "OWNED_BY_ACTIVE_CAMPAIGN", campaignId: "campaign-1" });
+    expect(classifyGlwCampaignOwnership({ canonicalPath: target.canonicalPath, authority: { status: "CHECKED", targets: { [target.canonicalPath]: { checked: true, classification: "OWNED_BY_ACTIVE_CAMPAIGN", campaignId: "campaign-1", campaignState: "ACTIVE", targetState: "GENERATING", reconciled: true, persistenceIdentity: "fixture:1:1", reason: "Campaign owns target.", authoritySource: "CAMPAIGN_PERSISTENCE" } } } })).toMatchObject({ classification: "OWNED_BY_ACTIVE_CAMPAIGN", campaignId: "campaign-1" });
   });
 
   test("exact canonical absence alone cannot produce global clear", () => {
-    expect(classifyGlwCannibalization({ target, matrixPlan: matrixCreate, intentAuthority: { status: "UNAVAILABLE" } }).classification).toBe("UNAVAILABLE");
+    expect(classifyGlwCannibalization({ target, matrixPlan: matrixCreate, intentOwnership: unavailableIntent }).classification).toBe("UNAVAILABLE");
   });
 
   test("matrix parent-state conflict participates in classification", () => {
-    expect(classifyGlwCannibalization({ target: { ...target, canonicalParentId: null }, matrixPlan: { ...matrixCreate, action: "BLOCKED_PARENT_STATE", reason: "Exactly one parent state page is required." }, intentAuthority: { status: "CHECKED_CLEAR" } })).toMatchObject({ classification: "PARENT_CHILD_CONFLICT", reason: "Exactly one parent state page is required." });
+    expect(classifyGlwCannibalization({ target: { ...target, canonicalParentId: null }, matrixPlan: { ...matrixCreate, action: "BLOCKED_PARENT_STATE", reason: "Exactly one parent state page is required." }, intentOwnership: clearIntent })).toMatchObject({ classification: "PARENT_CHILD_CONFLICT", reason: "Exactly one parent state page is required." });
   });
 
   test("only all required authoritative checks produce clear", () => {
-    const result = classifyGlwCannibalization({ target, matrixPlan: matrixCreate, intentAuthority: { status: "CHECKED_CLEAR" } });
+    const result = classifyGlwCannibalization({ target, matrixPlan: matrixCreate, intentOwnership: clearIntent });
     expect(result.classification).toBe("CLEAR");
     expect(result.checks.every((check) => check.state === "CLEAR")).toBe(true);
   });

@@ -1,6 +1,7 @@
 import type { GlwPageExecutionRecord } from "./page-execution";
 import type { GlwPlannedPage } from "./matrix-planner";
 import type { GlwTargetPreflightResult } from "./target-preflight";
+import type { GlwTargetIntentOwnership } from "./target-intent-authority";
 
 export type GlwExecutionOwnershipClassification =
   | "NO_EXECUTION"
@@ -31,20 +32,19 @@ export type GlwExecutionAuthority =
   | { status: "UNAVAILABLE" };
 
 export type GlwCampaignOwnershipAssessment = {
+  checked: boolean;
   classification: GlwCampaignOwnershipClassification;
   campaignId: string | null;
   campaignState: string | null;
   targetState: string | null;
+  reconciled: boolean;
+  persistenceIdentity: string | null;
   reason: string;
   authoritySource: "CAMPAIGN_PERSISTENCE";
 };
 
 export type GlwCampaignAuthority =
   | { status: "CHECKED"; targets: Readonly<Record<string, GlwCampaignOwnershipAssessment>> }
-  | { status: "UNAVAILABLE" };
-
-export type GlwIntentAuthority =
-  | { status: "CHECKED_CLEAR" }
   | { status: "UNAVAILABLE" };
 
 export type GlwExecutionOwnershipAssessment = {
@@ -163,19 +163,25 @@ export function classifyGlwCampaignOwnership(input: {
 }): GlwCampaignOwnershipAssessment {
   if (input.authority.status === "UNAVAILABLE") {
     return {
+      checked: false,
       classification: "UNKNOWN",
       campaignId: null,
       campaignState: null,
       targetState: null,
+      reconciled: false,
+      persistenceIdentity: null,
       reason: "Authoritative campaign persistence is not available on this upstream.",
       authoritySource: "CAMPAIGN_PERSISTENCE",
     };
   }
   return input.authority.targets[input.canonicalPath] ?? {
+    checked: true,
     classification: "AVAILABLE",
     campaignId: null,
     campaignState: null,
     targetState: null,
+    reconciled: true,
+    persistenceIdentity: "CAMPAIGN_PERSISTENCE:CHECKED",
     reason: "Checked campaign persistence has no owner for this exact target.",
     authoritySource: "CAMPAIGN_PERSISTENCE",
   };
@@ -184,7 +190,7 @@ export function classifyGlwCampaignOwnership(input: {
 export function classifyGlwCannibalization(input: {
   target: GlwTargetPreflightResult;
   matrixPlan: GlwPlannedPage | null;
-  intentAuthority: GlwIntentAuthority;
+  intentOwnership: GlwTargetIntentOwnership;
 }): GlwCannibalizationAssessment {
   const exactCheck = input.target.state === "EXISTS_DRAFT" || input.target.state === "EXISTS_PUBLISHED"
     ? "CONFLICT"
@@ -196,7 +202,11 @@ export function classifyGlwCannibalization(input: {
     : input.matrixPlan?.action === "BLOCKED_PARENT_STATE" || input.matrixPlan?.action === "BLOCKED_DUPLICATE"
       ? "CONFLICT"
       : "UNAVAILABLE";
-  const broaderCheck = input.intentAuthority.status === "CHECKED_CLEAR" ? "CLEAR" : "UNAVAILABLE";
+  const broaderCheck = input.intentOwnership.classification === "CLEAR"
+    ? "CLEAR"
+    : input.intentOwnership.classification === "UNAVAILABLE"
+      ? "UNAVAILABLE"
+      : "CONFLICT";
   const checks: GlwCannibalizationAssessment["checks"] = [
     { authority: "EXACT_CANONICAL", state: exactCheck },
     { authority: "GLW_MATRIX_PARENT_CHILD", state: matrixCheck },
@@ -211,6 +221,15 @@ export function classifyGlwCannibalization(input: {
   }
   if (input.matrixPlan?.action === "BLOCKED_DUPLICATE") {
     return { classification: "AMBIGUOUS", existingOwner: null, reason: input.matrixPlan.reason, checks, authoritySource: "GLW_CANONICAL_PLANNING" };
+  }
+  if (input.intentOwnership.classification !== "CLEAR" && input.intentOwnership.classification !== "UNAVAILABLE") {
+    return {
+      classification: input.intentOwnership.classification,
+      existingOwner: input.intentOwnership.campaignId,
+      reason: input.intentOwnership.reason,
+      checks,
+      authoritySource: "GLW_CANONICAL_PLANNING",
+    };
   }
   if (checks.every((check) => check.state === "CLEAR")) {
     return { classification: "CLEAR", existingOwner: null, reason: "Exact canonical, parent-child matrix, and broader intent checks are authoritatively clear.", checks, authoritySource: "GLW_CANONICAL_PLANNING" };

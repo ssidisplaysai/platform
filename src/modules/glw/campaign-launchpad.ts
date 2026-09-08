@@ -1,11 +1,13 @@
 import { evaluateProductReadiness } from "@/modules/foundation/product-readiness";
 import { evaluateSiteReadiness } from "@/modules/foundation/site-readiness";
 import type { PermissionAction, ProductConfiguration, ProductReadinessResult, SiteConfiguration, SiteReadinessResult } from "@/modules/foundation/types";
+import { getGlwCampaignOwnershipForTarget, type GlwCampaignAuthoritySnapshot } from "./campaign-authority";
 import { GLW_CITIES, GLW_STATES, createDefaultGlwGenerationInput, createGlwCanonicalPath, getGlwCitiesForState, type GlwGenerationProduct, type GlwGenerationSite } from "./page-generation";
 import { resolveGlwN8nEngineProductSlug } from "./page-execution";
 import { planGlwPageMatrix, type GlwPlannedPage } from "./matrix-planner";
 import type { GlwTargetPreflightResult } from "./target-preflight";
-import { classifyGlwCampaignOwnership, classifyGlwCannibalization, classifyGlwExecutionOwnership, type GlwCampaignAuthority, type GlwCampaignOwnershipAssessment, type GlwCannibalizationAssessment, type GlwExecutionAuthority, type GlwExecutionOwnershipAssessment, type GlwIntentAuthority } from "./launchpad-planning-authority";
+import { classifyGlwCampaignOwnership, classifyGlwCannibalization, classifyGlwExecutionOwnership, type GlwCampaignOwnershipAssessment, type GlwCannibalizationAssessment, type GlwExecutionAuthority, type GlwExecutionOwnershipAssessment } from "./launchpad-planning-authority";
+import { createGlwTargetIntentIdentity, evaluateGlwTargetIntentOwnership } from "./target-intent-authority";
 
 export type GlwCampaignReach = "NATIONWIDE" | "STATE" | "MULTI_STATE_REGION" | "METRO_LOCAL" | "CUSTOM";
 export type GlwCampaignReadiness = "READY" | "READY_WITH_REVIEW" | "AUTHORITY_REQUIRED" | "TARGET_CONFLICTS" | "UNRECONCILED" | "UNSUPPORTED" | "ANALYSIS_FAILED";
@@ -177,8 +179,13 @@ function targetBlockers(input: { execution: GlwExecutionOwnershipAssessment; cam
   if (input.execution.classification === "UNKNOWN") blockers.push({ code: "EXECUTION_OWNERSHIP_UNAVAILABLE", scope: "EXECUTION", severity: "BLOCKING", message: input.execution.reason, authoritySource: input.execution.authoritySource, repairableByExistingWorkflow: null });
   if (input.execution.classification === "UNRECONCILED") blockers.push({ code: "TARGET_EXECUTION_UNRECONCILED", scope: "TARGET", severity: "BLOCKING", message: input.execution.reason, authoritySource: input.execution.authoritySource, repairableByExistingWorkflow: null });
   if (input.campaign.classification === "UNKNOWN") blockers.push({ code: "CAMPAIGN_AUTHORITY_MISSING", scope: "CAMPAIGN", severity: "BLOCKING", message: input.campaign.reason, authoritySource: input.campaign.authoritySource, repairableByExistingWorkflow: null });
-  if (input.campaign.classification === "UNRECONCILED") blockers.push({ code: "CAMPAIGN_OWNERSHIP_UNKNOWN", scope: "CAMPAIGN", severity: "BLOCKING", message: input.campaign.reason, authoritySource: input.campaign.authoritySource, repairableByExistingWorkflow: null });
+  if (input.campaign.classification === "UNRECONCILED") blockers.push({ code: "CAMPAIGN_TARGET_UNRECONCILED", scope: "CAMPAIGN", severity: "BLOCKING", message: input.campaign.reason, authoritySource: input.campaign.authoritySource, repairableByExistingWorkflow: null });
+  if (input.campaign.classification === "OWNED_BY_ACTIVE_CAMPAIGN" || input.campaign.classification === "OWNED_BY_COMPLETED_CAMPAIGN") blockers.push({ code: "CAMPAIGN_TARGET_OWNED", scope: "CAMPAIGN", severity: "BLOCKING", message: input.campaign.reason, authoritySource: input.campaign.authoritySource, repairableByExistingWorkflow: false });
   if (input.cannibalization.classification === "UNAVAILABLE") blockers.push({ code: "CANNIBALIZATION_AUTHORITY_UNAVAILABLE", scope: "CANNIBALIZATION", severity: "BLOCKING", message: input.cannibalization.reason, authoritySource: input.cannibalization.authoritySource, repairableByExistingWorkflow: null });
+  if (input.cannibalization.classification === "EXISTING_INTENT_OWNER") blockers.push({ code: "TARGET_INTENT_ALREADY_OWNED", scope: "CANNIBALIZATION", severity: "BLOCKING", message: input.cannibalization.reason, authoritySource: input.cannibalization.authoritySource, repairableByExistingWorkflow: false });
+  if (input.cannibalization.classification === "PARENT_CHILD_CONFLICT") blockers.push({ code: "TARGET_PARENT_CHILD_CONFLICT", scope: "TARGET", severity: "BLOCKING", message: input.cannibalization.reason, authoritySource: input.cannibalization.authoritySource, repairableByExistingWorkflow: null });
+  if (input.cannibalization.classification === "SAME_PRODUCT_GEO_CONFLICT") blockers.push({ code: "TARGET_GEO_CONFLICT", scope: "CANNIBALIZATION", severity: "BLOCKING", message: input.cannibalization.reason, authoritySource: input.cannibalization.authoritySource, repairableByExistingWorkflow: null });
+  if (input.cannibalization.classification === "AMBIGUOUS") blockers.push({ code: "TARGET_INTENT_AMBIGUOUS", scope: "CANNIBALIZATION", severity: "BLOCKING", message: input.cannibalization.reason, authoritySource: input.cannibalization.authoritySource, repairableByExistingWorkflow: null });
   return blockers;
 }
 
@@ -208,8 +215,7 @@ export async function buildGlwCampaignLaunchpadPreflight(input: {
   sites: readonly SiteConfiguration[];
   products: readonly ProductConfiguration[];
   executionAuthority: GlwExecutionAuthority;
-  campaignAuthority: GlwCampaignAuthority;
-  intentAuthority: GlwIntentAuthority;
+  campaignSnapshot: GlwCampaignAuthoritySnapshot | null;
   readTarget: (target: GlwCampaignLaunchpadTarget, site: SiteConfiguration, product: ProductConfiguration) => Promise<GlwTargetPreflightResult>;
 }): Promise<GlwCampaignLaunchpadPreflight> {
   const validation = validateGlwCampaignLaunchpadInput(input.request);
@@ -224,8 +230,8 @@ export async function buildGlwCampaignLaunchpadPreflight(input: {
   const canonicalReadiness = evaluateCanonicalReadiness({ site, product, organizationActive: input.organizationActive, permissions: input.permissions });
   const globalBlockers = [...canonicalReadiness.blockers];
   if (input.executionAuthority.status === "UNAVAILABLE") globalBlockers.push({ code: "EXECUTION_OWNERSHIP_UNAVAILABLE", scope: "EXECUTION", severity: "BLOCKING", message: "GLW execution persistence was not available for this preflight.", authoritySource: "GLW_PAGE_EXECUTION_JOURNAL", repairableByExistingWorkflow: null });
-  if (input.campaignAuthority.status === "UNAVAILABLE") globalBlockers.push({ code: "CAMPAIGN_AUTHORITY_MISSING", scope: "CAMPAIGN", severity: "BLOCKING", message: "Authoritative campaign persistence is not available on this upstream.", authoritySource: "CAMPAIGN_PERSISTENCE", repairableByExistingWorkflow: null });
-  if (input.intentAuthority.status === "UNAVAILABLE") globalBlockers.push({ code: "CANNIBALIZATION_AUTHORITY_UNAVAILABLE", scope: "CANNIBALIZATION", severity: "BLOCKING", message: "Broader product/geographic intent ownership authority is not available on this upstream.", authoritySource: "GLW_CANONICAL_PLANNING", repairableByExistingWorkflow: null });
+  if (!input.campaignSnapshot) globalBlockers.push({ code: "CAMPAIGN_AUTHORITY_MISSING", scope: "CAMPAIGN", severity: "BLOCKING", message: "Authoritative campaign persistence is unavailable or could not be read.", authoritySource: "CAMPAIGN_PERSISTENCE", repairableByExistingWorkflow: null });
+  if (!input.campaignSnapshot) globalBlockers.push({ code: "CANNIBALIZATION_AUTHORITY_UNAVAILABLE", scope: "CANNIBALIZATION", severity: "BLOCKING", message: "Deterministic product/geographic intent ownership persistence is unavailable.", authoritySource: "GLW_CAMPAIGN_TARGET_INTENT", repairableByExistingWorkflow: null });
   const targetResults = product ? await Promise.all(targets.map((target) => input.readTarget(target, site, product))) : [];
   const matrixPlans = generationProduct ? matrixPlansForTargets({ targets, results: targetResults, product: generationProduct }) : new Map<string, GlwPlannedPage>();
   const siteReady = canonicalReadiness.siteResult.ready;
@@ -235,8 +241,11 @@ export async function buildGlwCampaignLaunchpadPreflight(input: {
   const targetAssessments = product ? targets.map((target, index): GlwLaunchpadTargetAssessment => {
     const canonical = targetResults[index];
     const executionOwnership = classifyGlwExecutionOwnership({ siteId: site.siteId, productId: product.productId, canonicalPath: target.canonicalPath, authority: input.executionAuthority });
-    const campaignOwnership = classifyGlwCampaignOwnership({ canonicalPath: target.canonicalPath, authority: input.campaignAuthority });
-    const cannibalization = classifyGlwCannibalization({ target: canonical, matrixPlan: matrixPlans.get(target.canonicalPath) ?? null, intentAuthority: input.intentAuthority });
+    const campaignOwnership = input.campaignSnapshot
+      ? getGlwCampaignOwnershipForTarget({ snapshot: input.campaignSnapshot, organizationId: input.organizationId, siteId: site.siteId, productId: product.productId, pageType: "city_service", stateCode: target.stateCode, citySlug: target.citySlug })
+      : classifyGlwCampaignOwnership({ canonicalPath: target.canonicalPath, authority: { status: "UNAVAILABLE" } });
+    const intentOwnership = evaluateGlwTargetIntentOwnership({ snapshot: input.campaignSnapshot, identity: createGlwTargetIntentIdentity({ siteId: site.siteId, productId: product.productId, stateCode: target.stateCode, citySlug: target.citySlug }) });
+    const cannibalization = classifyGlwCannibalization({ target: canonical, matrixPlan: matrixPlans.get(target.canonicalPath) ?? null, intentOwnership });
     const disposition = resolvePrimaryDisposition({ canonicalState: canonical.state, execution: executionOwnership, campaign: campaignOwnership, cannibalization, canonicalReadiness: authorityReady });
     const blockers = targetBlockers({ execution: executionOwnership, campaign: campaignOwnership, cannibalization });
     return { ...target, canonicalState: canonical.state, siteReadiness: siteReady ? "READY" : "BLOCKED", productReadiness: productReady ? "READY" : "BLOCKED", sourceReadiness: sourceReady ? "READY" : "BLOCKED", executionOwnership, campaignOwnership, cannibalization, primaryDisposition: disposition, blockers, safe: disposition === "SAFE" };
@@ -268,11 +277,11 @@ export async function buildGlwCampaignLaunchpadPreflight(input: {
   return {
     site: { id: site.siteId, name: site.displayName }, product: product ? { id: product.productId, name: product.displayName } : null, canonicalProductUrl: new URL(input.request.productUrl).toString(),
     productAuthorityState: productReady ? "READY" : "REQUIRES_AUTHORITY", sourceAuthorityState: sourceReady ? "READY" : "REQUIRES_AUTHORITY", desiredReach: input.request.reach,
-    existingCoverage: counts.existingCoverageCount, existingCampaignConflicts: input.campaignAuthority.status === "CHECKED" ? counts.campaignOwnedCount : "UNAVAILABLE", duplicateTargetsExcluded: counts.existingCoverageCount,
-    cannibalizationConflicts: input.intentAuthority.status === "CHECKED_CLEAR" ? counts.cannibalizationConflictCount : "UNAVAILABLE", availableEligibleTargets: safeCount, authorityBlockedTargets: counts.authorityBlockedCount,
+    existingCoverage: counts.existingCoverageCount, existingCampaignConflicts: input.campaignSnapshot ? counts.campaignOwnedCount : "UNAVAILABLE", duplicateTargetsExcluded: counts.existingCoverageCount,
+    cannibalizationConflicts: input.campaignSnapshot ? counts.cannibalizationConflictCount : "UNAVAILABLE", availableEligibleTargets: safeCount, authorityBlockedTargets: counts.authorityBlockedCount,
     potentialReach: counts.potentialCount, recommendedInitialBatch: Math.min(25, safeCount), maximumSafeReach: safeCount, publicationPolicy: policy, readiness,
     blockers: globalBlockers.map((entry) => entry.message), readinessBlockers: globalBlockers, targets, targetAssessments, excludedTargets, counts,
-    diagnostics: { exactCanonicalConflictCount, campaignAuthorityAvailable: input.campaignAuthority.status === "CHECKED", broaderIntentAuthorityAvailable: input.intentAuthority.status === "CHECKED_CLEAR" },
+    diagnostics: { exactCanonicalConflictCount, campaignAuthorityAvailable: Boolean(input.campaignSnapshot), broaderIntentAuthorityAvailable: Boolean(input.campaignSnapshot) },
     technicalDetails: { targetAuthority: targetAssessments.every((target) => target.canonicalState !== "UNKNOWN") ? "AUTHORITATIVE" : targetAssessments.length ? "PARTIAL" : "UNAVAILABLE", sourceMode: "PRODUCT_CANONICAL" },
   };
 }

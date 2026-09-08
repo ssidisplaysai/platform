@@ -4,6 +4,7 @@ import { FOUNDATION_SITE_FIXTURES } from "@/modules/foundation/site-fixtures";
 import { evaluateProductReadiness } from "@/modules/foundation/product-readiness";
 import { evaluateSiteReadiness } from "@/modules/foundation/site-readiness";
 import type { ProductConfiguration, SiteConfiguration } from "@/modules/foundation/types";
+import type { GlwCampaignAuthoritySnapshot } from "../campaign-authority";
 import type { GlwPageExecutionRecord } from "../page-execution";
 import { buildGlwCampaignLaunchpadPreflight, selectGlwLaunchpadTargets, validateGlwCampaignLaunchpadInput } from "../campaign-launchpad";
 
@@ -42,6 +43,25 @@ function execution(overrides: Partial<GlwPageExecutionRecord> = {}): GlwPageExec
   };
 }
 
+const emptyCampaignSnapshot: GlwCampaignAuthoritySnapshot = {
+  checked: true,
+  source: "GLW_CAMPAIGN_PERSISTENCE",
+  persistenceIdentity: "fixture",
+  campaignRevision: 1,
+  targetRevision: 1,
+  campaigns: [],
+  targets: [],
+};
+
+function campaignSnapshot(input: { citySlug: string; cityName?: string; status?: "running" | "draft_ready" | "failed" }): GlwCampaignAuthoritySnapshot {
+  const campaignId = "campaign-existing";
+  return {
+    ...emptyCampaignSnapshot,
+    campaigns: [{ campaignId, organizationId: site.organizationId, siteId: site.siteId, productId: product.productId, pageType: "city_service", status: "active" }],
+    targets: [{ targetId: `target-${input.citySlug}`, campaignId, organizationId: site.organizationId, siteId: site.siteId, productId: product.productId, stateCode: "TX", citySlug: input.citySlug, cityName: input.cityName ?? "Dallas", status: input.status ?? "running", jobId: "campaign-job", wordpressObjectId: null, lastError: input.status === "failed" ? "Quarantined." : null }],
+  };
+}
+
 function common(overrides: Record<string, unknown> = {}) {
   return {
     request: { reach: "STATE" as const, productUrl: `${site.canonicalUrl}/${product.slug}`, stateCodes: ["TX"] },
@@ -51,8 +71,7 @@ function common(overrides: Record<string, unknown> = {}) {
     sites: [site],
     products: [product],
     executionAuthority: { status: "CHECKED" as const, records: [] },
-    campaignAuthority: { status: "CHECKED" as const, targets: {} },
-    intentAuthority: { status: "CHECKED_CLEAR" as const },
+    campaignSnapshot: emptyCampaignSnapshot,
     ...overrides,
   };
 }
@@ -106,7 +125,7 @@ describe("GLW Campaign Launchpad preflight", () => {
   });
 
   test("missing campaign persistence and broader intent authority fail closed", async () => {
-    const result = await buildGlwCampaignLaunchpadPreflight({ ...common({ campaignAuthority: { status: "UNAVAILABLE" }, intentAuthority: { status: "UNAVAILABLE" } }), readTarget: async (target) => canonical(target) });
+    const result = await buildGlwCampaignLaunchpadPreflight({ ...common({ campaignSnapshot: null }), readTarget: async (target) => canonical(target) });
     expect(result.maximumSafeReach).toBe(0);
     expect(result.existingCampaignConflicts).toBe("UNAVAILABLE");
     expect(result.cannibalizationConflicts).toBe("UNAVAILABLE");
@@ -132,6 +151,29 @@ describe("GLW Campaign Launchpad preflight", () => {
     }
     expect(result.excludedTargets.find((target) => target.group === "EXISTING_COVERAGE")?.reason).toContain("exact canonical");
     expect(result.excludedTargets.find((target) => target.group === "EXECUTION_OWNED")).toMatchObject({ jobId: "job-dallas", campaignId: null });
+  });
+
+  test("excludes exact campaign ownership with the authoritative campaign ID", async () => {
+    const result = await buildGlwCampaignLaunchpadPreflight({ ...common({ campaignSnapshot: campaignSnapshot({ citySlug: "dallas" }) }), readTarget: async (target) => canonical(target) });
+    expect(result.counts).toMatchObject({ campaignOwnedCount: 1, maximumSafeReachCount: 3 });
+    expect(result.excludedTargets.find((target) => target.group === "CAMPAIGN_OWNED")).toMatchObject({ campaignId: "campaign-existing", jobId: null });
+    expect(result.readinessBlockers).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "CAMPAIGN_TARGET_OWNED" }),
+      expect.objectContaining({ code: "TARGET_INTENT_ALREADY_OWNED" }),
+    ]));
+  });
+
+  test("keeps failed campaign targets quarantined and unreconciled", async () => {
+    const result = await buildGlwCampaignLaunchpadPreflight({ ...common({ campaignSnapshot: campaignSnapshot({ citySlug: "dallas", status: "failed" }) }), readTarget: async (target) => canonical(target) });
+    expect(result.maximumSafeReach).toBe(3);
+    expect(result.targetAssessments.find((target) => target.citySlug === "dallas")?.campaignOwnership).toMatchObject({ classification: "UNRECONCILED", campaignId: "campaign-existing", targetState: "failed" });
+    expect(result.readinessBlockers).toContainEqual(expect.objectContaining({ code: "CAMPAIGN_TARGET_UNRECONCILED" }));
+  });
+
+  test("excludes same-product geography persisted under another slug", async () => {
+    const result = await buildGlwCampaignLaunchpadPreflight({ ...common({ campaignSnapshot: campaignSnapshot({ citySlug: "dallas-city", cityName: "Dallas" }) }), readTarget: async (target) => canonical(target) });
+    expect(result.counts).toMatchObject({ cannibalizationConflictCount: 1, maximumSafeReachCount: 3 });
+    expect(result.readinessBlockers).toContainEqual(expect.objectContaining({ code: "TARGET_GEO_CONFLICT" }));
   });
 
   test("only fully authoritative targets become safe", async () => {

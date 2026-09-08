@@ -4,6 +4,7 @@ import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/m
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { listProducts } from "@/modules/foundation/product-repository";
 import { listSites } from "@/modules/foundation/site-repository";
+import { readGlwCampaignAuthoritySnapshot } from "@/modules/glw/campaign-authority";
 import {
   buildGlwCampaignLaunchpadPreflight,
   createGlwLaunchpadGenerationForm,
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
   const sites = listSites();
   const products = listProducts();
   const localExecutions = await glwPageExecutionRepository.list();
+  const campaignSnapshot = readGlwCampaignAuthoritySnapshot();
   try {
     const preflight = await buildGlwCampaignLaunchpadPreflight({
       request: parsed.input,
@@ -71,8 +73,7 @@ export async function POST(request: NextRequest) {
       sites,
       products,
       executionAuthority: { status: "CHECKED", records: localExecutions },
-      campaignAuthority: { status: "UNAVAILABLE" },
-      intentAuthority: { status: "UNAVAILABLE" },
+      campaignSnapshot,
       readTarget: async (target, site, product): Promise<GlwTargetPreflightResult> => {
         try {
           const requestInput = createGlwLaunchpadGenerationForm(
