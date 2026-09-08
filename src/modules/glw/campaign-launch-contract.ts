@@ -1,4 +1,6 @@
 import type { GlwCampaignReach, GlwLaunchpadBlocker } from "./campaign-launchpad";
+import type { GlwCampaignLaunchpadInput } from "./campaign-launchpad";
+import type { GlwCampaignPublicationPolicy } from "./campaign-types";
 
 export type GlwLaunchUiState =
   | "IDLE"
@@ -21,14 +23,16 @@ export type GlwCertifiedLaunchTarget = {
 };
 
 export type GlwCampaignLaunchRequest = {
-  launchId: string;
   siteId: string;
   productId: string;
+  campaignName: string;
+  pagesPerDay: number;
+  targetClass: "CITY" | "STATE";
   reach: GlwCampaignReach;
-  productUrl: string;
+  preflightInput: GlwCampaignLaunchpadInput;
   selectedBatchSize: number;
   selectedTargets: readonly GlwCertifiedLaunchTarget[];
-  acknowledgedPublicationPolicy: string;
+  acknowledgedPublicationPolicy: GlwCampaignPublicationPolicy;
 };
 
 export type GlwLaunchConflict = {
@@ -56,7 +60,7 @@ export type GlwCampaignLaunchResult = {
   launchId: string;
   campaignId: string | null;
   campaignState: string | null;
-  publicationPolicy: string;
+  publicationPolicy: GlwCampaignPublicationPolicy;
   selectedTargetCount: number;
   targets: readonly GlwCertifiedLaunchTarget[];
   referenceTarget: GlwCertifiedLaunchTarget | null;
@@ -88,12 +92,12 @@ export function presentGlwLaunchResult(result: GlwCampaignLaunchResult): GlwLaun
   if (result.state === "RECOVERY_REQUIRED") return { uiState: "RECOVERY_REQUIRED", heading: "Campaign created - attention required", message: "The campaign is durable and requires recovery. Launching again will not create another campaign.", durable: true };
   if (result.state === "ALREADY_EXISTS") return { uiState: "SUCCESS", heading: "Existing campaign found", message: "The existing campaign was returned for this launch request.", durable: true };
   if (result.state === "CAMPAIGN_ACTIVE" || result.state === "DISPATCH_STARTED") return { uiState: "SUCCESS", heading: "Campaign Started", message: "Genesis accepted the certified target cohort.", durable: true };
-  if (result.state === "AUTHORITY_CHANGED" || result.state === "TARGET_CONFLICT") return { uiState: "FAILED", heading: "Campaign not launched", message: result.state === "AUTHORITY_CHANGED" ? "Preflight changed since analysis." : "One or more targets became unavailable.", durable: false };
+  if (result.state === "AUTHORITY_CHANGED" || result.state === "TARGET_CONFLICT") return { uiState: "FAILED", heading: "Campaign not launched", message: result.state === "AUTHORITY_CHANGED" ? "Preflight changed since analysis." : "Target set changed. No new cohort was partially reserved.", durable: false };
   if (result.state === "CAMPAIGN_CREATED" || result.state === "REFERENCE_GENERATION_STARTED") return { uiState: "REVIEW_REQUIRED", heading: "Campaign created", message: "Genesis is preparing the reference page.", durable: true };
   return { uiState: "FAILED", heading: "Campaign not launched", message: "The launch request could not be completed.", durable: Boolean(result.campaignId) };
 }
 
-export type GlwLaunchStatusCounts = Record<"researching" | "generating" | "qa" | "draft" | "review" | "published" | "failed", number>;
+export type GlwLaunchStatusCounts = Record<"researching" | "generating" | "qa" | "draft" | "review" | "published" | "failed", number | null>;
 
 export function launchBlockersAsReadiness(result: GlwCampaignLaunchResult): readonly GlwLaunchpadBlocker[] {
   return result.blockers.map((blocker) => ({ code: blocker.code, scope: "TARGET", severity: "BLOCKING", message: blocker.message, authoritySource: "ATOMIC_LAUNCH_REVALIDATION", repairableByExistingWorkflow: null }));

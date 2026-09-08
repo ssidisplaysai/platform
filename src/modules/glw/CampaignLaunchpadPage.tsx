@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createFoundationContext } from "@/modules/foundation/context";
 import { listProducts } from "@/modules/foundation/product-repository";
 import { listSites } from "@/modules/foundation/site-repository";
-import { resolveGlwLaunchExecutionCapability } from "./campaign-launch-capability";
+import { resolveGlwAtomicLaunchExecutionCapability, resolveGlwLaunchExecutionCapability } from "./campaign-launch-capability";
 import { CampaignLaunchpad } from "./CampaignLaunchpad";
 
 export function CampaignLaunchpadPage() {
@@ -10,6 +10,10 @@ export function CampaignLaunchpadPage() {
   const launchExecutionAvailable = resolveGlwLaunchExecutionCapability({
     nodeEnvironment: process.env.NODE_ENV,
     syntheticFlag: process.env.GLW_LAUNCHPAD_SYNTHETIC_LAUNCH,
+  });
+  const atomicLaunchAvailable = resolveGlwAtomicLaunchExecutionCapability({
+    nodeEnvironment: process.env.NODE_ENV,
+    atomicFlag: process.env.GLW_LAUNCHPAD_ATOMIC_LAUNCH,
   });
   const sites = listSites().filter((site) => site.organizationId === context.selectedOrganizationId && site.canonicalUrl);
   const existingProducts = sites.flatMap((site) => listProducts()
@@ -30,7 +34,7 @@ export function CampaignLaunchpadPage() {
           <Link href="/glw" className="w-fit border border-zinc-700 px-4 py-2 text-sm text-zinc-200 transition hover:border-red-500 hover:text-white">GLW Home</Link>
         </div>
       </header>
-      <CampaignLaunchpad organizationId={context.selectedOrganizationId} requestRoles={context.user.roles} existingProducts={existingProducts} launchExecutionAvailable={launchExecutionAvailable} />
+      <CampaignLaunchpad organizationId={context.selectedOrganizationId} requestRoles={context.user.roles} existingProducts={existingProducts} launchExecutionAvailable={launchExecutionAvailable} atomicLaunchAvailable={atomicLaunchAvailable} />
     </div>
   );
 }

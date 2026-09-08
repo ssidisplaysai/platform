@@ -49,7 +49,7 @@ const emptyCampaignSnapshot: GlwCampaignAuthoritySnapshot = {
   persistenceIdentity: "fixture",
   campaignRevision: 1,
   targetRevision: 1,
-  campaigns: [],
+  campaigns: [{ campaignId: "campaign-policy-authority", organizationId: site.organizationId, siteId: site.siteId, productId: product.productId, pageType: "city_service", publicationPolicy: "draft_only", imageRequired: true, status: "draft" }],
   targets: [],
 };
 
@@ -57,7 +57,7 @@ function campaignSnapshot(input: { citySlug: string; cityName?: string; status?:
   const campaignId = "campaign-existing";
   return {
     ...emptyCampaignSnapshot,
-    campaigns: [{ campaignId, organizationId: site.organizationId, siteId: site.siteId, productId: product.productId, pageType: "city_service", status: "active" }],
+    campaigns: [{ campaignId, organizationId: site.organizationId, siteId: site.siteId, productId: product.productId, pageType: "city_service", publicationPolicy: "draft_only", imageRequired: true, status: "active" }],
     targets: [{ targetId: `target-${input.citySlug}`, campaignId, organizationId: site.organizationId, siteId: site.siteId, productId: product.productId, stateCode: "TX", citySlug: input.citySlug, cityName: input.cityName ?? "Dallas", status: input.status ?? "running", jobId: "campaign-job", wordpressObjectId: null, lastError: input.status === "failed" ? "Quarantined." : null }],
   };
 }
@@ -181,6 +181,12 @@ describe("GLW Campaign Launchpad preflight", () => {
     expect(result.readiness).toBe("READY");
     expect(result.maximumSafeReach).toBe(4);
     expect(result.targetAssessments.every((target) => target.primaryDisposition === "SAFE" && target.safe)).toBe(true);
+  });
+
+  test("fails closed when runtime publication or image policy authority is missing", async () => {
+    const result = await buildGlwCampaignLaunchpadPreflight({ ...common({ campaignSnapshot: { ...emptyCampaignSnapshot, campaigns: [{ ...emptyCampaignSnapshot.campaigns[0], imageRequired: undefined }] } }), readTarget: async (target) => canonical(target) });
+    expect(result).toMatchObject({ readiness: "AUTHORITY_REQUIRED", publicationPolicy: "UNAVAILABLE" });
+    expect(result.readinessBlockers).toContainEqual(expect.objectContaining({ code: "CAMPAIGN_PUBLICATION_POLICY_AUTHORITY_CHANGED" }));
   });
 
   test("canonical readiness failure produces zero safe reach", async () => {

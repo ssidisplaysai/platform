@@ -2,8 +2,9 @@
 
 import React from "react";
 import { useMemo, useState } from "react";
-import { createDisabledCampaignLaunchAdapter, createSyntheticCampaignLaunchAdapter, type GlwSyntheticLaunchScenario } from "./campaign-launch-adapter";
+import { createConfiguredAtomicRuntimeCampaignLaunchAdapter, createDisabledCampaignLaunchAdapter, createSyntheticCampaignLaunchAdapter, type GlwSyntheticLaunchScenario } from "./campaign-launch-adapter";
 import type { GlwCampaignLaunchAdapter, GlwCampaignLaunchRequest, GlwCampaignLaunchResult, GlwLaunchUiState } from "./campaign-launch-contract";
+import { presentGlwLaunchResult } from "./campaign-launch-contract";
 import { CampaignLaunchConfirmation, CampaignLaunchOutcome, CampaignLaunchProgress } from "./CampaignLaunchExperience";
 import { GLW_CITIES, GLW_STATES } from "./page-generation";
 import type {
@@ -25,6 +26,7 @@ type Props = {
   requestRoles: readonly string[];
   existingProducts?: readonly { name: string; url: string }[];
   launchExecutionAvailable?: boolean;
+  atomicLaunchAvailable?: boolean;
   launchAdapter?: GlwCampaignLaunchAdapter;
 };
 type PreflightResponse = { preflight?: GlwCampaignLaunchpadPreflight; error?: string };
@@ -185,7 +187,7 @@ export function CampaignPreflight({ preflight, selectedBatchSize = 0, onSelectBa
 
 const ACTIVE_LAUNCH_STATES = new Set<GlwLaunchUiState>(["REVALIDATING", "CREATING_CAMPAIGN", "RESERVING_TARGETS", "REFERENCE_BOOTSTRAP", "STARTING"]);
 
-export function CampaignLaunchpad({ organizationId, requestRoles, existingProducts = [], launchExecutionAvailable = false, launchAdapter }: Props) {
+export function CampaignLaunchpad({ organizationId, requestRoles, existingProducts = [], launchExecutionAvailable = false, atomicLaunchAvailable = false, launchAdapter }: Props) {
   const [reach, setReach] = useState<GlwCampaignReach>("NATIONWIDE");
   const [productUrl, setProductUrl] = useState("");
   const [selectedProductUrl, setSelectedProductUrl] = useState("");
@@ -200,9 +202,11 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
   const [launchResult, setLaunchResult] = useState<GlwCampaignLaunchResult | null>(null);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [syntheticScenario, setSyntheticScenario] = useState<GlwSyntheticLaunchScenario>("SUCCESS");
-  const adapter = useMemo(() => launchAdapter ?? (launchExecutionAvailable
-    ? createSyntheticCampaignLaunchAdapter({ scenario: syntheticScenario, delay: () => new Promise((resolve) => setTimeout(resolve, 350)) })
-    : createDisabledCampaignLaunchAdapter()), [launchAdapter, launchExecutionAvailable, syntheticScenario]);
+  const adapter = useMemo(() => launchAdapter ?? (atomicLaunchAvailable
+    ? createConfiguredAtomicRuntimeCampaignLaunchAdapter({ organizationId, requestRoles })
+    : launchExecutionAvailable
+      ? createSyntheticCampaignLaunchAdapter({ scenario: syntheticScenario, delay: () => new Promise((resolve) => setTimeout(resolve, 350)) })
+      : createDisabledCampaignLaunchAdapter()), [atomicLaunchAvailable, launchAdapter, launchExecutionAvailable, organizationId, requestRoles, syntheticScenario]);
   const urlValid = useMemo(() => {
     try { const url = new URL(productUrl); return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password; }
     catch { return false; }
@@ -242,22 +246,27 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
     && selectedBatchSize > 0
     && selectedBatchSize <= preflight.maximumSafeReach
     && selectedBatchSize <= safeTargets.length
+    && preflight.publicationPolicy !== "UNAVAILABLE"
+    && !preflight.readinessBlockers.some((blocker) => blocker.severity === "BLOCKING")
     && adapter.available
   );
   const launchBusy = ACTIVE_LAUNCH_STATES.has(launchState);
 
   function requestLaunch() {
-    if (!preflight?.product || !launchEligible || launchBusy) return;
+    if (!preflight?.product || preflight.publicationPolicy === "UNAVAILABLE" || !launchEligible || launchBusy) return;
+    const publicationPolicy = preflight.publicationPolicy;
     const selectedTargets = safeTargets.slice(0, selectedBatchSize).map((target) => ({ canonicalPath: target.canonicalPath, stateCode: target.stateCode, citySlug: target.citySlug, cityName: target.cityName }));
     const request: GlwCampaignLaunchRequest = {
-      launchId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `launch-${Date.now()}`,
       siteId: preflight.site.id,
       productId: preflight.product.id,
+      campaignName: `${preflight.product.name} ${preflight.desiredReach.replaceAll("_", " ")} Cities`,
+      pagesPerDay: Math.min(100, selectedBatchSize),
+      targetClass: "CITY",
       reach: preflight.desiredReach,
-      productUrl,
+      preflightInput: { reach, productUrl, stateCodes, metro },
       selectedBatchSize,
       selectedTargets,
-      acknowledgedPublicationPolicy: preflight.publicationPolicy,
+      acknowledgedPublicationPolicy: publicationPolicy,
     };
     setLaunchRequest(request);
     setLaunchError(null);
@@ -270,14 +279,7 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
     try {
       const result = await adapter.launch(launchRequest, setLaunchState);
       setLaunchResult(result);
-      const terminal = result.state === "REFERENCE_REVIEW_REQUIRED"
-        ? "REVIEW_REQUIRED"
-        : result.state === "RECOVERY_REQUIRED"
-          ? "RECOVERY_REQUIRED"
-          : result.state === "DISPATCH_STARTED" || result.state === "CAMPAIGN_ACTIVE" || result.state === "ALREADY_EXISTS"
-            ? "SUCCESS"
-            : "FAILED";
-      setLaunchState(terminal);
+      setLaunchState(presentGlwLaunchResult(result).uiState);
     } catch (cause) {
       setLaunchError(cause instanceof Error ? cause.message : "Campaign launch failed.");
       setLaunchState("FAILED");
@@ -343,7 +345,7 @@ export function CampaignLaunchpad({ organizationId, requestRoles, existingProduc
           {error ? <div role="alert" className="mt-4 border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-200">{error}</div> : null}
         </section>
 
-        {launchExecutionAvailable ? (
+        {launchExecutionAvailable && !atomicLaunchAvailable ? (
           <details className="border border-cyan-700/40 bg-cyan-950/20 p-4 text-sm">
             <summary className="cursor-pointer text-cyan-200">Synthetic launch fixture</summary>
             <label className="mt-3 block text-zinc-300">Outcome<select aria-label="Synthetic launch outcome" value={syntheticScenario} onChange={(event) => setSyntheticScenario(event.target.value as GlwSyntheticLaunchScenario)} disabled={launchBusy} className="mt-2 h-10 w-full border border-zinc-700 bg-zinc-950 px-3 text-white"><option value="SUCCESS">Success</option><option value="STALE_PREFLIGHT">Stale preflight</option><option value="TARGET_CONFLICT">Target conflict</option><option value="ALREADY_EXISTS">Already exists</option><option value="REFERENCE_REVIEW_REQUIRED">Reference review required</option><option value="RECOVERY_REQUIRED">Recovery required</option><option value="DISPATCH_FAILED">Dispatch failure after persistence</option></select></label>

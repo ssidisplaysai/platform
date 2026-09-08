@@ -65,12 +65,12 @@ export function CampaignLaunchProgress({ state }: { state: GlwLaunchUiState }) {
 }
 
 export function CampaignStatusPanel({ counts }: { counts?: Partial<GlwLaunchStatusCounts> }) {
-  const values: GlwLaunchStatusCounts = { researching: 0, generating: 0, qa: 0, draft: 0, review: 0, published: 0, failed: 0, ...counts };
+  const values: GlwLaunchStatusCounts = { researching: null, generating: null, qa: null, draft: null, review: null, published: null, failed: null, ...counts };
   return (
     <section aria-label="Campaign status" className="border-t border-zinc-700 pt-5">
       <h3 className="text-sm font-semibold text-white">Campaign status</h3>
       <div className="mt-3 grid grid-cols-2 gap-px overflow-hidden bg-zinc-800 sm:grid-cols-4 lg:grid-cols-7">
-        {Object.entries(values).map(([label, count]) => <div key={label} className="bg-zinc-950 p-3"><p className="text-xs capitalize text-zinc-500">{label}</p><p className="mt-1 text-lg font-semibold text-white">{count}</p></div>)}
+        {Object.entries(values).map(([label, count]) => <div key={label} className="bg-zinc-950 p-3"><p className="text-xs capitalize text-zinc-500">{label}</p><p className="mt-1 text-lg font-semibold text-white">{count ?? "Unavailable"}</p></div>)}
       </div>
     </section>
   );
@@ -111,7 +111,7 @@ export function CampaignLaunchOutcome({ result, productName, reach, onAnalyzeAga
           <ul className="mt-2 space-y-2">{result.blockers.map((blocker) => <li key={`${blocker.code}-${blocker.target.canonicalPath}`} className="border border-amber-700/40 p-3 text-sm text-amber-100"><p>{blocker.message}</p><p className="mt-1 text-xs text-amber-300/70">{blocker.target.cityName}, {blocker.target.stateCode}{blocker.owningCampaignId ? ` / Campaign ${blocker.owningCampaignId}` : ""}{blocker.targetState ? ` / ${blocker.targetState}` : ""}</p></li>)}</ul>
         </section>
       ) : null}
-      {result.campaignId ? <CampaignStatusPanel counts={result.state === "DISPATCH_STARTED" ? { researching: result.selectedTargetCount } : result.state === "REFERENCE_REVIEW_REQUIRED" ? { review: 1 } : result.state === "RECOVERY_REQUIRED" ? { failed: 1 } : { draft: result.selectedTargetCount }} /> : null}
+      {result.campaignId ? <CampaignStatusPanel counts={result.state === "REFERENCE_REVIEW_REQUIRED" ? { review: 1 } : undefined} /> : null}
       <div className="flex flex-wrap gap-3">
         {!presentation.durable ? <button type="button" onClick={onAnalyzeAgain} className="min-h-11 bg-red-600 px-4 text-sm font-semibold text-white">Analyze Again</button> : null}
         {presentation.durable ? <button type="button" onClick={onStartAnother} className="min-h-11 border border-zinc-700 px-4 text-sm text-zinc-200">Start Another Campaign</button> : null}

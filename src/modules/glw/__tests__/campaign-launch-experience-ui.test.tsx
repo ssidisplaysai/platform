@@ -4,10 +4,10 @@ import { CampaignLaunchConfirmation, CampaignLaunchOutcome, CampaignLaunchProgre
 import type { GlwCampaignLaunchRequest, GlwCampaignLaunchResult, GlwCampaignLaunchResultState } from "../campaign-launch-contract";
 
 const target = { canonicalPath: "widget/texas/dallas", stateCode: "TX", citySlug: "dallas", cityName: "Dallas" };
-const request: GlwCampaignLaunchRequest = { launchId: "launch-1", siteId: "site-1", productId: "product-1", reach: "STATE", productUrl: "https://example.test/widget", selectedBatchSize: 1, selectedTargets: [target], acknowledgedPublicationPolicy: "Draft Only" };
+const request: GlwCampaignLaunchRequest = { siteId: "site-1", productId: "product-1", campaignName: "Widget Texas Cities", pagesPerDay: 1, targetClass: "CITY", reach: "STATE", preflightInput: { reach: "STATE", productUrl: "https://example.test/widget", stateCodes: ["TX"] }, selectedBatchSize: 1, selectedTargets: [target], acknowledgedPublicationPolicy: "draft_only" };
 
 function result(state: GlwCampaignLaunchResultState, overrides: Partial<GlwCampaignLaunchResult> = {}): GlwCampaignLaunchResult {
-  return { state, launchId: "launch-1", campaignId: state === "AUTHORITY_CHANGED" || state === "TARGET_CONFLICT" ? null : "campaign-1", campaignState: "active", publicationPolicy: "Draft Only", selectedTargetCount: 1, targets: [target], referenceTarget: target, referenceState: "reference_complete", dispatchState: "started", recoveryState: null, blockers: [], createdAt: "2030-01-01", ...overrides };
+  return { state, launchId: "launch-1", campaignId: state === "AUTHORITY_CHANGED" || state === "TARGET_CONFLICT" ? null : "campaign-1", campaignState: "active", publicationPolicy: "draft_only", selectedTargetCount: 1, targets: [target], referenceTarget: target, referenceState: "reference_complete", dispatchState: "started", recoveryState: null, blockers: [], createdAt: "2030-01-01", ...overrides };
 }
 
 describe("Campaign launch experience UI", () => {
@@ -16,7 +16,7 @@ describe("Campaign launch experience UI", () => {
     expect(html).toContain('role="dialog"');
     expect(html).toContain("Launch 1 pages for Widget?");
     expect(html).toContain("Maximum safe reach");
-    expect(html).toContain("Draft Only");
+    expect(html).toContain("draft_only");
     expect(html).toContain("Cancel");
     expect(html).toContain("Launch Campaign");
   });

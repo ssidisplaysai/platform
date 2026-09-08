@@ -3,6 +3,7 @@ import "server-only";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { GlwCampaignOwnershipAssessment } from "./launchpad-planning-authority";
+import type { GlwCampaignPublicationPolicy } from "./campaign-types";
 
 const CAMPAIGN_FILE = "glw-campaign-repository.json";
 const TARGET_FILE = "glw-campaign-target-repository.json";
@@ -23,6 +24,8 @@ export type GlwPersistedCampaign = {
   siteId: string;
   productId: string;
   pageType: "state_service" | "city_service";
+  publicationPolicy?: GlwCampaignPublicationPolicy;
+  imageRequired?: boolean;
   status: GlwPersistedCampaignStatus;
 };
 

@@ -6,6 +6,7 @@ import { GLW_CITIES, GLW_STATES, createDefaultGlwGenerationInput, createGlwCanon
 import { resolveGlwN8nEngineProductSlug } from "./page-execution";
 import { planGlwPageMatrix, type GlwPlannedPage } from "./matrix-planner";
 import type { GlwTargetPreflightResult } from "./target-preflight";
+import type { GlwCampaignPublicationPolicy } from "./campaign-types";
 import { classifyGlwCampaignOwnership, classifyGlwCannibalization, classifyGlwExecutionOwnership, type GlwCampaignOwnershipAssessment, type GlwCannibalizationAssessment, type GlwExecutionAuthority, type GlwExecutionOwnershipAssessment } from "./launchpad-planning-authority";
 import { createGlwTargetIntentIdentity, evaluateGlwTargetIntentOwnership } from "./target-intent-authority";
 
@@ -25,7 +26,7 @@ export type GlwCampaignLaunchpadV3Handoff = {
   productId: string;
   reach: GlwCampaignReach;
   selectedTargetIdentities: readonly { canonicalPath: string; stateCode: string; citySlug: string }[];
-  publicationPolicy: string;
+  publicationPolicy: GlwCampaignPublicationPolicy | "UNAVAILABLE";
   selectedBatchSize: number;
 };
 export type GlwCampaignLaunchpadTarget = { stateCode: string; stateName: string; citySlug: string; cityName: string; canonicalPath: string };
@@ -79,7 +80,7 @@ export type GlwCampaignLaunchpadPreflight = {
   potentialReach: number;
   recommendedInitialBatch: number;
   maximumSafeReach: number;
-  publicationPolicy: string;
+  publicationPolicy: GlwCampaignPublicationPolicy | "UNAVAILABLE";
   readiness: GlwCampaignReadiness;
   blockers: readonly string[];
   readinessBlockers: readonly GlwLaunchpadBlocker[];
@@ -229,6 +230,17 @@ export async function buildGlwCampaignLaunchpadPreflight(input: {
   const targets = selectedTargets.map((target) => ({ ...target, canonicalPath: createGlwCanonicalPath({ productSlug: generationProduct?.slug ?? "unknown-product", stateCode: target.stateCode, citySlug: target.citySlug }) }));
   const canonicalReadiness = evaluateCanonicalReadiness({ site, product, organizationActive: input.organizationActive, permissions: input.permissions });
   const globalBlockers = [...canonicalReadiness.blockers];
+  const authorityCampaigns = product && input.campaignSnapshot
+    ? input.campaignSnapshot.campaigns.filter((campaign) => campaign.organizationId === input.organizationId && campaign.siteId === site.siteId && campaign.productId === product.productId)
+    : [];
+  const publicationPolicies = [...new Set(authorityCampaigns.map((campaign) => campaign.publicationPolicy))];
+  const imagePolicies = [...new Set(authorityCampaigns.map((campaign) => campaign.imageRequired))];
+  const campaignPolicyAuthorityValid = authorityCampaigns.length > 0
+    && publicationPolicies.length === 1
+    && (publicationPolicies[0] === "draft_only" || publicationPolicies[0] === "publish_after_gates")
+    && imagePolicies.length === 1
+    && typeof imagePolicies[0] === "boolean";
+  if (!campaignPolicyAuthorityValid) globalBlockers.push({ code: "CAMPAIGN_PUBLICATION_POLICY_AUTHORITY_CHANGED", scope: "CAMPAIGN", severity: "BLOCKING", message: "Existing campaign publication and image policy authority is missing or conflicted for this site and product.", authoritySource: "GLW_CAMPAIGN_PERSISTENCE", repairableByExistingWorkflow: null });
   if (input.executionAuthority.status === "UNAVAILABLE") globalBlockers.push({ code: "EXECUTION_OWNERSHIP_UNAVAILABLE", scope: "EXECUTION", severity: "BLOCKING", message: "GLW execution persistence was not available for this preflight.", authoritySource: "GLW_PAGE_EXECUTION_JOURNAL", repairableByExistingWorkflow: null });
   if (!input.campaignSnapshot) globalBlockers.push({ code: "CAMPAIGN_AUTHORITY_MISSING", scope: "CAMPAIGN", severity: "BLOCKING", message: "Authoritative campaign persistence is unavailable or could not be read.", authoritySource: "CAMPAIGN_PERSISTENCE", repairableByExistingWorkflow: null });
   if (!input.campaignSnapshot) globalBlockers.push({ code: "CANNIBALIZATION_AUTHORITY_UNAVAILABLE", scope: "CANNIBALIZATION", severity: "BLOCKING", message: "Deterministic product/geographic intent ownership persistence is unavailable.", authoritySource: "GLW_CAMPAIGN_TARGET_INTENT", repairableByExistingWorkflow: null });
@@ -271,8 +283,8 @@ export async function buildGlwCampaignLaunchpadPreflight(input: {
   if (primaryTotal !== counts.potentialCount) throw new Error("Launchpad primary disposition counts do not reconcile.");
   const excludedTargets = targetAssessments.filter((target) => !target.safe).map((target): GlwLaunchpadExcludedTarget => ({ target: `${target.cityName}, ${target.stateName}`, canonicalPath: target.canonicalPath, group: target.primaryDisposition as Exclude<GlwTargetPrimaryDisposition, "SAFE">, reason: exclusionReason(target), existingOwner: target.cannibalization.existingOwner, jobId: target.executionOwnership.jobId, executionId: target.executionOwnership.executionId, campaignId: target.campaignOwnership.campaignId }));
   const safeCount = counts.maximumSafeReachCount;
-  const readiness: GlwCampaignReadiness = globalBlockers.some((entry) => ["SITE", "PRODUCT", "SOURCE"].includes(entry.scope) && entry.severity === "BLOCKING") ? "AUTHORITY_REQUIRED" : counts.unreconciledCount > 0 ? "UNRECONCILED" : safeCount > 0 ? (excludedTargets.length > 0 ? "READY_WITH_REVIEW" : "READY") : "TARGET_CONFLICTS";
-  const policy = site.defaultPublicationStatus === "draft" ? "Draft Only" : site.defaultPublicationStatus === "review" ? "Review Required" : "Existing Site Policy";
+  const readiness: GlwCampaignReadiness = globalBlockers.some((entry) => ["SITE", "PRODUCT", "SOURCE", "CAMPAIGN"].includes(entry.scope) && entry.severity === "BLOCKING") ? "AUTHORITY_REQUIRED" : counts.unreconciledCount > 0 ? "UNRECONCILED" : safeCount > 0 ? (excludedTargets.length > 0 ? "READY_WITH_REVIEW" : "READY") : "TARGET_CONFLICTS";
+  const policy = campaignPolicyAuthorityValid ? publicationPolicies[0] as GlwCampaignPublicationPolicy : "UNAVAILABLE";
   const exactCanonicalConflictCount = targetAssessments.filter((target) => target.cannibalization.classification === "EXACT_CANONICAL_EXISTS").length;
   return {
     site: { id: site.siteId, name: site.displayName }, product: product ? { id: product.productId, name: product.displayName } : null, canonicalProductUrl: new URL(input.request.productUrl).toString(),
