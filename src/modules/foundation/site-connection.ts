@@ -73,7 +73,7 @@ export class FoundationSiteConnectionTestAdapter
 
     if (read.ok) {
       return {
-        status: "success" as SiteConnectionTestResult["status"],
+        status: "passed",
         message: "Authenticated WordPress connection successful.",
         checkedAt,
         details:
@@ -83,7 +83,7 @@ export class FoundationSiteConnectionTestAdapter
 
     if (read.reason === "AUTH_FAILURE") {
       return {
-        status: "failed" as SiteConnectionTestResult["status"],
+        status: "failed",
         message: "WordPress authentication failed.",
         checkedAt,
         details:
@@ -93,7 +93,7 @@ export class FoundationSiteConnectionTestAdapter
 
     if (read.reason === "READ_TIMEOUT") {
       return {
-        status: "failed" as SiteConnectionTestResult["status"],
+        status: "failed",
         message: "WordPress connection timed out.",
         checkedAt,
         details:
@@ -102,7 +102,7 @@ export class FoundationSiteConnectionTestAdapter
     }
 
     return {
-      status: "failed" as SiteConnectionTestResult["status"],
+      status: "failed",
       message: "WordPress connection test failed.",
       checkedAt,
       details: `Read failure: ${read.reason}`,

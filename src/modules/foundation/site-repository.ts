@@ -14,6 +14,7 @@ import type {
   UpdateSiteInput,
 } from "./types";
 import { validateNewSiteInput, validateUpdateSiteInput } from "./site-validation";
+import { createSiteId } from "./site-identity";
 
 const PERSISTENCE_NAMESPACE = "site-repository";
 
@@ -66,10 +67,6 @@ loadStateFromPersistence();
 
 function nowIso(): string {
   return new Date().toISOString();
-}
-
-function createSiteId(organizationId: string, slug: string): string {
-  return `site-${organizationId}-${slug}`;
 }
 
 export function listSites(): readonly SiteConfiguration[] {
@@ -128,6 +125,7 @@ export function createSite(input: NewSiteInput): {
     enabled: false,
     healthStatus: "unknown",
     publishingStatus: "disabled",
+    publicationPolicy: input.publicationPolicy ?? "draft_only",
     defaultContentType: input.defaultContentType,
     defaultPublicationStatus: input.defaultPublicationStatus,
     defaultAuthorReference: input.defaultAuthorReference,

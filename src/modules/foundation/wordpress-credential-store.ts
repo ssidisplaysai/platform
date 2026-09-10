@@ -191,7 +191,6 @@ function decryptCredential(
 loadState();
 
 export function storeWordPressCredential(input: {
-  loadState();
   organizationId: string;
   siteId: string;
   username: string;
@@ -200,6 +199,7 @@ export function storeWordPressCredential(input: {
 }): {
   reference: string;
 } {
+  loadState();
   const username = input.username.trim();
   const applicationPassword =
     input.applicationPassword.replace(/\s+/g, "");
