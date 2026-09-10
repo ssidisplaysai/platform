@@ -1,6 +1,6 @@
 {
   "schemaVersion": "genesis.glw.typecheck-baseline/v1",
-  "certifiedSourceSha": "cc7af323bf27ce04c42699b9a4b832ba2bce7bcb",
+  "certifiedSourceSha": "03860b9b5d03f20aebf13519e95719ed2fe9bd77",
   "command": "npm run typecheck:production",
   "expectedExitCode": 2,
   "sourceBlobs": {
@@ -60,5 +60,5 @@
       "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'."
     }
   ],
-  "fingerprint": "2BB9DDEAE3AF0A9FA0D783BDAD6FDA2C2F1136D529438AD88AFABD5C20D11030"
+  "fingerprint": "592E03316DFCBCCE5E3A97FB3669691F15F32B65059ADFA02F94A4E7387E45FE"
 }
