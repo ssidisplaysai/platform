@@ -39,6 +39,7 @@ test("launcher rendering replaces authority and environment blocks", () => {
   const template = `$ReleasePath = "old"\n$ExpectedSourceSha = "old"\n$ExpectedEnvironment = [ordered]@{\n  OLD = @(1, "AAAA")\n}\n`;
   const rendered = renderLauncher({ template, assignments: { ReleasePath: "new", ExpectedSourceSha: "c".repeat(40) }, environment: { A: [1, "559AEAD0"] } });
   assert.match(rendered, /\$ReleasePath = "new"/u); assert.match(rendered, /A = @\(1, "559AEAD0"\)/u); assert.doesNotMatch(rendered, /OLD =/u);
+  assert.throws(() => renderLauncher({ template, assignments: { ReleasePath: "unsafe`$(whoami)" }, environment: { A: [1, "559AEAD0"] } }), /unsafe/u);
 });
 test("Windows cmd shims are launched through the configured command shell", () => {
   assert.deepEqual(commandInvocation("npm.cmd", ["ci"], "win32", "C:\\Windows\\System32\\cmd.exe"), {

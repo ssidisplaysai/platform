@@ -93,7 +93,8 @@ export function verifyManifest(releaseRoot, manifest) {
 function replaceAssignment(text, name, value) {
   const pattern = new RegExp(`^\\$${name}\\s*=.*$`, "mu");
   if (!pattern.test(text)) fail(`Launcher assignment is missing: ${name}`);
-  return text.replace(pattern, `$${name} = "${value.replaceAll('"', '`"')}"`);
+  if (typeof value !== "string" || /["`\r\n]/u.test(value)) fail(`Launcher assignment is unsafe: ${name}`);
+  return text.replace(pattern, `$${name} = "${value}"`);
 }
 
 export function renderLauncher({ template, assignments, environment }) {
@@ -165,6 +166,7 @@ function parseArgs(argv) { const options = {}; for (let i = 0; i < argv.length; 
 export function prepare(options) {
   const repository = resolve(options.repo); const stageRoot = resolve(options.stage); const environmentPath = resolve(options.environment); const launcherTemplatePath = resolve(options.launcher); const typecheckBaselinePath = options["typecheck-baseline"] ? resolve(options["typecheck-baseline"]) : null; const commit = options.commit; const tag = options.tag ?? "glw-research-security-v1";
   if (!/^[0-9a-f]{40}$/u.test(commit)) fail("Commit must be an exact lowercase 40-character SHA.");
+  if (!/^[A-Za-z0-9._-]+$/u.test(tag)) fail("Release tag contains invalid characters.");
   if (existsSync(stageRoot)) fail(`Stage path already exists: ${stageRoot}`);
   if (!existsSync(environmentPath)) fail("Protected environment file is missing.");
   if (!existsSync(launcherTemplatePath)) fail("Launcher template is missing.");
@@ -177,7 +179,7 @@ export function prepare(options) {
     const typecheckCertification = typecheckBaselinePath ? runTypecheckWithBaseline(sourcePath, repository, commit, typecheckBaselinePath) : (run("npm.cmd", ["run", "typecheck:production"], sourcePath), { policy: "ZERO_DIAGNOSTICS", diagnosticCount: 0 });
     run("npm.cmd", ["run", "build"], sourcePath);
     cpSync(sourcePath, releasePath, { recursive: true, dereference: true, filter: (path) => basename(path) !== ".git" });
-    const buildId = readFileSync(join(releasePath, ".next", "BUILD_ID"), "utf8").trim(); if (!buildId) fail("Next build ID is missing.");
+    const buildId = readFileSync(join(releasePath, ".next", "BUILD_ID"), "utf8").trim(); if (!/^[A-Za-z0-9_-]+$/u.test(buildId)) fail("Next build ID is missing or invalid.");
     const treeId = capture("git", ["rev-parse", `${commit}^{tree}`], repository);
     const finalReleasePath = `C:\\ProgramData\\Genesis\\GLW\\releases\\${commit}__${buildId}__${tag}`;
     const manifestPath = join(stageRoot, "GLW-Research-Security-Immutable-Release-Manifest.json");
@@ -192,5 +194,18 @@ export function prepare(options) {
   } finally { if (existsSync(sourcePath)) run("git", ["worktree", "remove", "--force", sourcePath], repository); }
 }
 
-function main() { const [command, ...rest] = process.argv.slice(2); if (command !== "prepare") fail("Only the non-production 'prepare' command is available in v1."); process.stdout.write(`${JSON.stringify(prepare(parseArgs(rest)), null, 2)}\n`); }
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) { try { main(); } catch (error) { process.stderr.write(`GLW_IMMUTABLE_RELEASE_PREPARE_FAILED: ${error.message}\n`); process.exitCode = 1; } }
+async function main() {
+  const [command, ...rest] = process.argv.slice(2); const options = parseArgs(rest);
+  if (command === "prepare") { process.stdout.write(`${JSON.stringify(prepare(options), null, 2)}\n`); return; }
+  if (command === "install") {
+    const defaults = { environment: "C:\\ProgramData\\Genesis\\GLW\\config\\production.env", launcher: "C:\\ProgramData\\Genesis\\GLW\\bin\\Start-GenesisGlw.ps1", "evidence-root": "C:\\ProgramData\\Genesis\\GLW\\evidence\\installations", "rollback-root": "C:\\ProgramData\\Genesis\\GLW\\rollback\\immutable-installer-v1", "release-root": "C:\\ProgramData\\Genesis\\GLW\\releases", "manifest-root": "C:\\ProgramData\\Genesis\\GLW\\manifests" };
+    Object.assign(options, Object.fromEntries(Object.entries(defaults).map(([name, value]) => [name, options[name] ?? value])));
+    const required = ["stage", "repository", "persistence-root"];
+    for (const name of required) if (!options[name]) fail(`Install option is required: --${name}.`);
+    const [{ installPreparedRelease }, { createWindowsProductionAdapters }] = await Promise.all([import("./glw-immutable-installer.mjs"), import("./glw-immutable-installer-windows.mjs")]);
+    const result = await installPreparedRelease({ stage: options.stage, environmentPath: options.environment, launcherPath: options.launcher, evidenceRoot: options["evidence-root"], rollbackRoot: options["rollback-root"], releaseRoot: options["release-root"], manifestRoot: options["manifest-root"], typecheckBaselinePath: options["typecheck-baseline"], sourceIdentityResolver: (sha) => ({ commit: capture("git", ["rev-parse", `${sha}^{commit}`], options.repository), tree: capture("git", ["rev-parse", `${sha}^{tree}`], options.repository) }), adapters: createWindowsProductionAdapters({ persistenceRoot: options["persistence-root"] }) });
+    process.stdout.write(`${JSON.stringify({ state: result.state, sourceSha: result.prepared.plan.sourceSha, buildId: result.prepared.plan.buildId, evidencePath: result.evidencePath ?? null }, null, 2)}\n`); return;
+  }
+  fail("Command must be 'prepare' or 'install'.");
+}
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) { try { await main(); } catch (error) { process.stderr.write(`GLW_IMMUTABLE_RELEASE_FAILED: ${error.message}\n`); process.exitCode = 1; } }
