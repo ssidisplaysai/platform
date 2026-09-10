@@ -128,6 +128,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
         </article>
 
         <div className="flex gap-3">
+          {site.lifecycleState === "configuring" ? <Link href={`/sites/${site.siteId}/onboarding`} className="rounded-lg border border-red-700 px-3 py-2 text-sm text-red-200 hover:border-red-500 hover:text-white">Continue Onboarding</Link> : null}
           <Link href={`/sites/${site.siteId}/settings`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Site Settings</Link>
           <Link href={`/sites/${site.siteId}/health`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Site Health</Link>
         </div>

@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CompanyRepository } from "@/core/repositories/CompanyRepository";
+import { OnboardingProfileCreator } from "./OnboardingProfileCreator";
+import {
+  applyCreatedOnboardingProfile,
+  filterReadyOnboardingProfiles,
+} from "./onboarding-profile-creation";
 import { findFreshSiteCollision, type FreshSiteCollision } from "./fresh-site-create-mode";
 import { createSiteId, slugifySiteName } from "./site-identity";
 import type {
@@ -64,39 +69,43 @@ function normalizedDomain(value: string): string {
   return value.trim().replace(/^https:\/\//i, "").replace(/\/$/, "").toLowerCase();
 }
 
-export function FreshSiteOnboardingFlow() {
+export function FreshSiteOnboardingFlow(input: {
+  initialSite?: SiteConfiguration | null;
+  mode?: "create" | "configure";
+} = {}) {
+  const configureMode = input.mode === "configure" && Boolean(input.initialSite);
   const organizations = CompanyRepository.getActive();
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(configureMode ? 4 : 1);
   const [intent, setIntent] = useState<"fresh" | "existing">("fresh");
-  const [organizationId, setOrganizationId] = useState(organizations[0]?.id ?? "");
-  const [siteName, setSiteName] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [domain, setDomain] = useState("");
-  const [environment, setEnvironment] = useState<SiteEnvironment>("production");
-  const [primaryAddress, setPrimaryAddress] = useState<SitePrimaryAddress>({
-    addressLine1: "",
-    addressLine2: null,
-    city: "",
-    stateRegion: "",
-    postalCode: "",
-    countryCode: "US",
-  });
+  const [organizationId, setOrganizationId] = useState(input.initialSite?.organizationId ?? organizations[0]?.id ?? "");
+  const [siteName, setSiteName] = useState(input.initialSite?.siteName ?? "");
+  const [displayName, setDisplayName] = useState(input.initialSite?.displayName ?? "");
+  const [domain, setDomain] = useState(input.initialSite?.domain ?? "");
+  const [environment, setEnvironment] = useState<SiteEnvironment>(input.initialSite?.environment ?? "production");
+  const [primaryAddress, setPrimaryAddress] = useState<SitePrimaryAddress>(input.initialSite?.primaryAddress ?? {
+      addressLine1: "",
+      addressLine2: null,
+      city: "",
+      stateRegion: "",
+      postalCode: "",
+      countryCode: "US",
+    });
   const [advanced, setAdvanced] = useState(false);
   const [apiOverride, setApiOverride] = useState("");
   const [preflight, setPreflight] = useState<PublicWordPressPreflightResult | null>(null);
-  const [site, setSite] = useState<SiteConfiguration | null>(null);
+  const [site, setSite] = useState<SiteConfiguration | null>(input.initialSite ?? null);
   const [username, setUsername] = useState("");
   const [applicationPassword, setApplicationPassword] = useState("");
-  const [credentialsStored, setCredentialsStored] = useState(false);
+  const [credentialsStored, setCredentialsStored] = useState(Boolean(input.initialSite?.integrations.wordpressCredentialReference));
   const [profiles, setProfiles] = useState<IntegrationProfileConfiguration[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState({
-    seoProfileReference: "",
-    promptProfileReference: "",
-    imageProfileReference: "",
-    brandProfileReference: "",
-    workflowReference: "",
+    seoProfileReference: input.initialSite?.profiles.seoProfileReference ?? "",
+    promptProfileReference: input.initialSite?.profiles.promptProfileReference ?? "",
+    imageProfileReference: input.initialSite?.profiles.imageProfileReference ?? "",
+    brandProfileReference: input.initialSite?.profiles.brandProfileReference ?? "",
+    workflowReference: input.initialSite?.integrations.workflowReference ?? "",
   });
-  const [publicationPolicy, setPublicationPolicy] = useState<SitePublicationPolicy>("draft_only");
+  const [publicationPolicy] = useState<SitePublicationPolicy>("draft_only");
   const [assessment, setAssessment] = useState<Assessment | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -106,18 +115,34 @@ export function FreshSiteOnboardingFlow() {
   const prospectiveSiteId = organizationId && slug ? createSiteId(organizationId, slug) : "Generated after site name";
   const cleanDomain = normalizedDomain(domain);
   const inferredApiUrl = cleanDomain ? `https://${cleanDomain}/wp-json/wp/v2` : "";
+  const organizationName = organizations.find((organization) => organization.id === organizationId)?.name ?? organizationId;
 
   useEffect(() => {
     let cancelled = false;
     async function loadProfiles() {
       if (!organizationId) return;
       try {
-        const response = await fetch(`/api/profiles?organizationId=${encodeURIComponent(organizationId)}&enabled=true`, {
-          headers: headers(organizationId),
-          cache: "no-store",
-        });
-        const payload = (await response.json()) as { profiles?: IntegrationProfileConfiguration[] };
-        if (!cancelled && response.ok) setProfiles(payload.profiles ?? []);
+        const [profileResponse, readinessResponse] = await Promise.all([
+          fetch(`/api/profiles?organizationId=${encodeURIComponent(organizationId)}&enabled=true`, {
+            headers: headers(organizationId),
+            cache: "no-store",
+          }),
+          fetch("/api/profiles/readiness", {
+            headers: headers(organizationId),
+            cache: "no-store",
+          }),
+        ]);
+        const payload = (await profileResponse.json()) as { profiles?: IntegrationProfileConfiguration[] };
+        const readinessPayload = (await readinessResponse.json()) as {
+          readiness?: Array<{ profileId: string; ready: boolean }>;
+        };
+        if (!cancelled && profileResponse.ok && readinessResponse.ok) {
+          setProfiles(filterReadyOnboardingProfiles({
+            organizationId,
+            profiles: payload.profiles ?? [],
+            readiness: readinessPayload.readiness ?? [],
+          }));
+        }
       } catch {
         if (!cancelled) setProfiles([]);
       }
@@ -289,6 +314,21 @@ export function FreshSiteOnboardingFlow() {
     return profiles.filter((profile) => profile.profileType === type && profile.status === "active" && profile.enabled);
   }
 
+  function handleProfileCreated(profile: IntegrationProfileConfiguration) {
+    const result = applyCreatedOnboardingProfile({
+      organizationId,
+      profiles,
+      selection: selectedProfiles,
+      profile,
+    });
+    if (!result.ok) {
+      setError("Created profile organization does not match the onboarding organization.");
+      return;
+    }
+    setProfiles(result.profiles);
+    setSelectedProfiles(result.selection);
+  }
+
   async function saveConfiguration() {
     if (!site) return;
     setBusy("configuration");
@@ -327,8 +367,8 @@ export function FreshSiteOnboardingFlow() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-400">Genesis Site Studio</p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">Add New Site</h2>
-            <p className="mt-2 max-w-2xl text-sm text-zinc-400">Connect a fresh WordPress installation, verify its technical authority, and prepare it for product onboarding.</p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">{configureMode ? `Configure ${site?.displayName}` : "Add New Site"}</h2>
+            <p className="mt-2 max-w-2xl text-sm text-zinc-400">{configureMode ? "Complete the organization-scoped Genesis authority required for product onboarding." : "Connect a fresh WordPress installation, verify its technical authority, and prepare it for product onboarding."}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/sites" className="border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-red-500 hover:text-white">Back to Sites</Link>
@@ -337,7 +377,7 @@ export function FreshSiteOnboardingFlow() {
         </div>
         <nav className="mt-6 grid grid-cols-5 gap-1" aria-label="Onboarding progress">
           {STEPS.map(([number, label]) => (
-            <button key={number} type="button" disabled={number > step} onClick={() => setStep(number)} className={`min-w-0 border-b-2 px-1 py-3 text-xs font-semibold ${step === number ? "border-red-500 text-white" : number < step ? "border-emerald-600 text-emerald-300" : "border-zinc-800 text-zinc-500"}`}>
+            <button key={number} type="button" disabled={configureMode ? number !== step : number > step} onClick={() => setStep(number)} className={`min-w-0 border-b-2 px-1 py-3 text-xs font-semibold ${step === number ? "border-red-500 text-white" : number < step ? "border-emerald-600 text-emerald-300" : "border-zinc-800 text-zinc-500"}`}>
               <span className="block">0{number}</span><span className="mt-1 block text-[10px] sm:text-xs">{label}</span>
             </button>
           ))}
@@ -408,9 +448,12 @@ export function FreshSiteOnboardingFlow() {
           <div className="space-y-6">
             <div><h3 className="text-lg font-semibold text-white">Configure Genesis authority</h3><p className="mt-1 text-sm text-zinc-400">Select only active profiles registered for {organizationId}. No settings are copied from another site automatically.</p></div>
             <div className="grid gap-4 md:grid-cols-2">
-              {PROFILE_FIELDS.map((item) => <ProfileSelect key={item.field} label={item.label} value={selectedProfiles[item.field]} profiles={profilesOfType(item.type)} onChange={(value) => setSelectedProfiles((current) => ({ ...current, [item.field]: value }))} />)}
-              <ProfileSelect label="Generation workflow" value={selectedProfiles.workflowReference} profiles={profilesOfType("workflow")} onChange={(value) => setSelectedProfiles((current) => ({ ...current, workflowReference: value }))} />
-              <label className="text-sm text-zinc-300">Publication Policy<select value={publicationPolicy} onChange={(event) => setPublicationPolicy(event.target.value as SitePublicationPolicy)} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white"><option value="draft_only">Draft only</option><option value="publish_after_gates">Publish after all gates</option></select><span className="mt-1 block text-xs text-zinc-500">Draft only is the conservative onboarding default. Direct publish is not supported.</span></label>
+              {PROFILE_FIELDS.map((item) => {
+                const available = profilesOfType(item.type);
+                return <div key={item.field}><ProfileSelect label={item.label} value={selectedProfiles[item.field]} profiles={available} onChange={(value) => setSelectedProfiles((current) => ({ ...current, [item.field]: value }))} /><OnboardingProfileCreator organizationId={organizationId} organizationName={organizationName} profileType={item.type} profileLabel={item.label} existingCount={available.length} onCreated={handleProfileCreated} /></div>;
+              })}
+              <div><ProfileSelect label="Generation workflow" value={selectedProfiles.workflowReference} profiles={profilesOfType("workflow")} onChange={(value) => setSelectedProfiles((current) => ({ ...current, workflowReference: value }))} /><OnboardingProfileCreator organizationId={organizationId} organizationName={organizationName} profileType="workflow" profileLabel="Workflow Profile" existingCount={profilesOfType("workflow").length} onCreated={handleProfileCreated} /></div>
+              <label className="text-sm text-zinc-300">Publication Policy<select value={publicationPolicy} disabled className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white disabled:opacity-70"><option value="draft_only">Draft only</option></select><span className="mt-1 block text-xs text-zinc-500">Fresh-site onboarding remains Draft Only.</span></label>
             </div>
             {!configurationComplete ? <p className="border-l-2 border-amber-500 pl-3 text-sm text-amber-200">All five profile categories are required. Missing organization profiles must be registered through Genesis Profiles before campaign readiness.</p> : null}
             <div className="flex justify-end"><button type="button" disabled={!configurationComplete || busy !== null} onClick={saveConfiguration} className="bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "configuration" ? "Saving..." : "Save Configuration & Verify"}</button></div>

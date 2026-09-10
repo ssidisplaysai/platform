@@ -18,6 +18,14 @@ describe("fresh site create mode", () => {
     path.join(process.cwd(), "src/app/sites/new/page.tsx"),
     "utf8",
   );
+  const resumeRoute = fs.readFileSync(
+    path.join(process.cwd(), "src/app/sites/[siteId]/onboarding/page.tsx"),
+    "utf8",
+  );
+  const siteDetail = fs.readFileSync(
+    path.join(process.cwd(), "src/app/sites/[siteId]/page.tsx"),
+    "utf8",
+  );
 
   test("the new route uses create mode and never mounts the legacy hydration form", () => {
     expect(route).toContain("FreshSiteOnboardingFlow");
@@ -26,11 +34,11 @@ describe("fresh site create mode", () => {
   });
 
   test("identity starts blank while organization and production environment may default", () => {
-    expect(source).toContain('useState(organizations[0]?.id ?? "")');
-    expect(source).toContain('const [siteName, setSiteName] = useState("")');
-    expect(source).toContain('const [displayName, setDisplayName] = useState("")');
-    expect(source).toContain('const [domain, setDomain] = useState("")');
-    expect(source).toContain('useState<SiteEnvironment>("production")');
+    expect(source).toContain('input.initialSite?.organizationId ?? organizations[0]?.id ?? ""');
+    expect(source).toContain('useState(input.initialSite?.siteName ?? "")');
+    expect(source).toContain('useState(input.initialSite?.displayName ?? "")');
+    expect(source).toContain('useState(input.initialSite?.domain ?? "")');
+    expect(source).toContain('useState<SiteEnvironment>(input.initialSite?.environment ?? "production")');
     expect(source).toContain('cleanDomain ? `https://${cleanDomain}/wp-json/wp/v2` : ""');
   });
 
@@ -66,5 +74,14 @@ describe("fresh site create mode", () => {
     expect(source).not.toContain("onboarding-test-page");
     expect(source).not.toContain("/api/glw/campaign-launch");
     expect(source).not.toMatch(/localStorage|sessionStorage/);
+  });
+
+  test("existing configuring shells resume through an explicit separate route", () => {
+    expect(resumeRoute).toContain('mode="configure"');
+    expect(resumeRoute).toContain("initialSite={site}");
+    expect(siteDetail).toContain("Continue Onboarding");
+    expect(siteDetail).toContain("/onboarding");
+    expect(source).toContain("input.initialSite?.profiles.seoProfileReference");
+    expect(source).toContain("input.initialSite?.integrations.workflowReference");
   });
 });
