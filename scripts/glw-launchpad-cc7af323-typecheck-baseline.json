@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "genesis.glw.typecheck-baseline/v1",
+  "certifiedSourceSha": "cc7af323bf27ce04c42699b9a4b832ba2bce7bcb",
+  "command": "npm run typecheck:production",
+  "expectedExitCode": 2,
+  "sourceBlobs": {
+    "src/modules/foundation/catalog-validation.ts": "3b4a1180384cbc9f7bd68ea8c91071864b953c47",
+    "src/modules/foundation/site-validation.ts": "108efea10bef8dc4b9f86362e5c10d9b2f6eb1f8",
+    "src/modules/glw/GlwPageGenerationWorkspace.tsx": "ce38e81acb2963fe779a4f50ed72736a23e010ca",
+    "src/modules/glw/page-execution.ts": "8c421bee84189eba028c8e073ee18ae6ea141808"
+  },
+  "diagnostics": [
+    {
+      "file": "src/modules/foundation/catalog-validation.ts",
+      "line": 102,
+      "column": 11,
+      "code": "TS2339",
+      "message": "Property 'organizationId' does not exist on type 'Partial<Omit<ProductConfiguration, \"createdAt\" | \"organizationId\" | \"productId\" | \"businessGenomeObjectReference\">>'."
+    },
+    {
+      "file": "src/modules/foundation/site-validation.ts",
+      "line": 76,
+      "column": 11,
+      "code": "TS2339",
+      "message": "Property 'organizationId' does not exist on type 'Partial<Omit<SiteConfiguration, \"createdAt\" | \"organizationId\" | \"siteId\">>'."
+    },
+    {
+      "file": "src/modules/glw/GlwPageGenerationWorkspace.tsx",
+      "line": 82,
+      "column": 27,
+      "code": "TS18047",
+      "message": "'form' is possibly 'null'."
+    },
+    {
+      "file": "src/modules/glw/GlwPageGenerationWorkspace.tsx",
+      "line": 84,
+      "column": 7,
+      "code": "TS18047",
+      "message": "'form' is possibly 'null'."
+    },
+    {
+      "file": "src/modules/glw/GlwPageGenerationWorkspace.tsx",
+      "line": 87,
+      "column": 21,
+      "code": "TS18047",
+      "message": "'form' is possibly 'null'."
+    },
+    {
+      "file": "src/modules/glw/page-execution.ts",
+      "line": 612,
+      "column": 13,
+      "code": "TS2322",
+      "message": "Type 'string | null' is not assignable to type 'string'."
+    },
+    {
+      "file": "src/modules/glw/page-execution.ts",
+      "line": 674,
+      "column": 53,
+      "code": "TS2345",
+      "message": "Argument of type 'string | null' is not assignable to parameter of type 'string'."
+    }
+  ],
+  "fingerprint": "2BB9DDEAE3AF0A9FA0D783BDAD6FDA2C2F1136D529438AD88AFABD5C20D11030"
+}

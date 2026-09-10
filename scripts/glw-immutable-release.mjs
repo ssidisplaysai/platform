@@ -47,7 +47,7 @@ export function environmentMetadata(values, requiredNames = REQUIRED_ENVIRONMENT
 
 function portablePath(path) { return path.split(sep).join("/"); }
 
-export function buildManifest({ releaseRoot, sourceSha, treeId, buildId, sourcePath, finalReleasePath, generatedAtUtc = new Date().toISOString() }) {
+export function buildManifest({ releaseRoot, sourceSha, treeId, buildId, sourcePath, finalReleasePath, typecheckCertification = null, generatedAtUtc = new Date().toISOString() }) {
   const root = resolve(releaseRoot);
   const entries = [];
   let directoryCount = 0;
@@ -76,6 +76,7 @@ export function buildManifest({ releaseRoot, sourceSha, treeId, buildId, sourceP
     contractVersion: "genesis.glw.immutable-release/v2",
     generatedAtUtc,
     canonicalIdentity: { sourceSha, treeId, buildId }, sourcePath, releasePath: finalReleasePath,
+    ...(typecheckCertification ? { typecheckCertification } : {}),
     objectTransformationRules: { gitlinkMode160000: "EMPTY_GITLINK_DIRECTORY", approvedJunctions: "INTERNALIZED_MATERIALIZED_DEPENDENCY_DIRECTORY", undeclaredLinks: "FORBIDDEN", externalLinksInRelease: "FORBIDDEN" },
     approvedJunctions: [],
     summary: { expectedObjectCount: entries.length, expectedDirectoryCount: directoryCount, expectedRegularFileCount: regularFileCount, sourceRegularFileCount: null, artifactRegularFileCount: null, dependencyRegularFileCount: null, materializedRegularFileCount: null },
@@ -84,7 +85,7 @@ export function buildManifest({ releaseRoot, sourceSha, treeId, buildId, sourceP
 }
 
 export function verifyManifest(releaseRoot, manifest) {
-  const rebuilt = buildManifest({ releaseRoot, sourceSha: manifest.canonicalIdentity.sourceSha, treeId: manifest.canonicalIdentity.treeId, buildId: manifest.canonicalIdentity.buildId, sourcePath: manifest.sourcePath, finalReleasePath: manifest.releasePath, generatedAtUtc: manifest.generatedAtUtc });
+  const rebuilt = buildManifest({ releaseRoot, sourceSha: manifest.canonicalIdentity.sourceSha, treeId: manifest.canonicalIdentity.treeId, buildId: manifest.canonicalIdentity.buildId, sourcePath: manifest.sourcePath, finalReleasePath: manifest.releasePath, typecheckCertification: manifest.typecheckCertification, generatedAtUtc: manifest.generatedAtUtc });
   if (JSON.stringify(manifest.entries) !== JSON.stringify(rebuilt.entries)) fail("Complete immutable release verification did not pass.");
   return rebuilt.summary;
 }
@@ -110,38 +111,83 @@ export function commandInvocation(command, args, platform = process.platform, co
   }
   return { command, args };
 }
+export function parseTypecheckDiagnostics(output) {
+  return output.split(/\r?\n/u).flatMap((line) => {
+    const match = line.match(/^(.+?)\((\d+),(\d+)\): error (TS\d+): (.+)$/u);
+    return match ? [{ file: portablePath(match[1]), line: Number(match[2]), column: Number(match[3]), code: match[4], message: match[5] }] : [];
+  }).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right), "en"));
+}
+export function typecheckBaselineFingerprint(baseline) {
+  return sha256Buffer(Buffer.from(JSON.stringify({ schemaVersion: baseline.schemaVersion, certifiedSourceSha: baseline.certifiedSourceSha, command: baseline.command, expectedExitCode: baseline.expectedExitCode, sourceBlobs: baseline.sourceBlobs, diagnostics: baseline.diagnostics }), "utf8"));
+}
+export function certifyTypecheckBaseline({ output, exitCode, baseline, sourceBlobResolver }) {
+  if (baseline.schemaVersion !== "genesis.glw.typecheck-baseline/v1") fail("Typecheck baseline schema is unsupported.");
+  if (!/^[0-9a-f]{40}$/u.test(baseline.certifiedSourceSha)) fail("Typecheck baseline source SHA is invalid.");
+  if (baseline.command !== "npm run typecheck:production") fail("Typecheck baseline command is invalid.");
+  if (!Number.isInteger(baseline.expectedExitCode) || baseline.expectedExitCode === 0) fail("Typecheck baseline exit code must be a nonzero integer.");
+  if (!Array.isArray(baseline.diagnostics) || baseline.diagnostics.length === 0) fail("Typecheck baseline diagnostics are missing.");
+  if (!baseline.sourceBlobs || typeof baseline.sourceBlobs !== "object" || Array.isArray(baseline.sourceBlobs)) fail("Typecheck baseline source blobs are missing.");
+  const diagnosticFiles = [...new Set(baseline.diagnostics.map((diagnostic) => diagnostic.file))].sort();
+  const sourceFiles = Object.keys(baseline.sourceBlobs).sort();
+  if (JSON.stringify(diagnosticFiles) !== JSON.stringify(sourceFiles)) fail("Typecheck baseline source coverage is incomplete.");
+  if (sourceFiles.some((path) => path.startsWith("/") || path.includes("..") || !/^[0-9a-f]{40}$/u.test(baseline.sourceBlobs[path]))) fail("Typecheck baseline source identity is invalid.");
+  if (exitCode !== baseline.expectedExitCode) fail(`Typecheck exit code changed: expected ${baseline.expectedExitCode}, found ${exitCode}.`);
+  const actualDiagnostics = parseTypecheckDiagnostics(output);
+  const expectedDiagnostics = [...baseline.diagnostics].sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right), "en"));
+  if (JSON.stringify(actualDiagnostics) !== JSON.stringify(expectedDiagnostics)) fail("Production typecheck diagnostics differ from the certified baseline.");
+  for (const [path, expectedBlob] of Object.entries(baseline.sourceBlobs)) {
+    const actualBlob = sourceBlobResolver(path);
+    if (actualBlob !== expectedBlob) fail(`Typecheck baseline source changed: ${path}.`);
+  }
+  const fingerprint = typecheckBaselineFingerprint({ ...baseline, diagnostics: expectedDiagnostics });
+  if (baseline.fingerprint !== fingerprint) fail("Typecheck baseline fingerprint is invalid.");
+  return { policy: "EXACT_DIAGNOSTIC_AND_SOURCE_BLOB_FAIL_ON_DRIFT", baselineSchemaVersion: baseline.schemaVersion, baselineFingerprint: fingerprint, diagnosticCount: actualDiagnostics.length, expectedExitCode: baseline.expectedExitCode, sourceBlobs: baseline.sourceBlobs };
+}
 function run(command, args, cwd) {
   const invocation = commandInvocation(command, args);
   const result = spawnSync(invocation.command, invocation.args, { cwd, stdio: "inherit", shell: false });
   if (result.error) fail(`${command} could not start: ${result.error.message}`);
   if (result.status !== 0) fail(`${command} failed with exit code ${result.status}`);
 }
+function runTypecheckWithBaseline(cwd, repository, commit, baselinePath) {
+  const invocation = commandInvocation("npm.cmd", ["run", "typecheck:production"]);
+  const result = spawnSync(invocation.command, invocation.args, { cwd, encoding: "utf8", shell: false });
+  if (result.error) fail(`npm.cmd could not start: ${result.error.message}`);
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
+  if (baseline.certifiedSourceSha !== commit) fail("Typecheck baseline is not certified for the requested source commit.");
+  return certifyTypecheckBaseline({ output: `${result.stdout ?? ""}\n${result.stderr ?? ""}`, exitCode: result.status, baseline, sourceBlobResolver: (path) => capture("git", ["rev-parse", `${commit}:${path}`], repository) });
+}
 function capture(command, args, cwd) { const result = spawnSync(command, args, { cwd, encoding: "utf8", shell: false }); if (result.status !== 0) fail(result.stderr?.trim() || `${command} failed`); return result.stdout.trim(); }
 function parseArgs(argv) { const options = {}; for (let i = 0; i < argv.length; i += 2) { if (!argv[i]?.startsWith("--") || argv[i + 1] === undefined) fail(`Invalid argument: ${argv[i] ?? ""}`); options[argv[i].slice(2)] = argv[i + 1]; } return options; }
 
 export function prepare(options) {
-  const repository = resolve(options.repo); const stageRoot = resolve(options.stage); const environmentPath = resolve(options.environment); const launcherTemplatePath = resolve(options.launcher); const commit = options.commit; const tag = options.tag ?? "glw-research-security-v1";
+  const repository = resolve(options.repo); const stageRoot = resolve(options.stage); const environmentPath = resolve(options.environment); const launcherTemplatePath = resolve(options.launcher); const typecheckBaselinePath = options["typecheck-baseline"] ? resolve(options["typecheck-baseline"]) : null; const commit = options.commit; const tag = options.tag ?? "glw-research-security-v1";
   if (!/^[0-9a-f]{40}$/u.test(commit)) fail("Commit must be an exact lowercase 40-character SHA.");
   if (existsSync(stageRoot)) fail(`Stage path already exists: ${stageRoot}`);
   if (!existsSync(environmentPath)) fail("Protected environment file is missing.");
   if (!existsSync(launcherTemplatePath)) fail("Launcher template is missing.");
+  if (typecheckBaselinePath && !existsSync(typecheckBaselinePath)) fail("Typecheck baseline file is missing.");
   if (capture("git", ["rev-parse", `${commit}^{commit}`], repository) !== commit) fail("Resolved source commit does not match the requested commit.");
   const sourcePath = join(stageRoot, "source"); const releasePath = join(stageRoot, "release"); mkdirSync(stageRoot, { recursive: false });
   try {
     run("git", ["worktree", "add", "--detach", sourcePath, commit], repository);
-    run("npm.cmd", ["ci"], sourcePath); run("npm.cmd", ["run", "typecheck:production"], sourcePath); run("npm.cmd", ["run", "build"], sourcePath);
+    run("npm.cmd", ["ci"], sourcePath);
+    const typecheckCertification = typecheckBaselinePath ? runTypecheckWithBaseline(sourcePath, repository, commit, typecheckBaselinePath) : (run("npm.cmd", ["run", "typecheck:production"], sourcePath), { policy: "ZERO_DIAGNOSTICS", diagnosticCount: 0 });
+    run("npm.cmd", ["run", "build"], sourcePath);
     cpSync(sourcePath, releasePath, { recursive: true, dereference: true, filter: (path) => basename(path) !== ".git" });
     const buildId = readFileSync(join(releasePath, ".next", "BUILD_ID"), "utf8").trim(); if (!buildId) fail("Next build ID is missing.");
     const treeId = capture("git", ["rev-parse", `${commit}^{tree}`], repository);
     const finalReleasePath = `C:\\ProgramData\\Genesis\\GLW\\releases\\${commit}__${buildId}__${tag}`;
     const manifestPath = join(stageRoot, "GLW-Research-Security-Immutable-Release-Manifest.json");
     const finalManifestPath = `C:\\ProgramData\\Genesis\\GLW\\manifests\\GLW-Research-Security-${commit}-${buildId}.json`;
-    const manifest = buildManifest({ releaseRoot: releasePath, sourceSha: commit, treeId, buildId, sourcePath, finalReleasePath });
+    const manifest = buildManifest({ releaseRoot: releasePath, sourceSha: commit, treeId, buildId, sourcePath, finalReleasePath, typecheckCertification });
     writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8"); verifyManifest(releasePath, manifest);
     const environment = environmentMetadata(parseEnvironment(readFileSync(environmentPath, "utf8"))); const manifestHash = sha256File(manifestPath);
     const launcher = renderLauncher({ template: readFileSync(launcherTemplatePath, "utf8"), assignments: { ReleasePath: finalReleasePath, ManifestPath: finalManifestPath, ExpectedSourceSha: commit, ExpectedTreeId: treeId, ExpectedBuildId: buildId, ExpectedManifestSha256: manifestHash, ExpectedEnvironmentSha256: sha256File(environmentPath), ExpectedPackageJsonSha256: sha256File(join(releasePath, "package.json")), ExpectedPackageLockSha256: sha256File(join(releasePath, "package-lock.json")) }, environment });
     const launcherPath = join(stageRoot, "Start-GenesisGlw.ps1.candidate"); writeFileSync(launcherPath, launcher, "utf8");
-    const plan = { schemaVersion: "genesis.glw.immutable-release-plan/v1", productionMutationAuthorized: false, sourceSha: commit, treeId, buildId, stageRoot, stagedReleasePath: releasePath, finalReleasePath, stagedManifestPath: manifestPath, finalManifestPath, stagedLauncherPath: launcherPath, hashes: { manifestSha256: manifestHash, launcherSha256: sha256File(launcherPath), environmentSha256: sha256File(environmentPath) }, objectCounts: manifest.summary };
+    const plan = { schemaVersion: "genesis.glw.immutable-release-plan/v1", productionMutationAuthorized: false, sourceSha: commit, treeId, buildId, stageRoot, stagedReleasePath: releasePath, finalReleasePath, stagedManifestPath: manifestPath, finalManifestPath, stagedLauncherPath: launcherPath, hashes: { manifestSha256: manifestHash, launcherSha256: sha256File(launcherPath), environmentSha256: sha256File(environmentPath), typecheckBaselineSha256: typecheckBaselinePath ? sha256File(typecheckBaselinePath) : null }, typecheckCertification, objectCounts: manifest.summary };
     writeFileSync(join(stageRoot, "release-plan.json"), `${JSON.stringify(plan, null, 2)}\n`, "utf8"); return plan;
   } finally { if (existsSync(sourcePath)) run("git", ["worktree", "remove", "--force", sourcePath], repository); }
 }
