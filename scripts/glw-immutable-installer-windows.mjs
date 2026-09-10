@@ -63,6 +63,7 @@ export async function waitForExpectedRuntime({ inspect, expectedSourceSha, expec
 export function inspectWindowsProcessAuthority() {
   return powershellJson("$all = @(Get-CimInstance Win32_Process); $schedulePid = (Get-CimInstance Win32_Service | Where-Object Name -eq $args[0] | Select-Object -First 1).ProcessId; $rows = @(foreach ($port in 3001, 3002) { $l = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1; $chain = @(); $visited = @{}; $current = if ($l) { $l.OwningProcess } else { $null }; for ($i = 0; $i -lt 64 -and $current; $i++) { if ($visited.ContainsKey($current)) { break }; $visited[$current] = $true; $p = $all | Where-Object ProcessId -eq $current | Select-Object -First 1; if (-not $p) { break }; $chain += $p; $current = $p.ParentProcessId }; $launcher = $chain | Where-Object { $_.Name -eq $args[1] -and $_.CommandLine -like $args[2] } | Select-Object -First 1; [pscustomobject]@{ port = $port; pid = if ($l) { $l.OwningProcess } else { $null }; launcherPid = $launcher.ProcessId; schedulePid = $schedulePid; ancestors = @($chain | Select-Object ProcessId, ParentProcessId, Name); commandLine = ($chain.CommandLine -join ' | ') } }); $rows | ConvertTo-Json -Depth 5 -Compress", ["Schedule", "powershell.exe", "*Start-GenesisGlw.ps1*"]);
 }
+export function normalizeProcessAuthorityRecords(value) { return Array.isArray(value) ? value : value ? [value] : []; }
 export function resolveCertifiedPredecessorLauncher({ ancestors, schedulePid, exactPredecessor, releasePath, predecessorReleasePath }) {
   if (!exactPredecessor || releasePath !== predecessorReleasePath) return null;
   const chain = Array.isArray(ancestors) ? ancestors : ancestors ? [ancestors] : [];
@@ -72,9 +73,9 @@ export function resolveCertifiedPredecessorLauncher({ ancestors, schedulePid, ex
   return recoveryLauncher ? { pid: recoveryLauncher.ProcessId, authority: "PROTECTED_LAUNCHER_RECOVERY" } : null;
 }
 async function runtimeSnapshot(persistenceRoot, phase = "PRE_INSTALL") {
-  const ports = inspectWindowsProcessAuthority();
+  const ports = normalizeProcessAuthorityRecords(inspectWindowsProcessAuthority());
   const production = ports.find((entry) => entry.port === 3001); const sidecar = ports.find((entry) => entry.port === 3002);
-  if (!production?.pid || !sidecar?.pid) fail("Required production listeners are missing.");
+  if (!production?.pid || !sidecar?.pid) fail(`Required production listeners are missing: 3001=${production?.pid ?? "MISSING"}, 3002=${sidecar?.pid ?? "MISSING"}.`);
   const version = await getJson("http://localhost:3001/api/glw/version"); const health = await getJson("http://localhost:3001/api/glw/health"); const capabilities = await getJson("http://localhost:3001/api/glw/capabilities"); const promotion = await inspectPromotionState({ sourceSha: version.git_commit, buildId: version.build_id, phase }); const sidecarHealthy = await inspectSidecarHealth();
   const statuses = capabilities.capabilities?.statuses ?? capabilities.record?.capabilities?.statuses ?? [];
   const healthy = health.record?.status?.state === "HEALTHY" && health.record?.status?.readiness === "READY" && health.record?.status?.liveness === "LIVE" && ["page-generation", "order-management"].every((capability) => statuses.some((status) => status.capability === capability && status.availability === "AVAILABLE"));
