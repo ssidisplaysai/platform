@@ -26,6 +26,21 @@ describe("campaign launch runtime endpoint and lifecycle contract", () => {
     expect(route).not.toContain("PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS");
   });
 
+  test("shares promotion authority with the UI and rechecks it at the mutation boundary", () => {
+    const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaign-launch/route.ts"), "utf8");
+    const page = readFileSync(join(process.cwd(), "src/modules/glw/CampaignLaunchpadPage.tsx"), "utf8");
+    const initialCheck = route.indexOf("const initialPromotion = readGlwCampaignLaunchPromotion()");
+    const mutationBoundaryCheck = route.indexOf("const mutationBoundaryPromotion = readGlwCampaignLaunchPromotion()");
+    const mutation = route.indexOf("const result = launchGlwCityCampaign(");
+
+    expect(page).toContain("const launchPromotion = readGlwCampaignLaunchPromotion()");
+    expect(page).toContain("atomicLaunchAvailable={launchPromotion.available}");
+    expect(initialCheck).toBeGreaterThan(-1);
+    expect(mutationBoundaryCheck).toBeGreaterThan(initialCheck);
+    expect(mutationBoundaryCheck).toBeLessThan(mutation);
+    expect(route.slice(mutationBoundaryCheck, mutation)).toContain("if (!mutationBoundaryPromotion.available)");
+  });
+
   test("preserves reference approval, activation, and scheduler ownership boundaries", () => {
     const reference = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8");
     const activation = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/activate/route.ts"), "utf8");
