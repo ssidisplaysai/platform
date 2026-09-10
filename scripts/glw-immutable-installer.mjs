@@ -15,6 +15,20 @@ function samePath(left, right) { return normalize(resolve(left)).toLowerCase() =
 function requireExact(value, expected, name) { if (value !== expected) fail(`${name} mismatch.`); }
 function requireAbsolute(path, name) { if (typeof path !== "string" || !isAbsolute(path)) fail(`${name} must be absolute.`); return resolve(path); }
 function stableProductionIdentity(snapshot) { return JSON.stringify({ pid: snapshot.pid, launcherPid: snapshot.launcherPid, sourceSha: snapshot.sourceSha, buildId: snapshot.buildId, releasePath: snapshot.releasePath, sidecarPid: snapshot.sidecarPid, sidecarHealthy: snapshot.sidecarHealthy, promotionEnabled: snapshot.promotionEnabled, persistence: snapshot.persistence }); }
+export function currentProductionPreflightFailures(snapshot) {
+  const failures = [];
+  if (!snapshot.healthy) failures.push(`healthy=${snapshot.healthy}`);
+  if (snapshot.port !== 3001) failures.push(`port=${snapshot.port}`);
+  if (!snapshot.expectedGenesisRuntime) failures.push(`expectedGenesisRuntime=${snapshot.expectedGenesisRuntime}`);
+  if (!snapshot.releasePath) failures.push(`releasePath=${snapshot.releasePath}`);
+  if (!snapshot.launcherPid) failures.push(`launcherPid=${snapshot.launcherPid}`);
+  if (snapshot.promotionEnabled) failures.push(`promotionState=${snapshot.promotionState}`);
+  if (!snapshot.persistence) failures.push("persistence=missing");
+  if (snapshot.persistence?.ownershipCollisionCount !== 0) failures.push(`ownershipCollisionCount=${snapshot.persistence?.ownershipCollisionCount}`);
+  if (snapshot.persistence?.unreconciledCount !== 0) failures.push(`unreconciledCount=${snapshot.persistence?.unreconciledCount}`);
+  if (!snapshot.sidecarHealthy) failures.push(`sidecarHealthy=${snapshot.sidecarHealthy}`);
+  return failures;
+}
 
 export function inspectTree(root) {
   const entries = [];
@@ -133,7 +147,8 @@ export async function installPreparedRelease({ stage, environmentPath, launcherP
   const prepared = validatePreparedStage(stage, environmentPath, { releaseRoot, manifestRoot, typecheckBaselinePath, sourceIdentityResolver });
   const startedAtUtc = adapters.now(); const transactionId = adapters.transactionId();
   const before = await adapters.inspectProduction(prepared);
-  if (!before.healthy || before.port !== 3001 || !before.expectedGenesisRuntime || !before.releasePath || before.promotionEnabled || !before.persistence || before.persistence.ownershipCollisionCount !== 0 || before.persistence.unreconciledCount !== 0 || !before.sidecarHealthy) fail("Current production preflight failed closed.");
+  const preflightFailures = currentProductionPreflightFailures(before);
+  if (preflightFailures.length) fail(`CURRENT_PRODUCTION_PREFLIGHT_FAILED: ${preflightFailures.join(", ")}; promotionState=${before.promotionState ?? "UNKNOWN"}; sourceSha=${before.sourceSha ?? "UNKNOWN"}; buildId=${before.buildId ?? "UNKNOWN"}`);
   const finalReleaseExists = adapters.pathExists(prepared.paths.finalReleasePath); const finalManifestExists = adapters.pathExists(prepared.paths.finalManifestPath);
   if (finalReleaseExists || finalManifestExists) {
     if (finalReleaseExists && finalManifestExists && before.sourceSha === prepared.plan.sourceSha && before.buildId === prepared.plan.buildId && before.releasePath && samePath(before.releasePath, prepared.paths.finalReleasePath)) {

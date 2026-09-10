@@ -36,6 +36,10 @@ Before mutation the installer requires:
 6. A healthy unchanged sidecar on port 3002.
 7. Promotion not enabled, zero ownership collisions, zero unreconciled records, and a complete persistence snapshot.
 
+The certified predecessor release `6904b4a382a54a78efb742b2863e564946a587fe` / `j0SCH6qGgHFA8AIWhd4d3` predates the Campaign Launchpad route. A no-redirect HTTP 404 is represented as `LEGACY_ROUTE_ABSENT_SAFE` only for that exact SHA, build, immutable release path, and Task Scheduler-owned process ancestry during pre-install inspection. Every other 404 fails closed.
+
+After installation, `/api/glw/campaign-launch` must exist, return valid JSON with `mutationPerformed=false`, and report a state other than `ENABLED_CERTIFIED_RELEASE`. Authentication failures, redirects, malformed JSON, missing authority fields, and 5xx responses fail closed. The sidecar check is the existing read-only UI route `/glw/campaigns`; it must return HTTP 200 without redirect. `/api/glw/campaigns` is not used as an unauthenticated health probe.
+
 The mutation order is:
 
 1. Copy the exact staged release to its plan-derived final path and verify it completely.
