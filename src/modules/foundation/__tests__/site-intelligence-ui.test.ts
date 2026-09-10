@@ -25,6 +25,12 @@ describe("site intelligence UI contract", () => {
     for (const decision of ["RESEARCH_MORE", "HOLD", "REJECTED", "APPROVED", "VERIFIED", "QUALIFIED", "FUTURE_CAPABILITY"]) expect(workspace).toContain(decision);
   });
 
+  test("workspace exposes real multiple-file upload with conservative classification", () => {
+    expect(workspace).toContain('type="file"'); expect(workspace).toContain("multiple"); expect(workspace).toContain("UPLOAD FILES");
+    expect(workspace).toContain('useState<SiteAssetClassification>("OWNER_SUPPLIED_REFERENCE")');
+    expect(workspace).toContain("Uploaded Assets"); expect(workspace).toContain("Not publishable");
+  });
+
   test("workspace has no campaign, product creation, generation, or WordPress mutation endpoint", () => {
     expect(workspace).not.toContain("/api/glw/");
     expect(workspace).not.toContain("/api/products");

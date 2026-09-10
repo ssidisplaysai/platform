@@ -109,6 +109,23 @@ export type CreativeInput = {
   notes: string | null;
   suppliedBy: string;
   suppliedAt: string;
+  binaryAsset: SiteIntelligenceBinaryAsset | null;
+};
+
+export type SiteIntelligenceBinaryAsset = {
+  assetId: string;
+  sha256: string;
+  originalFileName: string;
+  mediaType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  uploadedBy: string;
+  organizationId: string;
+  siteId: string;
+  providerReference: string;
+  provenance: { sourceType: "OWNER_UPLOAD"; sourceReference: string; recordedAt: string };
+  classification: SiteAssetClassification;
+  note: string | null;
 };
 
 export type ImageRequirement = {
@@ -160,6 +177,27 @@ export type SiteStrategyAuditEvent = {
   at: string;
 };
 
+export type SiteResearchExecutionState = "QUEUED" | "RESEARCHING" | "SYNTHESIZING" | "READY_FOR_REVIEW" | "FAILED" | "PAUSED" | "RECOVERABLE";
+export type SiteResearchExecution = {
+  executionId: string;
+  organizationId: string;
+  siteId: string;
+  kind: "INITIAL" | "OPPORTUNITY_CONTINUATION";
+  focusOpportunityId: string | null;
+  state: SiteResearchExecutionState;
+  providerReference: string;
+  attemptCount: number;
+  maxAttempts: number;
+  timeoutMs: number;
+  createdAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  evidenceCount: number;
+  opportunityCount: number;
+};
+
 export type SiteIntelligenceWorkspace = {
   workspaceId: string;
   organizationId: string;
@@ -172,6 +210,7 @@ export type SiteIntelligenceWorkspace = {
   creativeState: CreativeDirectionState;
   providerReference: string | null;
   researchStartedAt: string | null;
+  researchExecutions: SiteResearchExecution[];
   evidence: SiteIntelligenceEvidence[];
   opportunities: SiteOpportunity[];
   strategyRevisions: SiteStrategyProposal[];

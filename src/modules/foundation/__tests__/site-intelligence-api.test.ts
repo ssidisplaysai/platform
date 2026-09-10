@@ -41,12 +41,12 @@ describe("site intelligence API boundary", () => {
     expect(fs.existsSync(path.join(dir, "site-intelligence-repository.json"))).toBe(false);
   });
 
-  test("explicit START creates only the intelligence workspace", async () => {
+  test("explicit START fails closed without a configured dedicated provider", async () => {
     const route = await import("@/app/api/sites/[siteId]/intelligence/route");
     const response = await route.POST(request("POST", "led-display-warehouse", { action: "START", expectedRevision: 0, publicBrandIdentity: "Test Brand", providerReference: "provider-test" }), context);
-    expect(response.status).toBe(200);
-    expect((await response.json()).workspace).toMatchObject({ intelligenceState: "INTELLIGENCE_RESEARCHING", publicBrandIdentity: "Test Brand" });
-    expect(fs.readdirSync(dir)).toEqual(["site-intelligence-repository.json"]);
+    expect(response.status).toBe(503);
+    expect((await response.json()).error).toBe("SITE_INTELLIGENCE_PROVIDER_NOT_CONFIGURED");
+    expect(fs.existsSync(path.join(dir, "site-intelligence-repository.json"))).toBe(false);
   });
 
   test("workspace organization mismatch cannot access another site", async () => {
