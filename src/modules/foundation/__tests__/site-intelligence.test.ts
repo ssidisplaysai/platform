@@ -73,7 +73,7 @@ describe("site intelligence authority", () => {
     workspace = repository.addStrategyProposal({ ...scope, expectedRevision: workspace.revision, proposal: strategyProposal() });
     expect(workspace.strategyRevisions[0].revision).toBe(1);
     workspace = repository.decideStrategy({ ...scope, expectedRevision: workspace.revision, decision: "APPROVED" });
-    workspace = repository.addCreativeInput({ ...scope, expectedRevision: workspace.revision, creativeInput: { inputId: "creative-1", kind: "URL", reference: "https://competitor.example", sentiment: "LIKE", classification: "COMPETITOR_REFERENCE_ONLY", notes: "Layout inspiration only.", suppliedBy: "owner", suppliedAt: "2026-09-10T00:00:00.000Z" } });
+    workspace = repository.addCreativeInput({ ...scope, expectedRevision: workspace.revision, creativeInput: { inputId: "creative-1", kind: "URL", reference: "https://competitor.example", sentiment: "LIKE", classification: "COMPETITOR_REFERENCE_ONLY", notes: "Layout inspiration only.", suppliedBy: "owner", suppliedAt: "2026-09-10T00:00:00.000Z", binaryAsset: null } });
     expect(workspace.creativeInputs[0].classification).toBe("COMPETITOR_REFERENCE_ONLY");
     workspace = repository.addCreativeProposal({ ...scope, expectedRevision: workspace.revision, proposal: creativeProposal(1) });
     expect(workspace.creativeRevisions[0]).toMatchObject({ revision: 1, strategyRevision: 1, status: "PROPOSED" });
@@ -87,6 +87,15 @@ describe("site intelligence authority", () => {
     expect(isPublishableSiteAsset("EXTERNAL_INSPIRATION_ONLY")).toBe(false);
     expect(isPublishableSiteAsset("GENESIS_GENERATED_CANDIDATE")).toBe(false);
     expect(isPublishableSiteAsset("OWNER_APPROVED_PUBLISHABLE")).toBe(true);
+  });
+
+  test("asset classification change is explicit and audited", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
+    workspace = repository.addCreativeInput({ ...scope, expectedRevision: workspace.revision, creativeInput: { inputId: "asset-1", kind: "IMAGE", reference: "assetref-1", sentiment: "NEUTRAL", classification: "OWNER_SUPPLIED_REFERENCE", notes: null, suppliedBy: "owner", suppliedAt: "2026-09-10T00:00:00.000Z", binaryAsset: null } });
+    workspace = repository.classifyCreativeInput({ ...scope, expectedRevision: workspace.revision, inputId: "asset-1", classification: "OWNER_APPROVED_PUBLISHABLE" });
+    expect(workspace.creativeInputs[0].classification).toBe("OWNER_APPROVED_PUBLISHABLE");
+    expect(workspace.audit.at(-1)?.action).toBe("CREATIVE_INPUT_CLASSIFIED");
   });
 
   test("reload is durable, organization mismatch and stale revision fail closed", async () => {

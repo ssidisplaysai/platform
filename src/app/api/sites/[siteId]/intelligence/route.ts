@@ -6,11 +6,15 @@ import {
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { evaluateProfileReadiness, getIntegrationProfileById } from "@/modules/foundation/integration-profile-repository";
+import { createSiteIntelligenceN8nProvider, getSiteIntelligenceProviderStatus } from "@/modules/foundation/site-intelligence-n8n-provider";
+import { executeSiteIntelligenceResearch } from "@/modules/foundation/site-intelligence-research-executor";
 import {
   addCreativeInput,
   addCreativeProposal,
   addStrategyProposal,
   approveSiteIntelligence,
+  classifyCreativeInput,
   decideCreativeProposal,
   decideSiteOpportunity,
   decideStrategy,
@@ -46,6 +50,7 @@ export async function GET(request: NextRequest, context: Context) {
     site: { siteId: site.siteId, organizationId: site.organizationId, displayName: site.displayName, publicationPolicy: site.publicationPolicy, enabled: site.enabled },
     workspace: getSiteIntelligenceWorkspace(site.siteId),
     startBoundary: "START_SITE_INTELLIGENCE",
+    provider: getSiteIntelligenceProviderStatus(),
   });
 }
 
@@ -68,8 +73,21 @@ export async function POST(request: NextRequest, context: Context) {
     let workspace;
     switch (action) {
       case "START": {
+        const status = getSiteIntelligenceProviderStatus(); if (!status.configured) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROVIDER_NOT_CONFIGURED" }, { status: 503 });
+        const profileIds = [site.profiles.brandProfileReference, site.profiles.seoProfileReference, site.profiles.promptProfileReference, site.profiles.imageProfileReference];
+        if (profileIds.some((id) => !id || !evaluateProfileReadiness(id)?.ready)) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROFILE_AUTHORITY_NOT_READY" }, { status: 422 });
+        const brand = getIntegrationProfileById(site.profiles.brandProfileReference!);
         const created = ensureSiteIntelligenceWorkspace({ organizationId: site.organizationId, siteId: site.siteId, publicBrandIdentity: String(body.publicBrandIdentity ?? site.displayName), actor: common.actor });
-        workspace = startSiteIntelligence({ ...common, expectedRevision: created.revision, providerReference: String(body.providerReference ?? "provider-bounded-site-research-v1") });
+        const started = created.intelligenceState === "INTELLIGENCE_NOT_STARTED" ? startSiteIntelligence({ ...common, expectedRevision: created.revision, providerReference: status.providerId }) : created;
+        workspace = await executeSiteIntelligenceResearch({ expectedRevision: started.revision, actor: common.actor, provider: createSiteIntelligenceN8nProvider(), authority: { organizationId: site.organizationId, siteId: site.siteId, domain: site.domain!, publicBrandIdentity: brand?.profileName.split(/\s+[—-]\s+/)[0] ?? site.displayName, brandProfileId: site.profiles.brandProfileReference!, seoProfileId: site.profiles.seoProfileReference!, promptProfileId: site.profiles.promptProfileReference!, imageProfileId: site.profiles.imageProfileReference! } });
+        break;
+      }
+      case "RESEARCH_MORE": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const opportunityId = String(body.opportunityId); const status = getSiteIntelligenceProviderStatus(); if (!status.configured) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROVIDER_NOT_CONFIGURED" }, { status: 503 });
+        workspace = decideSiteOpportunity({ ...common, opportunityId, decision: "RESEARCH_MORE" });
+        const brand = getIntegrationProfileById(site.profiles.brandProfileReference!);
+        workspace = await executeSiteIntelligenceResearch({ expectedRevision: workspace.revision, actor: common.actor, focusOpportunityId: opportunityId, provider: createSiteIntelligenceN8nProvider(), authority: { organizationId: site.organizationId, siteId: site.siteId, domain: site.domain!, publicBrandIdentity: brand?.profileName.split(/\s+[—-]\s+/)[0] ?? site.displayName, brandProfileId: site.profiles.brandProfileReference!, seoProfileId: site.profiles.seoProfileReference!, promptProfileId: site.profiles.promptProfileReference!, imageProfileId: site.profiles.imageProfileReference! } });
         break;
       }
       case "DECIDE_OPPORTUNITY":
@@ -92,6 +110,9 @@ export async function POST(request: NextRequest, context: Context) {
         break;
       case "ADD_CREATIVE_INPUT":
         workspace = addCreativeInput({ ...common, creativeInput: body.creativeInput as never });
+        break;
+      case "CLASSIFY_CREATIVE_INPUT":
+        workspace = classifyCreativeInput({ ...common, inputId: String(body.inputId), classification: body.classification as never });
         break;
       case "PROPOSE_CREATIVE":
         workspace = addCreativeProposal({ ...common, proposal: body.proposal as never });

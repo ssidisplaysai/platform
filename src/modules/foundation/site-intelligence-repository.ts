@@ -15,6 +15,7 @@ import type {
   SiteIntelligenceEvidence,
   SiteIntelligenceWorkspace,
   SiteOpportunity,
+  SiteResearchExecution,
   SiteStrategyProposal,
 } from "./site-intelligence";
 
@@ -66,6 +67,7 @@ export function ensureSiteIntelligenceWorkspace(input: {
     creativeState: "CREATIVE_NOT_STARTED",
     providerReference: null,
     researchStartedAt: null,
+    researchExecutions: [],
     evidence: [], opportunities: [], strategyRevisions: [], creativeInputs: [], creativeRevisions: [],
     audit: [event("WORKSPACE_CREATED", input.actor, "Site intelligence workspace initialized without starting research.")],
     createdAt: timestamp, updatedAt: timestamp,
@@ -157,6 +159,7 @@ export function decideStrategy(input: { siteId: string; organizationId: string; 
 
 export function addCreativeInput(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; creativeInput: CreativeInput }) {
   return update({ ...input, action: "CREATIVE_INPUT_ADDED", mutate(workspace) {
+    if (input.creativeInput.binaryAsset && (input.creativeInput.binaryAsset.organizationId !== input.organizationId || input.creativeInput.binaryAsset.siteId !== input.siteId)) throw new Error("ASSET_SCOPE_MISMATCH");
     workspace.creativeInputs.push(input.creativeInput);
     workspace.creativeState = "CREATIVE_INPUTS_COLLECTING";
   }});
@@ -185,5 +188,43 @@ export function approveSiteIntelligence(input: { siteId: string; organizationId:
     if (workspace.intelligenceState !== "INTELLIGENCE_READY_FOR_REVIEW") throw new Error("INTELLIGENCE_NOT_READY_FOR_APPROVAL");
     if (!workspace.opportunities.some((candidate) => candidate.ownerDecision === "APPROVED")) throw new Error("APPROVED_OPPORTUNITY_REQUIRED");
     workspace.intelligenceState = "INTELLIGENCE_APPROVED";
+  }});
+}
+
+export function classifyCreativeInput(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; inputId: string; classification: CreativeInput["classification"] }) {
+  return update({ ...input, action: "CREATIVE_INPUT_CLASSIFIED", mutate(workspace) {
+    const creative = workspace.creativeInputs.find((candidate) => candidate.inputId === input.inputId);
+    if (!creative) throw new Error("CREATIVE_INPUT_NOT_FOUND");
+    creative.classification = input.classification;
+    if (creative.binaryAsset) creative.binaryAsset.classification = input.classification;
+  }});
+}
+
+export function queueSiteResearchExecution(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; providerReference: string; kind: SiteResearchExecution["kind"]; focusOpportunityId?: string | null; timeoutMs: number; maxAttempts: number }) {
+  const current = getSiteIntelligenceWorkspace(input.siteId);
+  if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+  const executions = current.researchExecutions ?? [];
+  if (input.kind === "INITIAL" && executions.some((execution) => execution.kind === "INITIAL")) return current;
+  const executionId = input.kind === "INITIAL" ? `site-research-${input.siteId}-initial` : `site-research-${input.siteId}-${input.focusOpportunityId}-${executions.filter((execution) => execution.focusOpportunityId === input.focusOpportunityId).length + 1}`;
+  return update({ ...input, action: "RESEARCH_EXECUTION_QUEUED", mutate(workspace) {
+    workspace.researchExecutions ??= [];
+    workspace.researchExecutions.push({ executionId, organizationId: input.organizationId, siteId: input.siteId, kind: input.kind, focusOpportunityId: input.focusOpportunityId ?? null, state: "QUEUED", providerReference: input.providerReference, attemptCount: 0, maxAttempts: Math.min(Math.max(input.maxAttempts, 1), 2), timeoutMs: Math.min(Math.max(input.timeoutMs, 60_000), 300_000), createdAt: now(), startedAt: null, completedAt: null, errorCode: null, errorMessage: null, evidenceCount: 0, opportunityCount: 0 });
+  }});
+}
+
+export function updateSiteResearchExecution(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; executionId: string; state: SiteResearchExecution["state"]; attemptCount?: number; errorCode?: string | null; errorMessage?: string | null; evidence?: SiteIntelligenceEvidence[]; opportunities?: SiteOpportunity[] }) {
+  return update({ ...input, action: `RESEARCH_EXECUTION_${input.state}`, mutate(workspace) {
+    const execution = (workspace.researchExecutions ?? []).find((candidate) => candidate.executionId === input.executionId);
+    if (!execution) throw new Error("RESEARCH_EXECUTION_NOT_FOUND");
+    execution.state = input.state;
+    if (input.attemptCount !== undefined) execution.attemptCount = input.attemptCount;
+    execution.errorCode = input.errorCode ?? null; execution.errorMessage = input.errorMessage ?? null;
+    if (input.state === "RESEARCHING" && !execution.startedAt) execution.startedAt = now();
+    if (["READY_FOR_REVIEW", "FAILED", "RECOVERABLE"].includes(input.state)) execution.completedAt = now();
+    if (input.evidence && input.opportunities) {
+      workspace.evidence.push(...input.evidence); workspace.opportunities.push(...input.opportunities);
+      execution.evidenceCount = input.evidence.length; execution.opportunityCount = input.opportunities.length;
+      workspace.intelligenceState = "INTELLIGENCE_READY_FOR_REVIEW";
+    }
   }});
 }
