@@ -10,6 +10,10 @@ describe("fresh-site onboarding UI contract", () => {
     path.join(process.cwd(), "src/app/sites/new/page.tsx"),
     "utf8",
   );
+  const profileCreator = fs.readFileSync(
+    path.join(process.cwd(), "src/modules/foundation/OnboardingProfileCreator.tsx"),
+    "utf8",
+  );
 
   test("exposes the native Add New Site fresh-site flow", () => {
     expect(page).toContain("FreshSiteOnboardingFlow");
@@ -61,7 +65,35 @@ describe("fresh-site onboarding UI contract", () => {
 
   test("offers only bounded publication policies with draft-only default", () => {
     expect(source).toContain('useState<SitePublicationPolicy>("draft_only")');
-    expect(source).toContain('value="publish_after_gates"');
+    expect(source).toContain("Fresh-site onboarding remains Draft Only.");
+    expect(source).not.toContain('value="publish_after_gates"');
     expect(source).not.toMatch(/direct_publish|publish_immediately/);
+  });
+
+  test("provides organization-locked creation beside all required profile categories", () => {
+    expect(source).toContain("OnboardingProfileCreator");
+    expect(source).toContain('profileType="workflow"');
+    for (const type of ["seo", "prompt", "image", "brand"]) {
+      expect(source).toContain(`type: "${type}"`);
+    }
+    expect(profileCreator).toContain("Create Another");
+    expect(profileCreator).toContain("Create ${input.profileLabel}");
+    expect(profileCreator).toContain("Organization");
+    expect(profileCreator).toContain("disabled");
+  });
+
+  test("profile creation uses onboarding scope and has no campaign or WordPress mutation", () => {
+    expect(profileCreator).toContain('"x-gcp-organization-id": input.organizationId');
+    expect(profileCreator).toContain('fetch("/api/profiles"');
+    expect(profileCreator).not.toContain("/api/glw/");
+    expect(profileCreator).not.toContain("wp-json");
+    expect(profileCreator).not.toMatch(/localStorage|sessionStorage/);
+  });
+
+  test("ready created profiles are added and selected through the organization guard", () => {
+    expect(source).toContain("applyCreatedOnboardingProfile");
+    expect(source).toContain("setProfiles(result.profiles)");
+    expect(source).toContain("setSelectedProfiles(result.selection)");
+    expect(source).toContain("filterReadyOnboardingProfiles");
   });
 });

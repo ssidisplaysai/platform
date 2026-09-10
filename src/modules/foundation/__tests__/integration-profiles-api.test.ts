@@ -4,6 +4,11 @@ import { GET as getProfile, PATCH as patchProfile } from "@/app/api/profiles/[pr
 import { POST as validateProfilePayload } from "@/app/api/profiles/validate/route";
 import { GET as getReadiness } from "@/app/api/profiles/readiness/route";
 import { resetIntegrationProfileRepositoryForTests } from "@/modules/foundation/integration-profile-repository";
+import {
+  buildOnboardingProfileInput,
+  createOnboardingProfileId,
+} from "@/modules/foundation/onboarding-profile-creation";
+import { getIntegrationProfileById } from "@/modules/foundation/integration-profile-repository";
 
 function request(url: string, init?: RequestInit): NextRequest {
   return new NextRequest(url, init);
@@ -113,7 +118,11 @@ describe("GCP-0002F integration profiles API", () => {
 
     const created = await createProfile(request("http://localhost/api/profiles", {
       method: "POST",
-      headers: { "content-type": "application/json", "x-gcp-roles": "ops_manager" },
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-roles": "ops_manager",
+        "x-gcp-organization-id": "led-display-warehouse",
+      },
       body: JSON.stringify(payload),
     }));
 
@@ -138,6 +147,102 @@ describe("GCP-0002F integration profiles API", () => {
     });
 
     expect(allowedPatch.status).toBe(200);
+  });
+
+  test("profile creation rejects organization scope mismatch", async () => {
+    const response = await createProfile(request("http://localhost/api/profiles", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-roles": "ops_manager",
+        "x-gcp-organization-id": "rj-metal",
+      },
+      body: JSON.stringify({
+        profileId: "profile-brand-ledw-cross-scope",
+        profileType: "brand",
+        organizationId: "led-display-warehouse",
+        profileName: "Cross Scope Brand",
+        description: null,
+        status: "active",
+        enabled: true,
+        version: "1.0.0",
+        assignedSiteIds: [],
+        defaultForOrganization: false,
+        references: {},
+        notes: null,
+      }),
+    }));
+
+    expect(response.status).toBe(403);
+  });
+
+  test("ready organization profile persists and duplicate deterministic identity conflicts", async () => {
+    const input = buildOnboardingProfileInput({
+      organizationId: "rj-metal",
+      profileType: "prompt",
+      profileName: "RJ Metal Commercial Fabrication Content",
+      description: "Reusable RJ Metal commercial content authority.",
+      references: {
+        promptReference: "promptref-rj-metal-commercial",
+        providerReference: "provider-openai-text",
+      },
+    });
+    const createRequest = () => request("http://localhost/api/profiles", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-roles": "ops_manager",
+        "x-gcp-organization-id": "rj-metal",
+      },
+      body: JSON.stringify(input),
+    });
+
+    const created = await createProfile(createRequest());
+    expect(created.status).toBe(201);
+    const payload = await created.json() as {
+      profile: { profileId: string; organizationId: string };
+      readiness: { ready: boolean };
+    };
+    expect(payload.profile.organizationId).toBe("rj-metal");
+    expect(payload.readiness.ready).toBe(true);
+    expect(getIntegrationProfileById(input.profileId)?.profileName).toBe(input.profileName);
+
+    const duplicate = await createProfile(createRequest());
+    expect(duplicate.status).toBe(409);
+    expect((await duplicate.json()).error).toBe("PROFILE_ALREADY_EXISTS");
+  });
+
+  test("active incomplete profile is rejected without persistence", async () => {
+    const profileName = "RJ Metal Incomplete Brand";
+    const input = buildOnboardingProfileInput({
+      organizationId: "rj-metal",
+      profileType: "brand",
+      profileName,
+      description: "Incomplete profile.",
+      references: {},
+    });
+    const response = await createProfile(request("http://localhost/api/profiles", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-roles": "ops_manager",
+        "x-gcp-organization-id": "rj-metal",
+      },
+      body: JSON.stringify(input),
+    }));
+
+    expect(response.status).toBe(422);
+    const payload = await response.json() as {
+      error: string;
+      readiness: { ready: boolean; blockers: string[] };
+    };
+    expect(payload.error).toBe("PROFILE_NOT_READY");
+    expect(payload.readiness.ready).toBe(false);
+    expect(getIntegrationProfileById(createOnboardingProfileId({
+      organizationId: "rj-metal",
+      profileType: "brand",
+      profileName,
+    }))).toBeNull();
   });
 
   test("validate endpoint rejects secret-like payloads", async () => {
