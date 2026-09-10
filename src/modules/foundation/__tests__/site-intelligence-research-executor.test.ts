@@ -34,6 +34,13 @@ describe("site intelligence bounded research executor", () => {
     expect(result.researchExecutions[0]).toMatchObject({ state: "RECOVERABLE", attemptCount: 2, errorCode: "PROVIDER_TIMEOUT" });
   });
 
+  test("contract rejection is recoverable and persists no partial provider output", async () => {
+    const workspace = await started(); const executor = await import("../site-intelligence-research-executor");
+    const result = await executor.executeSiteIntelligenceResearch({ authority, provider: { providerId: "test", async execute() { throw new Error("RESEARCH_PROVIDER_RESPONSE_INVALID:unexpected_field"); } }, actor: "owner", expectedRevision: workspace.revision, maxAttempts: 1 });
+    expect(result.researchExecutions[0]).toMatchObject({ state: "RECOVERABLE", attemptCount: 1, errorCode: "RESEARCH_PROVIDER_RESPONSE_INVALID", errorMessage: "RESEARCH_PROVIDER_RESPONSE_INVALID:unexpected_field" });
+    expect(result.evidence).toEqual([]); expect(result.opportunities).toEqual([]);
+  });
+
   test("Research More creates a continuation scoped to one opportunity", async () => {
     let workspace = await started(); const executor = await import("../site-intelligence-research-executor"); const focuses: Array<string | null> = [];
     workspace = await executor.executeSiteIntelligenceResearch({ authority, provider: { providerId: "test", async execute({ executionId }) { return output(executionId); } }, actor: "owner", expectedRevision: workspace.revision });
