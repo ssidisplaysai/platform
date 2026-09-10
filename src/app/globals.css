@@ -26,11 +26,13 @@ body {
 }
 
 @media (max-width: 1279px) {
-  body:has(#fresh-site-onboarding) main > div > aside {
+  body:has(#fresh-site-onboarding) main > div > aside,
+  body:has(#site-intelligence-workspace) main > div > aside {
     display: none;
   }
 
-  body:has(#fresh-site-onboarding) main > div > section {
+  body:has(#fresh-site-onboarding) main > div > section,
+  body:has(#site-intelligence-workspace) main > div > section {
     min-width: 0;
     padding: 1rem;
   }
