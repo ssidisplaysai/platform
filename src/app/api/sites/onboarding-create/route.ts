@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { CompanyRepository } from "@/core/repositories/CompanyRepository";
 import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { recordSiteActivity } from "@/modules/foundation/site-audit";
-import { createSite } from "@/modules/foundation/site-repository";
+import { createSite, listSites } from "@/modules/foundation/site-repository";
+import { createSiteId } from "@/modules/foundation/site-identity";
 import type { NewSiteInput } from "@/modules/foundation/types";
 import { runPublicWordPressPreflight } from "@/modules/foundation/wordpress-public-preflight";
 
@@ -27,6 +28,22 @@ export async function POST(request: NextRequest) {
   }
   if (!body.domain) {
     return NextResponse.json({ error: "Domain is required." }, { status: 400 });
+  }
+
+  const existing = listSites().find((site) =>
+    site.siteId === createSiteId(body.organizationId, body.slug)
+    || site.domain?.toLowerCase() === body.domain?.toLowerCase(),
+  );
+  if (existing) {
+    return NextResponse.json({
+      error: "SITE_ALREADY_EXISTS",
+      code: "SITE_ALREADY_EXISTS",
+      existingSite: {
+        siteId: existing.siteId,
+        displayName: existing.displayName,
+        domain: existing.domain,
+      },
+    }, { status: 409 });
   }
 
   try {
