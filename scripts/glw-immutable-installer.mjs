@@ -6,6 +6,7 @@ const PLAN_SCHEMA = "genesis.glw.immutable-release-plan/v1";
 const MANIFEST_SCHEMA = "genesis.glw.immutable-release-manifest/v2";
 const EXACT_SHA = /^[0-9a-f]{40}$/u;
 const EXACT_SHA256 = /^[0-9A-F]{64}$/u;
+const REQUIRED_PACKAGED_ROUTES = Object.freeze(["/api/glw/health/route", "/api/glw/version/route", "/api/glw/capabilities/route", "/api/glw/campaign-launch/route", "/glw/campaign-launchpad/page"]);
 
 function fail(message) { throw new Error(message); }
 function portable(path) { return path.split(sep).join("/"); }
@@ -107,6 +108,11 @@ export function validatePreparedStage(stagePath, environmentPath, options = {}) 
   if (!releaseName.startsWith(releasePrefix) || releaseName.length === releasePrefix.length) fail("Final release tag identity is invalid.");
   requireExact(basename(plan.finalManifestPath), `GLW-Research-Security-${plan.sourceSha}-${plan.buildId}.json`, "Final manifest identity");
   const tree = verifyTree(stagedReleasePath, manifest);
+  const appPathsManifest = join(stagedReleasePath, ".next", "server", "app-paths-manifest.json");
+  if (!existsSync(appPathsManifest)) fail("Packaged application route manifest is missing.");
+  const packagedRoutes = JSON.parse(readFileSync(appPathsManifest, "utf8"));
+  const missingRoutes = REQUIRED_PACKAGED_ROUTES.filter((route) => typeof packagedRoutes[route] !== "string");
+  if (missingRoutes.length) fail(`PACKAGED_RUNTIME_CONTRACT_MISSING: ${missingRoutes.join(", ")}`);
   const launcher = readFileSync(stagedLauncherPath, "utf8");
   requireExact(samePath(launcherAssignment(launcher, "ReleasePath"), plan.finalReleasePath), true, "Launcher release path");
   requireExact(samePath(launcherAssignment(launcher, "ManifestPath"), plan.finalManifestPath), true, "Launcher manifest path");

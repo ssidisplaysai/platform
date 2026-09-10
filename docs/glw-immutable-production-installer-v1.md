@@ -31,14 +31,17 @@ Before mutation the installer requires:
 1. Elevated Administrator authority.
 2. Exact release-plan schema, source commit/tree, stage paths, hashes, and prepared-only mutation marker.
 3. Complete manifest verification of every staged object, type, length, and SHA-256; links and reparse points are rejected.
-4. Exact candidate launcher release, manifest, source, tree, build, environment, and runtime identity assignments.
-5. A healthy Task Scheduler/protected-launcher-owned production runtime on port 3001.
-6. A healthy unchanged sidecar on port 3002.
-7. Promotion not enabled, zero ownership collisions, zero unreconciled records, and a complete persistence snapshot.
+4. Packaged production routes for GLW health, version, capabilities, campaign-launch status, and Launchpad UI.
+5. Exact candidate launcher release, manifest, source, tree, build, environment, and runtime identity assignments.
+6. A healthy Task Scheduler/protected-launcher-owned production runtime on port 3001.
+7. A healthy unchanged sidecar on port 3002.
+8. Promotion not enabled, zero ownership collisions, zero unreconciled records, and a complete persistence snapshot.
 
 The certified predecessor release `6904b4a382a54a78efb742b2863e564946a587fe` / `j0SCH6qGgHFA8AIWhd4d3` predates the Campaign Launchpad route. A no-redirect HTTP 404 is represented as `LEGACY_ROUTE_ABSENT_SAFE` only for that exact SHA, build, immutable release path, and Task Scheduler-owned process ancestry during pre-install inspection. Every other 404 fails closed.
 
 After installation, `/api/glw/campaign-launch` must exist, return valid JSON with `mutationPerformed=false`, and report a state other than `ENABLED_CERTIFIED_RELEASE`. Authentication failures, redirects, malformed JSON, missing authority fields, and 5xx responses fail closed. The sidecar check is the existing read-only UI route `/glw/campaigns`; it must return HTTP 200 without redirect. `/api/glw/campaigns` is not used as an unauthenticated health probe.
+
+Prepared and materialized releases must package `/api/glw/health`, `/api/glw/version`, `/api/glw/capabilities`, `/api/glw/campaign-launch`, and `/glw/campaign-launchpad`. Missing packaged observability routes fail before ProgramData or runtime mutation, even when the release tree otherwise matches its manifest.
 
 The mutation order is:
 
@@ -51,8 +54,9 @@ The mutation order is:
 7. Restore the exact original owner/SDDL in `finally`; require zero remaining write rules.
 8. Stop the single protected launcher process tree once.
 9. Invoke the protected launcher once.
-10. Require exact SHA/build/release identity, `HEALTHY/READY/LIVE`, required capabilities, unchanged sidecar, unchanged persistence hashes/counts, and promotion disabled.
-11. Write secret-free durable evidence.
+10. Poll for up to 20 minutes while complete immutable release verification runs. Temporary listener absence is retryable; timeout evidence includes the final observation.
+11. Require exact SHA/build/release identity, `HEALTHY/READY/LIVE`, required capabilities, unchanged sidecar, unchanged persistence hashes/counts, and promotion disabled.
+12. Write secret-free durable evidence.
 
 ## Rollback
 

@@ -47,6 +47,19 @@ export async function inspectSidecarHealth(fetchImpl = fetch) {
   const response = await fetchImpl("http://localhost:3002/glw/campaigns", { method: "GET", redirect: "manual" });
   return response.status === 200 && response.ok && response.redirected !== true && !response.headers?.get?.("location");
 }
+export async function waitForExpectedRuntime({ inspect, expectedSourceSha, expectedBuildId, expectedReleasePath, timeoutMs = 1_200_000, intervalMs = 500, now = Date.now, sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)) }) {
+  const startedAt = now(); let attempts = 0; let lastError = null; let lastSnapshot = null;
+  while (now() - startedAt < timeoutMs) {
+    attempts += 1;
+    try {
+      const snapshot = await inspect(); lastSnapshot = snapshot; lastError = null;
+      if (snapshot.healthy && snapshot.sourceSha === expectedSourceSha && snapshot.buildId === expectedBuildId && snapshot.releasePath?.toLowerCase() === expectedReleasePath.toLowerCase() && snapshot.sidecarHealthy && !snapshot.promotionEnabled) return snapshot;
+    } catch (error) { lastError = error; }
+    await sleep(intervalMs);
+  }
+  const observation = lastSnapshot ? `sourceSha=${lastSnapshot.sourceSha}, buildId=${lastSnapshot.buildId}, releasePath=${lastSnapshot.releasePath}, healthy=${lastSnapshot.healthy}, sidecarHealthy=${lastSnapshot.sidecarHealthy}, promotionState=${lastSnapshot.promotionState}` : `error=${lastError?.message ?? "no observation"}`;
+  fail(`Runtime verification timed out after ${timeoutMs}ms and ${attempts} observations: ${observation}.`);
+}
 export function inspectWindowsProcessAuthority() {
   return powershellJson("$all = @(Get-CimInstance Win32_Process); $schedulePid = (Get-CimInstance Win32_Service | Where-Object Name -eq $args[0] | Select-Object -First 1).ProcessId; $rows = @(foreach ($port in 3001, 3002) { $l = Get-NetTCPConnection -State Listen -LocalPort $port -ErrorAction SilentlyContinue | Select-Object -First 1; $chain = @(); $visited = @{}; $current = if ($l) { $l.OwningProcess } else { $null }; for ($i = 0; $i -lt 64 -and $current; $i++) { if ($visited.ContainsKey($current)) { break }; $visited[$current] = $true; $p = $all | Where-Object ProcessId -eq $current | Select-Object -First 1; if (-not $p) { break }; $chain += $p; $current = $p.ParentProcessId }; $launcher = $chain | Where-Object { $_.Name -eq $args[1] -and $_.CommandLine -like $args[2] } | Select-Object -First 1; [pscustomobject]@{ port = $port; pid = if ($l) { $l.OwningProcess } else { $null }; launcherPid = $launcher.ProcessId; schedulePid = $schedulePid; ancestors = @($chain | Select-Object ProcessId, ParentProcessId, Name); commandLine = ($chain.CommandLine -join ' | ') } }); $rows | ConvertTo-Json -Depth 5 -Compress", ["Schedule", "powershell.exe", "*Start-GenesisGlw.ps1*"]);
 }
@@ -82,6 +95,6 @@ export function createWindowsProductionAdapters({ persistenceRoot }) {
     writeText: (path, text) => writeFileSync(path, text, "utf8"),
     stopRuntimeOnce: async (before) => { if (!before.launcherPid) fail("Canonical production launcher process is unavailable."); powershell("$root = [int]$args[0]; $all = @(Get-CimInstance Win32_Process); $ids = @($root); do { $children = @($all | Where-Object { $_.ParentProcessId -in $ids -and $_.ProcessId -notin $ids } | Select-Object -ExpandProperty ProcessId); $new = @($children | Where-Object { $_ -notin $ids }); $ids += $new } while ($new.Count -gt 0); [array]::Reverse($ids); $ids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $deadline = (Get-Date).AddSeconds(45); while ((Get-Date) -lt $deadline -and (Get-NetTCPConnection -State Listen -LocalPort 3001 -ErrorAction SilentlyContinue)) { [Threading.Thread]::Sleep(250) }; if (Get-NetTCPConnection -State Listen -LocalPort 3001 -ErrorAction SilentlyContinue) { throw 'Port 3001 did not stop.' }", [String(before.launcherPid)]); },
     startProtectedLauncherOnce: async (launcher, port) => { const pid = Number(powershell("$p=Start-Process -FilePath powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$args[0],'-Port',$args[1]) -WorkingDirectory (Split-Path -Parent $args[0]) -PassThru;$p.Id", [launcher, String(port)])); if (!pid) fail("Protected launcher did not start."); return pid; },
-    verifyInstalledRuntime: async (prepared) => { const deadline = Date.now() + 180_000; let lastError; while (Date.now() < deadline) { try { const snapshot = await runtimeSnapshot(persistenceRoot, "POST_INSTALL"); if (snapshot.healthy && snapshot.sourceSha === prepared.plan.sourceSha && snapshot.buildId === prepared.plan.buildId) return snapshot; } catch (error) { lastError = error; } await new Promise((resolve) => setTimeout(resolve, 500)); } fail(`Installed runtime did not become healthy: ${lastError?.message ?? "identity mismatch"}`); },
+    verifyInstalledRuntime: async (prepared) => waitForExpectedRuntime({ inspect: () => runtimeSnapshot(persistenceRoot, "POST_INSTALL"), expectedSourceSha: prepared.plan.sourceSha, expectedBuildId: prepared.plan.buildId, expectedReleasePath: prepared.paths.finalReleasePath }),
   });
 }
