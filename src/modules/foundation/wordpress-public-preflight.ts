@@ -4,6 +4,7 @@ import { isIP } from "node:net";
 import type { LookupFunction } from "node:net";
 import { lookup } from "node:dns/promises";
 import { request as httpsRequest } from "node:https";
+import { isUnsafePublicAddress } from "./public-network-address";
 
 export type WordPressOnboardingIntent = "fresh" | "existing";
 
@@ -59,43 +60,6 @@ export type WordPressPublicPreflightDependencies = {
   ) => Promise<PreflightResponse>;
 };
 
-function isUnsafeIpv4(address: string): boolean {
-  const octets = address.split(".").map(Number);
-  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet))) {
-    return true;
-  }
-
-  const [first, second] = octets;
-  return first === 0
-    || first === 10
-    || first === 127
-    || (first === 169 && second === 254)
-    || (first === 172 && second >= 16 && second <= 31)
-    || (first === 192 && second === 168)
-    || (first === 100 && second >= 64 && second <= 127)
-    || first >= 224;
-}
-
-function isUnsafeAddress(address: string): boolean {
-  const normalized = address.toLowerCase().split("%")[0];
-  const family = isIP(normalized);
-
-  if (family === 4) {
-    return isUnsafeIpv4(normalized);
-  }
-
-  if (family === 6) {
-    return normalized === "::"
-      || normalized === "::1"
-      || normalized.startsWith("fc")
-      || normalized.startsWith("fd")
-      || /^fe[89ab]/.test(normalized)
-      || normalized.startsWith("::ffff:");
-  }
-
-  return true;
-}
-
 export function inferWordPressEndpoints(input: {
   domain: string;
   apiBaseUrl?: string | null;
@@ -132,7 +96,7 @@ export function inferWordPressEndpoints(input: {
     !domain
     || domain === "localhost"
     || domain.endsWith(".localhost")
-    || (isIP(domain) !== 0 && isUnsafeAddress(domain))
+    || (isIP(domain) !== 0 && isUnsafePublicAddress(domain))
   ) {
     throw new Error("A public WordPress domain is required.");
   }
@@ -236,7 +200,7 @@ export async function runPublicWordPressPreflight(
     lookup(hostname, { all: true, verbatim: true }));
   const addresses = await resolveHost(endpoints.domain);
 
-  if (addresses.length === 0 || addresses.some((entry) => isUnsafeAddress(entry.address))) {
+  if (addresses.length === 0 || addresses.some((entry) => isUnsafePublicAddress(entry.address))) {
     throw new Error("The supplied domain does not resolve exclusively to public IP addresses.");
   }
 
