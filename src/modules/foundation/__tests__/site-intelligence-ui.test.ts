@@ -13,7 +13,9 @@ describe("site intelligence UI contract", () => {
   });
 
   test("real identity transition preserves internal ID and public brand", () => {
-    expect(route).toContain('site.organizationId === "rj-metal" ? "Rocklin Metal"');
+    expect(route).toContain("getIntegrationProfileById");
+    expect(route).toContain("brandProfile?.organizationId === site?.organizationId");
+    expect(route).not.toContain('site.organizationId === "rj-metal"');
     expect(workspace).toContain("Internal organization");
     expect(workspace).toContain("Public brand");
   });
