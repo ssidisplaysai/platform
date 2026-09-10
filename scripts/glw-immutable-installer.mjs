@@ -192,7 +192,7 @@ export async function installPreparedRelease({ stage, environmentPath, launcherP
       try {
         if (runtimeStopped && newLauncherPid) await adapters.stopRuntimeOnce({ launcherPid: newLauncherPid, pid: newLauncherPid });
         if (launcherChanged) { adapters.grantTemporaryLauncherWrite(launcherPath, launcherSecurity); try { adapters.writeBytes(launcherPath, previousLauncher); } finally { adapters.restoreLauncherSecurity(launcherPath, launcherSecurity); } requireExact(adapters.hashFile(launcherPath), previousLauncherHash, "Rollback launcher hash"); adapters.verifyLauncherSecurity(launcherPath, launcherSecurity); }
-        if (runtimeStopped) { await adapters.startProtectedLauncherOnce(launcherPath, 3001); await adapters.verifyInstalledRuntime({ plan: { sourceSha: before.sourceSha, buildId: before.buildId }, paths: { finalReleasePath: before.releasePath } }, before); }
+        if (runtimeStopped) { await adapters.startProtectedLauncherOnce(launcherPath, 3001); await adapters.verifyInstalledRuntime({ plan: { sourceSha: before.sourceSha, buildId: before.buildId }, paths: { finalReleasePath: before.releasePath }, verificationPhase: "ROLLBACK" }, before); }
         if (manifestInstalled) adapters.removeFile(prepared.paths.finalManifestPath); if (materialized) adapters.removeTree(prepared.paths.finalReleasePath); rollback.succeeded = true;
       } catch (rollbackError) { rollback.succeeded = false; rollback.error = rollbackError instanceof Error ? rollbackError.message : String(rollbackError); }
     }

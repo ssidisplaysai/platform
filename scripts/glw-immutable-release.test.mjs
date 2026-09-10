@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { buildManifest, certifyTypecheckBaseline, commandInvocation, environmentMetadata, parseEnvironment, renderLauncher, typecheckBaselineFingerprint, verifyManifest } from "./glw-immutable-release.mjs";
+import { buildManifest, certifyTypecheckBaseline, commandInvocation, environmentMetadata, parseEnvironment, renderLauncher, sha256File, typecheckBaselineFingerprint, verifyManifest } from "./glw-immutable-release.mjs";
 
 const diagnostic = { file: "src/example.ts", line: 10, column: 2, code: "TS2322", message: "Type 'null' is not assignable to type 'string'." };
 function baseline(overrides = {}) {
@@ -40,6 +41,19 @@ test("launcher rendering replaces authority and environment blocks", () => {
   const rendered = renderLauncher({ template, assignments: { ReleasePath: "new", ExpectedSourceSha: "c".repeat(40) }, environment: { A: [1, "559AEAD0"] } });
   assert.match(rendered, /\$ReleasePath = "new"/u); assert.match(rendered, /A = @\(1, "559AEAD0"\)/u); assert.doesNotMatch(rendered, /OLD =/u);
   assert.throws(() => renderLauncher({ template, assignments: { ReleasePath: "unsafe`$(whoami)" }, environment: { A: [1, "559AEAD0"] } }), /unsafe/u);
+});
+test("rendered launcher hashes Windows paths beyond MAX_PATH", { skip: process.platform !== "win32" }, () => {
+  const root = mkdtempSync(join(tmpdir(), "glw-launcher-long-path-"));
+  try {
+    const nested = join(root, ...Array.from({ length: 9 }, (_, index) => `segment-${index}-${"x".repeat(24)}`));
+    mkdirSync(nested, { recursive: true });
+    const target = join(nested, "runtime.js"); writeFileSync(target, "immutable-runtime");
+    assert.ok(target.length > 260);
+    const template = `function Get-FileSha256 {\n  param([string]$Path)\n  $stream = [IO.File]::OpenRead($Path)\n  $sha = [Security.Cryptography.SHA256]::Create()\n  try { return ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace("-", "") } finally { $sha.Dispose(); $stream.Dispose() }\n}\n$ExpectedEnvironment = [ordered]@{\n  OLD = @(1, "AAAA")\n}\nGet-FileSha256 $args[0]\n`;
+    const script = join(root, "verify.ps1"); writeFileSync(script, renderLauncher({ template, assignments: {}, environment: { A: [1, "559AEAD0"] } }));
+    const result = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, target], { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr); assert.equal(result.stdout.trim(), sha256File(target));
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 test("Windows cmd shims are launched through the configured command shell", () => {
   assert.deepEqual(commandInvocation("npm.cmd", ["ci"], "win32", "C:\\Windows\\System32\\cmd.exe"), {

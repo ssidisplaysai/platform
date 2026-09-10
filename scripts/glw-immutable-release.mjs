@@ -98,7 +98,9 @@ function replaceAssignment(text, name, value) {
 }
 
 export function renderLauncher({ template, assignments, environment }) {
-  let result = template;
+  const legacyOpenRead = '$stream = [IO.File]::OpenRead($Path)';
+  const extendedOpenRead = '$resolvedPath = [IO.Path]::GetFullPath($Path)\n  $extendedPath = if ($resolvedPath.StartsWith("\\\\?\\")) { $resolvedPath } elseif ($resolvedPath.StartsWith("\\\\")) { "\\\\?\\UNC\\" + $resolvedPath.Substring(2) } else { "\\\\?\\" + $resolvedPath }\n  $stream = [IO.File]::OpenRead($extendedPath)';
+  let result = template.includes(legacyOpenRead) ? template.replace(legacyOpenRead, extendedOpenRead) : template;
   for (const [name, value] of Object.entries(assignments)) result = replaceAssignment(result, name, value);
   const blockPattern = /^\$ExpectedEnvironment\s*=\s*\[ordered\]@\{[\s\S]*?^\}/mu;
   if (!blockPattern.test(result)) fail("Launcher expected-environment block is missing.");

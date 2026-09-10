@@ -34,7 +34,7 @@ export async function inspectPromotionState({ sourceSha, buildId, phase, fetchIm
   const response = await fetchImpl("http://localhost:3001/api/glw/campaign-launch", { method: "GET", redirect: "manual", headers: { "x-gcp-roles": "administrator", "x-gcp-organization-id": "led-display-warehouse" } });
   if (response.status === 404) {
     const predecessor = sourceSha === CERTIFIED_PREDECESSOR.sourceSha && buildId === CERTIFIED_PREDECESSOR.buildId;
-    if (phase === "PRE_INSTALL" && predecessor && response.redirected !== true && !response.headers?.get?.("location")) return { enabled: false, state: "LEGACY_ROUTE_ABSENT_SAFE" };
+    if (["PRE_INSTALL", "ROLLBACK"].includes(phase) && predecessor && response.redirected !== true && !response.headers?.get?.("location")) return { enabled: false, state: "LEGACY_ROUTE_ABSENT_SAFE" };
     fail(`Promotion route is absent for an unauthorized runtime: phase=${phase}, sourceSha=${sourceSha}, buildId=${buildId}.`);
   }
   if (response.status === 401 || response.status === 403) fail(`Promotion GET authorization failed with HTTP ${response.status}.`);
@@ -104,6 +104,6 @@ export function createWindowsProductionAdapters({ persistenceRoot }) {
     writeText: (path, text) => writeFileSync(path, text, "utf8"),
     stopRuntimeOnce: async (before) => { if (!before.launcherPid) fail("Canonical production launcher process is unavailable."); powershell("$root = [int]$args[0]; $all = @(Get-CimInstance Win32_Process); $ids = @($root); do { $children = @($all | Where-Object { $_.ParentProcessId -in $ids -and $_.ProcessId -notin $ids } | Select-Object -ExpandProperty ProcessId); $new = @($children | Where-Object { $_ -notin $ids }); $ids += $new } while ($new.Count -gt 0); [array]::Reverse($ids); $ids | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; $deadline = (Get-Date).AddSeconds(45); while ((Get-Date) -lt $deadline -and (Get-NetTCPConnection -State Listen -LocalPort 3001 -ErrorAction SilentlyContinue)) { [Threading.Thread]::Sleep(250) }; if (Get-NetTCPConnection -State Listen -LocalPort 3001 -ErrorAction SilentlyContinue) { throw 'Port 3001 did not stop.' }", [String(before.launcherPid)]); },
     startProtectedLauncherOnce: async (launcher, port) => { const pid = Number(powershell("$p=Start-Process -FilePath powershell.exe -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',$args[0],'-Port',$args[1]) -WorkingDirectory (Split-Path -Parent $args[0]) -PassThru;$p.Id", [launcher, String(port)])); if (!pid) fail("Protected launcher did not start."); return pid; },
-    verifyInstalledRuntime: async (prepared) => waitForExpectedRuntime({ inspect: () => runtimeSnapshot(persistenceRoot, "POST_INSTALL"), expectedSourceSha: prepared.plan.sourceSha, expectedBuildId: prepared.plan.buildId, expectedReleasePath: prepared.paths.finalReleasePath }),
+    verifyInstalledRuntime: async (prepared) => waitForExpectedRuntime({ inspect: () => runtimeSnapshot(persistenceRoot, prepared.verificationPhase ?? "POST_INSTALL"), expectedSourceSha: prepared.plan.sourceSha, expectedBuildId: prepared.plan.buildId, expectedReleasePath: prepared.paths.finalReleasePath }),
   });
 }
