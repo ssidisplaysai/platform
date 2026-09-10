@@ -2,7 +2,7 @@ import { createFoundationContext, getSitesForOrganization } from "@/modules/foun
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { evaluatePublishingGuard } from "@/modules/foundation/site-publishing-guard";
 import { evaluateSiteReadiness } from "@/modules/foundation/site-readiness";
-import { getSiteById, listSites, resetSiteRepositoryForTests } from "@/modules/foundation/site-repository";
+import { createSite, getSiteById, listSites, resetSiteRepositoryForTests } from "@/modules/foundation/site-repository";
 import { filterSites } from "@/modules/foundation/site-selectors";
 import { resolveSiteAccess } from "@/modules/foundation/site-access";
 import { validateNewSiteInput, validateUpdateSiteInput } from "@/modules/foundation/site-validation";
@@ -112,6 +112,28 @@ describe("GCP-0002C multi-site foundation", () => {
 
     expect(guard.allowed).toBe(false);
     expect(guard.reasons.length).toBeGreaterThan(0);
+  });
+
+  test("fresh shell persists with conservative onboarding defaults", () => {
+    const created = createSite({
+      ...createValidNewSiteInput(),
+      publicationPolicy: "draft_only",
+      integrations: {
+        wordpressApiBaseUrl: "https://new.example.com/wp-json/wp/v2",
+        wordpressCredentialReference: null,
+        workflowReference: null,
+      },
+    });
+
+    expect(created.site).toMatchObject({
+      siteId: "site-led-display-warehouse-new-site",
+      lifecycleState: "draft",
+      enabled: false,
+      publishingStatus: "disabled",
+      publicationPolicy: "draft_only",
+      onboarding: { status: "not_started" },
+    });
+    expect(getSiteById("site-led-display-warehouse-new-site")).toEqual(created.site);
   });
 
   test("missing domain blocks readiness", () => {

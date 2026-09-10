@@ -721,6 +721,8 @@ export type SiteDefaultContentType =
 
 export type SiteDefaultPublicationStatus = "draft" | "review" | "scheduled";
 
+export type SitePublicationPolicy = "draft_only" | "publish_after_gates";
+
 export type SitePrimaryAddress = {
   addressLine1: string;
   addressLine2: string | null;
@@ -775,6 +777,7 @@ export type SiteConfiguration = {
   enabled: boolean;
   healthStatus: SiteHealthStatus;
   publishingStatus: SitePublishingStatus;
+  publicationPolicy?: SitePublicationPolicy;
   defaultContentType: SiteDefaultContentType;
   defaultPublicationStatus: SiteDefaultPublicationStatus;
   defaultAuthorReference: string | null;
@@ -845,6 +848,7 @@ export type NewSiteInput = {
   canonicalUrl: string | null;
   environment: SiteEnvironment;
   enabled: boolean;
+  publicationPolicy?: SitePublicationPolicy;
   defaultContentType: SiteDefaultContentType;
   defaultPublicationStatus: SiteDefaultPublicationStatus;
   defaultAuthorReference: string | null;

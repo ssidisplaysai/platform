@@ -479,8 +479,8 @@ export const FOUNDATION_COMMANDS: readonly CommandPaletteAction[] = [
   },
   {
     id: "open-new-site",
-    label: "Create New Site",
-    description: "Open bounded site creation foundation",
+    label: "Add New Site",
+    description: "Connect and configure a fresh WordPress site",
     href: "/sites/new",
     requiredPermissions: ["sites:create", "command_palette:use"],
   },
@@ -542,8 +542,8 @@ export const FOUNDATION_SEARCH_INDEX: readonly EnterpriseSearchItem[] = [
   },
   {
     id: "sites-new",
-    title: "Create Site Foundation",
-    subtitle: "Configure non-secret fields for a new site",
+    title: "Add New Site",
+    subtitle: "Connect a fresh WordPress site through guided onboarding",
     href: "/sites/new",
     scope: "sites",
     requiredPermissions: ["sites:create"],
