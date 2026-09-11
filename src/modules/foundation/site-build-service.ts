@@ -11,6 +11,9 @@ import { getSiteIntelligenceWorkspace } from "./site-intelligence-repository";
 import type { SiteConfiguration } from "./types";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import { writeGenesisWordPressDraft } from "./wordpress-draft-writer";
+import { decideSitePageImageCandidate, listSitePageImageCandidates, saveSitePageImageCandidate } from "./site-page-image-candidate-repository";
+import { generateGenesisFeaturedImage } from "@/modules/glw/generated-image-service";
+import { areRequiredPageImagesApproved } from "./site-page-image-review";
 
 export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "PAGE_GENERATION" | "PAGE_REVIEW" | "WORDPRESS_CONTENT_UPDATE" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
 
@@ -22,6 +25,7 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
   const generation = getSiteGenerationReadiness(site);
   const session = generation.buildSession;
   const records = session ? getSiteBuildRecords({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : { plans: [], changeRequests: [], currentPlan: null, draftSet: null, wordpressDrafts: [], assemblies: [], currentAssembly: null, wordpressContentUpdates: [] };
+  const imageCandidates = session ? listSitePageImageCandidates({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : [];
   const stale = generation.certification.status !== "CURRENT" || Boolean(records.currentPlan && !isSiteBuildSnapshotCurrent(records.currentPlan.authoritySnapshot, generation.readiness.snapshot)) || Boolean(records.draftSet && !isSiteBuildSnapshotCurrent(records.draftSet.authoritySnapshot, generation.readiness.snapshot));
   let stage: SiteBuildStage;
   if (!session) stage = "BUILD_NOT_STARTED";
@@ -48,7 +52,7 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
     COMPLETE: { action: "REVIEW_WORDPRESS_DRAFTS", label: "REVIEW WORDPRESS DRAFTS", detail: "Review the created drafts in WordPress. Publication remains a separate gate." },
     AUTHORITY_REVIEW_REQUIRED: { action: "REVIEW_GENERATION_READINESS", label: "REVIEW GENERATION READINESS", detail: "Material upstream authority changed. Recertify before continuing this build." },
   }[stage];
-  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, stale, stage, next, publication: { state: site.publishingStatus, enabled: site.enabled } };
+  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, imageCandidates, stale, stage, next, publication: { state: site.publishingStatus, enabled: site.enabled } };
 }
 
 function planningContext(site: SiteConfiguration) {
@@ -89,8 +93,10 @@ export function generateFullSiteAssembly(site: SiteConfiguration, actor: string,
   return saveSiteAssemblyProposal(synthesizeSiteAssembly({ site, buildSessionId: workspace.session.buildSessionId, plan: workspace.currentPlan, intelligence: context.intelligence, strategy: context.strategy, creative: context.creative, candidates: workspace.generation.authority.candidates, sources: workspace.generation.authority.sources, revision: (workspace.currentAssembly?.revision ?? 0) + 1, actor, instructions }));
 }
 
-export function decideGeneratedPage(site: SiteConfiguration, actor: string, pageId: string, decision: "APPROVE" | "REQUEST_CHANGES", instructions = "") { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || !workspace.currentAssembly || workspace.stale) throw new Error("CURRENT_SITE_ASSEMBLY_REQUIRED"); return decideSiteAssemblyPage({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, assemblyId: workspace.currentAssembly.assemblyId, pageId, decision, instructions, actor }); }
-export function approveAllGeneratedPages(site: SiteConfiguration, actor: string) { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || !workspace.currentAssembly || workspace.stale) throw new Error("CURRENT_SITE_ASSEMBLY_REQUIRED"); return approveAllReadySiteAssemblyPages({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, assemblyId: workspace.currentAssembly.assemblyId, actor }); }
+function pageImagesApproved(workspace: ReturnType<typeof getSiteBuildWorkspace>, pageId: string): boolean { const page = workspace.currentAssembly?.pages.find((item) => item.pageId === pageId); return page ? areRequiredPageImagesApproved(page, workspace.imageCandidates) : false; }
+
+export function decideGeneratedPage(site: SiteConfiguration, actor: string, pageId: string, decision: "APPROVE" | "REQUEST_CHANGES", instructions = "") { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || !workspace.currentAssembly || workspace.stale) throw new Error("CURRENT_SITE_ASSEMBLY_REQUIRED"); if (decision === "APPROVE" && !pageImagesApproved(workspace, pageId)) throw new Error("REQUIRED_IMAGE_REVIEW_INCOMPLETE"); return decideSiteAssemblyPage({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, assemblyId: workspace.currentAssembly.assemblyId, pageId, decision, instructions, actor }); }
+export function approveAllGeneratedPages(site: SiteConfiguration, actor: string) { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || !workspace.currentAssembly || workspace.stale) throw new Error("CURRENT_SITE_ASSEMBLY_REQUIRED"); if (!workspace.currentAssembly.pages.every((page) => pageImagesApproved(workspace, page.pageId))) throw new Error("REQUIRED_IMAGE_REVIEW_INCOMPLETE"); return approveAllReadySiteAssemblyPages({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, assemblyId: workspace.currentAssembly.assemblyId, actor }); }
 
 export function regenerateGeneratedPage(site: SiteConfiguration, actor: string, pageId: string, instructions: string) {
   const context = planningContext(site); const current = context.workspace.currentAssembly; if (!current || !instructions.trim()) throw new Error("PAGE_REGENERATION_INSTRUCTIONS_REQUIRED");
@@ -162,4 +168,21 @@ export async function updateBuildWordPressDraftContent(site: SiteConfiguration, 
     recordSiteBuildWordPressContentUpdate({ buildSessionId: workspace.session.buildSessionId, pageRevisionId: page.pageRevisionId, wordpressObjectId: result.wordpressObjectId, wordpressUrl: result.wordpressUrl, wordpressStatus: "draft", updatedAt: new Date().toISOString() });
   }
   return getSiteBuildWorkspace(site).wordpressContentUpdates;
+}
+
+export async function generatePageImageCandidate(site: SiteConfiguration, actor: string, pageId: string, slotId: string, ownerInstructions = "") {
+  const context = planningContext(site); const assembly = context.workspace.currentAssembly; const page = assembly?.pages.find((item) => item.pageId === pageId); const slot = page?.imageRequirements.find((item) => item.slotId === slotId);
+  if (!assembly || !page || !slot || slot.source !== "GENERATED_VISUAL" || context.workspace.stale) throw new Error("GENERATED_IMAGE_SLOT_NOT_AVAILABLE");
+  const authorityLabels = page.authority.filter((item) => item.kind === "PRODUCT_SERVICE" || item.kind === "CAPABILITY" || item.kind === "MARKET").map((item) => item.label);
+  const visualBrief = `${slot.subject}. ${slot.altTextGuidance}`;
+  const generationPrompt = [context.creative.overallDirection, context.creative.photographyStyle, context.creative.generatedImageStyle, context.creative.heroTreatment, `Page: ${page.h1}. Slot: ${slot.placement}.`, authorityLabels.length ? `Current business context: ${authorityLabels.join("; ")}.` : "Use a generic commercial stainless fabrication context.", visualBrief, "Create an editorial commercial website visual, not documentary evidence of a real customer or completed project. Show no logos, readable text, certifications, identifiable people, facility-scale claims, named equipment, or geographic markers.", ownerInstructions.trim() ? `Owner visual direction: ${ownerInstructions.trim()}` : ""].filter(Boolean).join("\n\n");
+  const generated = await generateGenesisFeaturedImage({ prompt: generationPrompt, siteName: site.displayName, productTopic: page.h1 }); if (!generated.ok) throw new Error(`IMAGE_CANDIDATE_GENERATION_FAILED:${generated.state}`);
+  return saveSitePageImageCandidate({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: context.workspace.session.buildSessionId, pageId, pageRevisionId: page.pageRevisionId, slotId, sourceType: "GENERATED_VISUAL", mimeType: generated.image.mimeType, bytes: generated.image.bytes, generationPrompt, visualBrief, creativeRevision: context.creative.revision, authorityReferences: page.authority.map((item) => `${item.kind}:${item.referenceId}`), ownerInstructions, actor });
+}
+
+export function decidePageImageCandidate(site: SiteConfiguration, actor: string, candidateId: string, decision: "APPROVE" | "REJECT") { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || workspace.stale) throw new Error("CURRENT_SITE_ASSEMBLY_REQUIRED"); return decideSitePageImageCandidate({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, candidateId, decision, actor }); }
+
+export function replacePageImageWithOwnerAsset(site: SiteConfiguration, actor: string, input: { pageId: string; slotId: string; mimeType: "image/jpeg" | "image/png" | "image/webp"; bytes: Buffer; instructions: string }) {
+  const context = planningContext(site); const page = context.workspace.currentAssembly?.pages.find((item) => item.pageId === input.pageId); const slot = page?.imageRequirements.find((item) => item.slotId === input.slotId); if (!page || !slot) throw new Error("IMAGE_SLOT_NOT_FOUND");
+  return saveSitePageImageCandidate({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: context.workspace.session.buildSessionId, pageId: page.pageId, pageRevisionId: page.pageRevisionId, slotId: slot.slotId, sourceType: "OWNER_ASSET", mimeType: input.mimeType, bytes: input.bytes, visualBrief: slot.subject, creativeRevision: context.creative.revision, authorityReferences: page.authority.map((item) => `${item.kind}:${item.referenceId}`), ownerInstructions: input.instructions, actor });
 }

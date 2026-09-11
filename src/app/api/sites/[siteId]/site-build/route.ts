@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { startSiteBuild } from "@/modules/foundation/site-generation-readiness-repository";
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
-import { approveAllGeneratedPages, approveBuildDrafts, approveBuildPlan, createBuildWordPressDrafts, decideGeneratedPage, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, getSiteBuildWorkspace, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
+import { approveAllGeneratedPages, approveBuildDrafts, approveBuildPlan, createBuildWordPressDrafts, decideGeneratedPage, decidePageImageCandidate, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
 import { getSiteById } from "@/modules/foundation/site-repository";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, context: Context) {
 export async function POST(request: NextRequest, context: Context) {
   const auth = authorizeRequest(request, "sites:manage_integrations"); if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const site = await scoped(request, context); if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
-  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string } | null;
+  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string; slotId?: string; candidateId?: string } | null;
   const confirm = body?.confirm ?? "";
   try {
     if (confirm === "START_SITE_BUILD") {
@@ -39,6 +39,9 @@ export async function POST(request: NextRequest, context: Context) {
     else if (confirm === "APPROVE_ALL_READY_PAGES") approveAllGeneratedPages(site, "site-owner");
     else if (confirm === "REQUEST_SITE_WIDE_CHANGES") generateFullSiteAssembly(site, "site-owner", body?.instructions ?? "");
     else if (confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT") await updateBuildWordPressDraftContent(site);
+    else if (confirm === "GENERATE_PAGE_IMAGE" || confirm === "REGENERATE_PAGE_IMAGE") await generatePageImageCandidate(site, "site-owner", body?.pageId ?? "", body?.slotId ?? "", body?.instructions ?? "");
+    else if (confirm === "APPROVE_PAGE_IMAGE") decidePageImageCandidate(site, "site-owner", body?.candidateId ?? "", "APPROVE");
+    else if (confirm === "REJECT_PAGE_IMAGE") decidePageImageCandidate(site, "site-owner", body?.candidateId ?? "", "REJECT");
     else return NextResponse.json({ error: "Explicit supported Site Build action is required." }, { status: 400 });
     return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT", publicationMutation: false, siteEnabledMutation: false });
   } catch (cause) { return NextResponse.json({ error: cause instanceof Error ? cause.message : "SITE_BUILD_ACTION_FAILED" }, { status: 409 }); }
