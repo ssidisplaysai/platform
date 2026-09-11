@@ -152,6 +152,24 @@ export function addStrategyProposal(input: { siteId: string; organizationId: str
   }});
 }
 
+export function getStrategyReadiness(workspace: SiteIntelligenceWorkspace): { ready: boolean; blockers: string[]; approvedOpportunityCount: number; verifiedCapabilityCount: number; qualifiedCapabilityCount: number } {
+  const approvedOpportunityCount = workspace.opportunities.filter((candidate) => candidate.ownerDecision === "APPROVED").length;
+  const verifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "VERIFIED").length;
+  const qualifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "QUALIFIED").length;
+  const blockers: string[] = [];
+  if (workspace.intelligenceState !== "INTELLIGENCE_APPROVED") blockers.push("Approve Site Intelligence after completing opportunity review.");
+  if (approvedOpportunityCount === 0) blockers.push("Approve at least one market opportunity for strategy consideration.");
+  return { ready: blockers.length === 0, blockers, approvedOpportunityCount, verifiedCapabilityCount, qualifiedCapabilityCount };
+}
+
+export function addInitialStrategyProposal(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; proposal: Omit<SiteStrategyProposal, "revision" | "status" | "createdBy" | "createdAt" | "decidedBy" | "decidedAt"> }) {
+  const current = getSiteIntelligenceWorkspace(input.siteId);
+  if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+  if (current.organizationId !== input.organizationId) throw new Error("SITE_INTELLIGENCE_ORGANIZATION_MISMATCH");
+  if (current.strategyRevisions.length > 0) return current;
+  return addStrategyProposal(input);
+}
+
 export function decideStrategy(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; decision: "APPROVED" | "REVISION_REQUESTED" | "REJECTED" }) {
   return update({ ...input, action: `STRATEGY_${input.decision}`, mutate(workspace) {
     const proposal = workspace.strategyRevisions.at(-1);

@@ -13,6 +13,7 @@ import { executeSiteIntelligenceResearch } from "@/modules/foundation/site-intel
 import {
   addCreativeInput,
   addCreativeProposal,
+  addInitialStrategyProposal,
   addStrategyProposal,
   approveSiteIntelligence,
   classifyCreativeInput,
@@ -21,11 +22,13 @@ import {
   decideStrategy,
   ensureSiteIntelligenceWorkspace,
   getSiteIntelligenceWorkspace,
+  getStrategyReadiness,
   recordSiteOpportunity,
   startSiteIntelligence,
   updateCreativeInputMetadata,
   validateOpportunityCapability,
 } from "@/modules/foundation/site-intelligence-repository";
+import { synthesizeInitialSiteStrategy } from "@/modules/foundation/site-strategy-synthesizer";
 import type { CreativeInput, SiteAssetClassification } from "@/modules/foundation/site-intelligence";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -51,9 +54,11 @@ export async function GET(request: NextRequest, context: Context) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const site = await scopedSite(request, context);
   if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
+  const workspace = getSiteIntelligenceWorkspace(site.siteId);
   return NextResponse.json({
     site: { siteId: site.siteId, organizationId: site.organizationId, displayName: site.displayName, publicationPolicy: site.publicationPolicy, enabled: site.enabled },
-    workspace: getSiteIntelligenceWorkspace(site.siteId),
+    workspace,
+    strategyReadiness: workspace ? getStrategyReadiness(workspace) : { ready: false, blockers: ["Complete and approve Site Intelligence review."], approvedOpportunityCount: 0, verifiedCapabilityCount: 0, qualifiedCapabilityCount: 0 },
     startBoundary: "START_SITE_INTELLIGENCE",
     provider: getSiteIntelligenceProviderStatus(),
   });
@@ -121,6 +126,17 @@ export async function POST(request: NextRequest, context: Context) {
       case "PROPOSE_STRATEGY":
         workspace = addStrategyProposal({ ...common, proposal: body.proposal as never });
         break;
+      case "GENERATE_STRATEGY": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const readiness = getStrategyReadiness(current); if (!readiness.ready) throw new Error(`STRATEGY_NOT_READY:${readiness.blockers.join("|")}`);
+        const brandProfile = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const seoProfile = site.profiles.seoProfileReference ? getIntegrationProfileById(site.profiles.seoProfileReference) : null;
+        const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
+        if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
+        const proposal = synthesizeInitialSiteStrategy(current, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile });
+        workspace = addInitialStrategyProposal({ ...common, expectedRevision: current.revision, proposal, reason: "Genesis synthesized the first Site Strategy proposal from approved intelligence and scoped profile authority." });
+        break;
+      }
       case "DECIDE_STRATEGY":
         workspace = decideStrategy({ ...common, decision: body.decision as never });
         break;

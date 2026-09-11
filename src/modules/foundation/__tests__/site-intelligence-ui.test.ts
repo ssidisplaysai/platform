@@ -34,6 +34,13 @@ describe("site intelligence UI contract", () => {
     expect(workspace).toContain('role="status"');
   });
 
+  test("approved intelligence exposes a generated strategy transition instead of mandatory manual entry", () => {
+    for (const text of ["Site Intelligence Review Complete", "Strategy Readiness", "Opportunities approved", "Capabilities verified", "Capabilities qualified", "PROPOSE SITE STRATEGY", "Complete these requirements:", "EDIT AS NEW REVISION", "REQUEST REVISION"]) expect(workspace).toContain(text);
+    expect(workspace).toContain('action: "GENERATE_STRATEGY"');
+    expect(workspace).toContain('workspace.intelligenceState !== "INTELLIGENCE_APPROVED"');
+    expect(workspace).toContain('opportunity.ownerDecision === "APPROVED"');
+  });
+
   test("workspace exposes real multiple-file upload with conservative classification", () => {
     expect(library).toContain('type="file"'); expect(library).toContain("multiple"); expect(library).toContain("UPLOAD {files.length");
     expect(library).toContain('useState<SiteAssetClassification>("OWNER_SUPPLIED_REFERENCE")');
