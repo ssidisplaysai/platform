@@ -28,4 +28,13 @@ describe("reusable fresh-site page generation", () => {
     const result = synthesizeSiteAssembly({ site: { siteId: "site", organizationId: "org", displayName: "Example" } as never, buildSessionId: "build", plan, intelligence: { creativeInputs: [], opportunities: [] } as never, strategy: strategy as never, creative: creative as never, candidates: [] as never, sources: [], revision: 1, actor: "owner" });
     expect(result.pages.filter((item) => ["OFFERING", "MARKET"].includes(item.pageRole)).every((item) => item.quality.blockers.includes("approvedAuthorityOnly"))).toBe(true);
   });
+
+  test("regenerates a commercial homepage as the approved category and lead-generation hub", () => {
+    const result = synthesizeSiteAssembly({ site: { siteId: "site", organizationId: "org", displayName: "Example Stainless" } as never, buildSessionId: "build", plan, intelligence: { creativeInputs: [], opportunities: [{ opportunityId: "o1", ownerDecision: "APPROVED", capabilityState: "VERIFIED", capabilityAuthorityRevisions: [{ decision: "VERIFIED", attestation: "Owner confirms.", evidenceIds: [], evidenceRelevance: [], revision: 1 }] }] } as never, strategy: strategy as never, creative: creative as never, candidates: [candidate, { ...candidate, authorityId: "a2", displayName: "Design-Build Fabrication" }] as never, sources: [], revision: 2, actor: "owner", instructions: "Rewrite only Home as a strong commercial lead-generation homepage with the core category as the primary focus and strong quote calls to action." });
+    const home = result.pages.find((item) => item.pageRole === "HOME")!;
+    expect(home.h1).toBe("Core Category and custom stainless fabrication"); expect(home.seoTitle).toBe("Core Category & Custom Stainless Fabrication"); expect(home.seoTitle).not.toMatch(/home/i);
+    expect(home.sections.map((item) => item.heading)).toEqual(["Core Category and custom stainless fabrication", "Commercial stainless products and fabrication solutions", "Core Category: the central project pathway", "Solutions for commercial industries", "A fabrication approach built around the requirement", "Fabrication proof and project detail", "Why commercial buyers use this resource", "Request a Quote"]);
+    expect(home.internalLinks.map((item) => item.anchorText)).toEqual(expect.arrayContaining(["Core Category", "Worktables", "Healthcare Solutions", "Capabilities", "About", "Request a Quote"]));
+    expect(home.quality.ready).toBe(true); expect(home.imageRequirements.every((item) => item.publishableAssetId === null)).toBe(true);
+  });
 });
