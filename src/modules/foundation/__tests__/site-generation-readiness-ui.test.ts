@@ -6,6 +6,7 @@ const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), "
 describe("Generation Readiness owner workflow UI", () => {
   const workflow = read("src/modules/foundation/SiteGenerationReadinessWorkflow.tsx");
   const page = read("src/app/sites/[siteId]/generation-readiness/page.tsx");
+  const buildPage = read("src/app/sites/[siteId]/build/page.tsx");
   const build = read("src/modules/foundation/SiteBuildWorkflow.tsx");
 
   test("explains draft generation separately from publication and avoids an enum dump", () => {
@@ -20,6 +21,7 @@ describe("Generation Readiness owner workflow UI", () => {
 
   test("binds route authority and keeps Site Build a separate explicit action", () => {
     expect(page).toContain("resourceSite={createSiteContext(site)}"); expect(page).toContain("getSiteGenerationReadiness(site)");
+    expect(buildPage).toContain("resourceSite={createSiteContext(site)}"); expect(buildPage).toContain("getSiteBuildWorkspace(site)");
     expect(build).toContain("START SITE BUILD"); expect(build).toContain("START_SITE_BUILD"); expect(build).toContain("does not create WordPress pages");
   });
 });
