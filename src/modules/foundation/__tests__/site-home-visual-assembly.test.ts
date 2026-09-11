@@ -1,4 +1,4 @@
-import { HOME_HERO_MEDIA_TOKEN, renderCommercialStainlessHome } from "../site-home-visual-assembly";
+import { HOME_HERO_MEDIA_TOKEN, refineCommercialStainlessHome, renderCommercialStainlessHome } from "../site-home-visual-assembly";
 
 describe("commercial stainless Home visual assembly", () => {
   test("preserves approved copy while applying reusable reference-inspired components", () => {
@@ -8,5 +8,11 @@ describe("commercial stainless Home visual assembly", () => {
     for (const className of ["gva-header", "gva-hero", "gva-strip", "gva-grid", "gva-split", "gva-cta", "gva-footer"]) expect(html).toContain(className);
     expect(html).toContain(HOME_HERO_MEDIA_TOKEN); expect(html).toContain(".page-id-10 .entry-title"); expect(html).toContain("Powered by Rocklin Metal");
     for (const prohibited of ["Walmart", "Safeway", "Whole Foods", "Costco", "Target", "Albertsons", "Sprouts", "50 states", "nationwide", "partner network", "1,000 locations"]) expect(html).not.toContain(prohibited);
+  });
+  test("refines hierarchy and controls without changing approved body text", () => {
+    const initial = '<style>.gva-utility{padding:8px 0;font:700 11px/1.2 Arial;text-transform:uppercase}.gva-header{padding:18px 0}.gva-header .gva-wrap,.gva-nav{justify-content:space-between;gap:24px}.gva-brand strong{display:block;font-size:22px;line-height:.95}.gva-brand small{font-size:10px}.gva-hero{min-height:650px;background:url("hero.jpg") center/cover;color:#fff}.gva-hero h1{max-width:780px;font-size:clamp(46px,7vw,92px);line-height:.93}.gva-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}.gva-button{display:inline-flex;padding:15px 22px}@media(max-width:560px){.gva-hero h1{font-size:46px}}</style><div class="gva-utility">Commercial stainless counters · Custom fabrication</div><div class="gva-brand"><strong>Commercial<br>Stainless Counters</strong><small>Powered by Rocklin Metal</small></div><nav class="gva-nav" aria-label="Draft site navigation"><a href="/one/">One</a><a href="/two/">Two</a></nav><p>Approved paragraph remains exact.</p>';
+    const refined = refineCommercialStainlessHome(initial);
+    for (const expected of ["max-width:620px", "clamp(38px,5.25vw,70px)", "68% 48%/cover", "min-height:48px", "gap:16px", "padding:12px 0", "<strong>CSC</strong>", "Approved paragraph remains exact."]) expect(refined).toContain(expected);
+    expect(refined).toContain("Solutions</a><a href=\"/capabilities/\">Capabilities"); expect(refined).not.toContain(">One</a>");
   });
 });
