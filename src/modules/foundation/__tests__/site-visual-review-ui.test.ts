@@ -1,0 +1,2 @@
+import fs from "node:fs"; import path from "node:path";
+describe("site visual review UI", () => { const source = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteVisualReviewWorkflow.tsx"), "utf8"); test("supports individual and efficient bulk owner review", () => { for (const text of ["ACTUAL RENDERED PREVIEW", "APPROVE DESIGN", "REQUEST DESIGN CHANGES", "REGENERATE / REASSEMBLE WITH INSTRUCTIONS", "APPROVE ALL READY DESIGNS", "Ready for review", "Needs attention"]) expect(source).toContain(text); expect(source).not.toContain("PUBLISH"); }); });

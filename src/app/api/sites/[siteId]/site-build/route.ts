@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { startSiteBuild } from "@/modules/foundation/site-generation-readiness-repository";
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
-import { approveAllGeneratedPages, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
+import { approveAllGeneratedPages, approveAllReadySiteDesigns, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, assembleRemainingSiteVisuals, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, decideSiteVisualDesign, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, reassembleSiteVisualDesign, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
 import { getSiteById } from "@/modules/foundation/site-repository";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -45,7 +45,12 @@ export async function POST(request: NextRequest, context: Context) {
     else if (confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL") await assembleHomeVisualCanary(site, "site-owner", body?.instructions ?? "");
     else if (confirm === "APPROVE_HOME_VISUAL") decideHomeVisualAssembly(site, "site-owner", body?.visualAssemblyId ?? "", "APPROVE");
     else if (confirm === "REQUEST_HOME_VISUAL_CHANGES") decideHomeVisualAssembly(site, "site-owner", body?.visualAssemblyId ?? "", "REQUEST_CHANGES");
+    else if (confirm === "ASSEMBLE_REMAINING_VISUALS") await assembleRemainingSiteVisuals(site, "site-owner");
+    else if (confirm === "APPROVE_SITE_VISUAL") decideSiteVisualDesign(site, "site-owner", body?.visualAssemblyId ?? "", "APPROVE");
+    else if (confirm === "REQUEST_SITE_VISUAL_CHANGES") decideSiteVisualDesign(site, "site-owner", body?.visualAssemblyId ?? "", "REQUEST_CHANGES");
+    else if (confirm === "REASSEMBLE_SITE_VISUAL") await reassembleSiteVisualDesign(site, "site-owner", body?.visualAssemblyId ?? "", body?.instructions ?? "");
+    else if (confirm === "APPROVE_ALL_READY_VISUALS") approveAllReadySiteDesigns(site, "site-owner");
     else return NextResponse.json({ error: "Explicit supported Site Build action is required." }, { status: 400 });
-    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT" || confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL", publicationMutation: false, siteEnabledMutation: false });
+    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT" || confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL" || confirm === "ASSEMBLE_REMAINING_VISUALS", publicationMutation: false, siteEnabledMutation: false });
   } catch (cause) { return NextResponse.json({ error: cause instanceof Error ? cause.message : "SITE_BUILD_ACTION_FAILED" }, { status: 409 }); }
 }
