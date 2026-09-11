@@ -2,6 +2,7 @@ import "server-only";
 
 import type { CreativeInput, SiteIntelligenceWorkspace, SiteStrategyProposal } from "./site-intelligence";
 import type { IntegrationProfileConfiguration } from "./types";
+import { classifyOpportunitySemantics } from "./opportunity-semantic-classifier";
 
 export type SiteStrategySynthesisContext = {
   domain: string;
@@ -35,33 +36,45 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
   const presentAuthority = approved.filter((opportunity) => opportunity.capabilityState === "VERIFIED" || opportunity.capabilityState === "QUALIFIED");
   const unverified = approved.filter((opportunity) => opportunity.capabilityState === "OWNER_VALIDATION_REQUIRED" || opportunity.capabilityState === "INSUFFICIENT");
   const future = approved.filter((opportunity) => opportunity.capabilityState === "FUTURE_CAPABILITY");
-  const verticals = unique(approved.map((opportunity) => opportunity.category));
-  const buyers = unique(approved.map((opportunity) => opportunity.buyer));
-  const authorityNames = unique(presentAuthority.map((opportunity) => opportunity.name));
+  const classifications = approved.map(classifyOpportunitySemantics);
+  const verticals = unique(classifications.flatMap((item) => item.marketVerticals));
+  const buyers = unique(classifications.flatMap((item) => item.audiences));
+  const authorityNames = unique(classifications.filter((item) => item.capabilityAuthority === "CURRENT" && item.roles.includes("PRODUCT_SERVICE")).flatMap((item) => item.productServiceCandidates));
+  const requiredProductAuthority = unique(classifications.filter((item) => item.capabilityAuthority === "UNVALIDATED" && item.roles.includes("PRODUCT_SERVICE")).flatMap((item) => item.productServiceCandidates));
+  const salesChannels = unique(classifications.flatMap((item) => item.salesChannels));
+  const researchedGeographies = unique(classifications.flatMap((item) => item.researchedGeographies));
+  const expansionGeographies = researchedGeographies.filter((scope) => !/^(national|nationwide(?: united states| us)?|united states)$/i.test(scope));
+  const locationSeoOpportunities = unique(classifications.filter((item) => item.roles.includes("GEOGRAPHY")).flatMap((item) => item.seoOpportunities));
+  const proofRequirements = unique([...classifications.flatMap((item) => item.proofRequirements), "Relevant completed-project photography", "Material and fabrication specifications", "Customer or project examples"]);
   const marketNames = unique(approved.map((opportunity) => opportunity.name));
   const evidenceIds = unique(approved.flatMap((opportunity) => opportunity.evidenceIds));
   const evidenceClaims = workspace.evidence.filter((item) => evidenceIds.includes(item.evidenceId)).map((item) => item.observedClaim);
   const referenceGuidance = workspace.creativeInputs.flatMap((input) => input.notes ? [`${input.sentiment === "LIKE" ? "Favor" : input.sentiment === "DISLIKE" ? "Avoid" : "Reference"}: ${input.notes}`] : []);
   const profileContext = unique([...profileGuidance(context.brandProfile), ...profileGuidance(context.seoProfile), ...profileGuidance(context.promptProfile)]);
-  const audience = buyers[0] ?? "Commercial buyers identified in approved intelligence";
+  const audience = buyers[0] ?? "Commercial project buyers";
   const brandName = context.publicBrandIdentity.trim();
-  const marketFocus = verticals.slice(0, 3).join(", ") || "commercial stainless fabrication markets";
-  const geographicScopes = unique(approved.map((opportunity) => opportunity.geographicScope).filter((scope) => scope.toLowerCase() !== "unknown"));
+  const marketFocus = verticals.slice(0, 3).join(", ") || "commercial and institutional project environments";
+  const brandDescription = context.brandProfile.description?.split(/\s+for\s+/i).at(-1)?.replace(/\.$/, "") ?? "";
+  const brandFocus = unique(brandDescription.split(/,|\band related\b/i).filter((value) => /stainless|counter|fabrication/i.test(value))).slice(0, 3).join(", ") || "commercial stainless projects";
+  const opportunityPrioritization = [...approved].sort((left, right) => {
+    const value = { HIGH: 3, MODERATE: 2, LOW: 1, UNKNOWN: 0 };
+    return value[right.commercialValue] - value[left.commercialValue] || right.confidence - left.confidence;
+  }).map((opportunity) => opportunity.name);
   return {
-    positioning: `${brandName} will position ${context.domain} as a focused resource for ${audience} evaluating ${marketFocus}.`,
+    positioning: `${brandName} is a commercial project resource for ${audience.toLowerCase()} planning stainless solutions across ${marketFocus.toLowerCase()}.`,
     primaryAudience: audience,
     secondaryAudiences: buyers.slice(1),
-    valueProposition: authorityNames.length ? `Connect ${audience} with ${authorityNames.join(", ")} through clear specifications, relevant project proof, and direct quote paths.` : `Help ${audience} compare project approaches, specifications, and fit across ${marketFocus}, with direct paths to discuss requirements.`,
+    valueProposition: `Help ${audience.toLowerCase()} turn project requirements into clear specifications, relevant proof, and a quote-ready conversation for ${brandFocus}.`,
     majorVerticals: verticals,
     productServiceFamilies: authorityNames,
     informationArchitecture: ["Home", "Capabilities", "Markets", "Projects", "About", "Request a Quote"],
     proposedSitemap: unique(["/", "/capabilities", ...verticals.map((vertical) => `/markets/${vertical.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`), "/projects", "/about", "/request-a-quote"]),
     homepageGoals: unique(["Explain the primary market focus", "Present relevant project and fabrication proof", "Help buyers navigate by application and project need", "Drive qualified quote requests", ...referenceGuidance.filter((item) => item.startsWith("Favor:")).map((item) => item.slice(7))]),
-    conversionPaths: ["Market or capability page to request-a-quote", "Project proof to contact", "Capability validation content to consultation"],
-    ctaHierarchy: ["Request a Quote", "Discuss Your Project", "Review Capabilities"],
-    trustProofRequirements: unique(["Relevant completed-project photography", "Material and fabrication specifications", "Customer or project examples", "Clear service-area and fulfillment details", ...referenceGuidance.filter((item) => item.startsWith("Reference:")).map((item) => item.slice(10))]),
-    geographicStrategy: geographicScopes.length ? `Prioritize ${geographicScopes.join(", ")} with location-specific proof and clear fulfillment expectations.` : "Lead with the primary service region and expand geographic pages only where project evidence supports buyer relevance.",
-    proposedProductAuthority: authorityNames,
+    conversionPaths: unique(["Market and application content to request-a-quote", "Project proof to project consultation", ...salesChannels.map((channel) => `${channel} resources to specification and quote intake`)]),
+    ctaHierarchy: ["Request a Quote", "Discuss Your Project", salesChannels.length ? "Submit Specifications" : "Review Project Requirements"],
+    trustProofRequirements: unique([...proofRequirements, "Clear fulfillment and service-area details", ...referenceGuidance.filter((item) => item.startsWith("Reference:")).map((item) => item.slice(10))]),
+    geographicStrategy: `Build nationwide United States demand capture and quote-intake coverage. Treat ${expansionGeographies.length ? expansionGeographies.join(", ") : "specific researched regions"} as research-led expansion or location-SEO opportunities until service scope is explicitly established.`,
+    proposedProductAuthority: requiredProductAuthority,
     reason: `Synthesized from ${approved.length} approved opportunities, ${workspace.evidence.length} evidence records, and ${preferenceSummary(workspace.creativeInputs)} Market priorities: ${marketNames.join("; ")}.`,
     synthesisContext: {
       approvedOpportunityIds: approved.map((opportunity) => opportunity.opportunityId),
@@ -75,6 +88,13 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
       evidenceClaims,
       referenceGuidance,
       profileGuidance: profileContext,
+      semanticClassifications: classifications,
+      opportunityPrioritization,
+      salesChannels,
+      currentServiceGeographies: unique(classifications.filter((item) => item.capabilityAuthority === "CURRENT" && item.roles.includes("CAPABILITY")).flatMap((item) => item.researchedGeographies)),
+      targetExpansionGeographies: expansionGeographies,
+      researchedDemandGeographies: researchedGeographies,
+      locationSeoOpportunities,
     },
   };
 }

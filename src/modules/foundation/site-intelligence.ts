@@ -110,6 +110,25 @@ export type SiteStrategyProposal = {
     evidenceClaims: string[];
     referenceGuidance: string[];
     profileGuidance: string[];
+    semanticClassifications?: Array<{
+      opportunityId: string;
+      roles: Array<"CAPABILITY" | "PRODUCT_SERVICE" | "MARKET_VERTICAL" | "AUDIENCE" | "SALES_CHANNEL" | "GEOGRAPHY" | "DELIVERY_MODEL" | "SEO_OPPORTUNITY" | "FUTURE_EXPANSION" | "PROOF_REQUIREMENT">;
+      capabilityAuthority: "CURRENT" | "FUTURE" | "REJECTED" | "UNVALIDATED";
+      productServiceCandidates: string[];
+      marketVerticals: string[];
+      audiences: string[];
+      salesChannels: string[];
+      researchedGeographies: string[];
+      deliveryModels: string[];
+      seoOpportunities: string[];
+      proofRequirements: string[];
+    }>;
+    opportunityPrioritization?: string[];
+    salesChannels?: string[];
+    currentServiceGeographies?: string[];
+    targetExpansionGeographies?: string[];
+    researchedDemandGeographies?: string[];
+    locationSeoOpportunities?: string[];
   };
 };
 

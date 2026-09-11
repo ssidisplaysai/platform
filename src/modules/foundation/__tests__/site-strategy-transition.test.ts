@@ -7,8 +7,8 @@ import type { IntegrationProfileConfiguration } from "../types";
 const scope = { organizationId: "strategy-org", siteId: "strategy-site", actor: "owner", reason: "Strategy transition test." };
 const evidence: SiteIntelligenceEvidence = { evidenceId: "e1", sourceReference: "https://example.com/evidence", sourceType: "WEB", observedClaim: "Observed market demand.", retrievedAt: "2026-09-10T00:00:00.000Z", entity: "Market", confidence: 0.8, strength: "MODERATE", authority: "OBSERVATION" };
 
-function opportunity(id: string, ownerDecision: SiteOpportunity["ownerDecision"], capabilityState: SiteOpportunity["capabilityState"]): SiteOpportunity {
-  return { opportunityId: id, name: `Opportunity ${id}`, category: `Vertical ${id}`, buyer: `Buyer ${id}`, problemUseCase: "Use case", commercialValue: "HIGH", demandSignal: "Observed", competitionLevel: "MODERATE", organizationFit: "UNKNOWN", evidenceStrength: "MODERATE", confidence: 0.8, geographicScope: "Regional", nationalRolloutPotential: false, recurringReplacementPotential: false, seoContentOpportunity: "Candidate", rationale: "Evidence-backed market priority.", competitorEntities: [], evidenceIds: ["e1"], capabilityState, capabilityEvidenceIds: capabilityState === "VERIFIED" || capabilityState === "QUALIFIED" ? [`owner-${id}`] : [], capabilityNotes: null, recommendation: "Review", ownerDecision, decidedBy: ownerDecision === "PENDING" ? null : "owner", decidedAt: ownerDecision === "PENDING" ? null : "2026-09-10T00:01:00.000Z" };
+function opportunity(id: string, ownerDecision: SiteOpportunity["ownerDecision"], capabilityState: SiteOpportunity["capabilityState"], overrides: Partial<SiteOpportunity> = {}): SiteOpportunity {
+  return { opportunityId: id, name: `Opportunity ${id}`, category: `Vertical ${id}`, buyer: `Buyer ${id}`, problemUseCase: "Use case", commercialValue: "HIGH", demandSignal: "Observed", competitionLevel: "MODERATE", organizationFit: "UNKNOWN", evidenceStrength: "MODERATE", confidence: 0.8, geographicScope: "Regional", nationalRolloutPotential: false, recurringReplacementPotential: false, seoContentOpportunity: "Candidate", rationale: "Evidence-backed market priority.", competitorEntities: [], evidenceIds: ["e1"], capabilityState, capabilityEvidenceIds: capabilityState === "VERIFIED" || capabilityState === "QUALIFIED" ? [`owner-${id}`] : [], capabilityNotes: null, recommendation: "Review", ownerDecision, decidedBy: ownerDecision === "PENDING" ? null : "owner", decidedAt: ownerDecision === "PENDING" ? null : "2026-09-10T00:01:00.000Z", ...overrides };
 }
 
 function profile(profileId: string, profileType: IntegrationProfileConfiguration["profileType"]): IntegrationProfileConfiguration {
@@ -42,7 +42,7 @@ describe("Site Intelligence to strategy transition", () => {
   });
 
   test("first synthesis creates one review revision and double click is idempotent", async () => {
-    const started = await reviewed([opportunity("verified", "APPROVED", "VERIFIED"), opportunity("future", "APPROVED", "FUTURE_CAPABILITY"), opportunity("rejected", "REJECTED", "VERIFIED")]);
+    const started = await reviewed([opportunity("verified", "APPROVED", "VERIFIED", { name: "Custom stainless countertops", category: "Custom stainless countertop fabrication", buyer: "Restaurant operators" }), opportunity("future", "APPROVED", "FUTURE_CAPABILITY", { name: "Sanitary stainless fabrication", category: "Hygienic fabrication", buyer: "Food processors" }), opportunity("rejected", "REJECTED", "VERIFIED", { name: "Rejected worktables", category: "Commercial worktables", buyer: "Kitchens" })]);
     started.workspace = started.repository.addCreativeInput({ ...scope, expectedRevision: started.workspace.revision, creativeInput: { inputId: "reference-1", kind: "URL", reference: "https://reference.example/layout", sentiment: "LIKE", classification: "EXTERNAL_INSPIRATION_ONLY", notes: "Like the navigation.", suppliedBy: "owner", suppliedAt: "2026-09-10T00:02:00.000Z", binaryAsset: null } });
     const { synthesizeInitialSiteStrategy } = await import("../site-strategy-synthesizer");
     const proposal = synthesizeInitialSiteStrategy(started.workspace, context);
@@ -52,7 +52,7 @@ describe("Site Intelligence to strategy transition", () => {
     expect(workspace.revision).toBe(firstRevision);
     expect(workspace.strategyRevisions).toHaveLength(1);
     expect(workspace.strategyState).toBe("STRATEGY_READY_FOR_REVIEW");
-    expect(workspace.strategyRevisions[0]).toMatchObject({ status: "PROPOSED", decidedBy: null, decidedAt: null, proposedProductAuthority: ["Opportunity verified"] });
+    expect(workspace.strategyRevisions[0]).toMatchObject({ status: "PROPOSED", decidedBy: null, decidedAt: null, productServiceFamilies: ["Stainless Countertops"], proposedProductAuthority: [] });
     expect(workspace.strategyRevisions[0].reason).not.toContain("Opportunity rejected");
     expect(workspace.strategyRevisions[0].reason).toContain("1 owner references considered (1 likes");
     expect(workspace.strategyRevisions[0].synthesisContext?.referenceGuidance).toContain("Favor: Like the navigation.");
@@ -67,11 +67,37 @@ describe("Site Intelligence to strategy transition", () => {
     const started = await reviewed([opportunity("market", "APPROVED", "OWNER_VALIDATION_REQUIRED")]);
     const { synthesizeInitialSiteStrategy } = await import("../site-strategy-synthesizer");
     const proposal = synthesizeInitialSiteStrategy(started.workspace, context);
-    expect(proposal.majorVerticals).toEqual(["Vertical market"]);
+    expect(proposal.majorVerticals).toEqual([]);
     expect(proposal.proposedProductAuthority).toEqual([]);
     expect(proposal.productServiceFamilies).toEqual([]);
     expect(proposal.synthesisContext?.pendingCapabilityOpportunityIds).toEqual(["market"]);
     for (const value of [proposal.positioning, proposal.valueProposition, ...proposal.homepageGoals, proposal.geographicStrategy]) expect(value).not.toMatch(/owner validation|owner-verified|verified capabilities|qualified capabilities|authority gating/i);
+  });
+
+  test("channel and researched geography shape conversion and expansion without becoming products or service claims", async () => {
+    const started = await reviewed([
+      opportunity("channel", "APPROVED", "VERIFIED", { name: "Consultant and dealer spec-channel sales", category: "Quote-ready specification support", buyer: "Foodservice consultants, dealers, and contractors", problemUseCase: "Need drawings, specifications, and quote intake", geographicScope: "National" }),
+      opportunity("region", "APPROVED", "OWNER_VALIDATION_REQUIRED", { name: "Regional design-build fabrication", category: "Regional project fabrication and installation", buyer: "Restaurant operators, contractors, and designers", problemUseCase: "Need project fabrication and installation", geographicScope: "Dallas-Fort Worth and Mid-Atlantic regional project markets" }),
+      opportunity("gmp", "APPROVED", "OWNER_VALIDATION_REQUIRED", { name: "Sanitary and regulated stainless fabrication", category: "Hygienic / GMP stainless fabrication", buyer: "Food processors, pharma, and medical facilities", geographicScope: "National and industrial" }),
+    ]);
+    const { synthesizeInitialSiteStrategy } = await import("../site-strategy-synthesizer");
+    const originalOpportunities = structuredClone(started.workspace.opportunities);
+    const originalEvidence = structuredClone(started.workspace.evidence);
+    const proposal = synthesizeInitialSiteStrategy(started.workspace, context);
+    expect(proposal.productServiceFamilies).toEqual([]);
+    expect(proposal.proposedProductAuthority).toEqual(expect.arrayContaining(["Design-Build Fabrication", "Sanitary And Regulated Stainless Fabrication"]));
+    expect(proposal.proposedProductAuthority).not.toContain("Consultant And Dealer Spec-Channel Sales");
+    expect(proposal.conversionPaths.join(" ")).toMatch(/Dealer channel|Consultant channel|Specification channel/);
+    expect(proposal.geographicStrategy).toContain("nationwide United States");
+    expect(proposal.geographicStrategy).toContain("Dallas-Fort Worth");
+    expect(proposal.positioning).not.toMatch(/Hygienic|GMP|Regional design-build|Consultant and dealer/i);
+    expect(proposal.valueProposition).not.toMatch(/Consultant and dealer spec-channel sales/i);
+    expect(proposal.synthesisContext?.salesChannels.length).toBeGreaterThan(0);
+    expect(proposal.synthesisContext?.currentServiceGeographies).toEqual([]);
+    expect(proposal.synthesisContext?.targetExpansionGeographies).toEqual(expect.arrayContaining(["Dallas-Fort Worth", "Mid-Atlantic"]));
+    expect(proposal.synthesisContext?.targetExpansionGeographies).not.toContain("United States");
+    expect(started.workspace.opportunities).toEqual(originalOpportunities);
+    expect(started.workspace.evidence).toEqual(originalEvidence);
   });
 
   test("CAS and organization scope fail closed while downstream stores remain absent", async () => {

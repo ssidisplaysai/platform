@@ -49,7 +49,7 @@ describe("site intelligence UI contract", () => {
   });
 
   test("rich strategy review renders all canonical owner-facing dimensions and valid state actions", () => {
-    for (const text of ["Positioning", "Audiences", "Value Proposition", "Market / Vertical Priorities", "Product / Service Families", "Geographic Strategy", "Sitemap", "Conversion Paths", "CTA Hierarchy", "Proof / Trust Requirements", "Required Product Authority", "Homepage Goals", "Internal Authority and Synthesis Context", "GENERATE REVISED STRATEGY"]) expect(workspace).toContain(text);
+    for (const text of ["Positioning", "Audiences", "Value Proposition", "Market / Vertical Priorities", "Product / Service Families", "Opportunity Prioritization", "Sales Channels", "Expansion / SEO Geography", "Geographic Strategy", "Sitemap", "Conversion Paths", "CTA Hierarchy", "Proof / Trust Requirements", "Required Product Authority", "Homepage Goals", "Internal Authority and Synthesis Context", "GENERATE REVISED STRATEGY"]) expect(workspace).toContain(text);
     expect(workspace).toContain('proposal.status === "PROPOSED"');
     expect(workspace).toContain('proposal.status === "REVISION_REQUESTED"');
   });
