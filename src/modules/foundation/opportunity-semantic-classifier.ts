@@ -1,4 +1,4 @@
-import type { SiteOpportunity } from "./site-intelligence";
+import { hasVerifiedCapability, type SiteOpportunity } from "./site-intelligence";
 
 export type OpportunitySemanticRole = "CAPABILITY" | "PRODUCT_SERVICE" | "MARKET_VERTICAL" | "AUDIENCE" | "SALES_CHANNEL" | "GEOGRAPHY" | "DELIVERY_MODEL" | "SEO_OPPORTUNITY" | "FUTURE_EXPANSION" | "PROOF_REQUIREMENT";
 export type OpportunitySemanticClassification = {
@@ -45,7 +45,7 @@ export function classifyOpportunitySemantics(opportunity: SiteOpportunity): Oppo
   const productService = productPattern.test(`${opportunity.name} ${opportunity.category}`);
   const channel = channelPattern.test(`${opportunity.name} ${opportunity.category}`) || (!productService && channelPattern.test(opportunity.buyer));
   const delivery = deliveryPattern.test(combined);
-  const currentCapability = opportunity.capabilityState === "VERIFIED" || opportunity.capabilityState === "QUALIFIED";
+  const currentCapability = hasVerifiedCapability(opportunity);
   const marketVerticals = unique(matches(`${opportunity.buyer} ${opportunity.problemUseCase}`, verticalTerms));
   const audiences = [opportunity.buyer.trim()];
   const salesChannels = channel ? unique([/dealer/i.test(combined) ? "Dealer channel" : "", /consultant/i.test(combined) ? "Consultant channel" : "", /specifier|spec-channel/i.test(combined) ? "Specification channel" : ""]) : [];

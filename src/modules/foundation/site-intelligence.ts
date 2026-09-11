@@ -27,6 +27,40 @@ export type CapabilityEvidenceState =
   | "QUALIFIED"
   | "REJECTED"
   | "FUTURE_CAPABILITY";
+export type CapabilityEvidenceRelevanceType =
+  | "DIRECT_CAPABILITY_PROOF"
+  | "PROJECT_EXAMPLE"
+  | "PRODUCT_EXAMPLE"
+  | "FABRICATION_EXAMPLE"
+  | "SERVICE_SCOPE"
+  | "DELIVERY_SCOPE"
+  | "CHANNEL_EVIDENCE"
+  | "GEOGRAPHIC_SERVICE_EVIDENCE"
+  | "SPECIFICATION_OR_COMPLIANCE_EVIDENCE"
+  | "OWNER_ATTESTATION_SUPPORT"
+  | "GENERAL_REFERENCE";
+export type CapabilityEvidenceRelevance = {
+  evidenceId: string;
+  opportunityId: string;
+  relevanceType: CapabilityEvidenceRelevanceType;
+  ownerConfirmedRelevant: boolean;
+  linkedBy: string;
+  linkedAt: string;
+};
+export type CapabilityAuthorityDecision = {
+  organizationId: string;
+  siteId: string;
+  opportunityId: string;
+  decision: CapabilityEvidenceState;
+  evidenceIds: string[];
+  evidenceRelevance: CapabilityEvidenceRelevance[];
+  attestation: string;
+  qualificationNotes: string | null;
+  decidedBy: string;
+  decidedAt: string;
+  revision: number;
+};
+export type CapabilityAuthorityStatus = "CURRENT" | "AUTHORITY_REVIEW_REQUIRED" | "NOT_CURRENT";
 export type SiteAssetClassification =
   | "OWNER_APPROVED_PUBLISHABLE"
   | "OWNER_SUPPLIED_REFERENCE"
@@ -70,6 +104,7 @@ export type SiteOpportunity = {
   capabilityState: CapabilityEvidenceState;
   capabilityEvidenceIds: string[];
   capabilityNotes: string | null;
+  capabilityAuthorityRevisions?: CapabilityAuthorityDecision[];
   recommendation: string;
   ownerDecision: OpportunityDecision;
   decidedBy: string | null;
@@ -283,7 +318,18 @@ export function isPublishableSiteAsset(classification: SiteAssetClassification):
 }
 
 export function hasVerifiedCapability(opportunity: SiteOpportunity): boolean {
-  return opportunity.capabilityState === "VERIFIED" || opportunity.capabilityState === "QUALIFIED";
+  return getCapabilityAuthorityStatus(opportunity) === "CURRENT";
+}
+
+export function getCapabilityAuthorityStatus(opportunity: SiteOpportunity): CapabilityAuthorityStatus {
+  if (opportunity.capabilityState !== "VERIFIED" && opportunity.capabilityState !== "QUALIFIED") return "NOT_CURRENT";
+  const authority = opportunity.capabilityAuthorityRevisions?.at(-1);
+  if (!authority || authority.decision !== opportunity.capabilityState || !authority.attestation.trim()) return "AUTHORITY_REVIEW_REQUIRED";
+  if (authority.decision === "QUALIFIED" && !authority.qualificationNotes?.trim()) return "AUTHORITY_REVIEW_REQUIRED";
+  const sufficientEvidence = new Set(authority.evidenceRelevance
+    .filter((link) => link.opportunityId === opportunity.opportunityId && link.ownerConfirmedRelevant && link.relevanceType !== "GENERAL_REFERENCE")
+    .map((link) => link.evidenceId));
+  return authority.evidenceIds.some((evidenceId) => sufficientEvidence.has(evidenceId)) ? "CURRENT" : "AUTHORITY_REVIEW_REQUIRED";
 }
 
 export function canUseOpportunityAsAuthority(opportunity: SiteOpportunity): boolean {

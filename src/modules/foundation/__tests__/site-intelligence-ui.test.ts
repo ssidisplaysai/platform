@@ -27,7 +27,7 @@ describe("site intelligence UI contract", () => {
   });
 
   test("opportunity controls distinguish market actions, selected state, and capability evidence feedback", () => {
-    for (const text of ["Market Opportunity Decision", "Capability Authority", "APPROVE", "RESEARCH MORE", "HOLD", "REJECT", "Opportunity approved.", "Opportunity marked Research More.", "Supporting evidence is required for Verified or Qualified capability.", "Cannot mark capability"] ) expect(workspace).toContain(text);
+    for (const text of ["Market Opportunity Decision", "Capability Authority", "APPROVE", "RESEARCH MORE", "HOLD", "REJECT", "Opportunity approved.", "Opportunity marked Research More.", "GENERAL REFERENCE alone cannot verify or qualify a capability.", "Cannot mark capability"] ) expect(workspace).toContain(text);
     expect(workspace).toContain("aria-pressed={selected}");
     expect(workspace).toContain('action: decision === "RESEARCH_MORE" ? "RESEARCH_MORE" : "DECIDE_OPPORTUNITY"');
     expect(workspace).toContain('action: "VALIDATE_CAPABILITY"');
@@ -42,8 +42,9 @@ describe("site intelligence UI contract", () => {
   });
 
   test("capability authority uses a typed multi-select evidence picker", () => {
-    for (const text of ["Supporting evidence", "Add an owner-supplied URL or upload", "Qualification notes should describe limits or conditions.", "option.sourceType", "option.provenance"]) expect(workspace).toContain(text);
+    for (const text of ["Supporting evidence and relevance", "Add an owner-supplied URL or upload", "Owner attestation", "Evidence relevance", "GENERAL REFERENCE alone", "AUTHORITY_REVIEW_REQUIRED", "RETURN TO OWNER REVIEW", "option.sourceType", "option.provenance"]) expect(workspace).toContain(text);
     expect(workspace).toContain('type="checkbox"');
+    expect(workspace).toContain("CAPABILITY_RELEVANCE_TYPES");
     expect(workspace).toContain("capabilityEvidenceOptions");
     expect(workspace).not.toContain("Capability evidence reference<input");
   });

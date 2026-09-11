@@ -8,6 +8,7 @@ import {
   savePersistedState,
 } from "./foundation-persistence";
 import type {
+  CapabilityEvidenceRelevance,
   CapabilityEvidenceState,
   CapabilityEvidenceOption,
   CreativeDirectionProposal,
@@ -19,7 +20,7 @@ import type {
   SiteResearchExecution,
   SiteStrategyProposal,
 } from "./site-intelligence";
-import { SITE_INTELLIGENCE_REFERENCE_LIMITS } from "./site-intelligence";
+import { hasVerifiedCapability, SITE_INTELLIGENCE_REFERENCE_LIMITS } from "./site-intelligence";
 
 const NAMESPACE = "site-intelligence-repository";
 type State = { workspaces: SiteIntelligenceWorkspace[] };
@@ -132,16 +133,29 @@ export function decideSiteOpportunity(input: { siteId: string; organizationId: s
   }});
 }
 
-export function validateOpportunityCapability(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; opportunityId: string; state: CapabilityEvidenceState; evidenceIds: string[]; notes: string }) {
+export function validateOpportunityCapability(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; opportunityId: string; state: CapabilityEvidenceState; evidenceIds: string[]; evidenceRelevance?: Array<Pick<CapabilityEvidenceRelevance, "evidenceId" | "relevanceType" | "ownerConfirmedRelevant">>; attestation?: string; notes: string }) {
   const resolvedEvidence = input.state === "VERIFIED" || input.state === "QUALIFIED" ? resolveCapabilityEvidenceReferences({ organizationId: input.organizationId, siteId: input.siteId, referenceIds: input.evidenceIds }) : [];
   return update({ ...input, action: `CAPABILITY_${input.state}`, mutate(workspace) {
     if (!["INSUFFICIENT", "OWNER_VALIDATION_REQUIRED", "VERIFIED", "QUALIFIED", "REJECTED", "FUTURE_CAPABILITY"].includes(input.state)) throw new Error("CAPABILITY_STATE_INVALID");
     const opportunity = workspace.opportunities.find((candidate) => candidate.opportunityId === input.opportunityId);
     if (!opportunity) throw new Error("OPPORTUNITY_NOT_FOUND");
     if ((input.state === "VERIFIED" || input.state === "QUALIFIED") && resolvedEvidence.length === 0) throw new Error("CAPABILITY_EVIDENCE_REQUIRED");
+    if ((input.state === "VERIFIED" || input.state === "QUALIFIED" || input.state === "FUTURE_CAPABILITY") && !input.attestation?.trim()) throw new Error("CAPABILITY_ATTESTATION_REQUIRED");
+    if (input.state === "QUALIFIED" && !input.notes.trim()) throw new Error("CAPABILITY_QUALIFICATION_NOTES_REQUIRED");
+    const timestamp = now();
+    const resolvedIds = new Set(resolvedEvidence.map((item) => item.referenceId));
+    const relevance = (input.evidenceRelevance ?? []).map((link): CapabilityEvidenceRelevance => {
+      if (!resolvedIds.has(link.evidenceId)) throw new Error("CAPABILITY_RELEVANCE_EVIDENCE_MISMATCH");
+      return { ...link, opportunityId: input.opportunityId, linkedBy: input.actor, linkedAt: timestamp };
+    });
+    const hasSufficientRelevance = relevance.some((link) => link.ownerConfirmedRelevant && link.relevanceType !== "GENERAL_REFERENCE");
+    if ((input.state === "VERIFIED" || input.state === "QUALIFIED") && !hasSufficientRelevance) throw new Error("CAPABILITY_SPECIFIC_RELEVANCE_REQUIRED");
+    const previousEvidenceIds = opportunity.capabilityEvidenceIds;
     opportunity.capabilityState = input.state;
     opportunity.capabilityEvidenceIds = resolvedEvidence.map((item) => item.referenceId);
-    opportunity.capabilityNotes = input.notes;
+    opportunity.capabilityNotes = input.notes.trim() || null;
+    opportunity.capabilityAuthorityRevisions ??= [];
+    opportunity.capabilityAuthorityRevisions.push({ organizationId: input.organizationId, siteId: input.siteId, opportunityId: input.opportunityId, decision: input.state, evidenceIds: input.state === "OWNER_VALIDATION_REQUIRED" ? previousEvidenceIds : resolvedEvidence.map((item) => item.referenceId), evidenceRelevance: relevance, attestation: input.attestation?.trim() ?? "", qualificationNotes: input.state === "QUALIFIED" ? input.notes.trim() : null, decidedBy: input.actor, decidedAt: timestamp, revision: opportunity.capabilityAuthorityRevisions.length + 1 });
   }});
 }
 
@@ -201,8 +215,8 @@ export function addStrategyProposal(input: { siteId: string; organizationId: str
 
 export function getStrategyReadiness(workspace: SiteIntelligenceWorkspace): { ready: boolean; blockers: string[]; approvedOpportunityCount: number; verifiedCapabilityCount: number; qualifiedCapabilityCount: number } {
   const approvedOpportunityCount = workspace.opportunities.filter((candidate) => candidate.ownerDecision === "APPROVED").length;
-  const verifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "VERIFIED").length;
-  const qualifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "QUALIFIED").length;
+  const verifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "VERIFIED" && hasVerifiedCapability(candidate)).length;
+  const qualifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "QUALIFIED" && hasVerifiedCapability(candidate)).length;
   const blockers: string[] = [];
   if (workspace.intelligenceState !== "INTELLIGENCE_APPROVED") blockers.push("Approve Site Intelligence after completing opportunity review.");
   if (approvedOpportunityCount === 0) blockers.push("Approve at least one market opportunity for strategy consideration.");

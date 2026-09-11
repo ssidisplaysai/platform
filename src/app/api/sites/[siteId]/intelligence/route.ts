@@ -121,7 +121,7 @@ export async function POST(request: NextRequest, context: Context) {
         workspace = recordSiteOpportunity({ ...common, opportunity: body.opportunity as never, evidence: Array.isArray(body.evidence) ? body.evidence as never : [] });
         break;
       case "VALIDATE_CAPABILITY":
-        workspace = validateOpportunityCapability({ ...common, opportunityId: String(body.opportunityId), state: body.state as never, evidenceIds: Array.isArray(body.evidenceIds) ? body.evidenceIds.map(String) : [], notes: String(body.notes ?? "") });
+        workspace = validateOpportunityCapability({ ...common, opportunityId: String(body.opportunityId), state: body.state as never, evidenceIds: Array.isArray(body.evidenceIds) ? body.evidenceIds.map(String) : [], evidenceRelevance: Array.isArray(body.evidenceRelevance) ? body.evidenceRelevance as never : [], attestation: String(body.attestation ?? ""), notes: String(body.notes ?? "") });
         break;
       case "APPROVE_INTELLIGENCE":
         workspace = approveSiteIntelligence(common);

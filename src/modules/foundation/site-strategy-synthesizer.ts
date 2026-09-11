@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { CreativeInput, SiteIntelligenceWorkspace, SiteStrategyProposal } from "./site-intelligence";
+import { hasVerifiedCapability, type CreativeInput, type SiteIntelligenceWorkspace, type SiteStrategyProposal } from "./site-intelligence";
 import type { IntegrationProfileConfiguration } from "./types";
 import { classifyOpportunitySemantics } from "./opportunity-semantic-classifier";
 
@@ -33,8 +33,8 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
   if (workspace.intelligenceState !== "INTELLIGENCE_APPROVED") throw new Error("APPROVED_INTELLIGENCE_REQUIRED");
   const approved = workspace.opportunities.filter((opportunity) => opportunity.ownerDecision === "APPROVED");
   if (!approved.length) throw new Error("APPROVED_INTELLIGENCE_REQUIRED");
-  const presentAuthority = approved.filter((opportunity) => opportunity.capabilityState === "VERIFIED" || opportunity.capabilityState === "QUALIFIED");
-  const unverified = approved.filter((opportunity) => opportunity.capabilityState === "OWNER_VALIDATION_REQUIRED" || opportunity.capabilityState === "INSUFFICIENT");
+  const presentAuthority = approved.filter(hasVerifiedCapability);
+  const unverified = approved.filter((opportunity) => !hasVerifiedCapability(opportunity) && opportunity.capabilityState !== "FUTURE_CAPABILITY" && opportunity.capabilityState !== "REJECTED");
   const future = approved.filter((opportunity) => opportunity.capabilityState === "FUTURE_CAPABILITY");
   const classifications = approved.map(classifyOpportunitySemantics);
   const verticals = unique(classifications.flatMap((item) => item.marketVerticals));
