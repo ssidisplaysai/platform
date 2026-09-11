@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
 import type { GenerationAuthoritySnapshot, GenerationReadinessResult } from "./site-generation-readiness";
-import type { SiteBuildPageAuthority, SiteBuildPlanProposal } from "./site-build-plan";
+import type { SiteBuildPageAuthority, SiteBuildPlanChangeRequest, SiteBuildPlanProposal } from "./site-build-plan";
 
 export type SiteGenerationReadinessCertification = GenerationAuthoritySnapshot & {
   certificationId: string;
@@ -61,6 +61,7 @@ type State = {
   certifications: SiteGenerationReadinessCertification[];
   buildSessions: SiteBuildSession[];
   buildPlans?: SiteBuildPlanProposal[];
+  buildPlanChangeRequests?: SiteBuildPlanChangeRequest[];
   draftSets?: SiteBuildDraftSet[];
   wordpressDrafts?: SiteBuildWordPressDraft[];
 };
@@ -69,7 +70,7 @@ const NAMESPACE = "site-generation-readiness-repository";
 const seed = (): State => ({ certifications: [], buildSessions: [] });
 function load() {
   const loaded = loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed });
-  return { ...loaded, state: { ...loaded.state, buildPlans: loaded.state.buildPlans ?? [], draftSets: loaded.state.draftSets ?? [], wordpressDrafts: loaded.state.wordpressDrafts ?? [] } };
+  return { ...loaded, state: { ...loaded.state, buildPlans: loaded.state.buildPlans ?? [], buildPlanChangeRequests: loaded.state.buildPlanChangeRequests ?? [], draftSets: loaded.state.draftSets ?? [], wordpressDrafts: loaded.state.wordpressDrafts ?? [] } };
 }
 function escapeHtml(value: string): string { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
 
@@ -131,9 +132,10 @@ export function listActiveSiteBuildSessions(input: { organizationId: string; sit
 export function getSiteBuildRecords(input: { organizationId: string; siteId: string; buildSessionId: string }) {
   const state = load().state;
   const plans = state.buildPlans.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId);
+  const changeRequests = state.buildPlanChangeRequests.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId);
   const draftSets = state.draftSets.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId);
   const wordpressDrafts = state.wordpressDrafts.filter((item) => item.buildSessionId === input.buildSessionId);
-  return deepClone({ plans, currentPlan: plans.at(-1) ?? null, draftSet: draftSets.at(-1) ?? null, wordpressDrafts });
+  return deepClone({ plans, changeRequests, currentPlan: plans.at(-1) ?? null, draftSet: draftSets.at(-1) ?? null, wordpressDrafts });
 }
 
 export function saveBuildPlanProposal(plan: SiteBuildPlanProposal): SiteBuildPlanProposal {
@@ -155,12 +157,14 @@ export function decideBuildPlan(input: { organizationId: string; siteId: string;
   return deepClone(loaded.state.buildPlans[index]);
 }
 
-export function saveRevisedBuildPlan(input: { currentRevision: number; proposal: SiteBuildPlanProposal; actor: string; instructions: string }): SiteBuildPlanProposal {
-  if (!input.instructions.trim()) throw new Error("BUILD_PLAN_CHANGE_INSTRUCTIONS_REQUIRED");
+export function saveRevisedBuildPlan(input: { currentRevision: number; proposal: SiteBuildPlanProposal; changeRequest: SiteBuildPlanChangeRequest; actor: string }): SiteBuildPlanProposal {
+  const instructions = input.changeRequest.instructions;
+  if (!instructions.trim()) throw new Error("BUILD_PLAN_CHANGE_INSTRUCTIONS_REQUIRED");
   const loaded = load();
   const currentIndex = loaded.state.buildPlans.findIndex((item) => item.buildSessionId === input.proposal.buildSessionId && item.revision === input.currentRevision && item.status === "PROPOSED");
   if (currentIndex < 0) throw new Error("BUILD_PLAN_NOT_PROPOSED");
   loaded.state.buildPlans[currentIndex] = { ...loaded.state.buildPlans[currentIndex], status: "REVISION_REQUESTED", decidedBy: input.actor, decidedAt: new Date().toISOString() };
+  loaded.state.buildPlanChangeRequests.push(input.changeRequest);
   loaded.state.buildPlans.push(input.proposal);
   savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
   return deepClone(input.proposal);

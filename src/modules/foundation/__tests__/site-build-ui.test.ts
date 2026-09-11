@@ -10,6 +10,10 @@ describe("bounded Site Build owner workspace", () => {
   test("supports explicit plan review, revision instructions, local draft review, and WordPress handoff", () => {
     for (const text of ["APPROVE BUILD PLAN", "REQUEST CHANGES", "REJECT / RETURN", "What should Genesis change?", "GENERATE SITE DRAFTS", "APPROVE SITE DRAFTS", "CREATE WORDPRESS DRAFTS"]) expect(source).toContain(text);
   });
+  test("shows requested changes and a four-way revision diff before full plan review", () => {
+    for (const text of ["Requested changes", "Changes from Revision", "Added", "Removed", "Changed", "Unchanged"]) expect(source).toContain(text);
+    expect(source.indexOf("Changes from Revision")).toBeLessThan(source.indexOf("plan.pages.map"));
+  });
   test("does not expose publishing or automatic site activation actions", () => {
     expect(source).not.toContain("PUBLISH SITE"); expect(source).not.toContain("ENABLE SITE");
   });

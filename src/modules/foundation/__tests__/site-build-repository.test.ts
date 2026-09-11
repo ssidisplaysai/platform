@@ -25,8 +25,10 @@ describe("bounded Site Build repository", () => {
     const repository = await import("../site-generation-readiness-repository");
     repository.saveBuildPlanProposal(plan());
     const revised = { ...plan(2), ownerInstructions: "Emphasize quote intake." };
-    repository.saveRevisedBuildPlan({ currentRevision: 1, proposal: revised, actor: "owner", instructions: "Emphasize quote intake." });
+    const changeRequest = { changeRequestId: "change-1", buildSessionId: "build-1", ...scope, fromRevision: 1, requestedBy: "owner", requestedAt: "now", instructions: "Emphasize quote intake.", authoritySnapshot: snapshot };
+    repository.saveRevisedBuildPlan({ currentRevision: 1, proposal: revised, changeRequest, actor: "owner" });
     expect(repository.getSiteBuildRecords({ ...scope, buildSessionId: "build-1" }).plans.map((item) => item.status)).toEqual(["REVISION_REQUESTED", "PROPOSED"]);
+    expect(repository.getSiteBuildRecords({ ...scope, buildSessionId: "build-1" }).changeRequests).toEqual([changeRequest]);
     expect(() => repository.generateSiteBuildDrafts({ plan: revised, actor: "owner" })).toThrow("APPROVED_BUILD_PLAN_REQUIRED");
     const approved = repository.decideBuildPlan({ ...scope, buildSessionId: "build-1", revision: 2, decision: "APPROVE", actor: "owner", reason: "Approved." });
     approved.pages[0].name = "Home <script>";

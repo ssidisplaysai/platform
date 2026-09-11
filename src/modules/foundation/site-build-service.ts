@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { synthesizeSiteBuildPlan } from "./site-build-plan";
 import type { GenerationAuthoritySnapshot } from "./site-generation-readiness";
 import { getSiteGenerationReadiness } from "./site-generation-readiness-service";
@@ -17,7 +18,7 @@ export function isSiteBuildSnapshotCurrent(left: GenerationAuthoritySnapshot, ri
 export function getSiteBuildWorkspace(site: SiteConfiguration) {
   const generation = getSiteGenerationReadiness(site);
   const session = generation.buildSession;
-  const records = session ? getSiteBuildRecords({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : { plans: [], currentPlan: null, draftSet: null, wordpressDrafts: [] };
+  const records = session ? getSiteBuildRecords({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : { plans: [], changeRequests: [], currentPlan: null, draftSet: null, wordpressDrafts: [] };
   const stale = generation.certification.status !== "CURRENT" || Boolean(records.currentPlan && !isSiteBuildSnapshotCurrent(records.currentPlan.authoritySnapshot, generation.readiness.snapshot)) || Boolean(records.draftSet && !isSiteBuildSnapshotCurrent(records.draftSet.authoritySnapshot, generation.readiness.snapshot));
   let stage: SiteBuildStage;
   if (!session) stage = "BUILD_NOT_STARTED";
@@ -61,8 +62,10 @@ export function generateBuildPlan(site: SiteConfiguration, actor: string) {
 export function reviseBuildPlan(site: SiteConfiguration, actor: string, instructions: string) {
   const context = planningContext(site); const current = context.workspace.currentPlan;
   if (!current || current.status !== "PROPOSED") throw new Error("BUILD_PLAN_NOT_PROPOSED");
-  const proposal = synthesizeSiteBuildPlan({ buildSessionId: context.workspace.session.buildSessionId, site, intelligence: context.intelligence, strategy: context.strategy, creative: context.creative, candidates: context.workspace.generation.authority.candidates, sources: context.workspace.generation.authority.sources, authoritySnapshot: context.workspace.generation.readiness.snapshot, revision: current.revision + 1, ownerInstructions: instructions, actor });
-  return saveRevisedBuildPlan({ currentRevision: current.revision, proposal, actor, instructions });
+  const requestedAt = new Date().toISOString();
+  const changeRequest = { changeRequestId: `build-plan-change-${randomUUID()}`, buildSessionId: context.workspace.session.buildSessionId, organizationId: site.organizationId, siteId: site.siteId, fromRevision: current.revision, requestedBy: actor, requestedAt, instructions: instructions.trim(), authoritySnapshot: context.workspace.generation.readiness.snapshot };
+  const proposal = synthesizeSiteBuildPlan({ buildSessionId: context.workspace.session.buildSessionId, site, intelligence: context.intelligence, strategy: context.strategy, creative: context.creative, candidates: context.workspace.generation.authority.candidates, sources: context.workspace.generation.authority.sources, authoritySnapshot: context.workspace.generation.readiness.snapshot, revision: current.revision + 1, ownerInstructions: instructions, priorPlan: current, changeRequest, actor, now: requestedAt });
+  return saveRevisedBuildPlan({ currentRevision: current.revision, proposal, changeRequest, actor });
 }
 
 export function approveBuildPlan(site: SiteConfiguration, actor: string, reason: string) { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || workspace.stale || !workspace.currentPlan) throw new Error("CURRENT_BUILD_PLAN_REQUIRED"); return decideBuildPlan({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, revision: workspace.currentPlan.revision, decision: "APPROVE", actor, reason }); }
