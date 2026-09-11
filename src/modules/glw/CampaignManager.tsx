@@ -3,29 +3,557 @@
 import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { GlwCampaignContinuationProposal, GlwCampaignManagerRecord, GlwCampaignStateCoverage } from "./campaign-manager";
+import type {
+  GlwCampaignContinuationProposal,
+  GlwCampaignManagerRecord,
+  GlwCampaignStateCoverage,
+} from "./campaign-manager";
 import { CampaignGeographicMap } from "./CampaignGeographicMap";
+import {
+  CampaignActivationAuthorityPanel,
+  type CampaignActivationReadiness,
+} from "./CampaignActivationAuthorityPanel";
 
-type RecordWithProposal = GlwCampaignManagerRecord & { proposal: GlwCampaignContinuationProposal | null };
-type Draft = { productId: string; goal: "state_service" | "city_service"; stateCodes: string[]; pagesPerDay: number; publicationPolicy: "draft_only" | "publish_after_gates"; name: string; parentCampaignId: string | null; originReason: string | null };
-const STEPS = ["Product / Service", "Campaign Goal", "Geographic Reach", "Throughput", "Publication Policy", "Preview"] as const;
+type RecordWithProposal = GlwCampaignManagerRecord & {
+  proposal: GlwCampaignContinuationProposal | null;
+};
+type Draft = {
+  productId: string;
+  goal: "state_service" | "city_service";
+  stateCodes: string[];
+  pagesPerDay: number;
+  publicationPolicy: "draft_only" | "publish_after_gates";
+  name: string;
+  parentCampaignId: string | null;
+  originReason: string | null;
+};
+const STEPS = [
+  "Product / Service",
+  "Campaign Goal",
+  "Geographic Reach",
+  "Throughput",
+  "Publication Policy",
+  "Preview",
+] as const;
 
-function freshDraft(products: readonly { productId: string; name: string }[]): Draft { return { productId: products[0]?.productId ?? "", goal: "state_service", stateCodes: [], pagesPerDay: 10, publicationPolicy: "draft_only", name: "", parentCampaignId: null, originReason: null }; }
-function formatDate(value: string | null): string { return value ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(value)) : "—"; }
+function freshDraft(
+  products: readonly { productId: string; name: string }[],
+): Draft {
+  return {
+    productId: products[0]?.productId ?? "",
+    goal: "state_service",
+    stateCodes: [],
+    pagesPerDay: 10,
+    publicationPolicy: "draft_only",
+    name: "",
+    parentCampaignId: null,
+    originReason: null,
+  };
+}
+function formatDate(value: string | null): string {
+  return value
+    ? new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).format(new Date(value))
+    : "—";
+}
 
-export function CampaignManager({ organizationId, siteId, requestRoles, records, coverage, coverageByProduct, products, productNames }: { organizationId: string; siteId: string; requestRoles: readonly string[]; records: readonly RecordWithProposal[]; coverage: readonly GlwCampaignStateCoverage[]; coverageByProduct: Record<string, readonly GlwCampaignStateCoverage[]>; products: readonly { productId: string; name: string }[]; productNames: Record<string, string> }) {
+export function CampaignManager({
+  organizationId,
+  siteId,
+  requestRoles,
+  records,
+  coverage,
+  coverageByProduct,
+  products,
+  productNames,
+  activationReadinessByCampaign = {},
+  globalPromotionAvailable = false,
+  globalPromotionReason = "Campaign activation is unavailable for this runtime.",
+}: {
+  organizationId: string;
+  siteId: string;
+  requestRoles: readonly string[];
+  records: readonly RecordWithProposal[];
+  coverage: readonly GlwCampaignStateCoverage[];
+  coverageByProduct: Record<string, readonly GlwCampaignStateCoverage[]>;
+  products: readonly { productId: string; name: string }[];
+  productNames: Record<string, string>;
+  activationReadinessByCampaign?: Record<string, CampaignActivationReadiness>;
+  globalPromotionAvailable?: boolean;
+  globalPromotionReason?: string;
+}) {
   const router = useRouter();
-  const [step, setStep] = useState(0); const [draft, setDraft] = useState<Draft>(() => freshDraft(products)); const [message, setMessage] = useState<string | null>(null); const [busy, setBusy] = useState(false);
-  const [productFilter, setProductFilter] = useState(""); const [mapSelection, setMapSelection] = useState<string[]>([]); const [selectedState, setSelectedState] = useState("CA");
-  const displayedCoverage = productFilter ? coverageByProduct[productFilter] ?? coverage : coverage;
-  const totals = records.reduce((result, record) => ({ complete: result.complete + record.completedCount, active: result.active + (record.displayState === "ACTIVE" ? 1 : 0), draft: result.draft + (record.displayState === "DRAFT" ? 1 : 0) }), { complete: 0, active: 0, draft: 0 });
-  function seedFrom(record: RecordWithProposal) { if (!record.proposal) return; setDraft({ productId: record.proposal.productId, goal: record.proposal.pageType, stateCodes: [...record.proposal.stateCodes], pagesPerDay: record.proposal.pagesPerDay, publicationPolicy: record.proposal.publicationPolicy, name: record.proposal.name, parentCampaignId: record.campaign.campaignId, originReason: record.proposal.originReason }); setStep(0); setMessage(null); document.getElementById("new-campaign")?.scrollIntoView({ behavior: "smooth" }); }
-  function toggleMapState(code: string) { setMapSelection((current) => current.includes(code) ? current.filter((item) => item !== code) : [...current, code]); }
-  async function createDraft() { setBusy(true); setMessage(null); try { const response = await fetch("/api/glw/campaign-drafts", { method: "POST", headers: { "Content-Type": "application/json", "x-gcp-roles": requestRoles.join(","), "x-gcp-organization-id": organizationId, "x-gcp-site-id": siteId }, body: JSON.stringify({ ...draft, pageType: draft.goal, imageRequired: true }) }); const payload = await response.json() as { campaign?: { name: string }; error?: string }; if (!response.ok || !payload.campaign) throw new Error(payload.error ?? "Draft could not be created."); setMessage(`${payload.campaign.name} was created as a draft.`); setDraft(freshDraft(products)); setStep(0); router.refresh(); } catch (error) { setMessage(error instanceof Error ? error.message : "Draft could not be created."); } finally { setBusy(false); } }
-  return <div className="space-y-8">
-    <section className="grid gap-px border border-zinc-800 bg-zinc-800 sm:grid-cols-4">{[["States covered",coverage.filter((state)=>state.state==="completed").length],["Targets complete",totals.complete],["Campaigns active",totals.active],["Campaigns draft",totals.draft]].map(([label,value])=><div key={label} className="bg-zinc-950 p-5"><p className="text-xs uppercase text-zinc-500">{label}</p><p className="mt-2 text-2xl font-bold text-white">{value}</p></div>)}</section>
-    <CampaignGeographicMap coverage={displayedCoverage} records={records} products={products} productFilter={productFilter} selectedStates={mapSelection} selectedState={selectedState} onProductFilter={setProductFilter} onToggleState={toggleMapState} onSelectState={setSelectedState} onUseSelection={() => { setDraft((current) => ({ ...current, productId: productFilter || current.productId, stateCodes: mapSelection })); setStep(2); document.getElementById("new-campaign")?.scrollIntoView({ behavior: "smooth" }); }} onSelectStatus={(status) => setMapSelection(displayedCoverage.filter((state) => state.state === status).map((state) => state.code))} onClear={() => setMapSelection([])} />
-    <section><div className="mb-4"><p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Campaigns</p><h2 className="mt-1 text-xl font-bold text-white">Execution portfolio</h2></div><div className="grid gap-4 xl:grid-cols-2">{records.map((record)=>{const terminal=record.displayState==="COMPLETED";const progress=record.summary.total?Math.round(record.completedCount/record.summary.total*100):0;return <article key={record.campaign.campaignId} className={`border p-5 ${terminal?"border-emerald-700 bg-emerald-950/10":"border-zinc-800 bg-zinc-950"}`}><div className="flex items-start justify-between gap-4"><div><h3 className="font-bold text-white">{record.campaign.name}</h3><p className="mt-1 text-sm text-zinc-400">{productNames[record.campaign.productId]??record.campaign.productId} · {record.campaign.pageType.replace("_"," ")}</p></div><span className={`border px-2 py-1 text-xs font-bold ${terminal?"border-emerald-600 text-emerald-300":"border-zinc-700 text-zinc-300"}`}>{record.displayState}</span></div><div className="mt-5 h-2 bg-zinc-800"><div className={`h-full ${terminal?"bg-emerald-500":"bg-sky-500"}`} style={{width:`${progress}%`}} /></div><div className="mt-3 grid grid-cols-4 gap-2 text-xs"><span className="text-zinc-400">{record.completedCount}/{record.summary.total}<b className="block text-zinc-200">Complete</b></span><span className="text-zinc-400">{record.summary.failed}<b className="block text-zinc-200">Failed</b></span><span className="text-zinc-400">{record.summary.queued}<b className="block text-zinc-200">Queued</b></span><span className="text-zinc-400">{record.summary.running}<b className="block text-zinc-200">Running</b></span></div><p className="mt-4 text-xs text-zinc-500">Created {formatDate(record.campaign.createdAt)}{terminal?` · Completed ${formatDate(record.completedAt)}`:""}</p>{record.proposal?<div className="mt-5 border-t border-zinc-800 pt-4"><p className="text-xs uppercase text-emerald-400">Next Campaign</p><p className="mt-1 text-sm font-semibold text-white">{record.proposal.name}</p><p className="mt-1 text-xs leading-5 text-zinc-400">{record.proposal.originReason}</p><button type="button" onClick={()=>seedFrom(record)} className="mt-3 border border-emerald-600 px-3 py-2 text-xs font-bold text-emerald-200">Start from this</button></div>:record.summary.failed>0?<p className="mt-4 text-xs text-amber-300">Resolve {record.summary.failed} failed target before expansion.</p>:null}</article>})}</div></section>
-    <section id="new-campaign" className="border border-zinc-800 bg-zinc-950 p-6"><div className="flex items-end justify-between"><div><p className="text-xs uppercase tracking-[0.2em] text-zinc-500">New Campaign</p><h2 className="mt-1 text-xl font-bold text-white">Create a draft</h2></div><span className="text-sm text-zinc-400">Step {step+1} of {STEPS.length}</span></div><div className="mt-5 flex gap-1">{STEPS.map((label,index)=><button type="button" key={label} onClick={()=>setStep(index)} className={`h-2 flex-1 ${index<=step?"bg-red-500":"bg-zinc-800"}`} title={label} />)}</div><div className="mt-6 min-h-48">{step===0?<label className="block text-sm text-zinc-300">What are we expanding?<select value={draft.productId} onChange={(e)=>setDraft({...draft,productId:e.target.value})} className="mt-2 w-full border border-zinc-700 bg-zinc-900 p-3 text-white">{products.map((product)=><option key={product.productId} value={product.productId}>{product.name}</option>)}</select></label>:null}{step===1?<div><p className="text-sm text-zinc-300">Campaign goal</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{[["state_service","State coverage"],["city_service","City coverage"]].map(([value,label])=><button key={value} type="button" onClick={()=>setDraft({...draft,goal:value as Draft["goal"]})} className={`border p-4 text-left ${draft.goal===value?"border-red-500 bg-red-950/20":"border-zinc-700"}`}><b className="text-white">{label}</b></button>)}</div></div>:null}{step===2?<div><div className="flex flex-wrap gap-2"><button type="button" onClick={()=>setDraft({...draft,stateCodes:coverage.map((state)=>state.code)})} className="border border-zinc-700 px-3 py-2 text-sm">All 50 states</button><button type="button" onClick={()=>setDraft({...draft,stateCodes:coverage.filter((state)=>state.state==="uncovered").map((state)=>state.code)})} className="border border-zinc-700 px-3 py-2 text-sm">Uncovered states</button><button type="button" onClick={()=>setDraft({...draft,stateCodes:coverage.filter((state)=>state.state==="incomplete").map((state)=>state.code)})} className="border border-zinc-700 px-3 py-2 text-sm">Incomplete states</button></div><p className="mt-4 text-sm text-zinc-300">{draft.stateCodes.length} states selected. Use the coverage map to adjust.</p></div>:null}{step===3?<label className="block text-sm text-zinc-300">Pages per day<input type="number" min={1} max={100} value={draft.pagesPerDay} onChange={(e)=>setDraft({...draft,pagesPerDay:Number(e.target.value)})} className="mt-2 block w-32 border border-zinc-700 bg-zinc-900 p-3 text-white" /></label>:null}{step===4?<div><p className="text-sm text-zinc-300">Publication policy</p>{[["draft_only","Draft only"],["publish_after_gates","Publish only after existing gates"]].map(([value,label])=><label key={value} className="mt-3 flex gap-3 border border-zinc-800 p-3"><input type="radio" checked={draft.publicationPolicy===value} onChange={()=>setDraft({...draft,publicationPolicy:value as Draft["publicationPolicy"]})} /><span>{label}</span></label>)}</div>:null}{step===5?<div className="space-y-3 text-sm"><label className="block text-zinc-300">Campaign name<input value={draft.name} onChange={(e)=>setDraft({...draft,name:e.target.value})} className="mt-2 w-full border border-zinc-700 bg-zinc-900 p-3 text-white" /></label><dl className="grid grid-cols-2 gap-2 text-zinc-400"><dt>Goal</dt><dd className="text-right text-white">{draft.goal.replace("_"," ")}</dd><dt>States</dt><dd className="text-right text-white">{draft.stateCodes.length}</dd><dt>Throughput</dt><dd className="text-right text-white">{draft.pagesPerDay}/day</dd><dt>Policy</dt><dd className="text-right text-white">{draft.publicationPolicy.replaceAll("_"," ")}</dd></dl><button type="button" disabled={busy||!draft.name.trim()||!draft.productId||draft.stateCodes.length===0} onClick={createDraft} className="mt-4 border border-red-500 bg-red-600 px-5 py-3 font-bold text-white disabled:border-zinc-700 disabled:bg-zinc-800">Create Campaign Draft</button></div>:null}</div><div className="flex justify-between border-t border-zinc-800 pt-4"><button type="button" disabled={step===0} onClick={()=>setStep(step-1)} className="px-3 py-2 text-sm text-zinc-400 disabled:text-zinc-700">Back</button><button type="button" disabled={step===STEPS.length-1} onClick={()=>setStep(step+1)} className="border border-zinc-700 px-4 py-2 text-sm disabled:text-zinc-700">Continue</button></div>{message?<p className="mt-4 text-sm text-zinc-300" role="status">{message}</p>:null}</section>
-  </div>;
+  const [step, setStep] = useState(0);
+  const [draft, setDraft] = useState<Draft>(() => freshDraft(products));
+  const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [productFilter, setProductFilter] = useState("");
+  const [mapSelection, setMapSelection] = useState<string[]>([]);
+  const [selectedState, setSelectedState] = useState("CA");
+  const displayedCoverage = productFilter
+    ? (coverageByProduct[productFilter] ?? coverage)
+    : coverage;
+  const totals = records.reduce(
+    (result, record) => ({
+      complete: result.complete + record.completedCount,
+      active: result.active + (record.displayState === "ACTIVE" ? 1 : 0),
+      draft: result.draft + (record.displayState === "DRAFT" ? 1 : 0),
+    }),
+    { complete: 0, active: 0, draft: 0 },
+  );
+  function seedFrom(record: RecordWithProposal) {
+    if (!record.proposal) return;
+    setDraft({
+      productId: record.proposal.productId,
+      goal: record.proposal.pageType,
+      stateCodes: [...record.proposal.stateCodes],
+      pagesPerDay: record.proposal.pagesPerDay,
+      publicationPolicy: record.proposal.publicationPolicy,
+      name: record.proposal.name,
+      parentCampaignId: record.campaign.campaignId,
+      originReason: record.proposal.originReason,
+    });
+    setStep(0);
+    setMessage(null);
+    document
+      .getElementById("new-campaign")
+      ?.scrollIntoView({ behavior: "smooth" });
+  }
+  function toggleMapState(code: string) {
+    setMapSelection((current) =>
+      current.includes(code)
+        ? current.filter((item) => item !== code)
+        : [...current, code],
+    );
+  }
+  async function createDraft() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/glw/campaign-drafts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-gcp-roles": requestRoles.join(","),
+          "x-gcp-organization-id": organizationId,
+          "x-gcp-site-id": siteId,
+        },
+        body: JSON.stringify({
+          ...draft,
+          pageType: draft.goal,
+          imageRequired: true,
+        }),
+      });
+      const payload = (await response.json()) as {
+        campaign?: { name: string };
+        error?: string;
+      };
+      if (!response.ok || !payload.campaign)
+        throw new Error(payload.error ?? "Draft could not be created.");
+      setMessage(`${payload.campaign.name} was created as a draft.`);
+      setDraft(freshDraft(products));
+      setStep(0);
+      router.refresh();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Draft could not be created.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="space-y-8">
+      <section className="grid gap-px border border-zinc-800 bg-zinc-800 sm:grid-cols-4">
+        {[
+          [
+            "States covered",
+            coverage.filter((state) => state.state === "completed").length,
+          ],
+          ["Targets complete", totals.complete],
+          ["Campaigns active", totals.active],
+          ["Campaigns draft", totals.draft],
+        ].map(([label, value]) => (
+          <div key={label} className="bg-zinc-950 p-5">
+            <p className="text-xs uppercase text-zinc-500">{label}</p>
+            <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+          </div>
+        ))}
+      </section>
+      <CampaignGeographicMap
+        coverage={displayedCoverage}
+        records={records}
+        products={products}
+        productFilter={productFilter}
+        selectedStates={mapSelection}
+        selectedState={selectedState}
+        onProductFilter={setProductFilter}
+        onToggleState={toggleMapState}
+        onSelectState={setSelectedState}
+        onUseSelection={() => {
+          setDraft((current) => ({
+            ...current,
+            productId: productFilter || current.productId,
+            stateCodes: mapSelection,
+          }));
+          setStep(2);
+          document
+            .getElementById("new-campaign")
+            ?.scrollIntoView({ behavior: "smooth" });
+        }}
+        onSelectStatus={(status) =>
+          setMapSelection(
+            displayedCoverage
+              .filter((state) => state.state === status)
+              .map((state) => state.code),
+          )
+        }
+        onClear={() => setMapSelection([])}
+      />
+      <section>
+        <div className="mb-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+            Campaigns
+          </p>
+          <h2 className="mt-1 text-xl font-bold text-white">
+            Execution portfolio
+          </h2>
+        </div>
+        <div className="grid gap-4 xl:grid-cols-2">
+          {records.map((record) => {
+            const terminal = record.displayState === "COMPLETED";
+            const progress = record.summary.total
+              ? Math.round((record.completedCount / record.summary.total) * 100)
+              : 0;
+            return (
+              <article
+                key={record.campaign.campaignId}
+                className={`border p-5 ${terminal ? "border-emerald-700 bg-emerald-950/10" : "border-zinc-800 bg-zinc-950"}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-white">
+                      {record.campaign.name}
+                    </h3>
+                    <p className="mt-1 text-sm text-zinc-400">
+                      {productNames[record.campaign.productId] ??
+                        record.campaign.productId}{" "}
+                      · {record.campaign.pageType.replace("_", " ")}
+                    </p>
+                  </div>
+                  <span
+                    className={`border px-2 py-1 text-xs font-bold ${terminal ? "border-emerald-600 text-emerald-300" : "border-zinc-700 text-zinc-300"}`}
+                  >
+                    {record.displayState}
+                  </span>
+                </div>
+                <div className="mt-5 h-2 bg-zinc-800">
+                  <div
+                    className={`h-full ${terminal ? "bg-emerald-500" : "bg-sky-500"}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                  <span className="text-zinc-400">
+                    {record.completedCount}/{record.summary.total}
+                    <b className="block text-zinc-200">Complete</b>
+                  </span>
+                  <span className="text-zinc-400">
+                    {record.summary.failed}
+                    <b className="block text-zinc-200">Failed</b>
+                  </span>
+                  <span className="text-zinc-400">
+                    {record.summary.queued}
+                    <b className="block text-zinc-200">Queued</b>
+                  </span>
+                  <span className="text-zinc-400">
+                    {record.summary.running}
+                    <b className="block text-zinc-200">Running</b>
+                  </span>
+                </div>
+                <p className="mt-4 text-xs text-zinc-500">
+                  Created {formatDate(record.campaign.createdAt)}
+                  {terminal
+                    ? ` · Completed ${formatDate(record.completedAt)}`
+                    : ""}
+                </p>
+                {activationReadinessByCampaign[record.campaign.campaignId]
+                  ?.preparedTargetCount > 0 ? (
+                  <CampaignActivationAuthorityPanel
+                    organizationId={organizationId}
+                    siteId={siteId}
+                    campaignId={record.campaign.campaignId}
+                    requestRoles={requestRoles}
+                    readiness={
+                      activationReadinessByCampaign[
+                        record.campaign.campaignId
+                      ]
+                    }
+                    globalPromotionAvailable={globalPromotionAvailable}
+                    globalPromotionReason={globalPromotionReason}
+                  />
+                ) : null}
+                {record.proposal ? (
+                  <div className="mt-5 border-t border-zinc-800 pt-4">
+                    <p className="text-xs uppercase text-emerald-400">
+                      Next Campaign
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-white">
+                      {record.proposal.name}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-zinc-400">
+                      {record.proposal.originReason}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => seedFrom(record)}
+                      className="mt-3 border border-emerald-600 px-3 py-2 text-xs font-bold text-emerald-200"
+                    >
+                      Start from this
+                    </button>
+                  </div>
+                ) : record.summary.failed > 0 ? (
+                  <p className="mt-4 text-xs text-amber-300">
+                    Resolve {record.summary.failed} failed target before
+                    expansion.
+                  </p>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      </section>
+      <section
+        id="new-campaign"
+        className="border border-zinc-800 bg-zinc-950 p-6"
+      >
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+              New Campaign
+            </p>
+            <h2 className="mt-1 text-xl font-bold text-white">
+              Create a draft
+            </h2>
+          </div>
+          <span className="text-sm text-zinc-400">
+            Step {step + 1} of {STEPS.length}
+          </span>
+        </div>
+        <div className="mt-5 flex gap-1">
+          {STEPS.map((label, index) => (
+            <button
+              type="button"
+              key={label}
+              onClick={() => setStep(index)}
+              className={`h-2 flex-1 ${index <= step ? "bg-red-500" : "bg-zinc-800"}`}
+              title={label}
+            />
+          ))}
+        </div>
+        <div className="mt-6 min-h-48">
+          {step === 0 ? (
+            <label className="block text-sm text-zinc-300">
+              What are we expanding?
+              <select
+                value={draft.productId}
+                onChange={(e) =>
+                  setDraft({ ...draft, productId: e.target.value })
+                }
+                className="mt-2 w-full border border-zinc-700 bg-zinc-900 p-3 text-white"
+              >
+                {products.map((product) => (
+                  <option key={product.productId} value={product.productId}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {step === 1 ? (
+            <div>
+              <p className="text-sm text-zinc-300">Campaign goal</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {[
+                  ["state_service", "State coverage"],
+                  ["city_service", "City coverage"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() =>
+                      setDraft({ ...draft, goal: value as Draft["goal"] })
+                    }
+                    className={`border p-4 text-left ${draft.goal === value ? "border-red-500 bg-red-950/20" : "border-zinc-700"}`}
+                  >
+                    <b className="text-white">{label}</b>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {step === 2 ? (
+            <div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft({
+                      ...draft,
+                      stateCodes: coverage.map((state) => state.code),
+                    })
+                  }
+                  className="border border-zinc-700 px-3 py-2 text-sm"
+                >
+                  All 50 states
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft({
+                      ...draft,
+                      stateCodes: coverage
+                        .filter((state) => state.state === "uncovered")
+                        .map((state) => state.code),
+                    })
+                  }
+                  className="border border-zinc-700 px-3 py-2 text-sm"
+                >
+                  Uncovered states
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDraft({
+                      ...draft,
+                      stateCodes: coverage
+                        .filter((state) => state.state === "incomplete")
+                        .map((state) => state.code),
+                    })
+                  }
+                  className="border border-zinc-700 px-3 py-2 text-sm"
+                >
+                  Incomplete states
+                </button>
+              </div>
+              <p className="mt-4 text-sm text-zinc-300">
+                {draft.stateCodes.length} states selected. Use the coverage map
+                to adjust.
+              </p>
+            </div>
+          ) : null}
+          {step === 3 ? (
+            <label className="block text-sm text-zinc-300">
+              Pages per day
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={draft.pagesPerDay}
+                onChange={(e) =>
+                  setDraft({ ...draft, pagesPerDay: Number(e.target.value) })
+                }
+                className="mt-2 block w-32 border border-zinc-700 bg-zinc-900 p-3 text-white"
+              />
+            </label>
+          ) : null}
+          {step === 4 ? (
+            <div>
+              <p className="text-sm text-zinc-300">Publication policy</p>
+              {[
+                ["draft_only", "Draft only"],
+                ["publish_after_gates", "Publish only after existing gates"],
+              ].map(([value, label]) => (
+                <label
+                  key={value}
+                  className="mt-3 flex gap-3 border border-zinc-800 p-3"
+                >
+                  <input
+                    type="radio"
+                    checked={draft.publicationPolicy === value}
+                    onChange={() =>
+                      setDraft({
+                        ...draft,
+                        publicationPolicy: value as Draft["publicationPolicy"],
+                      })
+                    }
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          ) : null}
+          {step === 5 ? (
+            <div className="space-y-3 text-sm">
+              <label className="block text-zinc-300">
+                Campaign name
+                <input
+                  value={draft.name}
+                  onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                  className="mt-2 w-full border border-zinc-700 bg-zinc-900 p-3 text-white"
+                />
+              </label>
+              <dl className="grid grid-cols-2 gap-2 text-zinc-400">
+                <dt>Goal</dt>
+                <dd className="text-right text-white">
+                  {draft.goal.replace("_", " ")}
+                </dd>
+                <dt>States</dt>
+                <dd className="text-right text-white">
+                  {draft.stateCodes.length}
+                </dd>
+                <dt>Throughput</dt>
+                <dd className="text-right text-white">
+                  {draft.pagesPerDay}/day
+                </dd>
+                <dt>Policy</dt>
+                <dd className="text-right text-white">
+                  {draft.publicationPolicy.replaceAll("_", " ")}
+                </dd>
+              </dl>
+              <button
+                type="button"
+                disabled={
+                  busy ||
+                  !draft.name.trim() ||
+                  !draft.productId ||
+                  draft.stateCodes.length === 0
+                }
+                onClick={createDraft}
+                className="mt-4 border border-red-500 bg-red-600 px-5 py-3 font-bold text-white disabled:border-zinc-700 disabled:bg-zinc-800"
+              >
+                Create Campaign Draft
+              </button>
+            </div>
+          ) : null}
+        </div>
+        <div className="flex justify-between border-t border-zinc-800 pt-4">
+          <button
+            type="button"
+            disabled={step === 0}
+            onClick={() => setStep(step - 1)}
+            className="px-3 py-2 text-sm text-zinc-400 disabled:text-zinc-700"
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            disabled={step === STEPS.length - 1}
+            onClick={() => setStep(step + 1)}
+            className="border border-zinc-700 px-4 py-2 text-sm disabled:text-zinc-700"
+          >
+            Continue
+          </button>
+        </div>
+        {message ? (
+          <p className="mt-4 text-sm text-zinc-300" role="status">
+            {message}
+          </p>
+        ) : null}
+      </section>
+    </div>
+  );
 }

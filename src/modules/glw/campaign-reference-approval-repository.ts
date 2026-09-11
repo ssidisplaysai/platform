@@ -90,6 +90,12 @@ export function getGlwCampaignReferenceApproval(
   return approval ? deepClone(approval) : null;
 }
 
+export function listGlwCampaignReferenceApprovals(campaignId: string): readonly GlwCampaignReferenceApproval[] {
+  return Array.from(approvalStore.values())
+    .filter((approval) => approval.campaignId === campaignId)
+    .map((approval) => deepClone(approval));
+}
+
 export function approveGlwCampaignReference(input: {
   campaignId: string;
   stateCode: string;

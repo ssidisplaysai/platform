@@ -71,7 +71,7 @@ describe("campaign launch runtime endpoint and lifecycle contract", () => {
     expect(reference.indexOf("approveGlwCampaignReference")).toBeLessThan(reference.indexOf("recordGlwCampaignLaunchReferenceApproved"));
     expect(activation.lastIndexOf("requireGlwCampaignLaunchReservationOwnership")).toBeLessThan(activation.lastIndexOf("initializeGlwCityCampaignTargets"));
     expect(activation.lastIndexOf("activateGlwCampaign")).toBeLessThan(activation.lastIndexOf("recordGlwCampaignLaunchActivated"));
-    expect(activation.indexOf('campaign.status === "active"')).toBeLessThan(activation.indexOf("recordGlwCampaignLaunchActivated(campaign, targets)"));
+    expect(activation.slice(activation.indexOf('campaign.status === "active"'), activation.indexOf('campaign.status !== "draft"'))).toContain("mutationPerformed: false");
     expect(activation).toContain("activationRecoveryRequired: true");
     expect(scheduler).toContain("buildGlwCampaignProductionGenerationForm");
     expect(scheduler).toContain("recordGlwCampaignLaunchDispatch");
@@ -86,5 +86,40 @@ describe("campaign launch runtime endpoint and lifecycle contract", () => {
     expect(promotion).toBeLessThan(campaignLookup);
     expect(promotion).toBeLessThan(mutation);
     expect(activation.slice(promotion, campaignLookup)).toContain("PRODUCTION_PROMOTION_REQUIRED");
+  });
+
+  test("claims and consumes an exact scoped grant around activation mutations", () => {
+    const activation = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/activate/route.ts"), "utf8");
+    const referenceApproval = activation.indexOf("const approval = getGlwCampaignReferenceApproval(");
+    const claim = activation.indexOf("claimGlwCampaignActivationGrant(");
+    const initialize = activation.indexOf("const initializedTargets =");
+    const activate = activation.indexOf("const activation = activateGlwCampaign(");
+    const consume = activation.indexOf("consumeGlwCampaignActivationGrant(");
+    expect(referenceApproval).toBeLessThan(claim);
+    expect(claim).toBeLessThan(initialize);
+    expect(initialize).toBeLessThan(activate);
+    expect(activate).toBeLessThan(consume);
+  });
+
+  test("requires an explicit owner action and keeps authorization GET read-only", () => {
+    const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/activation-authorization/route.ts"), "utf8");
+    const getStart = route.indexOf("export async function GET");
+    const postStart = route.indexOf("export async function POST");
+    expect(route.slice(getStart, postStart)).not.toContain("createGlwCampaignActivationGrant(");
+    expect(route.slice(postStart)).toContain('body?.operation !== "AUTHORIZE_ACTIVATION"');
+    expect(route.slice(postStart)).toContain('auth.roles.includes("platform_admin")');
+    expect(route).not.toContain("grant.nonce");
+  });
+
+  test("keeps ACTIVATE_ONLY authority out of dispatch, generation, and publication paths", () => {
+    const activation = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/activate/route.ts"), "utf8");
+    const scheduler = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/scheduler/route.ts"), "utf8");
+    const generation = readFileSync(join(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const reference = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8");
+    expect(activation).toContain("claimGlwCampaignActivationGrant");
+    expect(scheduler).not.toContain("campaign-activation-authorization");
+    expect(generation).not.toContain("campaign-activation-authorization");
+    expect(reference).not.toContain("campaign-activation-authorization");
+    expect(scheduler).toContain('publicationIntent: "draft"');
   });
 });

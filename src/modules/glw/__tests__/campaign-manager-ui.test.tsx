@@ -19,4 +19,24 @@ describe("Campaign Manager UI", () => {
     expect(html).toContain("Next Campaign"); expect(html).toContain("Start from this"); expect(html).toContain("Geographic United States campaign coverage map");
     expect(html).toContain("Step 1 of 6"); expect(html).toContain("What are we expanding?"); expect(html).not.toContain("Launch Campaign");
   });
+
+  it("shows exact activation prerequisites and campaign-scoped owner language", () => {
+    const prepared = {
+      ...record,
+      campaign: { ...record.campaign, status: "draft" as const, pageType: "city_service" as const },
+      summary: { ...record.summary, prepared: 4, total: 4, published: 0 },
+      displayState: "DRAFT" as const,
+      completedAt: null,
+      completedCount: 0,
+      unresolvedCount: 4,
+    };
+    const html = renderToStaticMarkup(<CampaignManager organizationId="org-1" siteId="site-1" requestRoles={["platform_admin"]} records={[{ ...prepared, proposal: null }]} coverage={coverage} coverageByProduct={{ "product-1": coverage }} products={[{ productId: "product-1", name: "Projector Enclosure" }]} productNames={{ "product-1": "Projector Enclosure" }} activationReadinessByCampaign={{ "campaign-1": { knowledgePackReady: false, approvedReferenceCount: 0, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: null, referenceCitySlug: null } }} globalPromotionAvailable={false} globalPromotionReason="Campaign Launch is not enabled for this production release." />);
+    expect(html).toContain("Ready except for:");
+    expect(html).toContain("Approved campaign reference / knowledge pack");
+    expect(html).toContain("Scoped activation authorization");
+    expect(html).toContain("Authorize This Campaign for Activation");
+    expect(html).toContain("This authorization applies only to this campaign and does not enable publishing or other campaigns.");
+    expect(html).toContain("Advanced Details");
+    expect(html).not.toContain("nonce");
+  });
 });
