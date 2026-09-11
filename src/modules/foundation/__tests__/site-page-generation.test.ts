@@ -36,5 +36,9 @@ describe("reusable fresh-site page generation", () => {
     expect(home.sections.map((item) => item.heading)).toEqual(["Core Category and custom stainless fabrication", "Commercial stainless products and fabrication solutions", "Core Category: the central project pathway", "Solutions for commercial industries", "A fabrication approach built around the requirement", "Fabrication proof and project detail", "Why commercial buyers use this resource", "Request a Quote"]);
     expect(home.internalLinks.map((item) => item.anchorText)).toEqual(expect.arrayContaining(["Core Category", "Worktables", "Healthcare Solutions", "Capabilities", "About", "Request a Quote"]));
     expect(home.quality.ready).toBe(true); expect(home.imageRequirements.every((item) => item.publishableAssetId === null)).toBe(true);
+    const publicCopy = home.sections.flatMap((item) => item.body).join(" ");
+    for (const prohibited of ["attributable evidence", "approved authority", "unsupported claims", "suitable material becomes available", "project-specific unknowns", "the site does not substitute", "evidence policy", "proof policy"]) expect(publicCopy.toLowerCase()).not.toContain(prohibited);
+    expect(publicCopy).toContain("Evaluate multiple commercial stainless solutions through one clear product and fabrication architecture.");
+    expect(publicCopy).toContain("Drawings, dimensions, photographs, equipment interfaces, workflow needs, and application requirements");
   });
 });
