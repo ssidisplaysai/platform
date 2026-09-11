@@ -13,10 +13,11 @@ import { resolveWordPressCredentialReference } from "./wordpress-credential-reso
 import { writeGenesisWordPressDraft } from "./wordpress-draft-writer";
 import { decideSitePageImageCandidate, listSitePageImageCandidates, saveSitePageImageCandidate } from "./site-page-image-candidate-repository";
 import { generateGenesisFeaturedImage } from "@/modules/glw/generated-image-service";
-import { areRequiredPageImagesApproved } from "./site-page-image-review";
+import { areRequiredPageImagesApproved, summarizeSitePageReview } from "./site-page-image-review";
 import { resolveSitePageImageRequirement } from "./site-page-image-resolution";
+import { resolveSiteBuildStage, type SiteBuildStage } from "./site-build-stage";
 
-export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "PAGE_GENERATION" | "PAGE_REVIEW" | "WORDPRESS_CONTENT_UPDATE" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
+export type { SiteBuildStage } from "./site-build-stage";
 
 export function isSiteBuildSnapshotCurrent(left: GenerationAuthoritySnapshot, right: GenerationAuthoritySnapshot): boolean {
   return left.strategyRevision === right.strategyRevision && left.creativeRevision === right.creativeRevision && left.marketFingerprint === right.marketFingerprint && left.capabilityFingerprint === right.capabilityFingerprint && left.productServiceFingerprint === right.productServiceFingerprint && left.sourcesFingerprint === right.sourcesFingerprint && left.generationPolicyVersion === right.generationPolicyVersion;
@@ -27,19 +28,9 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
   const session = generation.buildSession;
   const records = session ? getSiteBuildRecords({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : { plans: [], changeRequests: [], currentPlan: null, draftSet: null, wordpressDrafts: [], assemblies: [], currentAssembly: null, wordpressContentUpdates: [] };
   const imageCandidates = session ? listSitePageImageCandidates({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : [];
+  const pageReview = summarizeSitePageReview(records.currentAssembly, imageCandidates);
   const stale = generation.certification.status !== "CURRENT" || Boolean(records.currentPlan && !isSiteBuildSnapshotCurrent(records.currentPlan.authoritySnapshot, generation.readiness.snapshot)) || Boolean(records.draftSet && !isSiteBuildSnapshotCurrent(records.draftSet.authoritySnapshot, generation.readiness.snapshot));
-  let stage: SiteBuildStage;
-  if (!session) stage = "BUILD_NOT_STARTED";
-  else if (stale) stage = "AUTHORITY_REVIEW_REQUIRED";
-  else if (!records.currentPlan || records.currentPlan.status === "REJECTED") stage = "BUILD_PLAN";
-  else if (records.currentPlan.status === "PROPOSED") stage = "BUILD_PLAN_REVIEW";
-  else if (records.currentPlan.status !== "APPROVED" || !records.draftSet) stage = "DRAFT_GENERATION";
-  else if (records.draftSet.status === "GENERATED") stage = "DRAFT_REVIEW";
-  else if (records.wordpressDrafts.length < records.draftSet.drafts.length) stage = "WORDPRESS_DRAFTS";
-  else if (!records.currentAssembly) stage = "PAGE_GENERATION";
-  else if (records.currentAssembly.status !== "APPROVED") stage = "PAGE_REVIEW";
-  else if (records.wordpressContentUpdates.length < records.currentAssembly.pages.length) stage = "WORDPRESS_CONTENT_UPDATE";
-  else stage = "COMPLETE";
+  const stage: SiteBuildStage = resolveSiteBuildStage({ sessionStarted: Boolean(session), stale, planStatus: records.currentPlan?.status ?? null, draftStatus: records.draftSet?.status ?? null, expectedDraftCount: records.draftSet?.drafts.length ?? 0, wordpressDraftCount: records.wordpressDrafts.length, assemblyPresent: Boolean(records.currentAssembly), pageReviewComplete: pageReview.complete, generatedPageCount: pageReview.generatedPageCount, wordpressContentUpdateCount: records.wordpressContentUpdates.length });
   const next = {
     BUILD_NOT_STARTED: { action: "START_SITE_BUILD", label: "START SITE BUILD", detail: "Start one durable bounded build session." },
     BUILD_PLAN: { action: "GENERATE_BUILD_PLAN", label: "GENERATE BUILD PLAN", detail: "Create a proposal from current approved authority. This does not approve pages or contact WordPress." },
@@ -49,11 +40,11 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
     WORDPRESS_DRAFTS: { action: "CREATE_WORDPRESS_DRAFTS", label: "CREATE WORDPRESS DRAFTS", detail: "Create draft-only WordPress pages after authoritative collision checks. Publication remains disabled." },
     PAGE_GENERATION: { action: "GENERATE_FULL_SITE", label: "GENERATE FULL PAGE CONTENT", detail: "Generate production-quality page proposals, SEO, links, navigation, and image requirements locally. WordPress is not updated." },
     PAGE_REVIEW: { action: "REVIEW_FULL_SITE", label: "REVIEW GENERATED SITE", detail: "Review each generated page, request bounded changes, or approve pages that pass quality checks." },
-    WORDPRESS_CONTENT_UPDATE: { action: "UPDATE_WORDPRESS_DRAFT_CONTENT", label: "UPDATE WORDPRESS DRAFT CONTENT", detail: "Update the exact existing WordPress drafts only after all generated pages are owner approved." },
+    WORDPRESS_CONTENT_UPDATE: { action: "UPDATE_WORDPRESS_DRAFT_CONTENT", label: "UPDATE WORDPRESS DRAFT CONTENT", detail: `Update the existing ${records.wordpressDrafts.length} WordPress draft pages with the owner-approved content, SEO, links, and approved images. Nothing will be published.` },
     COMPLETE: { action: "REVIEW_WORDPRESS_DRAFTS", label: "REVIEW WORDPRESS DRAFTS", detail: "Review the created drafts in WordPress. Publication remains a separate gate." },
     AUTHORITY_REVIEW_REQUIRED: { action: "REVIEW_GENERATION_READINESS", label: "REVIEW GENERATION READINESS", detail: "Material upstream authority changed. Recertify before continuing this build." },
   }[stage];
-  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, imageCandidates, stale, stage, next, publication: { state: site.publishingStatus, enabled: site.enabled } };
+  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, imageCandidates, pageReview, stale, stage, next, publication: { state: site.publishingStatus, enabled: site.enabled } };
 }
 
 function planningContext(site: SiteConfiguration) {
@@ -107,6 +98,7 @@ export function regenerateGeneratedPage(site: SiteConfiguration, actor: string, 
 
 export type SiteBuildWordPressReadiness = {
   ready: boolean;
+  contentUpdateReady: boolean;
   credentialResolved: boolean;
   authenticated: boolean;
   collisionPreflightAvailable: boolean;
@@ -126,10 +118,10 @@ export async function inspectSiteBuildWordPressReadiness(site: SiteConfiguration
   const blockedTargets: SiteBuildWordPressReadiness["blockedTargets"] = [];
   let credential = null;
   try { credential = site.integrations.wordpressCredentialReference ? resolveWordPressCredentialReference(site.integrations.wordpressCredentialReference) : null; } catch { credential = null; }
-  if (!credential || !site.integrations.wordpressApiBaseUrl || !drafts.length || workspace.stale) return { ready: false, credentialResolved: Boolean(credential), authenticated: false, collisionPreflightAvailable: false, targetCount: drafts.length, absentCount: 0, existingReceiptCount: 0, blockedTargets, publicationMutationPerformed: false, wordpressMutationPerformed: false };
+  if (!credential || !site.integrations.wordpressApiBaseUrl || !drafts.length || workspace.stale) return { ready: false, contentUpdateReady: false, credentialResolved: Boolean(credential), authenticated: false, collisionPreflightAvailable: false, targetCount: drafts.length, absentCount: 0, existingReceiptCount: 0, blockedTargets, publicationMutationPerformed: false, wordpressMutationPerformed: false };
   const authority = createAuthenticatedWordPressReadAuthority({ configuration: { apiBaseUrl: site.integrations.wordpressApiBaseUrl, username: credential.username, applicationPassword: credential.applicationPassword, timeoutMs: 30_000 } });
   const identity = await authority.getJson({ path: "/users/me", query: new URLSearchParams({ context: "edit", _fields: "id,capabilities" }) });
-  if (!identity.ok) return { ready: false, credentialResolved: true, authenticated: false, collisionPreflightAvailable: false, targetCount: drafts.length, absentCount: 0, existingReceiptCount: 0, blockedTargets, publicationMutationPerformed: false, wordpressMutationPerformed: false };
+  if (!identity.ok) return { ready: false, contentUpdateReady: false, credentialResolved: true, authenticated: false, collisionPreflightAvailable: false, targetCount: drafts.length, absentCount: 0, existingReceiptCount: 0, blockedTargets, publicationMutationPerformed: false, wordpressMutationPerformed: false };
   const receipts = new Map(workspace.wordpressDrafts.map((item) => [item.draftId, item]));
   let absentCount = 0; let existingReceiptCount = 0;
   for (const draft of drafts) {
@@ -141,7 +133,7 @@ export async function inspectSiteBuildWordPressReadiness(site: SiteConfiguration
     else if (exact.length === 1 && receipt && String((exact[0] as { id?: unknown }).id ?? "") === receipt.wordpressObjectId && (exact[0] as { status?: unknown }).status === "draft") existingReceiptCount += 1;
     else blockedTargets.push({ draftId: draft.draftId, title: draft.title, reason: "COLLISION" });
   }
-  return { ready: blockedTargets.length === 0 && absentCount + existingReceiptCount === drafts.length, credentialResolved: true, authenticated: true, collisionPreflightAvailable: true, targetCount: drafts.length, absentCount, existingReceiptCount, blockedTargets, publicationMutationPerformed: false, wordpressMutationPerformed: false };
+  return { ready: blockedTargets.length === 0 && absentCount + existingReceiptCount === drafts.length, contentUpdateReady: blockedTargets.length === 0 && absentCount === 0 && existingReceiptCount === drafts.length, credentialResolved: true, authenticated: true, collisionPreflightAvailable: true, targetCount: drafts.length, absentCount, existingReceiptCount, blockedTargets, publicationMutationPerformed: false, wordpressMutationPerformed: false };
 }
 
 export async function createBuildWordPressDrafts(site: SiteConfiguration, writer = writeGenesisWordPressDraft) {
@@ -159,13 +151,15 @@ export async function createBuildWordPressDrafts(site: SiteConfiguration, writer
 
 export async function updateBuildWordPressDraftContent(site: SiteConfiguration, writer = writeGenesisWordPressDraft) {
   const workspace = getSiteBuildWorkspace(site); const assembly = workspace.currentAssembly;
-  if (workspace.stale || !workspace.session || assembly?.status !== "APPROVED" || !assembly.pages.every((item) => item.status === "APPROVED" && item.quality.ready)) throw new Error("APPROVED_SITE_ASSEMBLY_REQUIRED");
+  if (workspace.stale || !workspace.session || !assembly || !workspace.pageReview.complete) throw new Error("APPROVED_SITE_ASSEMBLY_REQUIRED");
   if (site.publishingStatus !== "disabled" || site.enabled) throw new Error("DRAFT_ONLY_SITE_BOUNDARY_REQUIRED");
+  const readiness = await inspectSiteBuildWordPressReadiness(site); if (!readiness.contentUpdateReady) throw new Error("WORDPRESS_CONTENT_UPDATE_IDENTITY_NOT_READY");
   const completed = new Set(workspace.wordpressContentUpdates.map((item) => item.pageRevisionId));
   for (const page of assembly.pages.filter((item) => !completed.has(item.pageRevisionId))) {
     const receipt = workspace.wordpressDrafts.find((item) => item.draftId === `${page.pageId}-draft`); if (!receipt) throw new Error(`WORDPRESS_DRAFT_RECEIPT_REQUIRED:${page.name}`);
     const result = await writer({ operation: "UPDATE", site, wordpressObjectId: receipt.wordpressObjectId, artifact: { title: page.name, slug: page.slug || "home", excerpt: page.metaDescription, contentHtml: page.contentHtml, seo: { focusKeyphrase: page.h1, seoTitle: page.seoTitle, metaDescription: page.metaDescription } } });
     if (!result.ok) throw new Error(`WORDPRESS_CONTENT_UPDATE_FAILED:${page.name}:${result.state}`);
+    if (result.wordpressObjectId !== receipt.wordpressObjectId || result.wordpressStatus !== "draft") throw new Error(`WORDPRESS_CONTENT_UPDATE_IDENTITY_MISMATCH:${page.name}`);
     recordSiteBuildWordPressContentUpdate({ buildSessionId: workspace.session.buildSessionId, pageRevisionId: page.pageRevisionId, wordpressObjectId: result.wordpressObjectId, wordpressUrl: result.wordpressUrl, wordpressStatus: "draft", updatedAt: new Date().toISOString() });
   }
   return getSiteBuildWorkspace(site).wordpressContentUpdates;

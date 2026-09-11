@@ -8,7 +8,7 @@ let contentUpdates: Array<{ buildSessionId: string; pageRevisionId: string; word
 
 const snapshot = { strategyRevision: 3, creativeRevision: 1, marketFingerprint: "market", capabilityFingerprint: "capability", productServiceFingerprint: "product", sourcesFingerprint: "sources", generationPolicyVersion: "site-draft-generation-v1" };
 const drafts = ["home", "capabilities"].map((slug) => ({ draftId: `page-${slug}-draft`, pageId: `page-${slug}`, title: slug, slug, excerpt: slug, contentHtml: `<h1>${slug}</h1>`, authority: [] }));
-const generatedPages = drafts.map((draft) => ({ pageRevisionId: `${draft.pageId}-rev-1`, pageId: draft.pageId, revision: 1, status: "APPROVED", name: draft.title, slug: draft.slug, seoTitle: draft.title, metaDescription: draft.title, h1: draft.title, contentHtml: draft.contentHtml, quality: { ready: true } }));
+const generatedPages = drafts.map((draft) => ({ pageRevisionId: `${draft.pageId}-rev-1`, pageId: draft.pageId, revision: 1, status: "APPROVED", name: draft.title, slug: draft.slug, seoTitle: draft.title, metaDescription: draft.title, h1: draft.title, contentHtml: draft.contentHtml, imageRequirements: [], quality: { ready: true } }));
 const site = { siteId: "site", organizationId: "org", displayName: "Site", enabled: false, publishingStatus: "disabled", integrations: { wordpressApiBaseUrl: "https://example.test/wp-json/wp/v2", wordpressCredentialReference: "credref-wp-1" } };
 const certification = { status: "CURRENT", certification: { certificationId: "cert", ...snapshot } };
 
@@ -27,10 +27,11 @@ import { createBuildWordPressDrafts, inspectSiteBuildWordPressReadiness, updateB
 
 describe("Site Build WordPress runtime boundary", () => {
   beforeEach(() => { receipts = []; contentUpdates = []; getJson.mockReset(); recordSiteBuildWordPressDraft.mockClear(); });
+  function mockExactDraftPreflight() { getJson.mockResolvedValueOnce({ ok: true, body: { id: 1 } }); for (const [index, draft] of drafts.entries()) getJson.mockResolvedValueOnce({ ok: true, body: [{ id: String(101 + index), slug: draft.slug, status: "draft" }] }); }
 
   test("authenticated readiness is read-only and proves exact absence", async () => {
     getJson.mockResolvedValueOnce({ ok: true, body: { id: 1 }, pagination: { total: null, totalPages: null } }).mockResolvedValue({ ok: true, body: [], pagination: { total: 0, totalPages: 0 } });
-    await expect(inspectSiteBuildWordPressReadiness(site as never)).resolves.toMatchObject({ ready: true, credentialResolved: true, authenticated: true, collisionPreflightAvailable: true, targetCount: 2, absentCount: 2, existingReceiptCount: 0, blockedTargets: [], wordpressMutationPerformed: false, publicationMutationPerformed: false });
+    await expect(inspectSiteBuildWordPressReadiness(site as never)).resolves.toMatchObject({ ready: true, contentUpdateReady: false, credentialResolved: true, authenticated: true, collisionPreflightAvailable: true, targetCount: 2, absentCount: 2, existingReceiptCount: 0, blockedTargets: [], wordpressMutationPerformed: false, publicationMutationPerformed: false });
     expect(recordSiteBuildWordPressDraft).not.toHaveBeenCalled();
   });
 
@@ -58,10 +59,20 @@ describe("Site Build WordPress runtime boundary", () => {
 
   test("content updates use exact existing draft IDs and resume after partial failure", async () => {
     receipts = drafts.map((draft, index) => ({ buildSessionId: "build", draftId: draft.draftId, wordpressObjectId: String(101 + index), wordpressUrl: `https://example.test/?page_id=${101 + index}`, wordpressStatus: "draft", createdAt: "now" }));
+    mockExactDraftPreflight();
     const firstWriter = jest.fn().mockResolvedValueOnce({ ok: true, operation: "UPDATE", wordpressObjectId: "101", wordpressUrl: receipts[0].wordpressUrl, wordpressStatus: "draft", seoMetadataAttempted: true, seoMetadataAccepted: true }).mockResolvedValueOnce({ ok: false, state: "write_failed", message: "failed" });
     await expect(updateBuildWordPressDraftContent(site as never, firstWriter)).rejects.toThrow("WORDPRESS_CONTENT_UPDATE_FAILED:capabilities:write_failed");
     expect(firstWriter.mock.calls[0][0]).toMatchObject({ operation: "UPDATE", wordpressObjectId: "101" }); expect(contentUpdates).toHaveLength(1);
+    mockExactDraftPreflight();
     const retryWriter = jest.fn().mockResolvedValue({ ok: true, operation: "UPDATE", wordpressObjectId: "102", wordpressUrl: receipts[1].wordpressUrl, wordpressStatus: "draft", seoMetadataAttempted: true, seoMetadataAccepted: true });
     await updateBuildWordPressDraftContent(site as never, retryWriter); expect(retryWriter).toHaveBeenCalledTimes(1); expect(retryWriter.mock.calls[0][0]).toMatchObject({ operation: "UPDATE", wordpressObjectId: "102" }); expect(contentUpdates).toHaveLength(2);
+  });
+
+  test("content update fails closed when the writer returns a different object identity", async () => {
+    receipts = drafts.map((draft, index) => ({ buildSessionId: "build", draftId: draft.draftId, wordpressObjectId: String(101 + index), wordpressUrl: `https://example.test/?page_id=${101 + index}`, wordpressStatus: "draft", createdAt: "now" }));
+    mockExactDraftPreflight();
+    const writer = jest.fn().mockResolvedValue({ ok: true, operation: "UPDATE", wordpressObjectId: "999", wordpressUrl: "https://example.test/?page_id=999", wordpressStatus: "draft", seoMetadataAttempted: true, seoMetadataAccepted: true });
+    await expect(updateBuildWordPressDraftContent(site as never, writer)).rejects.toThrow("WORDPRESS_CONTENT_UPDATE_IDENTITY_MISMATCH:home");
+    expect(contentUpdates).toEqual([]);
   });
 });

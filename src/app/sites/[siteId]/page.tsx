@@ -9,6 +9,7 @@ import { listSiteActivity } from "@/modules/foundation/site-audit";
 import { getSiteIntelligenceWorkspace } from "@/modules/foundation/site-intelligence-repository";
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
 import { resolveSiteWorkflowResume } from "@/modules/foundation/site-workflow-resume";
+import { getSiteBuildWorkspace } from "@/modules/foundation/site-build-service";
 
 type PageProps = {
   params: Promise<{
@@ -69,6 +70,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
   const activity = listSiteActivity(site.siteId);
   const intelligence = getSiteIntelligenceWorkspace(site.siteId);
   const generation = getSiteGenerationReadiness(site);
+  const siteBuild = getSiteBuildWorkspace(site);
   const authorityWorkspace = generation.authority;
   const protectedBlockers = authorityWorkspace.candidates
     .filter((candidate) => (candidate.decision === "APPROVED" || candidate.decision === "QUALIFIED") && candidate.protectedClaimBlockers.length > 0 && candidate.authorityBasis !== "OWNER_ATTESTED_AND_EVIDENCE")
@@ -90,6 +92,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
       blockers: generation.readiness.blockers,
     },
     siteBuildStarted: Boolean(generation.buildSession),
+    siteBuildStage: siteBuild.stage,
   });
 
   return (

@@ -116,4 +116,12 @@ describe("Site Detail workflow resume resolver", () => {
     expect(result.primaryAction).toMatchObject({ label: "START SITE BUILD", href: expect.stringContaining("/build?") });
     expect(result.stages.find((stage) => stage.key === "site_build")?.status).toBe("NOT_STARTED");
   });
+
+  test("an update-ready build resumes through CONTINUE SITE BUILD without publication", () => {
+    const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true, siteBuildStage: "WORDPRESS_CONTENT_UPDATE" });
+    expect(result.primaryAction).toMatchObject({ key: "CONTINUE_SITE_BUILD", label: "CONTINUE SITE BUILD", href: expect.stringContaining("/build?") });
+    expect(result.primaryAction.description).toContain("exact existing WordPress drafts");
+    expect(result.stages.find((stage) => stage.key === "site_build")?.detail).toContain("Page review is complete");
+    expect(result.stages.find((stage) => stage.key === "publication")?.status).toBe("DISABLED");
+  });
 });

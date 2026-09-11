@@ -40,6 +40,8 @@ describe("Site Detail workflow resume UI contract", () => {
   test("preserves route-authoritative organization and site scope", () => {
     expect(page).toContain("resourceSite={createSiteContext(site)}");
     expect(page).toContain("getSiteGenerationReadiness(site)");
+    expect(page).toContain("getSiteBuildWorkspace(site)");
+    expect(page).toContain("siteBuildStage: siteBuild.stage");
     expect(page).toContain("encodeURIComponent(site.organizationId)");
     expect(page).toContain("encodeURIComponent(site.siteId)");
   });
