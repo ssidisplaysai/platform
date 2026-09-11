@@ -122,6 +122,7 @@ export function recordSiteOpportunity(input: { siteId: string; organizationId: s
 
 export function decideSiteOpportunity(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; opportunityId: string; decision: OpportunityDecision }) {
   return update({ ...input, action: `OPPORTUNITY_${input.decision}`, mutate(workspace) {
+    if (!["PENDING", "APPROVED", "RESEARCH_MORE", "HOLD", "REJECTED"].includes(input.decision)) throw new Error("OPPORTUNITY_DECISION_INVALID");
     const opportunity = workspace.opportunities.find((candidate) => candidate.opportunityId === input.opportunityId);
     if (!opportunity) throw new Error("OPPORTUNITY_NOT_FOUND");
     opportunity.ownerDecision = input.decision;
@@ -132,6 +133,7 @@ export function decideSiteOpportunity(input: { siteId: string; organizationId: s
 
 export function validateOpportunityCapability(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; opportunityId: string; state: CapabilityEvidenceState; evidenceIds: string[]; notes: string }) {
   return update({ ...input, action: `CAPABILITY_${input.state}`, mutate(workspace) {
+    if (!["INSUFFICIENT", "OWNER_VALIDATION_REQUIRED", "VERIFIED", "QUALIFIED", "REJECTED", "FUTURE_CAPABILITY"].includes(input.state)) throw new Error("CAPABILITY_STATE_INVALID");
     const opportunity = workspace.opportunities.find((candidate) => candidate.opportunityId === input.opportunityId);
     if (!opportunity) throw new Error("OPPORTUNITY_NOT_FOUND");
     if ((input.state === "VERIFIED" || input.state === "QUALIFIED") && input.evidenceIds.length === 0) throw new Error("CAPABILITY_EVIDENCE_REQUIRED");

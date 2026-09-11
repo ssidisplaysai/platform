@@ -26,6 +26,14 @@ describe("site intelligence UI contract", () => {
     for (const decision of ["RESEARCH_MORE", "HOLD", "REJECTED", "APPROVED", "VERIFIED", "QUALIFIED", "FUTURE_CAPABILITY"]) expect(workspace).toContain(decision);
   });
 
+  test("opportunity controls distinguish market actions, selected state, and capability evidence feedback", () => {
+    for (const text of ["Market Opportunity Decision", "Capability Authority", "APPROVE", "RESEARCH MORE", "HOLD", "REJECT", "Opportunity approved.", "Opportunity marked Research More.", "Supporting evidence is required for Verified or Qualified capability.", "Cannot mark capability"] ) expect(workspace).toContain(text);
+    expect(workspace).toContain("aria-pressed={selected}");
+    expect(workspace).toContain('action: decision === "RESEARCH_MORE" ? "RESEARCH_MORE" : "DECIDE_OPPORTUNITY"');
+    expect(workspace).toContain('action: "VALIDATE_CAPABILITY"');
+    expect(workspace).toContain('role="status"');
+  });
+
   test("workspace exposes real multiple-file upload with conservative classification", () => {
     expect(library).toContain('type="file"'); expect(library).toContain("multiple"); expect(library).toContain("UPLOAD {files.length");
     expect(library).toContain('useState<SiteAssetClassification>("OWNER_SUPPLIED_REFERENCE")');

@@ -62,6 +62,50 @@ describe("site intelligence authority", () => {
     expect(canUseOpportunityAsAuthority(workspace.opportunities[0])).toBe(true);
   });
 
+  test("market decisions remain independent from capability authority and survive reload", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
+    workspace = repository.startSiteIntelligence({ ...scope, expectedRevision: workspace.revision, providerReference: "provider" });
+    workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: opportunity(), evidence: [evidence()] });
+    for (const decision of ["APPROVED", "RESEARCH_MORE", "HOLD", "REJECTED"] as const) {
+      workspace = repository.decideSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision });
+      expect(workspace.opportunities).toHaveLength(1);
+      expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: decision, capabilityState: "OWNER_VALIDATION_REQUIRED", capabilityEvidenceIds: [] });
+      expect(workspace.strategyRevisions).toEqual([]);
+    }
+    expect(repository.getSiteIntelligenceWorkspace(scope.siteId)?.opportunities[0]).toMatchObject({ ownerDecision: "REJECTED", capabilityState: "OWNER_VALIDATION_REQUIRED" });
+  });
+
+  test("capability decisions preserve evidence requirements and do not change market decisions", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
+    workspace = repository.startSiteIntelligence({ ...scope, expectedRevision: workspace.revision, providerReference: "provider" });
+    workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: opportunity(), evidence: [evidence()] });
+    workspace = repository.decideSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision: "APPROVED" });
+    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: [], notes: "Missing evidence" })).toThrow("CAPABILITY_EVIDENCE_REQUIRED");
+    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: [], notes: "Missing evidence" })).toThrow("CAPABILITY_EVIDENCE_REQUIRED");
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: ["owner-capability-evidence"], notes: "Qualified scope." });
+    expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "QUALIFIED", capabilityEvidenceIds: ["owner-capability-evidence"] });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "FUTURE_CAPABILITY", evidenceIds: [], notes: "Future capability." });
+    expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "FUTURE_CAPABILITY" });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "REJECTED", evidenceIds: [], notes: "Not offered." });
+    expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "REJECTED" });
+  });
+
+  test("duplicate market clicks are CAS-safe and cannot duplicate opportunities", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
+    workspace = repository.startSiteIntelligence({ ...scope, expectedRevision: workspace.revision, providerReference: "provider" });
+    workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: opportunity(), evidence: [evidence()] });
+    const decisionRevision = workspace.revision;
+    workspace = repository.decideSiteOpportunity({ ...scope, expectedRevision: decisionRevision, opportunityId: "opportunity-1", decision: "APPROVED" });
+    expect(() => repository.decideSiteOpportunity({ ...scope, expectedRevision: decisionRevision, opportunityId: "opportunity-1", decision: "APPROVED" })).toThrow("revision conflict");
+    expect(workspace.opportunities).toHaveLength(1);
+    expect(() => repository.decideSiteOpportunity({ ...scope, organizationId: "other", expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision: "HOLD" })).toThrow("ORGANIZATION_MISMATCH");
+    expect(() => repository.decideSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision: "INVALID" as never })).toThrow("OPPORTUNITY_DECISION_INVALID");
+    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "INVALID" as never, evidenceIds: [], notes: "" })).toThrow("CAPABILITY_STATE_INVALID");
+  });
+
   test("strategy and creative proposals require prior approvals and retain revisions", async () => {
     const repository = await import("../site-intelligence-repository");
     let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });

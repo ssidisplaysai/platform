@@ -77,4 +77,29 @@ describe("site intelligence API boundary", () => {
     expect(duplicate.status).toBe(422);
     expect((await duplicate.json()).error).toMatch(/^REFERENCE_ALREADY_EXISTS:/);
   });
+
+  test("market approval persists through the API without verifying capability", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", publicBrandIdentity: "LED Display Warehouse", actor: "owner" });
+    workspace = repository.startSiteIntelligence({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", providerReference: "test" });
+    workspace = repository.recordSiteOpportunity({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", evidence: [{ evidenceId: "e1", sourceReference: "https://example.com", sourceType: "WEB", observedClaim: "Observed", retrievedAt: "2026-09-10T00:00:00.000Z", entity: null, confidence: 0.7, strength: "MODERATE", authority: "OBSERVATION" }], opportunity: { opportunityId: "o1", name: "Opportunity", category: "market", buyer: "buyer", problemUseCase: "use", commercialValue: "UNKNOWN", demandSignal: "signal", competitionLevel: "UNKNOWN", organizationFit: "UNKNOWN", evidenceStrength: "MODERATE", confidence: 0.7, geographicScope: "unknown", nationalRolloutPotential: false, recurringReplacementPotential: false, seoContentOpportunity: "candidate", rationale: "reason", competitorEntities: [], evidenceIds: ["e1"], capabilityState: "OWNER_VALIDATION_REQUIRED", capabilityEvidenceIds: [], capabilityNotes: null, recommendation: "review", ownerDecision: "PENDING", decidedBy: null, decidedAt: null } });
+    const route = await import("@/app/api/sites/[siteId]/intelligence/route");
+    const response = await route.POST(request("POST", "led-display-warehouse", { action: "DECIDE_OPPORTUNITY", expectedRevision: workspace.revision, opportunityId: "o1", decision: "APPROVED", actor: "site-owner" }), context);
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.workspace.opportunities).toHaveLength(1);
+    expect(body.workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", decidedBy: "site-owner", capabilityState: "OWNER_VALIDATION_REQUIRED", capabilityEvidenceIds: [] });
+  });
+
+  test("capability verification fails visibly without evidence at the API boundary", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", publicBrandIdentity: "LED Display Warehouse", actor: "owner" });
+    workspace = repository.startSiteIntelligence({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", providerReference: "test" });
+    workspace = repository.recordSiteOpportunity({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", evidence: [{ evidenceId: "e1", sourceReference: "https://example.com", sourceType: "WEB", observedClaim: "Observed", retrievedAt: "2026-09-10T00:00:00.000Z", entity: null, confidence: 0.7, strength: "MODERATE", authority: "OBSERVATION" }], opportunity: { opportunityId: "o1", name: "Opportunity", category: "market", buyer: "buyer", problemUseCase: "use", commercialValue: "UNKNOWN", demandSignal: "signal", competitionLevel: "UNKNOWN", organizationFit: "UNKNOWN", evidenceStrength: "MODERATE", confidence: 0.7, geographicScope: "unknown", nationalRolloutPotential: false, recurringReplacementPotential: false, seoContentOpportunity: "candidate", rationale: "reason", competitorEntities: [], evidenceIds: ["e1"], capabilityState: "OWNER_VALIDATION_REQUIRED", capabilityEvidenceIds: [], capabilityNotes: null, recommendation: "review", ownerDecision: "PENDING", decidedBy: null, decidedAt: null } });
+    const route = await import("@/app/api/sites/[siteId]/intelligence/route");
+    const response = await route.POST(request("POST", "led-display-warehouse", { action: "VALIDATE_CAPABILITY", expectedRevision: workspace.revision, opportunityId: "o1", state: "VERIFIED", evidenceIds: [], notes: "Missing evidence" }), context);
+    expect(response.status).toBe(422);
+    expect((await response.json()).error).toBe("CAPABILITY_EVIDENCE_REQUIRED");
+    expect(repository.getSiteIntelligenceWorkspace("site-led-display-warehouse-production")?.opportunities[0]).toMatchObject({ ownerDecision: "PENDING", capabilityState: "OWNER_VALIDATION_REQUIRED" });
+  });
 });
