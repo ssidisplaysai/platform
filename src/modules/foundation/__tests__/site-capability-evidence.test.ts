@@ -90,7 +90,15 @@ describe("typed capability evidence authority", () => {
     const { repository, workspace } = await prepared();
     expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state: "FUTURE_CAPABILITY", evidenceIds: [], notes: "" })).toThrow("CAPABILITY_ATTESTATION_REQUIRED");
     const future = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state: "FUTURE_CAPABILITY", evidenceIds: [], attestation: "Rocklin Metal intends to develop this capability.", notes: "" });
-    expect(future.opportunities[0]).toMatchObject({ capabilityState: "FUTURE_CAPABILITY", capabilityEvidenceIds: [] });
+    expect(future.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "FUTURE_CAPABILITY", capabilityEvidenceIds: [] });
+    const { hasVerifiedCapability } = await import("../site-intelligence");
+    expect(hasVerifiedCapability(future.opportunities[0])).toBe(false);
+  });
+
+  test("rejecting capability does not reject the independently approved market", async () => {
+    const { repository, workspace } = await prepared();
+    const rejected = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state: "REJECTED", evidenceIds: [], notes: "Not offered." });
+    expect(rejected.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "REJECTED" });
   });
 
   test("return to owner review preserves and supersedes prior authority history", async () => {

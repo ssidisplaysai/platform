@@ -3,6 +3,8 @@ import path from "node:path";
 
 describe("site intelligence UI contract", () => {
   const workspace = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteIntelligenceWorkspace.tsx"), "utf8");
+  const ownerWorkflow = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteCapabilityOwnerWorkflow.tsx"), "utf8");
+  const ownerVocabulary = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/site-capability-owner-ux.ts"), "utf8");
   const library = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteIntelligenceReferenceLibrary.tsx"), "utf8");
   const onboarding = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/FreshSiteOnboardingFlow.tsx"), "utf8");
   const route = fs.readFileSync(path.join(process.cwd(), "src/app/sites/[siteId]/intelligence/page.tsx"), "utf8");
@@ -27,11 +29,12 @@ describe("site intelligence UI contract", () => {
   });
 
   test("opportunity controls distinguish market actions, selected state, and capability evidence feedback", () => {
-    for (const text of ["Market Opportunity Decision", "Capability Authority", "APPROVE", "RESEARCH MORE", "HOLD", "REJECT", "Opportunity approved.", "Opportunity marked Research More.", "GENERAL REFERENCE alone cannot verify or qualify a capability.", "Cannot mark capability"] ) expect(workspace).toContain(text);
-    expect(workspace).toContain("aria-pressed={selected}");
-    expect(workspace).toContain('action: decision === "RESEARCH_MORE" ? "RESEARCH_MORE" : "DECIDE_OPPORTUNITY"');
-    expect(workspace).toContain('action: "VALIDATE_CAPABILITY"');
-    expect(workspace).toContain('role="status"');
+    for (const text of ["Market", "Should we pursue this?", "YES - PURSUE", "Current capability", "Can we actually provide this today?", "This does not reject the market."]) expect(ownerWorkflow).toContain(text);
+    for (const text of ["YES - CURRENT CAPABILITY", "YES - WITH LIMITATIONS", "NOT YET"]) expect(ownerVocabulary).toContain(text);
+    expect(ownerWorkflow).toContain('action: decision === "RESEARCH_MORE" ? "RESEARCH_MORE" : "DECIDE_OPPORTUNITY"');
+    expect(ownerWorkflow).toContain('action: "VALIDATE_CAPABILITY"');
+    expect(ownerWorkflow).toContain("canonicalCapabilityState(capabilityChoice)");
+    expect(ownerWorkflow).toContain('role="status"');
   });
 
   test("approved intelligence exposes a generated strategy transition instead of mandatory manual entry", () => {
@@ -41,12 +44,21 @@ describe("site intelligence UI contract", () => {
     expect(workspace).toContain('opportunity.ownerDecision === "APPROVED"');
   });
 
-  test("capability authority uses a typed multi-select evidence picker", () => {
-    for (const text of ["Supporting evidence and relevance", "Add an owner-supplied URL or upload", "Owner attestation", "Evidence relevance", "GENERAL REFERENCE alone", "AUTHORITY_REVIEW_REQUIRED", "RETURN TO OWNER REVIEW", "option.sourceType", "option.provenance"]) expect(workspace).toContain(text);
-    expect(workspace).toContain('type="checkbox"');
-    expect(workspace).toContain("CAPABILITY_RELEVANCE_TYPES");
-    expect(workspace).toContain("capabilityEvidenceOptions");
-    expect(workspace).not.toContain("Capability evidence reference<input");
+  test("normal capability flow uses owner language while preserving advanced canonical evidence details", () => {
+    for (const text of ["How can we support this?", "What does this show?", "Advanced evidence details", "General references do not establish current capability", "What are the limitations?", "SAVE CAPABILITY REVIEW"]) expect(ownerWorkflow).toContain(text);
+    expect(ownerWorkflow).toContain('type="checkbox"');
+    expect(ownerWorkflow).toContain("OWNER_EVIDENCE_CHOICES");
+    expect(ownerWorkflow).toContain("CAPABILITY_RELEVANCE_TYPES");
+    expect(ownerWorkflow.indexOf("OWNER_EVIDENCE_CHOICES")).toBeLessThan(ownerWorkflow.indexOf("Advanced evidence details"));
+  });
+
+  test("owner confirmation is dynamic and legacy authority remains review-required", () => {
+    expect(ownerWorkflow).toContain("I confirm that ${publicBrandIdentity} currently has this capability.");
+    expect(ownerWorkflow).not.toContain("I confirm that Rocklin Metal currently has this capability.");
+    expect(ownerWorkflow).toContain("REVIEW REQUIRED");
+    expect(ownerWorkflow).toContain("proof requirements were upgraded");
+    expect(ownerWorkflow).toContain('getCapabilityAuthorityStatus(opportunity) === "AUTHORITY_REVIEW_REQUIRED"');
+    expect(ownerWorkflow).toContain("Owner confirmation is your attestation. Current capability also requires selected supporting proof.");
   });
 
   test("rich strategy review renders all canonical owner-facing dimensions and valid state actions", () => {

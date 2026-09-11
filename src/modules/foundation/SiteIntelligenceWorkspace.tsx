@@ -16,6 +16,7 @@ import type {
   SiteStrategyProposal,
 } from "./site-intelligence";
 import { SiteIntelligenceReferenceLibrary } from "./SiteIntelligenceReferenceLibrary";
+import { SiteCapabilityOwnerWorkflow } from "./SiteCapabilityOwnerWorkflow";
 
 type Props = {
   organizationId: string;
@@ -134,12 +135,12 @@ function EvidenceJournal({ workspace }: { workspace: Workspace }) {
 }
 
 function OpportunityBoard({ workspace, capabilityEvidenceOptions, busy, onAction }: { workspace: Workspace; capabilityEvidenceOptions: CapabilityEvidenceOption[]; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {
-  return <section className="border border-zinc-800 bg-zinc-950"><header className="border-b border-zinc-800 p-5"><h2 className="font-semibold text-white">Opportunity Board</h2><p className="mt-1 text-sm text-zinc-400">Discovered opportunities remain market hypotheses until owner capability authority is explicit.</p></header>{workspace.opportunities.length === 0 ? <p className="p-5 text-sm text-zinc-500">No opportunities recorded. Bounded research is awaiting provider results.</p> : <div>{workspace.opportunities.map((opportunity) => <OpportunityRow key={opportunity.opportunityId} opportunity={opportunity} capabilityEvidenceOptions={capabilityEvidenceOptions} busy={busy} onAction={onAction} />)}</div>}</section>;
+  return <section className="border border-zinc-800 bg-zinc-950"><header className="border-b border-zinc-800 p-5"><h2 className="font-semibold text-white">Opportunity Board</h2><p className="mt-1 text-sm text-zinc-400">Review market fit and current capability as two separate business decisions.</p></header>{workspace.opportunities.length === 0 ? <p className="p-5 text-sm text-zinc-500">No opportunities recorded. Bounded research is awaiting provider results.</p> : <div>{workspace.opportunities.map((opportunity) => <SiteCapabilityOwnerWorkflow key={opportunity.opportunityId} opportunity={opportunity} capabilityEvidenceOptions={capabilityEvidenceOptions} publicBrandIdentity={workspace.publicBrandIdentity} busy={busy} onAction={onAction} />)}</div>}</section>;
 }
 
 const CAPABILITY_RELEVANCE_TYPES: CapabilityEvidenceRelevanceType[] = ["DIRECT_CAPABILITY_PROOF", "PROJECT_EXAMPLE", "PRODUCT_EXAMPLE", "FABRICATION_EXAMPLE", "SERVICE_SCOPE", "DELIVERY_SCOPE", "CHANNEL_EVIDENCE", "GEOGRAPHIC_SERVICE_EVIDENCE", "SPECIFICATION_OR_COMPLIANCE_EVIDENCE", "OWNER_ATTESTATION_SUPPORT", "GENERAL_REFERENCE"];
 
-function OpportunityRow({ opportunity, capabilityEvidenceOptions, busy, onAction }: { opportunity: SiteOpportunity; capabilityEvidenceOptions: CapabilityEvidenceOption[]; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {
+export function LegacyOpportunityRow({ opportunity, capabilityEvidenceOptions, busy, onAction }: { opportunity: SiteOpportunity; capabilityEvidenceOptions: CapabilityEvidenceOption[]; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {
   const [capabilityEvidence, setCapabilityEvidence] = useState<string[]>(opportunity.capabilityEvidenceIds);
   const [evidenceRelevance, setEvidenceRelevance] = useState<Record<string, CapabilityEvidenceRelevanceType>>(() => Object.fromEntries(opportunity.capabilityEvidenceIds.map((evidenceId) => [evidenceId, opportunity.capabilityAuthorityRevisions?.at(-1)?.evidenceRelevance.find((link) => link.evidenceId === evidenceId)?.relevanceType ?? "GENERAL_REFERENCE"])));
   const [ownerAttested, setOwnerAttested] = useState(false);
@@ -157,7 +158,7 @@ function OpportunityRow({ opportunity, capabilityEvidenceOptions, busy, onAction
     if ((state === "VERIFIED" || state === "QUALIFIED" || state === "FUTURE_CAPABILITY") && !ownerAttested) { setFeedback("Confirm the owner attestation before recording this decision."); return; }
     if ((state === "VERIFIED" || state === "QUALIFIED") && !capabilityEvidence.some((evidenceId) => evidenceRelevance[evidenceId] !== "GENERAL_REFERENCE")) { setFeedback("Choose a capability-specific relevance type for at least one supporting record."); return; }
     if (state === "QUALIFIED" && !capabilityNotes.trim()) { setFeedback("Describe the actual limitation or condition for a Qualified capability."); return; }
-    const attestation = state === "FUTURE_CAPABILITY" ? `The owner confirms ${opportunity.name} is planned, targeted, under development, or strategically desirable.` : ownerAttested ? `The owner attests that Rocklin Metal currently provides ${opportunity.name}${state === "QUALIFIED" ? " subject to the recorded limitations" : ""}.` : "";
+    const attestation = state === "FUTURE_CAPABILITY" ? `The owner confirms ${opportunity.name} is planned, targeted, under development, or strategically desirable.` : ownerAttested ? `The owner attests that the organization currently provides ${opportunity.name}${state === "QUALIFIED" ? " subject to the recorded limitations" : ""}.` : "";
     const result = await onAction({ action: "VALIDATE_CAPABILITY", opportunityId: opportunity.opportunityId, state, evidenceIds: capabilityEvidence, evidenceRelevance: capabilityEvidence.map((evidenceId) => ({ evidenceId, relevanceType: evidenceRelevance[evidenceId] ?? "GENERAL_REFERENCE", ownerConfirmedRelevant: true })), attestation, notes: capabilityNotes, reason: `Owner capability decision: ${state}.` });
     setFeedback(result ? `Capability marked ${state.replace("_", " ").toLowerCase()}.` : "Capability decision failed. Review the workspace error and try again.");
   }
