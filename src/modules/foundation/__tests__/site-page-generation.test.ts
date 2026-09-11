@@ -16,6 +16,7 @@ describe("reusable fresh-site page generation", () => {
     expect(result.pages.filter((item) => item.canonicalPath !== "/").every((item) => inbound.has(item.pageId))).toBe(true);
     expect(result.navigation.map((item) => item.label)).toEqual(expect.arrayContaining(["Core Category", "Products & Solutions", "Industries", "Capabilities", "About", "Request a Quote"]));
     expect(result.pages.flatMap((item) => item.imageRequirements).every((item) => item.publishableAssetId === null && item.status !== "READY")).toBe(true);
+    expect(result.pages.find((item) => item.pageRole === "CAPABILITIES")?.imageRequirements[0]).toMatchObject({ purpose: "FABRICATION_VISUAL", resolutionPolicy: "GENERATED_OR_OWNER_ASSET", status: "GENERATED_CANDIDATE_NEEDED" });
   });
 
   test("quality gate fails seed copy, governance language, protected claims, bad links, and missing SEO", () => {
