@@ -23,6 +23,8 @@ export type GlwCampaign = {
   status: GlwCampaignStatus;
   completedTargetCount: number;
   failedTargetCount: number;
+  parentCampaignId?: string | null;
+  originReason?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -38,4 +40,6 @@ export type NewGlwCampaignInput = {
   pagesPerDay: number;
   publicationPolicy: GlwCampaignPublicationPolicy;
   imageRequired: boolean;
+  parentCampaignId?: string | null;
+  originReason?: string | null;
 };

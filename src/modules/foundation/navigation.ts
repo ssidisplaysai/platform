@@ -24,6 +24,12 @@ export const FOUNDATION_NAVIGATION_ITEMS: readonly NavigationItem[] = [
     requiredPermissions: ["sites:read", "products:read"],
   },
   {
+    id: "glw-campaign-manager",
+    label: "Campaign Manager",
+    href: "/glw/campaigns",
+    requiredPermissions: ["sites:read", "products:read"],
+  },
+  {
     id: "companies",
     label: "Companies",
     href: "/companies",
