@@ -181,6 +181,7 @@ export async function attachGenesisWordPressFeaturedImage(input: {
   title: string;
   altText: string;
   description: string;
+  mediaUrlToken?: string;
 }): Promise<GenesisWordPressMediaWriteResult> {
   const configuredApiBaseUrl = input.site.integrations.wordpressApiBaseUrl;
   const credentialReference = input.site.integrations.wordpressCredentialReference;
@@ -304,7 +305,7 @@ export async function attachGenesisWordPressFeaturedImage(input: {
     return { ok: false, state: "metadata_failed", message: `WordPress media metadata update failed with HTTP ${metadataResponse.status}.` };
   }
 
-  const content = insertHeroImage(input.contentHtml.trim(), mediaUrl, input.altText.trim());
+  const content = input.mediaUrlToken && input.contentHtml.includes(input.mediaUrlToken) ? input.contentHtml.replaceAll(input.mediaUrlToken, mediaUrl) : insertHeroImage(input.contentHtml.trim(), mediaUrl, input.altText.trim());
   let attachResponse: Response;
   try {
     attachResponse = await fetch(`${apiBaseUrl}/pages/${pageId}`, {

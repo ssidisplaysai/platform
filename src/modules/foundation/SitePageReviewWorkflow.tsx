@@ -7,8 +7,9 @@ import type { SitePageImageCandidate } from "./site-page-image-candidate-reposit
 import { areRequiredPageImagesApproved } from "./site-page-image-review";
 import { resolveSitePageImageRequirement } from "./site-page-image-resolution";
 import type { SiteBuildStage, SiteBuildWordPressReadiness } from "./site-build-service";
+import type { SiteVisualAssembly } from "./site-visual-assembly-repository";
 
-type Workspace = { site: { organizationId: string; siteId: string; displayName: string }; currentAssembly: SiteAssemblyProposal | null; assemblies: SiteAssemblyProposal[]; imageCandidates: SitePageImageCandidate[]; wordpressDrafts: unknown[]; wordpressContentUpdates: unknown[]; pageReview: { complete: boolean; generatedPageCount: number; ownerApprovedPageCount: number; requiredImageApprovalComplete: boolean }; stage: SiteBuildStage; next: { action: string; label: string; detail: string }; publication: { state: string } };
+type Workspace = { site: { organizationId: string; siteId: string; displayName: string }; currentAssembly: SiteAssemblyProposal | null; assemblies: SiteAssemblyProposal[]; imageCandidates: SitePageImageCandidate[]; wordpressDrafts: unknown[]; wordpressContentUpdates: unknown[]; currentVisualAssembly: SiteVisualAssembly | null; pageReview: { complete: boolean; generatedPageCount: number; ownerApprovedPageCount: number; requiredImageApprovalComplete: boolean }; stage: SiteBuildStage; next: { action: string; label: string; detail: string }; publication: { state: string } };
 
 function PostReviewNextAction({ workspace, readiness, busy, error, position, onUpdate }: { workspace: Workspace; readiness: SiteBuildWordPressReadiness | null; busy: boolean; error: string | null; position: "top" | "bottom"; onUpdate(): Promise<void> }) {
   const draftCount = workspace.wordpressDrafts.length; const updateComplete = workspace.wordpressContentUpdates.length >= workspace.pageReview.generatedPageCount;

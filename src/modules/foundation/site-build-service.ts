@@ -16,6 +16,11 @@ import { generateGenesisFeaturedImage } from "@/modules/glw/generated-image-serv
 import { areRequiredPageImagesApproved, summarizeSitePageReview } from "./site-page-image-review";
 import { resolveSitePageImageRequirement } from "./site-page-image-resolution";
 import { resolveSiteBuildStage, type SiteBuildStage } from "./site-build-stage";
+import { readSitePageImageCandidateBytes } from "./site-page-image-candidate-repository";
+import { attachGenesisWordPressFeaturedImage } from "./wordpress-media-writer";
+import { HOME_HERO_MEDIA_TOKEN, renderCommercialStainlessHome } from "./site-home-visual-assembly";
+import { decideSiteVisualAssembly, listSiteVisualAssemblies, saveSiteVisualAssembly } from "./site-visual-assembly-repository";
+import { writeExactWordPressDraftYoastSearch } from "./wordpress-yoast-search-writer";
 
 export type { SiteBuildStage } from "./site-build-stage";
 
@@ -28,6 +33,8 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
   const session = generation.buildSession;
   const records = session ? getSiteBuildRecords({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : { plans: [], changeRequests: [], currentPlan: null, draftSet: null, wordpressDrafts: [], assemblies: [], currentAssembly: null, wordpressContentUpdates: [] };
   const imageCandidates = session ? listSitePageImageCandidates({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : [];
+  const visualAssemblies = session ? listSiteVisualAssemblies({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : [];
+  const currentVisualAssembly = visualAssemblies.at(-1) ?? null;
   const pageReview = summarizeSitePageReview(records.currentAssembly, imageCandidates);
   const stale = generation.certification.status !== "CURRENT" || Boolean(records.currentPlan && !isSiteBuildSnapshotCurrent(records.currentPlan.authoritySnapshot, generation.readiness.snapshot)) || Boolean(records.draftSet && !isSiteBuildSnapshotCurrent(records.draftSet.authoritySnapshot, generation.readiness.snapshot));
   const stage: SiteBuildStage = resolveSiteBuildStage({ sessionStarted: Boolean(session), stale, planStatus: records.currentPlan?.status ?? null, draftStatus: records.draftSet?.status ?? null, expectedDraftCount: records.draftSet?.drafts.length ?? 0, wordpressDraftCount: records.wordpressDrafts.length, assemblyPresent: Boolean(records.currentAssembly), pageReviewComplete: pageReview.complete, generatedPageCount: pageReview.generatedPageCount, wordpressContentUpdateCount: records.wordpressContentUpdates.length });
@@ -45,8 +52,26 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
     COMPLETE: { action: "REVIEW_WORDPRESS_DRAFTS", label: "REVIEW WORDPRESS DRAFTS", detail: "Review the created drafts in WordPress. Publication remains a separate gate." },
     AUTHORITY_REVIEW_REQUIRED: { action: "REVIEW_GENERATION_READINESS", label: "REVIEW GENERATION READINESS", detail: "Material upstream authority changed. Recertify before continuing this build." },
   }[stage];
-  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, imageCandidates, pageReview, stale, stage, next, publication: { state: site.publishingStatus, enabled: site.enabled } };
+  const visualStage = stage === "WORDPRESS_DRAFT_REVIEW" && currentVisualAssembly?.status === "READY_FOR_OWNER_REVIEW" ? "HOME_DESIGN_REVIEW" : stage;
+  const visualNext = visualStage === "HOME_DESIGN_REVIEW" ? { action: "REVIEW_DESIGNED_HOME", label: "REVIEW DESIGNED HOME", detail: "Review the rendered Home visual assembly before any design is propagated to the remaining pages." } : next;
+  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, imageCandidates, visualAssemblies, currentVisualAssembly, pageReview, stale, stage: visualStage, next: visualNext, publication: { state: site.publishingStatus, enabled: site.enabled } };
 }
+
+export async function assembleHomeVisualCanary(site: SiteConfiguration, actor: string, ownerInstructions = "") {
+  const workspace = getSiteBuildWorkspace(site); const page = workspace.currentAssembly?.pages.find((item) => item.pageRole === "HOME");
+  if (!workspace.session || !workspace.currentAssembly || !page || !workspace.pageReview.complete || site.enabled || site.publishingStatus !== "disabled") throw new Error("HOME_VISUAL_ASSEMBLY_BOUNDARY_NOT_READY");
+  const candidate = workspace.imageCandidates.filter((item) => item.pageId === page.pageId && item.pageRevisionId === page.pageRevisionId && item.status === "APPROVED").sort((left, right) => left.revision - right.revision).at(-1); if (!candidate) throw new Error("APPROVED_HOME_IMAGE_REQUIRED");
+  const draft = workspace.wordpressDrafts.find((item) => item.draftId === `${page.pageId}-draft`); if (!draft) throw new Error("HOME_WORDPRESS_DRAFT_REQUIRED");
+  const yoast = await writeExactWordPressDraftYoastSearch({ site, wordpressObjectId: draft.wordpressObjectId, focusKeyphrase: page.h1, seoTitle: page.seoTitle, metaDescription: page.metaDescription }); if (!yoast.ok) throw new Error(`HOME_YOAST_SYNC_FAILED:${yoast.state}`);
+  if (workspace.currentVisualAssembly && workspace.currentVisualAssembly.pageRevisionId === page.pageRevisionId && workspace.currentVisualAssembly.status === "READY_FOR_OWNER_REVIEW" && !ownerInstructions.trim()) return workspace.currentVisualAssembly;
+  const stored = readSitePageImageCandidateBytes({ organizationId: site.organizationId, siteId: site.siteId, candidateId: candidate.candidateId }); if (!stored) throw new Error("APPROVED_HOME_IMAGE_BYTES_REQUIRED");
+  const html = renderCommercialStainlessHome({ page, navigation: workspace.currentAssembly.navigation, wordpressObjectId: draft.wordpressObjectId });
+  const media = await attachGenesisWordPressFeaturedImage({ site, wordpressObjectId: draft.wordpressObjectId, canonicalSlug: "commercial-stainless-counters-home", contentHtml: html, mediaUrlToken: HOME_HERO_MEDIA_TOKEN, image: { bytes: stored.bytes, mimeType: candidate.mimeType, fileExtension: candidate.mimeType === "image/png" ? "png" : candidate.mimeType === "image/webp" ? "webp" : "jpg" }, title: "Commercial stainless counters and custom fabrication", altText: "Commercial stainless counters and work surfaces in a professional fabrication setting", description: `Approved Genesis ${candidate.sourceType.toLowerCase().replaceAll("_", " ")} for Home hero.` });
+  if (!media.ok) throw new Error(`HOME_VISUAL_MEDIA_FAILED:${media.state}`);
+  return saveSiteVisualAssembly({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, pageId: page.pageId, pageRevisionId: page.pageRevisionId, status: "READY_FOR_OWNER_REVIEW", referenceAssetId: "site-asset-7cf46d465609b3d574532717952658809eca92e15f930c58af8db884a911be9c", referenceClassification: "OWNER_SUPPLIED_REFERENCE", referencePublished: false, imageCandidateId: candidate.candidateId, imageCandidateRevision: candidate.revision, imageProvenance: candidate.sourceType, imageSha256: candidate.sha256, wordpressObjectId: draft.wordpressObjectId, wordpressMediaId: media.mediaId, wordpressMediaUrl: media.mediaUrl, wordpressStatus: "draft", contentHtml: html.replaceAll(HOME_HERO_MEDIA_TOKEN, media.mediaUrl), designSystemVersion: "commercial-stainless-visual-v1", ownerInstructions: ownerInstructions.trim() || null, createdBy: actor });
+}
+
+export function decideHomeVisualAssembly(site: SiteConfiguration, actor: string, assemblyId: string, decision: "APPROVE" | "REQUEST_CHANGES") { const workspace = getSiteBuildWorkspace(site); if (!workspace.session) throw new Error("SITE_BUILD_SESSION_REQUIRED"); return decideSiteVisualAssembly({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, assemblyId, decision, actor }); }
 
 function planningContext(site: SiteConfiguration) {
   const workspace = getSiteBuildWorkspace(site);
