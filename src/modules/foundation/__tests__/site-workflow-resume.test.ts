@@ -131,4 +131,10 @@ describe("Site Detail workflow resume resolver", () => {
     expect(result.primaryAction.description).toContain("draft review and site QA");
     expect(result.stages.find((stage) => stage.key === "site_build")?.detail).toContain("content synchronization is complete");
   });
+
+  test("a visual-review build resumes directly to the resolver-owned action route", () => {
+    const next = { action: "REVIEW_REMAINING_DESIGNS", label: "REVIEW REMAINING 14 DESIGNS", detail: "Review 14 page-specific visual assemblies before site QA or publication.", route: "/sites/site-rj/build/designs?organizationId=rj-metal&siteId=site-rj" };
+    const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true, siteBuildStage: "SITE_VISUAL_REVIEW", siteBuildNext: next });
+    expect(result.primaryAction).toEqual({ key: "REVIEW_REMAINING_DESIGNS", title: "Site Visual Review", description: next.detail, label: next.label, href: next.route });
+  });
 });

@@ -93,6 +93,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
     },
     siteBuildStarted: Boolean(generation.buildSession),
     siteBuildStage: siteBuild.stage,
+    siteBuildNext: siteBuild.next,
   });
 
   return (

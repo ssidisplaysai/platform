@@ -1,14 +1,264 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { SiteVisualAssembly } from "./site-visual-assembly-repository";
 
-type PageInfo = { pageId: string; name: string; pageRole: string; canonicalPath: string };
-type Summary = { expected: number; assembled: number; readyForOwnerReview: number; approved: number; blocked: number };
+type PageInfo = {
+  pageId: string;
+  name: string;
+  pageRole: string;
+  canonicalPath: string;
+};
+type Summary = {
+  expected: number;
+  assembled: number;
+  readyForOwnerReview: number;
+  approved: number;
+  blocked: number;
+};
+type NextAction = { action: string; label: string; detail: string; route: string };
 
-export function SiteVisualReviewWorkflow({ initialAssemblies, pages, initialSummary, site }: { initialAssemblies: SiteVisualAssembly[]; pages: PageInfo[]; initialSummary: Summary; site: { organizationId: string; siteId: string } }) {
-  const [assemblies, setAssemblies] = useState(initialAssemblies); const [summary, setSummary] = useState(initialSummary); const [instructions, setInstructions] = useState<Record<string, string>>({}); const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
-  async function act(confirm: string, visualAssemblyId?: string, pageId?: string) { setBusy(true); setError(null); try { const response = await fetch(`/api/sites/${encodeURIComponent(site.siteId)}/site-build`, { method: "POST", headers: { "content-type": "application/json", "x-gcp-roles": "ops_manager", "x-gcp-organization-id": site.organizationId, "x-gcp-site-id": site.siteId }, body: JSON.stringify({ confirm, visualAssemblyId, instructions: pageId ? instructions[pageId] ?? "" : "" }) }); const payload = await response.json() as { workspace?: { remainingVisualAssemblies: SiteVisualAssembly[]; remainingVisualSummary: Summary }; error?: string }; if (!response.ok || !payload.workspace) throw new Error(payload.error ?? "Visual design action failed."); setAssemblies(payload.workspace.remainingVisualAssemblies); setSummary(payload.workspace.remainingVisualSummary); } catch (cause) { setError(cause instanceof Error ? cause.message : "Visual design action failed."); } finally { setBusy(false); } }
+export function SiteVisualReviewWorkflow({
+  initialAssemblies,
+  pages,
+  initialSummary,
+  initialNextAction,
+  site,
+}: {
+  initialAssemblies: SiteVisualAssembly[];
+  pages: PageInfo[];
+  initialSummary: Summary;
+  initialNextAction: NextAction;
+  site: { organizationId: string; siteId: string };
+}) {
+  const [assemblies, setAssemblies] = useState(initialAssemblies);
+  const [summary, setSummary] = useState(initialSummary);
+  const [nextAction, setNextAction] = useState(initialNextAction);
+  const [instructions, setInstructions] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function act(
+    confirm: string,
+    visualAssemblyId?: string,
+    pageId?: string,
+  ) {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `/api/sites/${encodeURIComponent(site.siteId)}/site-build`,
+        {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-gcp-roles": "ops_manager",
+            "x-gcp-organization-id": site.organizationId,
+            "x-gcp-site-id": site.siteId,
+          },
+          body: JSON.stringify({
+            confirm,
+            visualAssemblyId,
+            instructions: pageId ? (instructions[pageId] ?? "") : "",
+          }),
+        },
+      );
+      const payload = (await response.json()) as {
+        workspace?: {
+          remainingVisualAssemblies: SiteVisualAssembly[];
+          remainingVisualSummary: Summary;
+          next: NextAction;
+        };
+        error?: string;
+      };
+      if (!response.ok || !payload.workspace)
+        throw new Error(payload.error ?? "Visual design action failed.");
+      setAssemblies(payload.workspace.remainingVisualAssemblies);
+      setSummary(payload.workspace.remainingVisualSummary);
+      setNextAction(payload.workspace.next);
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Visual design action failed.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   const byPage = new Map(assemblies.map((item) => [item.pageId, item]));
-  return <section className="space-y-6"><header className="border border-zinc-800 bg-zinc-950 p-6"><p className="text-xs font-semibold uppercase text-red-400">Site Visual Assembly</p><h1 className="mt-2 text-2xl font-semibold text-white">Remaining page designs</h1><p className="mt-2 text-sm text-zinc-300">Home visual revision 2 is the approved design authority. These page-specific assemblies remain owner-reviewable and unpublished.</p><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4"><div><dt className="text-zinc-500">Assembled</dt><dd className="text-xl font-semibold text-white">{summary.assembled} / {summary.expected}</dd></div><div><dt className="text-zinc-500">Ready for review</dt><dd className="text-xl font-semibold text-amber-300">{summary.readyForOwnerReview}</dd></div><div><dt className="text-zinc-500">Approved</dt><dd className="text-xl font-semibold text-emerald-300">{summary.approved}</dd></div><div><dt className="text-zinc-500">Needs attention</dt><dd className="text-xl font-semibold text-white">{summary.blocked}</dd></div></dl>{summary.assembled === summary.expected && summary.blocked === 0 ? <button disabled={busy || summary.readyForOwnerReview === 0} onClick={() => act("APPROVE_ALL_READY_VISUALS")} className="mt-4 bg-emerald-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40">APPROVE ALL READY DESIGNS</button> : null}{error ? <p role="alert" className="mt-3 text-red-300">{error}</p> : null}</header><div className="space-y-5">{pages.map((page) => { const assembly = byPage.get(page.pageId); return <article key={page.pageId} className="border border-zinc-800 bg-zinc-950"><header className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-800 p-5"><div><p className="text-xs uppercase text-zinc-500">{page.pageRole.replaceAll("_", " ")}</p><h2 className="mt-1 text-lg font-semibold text-white">{page.name}</h2><p className="mt-1 text-xs text-zinc-500">{page.canonicalPath}</p></div><span className={assembly?.status === "APPROVED" ? "text-xs font-semibold text-emerald-300" : assembly ? "text-xs font-semibold text-amber-300" : "text-xs text-red-300"}>{assembly?.status.replaceAll("_", " ") ?? "NOT ASSEMBLED"}</span></header>{assembly ? <><details className="p-5"><summary className="cursor-pointer font-semibold text-zinc-200">ACTUAL RENDERED PREVIEW</summary><iframe title={`${page.name} designed preview`} srcDoc={assembly.contentHtml} className="mt-4 h-[760px] w-full bg-white" /></details><footer className="border-t border-zinc-800 p-5"><div className="flex flex-wrap gap-2"><button disabled={busy || assembly.status !== "READY_FOR_OWNER_REVIEW"} onClick={() => act("APPROVE_SITE_VISUAL", assembly.assemblyId)} className="bg-emerald-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">APPROVE DESIGN</button><button disabled={busy || assembly.status !== "READY_FOR_OWNER_REVIEW"} onClick={() => act("REQUEST_SITE_VISUAL_CHANGES", assembly.assemblyId)} className="border border-zinc-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40">REQUEST DESIGN CHANGES</button><button disabled={busy || !instructions[page.pageId]?.trim()} onClick={() => act("REASSEMBLE_SITE_VISUAL", assembly.assemblyId, page.pageId)} className="border border-red-800 px-4 py-2 text-xs font-semibold text-red-200 disabled:opacity-40">REGENERATE / REASSEMBLE WITH INSTRUCTIONS</button></div><textarea value={instructions[page.pageId] ?? ""} onChange={(event) => setInstructions((current) => ({ ...current, [page.pageId]: event.target.value }))} rows={2} placeholder="Page-specific visual changes" className="mt-3 w-full border border-zinc-700 bg-zinc-900 p-3 text-sm text-white" /><p className="mt-2 text-xs text-zinc-500">WordPress draft {assembly.wordpressObjectId} · Media {assembly.wordpressMediaId} · {assembly.imageProvenance.replaceAll("_", " ")}</p></footer></> : <p className="p-5 text-sm text-red-300">Visual assembly is incomplete.</p>}</article>; })}</div></section>;
+  return (
+    <section className="space-y-6">
+      <header className="border border-zinc-800 bg-zinc-950 p-6">
+        <p className="text-xs font-semibold uppercase text-red-400">
+          Site Visual Assembly
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-white">
+          Remaining page designs
+        </h1>
+        <p className="mt-2 text-sm text-zinc-300">
+          Home visual revision 2 is the approved design authority. These
+          page-specific assemblies remain owner-reviewable and unpublished.
+        </p>
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
+          <div>
+            <dt className="text-zinc-500">Assembled</dt>
+            <dd className="text-xl font-semibold text-white">
+              {summary.assembled} / {summary.expected}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">Ready for review</dt>
+            <dd className="text-xl font-semibold text-amber-300">
+              {summary.readyForOwnerReview}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">Approved</dt>
+            <dd className="text-xl font-semibold text-emerald-300">
+              {summary.approved}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-zinc-500">Needs attention</dt>
+            <dd className="text-xl font-semibold text-white">
+              {summary.blocked}
+            </dd>
+          </div>
+        </dl>
+        {summary.approved === summary.expected && summary.expected > 0 ? (
+          <section className="mt-5 border-l-4 border-emerald-500 bg-emerald-950/20 p-5">
+            <p className="text-xs font-semibold uppercase text-emerald-300">All Remaining Designs Approved</p>
+            <h2 className="mt-2 text-xl font-semibold text-white">Continue to the governed Site QA review.</h2>
+            <p className="mt-2 text-sm text-zinc-300">{nextAction.detail}</p>
+            <Link href={nextAction.route} className="mt-4 inline-block bg-red-600 px-5 py-3 text-sm font-semibold text-white">{nextAction.label}</Link>
+          </section>
+        ) : summary.assembled === summary.expected && summary.blocked === 0 ? (
+          <button
+            disabled={busy || summary.readyForOwnerReview === 0}
+            onClick={() => act("APPROVE_ALL_READY_VISUALS")}
+            className="mt-4 bg-emerald-700 px-5 py-3 text-sm font-semibold text-white disabled:opacity-40"
+          >
+            APPROVE ALL READY DESIGNS
+          </button>
+        ) : null}
+        {error ? (
+          <p role="alert" className="mt-3 text-red-300">
+            {error}
+          </p>
+        ) : null}
+      </header>
+      <div className="space-y-5">
+        {pages.map((page) => {
+          const assembly = byPage.get(page.pageId);
+          return (
+            <article
+              key={page.pageId}
+              className="border border-zinc-800 bg-zinc-950"
+            >
+              <header className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-800 p-5">
+                <div>
+                  <p className="text-xs uppercase text-zinc-500">
+                    {page.pageRole.replaceAll("_", " ")}
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold text-white">
+                    {page.name}
+                  </h2>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {page.canonicalPath}
+                  </p>
+                </div>
+                <span
+                  className={
+                    assembly?.status === "APPROVED"
+                      ? "text-xs font-semibold text-emerald-300"
+                      : assembly
+                        ? "text-xs font-semibold text-amber-300"
+                        : "text-xs text-red-300"
+                  }
+                >
+                  {assembly?.status.replaceAll("_", " ") ?? "NOT ASSEMBLED"}
+                </span>
+              </header>
+              {assembly ? (
+                <>
+                  <details className="p-5">
+                    <summary className="cursor-pointer font-semibold text-zinc-200">
+                      ACTUAL RENDERED PREVIEW
+                    </summary>
+                    <iframe
+                      title={`${page.name} designed preview`}
+                      srcDoc={assembly.contentHtml}
+                      className="mt-4 h-[760px] w-full bg-white"
+                    />
+                  </details>
+                  <footer className="border-t border-zinc-800 p-5">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        disabled={
+                          busy || assembly.status !== "READY_FOR_OWNER_REVIEW"
+                        }
+                        onClick={() =>
+                          act("APPROVE_SITE_VISUAL", assembly.assemblyId)
+                        }
+                        className="bg-emerald-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                      >
+                        APPROVE DESIGN
+                      </button>
+                      <button
+                        disabled={
+                          busy || assembly.status !== "READY_FOR_OWNER_REVIEW"
+                        }
+                        onClick={() =>
+                          act(
+                            "REQUEST_SITE_VISUAL_CHANGES",
+                            assembly.assemblyId,
+                          )
+                        }
+                        className="border border-zinc-600 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
+                      >
+                        REQUEST DESIGN CHANGES
+                      </button>
+                      <button
+                        disabled={busy || !instructions[page.pageId]?.trim()}
+                        onClick={() =>
+                          act(
+                            "REASSEMBLE_SITE_VISUAL",
+                            assembly.assemblyId,
+                            page.pageId,
+                          )
+                        }
+                        className="border border-red-800 px-4 py-2 text-xs font-semibold text-red-200 disabled:opacity-40"
+                      >
+                        REGENERATE / REASSEMBLE WITH INSTRUCTIONS
+                      </button>
+                    </div>
+                    <textarea
+                      value={instructions[page.pageId] ?? ""}
+                      onChange={(event) =>
+                        setInstructions((current) => ({
+                          ...current,
+                          [page.pageId]: event.target.value,
+                        }))
+                      }
+                      rows={2}
+                      placeholder="Page-specific visual changes"
+                      className="mt-3 w-full border border-zinc-700 bg-zinc-900 p-3 text-sm text-white"
+                    />
+                    <p className="mt-2 text-xs text-zinc-500">
+                      WordPress draft {assembly.wordpressObjectId} · Media{" "}
+                      {assembly.wordpressMediaId} ·{" "}
+                      {assembly.imageProvenance.replaceAll("_", " ")}
+                    </p>
+                  </footer>
+                </>
+              ) : (
+                <p className="p-5 text-sm text-red-300">
+                  Visual assembly is incomplete.
+                </p>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
