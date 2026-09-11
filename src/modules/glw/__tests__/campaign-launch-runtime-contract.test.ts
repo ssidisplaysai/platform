@@ -41,6 +41,29 @@ describe("campaign launch runtime endpoint and lifecycle contract", () => {
     expect(route.slice(mutationBoundaryCheck, mutation)).toContain("if (!mutationBoundaryPromotion.available)");
   });
 
+  test("keeps draft-only preparation separate from promoted atomic launch", () => {
+    const drafts = readFileSync(join(process.cwd(), "src/app/api/glw/campaign-drafts/route.ts"), "utf8");
+    const launch = readFileSync(join(process.cwd(), "src/app/api/glw/campaign-launch/route.ts"), "utf8");
+    expect(drafts).toContain("activationPerformed: false");
+    expect(drafts).toContain("targetsCreated: 0");
+    expect(drafts).toContain("publicationPerformed: false");
+    expect(drafts).not.toContain("GLW_CAMPAIGN_LAUNCH_PRODUCTION_ENABLED");
+    expect(launch).toContain('code: "PRODUCTION_PROMOTION_REQUIRED"');
+  });
+
+  test("revalidates current site and product authority before generation dispatch", () => {
+    const generation = readFileSync(join(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const siteReadiness = generation.indexOf("const siteReadiness = evaluateSiteReadiness(");
+    const productReadiness = generation.indexOf("const productReadiness = evaluateProductReadiness(");
+    const targetPreflight = generation.indexOf("const target = await readGlwTargetPreflight(");
+    const execute = generation.indexOf("service.execute(preview.request)");
+    expect(siteReadiness).toBeGreaterThan(-1);
+    expect(productReadiness).toBeGreaterThan(siteReadiness);
+    expect(targetPreflight).toBeGreaterThan(productReadiness);
+    expect(execute).toBeGreaterThan(targetPreflight);
+    expect(generation.slice(productReadiness, targetPreflight)).toContain("GENERATION_AUTHORITY_NOT_READY");
+  });
+
   test("preserves reference approval, activation, and scheduler ownership boundaries", () => {
     const reference = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8");
     const activation = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/activate/route.ts"), "utf8");

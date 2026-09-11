@@ -1,7 +1,6 @@
 import { getGlwState, type GlwGenerationRequest } from "./page-generation";
 import {
-  resolveGlwN8nEngineProduct,
-  resolveGlwN8nEngineProductSlug,
+  resolveGlwExecutionIdentity,
   type GlwPageExecutionRecord,
 } from "./page-execution";
 
@@ -53,6 +52,8 @@ type FetchResponse = {
 };
 
 export function createGlwCanonicalTargetIdentity(input: {
+  organizationId: string;
+  siteId: string;
   productId: string;
   stateCode: string;
   citySlug: string;
@@ -60,12 +61,17 @@ export function createGlwCanonicalTargetIdentity(input: {
   canonicalParentId?: string | null;
 }): GlwCanonicalTargetIdentity {
   const state = getGlwState(input.stateCode);
-  const canonicalProductSlug = resolveGlwN8nEngineProductSlug(input.productId);
+  const executionIdentity = resolveGlwExecutionIdentity({
+    applicationOrganizationId: input.organizationId,
+    applicationSiteId: input.siteId,
+    applicationProductId: input.productId,
+  });
+  const canonicalProductSlug = executionIdentity.engineProductSlug;
   const canonicalSlug = input.citySlug.trim().toLowerCase();
   return {
     applicationPath: input.applicationPath,
     canonicalPath: [canonicalProductSlug, state?.slug, canonicalSlug].filter(Boolean).join("/"),
-    canonicalProduct: resolveGlwN8nEngineProduct(input.productId),
+    canonicalProduct: executionIdentity.engineProductName,
     canonicalProductSlug,
     canonicalSlug,
     canonicalParentId: input.canonicalParentId ?? null,
@@ -103,11 +109,11 @@ export function resolveGlwTargetMutationAvailability(
     };
   }
   return {
-    createAvailable: true,
+    createAvailable: false,
     updateAvailable: false,
-    plannedOperation: "CREATE_CITY",
+    plannedOperation: null,
     wordpressObjectId: null,
-    message: "Target existence is unknown and will be verified authoritatively before creation.",
+    message: "Target existence is unknown. Authoritative verification is required before creation.",
   };
 }
 
@@ -179,6 +185,8 @@ export async function readGlwTargetPreflight(input: {
 }): Promise<GlwTargetPreflightResult> {
   const state = getGlwState(input.request.stateCode);
   const initialIdentity = createGlwCanonicalTargetIdentity({
+    organizationId: input.request.organizationId,
+    siteId: input.request.siteId,
     productId: input.request.productId,
     stateCode: input.request.stateCode,
     citySlug: input.request.citySlug,
@@ -228,6 +236,8 @@ export async function readGlwTargetPreflight(input: {
   }
 
   const identity = createGlwCanonicalTargetIdentity({
+    organizationId: input.request.organizationId,
+    siteId: input.request.siteId,
     productId: input.request.productId,
     stateCode: input.request.stateCode,
     citySlug: input.request.citySlug,

@@ -6,42 +6,98 @@ export const GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID = "prod-indoor-led-video-wall"
 export const GLW_N8N_ENGINE_PRODUCT_NAME = "LED Video Walls";
 export const GLW_N8N_ENGINE_PRODUCT_SLUG = "direct-view-led-video-walls";
 
-const GLW_N8N_ENGINE_SITE_BY_APPLICATION_SITE: Readonly<Record<string, string>> = {
-  [GLW_APPLICATION_SITE_ID]: GLW_N8N_ENGINE_SITE_ID,
+export type GlwExecutionIdentity = {
+  applicationOrganizationId: string;
+  applicationSiteId: string;
+  applicationProductId: string;
+  engineSiteId: string;
+  engineProductName: string;
+  engineProductSlug: string;
 };
 
-const GLW_N8N_ENGINE_PRODUCT_BY_APPLICATION_PRODUCT: Readonly<Record<string, {
-  name: string;
-  slug: string;
-}>> = {
-  [GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID]: {
-    name: GLW_N8N_ENGINE_PRODUCT_NAME,
-    slug: GLW_N8N_ENGINE_PRODUCT_SLUG,
+const GLW_EXECUTION_IDENTITIES: readonly GlwExecutionIdentity[] = [
+  {
+    applicationOrganizationId: "led-display-warehouse",
+    applicationSiteId: GLW_APPLICATION_SITE_ID,
+    applicationProductId: GLW_INDOOR_LED_VIDEO_WALL_PRODUCT_ID,
+    engineSiteId: GLW_N8N_ENGINE_SITE_ID,
+    engineProductName: GLW_N8N_ENGINE_PRODUCT_NAME,
+    engineProductSlug: GLW_N8N_ENGINE_PRODUCT_SLUG,
   },
-};
+  {
+    applicationOrganizationId: "led-display-warehouse",
+    applicationSiteId: GLW_APPLICATION_SITE_ID,
+    applicationProductId: "prod-indoor-digital-sphere",
+    engineSiteId: GLW_N8N_ENGINE_SITE_ID,
+    engineProductName: "Indoor Digital Sphere",
+    engineProductSlug: "indoor-digital-sphere",
+  },
+  {
+    applicationOrganizationId: "ssi",
+    applicationSiteId: "site-ssi-screen-solutions-international",
+    applicationProductId: "prod-ssi-accent-rear-projection-film",
+    engineSiteId: "screen-solutions-international",
+    engineProductName: "Accent Rear Projection Film",
+    engineProductSlug: "accent-rear-projection-film",
+  },
+  {
+    applicationOrganizationId: "ssi",
+    applicationSiteId: "site-ssi-projectorenclosure",
+    applicationProductId: "prod-ssi-fan-cooled-projector-enclosures",
+    engineSiteId: "projectorenclosure",
+    engineProductName: "Fan Cooled Projector Enclosures",
+    engineProductSlug: "fan-cooled-projector-enclosures",
+  },
+];
+
+export function resolveGlwExecutionIdentity(input: {
+  applicationOrganizationId: string;
+  applicationSiteId: string;
+  applicationProductId: string;
+}): GlwExecutionIdentity {
+  const siteIdentities = GLW_EXECUTION_IDENTITIES.filter((candidate) =>
+    candidate.applicationOrganizationId === input.applicationOrganizationId
+    && candidate.applicationSiteId === input.applicationSiteId);
+  if (siteIdentities.length === 0) {
+    throw new Error(
+      `Unsupported GLW application site or organization/site: ${input.applicationOrganizationId || "MISSING"}::${input.applicationSiteId || "MISSING"}`,
+    );
+  }
+  const identity = siteIdentities.find((candidate) =>
+    candidate.applicationProductId === input.applicationProductId);
+  if (!identity) {
+    throw new Error(
+      `Unsupported GLW application product for site ${input.applicationSiteId}: ${input.applicationProductId || "MISSING"}`,
+    );
+  }
+  return identity;
+}
 
 export function resolveGlwN8nEngineSiteId(applicationSiteId: string): string {
-  const engineSiteId = GLW_N8N_ENGINE_SITE_BY_APPLICATION_SITE[applicationSiteId];
-  if (!engineSiteId) {
+  const identities = GLW_EXECUTION_IDENTITIES.filter((identity) =>
+    identity.applicationSiteId === applicationSiteId);
+  if (identities.length === 0) {
     throw new Error(`Unsupported GLW application site: ${applicationSiteId || "MISSING"}`);
   }
-  return engineSiteId;
+  return identities[0].engineSiteId;
 }
 
 export function resolveGlwN8nEngineProduct(applicationProductId: string): string {
-  const engineProduct = GLW_N8N_ENGINE_PRODUCT_BY_APPLICATION_PRODUCT[applicationProductId];
-  if (!engineProduct) {
+  const identity = GLW_EXECUTION_IDENTITIES.find((candidate) =>
+    candidate.applicationProductId === applicationProductId);
+  if (!identity) {
     throw new Error(`Unsupported GLW application product: ${applicationProductId || "MISSING"}`);
   }
-  return engineProduct.name;
+  return identity.engineProductName;
 }
 
 export function resolveGlwN8nEngineProductSlug(applicationProductId: string): string {
-  const engineProduct = GLW_N8N_ENGINE_PRODUCT_BY_APPLICATION_PRODUCT[applicationProductId];
-  if (!engineProduct) {
+  const identity = GLW_EXECUTION_IDENTITIES.find((candidate) =>
+    candidate.applicationProductId === applicationProductId);
+  if (!identity) {
     throw new Error(`Unsupported GLW application product: ${applicationProductId || "MISSING"}`);
   }
-  return engineProduct.slug;
+  return identity.engineProductSlug;
 }
 
 export type GlwPageExecutionStatus =
@@ -285,6 +341,11 @@ export function mapGenerationRequestToN8nDraft(
   jobId: string,
   request: GlwGenerationRequest,
 ): GlwN8nDraftRequest {
+  const executionIdentity = resolveGlwExecutionIdentity({
+    applicationOrganizationId: request.organizationId,
+    applicationSiteId: request.siteId,
+    applicationProductId: request.productId,
+  });
   const primaryKeyword = [request.productTopic, request.cityName, request.stateName]
     .filter(Boolean)
     .join(" ")
@@ -306,7 +367,7 @@ export function mapGenerationRequestToN8nDraft(
     type: "page_generation",
     workspaceId: request.organizationId,
     workspace_id: request.organizationId,
-    site: { id: resolveGlwN8nEngineSiteId(request.siteId), name: request.siteName },
+    site: { id: executionIdentity.engineSiteId, name: request.siteName },
     page: {
       hierarchyMode: "city_child_target",
       hierarchy_mode: "city_child_target",
@@ -315,7 +376,7 @@ export function mapGenerationRequestToN8nDraft(
       pageType: request.pageType,
       page_type: request.pageType,
       productId: request.productId,
-      product: resolveGlwN8nEngineProduct(request.productId),
+      product: executionIdentity.engineProductName,
       productTopic: request.productTopic,
       product_topic: request.productTopic,
       state: request.stateName ?? "",

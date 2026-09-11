@@ -4,8 +4,11 @@ import {
   hasOrganizationScope,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
+import { evaluateProductReadiness } from "@/modules/foundation/product-readiness";
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { getProductById } from "@/modules/foundation/product-repository";
+import { resolvePermissions } from "@/modules/foundation/permissions";
+import { evaluateSiteReadiness } from "@/modules/foundation/site-readiness";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import {
   createGlwN8nMcpDispatcher,
@@ -83,6 +86,28 @@ export async function POST(request: NextRequest) {
   }
   if (siteRecord.organizationId !== scope.organizationId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const permissions = resolvePermissions(auth.roles);
+  const siteReadiness = evaluateSiteReadiness({
+    site: siteRecord,
+    organizationActive: true,
+    requiredPermission: "sites:update",
+    permissions,
+    intent: "configure",
+    requireWorkflowReference: true,
+  });
+  const productReadiness = evaluateProductReadiness({
+    product: productRecord,
+    requiredPermission: "products:evaluate_readiness",
+    permissions,
+  });
+  if (!siteReadiness.ready || !productReadiness.ready) {
+    return NextResponse.json({
+      error: "Site and product must be ready before page generation.",
+      code: "GENERATION_AUTHORITY_NOT_READY",
+      siteReadiness,
+      productReadiness,
+    }, { status: 409 });
   }
 
   const profileCount = listIntegrationProfiles({ organizationId: siteRecord.organizationId })

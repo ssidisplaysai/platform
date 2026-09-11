@@ -35,10 +35,23 @@ export async function GET(request: NextRequest) {
   const preview = buildLocalGlwGenerationPreview({ form, sites: [site], products: [product] });
   if (!preview.request) return NextResponse.json({ issues: preview.validation.issues }, { status: 400 });
 
-  const target = await readGlwTargetPreflight({
-    request: preview.request,
-    wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
-    localExecutions: await glwPageExecutionRepository.list(),
-  });
-  return NextResponse.json({ target, availability: resolveGlwTargetMutationAvailability(target) });
+  try {
+    const target = await readGlwTargetPreflight({
+      request: preview.request,
+      wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+      localExecutions: await glwPageExecutionRepository.list(),
+    });
+    return NextResponse.json({ target, availability: resolveGlwTargetMutationAvailability(target) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Execution identity is unsupported.";
+    if (message.startsWith("Unsupported GLW application")) {
+      return NextResponse.json({
+        classification: "BLOCKED",
+        code: "EXECUTION_IDENTITY_UNSUPPORTED",
+        reason: message,
+        mutationAvailable: false,
+      }, { status: 409 });
+    }
+    throw error;
+  }
 }
