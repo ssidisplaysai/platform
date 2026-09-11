@@ -14,8 +14,10 @@ describe("fresh-site generated page owner review", () => {
     expect(source).toContain("before any existing WordPress draft is updated");
   });
   test("shows the explicit exact-draft update action only after page review completes", () => {
-    for (const text of ["Page Review Complete", "UPDATE WORDPRESS DRAFT CONTENT", "workspace.next.detail", "contentUpdateReady", "exact WordPress draft identities"]) expect(source).toContain(text);
-    expect(source).toContain('onClick={() => act("UPDATE_WORDPRESS_DRAFT_CONTENT")}');
+    for (const text of ["SITE BUILD — PAGE REVIEW COMPLETE", "UPDATE WORDPRESS DRAFT CONTENT", "data-post-review-position", 'position="top"', 'position="bottom"', "This updates the existing", "Nothing will be published", "contentUpdateReady", "exact WordPress draft identities"]) expect(source).toContain(text);
+    expect(source).toContain("workspace.pageReview.complete ? <PostReviewNextAction");
+    expect(source).toContain("onClick={onUpdate}");
+    expect(source.match(/onUpdate=\{\(\) => act\("UPDATE_WORDPRESS_DRAFT_CONTENT"\)\}/g)).toHaveLength(2);
     expect(source).not.toContain('useEffect(() => { act("UPDATE_WORDPRESS_DRAFT_CONTENT")');
   });
 });
