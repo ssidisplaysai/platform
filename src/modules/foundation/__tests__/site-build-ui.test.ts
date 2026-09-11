@@ -17,4 +17,9 @@ describe("bounded Site Build owner workspace", () => {
   test("does not expose publishing or automatic site activation actions", () => {
     expect(source).not.toContain("PUBLISH SITE"); expect(source).not.toContain("ENABLE SITE");
   });
+  test("gates WordPress creation on authenticated read-only collision readiness", () => {
+    expect(source).toContain("/site-build/wordpress-readiness");
+    expect(source).toContain("!wordpressReadiness?.ready");
+    expect(source).toContain("Authenticated WordPress access and collision preflight passed");
+  });
 });
