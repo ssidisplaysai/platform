@@ -15,6 +15,7 @@ export function CampaignManagerPage() {
   const records = campaigns.map((campaign) => projectGlwCampaign(campaign, allTargets.filter((target) => target.campaignId === campaign.campaignId)));
   const products = listProducts().filter((product) => product.organizationId === organizationId && product.assignedSiteIds.includes(siteId));
   const productNames = Object.fromEntries(products.map((product) => [product.productId, product.displayName]));
+  const coverageByProduct = Object.fromEntries(products.map((product) => [product.productId, buildGlwStateCoverage({ campaigns: campaigns.filter((campaign) => campaign.productId === product.productId), targets: allTargets, organizationId, siteId })]));
   return (
     <div className="space-y-6">
       <header className="border-b border-zinc-800 pb-6">
@@ -29,6 +30,7 @@ export function CampaignManagerPage() {
         requestRoles={context.user.roles}
         records={records.map((record) => ({ ...record, proposal: recommendGlwCampaignContinuation({ record, campaigns }) }))}
         coverage={buildGlwStateCoverage({ campaigns, targets: allTargets, organizationId, siteId })}
+        coverageByProduct={coverageByProduct}
         products={products.map((product) => ({ productId: product.productId, name: product.displayName }))}
         productNames={productNames}
       />

@@ -39,4 +39,15 @@ describe("GLW campaign manager projections", () => {
     expect(coverage.find((state) => state.code === "AZ")?.state).toBe("incomplete");
     expect(coverage.find((state) => state.code === "NY")?.state).toBe("uncovered");
   });
+  it("does not derive coverage from a draft campaign without canonical targets", () => {
+    const coverage = buildGlwStateCoverage({ campaigns: [{ ...campaign, status: "draft" }], targets: [], organizationId: "org-1", siteId: "site-1" });
+    expect(coverage.every((state) => state.state === "uncovered")).toBe(true);
+  });
+  it("aggregates overlapping campaign targets with failed then active priority", () => {
+    const second = { ...campaign, campaignId: "campaign-2" };
+    const failed = buildGlwStateCoverage({ campaigns: [campaign, second], targets: [target("CA", "published"), target("CA", "failed", undefined, { campaignId: second.campaignId })], organizationId: "org-1", siteId: "site-1" });
+    expect(failed.find((state) => state.code === "CA")).toMatchObject({ state: "incomplete", completedCount: 1, failedCount: 1, campaignIds: ["campaign-1", "campaign-2"] });
+    const active = buildGlwStateCoverage({ campaigns: [campaign, second], targets: [target("CA", "published"), target("CA", "running", undefined, { campaignId: second.campaignId })], organizationId: "org-1", siteId: "site-1" });
+    expect(active.find((state) => state.code === "CA")?.state).toBe("active");
+  });
 });

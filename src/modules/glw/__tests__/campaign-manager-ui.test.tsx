@@ -14,9 +14,9 @@ const coverage: GlwCampaignStateCoverage[] = [{ code: "CA", name: "California", 
 
 describe("Campaign Manager UI", () => {
   it("renders terminal state, coverage map, continuation, and progressive draft builder", () => {
-    const html = renderToStaticMarkup(<CampaignManager organizationId="org-1" siteId="site-1" requestRoles={["ops_manager"]} records={[{ ...record, proposal: { parentCampaignId: "campaign-1", originReason: "Expand completed state coverage.", name: "Indoor LED Sphere Major Cities", productId: "product-1", pageType: "city_service", stateCodes: ["CA"], pagesPerDay: 10, publicationPolicy: "draft_only" } }]} coverage={coverage} products={[{ productId: "product-1", name: "Indoor LED Sphere" }]} productNames={{ "product-1": "Indoor LED Sphere" }} />);
+    const html = renderToStaticMarkup(<CampaignManager organizationId="org-1" siteId="site-1" requestRoles={["ops_manager"]} records={[{ ...record, proposal: { parentCampaignId: "campaign-1", originReason: "Expand completed state coverage.", name: "Indoor LED Sphere Major Cities", productId: "product-1", pageType: "city_service", stateCodes: ["CA"], pagesPerDay: 10, publicationPolicy: "draft_only" } }]} coverage={coverage} coverageByProduct={{ "product-1": coverage }} products={[{ productId: "product-1", name: "Indoor LED Sphere" }]} productNames={{ "product-1": "Indoor LED Sphere" }} />);
     expect(html).toContain("COMPLETED"); expect(html).toMatch(/Completed Sep (10|11), 2026/u); expect(html).toContain("0<"); expect(html).toContain("Failed");
-    expect(html).toContain("Next Campaign"); expect(html).toContain("Start from this"); expect(html).toContain("United States campaign coverage map");
+    expect(html).toContain("Next Campaign"); expect(html).toContain("Start from this"); expect(html).toContain("Geographic United States campaign coverage map");
     expect(html).toContain("Step 1 of 6"); expect(html).toContain("What are we expanding?"); expect(html).not.toContain("Launch Campaign");
   });
 });
