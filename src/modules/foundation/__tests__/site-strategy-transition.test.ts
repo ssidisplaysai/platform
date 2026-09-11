@@ -12,7 +12,7 @@ function opportunity(id: string, ownerDecision: SiteOpportunity["ownerDecision"]
 }
 
 function profile(profileId: string, profileType: IntegrationProfileConfiguration["profileType"]): IntegrationProfileConfiguration {
-  return { profileId, profileType, organizationId: scope.organizationId, profileName: profileId, description: null, status: "active", enabled: true, version: "1", assignedSiteIds: [scope.siteId], defaultForOrganization: false, references: {} as IntegrationProfileConfiguration["references"], createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z", notes: null };
+  return { profileId, profileType, organizationId: scope.organizationId, profileName: `${profileType} profile`, description: `${profileType} content guidance`, status: "active", enabled: true, version: "1", assignedSiteIds: [scope.siteId], defaultForOrganization: false, references: { voiceReference: profileType === "brand" ? "clear-commercial-voice" : null, titleStrategyReference: profileType === "seo" ? "market-title-strategy" : null, promptReference: profileType === "prompt" ? "evidence-led-content" : null } as IntegrationProfileConfiguration["references"], createdAt: "2026-09-10T00:00:00.000Z", updatedAt: "2026-09-10T00:00:00.000Z", notes: `${profileType} notes` };
 }
 
 const context = { domain: "example.com", publicBrandIdentity: "Example Fabrication", brandProfile: profile("brand-profile", "brand"), seoProfile: profile("seo-profile", "seo"), promptProfile: profile("prompt-profile", "prompt") };
@@ -55,7 +55,10 @@ describe("Site Intelligence to strategy transition", () => {
     expect(workspace.strategyRevisions[0]).toMatchObject({ status: "PROPOSED", decidedBy: null, decidedAt: null, proposedProductAuthority: ["Opportunity verified"] });
     expect(workspace.strategyRevisions[0].reason).not.toContain("Opportunity rejected");
     expect(workspace.strategyRevisions[0].reason).toContain("1 owner references considered (1 likes");
-    expect(workspace.strategyRevisions[0].trustProofRequirements.join(" ")).toContain("Future capability only");
+    expect(workspace.strategyRevisions[0].synthesisContext?.referenceGuidance).toContain("Favor: Like the navigation.");
+    expect(workspace.strategyRevisions[0].synthesisContext?.evidenceClaims).toContain("Observed market demand.");
+    expect(workspace.strategyRevisions[0].synthesisContext?.profileGuidance).toEqual(expect.arrayContaining(["brand content guidance", "seo content guidance", "prompt content guidance", "voiceReference: clear-commercial-voice", "titleStrategyReference: market-title-strategy", "promptReference: evidence-led-content"]));
+    expect(workspace.strategyRevisions[0].synthesisContext?.futureCapabilityOpportunityIds).toEqual(["future"]);
     expect(workspace.creativeState).toBe("CREATIVE_INPUTS_COLLECTING");
     expect(workspace.creativeRevisions).toEqual([]);
   });
@@ -66,8 +69,9 @@ describe("Site Intelligence to strategy transition", () => {
     const proposal = synthesizeInitialSiteStrategy(started.workspace, context);
     expect(proposal.majorVerticals).toEqual(["Vertical market"]);
     expect(proposal.proposedProductAuthority).toEqual([]);
-    expect(proposal.productServiceFamilies).toEqual(["Capabilities pending owner verification"]);
-    expect(proposal.trustProofRequirements.join(" ")).toContain("Owner capability evidence required");
+    expect(proposal.productServiceFamilies).toEqual([]);
+    expect(proposal.synthesisContext?.pendingCapabilityOpportunityIds).toEqual(["market"]);
+    for (const value of [proposal.positioning, proposal.valueProposition, ...proposal.homepageGoals, proposal.geographicStrategy]) expect(value).not.toMatch(/owner validation|owner-verified|verified capabilities|qualified capabilities|authority gating/i);
   });
 
   test("CAS and organization scope fail closed while downstream stores remain absent", async () => {
@@ -79,5 +83,26 @@ describe("Site Intelligence to strategy transition", () => {
     const workspace = started.repository.addInitialStrategyProposal({ ...scope, expectedRevision: started.workspace.revision, proposal });
     expect(workspace.strategyRevisions).toHaveLength(1);
     for (const name of ["product-repository.json", "glw-campaign-repository.json", "glw-page-execution-repository.json", "wordpress-credential-store.json"]) expect(fs.existsSync(path.join(directory, name))).toBe(false);
+  });
+
+  test("approval is terminal and owner correction preserves approved revision history", async () => {
+    const started = await reviewed([opportunity("approved", "APPROVED", "VERIFIED")]);
+    const { synthesizeInitialSiteStrategy } = await import("../site-strategy-synthesizer");
+    let workspace = started.repository.addInitialStrategyProposal({ ...scope, expectedRevision: started.workspace.revision, proposal: synthesizeInitialSiteStrategy(started.workspace, context) });
+    workspace = started.repository.decideStrategy({ ...scope, expectedRevision: workspace.revision, decision: "APPROVED" });
+    const approvedRevision = structuredClone(workspace.strategyRevisions[0]);
+    const approvalEvents = workspace.audit.filter((item) => item.action === "STRATEGY_APPROVED").length;
+    expect(() => started.repository.decideStrategy({ ...scope, expectedRevision: workspace.revision, decision: "APPROVED" })).toThrow("STRATEGY_DECISION_ALREADY_FINAL");
+    const correctionReason = "Owner indicated strategy approval was unintentional; reopened for review before further strategy work.";
+    expect(() => started.repository.reopenApprovedStrategyForReview({ ...scope, expectedRevision: workspace.revision - 1, reason: correctionReason })).toThrow("revision conflict");
+    expect(() => started.repository.reopenApprovedStrategyForReview({ ...scope, organizationId: "other", expectedRevision: workspace.revision, reason: correctionReason })).toThrow("ORGANIZATION_MISMATCH");
+    workspace = started.repository.reopenApprovedStrategyForReview({ ...scope, expectedRevision: workspace.revision, reason: correctionReason });
+    expect(workspace.strategyState).toBe("STRATEGY_READY_FOR_REVIEW");
+    expect(workspace.strategyRevisions).toHaveLength(2);
+    expect(workspace.strategyRevisions[0]).toEqual(approvedRevision);
+    expect(workspace.strategyRevisions[1]).toMatchObject({ revision: 2, status: "REVISION_REQUESTED", createdBy: "owner", reason: correctionReason, decidedBy: null, decidedAt: null });
+    expect(workspace.audit.filter((item) => item.action === "STRATEGY_APPROVED")).toHaveLength(approvalEvents);
+    expect(workspace.audit.at(-1)).toMatchObject({ action: "STRATEGY_REOPENED_FOR_REVIEW", actor: "owner", reason: correctionReason });
+    expect(started.repository.getSiteIntelligenceWorkspace(scope.siteId)?.strategyRevisions).toHaveLength(2);
   });
 });

@@ -9,6 +9,7 @@ import {
 } from "./foundation-persistence";
 import type {
   CapabilityEvidenceState,
+  CapabilityEvidenceOption,
   CreativeDirectionProposal,
   CreativeInput,
   OpportunityDecision,
@@ -132,21 +133,67 @@ export function decideSiteOpportunity(input: { siteId: string; organizationId: s
 }
 
 export function validateOpportunityCapability(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; opportunityId: string; state: CapabilityEvidenceState; evidenceIds: string[]; notes: string }) {
+  const resolvedEvidence = input.state === "VERIFIED" || input.state === "QUALIFIED" ? resolveCapabilityEvidenceReferences({ organizationId: input.organizationId, siteId: input.siteId, referenceIds: input.evidenceIds }) : [];
   return update({ ...input, action: `CAPABILITY_${input.state}`, mutate(workspace) {
     if (!["INSUFFICIENT", "OWNER_VALIDATION_REQUIRED", "VERIFIED", "QUALIFIED", "REJECTED", "FUTURE_CAPABILITY"].includes(input.state)) throw new Error("CAPABILITY_STATE_INVALID");
     const opportunity = workspace.opportunities.find((candidate) => candidate.opportunityId === input.opportunityId);
     if (!opportunity) throw new Error("OPPORTUNITY_NOT_FOUND");
-    if ((input.state === "VERIFIED" || input.state === "QUALIFIED") && input.evidenceIds.length === 0) throw new Error("CAPABILITY_EVIDENCE_REQUIRED");
+    if ((input.state === "VERIFIED" || input.state === "QUALIFIED") && resolvedEvidence.length === 0) throw new Error("CAPABILITY_EVIDENCE_REQUIRED");
     opportunity.capabilityState = input.state;
-    opportunity.capabilityEvidenceIds = [...input.evidenceIds];
+    opportunity.capabilityEvidenceIds = resolvedEvidence.map((item) => item.referenceId);
     opportunity.capabilityNotes = input.notes;
   }});
+}
+
+export function listCapabilityEvidenceOptions(input: { siteId: string; organizationId: string }): CapabilityEvidenceOption[] {
+  const loaded = load();
+  const workspace = loaded.state.workspaces.find((candidate) => candidate.siteId === input.siteId);
+  if (!workspace) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+  if (workspace.organizationId !== input.organizationId) throw new Error("SITE_INTELLIGENCE_ORGANIZATION_MISMATCH");
+  const creativeOptions = workspace.creativeInputs.flatMap((creative): CapabilityEvidenceOption[] => {
+    if (!creative.suppliedBy.trim() || !creative.suppliedAt.trim()) return [];
+    if (creative.classification === "REJECTED") return [];
+    if (creative.classification !== "OWNER_SUPPLIED_REFERENCE" && creative.classification !== "OWNER_APPROVED_PUBLISHABLE") return [];
+    if (creative.kind === "URL") return [{ referenceId: `creative:${creative.inputId}`, sourceType: "OWNER_URL", label: creative.reference, notes: creative.notes, provenance: `Supplied by ${creative.suppliedBy}`, classification: creative.classification, createdAt: creative.suppliedAt }];
+    if (creative.binaryAsset && creative.binaryAsset.provenance.sourceReference.trim() && creative.binaryAsset.provenance.recordedAt.trim()) return [{ referenceId: `creative:${creative.inputId}`, sourceType: "OWNER_UPLOAD", label: creative.binaryAsset.originalFileName, notes: creative.notes, provenance: `${creative.binaryAsset.provenance.sourceType}: ${creative.binaryAsset.provenance.sourceReference}`, classification: creative.classification, createdAt: creative.suppliedAt }];
+    return [];
+  });
+  const authorityOptions = workspace.evidence.filter((item) => item.authority === "OWNER_SUPPLIED_AUTHORITY" && ["OWNER_URL", "OWNER_DOCUMENT", "OWNER_IMAGE", "CONNECTED_SOURCE"].includes(item.sourceType)).map((item): CapabilityEvidenceOption => ({ referenceId: `evidence:${item.evidenceId}`, sourceType: "OWNER_SUPPLIED_AUTHORITY", label: item.entity ?? item.observedClaim, notes: item.observedClaim, provenance: `${item.sourceType}: ${item.sourceReference}`, classification: null, createdAt: item.retrievedAt }));
+  return [...creativeOptions, ...authorityOptions];
+}
+
+export function resolveCapabilityEvidenceReferences(input: { siteId: string; organizationId: string; referenceIds: string[] }): CapabilityEvidenceOption[] {
+  if (!input.referenceIds.length) throw new Error("CAPABILITY_EVIDENCE_REQUIRED");
+  const loaded = load();
+  const target = loaded.state.workspaces.find((candidate) => candidate.siteId === input.siteId);
+  if (!target) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+  if (target.organizationId !== input.organizationId) throw new Error("CAPABILITY_EVIDENCE_SCOPE_MISMATCH");
+  const options = listCapabilityEvidenceOptions(input);
+  const byId = new Map(options.map((option) => [option.referenceId, option]));
+  return [...new Set(input.referenceIds)].map((referenceId) => {
+    const option = byId.get(referenceId);
+    if (option) {
+      if (!option.provenance.trim() || !option.createdAt.trim()) throw new Error("CAPABILITY_EVIDENCE_PROVENANCE_INVALID");
+      return option;
+    }
+    const [, rawId] = referenceId.split(":", 2);
+    const elsewhere = loaded.state.workspaces.some((workspace) => workspace.siteId !== input.siteId && (workspace.creativeInputs.some((creative) => creative.inputId === rawId) || workspace.evidence.some((evidence) => evidence.evidenceId === rawId)));
+    if (elsewhere) throw new Error("CAPABILITY_EVIDENCE_SCOPE_MISMATCH");
+    const rejected = target.creativeInputs.some((creative) => creative.inputId === rawId && creative.classification === "REJECTED");
+    if (rejected) throw new Error("CAPABILITY_EVIDENCE_REJECTED");
+    const disallowedCreative = target.creativeInputs.some((creative) => creative.inputId === rawId);
+    const disallowedEvidence = target.evidence.some((evidence) => evidence.evidenceId === rawId);
+    if (disallowedCreative || disallowedEvidence) throw new Error("CAPABILITY_EVIDENCE_TYPE_NOT_ALLOWED");
+    throw new Error("CAPABILITY_EVIDENCE_NOT_FOUND");
+  });
 }
 
 export function addStrategyProposal(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; proposal: Omit<SiteStrategyProposal, "revision" | "status" | "createdBy" | "createdAt" | "decidedBy" | "decidedAt"> }) {
   return update({ ...input, action: "STRATEGY_PROPOSED", mutate(workspace) {
     if (workspace.intelligenceState !== "INTELLIGENCE_APPROVED") throw new Error("APPROVED_INTELLIGENCE_REQUIRED");
     if (!workspace.opportunities.some((candidate) => candidate.ownerDecision === "APPROVED")) throw new Error("APPROVED_INTELLIGENCE_REQUIRED");
+    const latest = workspace.strategyRevisions.at(-1);
+    if (latest && latest.status !== "REVISION_REQUESTED" && latest.status !== "REJECTED") throw new Error("STRATEGY_REVISION_NOT_REQUESTED");
     workspace.strategyRevisions.push({ ...input.proposal, revision: workspace.strategyRevisions.length + 1, status: "PROPOSED", createdBy: input.actor, createdAt: now(), decidedBy: null, decidedAt: null });
     workspace.strategyState = "STRATEGY_READY_FOR_REVIEW";
   }});
@@ -174,9 +221,19 @@ export function decideStrategy(input: { siteId: string; organizationId: string; 
   return update({ ...input, action: `STRATEGY_${input.decision}`, mutate(workspace) {
     const proposal = workspace.strategyRevisions.at(-1);
     if (!proposal) throw new Error("STRATEGY_NOT_FOUND");
+    if (proposal.status !== "PROPOSED") throw new Error("STRATEGY_DECISION_ALREADY_FINAL");
     proposal.status = input.decision;
     proposal.decidedBy = input.actor; proposal.decidedAt = now();
     workspace.strategyState = input.decision === "APPROVED" ? "STRATEGY_APPROVED" : input.decision === "REJECTED" ? "STRATEGY_REJECTED" : "STRATEGY_READY_FOR_REVIEW";
+  }});
+}
+
+export function reopenApprovedStrategyForReview(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string }) {
+  return update({ ...input, action: "STRATEGY_REOPENED_FOR_REVIEW", mutate(workspace) {
+    const approved = workspace.strategyRevisions.at(-1);
+    if (!approved || approved.status !== "APPROVED" || workspace.strategyState !== "STRATEGY_APPROVED") throw new Error("APPROVED_STRATEGY_REQUIRED");
+    workspace.strategyRevisions.push({ ...deepClone(approved), revision: approved.revision + 1, status: "REVISION_REQUESTED", reason: input.reason, createdBy: input.actor, createdAt: now(), decidedBy: null, decidedAt: null });
+    workspace.strategyState = "STRATEGY_READY_FOR_REVIEW";
   }});
 }
 

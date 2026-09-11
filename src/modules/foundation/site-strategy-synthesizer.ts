@@ -24,6 +24,10 @@ function preferenceSummary(inputs: CreativeInput[]): string {
   return `${inputs.length} owner references considered (${likes} likes, ${dislikes} dislikes, ${referenceOnly} reference only).`;
 }
 
+function profileGuidance(profile: IntegrationProfileConfiguration): string[] {
+  return unique([profile.profileName, profile.description ?? "", profile.notes ?? "", ...Object.entries(profile.references).flatMap(([key, value]) => value ? [`${key}: ${value}`] : [])]);
+}
+
 export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspace, context: SiteStrategySynthesisContext): StrategyDraft {
   if (workspace.intelligenceState !== "INTELLIGENCE_APPROVED") throw new Error("APPROVED_INTELLIGENCE_REQUIRED");
   const approved = workspace.opportunities.filter((opportunity) => opportunity.ownerDecision === "APPROVED");
@@ -35,29 +39,42 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
   const buyers = unique(approved.map((opportunity) => opportunity.buyer));
   const authorityNames = unique(presentAuthority.map((opportunity) => opportunity.name));
   const marketNames = unique(approved.map((opportunity) => opportunity.name));
-  const proofRequirements = unique([
-    ...unverified.map((opportunity) => `Owner capability evidence required before claiming: ${opportunity.name}`),
-    ...future.map((opportunity) => `Future capability only; do not present as currently offered: ${opportunity.name}`),
-    ...approved.flatMap((opportunity) => opportunity.evidenceIds.map((evidenceId) => `Retain provenance for ${opportunity.name}: ${evidenceId}`)),
-  ]);
-  const serviceFamilies = authorityNames.length ? authorityNames : ["Capabilities pending owner verification"];
+  const evidenceIds = unique(approved.flatMap((opportunity) => opportunity.evidenceIds));
+  const evidenceClaims = workspace.evidence.filter((item) => evidenceIds.includes(item.evidenceId)).map((item) => item.observedClaim);
+  const referenceGuidance = workspace.creativeInputs.flatMap((input) => input.notes ? [`${input.sentiment === "LIKE" ? "Favor" : input.sentiment === "DISLIKE" ? "Avoid" : "Reference"}: ${input.notes}`] : []);
+  const profileContext = unique([...profileGuidance(context.brandProfile), ...profileGuidance(context.seoProfile), ...profileGuidance(context.promptProfile)]);
   const audience = buyers[0] ?? "Commercial buyers identified in approved intelligence";
   const brandName = context.publicBrandIdentity.trim();
+  const marketFocus = verticals.slice(0, 3).join(", ") || "commercial stainless fabrication markets";
+  const geographicScopes = unique(approved.map((opportunity) => opportunity.geographicScope).filter((scope) => scope.toLowerCase() !== "unknown"));
   return {
-    positioning: `${brandName} will organize ${context.domain} around approved market priorities while limiting present-tense capability claims to owner-verified or qualified authority.`,
+    positioning: `${brandName} will position ${context.domain} as a focused resource for ${audience} evaluating ${marketFocus}.`,
     primaryAudience: audience,
     secondaryAudiences: buyers.slice(1),
-    valueProposition: authorityNames.length ? `Connect ${audience} with ${authorityNames.join(", ")} supported by explicit proof and clear request-for-quote paths.` : `Help ${audience} evaluate approved market priorities while capability claims remain pending owner validation.`,
+    valueProposition: authorityNames.length ? `Connect ${audience} with ${authorityNames.join(", ")} through clear specifications, relevant project proof, and direct quote paths.` : `Help ${audience} compare project approaches, specifications, and fit across ${marketFocus}, with direct paths to discuss requirements.`,
     majorVerticals: verticals,
-    productServiceFamilies: serviceFamilies,
+    productServiceFamilies: authorityNames,
     informationArchitecture: ["Home", "Capabilities", "Markets", "Projects", "About", "Request a Quote"],
     proposedSitemap: unique(["/", "/capabilities", ...verticals.map((vertical) => `/markets/${vertical.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`), "/projects", "/about", "/request-a-quote"]),
-    homepageGoals: ["Explain the approved market focus", "Separate verified capabilities from market opportunities", "Present evidence-backed trust signals", "Drive qualified quote requests"],
+    homepageGoals: unique(["Explain the primary market focus", "Present relevant project and fabrication proof", "Help buyers navigate by application and project need", "Drive qualified quote requests", ...referenceGuidance.filter((item) => item.startsWith("Favor:")).map((item) => item.slice(7))]),
     conversionPaths: ["Market or capability page to request-a-quote", "Project proof to contact", "Capability validation content to consultation"],
     ctaHierarchy: ["Request a Quote", "Discuss Your Project", "Review Capabilities"],
-    trustProofRequirements: proofRequirements.length ? proofRequirements : ["Owner-approved capability evidence required before capability publication"],
-    geographicStrategy: `Use approved geographic scope from opportunity evidence; do not imply coverage beyond validated authority. Primary domain: ${context.domain}.`,
+    trustProofRequirements: unique(["Relevant completed-project photography", "Material and fabrication specifications", "Customer or project examples", "Clear service-area and fulfillment details", ...referenceGuidance.filter((item) => item.startsWith("Reference:")).map((item) => item.slice(10))]),
+    geographicStrategy: geographicScopes.length ? `Prioritize ${geographicScopes.join(", ")} with location-specific proof and clear fulfillment expectations.` : "Lead with the primary service region and expand geographic pages only where project evidence supports buyer relevance.",
     proposedProductAuthority: authorityNames,
-    reason: `Synthesized from ${approved.length} approved opportunities, ${workspace.evidence.length} evidence records, ${preferenceSummary(workspace.creativeInputs)} Profiles: ${context.brandProfile.profileId}, ${context.seoProfile.profileId}, ${context.promptProfile.profileId}. Market priorities: ${marketNames.join("; ")}.`,
+    reason: `Synthesized from ${approved.length} approved opportunities, ${workspace.evidence.length} evidence records, and ${preferenceSummary(workspace.creativeInputs)} Market priorities: ${marketNames.join("; ")}.`,
+    synthesisContext: {
+      approvedOpportunityIds: approved.map((opportunity) => opportunity.opportunityId),
+      capabilityAuthorityOpportunityIds: presentAuthority.map((opportunity) => opportunity.opportunityId),
+      pendingCapabilityOpportunityIds: unverified.map((opportunity) => opportunity.opportunityId),
+      futureCapabilityOpportunityIds: future.map((opportunity) => opportunity.opportunityId),
+      excludedOpportunityIds: workspace.opportunities.filter((opportunity) => opportunity.ownerDecision !== "APPROVED").map((opportunity) => opportunity.opportunityId),
+      evidenceIds,
+      referenceInputIds: workspace.creativeInputs.map((input) => input.inputId),
+      profileIds: [context.brandProfile.profileId, context.seoProfile.profileId, context.promptProfile.profileId],
+      evidenceClaims,
+      referenceGuidance,
+      profileGuidance: profileContext,
+    },
   };
 }

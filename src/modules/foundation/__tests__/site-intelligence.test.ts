@@ -58,7 +58,8 @@ describe("site intelligence authority", () => {
     }
     workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "REJECTED", evidenceIds: [], notes: "Not offered." });
     expect(canUseOpportunityAsAuthority(workspace.opportunities[0])).toBe(false);
-    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: ["owner-evidence-1"], notes: "Owner confirmed with evidence." });
+    workspace = repository.addCreativeInput({ ...scope, expectedRevision: workspace.revision, creativeInput: { inputId: "owner-evidence-1", kind: "URL", reference: "https://owner.example/capability", sentiment: "REFERENCE_ONLY", classification: "OWNER_SUPPLIED_REFERENCE", notes: "Owner capability evidence.", suppliedBy: "owner", suppliedAt: "2026-09-10T00:00:00.000Z", binaryAsset: null } });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: ["creative:owner-evidence-1"], notes: "Owner confirmed with evidence." });
     expect(canUseOpportunityAsAuthority(workspace.opportunities[0])).toBe(true);
   });
 
@@ -84,8 +85,9 @@ describe("site intelligence authority", () => {
     workspace = repository.decideSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision: "APPROVED" });
     expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: [], notes: "Missing evidence" })).toThrow("CAPABILITY_EVIDENCE_REQUIRED");
     expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: [], notes: "Missing evidence" })).toThrow("CAPABILITY_EVIDENCE_REQUIRED");
-    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: ["owner-capability-evidence"], notes: "Qualified scope." });
-    expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "QUALIFIED", capabilityEvidenceIds: ["owner-capability-evidence"] });
+    workspace = repository.addCreativeInput({ ...scope, expectedRevision: workspace.revision, creativeInput: { inputId: "qualified-evidence", kind: "URL", reference: "https://owner.example/qualified", sentiment: "REFERENCE_ONLY", classification: "OWNER_SUPPLIED_REFERENCE", notes: "Qualified capability evidence.", suppliedBy: "owner", suppliedAt: "2026-09-10T00:00:00.000Z", binaryAsset: null } });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: ["creative:qualified-evidence"], notes: "Qualified scope." });
+    expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "QUALIFIED", capabilityEvidenceIds: ["creative:qualified-evidence"] });
     workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "FUTURE_CAPABILITY", evidenceIds: [], notes: "Future capability." });
     expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "FUTURE_CAPABILITY" });
     workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "REJECTED", evidenceIds: [], notes: "Not offered." });

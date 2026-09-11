@@ -98,6 +98,29 @@ export type SiteStrategyProposal = {
   createdAt: string;
   decidedBy: string | null;
   decidedAt: string | null;
+  synthesisContext?: {
+    approvedOpportunityIds: string[];
+    capabilityAuthorityOpportunityIds: string[];
+    pendingCapabilityOpportunityIds: string[];
+    futureCapabilityOpportunityIds: string[];
+    excludedOpportunityIds: string[];
+    evidenceIds: string[];
+    referenceInputIds: string[];
+    profileIds: string[];
+    evidenceClaims: string[];
+    referenceGuidance: string[];
+    profileGuidance: string[];
+  };
+};
+
+export type CapabilityEvidenceOption = {
+  referenceId: string;
+  sourceType: "OWNER_URL" | "OWNER_UPLOAD" | "OWNER_SUPPLIED_AUTHORITY";
+  label: string;
+  notes: string | null;
+  provenance: string;
+  classification: SiteAssetClassification | null;
+  createdAt: string;
 };
 
 export type CreativeInput = {

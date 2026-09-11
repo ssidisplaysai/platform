@@ -23,7 +23,9 @@ import {
   ensureSiteIntelligenceWorkspace,
   getSiteIntelligenceWorkspace,
   getStrategyReadiness,
+  listCapabilityEvidenceOptions,
   recordSiteOpportunity,
+  reopenApprovedStrategyForReview,
   startSiteIntelligence,
   updateCreativeInputMetadata,
   validateOpportunityCapability,
@@ -58,6 +60,7 @@ export async function GET(request: NextRequest, context: Context) {
   return NextResponse.json({
     site: { siteId: site.siteId, organizationId: site.organizationId, displayName: site.displayName, publicationPolicy: site.publicationPolicy, enabled: site.enabled },
     workspace,
+    capabilityEvidenceOptions: workspace ? listCapabilityEvidenceOptions({ organizationId: site.organizationId, siteId: site.siteId }) : [],
     strategyReadiness: workspace ? getStrategyReadiness(workspace) : { ready: false, blockers: ["Complete and approve Site Intelligence review."], approvedOpportunityCount: 0, verifiedCapabilityCount: 0, qualifiedCapabilityCount: 0 },
     startBoundary: "START_SITE_INTELLIGENCE",
     provider: getSiteIntelligenceProviderStatus(),
@@ -137,6 +140,19 @@ export async function POST(request: NextRequest, context: Context) {
         workspace = addInitialStrategyProposal({ ...common, expectedRevision: current.revision, proposal, reason: "Genesis synthesized the first Site Strategy proposal from approved intelligence and scoped profile authority." });
         break;
       }
+      case "GENERATE_REVISED_STRATEGY": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const latest = current.strategyRevisions.at(-1); if (!latest || latest.status !== "REVISION_REQUESTED") throw new Error("STRATEGY_REVISION_NOT_REQUESTED");
+        const brandProfile = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const seoProfile = site.profiles.seoProfileReference ? getIntegrationProfileById(site.profiles.seoProfileReference) : null;
+        const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
+        if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
+        workspace = addStrategyProposal({ ...common, expectedRevision: current.revision, proposal: synthesizeInitialSiteStrategy(current, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile }), reason: "Owner requested a revised Genesis Site Strategy proposal." });
+        break;
+      }
+      case "REOPEN_STRATEGY":
+        workspace = reopenApprovedStrategyForReview({ ...common, reason: String(body.reason ?? "Owner reopened the approved strategy for review.") });
+        break;
       case "DECIDE_STRATEGY":
         workspace = decideStrategy({ ...common, decision: body.decision as never });
         break;
@@ -172,7 +188,7 @@ export async function POST(request: NextRequest, context: Context) {
       default:
         return NextResponse.json({ error: "Unsupported intelligence action." }, { status: 400 });
     }
-    return NextResponse.json({ workspace });
+    return NextResponse.json({ workspace, capabilityEvidenceOptions: listCapabilityEvidenceOptions({ organizationId: site.organizationId, siteId: site.siteId }) });
   } catch (error) {
     return errorResponse(error);
   }
