@@ -24,7 +24,7 @@ const COLLAPSIBLE_NAVIGATION_LABELS = new Set([
   "Operations",
 ]);
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, resourceSite = null }: { children: React.ReactNode; resourceSite?: SiteContext | null }) {
   const pathname = usePathname();
   const foundationContext = useMemo(() => createFoundationContext(), []);
   const permissions = useMemo(
@@ -34,29 +34,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const initialSelection = useMemo(
     () => ({
-      organizationId: foundationContext.selectedOrganizationId,
-      siteId: foundationContext.selectedSiteId,
+      organizationId: resourceSite?.organizationId ?? foundationContext.selectedOrganizationId,
+      siteId: resourceSite?.id ?? foundationContext.selectedSiteId,
       message: null as string | null,
     }),
     [
       foundationContext.selectedOrganizationId,
       foundationContext.selectedSiteId,
+      resourceSite,
     ],
   );
 const [selectedOrganizationId, setSelectedOrganizationId] = useState(
     initialSelection.organizationId,
   );
 
-  const [selectedSiteId, setSelectedSiteId] = useState(initialSelection.siteId);
-  const [liveSites, setLiveSites] = useState<readonly SiteContext[]>(
-    foundationContext.sites,
+  const [selectedSiteId, setSelectedSiteId] = useState(
+    initialSelection.siteId,
   );
+
+  const [liveSites, setLiveSites] = useState<readonly SiteContext[]>(resourceSite && !foundationContext.sites.some((site) => site.id === resourceSite.id) ? [...foundationContext.sites, resourceSite] : foundationContext.sites);
   const [siteSelectionMessage, setSiteSelectionMessage] = useState<string | null>(
     initialSelection.message,
   );
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [moreNavOpen, setMoreNavOpen] = useState(false);
+  const effectiveOrganizationId = resourceSite?.organizationId ?? selectedOrganizationId;
+  const effectiveSiteId = resourceSite?.id ?? selectedSiteId;
 
   const visibleNavigationItems = useMemo(
     () => getVisibleNavigationItems(FOUNDATION_NAVIGATION_ITEMS, permissions),
@@ -64,8 +68,11 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
   );
 
   const availableSites = useMemo(
-    () => getSitesForOrganization(liveSites, selectedOrganizationId),
-    [liveSites, selectedOrganizationId],
+    () => {
+      const sites = getSitesForOrganization(liveSites, effectiveOrganizationId);
+      return resourceSite && resourceSite.organizationId === effectiveOrganizationId && !sites.some((site) => site.id === resourceSite.id) ? [...sites, resourceSite] : sites;
+    },
+    [liveSites, effectiveOrganizationId, resourceSite],
   );
 
   const visibleCommands = useMemo(
@@ -81,8 +88,8 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
   const canUseCommandPalette = hasPermission(permissions, "command_palette:use");
 
   const selectedSite = useMemo(
-    () => liveSites.find((site) => site.id === selectedSiteId) ?? null,
-    [liveSites, selectedSiteId],
+    () => resourceSite ?? liveSites.find((site) => site.id === effectiveSiteId) ?? null,
+    [liveSites, effectiveSiteId, resourceSite],
   );
 
   // GLW_INITIAL_ROUTE_CONTEXT_SYNC
@@ -145,6 +152,9 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
 
   // SITE_STUDIO_HANDOFF_ORGANIZATION_SYNC
   useEffect(() => {
+    if (resourceSite) {
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const requestedOrganizationId = params.get("organizationId");
 
@@ -160,15 +170,18 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
       return;
     }
 
-    setSelectedOrganizationId(requestedOrganizationId);
+    queueMicrotask(() => setSelectedOrganizationId(requestedOrganizationId));
     localStorage.setItem(
       ORGANIZATION_STORAGE_KEY,
       requestedOrganizationId,
     );
-  }, [foundationContext.organizations]);
+  }, [foundationContext.organizations, resourceSite]);
 
   // SITE_STUDIO_HANDOFF_SITE_SYNC
   useEffect(() => {
+    if (resourceSite) {
+      return;
+    }
     const params = new URLSearchParams(window.location.search);
     const requestedOrganizationId = params.get("organizationId");
     const requestedSiteId = params.get("siteId");
@@ -191,15 +204,20 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
       return;
     }
 
-    setSelectedSiteId(requestedSiteId);
-    setSiteSelectionMessage(null);
+    queueMicrotask(() => {
+      setSelectedSiteId(requestedSiteId);
+      setSiteSelectionMessage(null);
+    });
     localStorage.setItem(
       SITE_STORAGE_KEY,
       requestedSiteId,
     );
-  }, [liveSites, selectedOrganizationId]);
+  }, [liveSites, selectedOrganizationId, resourceSite]);
 useEffect(() => {
     function restorePersistedWorkspaceSelection() {
+      if (resourceSite) {
+        return;
+      }
       const params = new URLSearchParams(window.location.search);
       const requestedOrganizationId = params.get("organizationId");
 
@@ -227,23 +245,26 @@ useEffect(() => {
     }
 
     restorePersistedWorkspaceSelection();
-  }, [foundationContext.organizations]);
+  }, [foundationContext.organizations, resourceSite]);
   useEffect(() => {
-    if (selectedOrganizationId) {
-      localStorage.setItem(ORGANIZATION_STORAGE_KEY, selectedOrganizationId);
+    if (effectiveOrganizationId) {
+      localStorage.setItem(ORGANIZATION_STORAGE_KEY, effectiveOrganizationId);
     }
-  }, [selectedOrganizationId]);
+  }, [effectiveOrganizationId]);
 
   useEffect(() => {
-    if (selectedSiteId) {
-      localStorage.setItem(SITE_STORAGE_KEY, selectedSiteId);
+    if (effectiveSiteId) {
+      localStorage.setItem(SITE_STORAGE_KEY, effectiveSiteId);
     }
-  }, [selectedSiteId]);
+  }, [effectiveSiteId]);
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadSitesForSelectedOrganization() {
+      if (resourceSite) {
+        return;
+      }
       if (!selectedOrganizationId) {
         setLiveSites([]);
         setSelectedSiteId("");
@@ -330,18 +351,20 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [selectedOrganizationId]);
+  }, [selectedOrganizationId, selectedSiteId, resourceSite]);
 
   async function handleOrganizationChange(
     nextOrganizationId: string,
   ) {
-    setSelectedOrganizationId(nextOrganizationId);
     setSiteSelectionMessage(null);
 
-    localStorage.setItem(
-      ORGANIZATION_STORAGE_KEY,
-      nextOrganizationId,
-    );
+    if (!resourceSite) {
+      setSelectedOrganizationId(nextOrganizationId);
+      localStorage.setItem(
+        ORGANIZATION_STORAGE_KEY,
+        nextOrganizationId,
+      );
+    }
 
     try {
       const response = await fetch("/api/sites", {
@@ -354,6 +377,10 @@ useEffect(() => {
       });
 
       if (!response.ok) {
+        if (resourceSite) {
+          setSiteSelectionMessage(`Unable to load sites for this organization (${response.status}).`);
+          return;
+        }
         setSelectedSiteId("");
         localStorage.removeItem(SITE_STORAGE_KEY);
         setSiteSelectionMessage(
@@ -369,11 +396,20 @@ useEffect(() => {
       const nextSite = payload.sites?.[0] ?? null;
 
       if (!nextSite) {
+        if (resourceSite) {
+          setSiteSelectionMessage("No configured sites are currently available for the selected organization.");
+          return;
+        }
         setSelectedSiteId("");
         localStorage.removeItem(SITE_STORAGE_KEY);
         setSiteSelectionMessage(
           "No configured sites are currently available for the selected organization.",
         );
+        return;
+      }
+
+      if (resourceSite) {
+        window.location.href = `/sites/${encodeURIComponent(nextSite.siteId)}`;
         return;
       }
 
@@ -387,6 +423,10 @@ useEffect(() => {
       window.location.href =
         `${window.location.pathname}?${params.toString()}`;
     } catch {
+      if (resourceSite) {
+        setSiteSelectionMessage("Unable to load sites for this organization.");
+        return;
+      }
       setSelectedSiteId("");
       localStorage.removeItem(SITE_STORAGE_KEY);
       setSiteSelectionMessage(
@@ -396,6 +436,11 @@ useEffect(() => {
   }
 
   function handleSiteChange(nextSiteId: string) {
+    if (resourceSite) {
+      window.location.href = `/sites/${encodeURIComponent(nextSiteId)}`;
+      return;
+    }
+
     setSelectedSiteId(nextSiteId);
     setSiteSelectionMessage(null);
     localStorage.setItem(SITE_STORAGE_KEY, nextSiteId);
@@ -429,7 +474,7 @@ useEffect(() => {
               Organization
             </label>
             <select
-              value={selectedOrganizationId}
+              value={effectiveOrganizationId}
               onChange={(event) => handleOrganizationChange(event.target.value)}
               className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500"
             >
@@ -444,7 +489,7 @@ useEffect(() => {
               Site
             </label>
             <select
-              value={selectedSiteId}
+              value={effectiveSiteId}
               onChange={(event) => handleSiteChange(event.target.value)}
               className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500"
             >

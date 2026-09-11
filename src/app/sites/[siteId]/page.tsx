@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { createFoundationContext } from "@/modules/foundation/context";
+import { createFoundationContext, createSiteContext } from "@/modules/foundation/context";
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveSiteAccess } from "@/modules/foundation/site-access";
@@ -66,7 +66,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
   const activity = listSiteActivity(site.siteId);
 
   return (
-    <AppShell>
+    <AppShell resourceSite={createSiteContext(site)}>
       <section className="space-y-6">
         <header className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-red-500">Site Detail</p>
@@ -128,10 +128,10 @@ export default async function SiteDetailPage({ params }: PageProps) {
         </article>
 
         <div className="flex gap-3">
-          {site.onboarding?.status === "connected" ? <Link href={`/sites/${site.siteId}/intelligence`} className="rounded-lg border border-red-700 px-3 py-2 text-sm text-red-200 hover:border-red-500 hover:text-white">Site Intelligence</Link> : null}
-          {site.lifecycleState === "configuring" ? <Link href={`/sites/${site.siteId}/onboarding`} className="rounded-lg border border-red-700 px-3 py-2 text-sm text-red-200 hover:border-red-500 hover:text-white">Continue Onboarding</Link> : null}
-          <Link href={`/sites/${site.siteId}/settings`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Site Settings</Link>
-          <Link href={`/sites/${site.siteId}/health`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Site Health</Link>
+          {site.onboarding?.status === "connected" ? <Link href={`/sites/${site.siteId}/intelligence?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`} className="rounded-lg border border-red-700 px-3 py-2 text-sm text-red-200 hover:border-red-500 hover:text-white">Site Intelligence</Link> : null}
+          {site.lifecycleState === "configuring" ? <Link href={`/sites/${site.siteId}/onboarding?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`} className="rounded-lg border border-red-700 px-3 py-2 text-sm text-red-200 hover:border-red-500 hover:text-white">Continue Onboarding</Link> : null}
+          <Link href={`/sites/${site.siteId}/settings?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Site Settings</Link>
+          <Link href={`/sites/${site.siteId}/health?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:border-red-500 hover:text-white">Site Health</Link>
         </div>
       </section>
     </AppShell>

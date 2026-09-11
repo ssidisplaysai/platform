@@ -4,6 +4,7 @@ import type {
   AppUser,
   FoundationContext,
   OrganizationContext,
+  SiteConfiguration,
   SiteContext,
 } from "./types";
 
@@ -40,6 +41,20 @@ export function buildSiteContext(
       publishing: site.publishingStatus,
       enabled: site.enabled,
     }));
+}
+
+export function createSiteContext(site: SiteConfiguration): SiteContext {
+  return {
+    id: site.siteId,
+    slug: site.slug,
+    organizationId: site.organizationId,
+    name: site.displayName,
+    region: "US-CENTRAL",
+    environment: site.environment,
+    health: site.healthStatus,
+    publishing: site.publishingStatus,
+    enabled: site.enabled,
+  };
 }
 
 export function createFoundationContext(

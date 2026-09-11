@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { createSiteContext } from "@/modules/foundation/context";
 import { FoundationSiteConnectionTestAdapter } from "@/modules/foundation/site-connection";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { evaluateSiteReadiness } from "@/modules/foundation/site-readiness";
@@ -25,7 +26,12 @@ export default async function SiteHealthPage({ params }: PageProps) {
   }
 
   const adapter = new FoundationSiteConnectionTestAdapter();
-  const connectionResult = await adapter.testConnection(site);
+  const connectionResult = await adapter.testConnection(site).catch(() => ({
+    status: "unavailable" as const,
+    message: "The read-only site connection check is unavailable in this runtime.",
+    checkedAt: new Date().toISOString(),
+    details: "Site configuration and workspace context remain available; no credential or publication action was attempted.",
+  }));
   const readiness = evaluateSiteReadiness({
     site,
     organizationActive: true,
@@ -36,7 +42,7 @@ export default async function SiteHealthPage({ params }: PageProps) {
   });
 
   return (
-    <AppShell>
+    <AppShell resourceSite={createSiteContext(site)}>
       <section className="space-y-6">
         <header className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-red-500">Site Health Foundation</p>

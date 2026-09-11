@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { createSiteContext } from "@/modules/foundation/context";
 import { getSiteById } from "@/modules/foundation/site-repository";
 
 type PageProps = {
@@ -12,7 +13,7 @@ export default async function SiteSettingsPage({ params }: PageProps) {
   const site = getSiteById(siteId);
 
   return (
-    <AppShell>
+    <AppShell resourceSite={site ? createSiteContext(site) : null}>
       <section className="space-y-6">
         <header className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6">
           <p className="text-xs uppercase tracking-[0.3em] text-red-500">Site Settings Foundation</p>

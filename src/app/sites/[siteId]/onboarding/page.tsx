@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { createSiteContext } from "@/modules/foundation/context";
 import { FreshSiteOnboardingFlow } from "@/modules/foundation/FreshSiteOnboardingFlow";
 import { getSiteById } from "@/modules/foundation/site-repository";
 
@@ -11,7 +12,7 @@ export default async function SiteOnboardingPage({ params }: PageProps) {
   const site = getSiteById(siteId);
 
   return (
-    <AppShell>
+    <AppShell resourceSite={site ? createSiteContext(site) : null}>
       {site ? (
         <FreshSiteOnboardingFlow initialSite={site} mode="configure" />
       ) : (
