@@ -5,6 +5,7 @@ describe("site intelligence UI contract", () => {
   const workspace = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteIntelligenceWorkspace.tsx"), "utf8");
   const ownerWorkflow = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteCapabilityOwnerWorkflow.tsx"), "utf8");
   const ownerVocabulary = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/site-capability-owner-ux.ts"), "utf8");
+  const creativeWorkflow = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteCreativeDirectionWorkflow.tsx"), "utf8");
   const library = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteIntelligenceReferenceLibrary.tsx"), "utf8");
   const onboarding = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/FreshSiteOnboardingFlow.tsx"), "utf8");
   const route = fs.readFileSync(path.join(process.cwd(), "src/app/sites/[siteId]/intelligence/page.tsx"), "utf8");
@@ -92,6 +93,27 @@ describe("site intelligence UI contract", () => {
     for (const text of ["Positioning", "Audiences", "Value Proposition", "Market / Vertical Priorities", "Product / Service Families", "Opportunity Prioritization", "Sales Channels", "Expansion / SEO Geography", "Geographic Strategy", "Sitemap", "Conversion Paths", "CTA Hierarchy", "Proof / Trust Requirements", "Required Product Authority", "Homepage Goals", "Internal Authority and Synthesis Context", "GENERATE REVISED STRATEGY"]) expect(workspace).toContain(text);
     expect(workspace).toContain('proposal.status === "PROPOSED"');
     expect(workspace).toContain('proposal.status === "REVISION_REQUESTED"');
+  });
+
+  test("creative direction starts with assisted generation instead of mandatory technical fields", () => {
+    for (const text of ["Genesis will build a visual and structural direction", "Approved strategy", "Creative references", "Anything you want Genesis to emphasize or avoid?", "GENERATE CREATIVE DIRECTION", "Inspiration / reference only", "Not publishable"]) expect(creativeWorkflow).toContain(text);
+    expect(creativeWorkflow).toContain('action: "GENERATE_CREATIVE_DIRECTION"');
+    expect(creativeWorkflow).not.toContain("disabled={busy || !direction.trim()}");
+  });
+
+  test("creative review exposes structured proposal and top/bottom owner decisions", () => {
+    for (const text of ["Creative Direction ready for review", "Current revision:", "Status: READY FOR REVIEW", "Overall Visual Direction", "Color Direction", "Typography Direction", "Layout Direction", "Photography / Visual Asset Style", "Homepage Blueprint", "Product / Service Presentation", "Market / Vertical Presentation", "Conversion Direction", "Creative Guardrails", "APPROVE CREATIVE DIRECTION", "REQUEST CHANGES", "REJECT"]) expect(creativeWorkflow).toContain(text);
+    expect(creativeWorkflow).toContain('placement="top"');
+    expect(creativeWorkflow).toContain('placement="bottom"');
+    expect(creativeWorkflow.indexOf('placement="top"')).toBeLessThan(creativeWorkflow.indexOf("<CreativeProposalReview proposal={proposal}"));
+    expect(creativeWorkflow.indexOf('placement="bottom"')).toBeGreaterThan(creativeWorkflow.indexOf("<CreativeProposalReview proposal={proposal}"));
+  });
+
+  test("creative revisions and approval expose explicit next stages", () => {
+    for (const text of ["What should Genesis change?", "GENERATE REVISED CREATIVE DIRECTION", "Creative Direction approved", "CONTINUE TO PRODUCT / SERVICE AUTHORITY", "Site generation remains disabled until bounded product onboarding is complete."]) expect(creativeWorkflow).toContain(text);
+    expect(creativeWorkflow).toContain('generate("GENERATE_REVISED_CREATIVE_DIRECTION")');
+    expect(creativeWorkflow).toContain("/products/new?organizationId=");
+    expect(creativeWorkflow).toContain('action: "DECIDE_CREATIVE"');
   });
 
   test("workspace exposes real multiple-file upload with conservative classification", () => {

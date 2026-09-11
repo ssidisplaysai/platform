@@ -17,6 +17,7 @@ import type {
 } from "./site-intelligence";
 import { SiteIntelligenceReferenceLibrary } from "./SiteIntelligenceReferenceLibrary";
 import { SiteCapabilityOwnerWorkflow } from "./SiteCapabilityOwnerWorkflow";
+import { SiteCreativeDirectionWorkflow } from "./SiteCreativeDirectionWorkflow";
 import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "./site-capability-transition";
 
 type Props = {
@@ -114,7 +115,7 @@ export function SiteIntelligenceWorkspace(props: Props) {
           {workspace.intelligenceState === "INTELLIGENCE_READY_FOR_REVIEW" ? <button type="button" disabled={busy || !workspace.opportunities.some((opportunity) => opportunity.ownerDecision === "APPROVED")} onClick={() => action({ action: "APPROVE_INTELLIGENCE", reason: "Owner approved reviewed site intelligence." })} className="bg-red-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">APPROVE INTELLIGENCE</button> : null}
           <div id="strategy-review" tabIndex={-1} className="scroll-mt-4 focus:outline focus:outline-2 focus:outline-offset-4 focus:outline-red-500"><StrategyPanel key={`strategy-${workspace.strategyRevisions.at(-1)?.revision ?? 0}`} workspace={workspace} busy={busy} onAction={action} /></div>
           <SiteIntelligenceReferenceLibrary organizationId={props.organizationId} siteId={props.siteId} workspace={workspace} busy={busy} onAction={action} onWorkspace={setWorkspace} />
-          <div id="creative-direction"><CreativePanel proposal={workspace.creativeRevisions.at(-1) ?? null} state={workspace.creativeState} strategyApproved={workspace.strategyState === "STRATEGY_APPROVED"} strategyRevision={workspace.strategyRevisions.at(-1)?.revision ?? null} inputs={workspace.creativeInputs.length} busy={busy} onAction={action} /></div>
+          <div id="creative-direction" tabIndex={-1} className="scroll-mt-4 focus:outline focus:outline-2 focus:outline-offset-4 focus:outline-red-500"><SiteCreativeDirectionWorkflow workspace={workspace} busy={busy} onAction={action} /></div>
           <section className="border border-zinc-800 p-5">
             <h2 className="font-semibold text-white">Product authority boundary</h2>
             <p className="mt-2 text-sm text-zinc-400">Product onboarding remains separate. Intelligence and creative approval never create products, campaigns, WordPress pages, or publishable assets.</p>
@@ -256,7 +257,7 @@ function RichStrategyReview({ proposal }: { proposal: SiteStrategyProposal }) {
 
 function StrategyText({ label, value }: { label: string; value: string }) { return <div className="border border-zinc-800 p-4"><h3 className="text-xs font-semibold uppercase text-zinc-400">{label}</h3><p className="mt-2 text-sm text-zinc-200">{value}</p></div>; }
 
-function CreativePanel({ proposal, state, strategyApproved, strategyRevision, inputs, busy, onAction }: { proposal: CreativeDirectionProposal | null; state: string; strategyApproved: boolean; strategyRevision: number | null; inputs: number; busy: boolean; onAction(body: Record<string, unknown>): void }) {
+export function LegacyCreativePanel({ proposal, state, strategyApproved, strategyRevision, inputs, busy, onAction }: { proposal: CreativeDirectionProposal | null; state: string; strategyApproved: boolean; strategyRevision: number | null; inputs: number; busy: boolean; onAction(body: Record<string, unknown>): void }) {
   const [direction, setDirection] = useState(proposal?.overallDirection ?? "");
   const [colors, setColors] = useState(proposal?.colorDirection ?? "");
   const [typography, setTypography] = useState(proposal?.typographyDirection ?? "");

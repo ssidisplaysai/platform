@@ -115,7 +115,7 @@ describe("site intelligence API boundary", () => {
     expect(body.workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "VERIFIED", capabilityEvidenceIds: [], capabilityAuthorityRevisions: [expect.objectContaining({ authorityBasis: "OWNER_ATTESTATION", evidenceIds: [] })] });
   });
 
-  test("GENERATE_STRATEGY creates one proposed revision through scoped API authority", async () => {
+  test("approved generated strategy enables one unapproved assisted Creative Direction revision", async () => {
     const repository = await import("../site-intelligence-repository");
     let workspace = repository.ensureSiteIntelligenceWorkspace({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", publicBrandIdentity: "LED Display Warehouse", actor: "owner" });
     workspace = repository.startSiteIntelligence({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", providerReference: "test" });
@@ -129,5 +129,14 @@ describe("site intelligence API boundary", () => {
     expect(body.workspace.strategyRevisions).toHaveLength(1);
     expect(body.workspace.strategyRevisions[0]).toMatchObject({ status: "PROPOSED", decidedBy: null, decidedAt: null });
     expect(body.workspace.creativeState).toBe("CREATIVE_NOT_STARTED");
+    const approval = await route.POST(request("POST", "led-display-warehouse", { action: "DECIDE_STRATEGY", expectedRevision: body.workspace.revision, decision: "APPROVED", actor: "site-owner" }), context);
+    const approvedBody = await approval.json();
+    expect(approvedBody.workspace.strategyState).toBe("STRATEGY_APPROVED");
+    const creative = await route.POST(request("POST", "led-display-warehouse", { action: "GENERATE_CREATIVE_DIRECTION", expectedRevision: approvedBody.workspace.revision, ownerInstruction: "Keep it industrial and premium.", actor: "site-owner" }), context);
+    const creativeBody = await creative.json();
+    expect(creative.status).toBe(200);
+    expect(creativeBody.workspace.creativeState).toBe("CREATIVE_READY_FOR_REVIEW");
+    expect(creativeBody.workspace.creativeRevisions).toHaveLength(1);
+    expect(creativeBody.workspace.creativeRevisions[0]).toMatchObject({ revision: 1, strategyRevision: 1, status: "PROPOSED", decidedBy: null, decidedAt: null });
   });
 });

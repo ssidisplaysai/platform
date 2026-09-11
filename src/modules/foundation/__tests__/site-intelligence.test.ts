@@ -144,6 +144,26 @@ describe("site intelligence authority", () => {
     expect(downstreamGenerationAllowed(workspace)).toBe(false);
   });
 
+  test("creative request changes preserves history until explicit revised proposal generation", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
+    workspace = repository.startSiteIntelligence({ ...scope, expectedRevision: workspace.revision, providerReference: "provider" });
+    workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: opportunity(), evidence: [evidence()] });
+    workspace = repository.decideSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision: "APPROVED" });
+    workspace = repository.approveSiteIntelligence({ ...scope, expectedRevision: workspace.revision });
+    workspace = repository.addStrategyProposal({ ...scope, expectedRevision: workspace.revision, proposal: strategyProposal() });
+    workspace = repository.decideStrategy({ ...scope, expectedRevision: workspace.revision, decision: "APPROVED" });
+    workspace = repository.addCreativeProposal({ ...scope, expectedRevision: workspace.revision, proposal: creativeProposal(1) });
+    workspace = repository.decideCreativeProposal({ ...scope, expectedRevision: workspace.revision, decision: "REVISION_REQUESTED", reason: "Use a more industrial hierarchy." });
+    const requested = structuredClone(workspace.creativeRevisions[0]);
+    expect(() => repository.decideCreativeProposal({ ...scope, expectedRevision: workspace.revision, decision: "APPROVED" })).toThrow("CREATIVE_DECISION_ALREADY_FINAL");
+    workspace = repository.addCreativeProposal({ ...scope, expectedRevision: workspace.revision, reason: "Explicit revised generation.", proposal: { ...creativeProposal(1), reason: "Owner instruction: use a more industrial hierarchy." } });
+    expect(workspace.creativeRevisions).toHaveLength(2);
+    expect(workspace.creativeRevisions[0]).toEqual(requested);
+    expect(workspace.creativeRevisions[1]).toMatchObject({ revision: 2, status: "PROPOSED", decidedBy: null, decidedAt: null });
+    expect(workspace.strategyRevisions).toHaveLength(1);
+  });
+
   test("asset classification keeps external references non-publishable", () => {
     expect(isPublishableSiteAsset("COMPETITOR_REFERENCE_ONLY")).toBe(false);
     expect(isPublishableSiteAsset("EXTERNAL_INSPIRATION_ONLY")).toBe(false);

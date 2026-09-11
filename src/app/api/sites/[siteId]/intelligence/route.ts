@@ -32,6 +32,7 @@ import {
   validateOpportunityCapability,
 } from "@/modules/foundation/site-intelligence-repository";
 import { synthesizeInitialSiteStrategy } from "@/modules/foundation/site-strategy-synthesizer";
+import { synthesizeCreativeDirection } from "@/modules/foundation/site-creative-direction-synthesizer";
 import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "@/modules/foundation/site-capability-transition";
 import type { CreativeInput, SiteAssetClassification } from "@/modules/foundation/site-intelligence";
 
@@ -199,6 +200,20 @@ export async function POST(request: NextRequest, context: Context) {
       case "PROPOSE_CREATIVE":
         workspace = addCreativeProposal({ ...common, proposal: body.proposal as never });
         break;
+      case "GENERATE_CREATIVE_DIRECTION": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const proposal = synthesizeCreativeDirection({ ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) }, String(body.ownerInstruction ?? ""));
+        workspace = addCreativeProposal({ ...common, expectedRevision: current.revision, proposal, reason: "Owner requested a Creative Direction proposal grounded in approved strategy and creative references." });
+        break;
+      }
+      case "GENERATE_REVISED_CREATIVE_DIRECTION": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const latest = current.creativeRevisions.at(-1); if (!latest || (latest.status !== "REVISION_REQUESTED" && latest.status !== "REJECTED")) throw new Error("CREATIVE_REVISION_NOT_REQUESTED");
+        const revisionInstructions = String(body.revisionInstructions ?? "").trim(); if (!revisionInstructions) throw new Error("CREATIVE_REVISION_INSTRUCTIONS_REQUIRED");
+        const proposal = synthesizeCreativeDirection({ ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) }, revisionInstructions);
+        workspace = addCreativeProposal({ ...common, expectedRevision: current.revision, proposal, reason: `Owner requested a revised Creative Direction proposal: ${revisionInstructions}` });
+        break;
+      }
       case "DECIDE_CREATIVE":
         workspace = decideCreativeProposal({ ...common, decision: body.decision as never });
         break;
