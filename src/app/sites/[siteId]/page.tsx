@@ -7,7 +7,7 @@ import { resolveSiteAccess } from "@/modules/foundation/site-access";
 import { evaluateSiteReadiness } from "@/modules/foundation/site-readiness";
 import { listSiteActivity } from "@/modules/foundation/site-audit";
 import { getSiteIntelligenceWorkspace } from "@/modules/foundation/site-intelligence-repository";
-import { getSiteAuthorityWorkspace } from "@/modules/foundation/site-product-authority-repository";
+import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
 import { resolveSiteWorkflowResume } from "@/modules/foundation/site-workflow-resume";
 
 type PageProps = {
@@ -68,10 +68,8 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
   const activity = listSiteActivity(site.siteId);
   const intelligence = getSiteIntelligenceWorkspace(site.siteId);
-  const strategy = intelligence?.strategyRevisions.at(-1) ?? null;
-  const authorityWorkspace = strategy
-    ? getSiteAuthorityWorkspace({ organizationId: site.organizationId, siteId: site.siteId, strategy })
-    : { candidates: [], sources: [], progress: { proposed: 0, approved: 0, needReview: 0 } };
+  const generation = getSiteGenerationReadiness(site);
+  const authorityWorkspace = generation.authority;
   const protectedBlockers = authorityWorkspace.candidates
     .filter((candidate) => (candidate.decision === "APPROVED" || candidate.decision === "QUALIFIED") && candidate.protectedClaimBlockers.length > 0 && candidate.authorityBasis !== "OWNER_ATTESTED_AND_EVIDENCE")
     .flatMap((candidate) => candidate.protectedClaimBlockers.map((blocker) => `${candidate.displayName}: ${blocker}`));
@@ -85,7 +83,13 @@ export default async function SiteDetailPage({ params }: PageProps) {
       protectedBlockers,
       candidates: authorityWorkspace.candidates,
     },
-    generationReadiness: { ready: readiness.ready, blockers: readiness.blockingReasons },
+    generationReadiness: {
+      readyToCertify: generation.readiness.readyToCertify,
+      certified: generation.certification.status === "CURRENT",
+      stale: generation.certification.status === "STALE",
+      blockers: generation.readiness.blockers,
+    },
+    siteBuildStarted: Boolean(generation.buildSession),
   });
 
   return (
@@ -145,6 +149,7 @@ export default async function SiteDetailPage({ params }: PageProps) {
 
           <article className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
             <h2 className="text-lg font-semibold text-white">Publishing Readiness</h2>
+            <p className="mt-2 text-xs text-zinc-400">Separate later gate. These conditions do not block bounded draft generation.</p>
             <p className="mt-2 text-sm text-zinc-300">Status: {readiness.status}</p>
             <p className="text-sm text-zinc-300">Ready: {readiness.ready ? "Yes" : "No"}</p>
             <ul className="mt-3 space-y-1 text-xs text-amber-300">

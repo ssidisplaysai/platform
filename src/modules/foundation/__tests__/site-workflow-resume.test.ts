@@ -56,7 +56,8 @@ function intelligence(overrides: Partial<SiteIntelligenceWorkspace> = {}): SiteI
 function authority(overrides: Partial<ProductAuthorityProgress> = {}): ProductAuthorityProgress {
   return { proposed: 4, approved: 0, remaining: 4, protectedBlockers: [], candidates: [], ...overrides };
 }
-const blockedReadiness = { ready: false, blockers: ["Site is disabled.", "Lifecycle state is configuring.", "Publishing status is disabled."] };
+const blockedReadiness = { readyToCertify: false, certified: false, stale: false, blockers: ["WordPress credential reference is missing."] };
+const readyToCertify = { readyToCertify: true, certified: false, stale: false, blockers: [] };
 
 describe("Site Detail workflow resume resolver", () => {
   test("completed creative with pending offerings resumes Product / Service Authority", () => {
@@ -67,12 +68,13 @@ describe("Site Detail workflow resume resolver", () => {
     expect(result.productAuthority).toMatchObject({ proposed: 4, approved: 0, remaining: 4 });
   });
 
-  test("complete Product Authority advances to Generation Readiness with technical blockers", () => {
-    const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: blockedReadiness });
+  test("complete Product Authority advances to explicit Generation Readiness certification", () => {
+    const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: readyToCertify });
     expect(result.primaryAction).toMatchObject({ key: "CONTINUE_GENERATION_READINESS", label: "CONTINUE TO GENERATION READINESS" });
+    expect(result.primaryAction.href).toContain("/generation-readiness?");
     expect(result.stages.find((stage) => stage.key === "product_authority")?.status).toBe("COMPLETE");
-    expect(result.stages.find((stage) => stage.key === "generation_readiness")?.status).toBe("NOT_STARTED");
-    expect(result.blockers).toEqual(blockedReadiness.blockers);
+    expect(result.stages.find((stage) => stage.key === "generation_readiness")?.status).toBe("READY_FOR_REVIEW");
+    expect(result.blockers).toEqual([]);
   });
 
   test("all-rejected Product Authority remains incomplete until one offering is approved", () => {
@@ -107,9 +109,11 @@ describe("Site Detail workflow resume resolver", () => {
     expect(JSON.stringify({ inputSite, inputIntelligence, inputAuthority })).toBe(before);
   });
 
-  test("canonical ready result advances from Generation Readiness to Site Build", () => {
-    const result = resolveSiteWorkflowResume({ site: site({ lifecycleState: "active", enabled: true, publishingStatus: "ready" }), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ready: true, blockers: [] } });
+  test("only current explicit certification advances to Site Build without starting it", () => {
+    const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true } });
     expect(result.stages.find((stage) => stage.key === "generation_readiness")?.status).toBe("COMPLETE");
     expect(result.primaryAction.key).toBe("CONTINUE_SITE_BUILD");
+    expect(result.primaryAction).toMatchObject({ label: "START SITE BUILD", href: expect.stringContaining("/build?") });
+    expect(result.stages.find((stage) => stage.key === "site_build")?.status).toBe("NOT_STARTED");
   });
 });

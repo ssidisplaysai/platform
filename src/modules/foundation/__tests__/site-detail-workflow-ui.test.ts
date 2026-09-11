@@ -8,6 +8,7 @@ describe("Site Detail workflow resume UI contract", () => {
     for (const text of ["Technical Status", "Site Build Progress", "Genesis workflow status", "Next Step"]) expect(page).toContain(text);
     expect(page).toContain("workflow.stages.map");
     expect(page).toContain("resolveSiteWorkflowResume");
+    expect(page).toContain("Separate later gate. These conditions do not block bounded draft generation.");
   });
 
   test("renders one canonical primary resume action and owner-friendly blockers", () => {
@@ -19,7 +20,7 @@ describe("Site Detail workflow resume UI contract", () => {
   });
 
   test("reads Product Authority progress without mutating it", () => {
-    expect(page).toContain("getSiteAuthorityWorkspace");
+    expect(page).toContain("getSiteGenerationReadiness");
     expect(page).toContain("authorityWorkspace.progress.proposed");
     expect(page).toContain("authorityWorkspace.progress.approved");
     expect(page).toContain("authorityWorkspace.progress.needReview");
@@ -38,7 +39,8 @@ describe("Site Detail workflow resume UI contract", () => {
 
   test("preserves route-authoritative organization and site scope", () => {
     expect(page).toContain("resourceSite={createSiteContext(site)}");
-    expect(page).toContain("organizationId: site.organizationId");
-    expect(page).toContain("siteId: site.siteId");
+    expect(page).toContain("getSiteGenerationReadiness(site)");
+    expect(page).toContain("encodeURIComponent(site.organizationId)");
+    expect(page).toContain("encodeURIComponent(site.siteId)");
   });
 });
