@@ -145,11 +145,14 @@ export async function POST(request: NextRequest, context: Context) {
       case "GENERATE_REVISED_STRATEGY": {
         const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
         const latest = current.strategyRevisions.at(-1); if (!latest || latest.status !== "REVISION_REQUESTED") throw new Error("STRATEGY_REVISION_NOT_REQUESTED");
+        const revisionInstructions = String(body.revisionInstructions ?? "").trim(); if (!revisionInstructions) throw new Error("STRATEGY_REVISION_INSTRUCTIONS_REQUIRED");
         const brandProfile = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
         const seoProfile = site.profiles.seoProfileReference ? getIntegrationProfileById(site.profiles.seoProfileReference) : null;
         const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
         if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
-        workspace = addStrategyProposal({ ...common, expectedRevision: current.revision, proposal: synthesizeInitialSiteStrategy(current, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile }), reason: "Owner requested a revised Genesis Site Strategy proposal." });
+        const finalized = { ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) };
+        const revised = synthesizeInitialSiteStrategy(finalized, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile });
+        workspace = addStrategyProposal({ ...common, expectedRevision: current.revision, proposal: { ...revised, reason: `${revised.reason} Owner revision instructions: ${revisionInstructions}` }, reason: `Owner requested a revised Genesis Site Strategy proposal: ${revisionInstructions}` });
         break;
       }
       case "REFRESH_STRATEGY": {

@@ -72,6 +72,22 @@ describe("site intelligence UI contract", () => {
     expect(workspace).toContain("selectDistinctCapabilityOpportunities(workspace.opportunities)");
   });
 
+  test("active proposed strategy exposes immediate and persistent owner decision controls", () => {
+    for (const text of ["Updated strategy ready for review", "Current revision:", "Status: READY FOR REVIEW", "APPROVE STRATEGY", "REQUEST CHANGES", "REJECT", "CURRENTLY AWAITING OWNER DECISION", "Historical revision", "Active review"]) expect(workspace).toContain(text);
+    expect(workspace).toContain('placement="top"');
+    expect(workspace).toContain('placement="bottom"');
+    expect(workspace.indexOf('placement="top"')).toBeLessThan(workspace.indexOf("<RichStrategyReview proposal={proposal}"));
+    expect(workspace.indexOf('placement="bottom"')).toBeGreaterThan(workspace.indexOf("<RichStrategyReview proposal={proposal}"));
+  });
+
+  test("strategy refresh focuses review and request changes requires explicit instructions", () => {
+    for (const text of ["What should Genesis change?", "GENERATE REVISED STRATEGY", "STRATEGY_REVISION_INSTRUCTIONS_REQUIRED"]) expect(`${workspace}${fs.readFileSync(path.join(process.cwd(), "src/app/api/sites/[siteId]/intelligence/route.ts"), "utf8")}`).toContain(text);
+    expect(workspace).toContain('document.getElementById("strategy-review")');
+    expect(workspace).toContain('review?.focus({ preventScroll: true })');
+    expect(workspace).toContain('review?.scrollIntoView({ behavior: "smooth", block: "start" })');
+    expect(workspace).toContain('href="#creative-direction"');
+  });
+
   test("rich strategy review renders all canonical owner-facing dimensions and valid state actions", () => {
     for (const text of ["Positioning", "Audiences", "Value Proposition", "Market / Vertical Priorities", "Product / Service Families", "Opportunity Prioritization", "Sales Channels", "Expansion / SEO Geography", "Geographic Strategy", "Sitemap", "Conversion Paths", "CTA Hierarchy", "Proof / Trust Requirements", "Required Product Authority", "Homepage Goals", "Internal Authority and Synthesis Context", "GENERATE REVISED STRATEGY"]) expect(workspace).toContain(text);
     expect(workspace).toContain('proposal.status === "PROPOSED"');
