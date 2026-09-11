@@ -104,13 +104,18 @@ export type CreativeInput = {
   inputId: string;
   kind: "IMAGE" | "SCREENSHOT" | "LOGO" | "PRODUCT_PHOTO" | "FACILITY_PHOTO" | "PROJECT_PHOTO" | "URL" | "TEXT" | "COLOR" | "TYPOGRAPHY" | "LAYOUT" | "TONE";
   reference: string;
-  sentiment: "LIKE" | "DISLIKE" | "NEUTRAL";
+  sentiment: "LIKE" | "DISLIKE" | "REFERENCE_ONLY" | "NEUTRAL";
   classification: SiteAssetClassification;
   notes: string | null;
   suppliedBy: string;
   suppliedAt: string;
   binaryAsset: SiteIntelligenceBinaryAsset | null;
 };
+
+export const SITE_INTELLIGENCE_REFERENCE_LIMITS = {
+  maxCreativeInputs: 200,
+  maxUrlReferences: 100,
+} as const;
 
 export type SiteIntelligenceBinaryAsset = {
   assetId: string;

@@ -22,11 +22,22 @@ describe("site intelligence binary assets", () => {
   test("rejects disguised and unsupported files", () => {
     expect(() => storeSiteIntelligenceAsset({ organizationId: "rj-metal", siteId: "site-1", originalFileName: "bad.png", mediaType: "image/png", bytes: Uint8Array.from([1, 2, 3]), actor: "owner", classification: "UNVERIFIED", note: null })).toThrow("SIGNATURE");
     expect(() => storeSiteIntelligenceAsset({ organizationId: "rj-metal", siteId: "site-1", originalFileName: "bad.svg", mediaType: "image/svg+xml", bytes: Uint8Array.from([1]), actor: "owner", classification: "UNVERIFIED", note: null })).toThrow("MEDIA_TYPE");
+    const oversized = new Uint8Array(25 * 1024 * 1024 + 1); oversized.set([0x89, 0x50, 0x4e, 0x47]);
+    expect(() => storeSiteIntelligenceAsset({ organizationId: "rj-metal", siteId: "site-1", originalFileName: "large.png", mediaType: "image/png", bytes: oversized, actor: "owner", classification: "UNVERIFIED", note: null })).toThrow("ASSET_SIZE_OUT_OF_BOUNDS");
+  });
+
+  test("identical bytes resolve to one content-addressed asset", () => {
+    const bytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 9, 8, 7]);
+    const first = storeSiteIntelligenceAsset({ organizationId: "rj-metal", siteId: "site-1", originalFileName: "first.png", mediaType: "image/png", bytes, actor: "owner", classification: "OWNER_SUPPLIED_REFERENCE", note: null });
+    const second = storeSiteIntelligenceAsset({ organizationId: "rj-metal", siteId: "site-1", originalFileName: "second.png", mediaType: "image/png", bytes, actor: "owner", classification: "OWNER_SUPPLIED_REFERENCE", note: null });
+    expect(second.assetId).toBe(first.assetId);
+    expect(fs.readdirSync(path.join(dir, "site-intelligence-assets", "rj-metal", "site-1"))).toHaveLength(1);
   });
 
   test("only explicit owner-approved classification is publishable", () => {
     expect(isPublishableSiteAsset("OWNER_SUPPLIED_REFERENCE")).toBe(false);
     expect(isPublishableSiteAsset("COMPETITOR_REFERENCE_ONLY")).toBe(false);
+    expect(isPublishableSiteAsset("EXTERNAL_INSPIRATION_ONLY")).toBe(false);
     expect(isPublishableSiteAsset("OWNER_APPROVED_PUBLISHABLE")).toBe(true);
   });
 });

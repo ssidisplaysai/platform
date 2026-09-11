@@ -54,4 +54,27 @@ describe("site intelligence API boundary", () => {
     const response = await route.GET(request("GET", "rj-metal"), context);
     expect(response.status).toBe(404);
   });
+
+  test("adds multiple URL references and updates one independently", async () => {
+    const route = await import("@/app/api/sites/[siteId]/intelligence/route");
+    const first = await route.POST(request("POST", "led-display-warehouse", { action: "ADD_URL_REFERENCE", expectedRevision: 0, reference: "https://example.com/one/", classification: "COMPETITOR_REFERENCE_ONLY", sentiment: "LIKE", notes: "One" }), context);
+    const firstBody = await first.json();
+    const second = await route.POST(request("POST", "led-display-warehouse", { action: "ADD_URL_REFERENCE", expectedRevision: firstBody.workspace.revision, reference: "https://example.com/two", classification: "EXTERNAL_INSPIRATION_ONLY", sentiment: "DISLIKE", notes: "Two" }), context);
+    const secondBody = await second.json();
+    expect(secondBody.workspace.creativeInputs).toHaveLength(2);
+    const updated = await route.POST(request("POST", "led-display-warehouse", { action: "UPDATE_CREATIVE_INPUT", expectedRevision: secondBody.workspace.revision, inputId: secondBody.workspace.creativeInputs[0].inputId, sentiment: "REFERENCE_ONLY", notes: "Updated" }), context);
+    const updatedBody = await updated.json();
+    expect(updatedBody.workspace.creativeInputs).toHaveLength(2);
+    expect(updatedBody.workspace.creativeInputs[0]).toMatchObject({ sentiment: "REFERENCE_ONLY", notes: "Updated" });
+    expect(updatedBody.workspace.creativeInputs[1]).toMatchObject({ sentiment: "DISLIKE", notes: "Two" });
+  });
+
+  test("returns deterministic duplicate URL error", async () => {
+    const route = await import("@/app/api/sites/[siteId]/intelligence/route");
+    const first = await route.POST(request("POST", "led-display-warehouse", { action: "ADD_URL_REFERENCE", expectedRevision: 0, reference: "https://example.com/path/#one", classification: "OWNER_SUPPLIED_REFERENCE", sentiment: "REFERENCE_ONLY" }), context);
+    const firstBody = await first.json();
+    const duplicate = await route.POST(request("POST", "led-display-warehouse", { action: "ADD_URL_REFERENCE", expectedRevision: firstBody.workspace.revision, reference: "https://EXAMPLE.com/path/", classification: "OWNER_SUPPLIED_REFERENCE", sentiment: "REFERENCE_ONLY" }), context);
+    expect(duplicate.status).toBe(422);
+    expect((await duplicate.json()).error).toMatch(/^REFERENCE_ALREADY_EXISTS:/);
+  });
 });

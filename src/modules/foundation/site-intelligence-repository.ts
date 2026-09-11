@@ -18,9 +18,12 @@ import type {
   SiteResearchExecution,
   SiteStrategyProposal,
 } from "./site-intelligence";
+import { SITE_INTELLIGENCE_REFERENCE_LIMITS } from "./site-intelligence";
 
 const NAMESPACE = "site-intelligence-repository";
 type State = { workspaces: SiteIntelligenceWorkspace[] };
+const CREATIVE_CLASSIFICATIONS: CreativeInput["classification"][] = ["OWNER_APPROVED_PUBLISHABLE", "OWNER_SUPPLIED_REFERENCE", "GENESIS_GENERATED_CANDIDATE", "EXTERNAL_INSPIRATION_ONLY", "COMPETITOR_REFERENCE_ONLY", "UNVERIFIED", "REJECTED"];
+const CREATIVE_SENTIMENTS: CreativeInput["sentiment"][] = ["LIKE", "DISLIKE", "REFERENCE_ONLY", "NEUTRAL"];
 
 function load(): { state: State; revision: number } {
   return loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: () => ({ workspaces: [] }) });
@@ -158,10 +161,68 @@ export function decideStrategy(input: { siteId: string; organizationId: string; 
 }
 
 export function addCreativeInput(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; creativeInput: CreativeInput }) {
+  return addCreativeInputs({ ...input, creativeInputs: [input.creativeInput] });
+}
+
+export function addCreativeInputs(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; creativeInputs: CreativeInput[] }) {
   return update({ ...input, action: "CREATIVE_INPUT_ADDED", mutate(workspace) {
-    if (input.creativeInput.binaryAsset && (input.creativeInput.binaryAsset.organizationId !== input.organizationId || input.creativeInput.binaryAsset.siteId !== input.siteId)) throw new Error("ASSET_SCOPE_MISMATCH");
-    workspace.creativeInputs.push(input.creativeInput);
+    if (!input.creativeInputs.length || workspace.creativeInputs.length + input.creativeInputs.length > SITE_INTELLIGENCE_REFERENCE_LIMITS.maxCreativeInputs) throw new Error("REFERENCE_LIBRARY_LIMIT_REACHED");
+    const additions = input.creativeInputs.map(normalizeCreativeInput);
+    const combined = [...workspace.creativeInputs];
+    for (const creativeInput of additions) {
+      if (creativeInput.binaryAsset && (creativeInput.binaryAsset.organizationId !== input.organizationId || creativeInput.binaryAsset.siteId !== input.siteId)) throw new Error("ASSET_SCOPE_MISMATCH");
+      if (creativeInput.kind === "URL" && combined.filter((candidate) => candidate.kind === "URL").length >= SITE_INTELLIGENCE_REFERENCE_LIMITS.maxUrlReferences) throw new Error("URL_REFERENCE_LIMIT_REACHED");
+      const duplicateUrl = creativeInput.kind === "URL" ? combined.find((candidate) => candidate.kind === "URL" && normalizeReferenceUrl(candidate.reference) === creativeInput.reference) : null;
+      if (duplicateUrl) throw new Error(`REFERENCE_ALREADY_EXISTS:${duplicateUrl.inputId}`);
+      const duplicateAsset = creativeInput.binaryAsset ? combined.find((candidate) => candidate.binaryAsset?.sha256 === creativeInput.binaryAsset?.sha256) : null;
+      if (duplicateAsset) throw new Error(`ASSET_ALREADY_EXISTS:${duplicateAsset.inputId}`);
+      combined.push(creativeInput);
+    }
+    workspace.creativeInputs.push(...additions);
     workspace.creativeState = "CREATIVE_INPUTS_COLLECTING";
+  }});
+}
+
+export function normalizeReferenceUrl(reference: string): string {
+  const url = new URL(reference.trim());
+  if (url.protocol !== "https:" || url.username || url.password) throw new Error("REFERENCE_URL_INVALID");
+  url.hostname = url.hostname.toLowerCase();
+  url.hash = "";
+  if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+  return url.toString();
+}
+
+function normalizeCreativeInput(creativeInput: CreativeInput): CreativeInput {
+  if (!CREATIVE_CLASSIFICATIONS.includes(creativeInput.classification) || !CREATIVE_SENTIMENTS.includes(creativeInput.sentiment)) throw new Error("CREATIVE_INPUT_METADATA_INVALID");
+  const reference = creativeInput.kind === "URL" ? normalizeReferenceUrl(creativeInput.reference) : creativeInput.reference.trim();
+  const notes = creativeInput.notes?.trim() || null;
+  if (!creativeInput.inputId.trim() || !reference || reference.length > 2_048 || (notes?.length ?? 0) > 5_000) throw new Error("CREATIVE_INPUT_INVALID");
+  return { ...creativeInput, reference, sentiment: creativeInput.sentiment === "NEUTRAL" ? "REFERENCE_ONLY" : creativeInput.sentiment, notes, binaryAsset: creativeInput.binaryAsset ? { ...creativeInput.binaryAsset, classification: creativeInput.classification, note: notes } : null };
+}
+
+export function updateCreativeInputMetadata(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; inputId: string; reference?: string; classification?: CreativeInput["classification"]; sentiment?: CreativeInput["sentiment"]; notes?: string | null }) {
+  return update({ ...input, action: "CREATIVE_INPUT_METADATA_UPDATED", mutate(workspace) {
+    const creative = workspace.creativeInputs.find((candidate) => candidate.inputId === input.inputId);
+    if (!creative) throw new Error("CREATIVE_INPUT_NOT_FOUND");
+    if ((input.classification !== undefined && !CREATIVE_CLASSIFICATIONS.includes(input.classification)) || (input.sentiment !== undefined && !CREATIVE_SENTIMENTS.includes(input.sentiment))) throw new Error("CREATIVE_INPUT_METADATA_INVALID");
+    if (input.reference !== undefined) {
+      if (creative.kind !== "URL") throw new Error("BINARY_REFERENCE_IMMUTABLE");
+      const reference = normalizeReferenceUrl(input.reference);
+      const existing = workspace.creativeInputs.find((candidate) => candidate.inputId !== creative.inputId && candidate.kind === "URL" && normalizeReferenceUrl(candidate.reference) === reference);
+      if (existing) throw new Error(`REFERENCE_ALREADY_EXISTS:${existing.inputId}`);
+      creative.reference = reference;
+    }
+    if (input.classification !== undefined) {
+      creative.classification = input.classification;
+      if (creative.binaryAsset) creative.binaryAsset.classification = input.classification;
+    }
+    if (input.sentiment !== undefined) creative.sentiment = input.sentiment === "NEUTRAL" ? "REFERENCE_ONLY" : input.sentiment;
+    if (input.notes !== undefined) {
+      const notes = input.notes?.trim() || null;
+      if ((notes?.length ?? 0) > 5_000) throw new Error("CREATIVE_INPUT_INVALID");
+      creative.notes = notes;
+      if (creative.binaryAsset) creative.binaryAsset.note = creative.notes;
+    }
   }});
 }
 
@@ -195,6 +256,7 @@ export function classifyCreativeInput(input: { siteId: string; organizationId: s
   return update({ ...input, action: "CREATIVE_INPUT_CLASSIFIED", mutate(workspace) {
     const creative = workspace.creativeInputs.find((candidate) => candidate.inputId === input.inputId);
     if (!creative) throw new Error("CREATIVE_INPUT_NOT_FOUND");
+    if (!CREATIVE_CLASSIFICATIONS.includes(input.classification)) throw new Error("CREATIVE_INPUT_METADATA_INVALID");
     creative.classification = input.classification;
     if (creative.binaryAsset) creative.binaryAsset.classification = input.classification;
   }});

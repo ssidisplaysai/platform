@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import {
   authorizeRequest,
   hasOrganizationScope,
@@ -22,10 +23,14 @@ import {
   getSiteIntelligenceWorkspace,
   recordSiteOpportunity,
   startSiteIntelligence,
+  updateCreativeInputMetadata,
   validateOpportunityCapability,
 } from "@/modules/foundation/site-intelligence-repository";
+import type { CreativeInput, SiteAssetClassification } from "@/modules/foundation/site-intelligence";
 
 type Context = { params: Promise<{ siteId: string }> };
+const CLASSIFICATIONS = new Set<SiteAssetClassification>(["OWNER_APPROVED_PUBLISHABLE", "OWNER_SUPPLIED_REFERENCE", "EXTERNAL_INSPIRATION_ONLY", "COMPETITOR_REFERENCE_ONLY", "UNVERIFIED", "REJECTED"]);
+const SENTIMENTS = new Set<CreativeInput["sentiment"]>(["LIKE", "DISLIKE", "REFERENCE_ONLY"]);
 
 function errorResponse(error: unknown) {
   const message = error instanceof Error ? error.message : "SITE_INTELLIGENCE_REQUEST_FAILED";
@@ -111,9 +116,26 @@ export async function POST(request: NextRequest, context: Context) {
       case "ADD_CREATIVE_INPUT":
         workspace = addCreativeInput({ ...common, creativeInput: body.creativeInput as never });
         break;
+      case "ADD_URL_REFERENCE": {
+        const classification = String(body.classification) as SiteAssetClassification;
+        const sentiment = String(body.sentiment) as CreativeInput["sentiment"];
+        if (!CLASSIFICATIONS.has(classification) || !SENTIMENTS.has(sentiment)) throw new Error("CREATIVE_INPUT_METADATA_INVALID");
+        const existing = getSiteIntelligenceWorkspace(site.siteId);
+        const brand = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const base = existing ?? ensureSiteIntelligenceWorkspace({ organizationId: site.organizationId, siteId: site.siteId, publicBrandIdentity: brand?.organizationId === site.organizationId ? brand.profileName.split(/\s+[—-]\s+/)[0] : site.displayName, actor: common.actor });
+        workspace = addCreativeInput({ ...common, expectedRevision: base.revision, creativeInput: { inputId: `creative-input-${randomUUID()}`, kind: "URL", reference: String(body.reference ?? ""), sentiment, classification, notes: body.notes === null ? null : String(body.notes ?? ""), suppliedBy: common.actor, suppliedAt: new Date().toISOString(), binaryAsset: null } });
+        break;
+      }
       case "CLASSIFY_CREATIVE_INPUT":
         workspace = classifyCreativeInput({ ...common, inputId: String(body.inputId), classification: body.classification as never });
         break;
+      case "UPDATE_CREATIVE_INPUT": {
+        const classification = body.classification === undefined ? undefined : String(body.classification) as SiteAssetClassification;
+        const sentiment = body.sentiment === undefined ? undefined : String(body.sentiment) as CreativeInput["sentiment"];
+        if ((classification !== undefined && !CLASSIFICATIONS.has(classification)) || (sentiment !== undefined && !SENTIMENTS.has(sentiment))) throw new Error("CREATIVE_INPUT_METADATA_INVALID");
+        workspace = updateCreativeInputMetadata({ ...common, inputId: String(body.inputId), reference: body.reference === undefined ? undefined : String(body.reference), classification, sentiment, notes: body.notes === undefined ? undefined : body.notes === null ? null : String(body.notes) });
+        break;
+      }
       case "PROPOSE_CREATIVE":
         workspace = addCreativeProposal({ ...common, proposal: body.proposal as never });
         break;
