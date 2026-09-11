@@ -124,4 +124,11 @@ describe("Site Detail workflow resume resolver", () => {
     expect(result.stages.find((stage) => stage.key === "site_build")?.detail).toContain("Page review is complete");
     expect(result.stages.find((stage) => stage.key === "publication")?.status).toBe("DISABLED");
   });
+
+  test("a synchronized build resumes into WordPress draft review and QA", () => {
+    const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true, siteBuildStage: "WORDPRESS_DRAFT_REVIEW" });
+    expect(result.primaryAction).toMatchObject({ key: "CONTINUE_SITE_BUILD", label: "CONTINUE SITE BUILD" });
+    expect(result.primaryAction.description).toContain("draft review and site QA");
+    expect(result.stages.find((stage) => stage.key === "site_build")?.detail).toContain("content synchronization is complete");
+  });
 });

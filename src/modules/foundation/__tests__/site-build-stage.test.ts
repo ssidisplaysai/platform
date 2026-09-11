@@ -9,6 +9,6 @@ describe("Site Build stage transition", () => {
 
   test("advances completed review to explicit WordPress content update", () => {
     expect(resolveSiteBuildStage(completeReview)).toBe("WORDPRESS_CONTENT_UPDATE");
-    expect(resolveSiteBuildStage({ ...completeReview, wordpressContentUpdateCount: 2 })).toBe("COMPLETE");
+    expect(resolveSiteBuildStage({ ...completeReview, wordpressContentUpdateCount: 2 })).toBe("WORDPRESS_DRAFT_REVIEW");
   });
 });

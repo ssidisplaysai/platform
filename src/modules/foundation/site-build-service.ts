@@ -41,6 +41,7 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
     PAGE_GENERATION: { action: "GENERATE_FULL_SITE", label: "GENERATE FULL PAGE CONTENT", detail: "Generate production-quality page proposals, SEO, links, navigation, and image requirements locally. WordPress is not updated." },
     PAGE_REVIEW: { action: "REVIEW_FULL_SITE", label: "REVIEW GENERATED SITE", detail: "Review each generated page, request bounded changes, or approve pages that pass quality checks." },
     WORDPRESS_CONTENT_UPDATE: { action: "UPDATE_WORDPRESS_DRAFT_CONTENT", label: "UPDATE WORDPRESS DRAFT CONTENT", detail: `Update the existing ${records.wordpressDrafts.length} WordPress draft pages with the owner-approved content, SEO, links, and approved images. Nothing will be published.` },
+    WORDPRESS_DRAFT_REVIEW: { action: "REVIEW_WORDPRESS_DRAFTS", label: "REVIEW WORDPRESS DRAFTS", detail: `Review the ${records.wordpressDrafts.length} synchronized WordPress drafts, compare them with the approved Genesis versions, and inspect site QA. Publication remains disabled.` },
     COMPLETE: { action: "REVIEW_WORDPRESS_DRAFTS", label: "REVIEW WORDPRESS DRAFTS", detail: "Review the created drafts in WordPress. Publication remains a separate gate." },
     AUTHORITY_REVIEW_REQUIRED: { action: "REVIEW_GENERATION_READINESS", label: "REVIEW GENERATION READINESS", detail: "Material upstream authority changed. Recertify before continuing this build." },
   }[stage];

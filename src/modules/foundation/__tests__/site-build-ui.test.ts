@@ -4,7 +4,7 @@ import path from "node:path";
 describe("bounded Site Build owner workspace", () => {
   const source = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteBuildWorkflow.tsx"), "utf8");
   test("shows the progress ladder, current next step, and progressive authority disclosure", () => {
-    for (const text of ["Build Started", "Build Plan", "Draft Generation", "Full Pages", "Page Review", "WordPress Drafts", "WordPress Content Update", "Publication", "Current Next Step", "Advanced Details", "Authority used"]) expect(source).toContain(text);
+    for (const text of ["Build Started", "Build Plan", "Draft Generation", "Full Pages", "Page Review", "WordPress Drafts", "WordPress Content Update", "WordPress Draft Review", "Site QA", "Publication", "Current Next Step", "Advanced Details", "Authority used"]) expect(source).toContain(text);
     expect(source).toContain('publication ? "DISABLED"');
   });
   test("supports explicit plan review, revision instructions, local draft review, and WordPress handoff", () => {
@@ -26,5 +26,7 @@ describe("bounded Site Build owner workspace", () => {
     for (const text of ["GENERATE FULL PAGE CONTENT", "REVIEW GENERATED SITE", "UPDATE WORDPRESS DRAFT CONTENT"]) expect(source).toContain(text);
     expect(source).toContain("wordpressReadiness?.contentUpdateReady");
     expect(source).toContain("existingReceiptCount");
+    expect(source).toContain("/build/wordpress-review?");
+    expect(source).toContain('workspace.stage === "WORDPRESS_DRAFT_REVIEW"');
   });
 });

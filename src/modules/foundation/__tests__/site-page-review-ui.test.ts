@@ -20,4 +20,10 @@ describe("fresh-site generated page owner review", () => {
     expect(source.match(/onUpdate=\{\(\) => act\("UPDATE_WORDPRESS_DRAFT_CONTENT"\)\}/g)).toHaveLength(2);
     expect(source).not.toContain('useEffect(() => { act("UPDATE_WORDPRESS_DRAFT_CONTENT")');
   });
+  test("switches completed receipts to WordPress draft review instead of asking for another update", () => {
+    expect(source).toContain("wordpressContentUpdates.length >= workspace.pageReview.generatedPageCount");
+    expect(source).toContain("WORDPRESS CONTENT UPDATE COMPLETE");
+    expect(source).toContain("REVIEW WORDPRESS DRAFTS");
+    expect(source).toContain("/build/wordpress-review?");
+  });
 });

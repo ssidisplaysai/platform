@@ -1,4 +1,4 @@
-export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "PAGE_GENERATION" | "PAGE_REVIEW" | "WORDPRESS_CONTENT_UPDATE" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
+export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "PAGE_GENERATION" | "PAGE_REVIEW" | "WORDPRESS_CONTENT_UPDATE" | "WORDPRESS_DRAFT_REVIEW" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
 
 export function resolveSiteBuildStage(input: {
   sessionStarted: boolean;
@@ -22,5 +22,5 @@ export function resolveSiteBuildStage(input: {
   if (!input.assemblyPresent) return "PAGE_GENERATION";
   if (!input.pageReviewComplete) return "PAGE_REVIEW";
   if (input.wordpressContentUpdateCount < input.generatedPageCount) return "WORDPRESS_CONTENT_UPDATE";
-  return "COMPLETE";
+  return "WORDPRESS_DRAFT_REVIEW";
 }
