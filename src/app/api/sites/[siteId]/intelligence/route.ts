@@ -95,6 +95,17 @@ export async function POST(request: NextRequest, context: Context) {
         workspace = await executeSiteIntelligenceResearch({ expectedRevision: workspace.revision, actor: common.actor, focusOpportunityId: opportunityId, provider: createSiteIntelligenceN8nProvider(), authority: { organizationId: site.organizationId, siteId: site.siteId, domain: site.domain!, publicBrandIdentity: brand?.profileName.split(/\s+[—-]\s+/)[0] ?? site.displayName, brandProfileId: site.profiles.brandProfileReference!, seoProfileId: site.profiles.seoProfileReference!, promptProfileId: site.profiles.promptProfileReference!, imageProfileId: site.profiles.imageProfileReference! } });
         break;
       }
+      case "RETRY_RESEARCH": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        const execution = (current.researchExecutions ?? []).find((candidate) => candidate.kind === "INITIAL");
+        if (!execution || execution.state !== "RECOVERABLE") throw new Error("RESEARCH_EXECUTION_NOT_RECOVERABLE");
+        const status = getSiteIntelligenceProviderStatus(); if (!status.configured) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROVIDER_NOT_CONFIGURED" }, { status: 503 });
+        const profileIds = [site.profiles.brandProfileReference, site.profiles.seoProfileReference, site.profiles.promptProfileReference, site.profiles.imageProfileReference];
+        if (profileIds.some((id) => !id || !evaluateProfileReadiness(id)?.ready)) return NextResponse.json({ error: "SITE_INTELLIGENCE_PROFILE_AUTHORITY_NOT_READY" }, { status: 422 });
+        const brand = getIntegrationProfileById(site.profiles.brandProfileReference!);
+        workspace = await executeSiteIntelligenceResearch({ expectedRevision: current.revision, actor: common.actor, maxAttempts: 1, provider: createSiteIntelligenceN8nProvider(), authority: { organizationId: site.organizationId, siteId: site.siteId, domain: site.domain!, publicBrandIdentity: brand?.profileName.split(/\s+[—-]\s+/)[0] ?? site.displayName, brandProfileId: site.profiles.brandProfileReference!, seoProfileId: site.profiles.seoProfileReference!, promptProfileId: site.profiles.promptProfileReference!, imageProfileId: site.profiles.imageProfileReference! } });
+        break;
+      }
       case "DECIDE_OPPORTUNITY":
         workspace = decideSiteOpportunity({ ...common, opportunityId: String(body.opportunityId), decision: body.decision as never });
         break;

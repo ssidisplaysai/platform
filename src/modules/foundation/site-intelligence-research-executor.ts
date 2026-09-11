@@ -31,7 +31,7 @@ export async function executeSiteIntelligenceResearch(input: { authority: SiteRe
   let workspace = queueSiteResearchExecution({ organizationId: input.authority.organizationId, siteId: input.authority.siteId, expectedRevision: input.expectedRevision, actor: input.actor, reason: input.focusOpportunityId ? "Owner requested focused opportunity research." : "Owner explicitly started site intelligence.", providerReference: input.provider.providerId, kind: executionMode, focusOpportunityId: input.focusOpportunityId, timeoutMs: input.timeoutMs ?? 120_000, maxAttempts: input.maxAttempts ?? 2 });
   const execution = (workspace.researchExecutions ?? []).at(-1)!;
   if (execution.state !== "QUEUED") return workspace;
-  for (let attempt = 1; attempt <= execution.maxAttempts; attempt += 1) {
+  for (let attempt = execution.attemptCount + 1; attempt <= execution.maxAttempts; attempt += 1) {
     workspace = updateSiteResearchExecution({ organizationId: input.authority.organizationId, siteId: input.authority.siteId, expectedRevision: workspace.revision, actor: input.actor, reason: `Research attempt ${attempt}.`, executionId: execution.executionId, state: "RESEARCHING", attemptCount: attempt });
     const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), execution.timeoutMs);
     try {

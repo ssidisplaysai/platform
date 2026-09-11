@@ -266,7 +266,21 @@ export function queueSiteResearchExecution(input: { siteId: string; organization
   const current = getSiteIntelligenceWorkspace(input.siteId);
   if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
   const executions = current.researchExecutions ?? [];
-  if (input.kind === "INITIAL" && executions.some((execution) => execution.kind === "INITIAL")) return current;
+  const existingInitial = input.kind === "INITIAL" ? executions.find((execution) => execution.kind === "INITIAL") : null;
+  if (existingInitial) {
+    if (existingInitial.state !== "RECOVERABLE") return current;
+    return update({ ...input, action: "RESEARCH_EXECUTION_REQUEUED", mutate(workspace) {
+      const execution = (workspace.researchExecutions ?? []).find((candidate) => candidate.executionId === existingInitial.executionId);
+      if (!execution || execution.state !== "RECOVERABLE") throw new Error("RESEARCH_EXECUTION_NOT_RECOVERABLE");
+      execution.state = "QUEUED";
+      execution.maxAttempts = execution.attemptCount + Math.min(Math.max(input.maxAttempts, 1), 2);
+      execution.timeoutMs = Math.min(Math.max(input.timeoutMs, 60_000), 300_000);
+      execution.providerReference = input.providerReference;
+      execution.completedAt = null;
+      execution.errorCode = null;
+      execution.errorMessage = null;
+    }});
+  }
   const executionId = input.kind === "INITIAL" ? `site-research-${input.siteId}-initial` : `site-research-${input.siteId}-${input.focusOpportunityId}-${executions.filter((execution) => execution.focusOpportunityId === input.focusOpportunityId).length + 1}`;
   return update({ ...input, action: "RESEARCH_EXECUTION_QUEUED", mutate(workspace) {
     workspace.researchExecutions ??= [];

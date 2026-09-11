@@ -41,6 +41,17 @@ describe("site intelligence bounded research executor", () => {
     expect(result.evidence).toEqual([]); expect(result.opportunities).toEqual([]);
   });
 
+  test("resumes the same recoverable initial execution and retains cumulative attempts", async () => {
+    const workspace = await started(); const executor = await import("../site-intelligence-research-executor"); let calls = 0;
+    const provider: SiteResearchProvider = { providerId: "test", async execute({ executionId }) { calls += 1; if (calls === 1) throw new Error("transient"); return output(executionId); } };
+    const failed = await executor.executeSiteIntelligenceResearch({ authority, provider, actor: "owner", expectedRevision: workspace.revision, maxAttempts: 1 });
+    const executionId = failed.researchExecutions[0].executionId;
+    const recovered = await executor.executeSiteIntelligenceResearch({ authority, provider, actor: "owner", expectedRevision: failed.revision, maxAttempts: 1 });
+    expect(calls).toBe(2); expect(recovered.researchExecutions).toHaveLength(1);
+    expect(recovered.researchExecutions[0]).toMatchObject({ executionId, state: "READY_FOR_REVIEW", attemptCount: 2, maxAttempts: 2 });
+    expect(recovered.opportunities[0]).toMatchObject({ capabilityState: "OWNER_VALIDATION_REQUIRED", ownerDecision: "PENDING", decidedBy: null, decidedAt: null });
+  });
+
   test("Research More creates a continuation scoped to one opportunity", async () => {
     let workspace = await started(); const executor = await import("../site-intelligence-research-executor"); const focuses: Array<string | null> = [];
     workspace = await executor.executeSiteIntelligenceResearch({ authority, provider: { providerId: "test", async execute({ executionId }) { return output(executionId); } }, actor: "owner", expectedRevision: workspace.revision });
