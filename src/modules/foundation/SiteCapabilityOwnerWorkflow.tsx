@@ -8,12 +8,12 @@ import type {
   SiteIntelligenceWorkspace,
   SiteOpportunity,
 } from "./site-intelligence";
-import { getCapabilityAuthorityStatus } from "./site-intelligence";
+import { getCapabilityAuthorityAssurance, getCapabilityAuthorityStatus } from "./site-intelligence";
 import {
   canonicalCapabilityState,
   CAPABILITY_RELEVANCE_TYPES,
   evidenceNeedsClarification,
-  hasSpecificCapabilityProof,
+  getOwnerCapabilityPreview,
   inferEvidenceRelevance,
   OWNER_CAPABILITY_CHOICES,
   OWNER_EVIDENCE_CHOICES,
@@ -42,15 +42,6 @@ function evidenceTypeLabel(option: CapabilityEvidenceOption): string {
   return "Owner-provided material";
 }
 
-function statusPresentation(opportunity: SiteOpportunity) {
-  const authority = getCapabilityAuthorityStatus(opportunity);
-  if (authority === "AUTHORITY_REVIEW_REQUIRED") return { label: "REVIEW REQUIRED", tone: "text-amber-200", proof: false, confirmed: false };
-  if (authority === "CURRENT") return { label: opportunity.capabilityState, tone: "text-emerald-200", proof: true, confirmed: true };
-  if (opportunity.capabilityState === "FUTURE_CAPABILITY") return { label: "NOT A CURRENT CAPABILITY", tone: "text-blue-200", proof: false, confirmed: true };
-  if (opportunity.capabilityState === "REJECTED") return { label: "NOT OFFERED", tone: "text-zinc-300", proof: false, confirmed: true };
-  return { label: "NEEDS OWNER REVIEW", tone: "text-amber-200", proof: false, confirmed: false };
-}
-
 export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOptions, publicBrandIdentity, busy, onAction }: Props) {
   const latestAuthority = opportunity.capabilityAuthorityRevisions?.at(-1);
   const [capabilityChoice, setCapabilityChoice] = useState<OwnerCapabilityChoice | null>(() => ownerCapabilityChoice(opportunity.capabilityState));
@@ -62,18 +53,13 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
       return [option.referenceId, existing ?? inferEvidenceRelevance(option)];
     })),
   }));
-  const [ownerConfirmed, setOwnerConfirmed] = useState(false);
+  const [ownerConfirmed, setOwnerConfirmed] = useState(() => Boolean(latestAuthority?.attestation.trim() && latestAuthority.decision === opportunity.capabilityState));
   const [limitations, setLimitations] = useState(opportunity.capabilityNotes ?? "");
   const [feedback, setFeedback] = useState<string | null>(null);
-  const status = statusPresentation(opportunity);
   const canonicalState = capabilityChoice ? canonicalCapabilityState(capabilityChoice) : null;
-  const requiresProof = canonicalState === "VERIFIED" || canonicalState === "QUALIFIED";
-  const requiresConfirmation = requiresProof || canonicalState === "FUTURE_CAPABILITY";
-  const hasSpecificProof = hasSpecificCapabilityProof(selectedEvidence, evidenceRelevance);
-  const canSubmit = Boolean(canonicalState)
-    && (!requiresProof || (selectedEvidence.length > 0 && hasSpecificProof))
-    && (!requiresConfirmation || ownerConfirmed)
-    && (canonicalState !== "QUALIFIED" || Boolean(limitations.trim()));
+  const currentDecision = canonicalState === "VERIFIED" || canonicalState === "QUALIFIED";
+  const requiresConfirmation = currentDecision || canonicalState === "FUTURE_CAPABILITY";
+  const status = getOwnerCapabilityPreview({ opportunity, choice: capabilityChoice, ownerConfirmed, selectedEvidence, evidenceRelevance, limitations });
 
   async function decideMarket(decision: OpportunityDecision) {
     setFeedback(null);
@@ -87,18 +73,18 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
   }
 
   async function saveCapability() {
-    if (!canonicalState || !canSubmit) return;
+    if (!canonicalState || !status.canSubmit) return;
     const attestation = canonicalState === "FUTURE_CAPABILITY"
       ? `${publicBrandIdentity} does not currently have this capability and may develop it.`
-      : requiresProof
+      : currentDecision
         ? `${publicBrandIdentity} currently provides ${opportunity.name}${canonicalState === "QUALIFIED" ? " subject to the recorded limitations" : ""}.`
         : "";
     const result = await onAction({
       action: "VALIDATE_CAPABILITY",
       opportunityId: opportunity.opportunityId,
       state: canonicalState,
-      evidenceIds: requiresProof ? selectedEvidence : [],
-      evidenceRelevance: requiresProof ? selectedEvidence.map((evidenceId) => ({ evidenceId, relevanceType: evidenceRelevance[evidenceId] ?? "GENERAL_REFERENCE", ownerConfirmedRelevant: true })) : [],
+      evidenceIds: currentDecision ? selectedEvidence : [],
+      evidenceRelevance: currentDecision ? selectedEvidence.map((evidenceId) => ({ evidenceId, relevanceType: evidenceRelevance[evidenceId] ?? "GENERAL_REFERENCE", ownerConfirmedRelevant: true })) : [],
       attestation,
       notes: canonicalState === "QUALIFIED" ? limitations : canonicalState === "FUTURE_CAPABILITY" ? "Future capability; not authorized as a current claim." : canonicalState === "REJECTED" ? "Not offered as a current capability." : "",
       reason: `Owner capability decision: ${canonicalState}.`,
@@ -130,10 +116,11 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
         {canonicalState === "REJECTED" ? <p className="mt-3 text-sm text-zinc-300">Genesis will not treat this as a current organizational capability. This does not reject the market.</p> : null}
       </section>
 
-      {requiresProof ? <section className="mt-4 border border-zinc-800 p-4">
+      {currentDecision ? <section className="mt-4 border border-zinc-800 p-4">
         <p className="text-xs font-semibold uppercase text-zinc-400">Proof</p>
         <h4 className="mt-1 font-semibold text-white">How can we support this?</h4>
-        <p className="mt-1 text-xs text-zinc-500">Select owner-supplied proof for this specific capability. General references do not establish current capability.</p>
+        <p className="mt-1 text-xs text-zinc-500">{status.proofRequired ? "Independent proof is required for this protected claim." : "Supporting proof is optional and can independently verify the owner-confirmed capability."} General references do not establish independent proof.</p>
+        {status.proofReason ? <p className="mt-2 text-xs text-amber-200">{status.proofReason}</p> : null}
         {capabilityEvidenceOptions.length ? <div className="mt-3 grid gap-2 sm:grid-cols-2">{capabilityEvidenceOptions.map((option) => {
           const selected = selectedEvidence.includes(option.referenceId);
           const relevance = evidenceRelevance[option.referenceId] ?? inferEvidenceRelevance(option);
@@ -144,9 +131,9 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
 
       {canonicalState === "QUALIFIED" ? <label className="mt-4 block border border-zinc-800 p-4 text-sm text-zinc-300">What are the limitations?<textarea value={limitations} onChange={(event) => setLimitations(event.target.value)} rows={3} className="mt-2 w-full border border-zinc-700 bg-zinc-900 p-2 text-white" /></label> : null}
 
-      {requiresConfirmation ? <label className="mt-4 flex gap-3 border border-zinc-800 p-4 text-sm text-zinc-200"><input type="checkbox" checked={ownerConfirmed} onChange={(event) => setOwnerConfirmed(event.target.checked)} /><span>{canonicalState === "FUTURE_CAPABILITY" ? `I confirm that ${publicBrandIdentity} does not currently have this capability.` : `I confirm that ${publicBrandIdentity} currently has this capability.`}<span className="mt-1 block text-xs text-zinc-500">Owner confirmation is your attestation. Current capability also requires selected supporting proof.</span></span></label> : null}
+      {requiresConfirmation ? <label className="mt-4 flex gap-3 border border-zinc-800 p-4 text-sm text-zinc-200"><input type="checkbox" checked={ownerConfirmed} onChange={(event) => setOwnerConfirmed(event.target.checked)} /><span>{canonicalState === "FUTURE_CAPABILITY" ? `I confirm that ${publicBrandIdentity} does not currently have this capability.` : `I confirm that ${publicBrandIdentity} currently has this capability.`}<span className="mt-1 block text-xs text-zinc-500">Owner confirmation is recorded as owner authority. {status.proofRequired ? "This protected claim also requires independent proof." : "Independent proof may be added now or later."}</span></span></label> : null}
 
-      <div className="mt-4 grid gap-3 border border-zinc-800 bg-zinc-950 p-4 sm:grid-cols-[1fr_auto] sm:items-end"><div><p className="text-xs font-semibold uppercase text-zinc-500">Capability status</p><strong className={`mt-1 block ${status.tone}`}>{status.label}</strong><dl className="mt-2 grid grid-cols-2 gap-2 text-xs text-zinc-400"><div><dt>Owner confirmed</dt><dd>{status.confirmed ? "Yes" : "Needed"}</dd></div><div><dt>Supporting proof</dt><dd>{status.proof ? "Yes" : requiresProof ? "Needed" : "Not required"}</dd></div></dl>{opportunity.capabilityState === "QUALIFIED" && opportunity.capabilityNotes ? <p className="mt-2 text-xs text-zinc-300">Limitations: {opportunity.capabilityNotes}</p> : null}</div><button type="button" disabled={busy || !canSubmit} onClick={saveCapability} className="bg-emerald-700 px-4 py-3 text-xs font-semibold text-white disabled:opacity-40">SAVE CAPABILITY REVIEW</button></div>
+      <div className="mt-4 grid gap-3 border border-zinc-800 bg-zinc-950 p-4 sm:grid-cols-[1fr_auto] sm:items-end"><div><p className="text-xs font-semibold uppercase text-zinc-500">Capability status</p><strong className={`mt-1 block ${status.label === "VERIFIED" || status.label === "OWNER CONFIRMED" || status.label === "QUALIFIED" ? "text-emerald-200" : status.label === "NOT A CURRENT CAPABILITY" ? "text-blue-200" : "text-amber-200"}`}>{status.label}</strong><dl className="mt-2 grid grid-cols-2 gap-2 text-xs text-zinc-400"><div><dt>Owner confirmed</dt><dd>{status.ownerConfirmation}</dd></div><div><dt>Supporting proof</dt><dd>{status.supportingProof}</dd></div></dl>{getCapabilityAuthorityAssurance(opportunity) === "OWNER_ATTESTED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner attestation · Evidence status: Not independently verified</p> : getCapabilityAuthorityAssurance(opportunity) === "EVIDENCE_VERIFIED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner + evidence</p> : null}{opportunity.capabilityState === "QUALIFIED" && opportunity.capabilityNotes ? <p className="mt-2 text-xs text-zinc-300">Limitations: {opportunity.capabilityNotes}</p> : null}</div><button type="button" disabled={busy || !status.canSubmit} onClick={saveCapability} className="bg-emerald-700 px-4 py-3 text-xs font-semibold text-white disabled:opacity-40">SAVE CAPABILITY REVIEW</button></div>
       {feedback ? <p role="status" className="mt-3 border border-zinc-700 bg-zinc-900 p-2 text-xs text-zinc-200">{feedback}</p> : null}
     </article>
   );

@@ -47,6 +47,7 @@ export type CapabilityEvidenceRelevance = {
   linkedBy: string;
   linkedAt: string;
 };
+export type CapabilityAuthorityBasis = "OWNER_ATTESTATION" | "OWNER_ATTESTATION_AND_EVIDENCE";
 export type CapabilityAuthorityDecision = {
   organizationId: string;
   siteId: string;
@@ -55,12 +56,19 @@ export type CapabilityAuthorityDecision = {
   evidenceIds: string[];
   evidenceRelevance: CapabilityEvidenceRelevance[];
   attestation: string;
+  authorityBasis?: CapabilityAuthorityBasis;
   qualificationNotes: string | null;
   decidedBy: string;
   decidedAt: string;
   revision: number;
 };
 export type CapabilityAuthorityStatus = "CURRENT" | "AUTHORITY_REVIEW_REQUIRED" | "NOT_CURRENT";
+export type CapabilityAuthorityAssurance = "OWNER_ATTESTED" | "EVIDENCE_VERIFIED" | "PROOF_REQUIRED" | "REVIEW_REQUIRED" | "NOT_CURRENT";
+export type CapabilityEvidencePolicy = {
+  requirement: "OWNER_ATTESTATION_ALLOWED" | "INDEPENDENT_EVIDENCE_REQUIRED";
+  protectedClaimClass: "COMPLIANCE_OR_CERTIFICATION" | "GEOGRAPHIC_SERVICE" | "CHANNEL_AUTHORITY" | null;
+  reason: string | null;
+};
 export type SiteAssetClassification =
   | "OWNER_APPROVED_PUBLISHABLE"
   | "OWNER_SUPPLIED_REFERENCE"
@@ -321,15 +329,49 @@ export function hasVerifiedCapability(opportunity: SiteOpportunity): boolean {
   return getCapabilityAuthorityStatus(opportunity) === "CURRENT";
 }
 
-export function getCapabilityAuthorityStatus(opportunity: SiteOpportunity): CapabilityAuthorityStatus {
+export function getCapabilityEvidencePolicy(opportunity: SiteOpportunity): CapabilityEvidencePolicy {
+  const claim = [opportunity.name, opportunity.category, opportunity.problemUseCase, opportunity.rationale, opportunity.recommendation].join(" ");
+  if (/\b(certif(?:ied|ication)|regulatory|compliance|compliant|licen[cs](?:e|ed|ing)|UL|NSF|GMP|ISO|formal standard|code[- ]compliant|listed)\b/i.test(claim)) {
+    return { requirement: "INDEPENDENT_EVIDENCE_REQUIRED", protectedClaimClass: "COMPLIANCE_OR_CERTIFICATION", reason: "Certification, compliance, licensing, and formal-standard claims require independent proof." };
+  }
+  if (/\b(service area|coverage area|nationwide service|national service|ships? nationwide|geographic service|territorial coverage)\b/i.test(claim)) {
+    return { requirement: "INDEPENDENT_EVIDENCE_REQUIRED", protectedClaimClass: "GEOGRAPHIC_SERVICE", reason: "Geographic service and coverage claims require independent support." };
+  }
+  if (/\b(authorized dealer|authorized distributor|dealer authority|distributor authority|reseller authority|channel authority|certified partner)\b/i.test(claim)) {
+    return { requirement: "INDEPENDENT_EVIDENCE_REQUIRED", protectedClaimClass: "CHANNEL_AUTHORITY", reason: "Dealer, distributor, reseller, and channel-authority claims require independent support." };
+  }
+  return { requirement: "OWNER_ATTESTATION_ALLOWED", protectedClaimClass: null, reason: null };
+}
+
+export function isEvidenceSufficientForCapabilityPolicy(policy: CapabilityEvidencePolicy, relevanceType: CapabilityEvidenceRelevanceType): boolean {
+  if (relevanceType === "GENERAL_REFERENCE") return false;
+  if (policy.protectedClaimClass === "COMPLIANCE_OR_CERTIFICATION") return relevanceType === "SPECIFICATION_OR_COMPLIANCE_EVIDENCE";
+  if (policy.protectedClaimClass === "GEOGRAPHIC_SERVICE") return relevanceType === "GEOGRAPHIC_SERVICE_EVIDENCE";
+  if (policy.protectedClaimClass === "CHANNEL_AUTHORITY") return relevanceType === "CHANNEL_EVIDENCE";
+  return true;
+}
+
+function hasCapabilitySpecificEvidence(opportunity: SiteOpportunity, authority: CapabilityAuthorityDecision): boolean {
+  const policy = getCapabilityEvidencePolicy(opportunity);
+  const sufficientEvidence = new Set(authority.evidenceRelevance
+    .filter((link) => link.opportunityId === opportunity.opportunityId && link.ownerConfirmedRelevant && isEvidenceSufficientForCapabilityPolicy(policy, link.relevanceType))
+    .map((link) => link.evidenceId));
+  return authority.evidenceIds.some((evidenceId) => sufficientEvidence.has(evidenceId));
+}
+
+export function getCapabilityAuthorityAssurance(opportunity: SiteOpportunity): CapabilityAuthorityAssurance {
   if (opportunity.capabilityState !== "VERIFIED" && opportunity.capabilityState !== "QUALIFIED") return "NOT_CURRENT";
   const authority = opportunity.capabilityAuthorityRevisions?.at(-1);
-  if (!authority || authority.decision !== opportunity.capabilityState || !authority.attestation.trim()) return "AUTHORITY_REVIEW_REQUIRED";
-  if (authority.decision === "QUALIFIED" && !authority.qualificationNotes?.trim()) return "AUTHORITY_REVIEW_REQUIRED";
-  const sufficientEvidence = new Set(authority.evidenceRelevance
-    .filter((link) => link.opportunityId === opportunity.opportunityId && link.ownerConfirmedRelevant && link.relevanceType !== "GENERAL_REFERENCE")
-    .map((link) => link.evidenceId));
-  return authority.evidenceIds.some((evidenceId) => sufficientEvidence.has(evidenceId)) ? "CURRENT" : "AUTHORITY_REVIEW_REQUIRED";
+  if (!authority || authority.decision !== opportunity.capabilityState || !authority.attestation.trim()) return "REVIEW_REQUIRED";
+  if (authority.decision === "QUALIFIED" && !authority.qualificationNotes?.trim()) return "REVIEW_REQUIRED";
+  if (hasCapabilitySpecificEvidence(opportunity, authority)) return "EVIDENCE_VERIFIED";
+  return getCapabilityEvidencePolicy(opportunity).requirement === "INDEPENDENT_EVIDENCE_REQUIRED" ? "PROOF_REQUIRED" : "OWNER_ATTESTED";
+}
+
+export function getCapabilityAuthorityStatus(opportunity: SiteOpportunity): CapabilityAuthorityStatus {
+  const assurance = getCapabilityAuthorityAssurance(opportunity);
+  if (assurance === "OWNER_ATTESTED" || assurance === "EVIDENCE_VERIFIED") return "CURRENT";
+  return assurance === "NOT_CURRENT" ? "NOT_CURRENT" : "AUTHORITY_REVIEW_REQUIRED";
 }
 
 export function canUseOpportunityAsAuthority(opportunity: SiteOpportunity): boolean {

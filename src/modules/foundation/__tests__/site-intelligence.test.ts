@@ -77,14 +77,16 @@ describe("site intelligence authority", () => {
     expect(repository.getSiteIntelligenceWorkspace(scope.siteId)?.opportunities[0]).toMatchObject({ ownerDecision: "REJECTED", capabilityState: "OWNER_VALIDATION_REQUIRED" });
   });
 
-  test("capability decisions preserve evidence requirements and do not change market decisions", async () => {
+  test("capability decisions preserve authority requirements and do not change market decisions", async () => {
     const repository = await import("../site-intelligence-repository");
     let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
     workspace = repository.startSiteIntelligence({ ...scope, expectedRevision: workspace.revision, providerReference: "provider" });
     workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: opportunity(), evidence: [evidence()] });
     workspace = repository.decideSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision: "APPROVED" });
-    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: [], notes: "Missing evidence" })).toThrow("CAPABILITY_EVIDENCE_REQUIRED");
-    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: [], notes: "Missing evidence" })).toThrow("CAPABILITY_EVIDENCE_REQUIRED");
+    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: [], notes: "Missing attestation" })).toThrow("CAPABILITY_ATTESTATION_REQUIRED");
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: [], attestation: "Rocklin Metal currently provides this capability.", notes: "" });
+    expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "VERIFIED", capabilityEvidenceIds: [], capabilityAuthorityRevisions: [expect.objectContaining({ authorityBasis: "OWNER_ATTESTATION" })] });
+    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: [], notes: "Missing attestation" })).toThrow("CAPABILITY_ATTESTATION_REQUIRED");
     workspace = repository.addCreativeInput({ ...scope, expectedRevision: workspace.revision, creativeInput: { inputId: "qualified-evidence", kind: "URL", reference: "https://owner.example/qualified", sentiment: "REFERENCE_ONLY", classification: "OWNER_SUPPLIED_REFERENCE", notes: "Qualified capability evidence.", suppliedBy: "owner", suppliedAt: "2026-09-10T00:00:00.000Z", binaryAsset: null } });
     workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "QUALIFIED", evidenceIds: ["creative:qualified-evidence"], evidenceRelevance: [{ evidenceId: "creative:qualified-evidence", relevanceType: "SERVICE_SCOPE", ownerConfirmedRelevant: true }], attestation: "Rocklin Metal provides this capability subject to the recorded limits.", notes: "Qualified scope." });
     expect(workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "QUALIFIED", capabilityEvidenceIds: ["creative:qualified-evidence"] });

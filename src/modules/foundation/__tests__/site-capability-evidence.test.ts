@@ -51,9 +51,13 @@ describe("typed capability evidence authority", () => {
     expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state, evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof"), notes: state === "QUALIFIED" ? "Selected projects." : "" })).toThrow("CAPABILITY_ATTESTATION_REQUIRED");
   });
 
-  test.each(["VERIFIED", "QUALIFIED"] as const)("%s requires capability-specific relevance", async (state) => {
+  test.each(["VERIFIED", "QUALIFIED"] as const)("ordinary %s accepts owner authority while general reference remains non-verifying", async (state) => {
     const { repository, workspace } = await prepared();
-    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state, evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof", "GENERAL_REFERENCE"), attestation: "Rocklin Metal currently provides this capability.", notes: state === "QUALIFIED" ? "Selected projects." : "" })).toThrow("CAPABILITY_SPECIFIC_RELEVANCE_REQUIRED");
+    const updated = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state, evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof", "GENERAL_REFERENCE"), attestation: "Rocklin Metal currently provides this capability.", notes: state === "QUALIFIED" ? "Selected projects." : "" });
+    const current = updated.opportunities[0];
+    const { getCapabilityAuthorityAssurance } = await import("../site-intelligence");
+    expect(getCapabilityAuthorityAssurance(current)).toBe("OWNER_ATTESTED");
+    expect(current.capabilityAuthorityRevisions?.at(-1)).toMatchObject({ authorityBasis: "OWNER_ATTESTATION", evidenceIds: ["creative:url-proof"], evidenceRelevance: [expect.objectContaining({ relevanceType: "GENERAL_REFERENCE" })] });
   });
 
   test("qualified authority requires a non-empty limitation", async () => {
@@ -61,20 +65,50 @@ describe("typed capability evidence authority", () => {
     expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state: "QUALIFIED", evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof"), attestation: "Rocklin Metal provides this capability subject to the stated limits.", notes: "  " })).toThrow("CAPABILITY_QUALIFICATION_NOTES_REQUIRED");
   });
 
-  test("one evidence record supports multiple capabilities only through independent links", async () => {
+  test("one evidence record upgrades multiple capabilities only through independent links", async () => {
     const { repository, workspace: initial } = await prepared();
     let workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: initial.revision, opportunityId: "o1", state: "VERIFIED", evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof", "PRODUCT_EXAMPLE"), attestation: "Rocklin Metal currently provides o1.", notes: "" });
-    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o2", state: "VERIFIED", evidenceIds: ["creative:url-proof"], evidenceRelevance: [], attestation: "Rocklin Metal currently provides o2.", notes: "" })).toThrow("CAPABILITY_SPECIFIC_RELEVANCE_REQUIRED");
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o2", state: "VERIFIED", evidenceIds: ["creative:url-proof"], evidenceRelevance: [], attestation: "Rocklin Metal currently provides o2.", notes: "" });
+    const { getCapabilityAuthorityAssurance } = await import("../site-intelligence");
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities[0])).toBe("EVIDENCE_VERIFIED");
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities[1])).toBe("OWNER_ATTESTED");
     workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o2", state: "VERIFIED", evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof", "FABRICATION_EXAMPLE"), attestation: "Rocklin Metal currently provides o2.", notes: "" });
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities[1])).toBe("EVIDENCE_VERIFIED");
     expect(workspace.opportunities.map((item) => item.capabilityAuthorityRevisions?.at(-1)?.opportunityId)).toEqual(["o1", "o2"]);
+  });
+
+  test("ordinary owner attestation exits legacy review and later evidence upgrades assurance", async () => {
+    const { repository, workspace: initial } = await prepared();
+    let workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: initial.revision, opportunityId: "o1", state: "VERIFIED", evidenceIds: [], evidenceRelevance: [], attestation: "Rocklin Metal currently fabricates commercial worktables.", notes: "" });
+    const { getCapabilityAuthorityAssurance, getCapabilityAuthorityStatus } = await import("../site-intelligence");
+    expect(getCapabilityAuthorityStatus(workspace.opportunities[0])).toBe("CURRENT");
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities[0])).toBe("OWNER_ATTESTED");
+    expect(workspace.opportunities[0].capabilityAuthorityRevisions?.at(-1)).toMatchObject({ authorityBasis: "OWNER_ATTESTATION", evidenceIds: [] });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "o1", state: "VERIFIED", evidenceIds: ["creative:upload-proof"], evidenceRelevance: relevance("creative:upload-proof", "PROJECT_EXAMPLE"), attestation: "Rocklin Metal currently fabricates commercial worktables.", notes: "" });
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities[0])).toBe("EVIDENCE_VERIFIED");
+    expect(workspace.opportunities[0].capabilityAuthorityRevisions).toHaveLength(2);
+    expect(workspace.opportunities[0].capabilityAuthorityRevisions?.at(-1)).toMatchObject({ authorityBasis: "OWNER_ATTESTATION_AND_EVIDENCE" });
+  });
+
+  test.each(["UL listed equipment", "NSF certified fabrication", "GMP compliant worktables", "ISO certification", "Licensed regulatory service", "Nationwide service coverage", "Authorized dealer authority"])("protected claim %s requires policy-matched evidence", async (name) => {
+    const { repository, workspace: initial } = await prepared();
+    const protectedOpportunity = { ...opportunity(`protected-${name}`), name, rationale: `${name} claim.` };
+    let workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: initial.revision, opportunity: protectedOpportunity, evidence: [] });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: protectedOpportunity.opportunityId, state: "VERIFIED", evidenceIds: [], evidenceRelevance: [], attestation: `Owner confirms ${name}.`, notes: "" });
+    const { getCapabilityAuthorityAssurance, getCapabilityAuthorityStatus } = await import("../site-intelligence");
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities.at(-1)!)).toBe("PROOF_REQUIRED");
+    expect(getCapabilityAuthorityStatus(workspace.opportunities.at(-1)!)).toBe("AUTHORITY_REVIEW_REQUIRED");
+    expect(workspace.opportunities.at(-1)?.capabilityAuthorityRevisions?.at(-1)).toMatchObject({ authorityBasis: "OWNER_ATTESTATION", evidenceIds: [] });
   });
 
   test("compliance authority requires confirmed compliance relevance, not a general creative reference", async () => {
     const { repository, workspace: initial } = await prepared();
     let workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: initial.revision, opportunity: opportunity("compliance"), evidence: [{ evidenceId: "owner-compliance", sourceReference: "owner-record://compliance", sourceType: "CONNECTED_SOURCE", observedClaim: "Owner compliance record.", retrievedAt: "2026-09-10T00:00:00.000Z", entity: "Compliance record", confidence: 1, strength: "STRONG", authority: "OWNER_SUPPLIED_AUTHORITY" }] });
-    expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "compliance", state: "VERIFIED", evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof", "GENERAL_REFERENCE"), attestation: "Current compliance capability.", notes: "" })).toThrow("CAPABILITY_SPECIFIC_RELEVANCE_REQUIRED");
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "compliance", state: "VERIFIED", evidenceIds: ["creative:url-proof"], evidenceRelevance: relevance("creative:url-proof", "GENERAL_REFERENCE"), attestation: "Current compliance capability.", notes: "" });
+    const { getCapabilityAuthorityAssurance } = await import("../site-intelligence");
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities.at(-1)!)).toBe("PROOF_REQUIRED");
     workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "compliance", state: "VERIFIED", evidenceIds: ["evidence:owner-compliance"], evidenceRelevance: relevance("evidence:owner-compliance", "SPECIFICATION_OR_COMPLIANCE_EVIDENCE"), attestation: "Current compliance capability.", notes: "" });
-    expect(workspace.opportunities.at(-1)?.capabilityState).toBe("VERIFIED");
+    expect(getCapabilityAuthorityAssurance(workspace.opportunities.at(-1)!)).toBe("EVIDENCE_VERIFIED");
   });
 
   test("invalid, discovery, rejected, and cross-site evidence fail closed", async () => {

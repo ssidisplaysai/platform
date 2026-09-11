@@ -20,7 +20,7 @@ import type {
   SiteResearchExecution,
   SiteStrategyProposal,
 } from "./site-intelligence";
-import { hasVerifiedCapability, SITE_INTELLIGENCE_REFERENCE_LIMITS } from "./site-intelligence";
+import { getCapabilityEvidencePolicy, hasVerifiedCapability, isEvidenceSufficientForCapabilityPolicy, SITE_INTELLIGENCE_REFERENCE_LIMITS } from "./site-intelligence";
 
 const NAMESPACE = "site-intelligence-repository";
 type State = { workspaces: SiteIntelligenceWorkspace[] };
@@ -134,28 +134,33 @@ export function decideSiteOpportunity(input: { siteId: string; organizationId: s
 }
 
 export function validateOpportunityCapability(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; opportunityId: string; state: CapabilityEvidenceState; evidenceIds: string[]; evidenceRelevance?: Array<Pick<CapabilityEvidenceRelevance, "evidenceId" | "relevanceType" | "ownerConfirmedRelevant">>; attestation?: string; notes: string }) {
-  const resolvedEvidence = input.state === "VERIFIED" || input.state === "QUALIFIED" ? resolveCapabilityEvidenceReferences({ organizationId: input.organizationId, siteId: input.siteId, referenceIds: input.evidenceIds }) : [];
+  const currentDecision = input.state === "VERIFIED" || input.state === "QUALIFIED";
+  const resolvedEvidence = currentDecision && input.evidenceIds.length ? resolveCapabilityEvidenceReferences({ organizationId: input.organizationId, siteId: input.siteId, referenceIds: input.evidenceIds }) : [];
   return update({ ...input, action: `CAPABILITY_${input.state}`, mutate(workspace) {
     if (!["INSUFFICIENT", "OWNER_VALIDATION_REQUIRED", "VERIFIED", "QUALIFIED", "REJECTED", "FUTURE_CAPABILITY"].includes(input.state)) throw new Error("CAPABILITY_STATE_INVALID");
     const opportunity = workspace.opportunities.find((candidate) => candidate.opportunityId === input.opportunityId);
     if (!opportunity) throw new Error("OPPORTUNITY_NOT_FOUND");
-    if ((input.state === "VERIFIED" || input.state === "QUALIFIED") && resolvedEvidence.length === 0) throw new Error("CAPABILITY_EVIDENCE_REQUIRED");
+    const evidencePolicy = getCapabilityEvidencePolicy(opportunity);
     if ((input.state === "VERIFIED" || input.state === "QUALIFIED" || input.state === "FUTURE_CAPABILITY") && !input.attestation?.trim()) throw new Error("CAPABILITY_ATTESTATION_REQUIRED");
     if (input.state === "QUALIFIED" && !input.notes.trim()) throw new Error("CAPABILITY_QUALIFICATION_NOTES_REQUIRED");
     const timestamp = now();
     const resolvedIds = new Set(resolvedEvidence.map((item) => item.referenceId));
-    const relevance = (input.evidenceRelevance ?? []).map((link): CapabilityEvidenceRelevance => {
+    const suppliedRelevance = (input.evidenceRelevance ?? []).map((link): CapabilityEvidenceRelevance => {
       if (!resolvedIds.has(link.evidenceId)) throw new Error("CAPABILITY_RELEVANCE_EVIDENCE_MISMATCH");
       return { ...link, opportunityId: input.opportunityId, linkedBy: input.actor, linkedAt: timestamp };
     });
-    const hasSufficientRelevance = relevance.some((link) => link.ownerConfirmedRelevant && link.relevanceType !== "GENERAL_REFERENCE");
-    if ((input.state === "VERIFIED" || input.state === "QUALIFIED") && !hasSufficientRelevance) throw new Error("CAPABILITY_SPECIFIC_RELEVANCE_REQUIRED");
     const previousEvidenceIds = opportunity.capabilityEvidenceIds;
+    const previousAuthority = opportunity.capabilityAuthorityRevisions?.at(-1);
+    const evidenceIds = currentDecision && input.evidenceIds.length === 0 ? previousEvidenceIds : resolvedEvidence.map((item) => item.referenceId);
+    const relevance = currentDecision && input.evidenceIds.length === 0
+      ? (previousAuthority?.evidenceRelevance ?? []).map((link) => ({ ...link }))
+      : suppliedRelevance;
+    const hasSufficientRelevance = relevance.some((link) => evidenceIds.includes(link.evidenceId) && link.opportunityId === input.opportunityId && link.ownerConfirmedRelevant && isEvidenceSufficientForCapabilityPolicy(evidencePolicy, link.relevanceType));
     opportunity.capabilityState = input.state;
-    opportunity.capabilityEvidenceIds = resolvedEvidence.map((item) => item.referenceId);
+    opportunity.capabilityEvidenceIds = currentDecision ? evidenceIds : [];
     opportunity.capabilityNotes = input.notes.trim() || null;
     opportunity.capabilityAuthorityRevisions ??= [];
-    opportunity.capabilityAuthorityRevisions.push({ organizationId: input.organizationId, siteId: input.siteId, opportunityId: input.opportunityId, decision: input.state, evidenceIds: input.state === "OWNER_VALIDATION_REQUIRED" ? previousEvidenceIds : resolvedEvidence.map((item) => item.referenceId), evidenceRelevance: relevance, attestation: input.attestation?.trim() ?? "", qualificationNotes: input.state === "QUALIFIED" ? input.notes.trim() : null, decidedBy: input.actor, decidedAt: timestamp, revision: opportunity.capabilityAuthorityRevisions.length + 1 });
+    opportunity.capabilityAuthorityRevisions.push({ organizationId: input.organizationId, siteId: input.siteId, opportunityId: input.opportunityId, decision: input.state, evidenceIds: input.state === "OWNER_VALIDATION_REQUIRED" ? previousEvidenceIds : currentDecision ? evidenceIds : [], evidenceRelevance: relevance, attestation: input.attestation?.trim() ?? "", authorityBasis: currentDecision ? hasSufficientRelevance ? "OWNER_ATTESTATION_AND_EVIDENCE" : "OWNER_ATTESTATION" : undefined, qualificationNotes: input.state === "QUALIFIED" ? input.notes.trim() : null, decidedBy: input.actor, decidedAt: timestamp, revision: opportunity.capabilityAuthorityRevisions.length + 1 });
   }});
 }
 

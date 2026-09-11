@@ -2,7 +2,9 @@ import type {
   CapabilityEvidenceOption,
   CapabilityEvidenceRelevanceType,
   CapabilityEvidenceState,
+  SiteOpportunity,
 } from "./site-intelligence";
+import { getCapabilityAuthorityAssurance, getCapabilityEvidencePolicy, isEvidenceSufficientForCapabilityPolicy } from "./site-intelligence";
 
 export type OwnerCapabilityChoice = "CURRENT" | "LIMITED" | "FUTURE" | "NO";
 
@@ -82,4 +84,64 @@ export function hasSpecificCapabilityProof(
     const relevance = evidenceRelevance[evidenceId];
     return relevance !== undefined && relevance !== "GENERAL_REFERENCE";
   });
+}
+
+export type OwnerCapabilityPreview = {
+  label: "REVIEW REQUIRED" | "OWNER CONFIRMED" | "VERIFIED" | "PROOF REQUIRED" | "QUALIFIED" | "NOT A CURRENT CAPABILITY" | "NOT OFFERED" | "NEEDS OWNER REVIEW";
+  ownerConfirmation: "Confirmed" | "Needed" | "Not required";
+  supportingProof: "Verified" | "Needed" | "Not added" | "Not required";
+  canSubmit: boolean;
+  proofRequired: boolean;
+  proofReason: string | null;
+};
+
+export function getOwnerCapabilityPreview(input: {
+  opportunity: SiteOpportunity;
+  choice: OwnerCapabilityChoice | null;
+  ownerConfirmed: boolean;
+  selectedEvidence: readonly string[];
+  evidenceRelevance: Readonly<Record<string, CapabilityEvidenceRelevanceType>>;
+  limitations: string;
+}): OwnerCapabilityPreview {
+  if (!input.choice) {
+    const assurance = getCapabilityAuthorityAssurance(input.opportunity);
+    return {
+      label: assurance === "OWNER_ATTESTED" ? "OWNER CONFIRMED" : assurance === "EVIDENCE_VERIFIED" ? "VERIFIED" : assurance === "PROOF_REQUIRED" ? "PROOF REQUIRED" : assurance === "NOT_CURRENT" ? "NEEDS OWNER REVIEW" : "REVIEW REQUIRED",
+      ownerConfirmation: assurance === "OWNER_ATTESTED" || assurance === "EVIDENCE_VERIFIED" || assurance === "PROOF_REQUIRED" ? "Confirmed" : "Needed",
+      supportingProof: assurance === "EVIDENCE_VERIFIED" ? "Verified" : assurance === "PROOF_REQUIRED" ? "Needed" : assurance === "OWNER_ATTESTED" ? "Not added" : "Not required",
+      canSubmit: false,
+      proofRequired: assurance === "PROOF_REQUIRED",
+      proofReason: assurance === "PROOF_REQUIRED" ? getCapabilityEvidencePolicy(input.opportunity).reason : null,
+    };
+  }
+
+  const state = canonicalCapabilityState(input.choice);
+  const currentDecision = state === "VERIFIED" || state === "QUALIFIED";
+  const policy = getCapabilityEvidencePolicy(input.opportunity);
+  const specificProof = input.selectedEvidence.some((evidenceId) => {
+    const relevance = input.evidenceRelevance[evidenceId];
+    return relevance !== undefined && isEvidenceSufficientForCapabilityPolicy(policy, relevance);
+  });
+  const proofRequired = currentDecision && policy.requirement === "INDEPENDENT_EVIDENCE_REQUIRED";
+  const confirmationRequired = currentDecision || state === "FUTURE_CAPABILITY";
+  const canSubmit = (!confirmationRequired || input.ownerConfirmed)
+    && (state !== "QUALIFIED" || Boolean(input.limitations.trim()));
+  const label = state === "FUTURE_CAPABILITY"
+    ? "NOT A CURRENT CAPABILITY"
+    : state === "REJECTED"
+      ? "NOT OFFERED"
+      : proofRequired && !specificProof
+        ? "PROOF REQUIRED"
+        : input.ownerConfirmed
+          ? specificProof ? state === "QUALIFIED" ? "QUALIFIED" : "VERIFIED" : state === "QUALIFIED" ? "QUALIFIED" : "OWNER CONFIRMED"
+          : "REVIEW REQUIRED";
+
+  return {
+    label,
+    ownerConfirmation: confirmationRequired ? input.ownerConfirmed ? "Confirmed" : "Needed" : "Not required",
+    supportingProof: specificProof ? "Verified" : proofRequired ? "Needed" : currentDecision ? "Not added" : "Not required",
+    canSubmit,
+    proofRequired,
+    proofReason: proofRequired ? policy.reason : null,
+  };
 }

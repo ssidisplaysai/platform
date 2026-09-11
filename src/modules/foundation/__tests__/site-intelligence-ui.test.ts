@@ -45,7 +45,7 @@ describe("site intelligence UI contract", () => {
   });
 
   test("normal capability flow uses owner language while preserving advanced canonical evidence details", () => {
-    for (const text of ["How can we support this?", "What does this show?", "Advanced evidence details", "General references do not establish current capability", "What are the limitations?", "SAVE CAPABILITY REVIEW"]) expect(ownerWorkflow).toContain(text);
+    for (const text of ["How can we support this?", "What does this show?", "Advanced evidence details", "General references do not establish independent proof", "What are the limitations?", "SAVE CAPABILITY REVIEW"]) expect(ownerWorkflow).toContain(text);
     expect(ownerWorkflow).toContain('type="checkbox"');
     expect(ownerWorkflow).toContain("OWNER_EVIDENCE_CHOICES");
     expect(ownerWorkflow).toContain("CAPABILITY_RELEVANCE_TYPES");
@@ -58,7 +58,10 @@ describe("site intelligence UI contract", () => {
     expect(ownerWorkflow).toContain("REVIEW REQUIRED");
     expect(ownerWorkflow).toContain("proof requirements were upgraded");
     expect(ownerWorkflow).toContain('getCapabilityAuthorityStatus(opportunity) === "AUTHORITY_REVIEW_REQUIRED"');
-    expect(ownerWorkflow).toContain("Owner confirmation is your attestation. Current capability also requires selected supporting proof.");
+    expect(ownerWorkflow).toContain("Owner confirmation is recorded as owner authority.");
+    expect(ownerWorkflow).toContain("Independent proof may be added now or later.");
+    expect(ownerWorkflow).toContain("This protected claim also requires independent proof.");
+    expect(ownerWorkflow).toContain("latestAuthority?.attestation.trim()");
   });
 
   test("rich strategy review renders all canonical owner-facing dimensions and valid state actions", () => {

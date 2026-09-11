@@ -91,7 +91,7 @@ describe("site intelligence API boundary", () => {
     expect(body.workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", decidedBy: "site-owner", capabilityState: "OWNER_VALIDATION_REQUIRED", capabilityEvidenceIds: [] });
   });
 
-  test("capability verification fails visibly without evidence at the API boundary", async () => {
+  test("capability verification fails visibly without owner attestation at the API boundary", async () => {
     const repository = await import("../site-intelligence-repository");
     let workspace = repository.ensureSiteIntelligenceWorkspace({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", publicBrandIdentity: "LED Display Warehouse", actor: "owner" });
     workspace = repository.startSiteIntelligence({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", providerReference: "test" });
@@ -99,8 +99,20 @@ describe("site intelligence API boundary", () => {
     const route = await import("@/app/api/sites/[siteId]/intelligence/route");
     const response = await route.POST(request("POST", "led-display-warehouse", { action: "VALIDATE_CAPABILITY", expectedRevision: workspace.revision, opportunityId: "o1", state: "VERIFIED", evidenceIds: [], notes: "Missing evidence" }), context);
     expect(response.status).toBe(422);
-    expect((await response.json()).error).toBe("CAPABILITY_EVIDENCE_REQUIRED");
+    expect((await response.json()).error).toBe("CAPABILITY_ATTESTATION_REQUIRED");
     expect(repository.getSiteIntelligenceWorkspace("site-led-display-warehouse-production")?.opportunities[0]).toMatchObject({ ownerDecision: "PENDING", capabilityState: "OWNER_VALIDATION_REQUIRED" });
+  });
+
+  test("ordinary owner-attested capability saves through scoped API without independent evidence", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", publicBrandIdentity: "LED Display Warehouse", actor: "owner" });
+    workspace = repository.startSiteIntelligence({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", providerReference: "test" });
+    workspace = repository.recordSiteOpportunity({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", evidence: [], opportunity: { opportunityId: "ordinary-capability", name: "Commercial stainless worktables", category: "fabrication", buyer: "commercial buyer", problemUseCase: "worktable fabrication", commercialValue: "HIGH", demandSignal: "signal", competitionLevel: "UNKNOWN", organizationFit: "HIGH", evidenceStrength: "MODERATE", confidence: 0.8, geographicScope: "regional", nationalRolloutPotential: false, recurringReplacementPotential: false, seoContentOpportunity: "candidate", rationale: "Ordinary operational capability.", competitorEntities: [], evidenceIds: [], capabilityState: "OWNER_VALIDATION_REQUIRED", capabilityEvidenceIds: [], capabilityNotes: null, recommendation: "review", ownerDecision: "APPROVED", decidedBy: "owner", decidedAt: "2026-09-10T00:01:00.000Z" } });
+    const route = await import("@/app/api/sites/[siteId]/intelligence/route");
+    const response = await route.POST(request("POST", "led-display-warehouse", { action: "VALIDATE_CAPABILITY", expectedRevision: workspace.revision, opportunityId: "ordinary-capability", state: "VERIFIED", evidenceIds: [], evidenceRelevance: [], attestation: "LED Display Warehouse currently fabricates commercial stainless worktables.", actor: "site-owner" }), context);
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body.workspace.opportunities[0]).toMatchObject({ ownerDecision: "APPROVED", capabilityState: "VERIFIED", capabilityEvidenceIds: [], capabilityAuthorityRevisions: [expect.objectContaining({ authorityBasis: "OWNER_ATTESTATION", evidenceIds: [] })] });
   });
 
   test("GENERATE_STRATEGY creates one proposed revision through scoped API authority", async () => {
