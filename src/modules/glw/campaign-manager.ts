@@ -55,6 +55,7 @@ function campaignProductName(campaign: GlwCampaign): string {
 export function summarizeCampaignTargets(targets: readonly GlwCampaignTarget[]): GlwCampaignTargetQueueSummary {
   return {
     total: targets.length,
+    prepared: targets.filter((target) => target.status === "prepared").length,
     referenceComplete: targets.filter((target) => target.status === "reference_complete").length,
     queued: targets.filter((target) => target.status === "queued").length,
     running: targets.filter((target) => target.status === "running").length,
@@ -89,7 +90,7 @@ export function projectGlwCampaign(
     displayState,
     completedAt,
     completedCount: summary.referenceComplete + summary.draftReady + summary.published,
-    unresolvedCount: summary.queued + summary.running + summary.failed + summary.skipped,
+    unresolvedCount: summary.prepared + summary.queued + summary.running + summary.failed + summary.skipped,
   };
 }
 

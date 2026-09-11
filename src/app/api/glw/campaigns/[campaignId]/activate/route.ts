@@ -22,6 +22,7 @@ import {
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { recordGlwCampaignLaunchActivated, requireGlwCampaignLaunchReservationOwnership } from "@/modules/glw/campaign-launch-authority";
+import { readGlwCampaignLaunchPromotion } from "@/modules/glw/campaign-launch-capability";
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -98,6 +99,11 @@ export async function POST(
       { error: "Forbidden" },
       { status: 403 },
     );
+  }
+
+  const promotion = readGlwCampaignLaunchPromotion();
+  if (!promotion.available) {
+    return NextResponse.json({ error: promotion.reason, code: "PRODUCTION_PROMOTION_REQUIRED", promotion: { state: promotion.state } }, { status: 503 });
   }
 
   const { campaignId } = await context.params;

@@ -10,6 +10,7 @@ const TARGET_FILE = "glw-campaign-target-repository.json";
 
 export type GlwPersistedCampaignStatus = "draft" | "active" | "paused" | "complete";
 export type GlwPersistedCampaignTargetStatus =
+  | "prepared"
   | "reference_complete"
   | "queued"
   | "running"
@@ -112,7 +113,7 @@ function normalizeCitySlug(value?: string | null): string | null {
 
 function retainsOwnership(target: GlwPersistedCampaignTarget): boolean {
   // Runtime recovery keeps failed/skipped targets durable; no existing transition releases ownership.
-  return ["reference_complete", "queued", "running", "draft_ready", "published", "failed", "skipped"].includes(target.status);
+  return ["prepared", "reference_complete", "queued", "running", "draft_ready", "published", "failed", "skipped"].includes(target.status);
 }
 
 export function getGlwCampaignOwnershipForTarget(input: {

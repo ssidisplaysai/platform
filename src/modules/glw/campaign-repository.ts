@@ -198,6 +198,15 @@ export function createGlwCampaign(input: NewGlwCampaignInput): {
   persistState();
   return { campaign: deepClone(campaign), errors: [] };
 }
+
+export function deleteUnactivatedGlwCampaign(campaignId: string): boolean {
+  loadState();
+  const campaign = campaignStore.get(campaignId);
+  if (!campaign || campaign.status !== "draft") return false;
+  campaignStore.delete(campaignId);
+  persistState();
+  return true;
+}
 export function activateGlwCampaign(campaignId: string): {
   campaign: GlwCampaign | null;
   errors: readonly string[];

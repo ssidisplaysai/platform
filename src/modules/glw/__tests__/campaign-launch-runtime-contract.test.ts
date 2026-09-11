@@ -76,4 +76,15 @@ describe("campaign launch runtime endpoint and lifecycle contract", () => {
     expect(scheduler).toContain("buildGlwCampaignProductionGenerationForm");
     expect(scheduler).toContain("recordGlwCampaignLaunchDispatch");
   });
+
+  test("checks production promotion before activation can resolve or mutate a campaign", () => {
+    const activation = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/activate/route.ts"), "utf8");
+    const promotion = activation.indexOf("const promotion = readGlwCampaignLaunchPromotion()");
+    const campaignLookup = activation.indexOf("const campaign = listGlwCampaigns().find(", promotion);
+    const mutation = activation.indexOf("const activation = activateGlwCampaign(");
+    expect(promotion).toBeGreaterThan(-1);
+    expect(promotion).toBeLessThan(campaignLookup);
+    expect(promotion).toBeLessThan(mutation);
+    expect(activation.slice(promotion, campaignLookup)).toContain("PRODUCTION_PROMOTION_REQUIRED");
+  });
 });

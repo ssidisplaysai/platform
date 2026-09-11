@@ -50,7 +50,7 @@ describe("GLW campaign persistence authority", () => {
     expect(ownership([]).classification).toBe("AVAILABLE");
   });
 
-  test.each(["queued", "running", "reference_complete", "draft_ready", "published", "skipped"] as const)("retains active campaign ownership for %s targets", (status) => {
+  test.each(["prepared", "queued", "running", "reference_complete", "draft_ready", "published", "skipped"] as const)("retains active campaign ownership for %s targets", (status) => {
     expect(ownership([target({ status })])).toMatchObject({ classification: "OWNED_BY_ACTIVE_CAMPAIGN", campaignId: campaign.campaignId, campaignState: "active", targetState: status });
   });
 

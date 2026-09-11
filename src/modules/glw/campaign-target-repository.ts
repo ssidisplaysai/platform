@@ -6,10 +6,12 @@ import {
   savePersistedState,
 } from "@/modules/foundation/foundation-persistence";
 import type { GlwCampaignCityTarget } from "@/modules/glw/campaign-types";
+import type { GlwCampaignPublicationPolicy } from "@/modules/glw/campaign-types";
 
 const PERSISTENCE_NAMESPACE = "glw-campaign-target-repository";
 
 export type GlwCampaignTargetStatus =
+  | "prepared"
   | "reference_complete"
   | "queued"
   | "running"
@@ -24,9 +26,15 @@ export type GlwCampaignTarget = {
   organizationId: string;
   siteId: string;
   productId: string;
+  pageType?: "state_service" | "city_service";
   stateCode: string;
   citySlug?: string | null;
   cityName?: string | null;
+  applicationPath?: string | null;
+  canonicalPath?: string | null;
+  canonicalParentId?: string | null;
+  parentCampaignId?: string | null;
+  publicationPolicy?: GlwCampaignPublicationPolicy;
   status: GlwCampaignTargetStatus;
   jobId: string | null;
   wordpressObjectId: string | null;
@@ -127,6 +135,88 @@ export function listAllGlwCampaignTargets(): readonly GlwCampaignTarget[] {
   return Array.from(targetStore.values(), (target) => deepClone(target));
 }
 
+export function prepareGlwCityCampaignTargets(input: {
+  campaignId: string;
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  parentCampaignId: string | null;
+  publicationPolicy: GlwCampaignPublicationPolicy;
+  productSlug: string;
+  stateSlug: string;
+  canonicalParentId: string | null;
+  cityTargets: readonly GlwCampaignCityTarget[];
+}): readonly GlwCampaignTarget[] {
+  loadState();
+  const expected = input.cityTargets.map((target) => ({
+    stateCode: target.stateCode.trim().toUpperCase(),
+    citySlug: normalizeCitySlug(target.citySlug),
+    cityName: target.cityName.trim(),
+  }));
+  if (expected.some((target) => !target.citySlug || !target.cityName)) {
+    throw new Error("Prepared city targets require canonical city identity.");
+  }
+
+  const existing = listGlwCampaignTargets(input.campaignId);
+  if (existing.length > 0) {
+    const exact = existing.length === expected.length && expected.every((target) =>
+      existing.some((candidate) =>
+        candidate.status === "prepared"
+        && candidate.organizationId === input.organizationId
+        && candidate.siteId === input.siteId
+        && candidate.productId === input.productId
+        && candidate.stateCode === target.stateCode
+        && candidate.citySlug === target.citySlug));
+    if (!exact) throw new Error("Campaign targets already exist with a different prepared identity.");
+    return existing;
+  }
+
+  for (const target of expected) {
+    const conflict = Array.from(targetStore.values()).find((candidate) =>
+      candidate.organizationId === input.organizationId
+      && candidate.siteId === input.siteId
+      && candidate.productId === input.productId
+      && candidate.stateCode === target.stateCode
+      && candidate.citySlug === target.citySlug);
+    if (conflict) throw new Error(`Canonical target is already owned by campaign ${conflict.campaignId}.`);
+  }
+
+  const timestamp = new Date().toISOString();
+  for (const target of expected) {
+    const applicationPath = [input.productSlug, input.stateSlug, target.citySlug].join("/");
+    const prepared: GlwCampaignTarget = {
+      targetId: `target-${input.campaignId}-${target.stateCode.toLowerCase()}-${target.citySlug}`,
+      campaignId: input.campaignId,
+      organizationId: input.organizationId,
+      siteId: input.siteId,
+      productId: input.productId,
+      pageType: "city_service",
+      stateCode: target.stateCode,
+      citySlug: target.citySlug,
+      cityName: target.cityName,
+      applicationPath,
+      canonicalPath: applicationPath,
+      canonicalParentId: input.canonicalParentId,
+      parentCampaignId: input.parentCampaignId,
+      publicationPolicy: input.publicationPolicy,
+      status: "prepared",
+      jobId: null,
+      wordpressObjectId: null,
+      attemptCount: 0,
+      lastError: null,
+      leaseId: null,
+      leasedAt: null,
+      leaseExpiresAt: null,
+      dispatchDate: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    targetStore.set(keyForTarget(prepared), prepared);
+  }
+  persistState();
+  return listGlwCampaignTargets(input.campaignId);
+}
+
 export function initializeGlwCampaignTargets(input: {
   campaignId: string;
   organizationId: string;
@@ -214,6 +304,24 @@ export function initializeGlwCityCampaignTargets(input: {
       );
     }
 
+    if (existing.every((target) => target.status === "prepared")) {
+      const referenceStateCode = input.referenceTarget.stateCode.trim().toUpperCase();
+      const referenceCitySlug = normalizeCitySlug(input.referenceTarget.citySlug);
+      const timestamp = new Date().toISOString();
+      for (const target of existing) {
+        const isReference = target.stateCode === referenceStateCode && target.citySlug === referenceCitySlug;
+        targetStore.set(keyForTarget(target), {
+          ...target,
+          status: isReference ? "reference_complete" : "queued",
+          jobId: isReference ? input.referenceJobId : null,
+          wordpressObjectId: isReference ? input.referenceWordpressObjectId : null,
+          attemptCount: isReference ? 1 : 0,
+          updatedAt: timestamp,
+        });
+      }
+      persistState();
+      return listGlwCampaignTargets(input.campaignId);
+    }
     return existing;
   }
 
@@ -276,6 +384,7 @@ export function initializeGlwCityCampaignTargets(input: {
 
 export type GlwCampaignTargetQueueSummary = {
   total: number;
+  prepared: number;
   referenceComplete: number;
   queued: number;
   running: number;
@@ -292,6 +401,7 @@ export function summarizeGlwCampaignTargets(
 
   return {
     total: targets.length,
+    prepared: targets.filter((target) => target.status === "prepared").length,
     referenceComplete: targets.filter(
       (target) => target.status === "reference_complete",
     ).length,
