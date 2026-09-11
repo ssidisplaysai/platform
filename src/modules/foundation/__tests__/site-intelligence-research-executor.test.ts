@@ -52,6 +52,12 @@ describe("site intelligence bounded research executor", () => {
     expect(recovered.opportunities[0]).toMatchObject({ capabilityState: "OWNER_VALIDATION_REQUIRED", ownerDecision: "PENDING", decidedBy: null, decidedAt: null });
   });
 
+  test("persists provider execution receipt metadata on success", async () => {
+    const workspace = await started(); const executor = await import("../site-intelligence-research-executor");
+    const result = await executor.executeSiteIntelligenceResearch({ authority, provider: { providerId: "test", async execute({ executionId }) { return { ...output(executionId), provider: { providerExecutionId: "provider-123", completedAt: "2026-09-10T00:01:00.000Z" } }; } }, actor: "owner", expectedRevision: workspace.revision, maxAttempts: 1 });
+    expect(result.researchExecutions[0]).toMatchObject({ providerExecutionId: "provider-123", providerCompletedAt: "2026-09-10T00:01:00.000Z" });
+  });
+
   test("Research More creates a continuation scoped to one opportunity", async () => {
     let workspace = await started(); const executor = await import("../site-intelligence-research-executor"); const focuses: Array<string | null> = [];
     workspace = await executor.executeSiteIntelligenceResearch({ authority, provider: { providerId: "test", async execute({ executionId }) { return output(executionId); } }, actor: "owner", expectedRevision: workspace.revision });

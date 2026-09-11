@@ -5,7 +5,7 @@ import type { SiteIntelligenceExecutionMode } from "./site-intelligence-provider
 import { queueSiteResearchExecution, updateSiteResearchExecution } from "./site-intelligence-repository";
 
 export type SiteResearchAuthority = { organizationId: string; siteId: string; domain: string; publicBrandIdentity: string; brandProfileId: string; seoProfileId: string; promptProfileId: string; imageProfileId: string };
-export type SiteResearchProviderOutput = { organizationId: string; siteId: string; executionId: string; evidence: SiteIntelligenceEvidence[]; opportunities: SiteOpportunity[] };
+export type SiteResearchProviderOutput = { organizationId: string; siteId: string; executionId: string; provider?: { providerExecutionId: string; completedAt: string }; evidence: SiteIntelligenceEvidence[]; opportunities: SiteOpportunity[] };
 export type SiteResearchProvider = { providerId: string; execute(input: { executionId: string; executionMode: SiteIntelligenceExecutionMode; authority: SiteResearchAuthority; focusOpportunityId: string | null; signal: AbortSignal }): Promise<SiteResearchProviderOutput> };
 
 function validateOutput(output: SiteResearchProviderOutput, executionId: string, authority: SiteResearchAuthority) {
@@ -37,7 +37,7 @@ export async function executeSiteIntelligenceResearch(input: { authority: SiteRe
     try {
       const output = validateOutput(await input.provider.execute({ executionId: execution.executionId, executionMode, authority: input.authority, focusOpportunityId: input.focusOpportunityId ?? null, signal: controller.signal }), execution.executionId, input.authority);
       clearTimeout(timeout);
-      return updateSiteResearchExecution({ organizationId: input.authority.organizationId, siteId: input.authority.siteId, expectedRevision: workspace.revision, actor: input.actor, reason: "Evidence-backed research ready for owner review.", executionId: execution.executionId, state: "READY_FOR_REVIEW", attemptCount: attempt, evidence: output.evidence, opportunities: output.opportunities });
+      return updateSiteResearchExecution({ organizationId: input.authority.organizationId, siteId: input.authority.siteId, expectedRevision: workspace.revision, actor: input.actor, reason: "Evidence-backed research ready for owner review.", executionId: execution.executionId, state: "READY_FOR_REVIEW", attemptCount: attempt, providerExecutionId: output.provider?.providerExecutionId, providerCompletedAt: output.provider?.completedAt, evidence: output.evidence, opportunities: output.opportunities });
     } catch (error) {
       clearTimeout(timeout);
       if (attempt === execution.maxAttempts) return updateSiteResearchExecution({ organizationId: input.authority.organizationId, siteId: input.authority.siteId, expectedRevision: workspace.revision, actor: input.actor, reason: "Bounded research attempts exhausted.", executionId: execution.executionId, state: "RECOVERABLE", attemptCount: attempt, errorCode: providerErrorCode(error), errorMessage: error instanceof Error ? error.message : "Provider failed." });

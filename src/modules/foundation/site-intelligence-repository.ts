@@ -284,16 +284,18 @@ export function queueSiteResearchExecution(input: { siteId: string; organization
   const executionId = input.kind === "INITIAL" ? `site-research-${input.siteId}-initial` : `site-research-${input.siteId}-${input.focusOpportunityId}-${executions.filter((execution) => execution.focusOpportunityId === input.focusOpportunityId).length + 1}`;
   return update({ ...input, action: "RESEARCH_EXECUTION_QUEUED", mutate(workspace) {
     workspace.researchExecutions ??= [];
-    workspace.researchExecutions.push({ executionId, organizationId: input.organizationId, siteId: input.siteId, kind: input.kind, focusOpportunityId: input.focusOpportunityId ?? null, state: "QUEUED", providerReference: input.providerReference, attemptCount: 0, maxAttempts: Math.min(Math.max(input.maxAttempts, 1), 2), timeoutMs: Math.min(Math.max(input.timeoutMs, 60_000), 300_000), createdAt: now(), startedAt: null, completedAt: null, errorCode: null, errorMessage: null, evidenceCount: 0, opportunityCount: 0 });
+    workspace.researchExecutions.push({ executionId, organizationId: input.organizationId, siteId: input.siteId, kind: input.kind, focusOpportunityId: input.focusOpportunityId ?? null, state: "QUEUED", providerReference: input.providerReference, providerExecutionId: null, providerCompletedAt: null, attemptCount: 0, maxAttempts: Math.min(Math.max(input.maxAttempts, 1), 2), timeoutMs: Math.min(Math.max(input.timeoutMs, 60_000), 300_000), createdAt: now(), startedAt: null, completedAt: null, errorCode: null, errorMessage: null, evidenceCount: 0, opportunityCount: 0 });
   }});
 }
 
-export function updateSiteResearchExecution(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; executionId: string; state: SiteResearchExecution["state"]; attemptCount?: number; errorCode?: string | null; errorMessage?: string | null; evidence?: SiteIntelligenceEvidence[]; opportunities?: SiteOpportunity[] }) {
+export function updateSiteResearchExecution(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; executionId: string; state: SiteResearchExecution["state"]; attemptCount?: number; errorCode?: string | null; errorMessage?: string | null; providerExecutionId?: string; providerCompletedAt?: string; evidence?: SiteIntelligenceEvidence[]; opportunities?: SiteOpportunity[] }) {
   return update({ ...input, action: `RESEARCH_EXECUTION_${input.state}`, mutate(workspace) {
     const execution = (workspace.researchExecutions ?? []).find((candidate) => candidate.executionId === input.executionId);
     if (!execution) throw new Error("RESEARCH_EXECUTION_NOT_FOUND");
     execution.state = input.state;
     if (input.attemptCount !== undefined) execution.attemptCount = input.attemptCount;
+    if (input.providerExecutionId !== undefined) execution.providerExecutionId = input.providerExecutionId;
+    if (input.providerCompletedAt !== undefined) execution.providerCompletedAt = input.providerCompletedAt;
     execution.errorCode = input.errorCode ?? null; execution.errorMessage = input.errorMessage ?? null;
     if (input.state === "RESEARCHING" && !execution.startedAt) execution.startedAt = now();
     if (["READY_FOR_REVIEW", "FAILED", "RECOVERABLE"].includes(input.state)) execution.completedAt = now();

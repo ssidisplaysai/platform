@@ -191,6 +191,8 @@ export type SiteResearchExecution = {
   focusOpportunityId: string | null;
   state: SiteResearchExecutionState;
   providerReference: string;
+  providerExecutionId?: string | null;
+  providerCompletedAt?: string | null;
   attemptCount: number;
   maxAttempts: number;
   timeoutMs: number;
