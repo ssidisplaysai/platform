@@ -27,7 +27,10 @@ export type GlwLocalReferenceDraft = {
   internalLinks: readonly { label: string; url: string }[];
   image: {
     required: boolean;
-    status: "OWNER_ASSET_CANDIDATE" | "GENERATED_VISUAL_CANDIDATE" | "MISSING";
+    requirementPurpose?: "PROJECTOR_ENCLOSURE_APPLICATION_VISUAL";
+    candidateId?: string | null;
+    candidateRevision?: number | null;
+    status: "OWNER_ASSET_CANDIDATE" | "GENERATED_VISUAL_CANDIDATE" | "READY_FOR_OWNER_REVIEW" | "APPROVED" | "REJECTED" | "MISSING";
     assetReference: string | null;
     classification: "OWNER_ASSET" | "GENERATED_VISUAL" | null;
     altText: string | null;
@@ -123,8 +126,47 @@ export function approveGlwLocalReferenceForMaterialization(input: {
   if (!existing || existing.status !== "READY_FOR_OWNER_REVIEW") {
     throw new Error("Only a review-ready local reference can be approved.");
   }
+  if (existing.image.required && (!existing.image.candidateId || existing.image.status !== "APPROVED" || !existing.image.ownerApproved)) {
+    throw new Error("Required reference image must be owner-approved before reference approval.");
+  }
   const draft = { ...existing, status: "OWNER_APPROVED_LOCAL" as const, updatedAt: new Date().toISOString() };
   store.set(referenceDraftId, draft);
   persist();
   return deepClone(draft);
+}
+
+export function updateGlwLocalReferenceImage(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug: string;
+  candidateId: string;
+  candidateRevision: number;
+  status: "READY_FOR_OWNER_REVIEW" | "APPROVED" | "REJECTED";
+  sourceType: "GENERATED_VISUAL" | "OWNER_ASSET";
+  assetReference: string;
+  altText: string;
+}): GlwLocalReferenceDraft {
+  load();
+  const referenceDraftId = id(input.campaignId, input.stateCode, input.citySlug);
+  const existing = store.get(referenceDraftId);
+  if (!existing) throw new Error("Local campaign reference was not found.");
+  const updated: GlwLocalReferenceDraft = {
+    ...existing,
+    image: {
+      ...existing.image,
+      required: true,
+      requirementPurpose: "PROJECTOR_ENCLOSURE_APPLICATION_VISUAL",
+      candidateId: input.candidateId,
+      candidateRevision: input.candidateRevision,
+      status: input.status,
+      assetReference: input.assetReference,
+      classification: input.sourceType,
+      altText: input.altText,
+      ownerApproved: input.status === "APPROVED",
+    },
+    updatedAt: new Date().toISOString(),
+  };
+  store.set(referenceDraftId, updated);
+  persist();
+  return deepClone(updated);
 }

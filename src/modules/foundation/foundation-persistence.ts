@@ -43,7 +43,7 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function resolvePersistenceRoot(): string {
+export function resolvePersistenceRoot(): string {
   const fromEnv = process.env.GCP_FOUNDATION_PERSISTENCE_DIR?.trim();
   if (fromEnv && fromEnv.length > 0) {
     return fromEnv;

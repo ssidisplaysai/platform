@@ -1,18 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createFoundationContext, getSitesForOrganization } from "@/modules/foundation/context";
 import { FOUNDATION_COMMANDS, FOUNDATION_NAVIGATION_ITEMS } from "@/modules/foundation/navigation";
 import { hasPermission, resolvePermissions } from "@/modules/foundation/permissions";
 import { getVisibleCommandPaletteActions, getVisibleNavigationItems } from "@/modules/foundation/selectors";
+import type { SiteContext } from "@/modules/foundation/types";
 
 const ORGANIZATION_STORAGE_KEY = "gcp.selectedOrganizationId";
 const SITE_STORAGE_KEY = "gcp.selectedSiteId";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const foundationContext = useMemo(() => createFoundationContext(), []);
   const permissions = useMemo(
     () => resolvePermissions(foundationContext.user.roles),
@@ -30,16 +32,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     const persistedOrganizationId = localStorage.getItem(ORGANIZATION_STORAGE_KEY);
     const persistedSiteId = localStorage.getItem(SITE_STORAGE_KEY);
+    const requested = new URLSearchParams(globalThis.location?.search ?? "");
+    const requestedOrganizationId = requested.get("organizationId");
+    const requestedSiteId = requested.get("siteId");
 
     const organizationId =
-      persistedOrganizationId &&
+      requestedOrganizationId &&
+      foundationContext.organizations.some(
+        (organization) => organization.id === requestedOrganizationId,
+      )
+        ? requestedOrganizationId
+        : persistedOrganizationId &&
       foundationContext.organizations.some(
         (organization) => organization.id === persistedOrganizationId,
       )
         ? persistedOrganizationId
         : foundationContext.selectedOrganizationId;
 
-    if (!persistedSiteId) {
+    const preferredSiteId = requestedSiteId ?? persistedSiteId;
+    if (!preferredSiteId) {
       return {
         organizationId,
         siteId: foundationContext.selectedSiteId,
@@ -47,10 +58,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       };
     }
 
-    if (foundationContext.sites.some((site) => site.id === persistedSiteId)) {
+    if (foundationContext.sites.some((site) => site.id === preferredSiteId)) {
       return {
         organizationId,
-        siteId: persistedSiteId,
+        siteId: preferredSiteId,
         message: null as string | null,
       };
     }
@@ -58,7 +69,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return {
       organizationId,
       siteId: "",
-      message: `Selected site ${persistedSiteId} is unavailable or unauthorized in this context.`,
+      message: `Selected site ${preferredSiteId} is unavailable or unauthorized in this context.`,
     };
   }, [
     foundationContext.organizations,
@@ -72,6 +83,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   const [selectedSiteId, setSelectedSiteId] = useState(initialSelection.siteId);
+  const [canonicalSites, setCanonicalSites] = useState<readonly SiteContext[]>(foundationContext.sites);
   const [siteSelectionMessage, setSiteSelectionMessage] = useState<string | null>(
     initialSelection.message,
   );
@@ -84,8 +96,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   const availableSites = useMemo(
-    () => getSitesForOrganization(foundationContext.sites, selectedOrganizationId),
-    [foundationContext.sites, selectedOrganizationId],
+    () => getSitesForOrganization(canonicalSites, selectedOrganizationId),
+    [canonicalSites, selectedOrganizationId],
   );
 
   const visibleCommands = useMemo(
@@ -101,9 +113,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const canUseCommandPalette = hasPermission(permissions, "command_palette:use");
 
   const selectedSite = useMemo(
-    () => foundationContext.sites.find((site) => site.id === selectedSiteId) ?? null,
-    [foundationContext.sites, selectedSiteId],
+    () => canonicalSites.find((site) => site.id === selectedSiteId) ?? null,
+    [canonicalSites, selectedSiteId],
   );
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/sites", {
+      headers: {
+        "x-gcp-roles": foundationContext.user.roles.join(","),
+        "x-gcp-organization-id": selectedOrganizationId,
+      },
+      cache: "no-store",
+    }).then(async (response) => {
+      if (!response.ok) throw new Error("Site context unavailable.");
+      const payload = await response.json() as { sites?: Array<{ siteId: string; slug: string; organizationId: string; displayName: string; environment: SiteContext["environment"]; healthStatus: SiteContext["health"]; publishingStatus: SiteContext["publishing"]; enabled: boolean }> };
+      if (!active) return;
+      const sites = (payload.sites ?? []).map((site) => ({ id: site.siteId, slug: site.slug, organizationId: site.organizationId, name: site.displayName, region: "US-CENTRAL", environment: site.environment, health: site.healthStatus, publishing: site.publishingStatus, enabled: site.enabled })) satisfies SiteContext[];
+      setCanonicalSites((current) => [...current.filter((site) => site.organizationId !== selectedOrganizationId), ...sites]);
+      const params = new URLSearchParams(globalThis.location?.search ?? "");
+      const requestedSiteId = params.get("siteId");
+      const nextSite = sites.find((site) => site.id === requestedSiteId) ?? sites[0] ?? null;
+      if (nextSite && nextSite.id !== selectedSiteId) {
+        setSelectedSiteId(nextSite.id);
+        params.set("organizationId", selectedOrganizationId);
+        params.set("siteId", nextSite.id);
+        router.replace(`${pathname}?${params.toString()}`);
+      } else if (!nextSite) {
+        setSelectedSiteId("");
+        setSiteSelectionMessage("No configured sites are currently available for the selected organization.");
+      }
+    }).catch(() => {
+      if (active) setSiteSelectionMessage("Configured sites could not be loaded for this organization.");
+    });
+    return () => { active = false; };
+  }, [foundationContext.user.roles, pathname, router, selectedOrganizationId, selectedSiteId]);
 
   useEffect(() => {
     if (selectedOrganizationId) {
@@ -119,20 +163,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   function handleOrganizationChange(nextOrganizationId: string) {
     setSelectedOrganizationId(nextOrganizationId);
-    const nextSite = foundationContext.sites.find(
-      (site) => site.organizationId === nextOrganizationId,
-    );
-
-    if (nextSite) {
-      setSelectedSiteId(nextSite.id);
-      setSiteSelectionMessage(null);
-      return;
-    }
-
     setSelectedSiteId("");
-    setSiteSelectionMessage(
-      "No configured sites are currently available for the selected organization.",
-    );
+    setSiteSelectionMessage(null);
+    const params = new URLSearchParams(globalThis.location?.search ?? "");
+    params.set("organizationId", nextOrganizationId);
+    params.delete("siteId");
+    router.replace(`${pathname}?${params.toString()}`);
   }
 
   return (
@@ -173,6 +209,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onChange={(event) => {
                 setSelectedSiteId(event.target.value);
                 setSiteSelectionMessage(null);
+                const params = new URLSearchParams(globalThis.location?.search ?? "");
+                params.set("organizationId", selectedOrganizationId);
+                if (event.target.value) params.set("siteId", event.target.value);
+                else params.delete("siteId");
+                router.replace(`${pathname}?${params.toString()}`);
               }}
               className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500"
             >

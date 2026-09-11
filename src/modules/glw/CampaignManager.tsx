@@ -11,6 +11,7 @@ import type {
 import { CampaignGeographicMap } from "./CampaignGeographicMap";
 import { CampaignLocalReferenceReview } from "./CampaignLocalReferenceReview";
 import type { GlwLocalReferenceDraft } from "./campaign-local-reference-repository";
+import type { GlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
 import {
   CampaignActivationAuthorityPanel,
   type CampaignActivationReadiness,
@@ -87,7 +88,7 @@ export function CampaignManager({
   activationReadinessByCampaign?: Record<string, CampaignActivationReadiness>;
   globalPromotionAvailable?: boolean;
   globalPromotionReason?: string;
-  localReferencesByCampaign?: Record<string, GlwLocalReferenceDraft>;
+  localReferencesByCampaign?: Record<string, { reference: GlwLocalReferenceDraft; imageCandidate: GlwReferenceImageCandidate | null; imageHistory: readonly GlwReferenceImageCandidate[]; imagePreviewDataUrl: string | null }>;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -290,7 +291,10 @@ export function CampaignManager({
                     siteId={siteId}
                     campaignId={record.campaign.campaignId}
                     requestRoles={requestRoles}
-                    reference={localReferencesByCampaign[record.campaign.campaignId]}
+                    reference={localReferencesByCampaign[record.campaign.campaignId].reference}
+                    imageCandidate={localReferencesByCampaign[record.campaign.campaignId].imageCandidate}
+                    imageHistory={localReferencesByCampaign[record.campaign.campaignId].imageHistory}
+                    imagePreviewDataUrl={localReferencesByCampaign[record.campaign.campaignId].imagePreviewDataUrl}
                   />
                 ) : null}
                 {activationReadinessByCampaign[record.campaign.campaignId]

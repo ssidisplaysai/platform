@@ -114,6 +114,9 @@ export function buildProjectorEnclosureAustinReference(input: {
     internalLinks: links,
     image: {
       required: true,
+      requirementPurpose: "PROJECTOR_ENCLOSURE_APPLICATION_VISUAL",
+      candidateId: null,
+      candidateRevision: null,
       status: "OWNER_ASSET_CANDIDATE",
       assetReference: "wordpress-media:10757",
       classification: "OWNER_ASSET",

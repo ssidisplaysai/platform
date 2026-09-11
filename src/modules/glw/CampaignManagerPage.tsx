@@ -11,12 +11,13 @@ import { buildGlwStateCoverage, projectGlwCampaign, recommendGlwCampaignContinua
 import { CampaignManager } from "./CampaignManager";
 import type { CampaignActivationReadiness } from "./CampaignActivationAuthorityPanel";
 import { getGlwLocalReferenceDraft } from "./campaign-local-reference-repository";
+import { getLatestGlwReferenceImageCandidate, listGlwReferenceImageCandidates, readGlwReferenceImageCandidateBytes } from "./campaign-reference-image-candidate-repository";
 import { selectDeterministicCityReference } from "./projector-enclosure-texas-reference";
 
-export function CampaignManagerPage() {
+export function CampaignManagerPage(input: { organizationId?: string; siteId?: string } = {}) {
   const context = createFoundationContext();
-  const organizationId = context.selectedOrganizationId;
-  const siteId = context.selectedSiteId;
+  const organizationId = input.organizationId || context.selectedOrganizationId;
+  const siteId = input.siteId || context.selectedSiteId;
   const campaigns = listGlwCampaigns().filter((campaign) => campaign.organizationId === organizationId && campaign.siteId === siteId);
   const allTargets = listAllGlwCampaignTargets();
   const records = campaigns.map((campaign) => projectGlwCampaign(campaign, allTargets.filter((target) => target.campaignId === campaign.campaignId)));
@@ -63,7 +64,12 @@ export function CampaignManagerPage() {
     if (campaign.pageType !== "city_service" || !campaign.cityTargets?.length) return [];
     const target = selectDeterministicCityReference(campaign);
     const reference = getGlwLocalReferenceDraft(campaign.campaignId, target.stateCode, target.citySlug);
-    return reference ? [[campaign.campaignId, reference]] : [];
+    if (!reference) return [];
+    const scope = { organizationId: campaign.organizationId, siteId: campaign.siteId, campaignId: campaign.campaignId, referenceDraftId: reference.referenceDraftId };
+    const imageCandidate = getLatestGlwReferenceImageCandidate(scope);
+    const stored = imageCandidate ? readGlwReferenceImageCandidateBytes({ organizationId: campaign.organizationId, siteId: campaign.siteId, campaignId: campaign.campaignId, candidateId: imageCandidate.candidateId }) : null;
+    const imagePreviewDataUrl = stored ? `data:${stored.candidate.mimeType};base64,${stored.bytes.toString("base64")}` : null;
+    return [[campaign.campaignId, { reference, imageCandidate, imageHistory: listGlwReferenceImageCandidates(scope), imagePreviewDataUrl }]];
   }));
   return (
     <div className="space-y-6">

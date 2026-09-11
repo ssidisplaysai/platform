@@ -67,4 +67,33 @@ describe("Campaign Manager UI", () => {
     expect(html).toContain("Advanced provenance");
     expect(html).toContain("does not approve the canonical WordPress reference");
   });
+
+  it("renders generated image preview and image review controls while blocking reference approval", () => {
+    const baseReference = {
+      referenceDraftId: "local-reference-1", campaignId: "campaign-1", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", productId: "product-1",
+      stateCode: "TX", citySlug: "austin", cityName: "Austin", canonicalPath: "fan-cooled-projector-enclosures/texas/austin", revision: 1,
+      status: "READY_FOR_OWNER_REVIEW" as const, title: "Fan Cooled Projector Enclosures in Austin, Texas", seoTitle: "Austin SEO", metaDescription: "Austin meta",
+      h1: "Fan Cooled Projector Enclosures in Austin, Texas", excerpt: "Austin", sections: [], internalLinks: [],
+      image: { required: true, requirementPurpose: "PROJECTOR_ENCLOSURE_APPLICATION_VISUAL" as const, candidateId: "candidate-1", candidateRevision: 1, status: "READY_FOR_OWNER_REVIEW" as const, assetReference: "candidate-1", classification: "GENERATED_VISUAL" as const, altText: "Illustrative enclosure", ownerApproved: false },
+      provenance: { parentCampaignId: "parent", knowledgePackRevision: 1, authorityReferences: [] }, reviewInstructions: null, createdAt: "2030-01-01", updatedAt: "2030-01-01",
+    };
+    const candidate = {
+      candidateId: "candidate-1", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", campaignId: "campaign-1", referenceDraftId: "local-reference-1",
+      requirementPurpose: "PROJECTOR_ENCLOSURE_APPLICATION_VISUAL" as const, revision: 1, sourceType: "GENERATED_VISUAL" as const, status: "READY_FOR_OWNER_REVIEW" as const,
+      mimeType: "image/jpeg" as const, byteSize: 10, sha256: "a".repeat(64), storageKey: "candidate.jpg", generationPrompt: "prompt", visualBrief: "brief",
+      sourceAssetReference: "wordpress-media:10757", generationBasis: { provider: "LOCAL_GOVERNED_COMPOSITOR" as const, imageProfileReference: "profile-image", knowledgePackRevision: 1, authorityReferences: [], referenceOnlyInputsUsed: false as const, competitorInputsUsed: false as const },
+      altText: "Illustrative enclosure", ownerInstructions: null, priorCandidateId: null, createdAt: "2030-01-01", createdBy: "platform_admin", decidedAt: null, decidedBy: null,
+    };
+    const html = renderToStaticMarkup(<CampaignLocalReferenceReview organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} reference={baseReference} imageCandidate={candidate} imageHistory={[candidate]} imagePreviewDataUrl="data:image/jpeg;base64,/9j/" />);
+    expect(html).toContain("PROJECTOR ENCLOSURE APPLICATION VISUAL");
+    expect(html).toContain("GENERATED VISUAL");
+    expect(html).toContain("READY FOR OWNER REVIEW");
+    expect(html).toContain("Approve Image");
+    expect(html).toContain("Regenerate Image");
+    expect(html).toContain("Regenerate With Instructions");
+    expect(html).toContain("Reject Image");
+    expect(html).toContain("Image review required");
+    expect(html).toContain("data:image/jpeg;base64,/9j/");
+    expect(html).toMatch(/Approve Reference[\s\S]*disabled|disabled[\s\S]*Approve Reference/);
+  });
 });

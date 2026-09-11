@@ -19,7 +19,7 @@ jest.mock("@/modules/foundation/foundation-persistence", () => ({
 
 import type { GlwCampaign } from "../campaign-types";
 import type { GlwCampaignKnowledgePack } from "../campaign-reference-types";
-import { getGlwLocalReferenceDraft, requestGlwLocalReferenceChanges, saveGlwLocalReferenceDraft } from "../campaign-local-reference-repository";
+import { approveGlwLocalReferenceForMaterialization, getGlwLocalReferenceDraft, requestGlwLocalReferenceChanges, saveGlwLocalReferenceDraft, updateGlwLocalReferenceImage } from "../campaign-local-reference-repository";
 import { buildProjectorEnclosureAustinReference, buildProjectorEnclosureTexasKnowledgePack, PROJECTOR_TEXAS_PARENT_CAMPAIGN_ID, selectDeterministicCityReference } from "../projector-enclosure-texas-reference";
 
 const campaign: GlwCampaign = {
@@ -82,5 +82,14 @@ describe("ProjectorEnclosure Texas local reference", () => {
     const changed = requestGlwLocalReferenceChanges({ campaignId: campaign.campaignId, stateCode: "TX", citySlug: "austin", instructions: "Clarify the fit-review CTA." });
     expect(changed).toMatchObject({ revision: 2, status: "CHANGES_REQUESTED", reviewInstructions: "Clarify the fit-review CTA." });
     expect(getGlwLocalReferenceDraft(campaign.campaignId, "TX", "austin")?.status).toBe("CHANGES_REQUESTED");
+  });
+
+  test("blocks reference approval until the required image candidate is owner-approved", () => {
+    const synthesized = buildProjectorEnclosureTexasKnowledgePack({ campaign, parentPack });
+    const knowledgePack = { ...parentPack, campaignId: campaign.campaignId, revision: 1, instructions: synthesized.instructions, authorityReferences: synthesized.authorityReferences };
+    saveGlwLocalReferenceDraft(buildProjectorEnclosureAustinReference({ campaign, knowledgePack }));
+    expect(() => approveGlwLocalReferenceForMaterialization({ campaignId: campaign.campaignId, stateCode: "TX", citySlug: "austin" })).toThrow("owner-approved");
+    updateGlwLocalReferenceImage({ campaignId: campaign.campaignId, stateCode: "TX", citySlug: "austin", candidateId: "candidate-1", candidateRevision: 1, status: "APPROVED", sourceType: "GENERATED_VISUAL", assetReference: "candidate-1", altText: "Illustrative enclosure" });
+    expect(approveGlwLocalReferenceForMaterialization({ campaignId: campaign.campaignId, stateCode: "TX", citySlug: "austin" }).status).toBe("OWNER_APPROVED_LOCAL");
   });
 });
