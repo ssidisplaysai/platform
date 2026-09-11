@@ -13,6 +13,7 @@ describe("resource workspace context authority", () => {
   const settings = read("src/app/sites/[siteId]/settings/page.tsx");
   const health = read("src/app/sites/[siteId]/health/page.tsx");
   const productAuthority = read("src/app/products/new/page.tsx");
+  const workflowResume = read("src/modules/foundation/site-workflow-resume.ts");
 
   test("canonical site record maps all visible workspace identity and status fields", () => {
     const site = { siteId: "site-rj", slug: "commercial-stainless", organizationId: "rj-metal", displayName: "Commercial Stainless Counters", environment: "production", healthStatus: "healthy", publishingStatus: "not_ready", enabled: true } as SiteConfiguration;
@@ -33,7 +34,8 @@ describe("resource workspace context authority", () => {
   });
 
   test("Site Detail downstream links preserve route organization and site", () => {
-    for (const segment of ["intelligence", "onboarding", "settings", "health"]) expect(detail).toContain(`/sites/\${site.siteId}/${segment}?organizationId=\${encodeURIComponent(site.organizationId)}&siteId=\${encodeURIComponent(site.siteId)}`);
+    for (const segment of ["intelligence", "settings", "health"]) expect(detail).toContain(`/sites/\${site.siteId}/${segment}?organizationId=\${encodeURIComponent(site.organizationId)}&siteId=\${encodeURIComponent(site.siteId)}`);
+    expect(workflowResume).toContain('scoped(`/sites/${site.siteId}/onboarding`, site)');
   });
 
   test("Product Authority rejects mismatched query scope and binds matching site", () => {
