@@ -122,4 +122,15 @@ describe("campaign launch runtime endpoint and lifecycle contract", () => {
     expect(reference).not.toContain("campaign-activation-authorization");
     expect(scheduler).toContain('publicationIntent: "draft"');
   });
+
+  test("keeps Genesis-local reference preparation outside WordPress and canonical approval paths", () => {
+    const localReference = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/local-reference/route.ts"), "utf8");
+    expect(localReference).not.toContain("/api/glw/page-generation");
+    expect(localReference).not.toContain("approveGlwCampaignReference");
+    expect(localReference).not.toContain("activateGlwCampaign");
+    expect(localReference).not.toContain("leaseGlwCampaignTargets");
+    expect(localReference).not.toContain("createGlwCampaignActivationGrant");
+    expect(localReference).toContain("wordpressMutationPerformed: false");
+    expect(localReference).toContain("canonicalApprovalPerformed: false");
+  });
 });

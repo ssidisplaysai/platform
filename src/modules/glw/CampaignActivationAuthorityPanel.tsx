@@ -29,9 +29,11 @@ export function CampaignActivationAuthorityPanel(props: {
   const router = useRouter();
   const [busy, setBusy] = useState<"authorize" | "activate" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const referenceReady = props.readiness.knowledgePackReady && props.readiness.approvedReferenceCount > 0;
+  const referenceApproved = props.readiness.approvedReferenceCount > 0;
+  const referenceReady = props.readiness.knowledgePackReady && referenceApproved;
   const missing = [
-    !referenceReady ? "Approved campaign reference / knowledge pack" : null,
+    !props.readiness.knowledgePackReady ? "Campaign knowledge pack" : null,
+    !referenceApproved ? "Approved campaign reference" : null,
     !props.readiness.grantActive ? "Scoped activation authorization" : null,
   ].filter((value): value is string => Boolean(value));
 
@@ -91,6 +93,7 @@ export function CampaignActivationAuthorityPanel(props: {
   return (
     <div className="mt-5 border-t border-zinc-800 pt-4">
       <p className="text-xs font-bold uppercase text-zinc-400">Activation authority</p>
+      <p className="mt-2 text-xs text-zinc-500">Campaign prepared → Knowledge pack ready → Reference review → Activation authorization → Activate → Dispatch</p>
       {missing.length > 0 ? (
         <div className="mt-3">
           <p className="text-sm font-semibold text-amber-300">Ready except for:</p>

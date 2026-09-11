@@ -9,6 +9,8 @@ import type {
   GlwCampaignStateCoverage,
 } from "./campaign-manager";
 import { CampaignGeographicMap } from "./CampaignGeographicMap";
+import { CampaignLocalReferenceReview } from "./CampaignLocalReferenceReview";
+import type { GlwLocalReferenceDraft } from "./campaign-local-reference-repository";
 import {
   CampaignActivationAuthorityPanel,
   type CampaignActivationReadiness,
@@ -72,6 +74,7 @@ export function CampaignManager({
   activationReadinessByCampaign = {},
   globalPromotionAvailable = false,
   globalPromotionReason = "Campaign activation is unavailable for this runtime.",
+  localReferencesByCampaign = {},
 }: {
   organizationId: string;
   siteId: string;
@@ -84,6 +87,7 @@ export function CampaignManager({
   activationReadinessByCampaign?: Record<string, CampaignActivationReadiness>;
   globalPromotionAvailable?: boolean;
   globalPromotionReason?: string;
+  localReferencesByCampaign?: Record<string, GlwLocalReferenceDraft>;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -280,6 +284,15 @@ export function CampaignManager({
                     ? ` · Completed ${formatDate(record.completedAt)}`
                     : ""}
                 </p>
+                {localReferencesByCampaign[record.campaign.campaignId] ? (
+                  <CampaignLocalReferenceReview
+                    organizationId={organizationId}
+                    siteId={siteId}
+                    campaignId={record.campaign.campaignId}
+                    requestRoles={requestRoles}
+                    reference={localReferencesByCampaign[record.campaign.campaignId]}
+                  />
+                ) : null}
                 {activationReadinessByCampaign[record.campaign.campaignId]
                   ?.preparedTargetCount > 0 ? (
                   <CampaignActivationAuthorityPanel

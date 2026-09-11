@@ -10,6 +10,8 @@ import { readGlwCampaignLaunchPromotion } from "./campaign-launch-capability";
 import { buildGlwStateCoverage, projectGlwCampaign, recommendGlwCampaignContinuation } from "./campaign-manager";
 import { CampaignManager } from "./CampaignManager";
 import type { CampaignActivationReadiness } from "./CampaignActivationAuthorityPanel";
+import { getGlwLocalReferenceDraft } from "./campaign-local-reference-repository";
+import { selectDeterministicCityReference } from "./projector-enclosure-texas-reference";
 
 export function CampaignManagerPage() {
   const context = createFoundationContext();
@@ -57,6 +59,12 @@ export function CampaignManagerPage() {
     }];
   }));
   const promotion = readGlwCampaignLaunchPromotion();
+  const localReferencesByCampaign = Object.fromEntries(campaigns.flatMap((campaign) => {
+    if (campaign.pageType !== "city_service" || !campaign.cityTargets?.length) return [];
+    const target = selectDeterministicCityReference(campaign);
+    const reference = getGlwLocalReferenceDraft(campaign.campaignId, target.stateCode, target.citySlug);
+    return reference ? [[campaign.campaignId, reference]] : [];
+  }));
   return (
     <div className="space-y-6">
       <header className="border-b border-zinc-800 pb-6">
@@ -77,6 +85,7 @@ export function CampaignManagerPage() {
         activationReadinessByCampaign={activationReadinessByCampaign}
         globalPromotionAvailable={promotion.available}
         globalPromotionReason={promotion.reason}
+        localReferencesByCampaign={localReferencesByCampaign}
       />
     </div>
   );

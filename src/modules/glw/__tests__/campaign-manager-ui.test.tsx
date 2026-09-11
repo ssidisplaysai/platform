@@ -1,6 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CampaignManager } from "../CampaignManager";
+import { CampaignLocalReferenceReview } from "../CampaignLocalReferenceReview";
 import type { GlwCampaignManagerRecord, GlwCampaignStateCoverage } from "../campaign-manager";
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: jest.fn() }) }));
@@ -32,11 +33,38 @@ describe("Campaign Manager UI", () => {
     };
     const html = renderToStaticMarkup(<CampaignManager organizationId="org-1" siteId="site-1" requestRoles={["platform_admin"]} records={[{ ...prepared, proposal: null }]} coverage={coverage} coverageByProduct={{ "product-1": coverage }} products={[{ productId: "product-1", name: "Projector Enclosure" }]} productNames={{ "product-1": "Projector Enclosure" }} activationReadinessByCampaign={{ "campaign-1": { knowledgePackReady: false, approvedReferenceCount: 0, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: null, referenceCitySlug: null } }} globalPromotionAvailable={false} globalPromotionReason="Campaign Launch is not enabled for this production release." />);
     expect(html).toContain("Ready except for:");
-    expect(html).toContain("Approved campaign reference / knowledge pack");
+    expect(html).toContain("Campaign knowledge pack");
+    expect(html).toContain("Approved campaign reference");
     expect(html).toContain("Scoped activation authorization");
+    expect(html).toContain("Campaign prepared");
+    expect(html).toContain("Reference review");
     expect(html).toContain("Authorize This Campaign for Activation");
     expect(html).toContain("This authorization applies only to this campaign and does not enable publishing or other campaigns.");
     expect(html).toContain("Advanced Details");
     expect(html).not.toContain("nonce");
+  });
+
+  it("renders the Genesis-local reference review and all explicit owner actions", () => {
+    const html = renderToStaticMarkup(<CampaignLocalReferenceReview organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} reference={{
+      referenceDraftId: "local-reference-1", campaignId: "campaign-1", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", productId: "product-1",
+      stateCode: "TX", citySlug: "austin", cityName: "Austin", canonicalPath: "fan-cooled-projector-enclosures/texas/austin", revision: 1,
+      status: "READY_FOR_OWNER_REVIEW", title: "Fan Cooled Projector Enclosures in Austin, Texas", seoTitle: "Fan Cooled Projector Enclosures in Austin, TX",
+      metaDescription: "Plan a fan-cooled projector enclosure for an Austin commercial AV installation.", h1: "Fan Cooled Projector Enclosures in Austin, Texas",
+      excerpt: "Austin planning guidance.", sections: [{ heading: "Plan projector protection", bodyHtml: "<p>Approved local review copy.</p>" }],
+      internalLinks: [{ label: "fan-cooled overview", url: "https://projectorenclosure.com/fan-cooled-projector-enclosures/" }],
+      image: { required: true, status: "OWNER_ASSET_CANDIDATE", assetReference: "wordpress-media:10757", classification: "OWNER_ASSET", altText: "Fan-cooled enclosure", ownerApproved: false },
+      provenance: { parentCampaignId: "parent", knowledgePackRevision: 1, authorityReferences: ["product:product-1"] }, reviewInstructions: null,
+      createdAt: "2030-01-01", updatedAt: "2030-01-01",
+    }} />);
+    expect(html).toContain("READY FOR OWNER REVIEW");
+    expect(html).toContain("Genesis local · not published");
+    expect(html).toContain("Approve Reference");
+    expect(html).toContain("Request Changes");
+    expect(html).toContain("Regenerate");
+    expect(html).toContain("Regenerate With Instructions");
+    expect(html).toContain("Generate Image");
+    expect(html).toContain("Replace With Owner Asset");
+    expect(html).toContain("Advanced provenance");
+    expect(html).toContain("does not approve the canonical WordPress reference");
   });
 });
