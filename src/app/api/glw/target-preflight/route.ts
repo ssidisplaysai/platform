@@ -10,7 +10,8 @@ import {
   createDefaultGlwGenerationInput,
   type GlwPageType,
 } from "@/modules/glw/page-generation";
-import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
+import { classifyGlwTargetPreflight, readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
+import { createGlwWordPressPreflightAuthority } from "@/modules/glw/wordpress-preflight-authority";
 
 export async function GET(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:read");
@@ -20,7 +21,14 @@ export async function GET(request: NextRequest) {
 
   const siteRecord = getSiteById(request.nextUrl.searchParams.get("siteId") ?? "");
   const productRecord = getProductById(request.nextUrl.searchParams.get("productId") ?? "");
-  if (!siteRecord || !productRecord || siteRecord.organizationId !== scope.organizationId) {
+  if (
+    !siteRecord
+    || !productRecord
+    || siteRecord.organizationId !== scope.organizationId
+    || productRecord.organizationId !== scope.organizationId
+    || !productRecord.assignedSiteIds.includes(siteRecord.siteId)
+    || (scope.siteId && scope.siteId !== siteRecord.siteId)
+  ) {
     return NextResponse.json({ error: "Configured site and product are required." }, { status: 400 });
   }
   const site = adaptSiteForGeneration(siteRecord);
@@ -36,12 +44,28 @@ export async function GET(request: NextRequest) {
   if (!preview.request) return NextResponse.json({ issues: preview.validation.issues }, { status: 400 });
 
   try {
+    const wordpressAuthority = createGlwWordPressPreflightAuthority({
+      organizationId: siteRecord.organizationId,
+      siteId: siteRecord.siteId,
+      wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+      wordpressCredentialReference: siteRecord.integrations.wordpressCredentialReference,
+    });
     const target = await readGlwTargetPreflight({
       request: preview.request,
       wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+      wordpressReadAuthority: wordpressAuthority.authority,
       localExecutions: await glwPageExecutionRepository.list(),
     });
-    return NextResponse.json({ target, availability: resolveGlwTargetMutationAvailability(target) });
+    return NextResponse.json({
+      target,
+      classification: classifyGlwTargetPreflight(target),
+      availability: resolveGlwTargetMutationAvailability(target),
+      inventory: {
+        authenticated: wordpressAuthority.status === "READY",
+        status: wordpressAuthority.status,
+        readOnly: true,
+      },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Execution identity is unsupported.";
     if (message.startsWith("Unsupported GLW application")) {

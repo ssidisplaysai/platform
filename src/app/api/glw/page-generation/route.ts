@@ -28,6 +28,7 @@ import {
   type GlwGenerationRequestInput,
 } from "@/modules/glw/page-generation";
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
+import { createGlwWordPressPreflightAuthority } from "@/modules/glw/wordpress-preflight-authority";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -122,9 +123,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Public publish is blocked. Select draft intent." }, { status: 403 });
   }
 
+  const wordpressAuthority = createGlwWordPressPreflightAuthority({
+    organizationId: siteRecord.organizationId,
+    siteId: siteRecord.siteId,
+    wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+    wordpressCredentialReference: siteRecord.integrations.wordpressCredentialReference,
+  });
   const target = await readGlwTargetPreflight({
     request: preview.request,
     wordpressApiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+    wordpressReadAuthority: wordpressAuthority.authority,
     localExecutions: await glwPageExecutionRepository.list(),
   });
   const availability = resolveGlwTargetMutationAvailability(target);

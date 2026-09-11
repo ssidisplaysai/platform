@@ -1,4 +1,5 @@
 import {
+  classifyGlwTargetPreflight,
   createGlwCanonicalTargetIdentity,
   resolveGlwTargetMutationAvailability,
   resolveGlwTargetPreflight,
@@ -40,6 +41,133 @@ describe("GLW canonical target preflight", () => {
     canonicalPath: "fan-cooled-projector-enclosures/texas/austin", plannedOperation: "CREATE_CITY" as const,
     wordpressObjectId: null, externalExecutionAllowed: false as const,
   };
+
+  function authenticatedHierarchy(input: {
+    leaf?: readonly Record<string, unknown>[];
+    product?: readonly Record<string, unknown>[];
+    state?: readonly Record<string, unknown>[];
+    fail?: boolean;
+  } = {}) {
+    const responses = [
+      input.product ?? [{ id: 100, slug: "fan-cooled-projector-enclosures", parent: 0, status: "publish" }],
+      input.state ?? [{ id: 200, slug: "texas", parent: 100, status: "draft" }],
+      input.leaf ?? [],
+    ];
+    return {
+      async getJson() {
+        return input.fail
+          ? { ok: false as const, reason: "AUTH_FAILURE" as const }
+          : { ok: true as const, body: responses.shift() };
+      },
+    };
+  }
+
+  test("authenticated exact absence is authoritative and becomes NEW-capable", async () => {
+    const target = await readGlwTargetPreflight({
+      request: projectorRequest,
+      wordpressReadAuthority: authenticatedHierarchy(),
+      localExecutions: [],
+    });
+    expect(target).toMatchObject({
+      state: "ABSENT",
+      confidence: "AUTHORITATIVE",
+      hierarchy: { generationAvailable: true, leaf: { state: "ABSENT" } },
+    });
+    expect(resolveGlwTargetMutationAvailability(target)).toMatchObject({ createAvailable: true, plannedOperation: "CREATE_CITY" });
+  });
+
+  test.each([
+    { status: "draft", expected: "EXISTS_DRAFT", objectId: "301" },
+    { status: "publish", expected: "EXISTS_PUBLISHED", objectId: "302" },
+  ])("authenticated exact $status target becomes $expected", async ({ status, expected, objectId }) => {
+    const target = await readGlwTargetPreflight({
+      request: projectorRequest,
+      wordpressReadAuthority: authenticatedHierarchy({
+        leaf: [{ id: Number(objectId), slug: "austin", parent: 200, status }],
+      }),
+      localExecutions: [],
+    });
+    expect(target).toMatchObject({ state: expected, wordpressObjectId: objectId, confidence: "AUTHORITATIVE" });
+  });
+
+  test("ambiguous exact target and invalid parent hierarchy fail closed", async () => {
+    const duplicate = { slug: "austin", parent: 200, status: "draft" };
+    const target = await readGlwTargetPreflight({
+      request: projectorRequest,
+      wordpressReadAuthority: authenticatedHierarchy({ leaf: [{ ...duplicate, id: 1 }, { ...duplicate, id: 2 }] }),
+      localExecutions: [],
+    });
+    expect(target).toMatchObject({ state: "BLOCKED", hierarchy: { generationAvailable: false, leaf: { state: "AMBIGUOUS" } } });
+
+    const hierarchy = await readGlwTargetPreflight({
+      request: projectorRequest,
+      wordpressReadAuthority: authenticatedHierarchy({
+        product: [{ id: 100, slug: "fan-cooled-projector-enclosures", parent: 0, status: "private" }],
+      }),
+      localExecutions: [],
+    });
+    expect(hierarchy).toMatchObject({ state: "BLOCKED", hierarchy: { productParent: { state: "UNSUPPORTED_STATUS" } } });
+  });
+
+  test("authentication failure remains UNKNOWN and non-creatable", async () => {
+    const target = await readGlwTargetPreflight({
+      request: projectorRequest,
+      wordpressReadAuthority: authenticatedHierarchy({ fail: true }),
+      localExecutions: [],
+    });
+    expect(target).toMatchObject({ state: "UNKNOWN", confidence: "UNVERIFIED" });
+    expect(resolveGlwTargetMutationAvailability(target).createAvailable).toBe(false);
+  });
+
+  test.each([
+    {
+      idRead: { ok: true as const, body: { id: 401, slug: "austin", parent: 200, status: "draft" } },
+      expected: "EXISTS_DRAFT",
+    },
+    {
+      idRead: { ok: true as const, body: { id: 401, slug: "austin", parent: 999, status: "draft" } },
+      expected: "EXISTS_OTHER",
+    },
+    {
+      idRead: { ok: false as const, reason: "NOT_FOUND" as const },
+      expected: "ABSENT",
+    },
+    {
+      idRead: { ok: false as const, reason: "AUTH_FAILURE" as const },
+      expected: "BLOCKED",
+    },
+  ])("authenticates durable local object identity before resolving $expected", async ({ idRead, expected }) => {
+    const responses: Array<unknown> = [
+      [{ id: 100, slug: "fan-cooled-projector-enclosures", parent: 0, status: "publish" }],
+      [{ id: 200, slug: "texas", parent: 100, status: "draft" }],
+      [],
+    ];
+    const target = await readGlwTargetPreflight({
+      request: projectorRequest,
+      wordpressReadAuthority: {
+        async getJson({ path }) {
+          return path === "/pages/401"
+            ? idRead
+            : { ok: true as const, body: responses.shift() };
+        },
+      },
+      localExecutions: [{
+        jobId: "job-local", correlationId: "job-local", executionTransport: "N8N_MCP",
+        organizationId: "ssi", siteId: projectorRequest.siteId, productId: projectorRequest.productId,
+        productTopic: projectorRequest.productTopic, state: "Texas", city: "Austin",
+        slug: projectorRequest.canonicalPath, title: "Austin", seoTitle: "Austin", metaDescription: "Austin",
+        publicationIntent: "draft", status: "COMPLETE", externalExecutionId: "1", wordpressObjectId: "401",
+        wordpressUrl: null, wordpressStatus: "draft", errorCode: null, errorMessage: null,
+        requestedPublicationMode: "draft", disposition: "CREATED", qaStatus: "COMPLETE", qaChecks: {},
+        qaFailureReasons: {}, focusKeyphrase: null, wordCount: null, featuredImagePresent: null,
+        createdAt: "2026-01-01", dispatchedAt: "2026-01-01", updatedAt: "2026-01-01", completedAt: "2026-01-01",
+      }],
+    });
+    expect(target.state).toBe(expected);
+    if (expected === "EXISTS_OTHER" || expected === "BLOCKED") {
+      expect(resolveGlwTargetMutationAvailability(target).createAvailable).toBe(false);
+    }
+  });
 
   test("maps the current ProjectorEnclosure city identity for preflight and dispatch", () => {
     const executionIdentity = resolveGlwExecutionIdentity({
@@ -118,7 +246,7 @@ describe("GLW canonical target preflight", () => {
       fetcher,
     });
     expect(target.state).toBe("UNKNOWN");
-    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(fetcher).toHaveBeenCalledTimes(1);
     expect(fetcher.mock.calls.every(([, init]) => Object.keys(init).sort().join(",") === "headers")).toBe(true);
   });
 
@@ -166,6 +294,7 @@ describe("GLW canonical target preflight", () => {
       updateAvailable: false,
       plannedOperation: "CREATE_CITY",
     });
+    expect(classifyGlwTargetPreflight(result("ABSENT"))).toBe("NEW");
   });
 
   test("does not represent unknown target state as absent", () => {
@@ -177,6 +306,7 @@ describe("GLW canonical target preflight", () => {
       plannedOperation: null,
     });
     expect(resolveGlwTargetMutationAvailability(unknown).message).toContain("Authoritative verification");
+    expect(classifyGlwTargetPreflight(unknown)).toBe("BLOCKED");
   });
 
   test("uses a durable completed draft as local partial authority", () => {
