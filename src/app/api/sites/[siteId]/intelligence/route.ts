@@ -25,12 +25,14 @@ import {
   getStrategyReadiness,
   listCapabilityEvidenceOptions,
   recordSiteOpportunity,
+  refreshApprovedStrategy,
   reopenApprovedStrategyForReview,
   startSiteIntelligence,
   updateCreativeInputMetadata,
   validateOpportunityCapability,
 } from "@/modules/foundation/site-intelligence-repository";
 import { synthesizeInitialSiteStrategy } from "@/modules/foundation/site-strategy-synthesizer";
+import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "@/modules/foundation/site-capability-transition";
 import type { CreativeInput, SiteAssetClassification } from "@/modules/foundation/site-intelligence";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -148,6 +150,18 @@ export async function POST(request: NextRequest, context: Context) {
         const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
         if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
         workspace = addStrategyProposal({ ...common, expectedRevision: current.revision, proposal: synthesizeInitialSiteStrategy(current, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile }), reason: "Owner requested a revised Genesis Site Strategy proposal." });
+        break;
+      }
+      case "REFRESH_STRATEGY": {
+        const current = getSiteIntelligenceWorkspace(site.siteId); if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+        if (resolvePostCapabilityTransition(current).nextStep !== "REVIEW_UPDATED_STRATEGY") throw new Error("STRATEGY_REFRESH_NOT_REQUIRED");
+        const brandProfile = site.profiles.brandProfileReference ? getIntegrationProfileById(site.profiles.brandProfileReference) : null;
+        const seoProfile = site.profiles.seoProfileReference ? getIntegrationProfileById(site.profiles.seoProfileReference) : null;
+        const promptProfile = site.profiles.promptProfileReference ? getIntegrationProfileById(site.profiles.promptProfileReference) : null;
+        if (!brandProfile || !seoProfile || !promptProfile || !evaluateProfileReadiness(brandProfile.profileId)?.ready || !evaluateProfileReadiness(seoProfile.profileId)?.ready || !evaluateProfileReadiness(promptProfile.profileId)?.ready) throw new Error("STRATEGY_PROFILE_AUTHORITY_NOT_READY");
+        const finalized = { ...current, opportunities: selectDistinctCapabilityOpportunities(current.opportunities) };
+        const proposal = synthesizeInitialSiteStrategy(finalized, { domain: site.domain!, publicBrandIdentity: current.publicBrandIdentity, brandProfile, seoProfile, promptProfile });
+        workspace = refreshApprovedStrategy({ ...common, expectedRevision: current.revision, proposal, reason: "Owner requested an updated Site Strategy proposal after final capability review." });
         break;
       }
       case "REOPEN_STRATEGY":

@@ -17,6 +17,7 @@ import type {
 } from "./site-intelligence";
 import { SiteIntelligenceReferenceLibrary } from "./SiteIntelligenceReferenceLibrary";
 import { SiteCapabilityOwnerWorkflow } from "./SiteCapabilityOwnerWorkflow";
+import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "./site-capability-transition";
 
 type Props = {
   organizationId: string;
@@ -109,10 +110,11 @@ export function SiteIntelligenceWorkspace(props: Props) {
           <ResearchExecutionList workspace={workspace} busy={busy} onAction={action} />
           <EvidenceJournal workspace={workspace} />
           <OpportunityBoard workspace={workspace} capabilityEvidenceOptions={capabilityEvidenceOptions} busy={busy} onAction={action} />
+          <PostCapabilityNextStep workspace={workspace} busy={busy} onAction={action} />
           {workspace.intelligenceState === "INTELLIGENCE_READY_FOR_REVIEW" ? <button type="button" disabled={busy || !workspace.opportunities.some((opportunity) => opportunity.ownerDecision === "APPROVED")} onClick={() => action({ action: "APPROVE_INTELLIGENCE", reason: "Owner approved reviewed site intelligence." })} className="bg-red-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">APPROVE INTELLIGENCE</button> : null}
-          <StrategyPanel key={`strategy-${workspace.strategyRevisions.at(-1)?.revision ?? 0}`} workspace={workspace} busy={busy} onAction={action} />
+          <div id="strategy-review"><StrategyPanel key={`strategy-${workspace.strategyRevisions.at(-1)?.revision ?? 0}`} workspace={workspace} busy={busy} onAction={action} /></div>
           <SiteIntelligenceReferenceLibrary organizationId={props.organizationId} siteId={props.siteId} workspace={workspace} busy={busy} onAction={action} onWorkspace={setWorkspace} />
-          <CreativePanel proposal={workspace.creativeRevisions.at(-1) ?? null} state={workspace.creativeState} strategyApproved={workspace.strategyState === "STRATEGY_APPROVED"} strategyRevision={workspace.strategyRevisions.at(-1)?.revision ?? null} inputs={workspace.creativeInputs.length} busy={busy} onAction={action} />
+          <div id="creative-direction"><CreativePanel proposal={workspace.creativeRevisions.at(-1) ?? null} state={workspace.creativeState} strategyApproved={workspace.strategyState === "STRATEGY_APPROVED"} strategyRevision={workspace.strategyRevisions.at(-1)?.revision ?? null} inputs={workspace.creativeInputs.length} busy={busy} onAction={action} /></div>
           <section className="border border-zinc-800 p-5">
             <h2 className="font-semibold text-white">Product authority boundary</h2>
             <p className="mt-2 text-sm text-zinc-400">Product onboarding remains separate. Intelligence and creative approval never create products, campaigns, WordPress pages, or publishable assets.</p>
@@ -135,7 +137,18 @@ function EvidenceJournal({ workspace }: { workspace: Workspace }) {
 }
 
 function OpportunityBoard({ workspace, capabilityEvidenceOptions, busy, onAction }: { workspace: Workspace; capabilityEvidenceOptions: CapabilityEvidenceOption[]; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {
-  return <section className="border border-zinc-800 bg-zinc-950"><header className="border-b border-zinc-800 p-5"><h2 className="font-semibold text-white">Opportunity Board</h2><p className="mt-1 text-sm text-zinc-400">Review market fit and current capability as two separate business decisions.</p></header>{workspace.opportunities.length === 0 ? <p className="p-5 text-sm text-zinc-500">No opportunities recorded. Bounded research is awaiting provider results.</p> : <div>{workspace.opportunities.map((opportunity) => <SiteCapabilityOwnerWorkflow key={opportunity.opportunityId} opportunity={opportunity} capabilityEvidenceOptions={capabilityEvidenceOptions} publicBrandIdentity={workspace.publicBrandIdentity} busy={busy} onAction={onAction} />)}</div>}</section>;
+  const opportunities = selectDistinctCapabilityOpportunities(workspace.opportunities);
+  return <section id="capability-review" className="border border-zinc-800 bg-zinc-950"><header className="border-b border-zinc-800 p-5"><h2 className="font-semibold text-white">Opportunity Board</h2><p className="mt-1 text-sm text-zinc-400">Review market fit and current capability as two separate business decisions.</p></header>{opportunities.length === 0 ? <p className="p-5 text-sm text-zinc-500">No opportunities recorded. Bounded research is awaiting provider results.</p> : <div>{opportunities.map((opportunity) => <SiteCapabilityOwnerWorkflow key={opportunity.opportunityId} opportunity={opportunity} capabilityEvidenceOptions={capabilityEvidenceOptions} publicBrandIdentity={workspace.publicBrandIdentity} busy={busy} onAction={onAction} />)}</div>}</section>;
+}
+
+function PostCapabilityNextStep({ workspace, busy, onAction }: { workspace: Workspace; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {
+  const transition = resolvePostCapabilityTransition(workspace);
+  if (transition.nextStep === "REVIEW_REMAINING_CAPABILITIES") return <section className="border border-amber-800 bg-amber-950/20 p-5"><p className="text-xs font-semibold uppercase text-amber-300">Capability review incomplete</p><h2 className="mt-2 text-lg font-semibold text-white">{transition.capabilityReviewsRemaining} of {transition.distinctCapabilityCount} capability reviews remain.</h2><a href="#capability-review" className="mt-4 inline-block border border-amber-700 px-4 py-3 text-sm font-semibold text-amber-100">REVIEW REMAINING CAPABILITIES</a></section>;
+  if (transition.nextStep === "REVIEW_UPDATED_STRATEGY") {
+    const proposalReady = workspace.strategyRevisions.at(-1)?.status === "PROPOSED";
+    return <section className="border border-red-800 bg-red-950/20 p-5"><p className="text-xs font-semibold uppercase text-red-300">Capability review complete</p><h2 className="mt-2 text-lg font-semibold text-white">All required capability decisions are complete.</h2><p className="mt-2 text-sm text-zinc-300">{proposalReady ? "Your updated strategy proposal is ready for explicit owner review." : "Your approved strategy was created before the final capability review and should be regenerated against the current authority."}</p>{proposalReady ? <a href="#strategy-review" className="mt-4 inline-block bg-red-600 px-4 py-3 text-sm font-semibold text-white">REVIEW UPDATED STRATEGY</a> : <button type="button" disabled={busy} onClick={() => onAction({ action: "REFRESH_STRATEGY", reason: "Owner requested an updated strategy after final capability review." })} className="mt-4 bg-red-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">REVIEW UPDATED STRATEGY</button>}</section>;
+  }
+  return <section className="border border-emerald-800 bg-emerald-950/20 p-5"><p className="text-xs font-semibold uppercase text-emerald-300">Capability review complete</p><h2 className="mt-2 text-lg font-semibold text-white">All required capability decisions are complete.</h2><p className="mt-2 text-sm text-zinc-300">The current approved strategy remains valid against the finalized capability authority.</p><a href="#creative-direction" className="mt-4 inline-block bg-emerald-700 px-4 py-3 text-sm font-semibold text-white">CONTINUE TO CREATIVE DIRECTION</a></section>;
 }
 
 const CAPABILITY_RELEVANCE_TYPES: CapabilityEvidenceRelevanceType[] = ["DIRECT_CAPABILITY_PROOF", "PROJECT_EXAMPLE", "PRODUCT_EXAMPLE", "FABRICATION_EXAMPLE", "SERVICE_SCOPE", "DELIVERY_SCOPE", "CHANNEL_EVIDENCE", "GEOGRAPHIC_SERVICE_EVIDENCE", "SPECIFICATION_OR_COMPLIANCE_EVIDENCE", "OWNER_ATTESTATION_SUPPORT", "GENERAL_REFERENCE"];

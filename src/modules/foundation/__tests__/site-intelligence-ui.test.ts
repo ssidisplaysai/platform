@@ -64,6 +64,14 @@ describe("site intelligence UI contract", () => {
     expect(ownerWorkflow).toContain("latestAuthority?.attestation.trim()");
   });
 
+  test("post-capability review always exposes the canonical next step", () => {
+    for (const text of ["Capability review incomplete", "REVIEW REMAINING CAPABILITIES", "Capability review complete", "REVIEW UPDATED STRATEGY", "CONTINUE TO CREATIVE DIRECTION", "All required capability decisions are complete."]) expect(workspace).toContain(text);
+    expect(workspace).toContain("resolvePostCapabilityTransition(workspace)");
+    expect(workspace).toContain('action: "REFRESH_STRATEGY"');
+    expect(workspace).toContain('href="#creative-direction"');
+    expect(workspace).toContain("selectDistinctCapabilityOpportunities(workspace.opportunities)");
+  });
+
   test("rich strategy review renders all canonical owner-facing dimensions and valid state actions", () => {
     for (const text of ["Positioning", "Audiences", "Value Proposition", "Market / Vertical Priorities", "Product / Service Families", "Opportunity Prioritization", "Sales Channels", "Expansion / SEO Geography", "Geographic Strategy", "Sitemap", "Conversion Paths", "CTA Hierarchy", "Proof / Trust Requirements", "Required Product Authority", "Homepage Goals", "Internal Authority and Synthesis Context", "GENERATE REVISED STRATEGY"]) expect(workspace).toContain(text);
     expect(workspace).toContain('proposal.status === "PROPOSED"');

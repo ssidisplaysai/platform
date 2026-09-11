@@ -133,4 +133,22 @@ describe("Site Intelligence to strategy transition", () => {
     expect(workspace.audit.at(-1)).toMatchObject({ action: "STRATEGY_REOPENED_FOR_REVIEW", actor: "owner", reason: correctionReason });
     expect(started.repository.getSiteIntelligenceWorkspace(scope.siteId)?.strategyRevisions).toHaveLength(2);
   });
+
+  test("explicit capability refresh appends one proposed strategy and preserves approved history", async () => {
+    const started = await reviewed([opportunity("approved", "APPROVED", "VERIFIED")]);
+    const { synthesizeInitialSiteStrategy } = await import("../site-strategy-synthesizer");
+    let workspace = started.repository.addInitialStrategyProposal({ ...scope, expectedRevision: started.workspace.revision, proposal: synthesizeInitialSiteStrategy(started.workspace, context) });
+    workspace = started.repository.decideStrategy({ ...scope, expectedRevision: workspace.revision, decision: "APPROVED" });
+    const approvedRevision = structuredClone(workspace.strategyRevisions[0]);
+    const creativeState = workspace.creativeState;
+    const refreshedProposal = synthesizeInitialSiteStrategy(workspace, context);
+    workspace = started.repository.refreshApprovedStrategy({ ...scope, expectedRevision: workspace.revision, reason: "Owner requested updated strategy after final capability review.", proposal: refreshedProposal });
+    expect(workspace.strategyState).toBe("STRATEGY_READY_FOR_REVIEW");
+    expect(workspace.strategyRevisions).toHaveLength(2);
+    expect(workspace.strategyRevisions[0]).toEqual(approvedRevision);
+    expect(workspace.strategyRevisions[1]).toMatchObject({ revision: 2, status: "PROPOSED", decidedBy: null, decidedAt: null });
+    expect(workspace.creativeState).toBe(creativeState);
+    expect(workspace.creativeRevisions).toEqual([]);
+    expect(workspace.audit.at(-1)).toMatchObject({ action: "STRATEGY_REFRESH_PROPOSED", actor: "owner" });
+  });
 });

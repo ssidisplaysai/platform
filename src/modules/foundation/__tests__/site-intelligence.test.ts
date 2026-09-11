@@ -110,6 +110,20 @@ describe("site intelligence authority", () => {
     expect(() => repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "INVALID" as never, evidenceIds: [], notes: "" })).toThrow("CAPABILITY_STATE_INVALID");
   });
 
+  test("duplicate capability IDs mutate the durably reviewed canonical record without deleting history", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
+    workspace = repository.startSiteIntelligence({ ...scope, expectedRevision: workspace.revision, providerReference: "provider" });
+    workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: opportunity(), evidence: [evidence()] });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "VERIFIED", evidenceIds: [], attestation: "Owner confirms current capability.", notes: "" });
+    const historicalDuplicate = { ...opportunity(), name: "Historical duplicate", capabilityAuthorityRevisions: [{ ...workspace.opportunities[0].capabilityAuthorityRevisions![0], decision: "OWNER_VALIDATION_REQUIRED" as const, attestation: "", decidedAt: "" }] };
+    workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: historicalDuplicate, evidence: [] });
+    workspace = repository.validateOpportunityCapability({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", state: "REJECTED", evidenceIds: [], notes: "No longer offered." });
+    expect(workspace.opportunities).toHaveLength(2);
+    expect(workspace.opportunities[0]).toMatchObject({ name: "Observed market category", capabilityState: "REJECTED" });
+    expect(workspace.opportunities[1]).toMatchObject({ name: "Historical duplicate", capabilityState: "OWNER_VALIDATION_REQUIRED" });
+  });
+
   test("strategy and creative proposals require prior approvals and retain revisions", async () => {
     const repository = await import("../site-intelligence-repository");
     let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });

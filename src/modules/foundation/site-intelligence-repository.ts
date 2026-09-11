@@ -21,6 +21,7 @@ import type {
   SiteStrategyProposal,
 } from "./site-intelligence";
 import { getCapabilityEvidencePolicy, hasVerifiedCapability, isEvidenceSufficientForCapabilityPolicy, SITE_INTELLIGENCE_REFERENCE_LIMITS } from "./site-intelligence";
+import { selectDistinctCapabilityOpportunities } from "./site-capability-transition";
 
 const NAMESPACE = "site-intelligence-repository";
 type State = { workspaces: SiteIntelligenceWorkspace[] };
@@ -125,7 +126,7 @@ export function recordSiteOpportunity(input: { siteId: string; organizationId: s
 export function decideSiteOpportunity(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; opportunityId: string; decision: OpportunityDecision }) {
   return update({ ...input, action: `OPPORTUNITY_${input.decision}`, mutate(workspace) {
     if (!["PENDING", "APPROVED", "RESEARCH_MORE", "HOLD", "REJECTED"].includes(input.decision)) throw new Error("OPPORTUNITY_DECISION_INVALID");
-    const opportunity = workspace.opportunities.find((candidate) => candidate.opportunityId === input.opportunityId);
+    const opportunity = selectDistinctCapabilityOpportunities(workspace.opportunities).find((candidate) => candidate.opportunityId === input.opportunityId);
     if (!opportunity) throw new Error("OPPORTUNITY_NOT_FOUND");
     opportunity.ownerDecision = input.decision;
     opportunity.decidedBy = input.actor;
@@ -138,7 +139,7 @@ export function validateOpportunityCapability(input: { siteId: string; organizat
   const resolvedEvidence = currentDecision && input.evidenceIds.length ? resolveCapabilityEvidenceReferences({ organizationId: input.organizationId, siteId: input.siteId, referenceIds: input.evidenceIds }) : [];
   return update({ ...input, action: `CAPABILITY_${input.state}`, mutate(workspace) {
     if (!["INSUFFICIENT", "OWNER_VALIDATION_REQUIRED", "VERIFIED", "QUALIFIED", "REJECTED", "FUTURE_CAPABILITY"].includes(input.state)) throw new Error("CAPABILITY_STATE_INVALID");
-    const opportunity = workspace.opportunities.find((candidate) => candidate.opportunityId === input.opportunityId);
+    const opportunity = selectDistinctCapabilityOpportunities(workspace.opportunities).find((candidate) => candidate.opportunityId === input.opportunityId);
     if (!opportunity) throw new Error("OPPORTUNITY_NOT_FOUND");
     const evidencePolicy = getCapabilityEvidencePolicy(opportunity);
     if ((input.state === "VERIFIED" || input.state === "QUALIFIED" || input.state === "FUTURE_CAPABILITY") && !input.attestation?.trim()) throw new Error("CAPABILITY_ATTESTATION_REQUIRED");
@@ -219,9 +220,10 @@ export function addStrategyProposal(input: { siteId: string; organizationId: str
 }
 
 export function getStrategyReadiness(workspace: SiteIntelligenceWorkspace): { ready: boolean; blockers: string[]; approvedOpportunityCount: number; verifiedCapabilityCount: number; qualifiedCapabilityCount: number } {
-  const approvedOpportunityCount = workspace.opportunities.filter((candidate) => candidate.ownerDecision === "APPROVED").length;
-  const verifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "VERIFIED" && hasVerifiedCapability(candidate)).length;
-  const qualifiedCapabilityCount = workspace.opportunities.filter((candidate) => candidate.capabilityState === "QUALIFIED" && hasVerifiedCapability(candidate)).length;
+  const opportunities = selectDistinctCapabilityOpportunities(workspace.opportunities);
+  const approvedOpportunityCount = opportunities.filter((candidate) => candidate.ownerDecision === "APPROVED").length;
+  const verifiedCapabilityCount = opportunities.filter((candidate) => candidate.capabilityState === "VERIFIED" && hasVerifiedCapability(candidate)).length;
+  const qualifiedCapabilityCount = opportunities.filter((candidate) => candidate.capabilityState === "QUALIFIED" && hasVerifiedCapability(candidate)).length;
   const blockers: string[] = [];
   if (workspace.intelligenceState !== "INTELLIGENCE_APPROVED") blockers.push("Approve Site Intelligence after completing opportunity review.");
   if (approvedOpportunityCount === 0) blockers.push("Approve at least one market opportunity for strategy consideration.");
@@ -252,6 +254,15 @@ export function reopenApprovedStrategyForReview(input: { siteId: string; organiz
     const approved = workspace.strategyRevisions.at(-1);
     if (!approved || approved.status !== "APPROVED" || workspace.strategyState !== "STRATEGY_APPROVED") throw new Error("APPROVED_STRATEGY_REQUIRED");
     workspace.strategyRevisions.push({ ...deepClone(approved), revision: approved.revision + 1, status: "REVISION_REQUESTED", reason: input.reason, createdBy: input.actor, createdAt: now(), decidedBy: null, decidedAt: null });
+    workspace.strategyState = "STRATEGY_READY_FOR_REVIEW";
+  }});
+}
+
+export function refreshApprovedStrategy(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; proposal: Omit<SiteStrategyProposal, "revision" | "status" | "createdBy" | "createdAt" | "decidedBy" | "decidedAt"> }) {
+  return update({ ...input, action: "STRATEGY_REFRESH_PROPOSED", mutate(workspace) {
+    const approved = workspace.strategyRevisions.at(-1);
+    if (!approved || approved.status !== "APPROVED" || workspace.strategyState !== "STRATEGY_APPROVED") throw new Error("APPROVED_STRATEGY_REQUIRED");
+    workspace.strategyRevisions.push({ ...input.proposal, revision: approved.revision + 1, status: "PROPOSED", createdBy: input.actor, createdAt: now(), decidedBy: null, decidedAt: null });
     workspace.strategyState = "STRATEGY_READY_FOR_REVIEW";
   }});
 }
