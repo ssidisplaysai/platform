@@ -7,10 +7,12 @@ const mockWorkspace = { site: mockSite, session: { buildSessionId: "build-1" }, 
 const mockGetSiteBuildWorkspace = jest.fn(() => mockWorkspace);
 const mockGenerateBuildPlan = jest.fn();
 const mockCreateBuildWordPressDrafts = jest.fn(async () => []);
+const mockGenerateFullSiteAssembly = jest.fn();
+const mockUpdateBuildWordPressDraftContent = jest.fn(async () => []);
 const mockGetSiteGenerationReadiness = jest.fn(() => ({ certification: { status: "CURRENT", certification: { certificationId: "cert-1" } } }));
 
 jest.mock("../site-repository", () => ({ getSiteById: jest.fn((siteId: string) => siteId === mockSite.siteId ? mockSite : null) }));
-jest.mock("../site-build-service", () => ({ getSiteBuildWorkspace: (...args: unknown[]) => mockGetSiteBuildWorkspace(...args), generateBuildPlan: (...args: unknown[]) => mockGenerateBuildPlan(...args), reviseBuildPlan: jest.fn(), approveBuildPlan: jest.fn(), rejectBuildPlan: jest.fn(), generateBuildDrafts: jest.fn(), approveBuildDrafts: jest.fn(), createBuildWordPressDrafts: (...args: unknown[]) => mockCreateBuildWordPressDrafts(...args) }));
+jest.mock("../site-build-service", () => ({ getSiteBuildWorkspace: (...args: unknown[]) => mockGetSiteBuildWorkspace(...args), generateBuildPlan: (...args: unknown[]) => mockGenerateBuildPlan(...args), reviseBuildPlan: jest.fn(), approveBuildPlan: jest.fn(), rejectBuildPlan: jest.fn(), generateBuildDrafts: jest.fn(), approveBuildDrafts: jest.fn(), createBuildWordPressDrafts: (...args: unknown[]) => mockCreateBuildWordPressDrafts(...args), generateFullSiteAssembly: (...args: unknown[]) => mockGenerateFullSiteAssembly(...args), decideGeneratedPage: jest.fn(), regenerateGeneratedPage: jest.fn(), approveAllGeneratedPages: jest.fn(), updateBuildWordPressDraftContent: (...args: unknown[]) => mockUpdateBuildWordPressDraftContent(...args) }));
 jest.mock("../site-generation-readiness-service", () => ({ getSiteGenerationReadiness: (...args: unknown[]) => mockGetSiteGenerationReadiness(...args) }));
 jest.mock("../site-generation-readiness-repository", () => ({ startSiteBuild: jest.fn() }));
 
@@ -40,5 +42,12 @@ describe("bounded Site Build API", () => {
     expect((await POST(request({ method: "POST", headers, body: "{}" }), context)).status).toBe(400);
     const response = await POST(request({ method: "POST", headers, body: JSON.stringify({ confirm: "CREATE_WORDPRESS_DRAFTS" }) }), context);
     expect(response.status).toBe(200); expect(mockCreateBuildWordPressDrafts).toHaveBeenCalledTimes(1); expect(await response.json()).toMatchObject({ wordpressMutation: true, publicationMutation: false });
+  });
+
+  test("full-site generation remains local and WordPress content update is a separate action", async () => {
+    const generated = await POST(request({ method: "POST", headers, body: JSON.stringify({ confirm: "GENERATE_FULL_SITE" }) }), context);
+    expect(generated.status).toBe(200); expect(mockGenerateFullSiteAssembly).toHaveBeenCalledTimes(1); expect(mockUpdateBuildWordPressDraftContent).not.toHaveBeenCalled(); expect(await generated.json()).toMatchObject({ wordpressMutation: false, publicationMutation: false });
+    const updated = await POST(request({ method: "POST", headers, body: JSON.stringify({ confirm: "UPDATE_WORDPRESS_DRAFT_CONTENT" }) }), context);
+    expect(updated.status).toBe(200); expect(mockUpdateBuildWordPressDraftContent).toHaveBeenCalledTimes(1); expect(await updated.json()).toMatchObject({ wordpressMutation: true, publicationMutation: false });
   });
 });

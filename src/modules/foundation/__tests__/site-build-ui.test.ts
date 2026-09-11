@@ -4,7 +4,7 @@ import path from "node:path";
 describe("bounded Site Build owner workspace", () => {
   const source = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteBuildWorkflow.tsx"), "utf8");
   test("shows the progress ladder, current next step, and progressive authority disclosure", () => {
-    for (const text of ["Build Started", "Build Plan", "Draft Generation", "Review", "WordPress Drafts", "Publication", "Current Next Step", "Advanced Details", "Authority used"]) expect(source).toContain(text);
+    for (const text of ["Build Started", "Build Plan", "Draft Seeds", "Full Pages", "Owner Review", "WordPress Drafts", "Publication", "Current Next Step", "Advanced Details", "Authority used"]) expect(source).toContain(text);
     expect(source).toContain('publication ? "DISABLED"');
   });
   test("supports explicit plan review, revision instructions, local draft review, and WordPress handoff", () => {
@@ -21,5 +21,8 @@ describe("bounded Site Build owner workspace", () => {
     expect(source).toContain("/site-build/wordpress-readiness");
     expect(source).toContain("!wordpressReadiness?.ready");
     expect(source).toContain("Authenticated WordPress access and collision preflight passed");
+  });
+  test("continues through local full-page review before exact WordPress content updates", () => {
+    for (const text of ["GENERATE FULL PAGE CONTENT", "REVIEW GENERATED SITE", "UPDATE WORDPRESS DRAFT CONTENT"]) expect(source).toContain(text);
   });
 });

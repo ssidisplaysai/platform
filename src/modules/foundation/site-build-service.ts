@@ -3,15 +3,16 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { synthesizeSiteBuildPlan } from "./site-build-plan";
 import { createAuthenticatedWordPressReadAuthority } from "./authenticated-wordpress-read-authority";
+import { SITE_PAGE_GENERATION_POLICY_VERSION, synthesizeSiteAssembly } from "./site-page-generation";
 import type { GenerationAuthoritySnapshot } from "./site-generation-readiness";
 import { getSiteGenerationReadiness } from "./site-generation-readiness-service";
-import { approveSiteBuildDrafts, decideBuildPlan, generateSiteBuildDrafts, getSiteBuildRecords, recordSiteBuildWordPressDraft, saveBuildPlanProposal, saveRevisedBuildPlan } from "./site-generation-readiness-repository";
+import { approveAllReadySiteAssemblyPages, approveSiteBuildDrafts, decideBuildPlan, decideSiteAssemblyPage, generateSiteBuildDrafts, getSiteBuildRecords, recordSiteBuildWordPressContentUpdate, recordSiteBuildWordPressDraft, replaceSiteAssemblyPageRevision, saveBuildPlanProposal, saveRevisedBuildPlan, saveSiteAssemblyProposal } from "./site-generation-readiness-repository";
 import { getSiteIntelligenceWorkspace } from "./site-intelligence-repository";
 import type { SiteConfiguration } from "./types";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import { writeGenesisWordPressDraft } from "./wordpress-draft-writer";
 
-export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
+export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "PAGE_GENERATION" | "PAGE_REVIEW" | "WORDPRESS_CONTENT_UPDATE" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
 
 export function isSiteBuildSnapshotCurrent(left: GenerationAuthoritySnapshot, right: GenerationAuthoritySnapshot): boolean {
   return left.strategyRevision === right.strategyRevision && left.creativeRevision === right.creativeRevision && left.marketFingerprint === right.marketFingerprint && left.capabilityFingerprint === right.capabilityFingerprint && left.productServiceFingerprint === right.productServiceFingerprint && left.sourcesFingerprint === right.sourcesFingerprint && left.generationPolicyVersion === right.generationPolicyVersion;
@@ -20,7 +21,7 @@ export function isSiteBuildSnapshotCurrent(left: GenerationAuthoritySnapshot, ri
 export function getSiteBuildWorkspace(site: SiteConfiguration) {
   const generation = getSiteGenerationReadiness(site);
   const session = generation.buildSession;
-  const records = session ? getSiteBuildRecords({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : { plans: [], changeRequests: [], currentPlan: null, draftSet: null, wordpressDrafts: [] };
+  const records = session ? getSiteBuildRecords({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: session.buildSessionId }) : { plans: [], changeRequests: [], currentPlan: null, draftSet: null, wordpressDrafts: [], assemblies: [], currentAssembly: null, wordpressContentUpdates: [] };
   const stale = generation.certification.status !== "CURRENT" || Boolean(records.currentPlan && !isSiteBuildSnapshotCurrent(records.currentPlan.authoritySnapshot, generation.readiness.snapshot)) || Boolean(records.draftSet && !isSiteBuildSnapshotCurrent(records.draftSet.authoritySnapshot, generation.readiness.snapshot));
   let stage: SiteBuildStage;
   if (!session) stage = "BUILD_NOT_STARTED";
@@ -30,6 +31,9 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
   else if (records.currentPlan.status !== "APPROVED" || !records.draftSet) stage = "DRAFT_GENERATION";
   else if (records.draftSet.status === "GENERATED") stage = "DRAFT_REVIEW";
   else if (records.wordpressDrafts.length < records.draftSet.drafts.length) stage = "WORDPRESS_DRAFTS";
+  else if (!records.currentAssembly) stage = "PAGE_GENERATION";
+  else if (records.currentAssembly.status !== "APPROVED") stage = "PAGE_REVIEW";
+  else if (records.wordpressContentUpdates.length < records.currentAssembly.pages.length) stage = "WORDPRESS_CONTENT_UPDATE";
   else stage = "COMPLETE";
   const next = {
     BUILD_NOT_STARTED: { action: "START_SITE_BUILD", label: "START SITE BUILD", detail: "Start one durable bounded build session." },
@@ -38,6 +42,9 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
     DRAFT_GENERATION: { action: "GENERATE_SITE_DRAFTS", label: "GENERATE SITE DRAFTS", detail: "Generate local review drafts from the approved plan. WordPress is not contacted." },
     DRAFT_REVIEW: { action: "APPROVE_SITE_DRAFTS", label: "APPROVE SITE DRAFTS", detail: "Approve the local drafts before any WordPress draft is created." },
     WORDPRESS_DRAFTS: { action: "CREATE_WORDPRESS_DRAFTS", label: "CREATE WORDPRESS DRAFTS", detail: "Create draft-only WordPress pages after authoritative collision checks. Publication remains disabled." },
+    PAGE_GENERATION: { action: "GENERATE_FULL_SITE", label: "GENERATE FULL PAGE CONTENT", detail: "Generate production-quality page proposals, SEO, links, navigation, and image requirements locally. WordPress is not updated." },
+    PAGE_REVIEW: { action: "REVIEW_FULL_SITE", label: "REVIEW GENERATED SITE", detail: "Review each generated page, request bounded changes, or approve pages that pass quality checks." },
+    WORDPRESS_CONTENT_UPDATE: { action: "UPDATE_WORDPRESS_DRAFT_CONTENT", label: "UPDATE WORDPRESS DRAFT CONTENT", detail: "Update the exact existing WordPress drafts only after all generated pages are owner approved." },
     COMPLETE: { action: "REVIEW_WORDPRESS_DRAFTS", label: "REVIEW WORDPRESS DRAFTS", detail: "Review the created drafts in WordPress. Publication remains a separate gate." },
     AUTHORITY_REVIEW_REQUIRED: { action: "REVIEW_GENERATION_READINESS", label: "REVIEW GENERATION READINESS", detail: "Material upstream authority changed. Recertify before continuing this build." },
   }[stage];
@@ -74,6 +81,22 @@ export function approveBuildPlan(site: SiteConfiguration, actor: string, reason:
 export function rejectBuildPlan(site: SiteConfiguration, actor: string, reason: string) { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || !workspace.currentPlan) throw new Error("CURRENT_BUILD_PLAN_REQUIRED"); return decideBuildPlan({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, revision: workspace.currentPlan.revision, decision: "REJECT", actor, reason }); }
 export function generateBuildDrafts(site: SiteConfiguration, actor: string) { const workspace = getSiteBuildWorkspace(site); if (workspace.stale || !workspace.currentPlan) throw new Error("CURRENT_APPROVED_BUILD_PLAN_REQUIRED"); return generateSiteBuildDrafts({ plan: workspace.currentPlan, actor }); }
 export function approveBuildDrafts(site: SiteConfiguration, actor: string) { const workspace = getSiteBuildWorkspace(site); if (workspace.stale || !workspace.session || !workspace.draftSet) throw new Error("CURRENT_BUILD_DRAFTS_REQUIRED"); return approveSiteBuildDrafts({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, draftSetId: workspace.draftSet.draftSetId, actor }); }
+
+export function generateFullSiteAssembly(site: SiteConfiguration, actor: string, instructions = "") {
+  const context = planningContext(site); const { workspace } = context;
+  if (!workspace.currentPlan || workspace.currentPlan.status !== "APPROVED" || !workspace.draftSet || workspace.wordpressDrafts.length !== workspace.draftSet.drafts.length) throw new Error("COMPLETED_WORDPRESS_DRAFT_STAGE_REQUIRED");
+  if (workspace.currentAssembly?.status === "READY_FOR_OWNER_REVIEW" && workspace.currentAssembly.policyVersion === SITE_PAGE_GENERATION_POLICY_VERSION && !instructions.trim()) return workspace.currentAssembly;
+  return saveSiteAssemblyProposal(synthesizeSiteAssembly({ site, buildSessionId: workspace.session.buildSessionId, plan: workspace.currentPlan, intelligence: context.intelligence, strategy: context.strategy, creative: context.creative, candidates: workspace.generation.authority.candidates, sources: workspace.generation.authority.sources, revision: (workspace.currentAssembly?.revision ?? 0) + 1, actor, instructions }));
+}
+
+export function decideGeneratedPage(site: SiteConfiguration, actor: string, pageId: string, decision: "APPROVE" | "REQUEST_CHANGES", instructions = "") { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || !workspace.currentAssembly || workspace.stale) throw new Error("CURRENT_SITE_ASSEMBLY_REQUIRED"); return decideSiteAssemblyPage({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, assemblyId: workspace.currentAssembly.assemblyId, pageId, decision, instructions, actor }); }
+export function approveAllGeneratedPages(site: SiteConfiguration, actor: string) { const workspace = getSiteBuildWorkspace(site); if (!workspace.session || !workspace.currentAssembly || workspace.stale) throw new Error("CURRENT_SITE_ASSEMBLY_REQUIRED"); return approveAllReadySiteAssemblyPages({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, assemblyId: workspace.currentAssembly.assemblyId, actor }); }
+
+export function regenerateGeneratedPage(site: SiteConfiguration, actor: string, pageId: string, instructions: string) {
+  const context = planningContext(site); const current = context.workspace.currentAssembly; if (!current || !instructions.trim()) throw new Error("PAGE_REGENERATION_INSTRUCTIONS_REQUIRED");
+  const regenerated = synthesizeSiteAssembly({ site, buildSessionId: context.workspace.session.buildSessionId, plan: context.workspace.currentPlan!, intelligence: context.intelligence, strategy: context.strategy, creative: context.creative, candidates: context.workspace.generation.authority.candidates, sources: context.workspace.generation.authority.sources, revision: current.revision + 1, actor, instructions }); const page = regenerated.pages.find((item) => item.pageId === pageId); if (!page) throw new Error("SITE_ASSEMBLY_PAGE_NOT_FOUND");
+  return replaceSiteAssemblyPageRevision({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: context.workspace.session.buildSessionId, priorAssemblyId: current.assemblyId, page, actor });
+}
 
 export type SiteBuildWordPressReadiness = {
   ready: boolean;
@@ -125,4 +148,18 @@ export async function createBuildWordPressDrafts(site: SiteConfiguration, writer
     recordSiteBuildWordPressDraft({ buildSessionId: workspace.session.buildSessionId, draftId: draft.draftId, wordpressObjectId: result.wordpressObjectId, wordpressUrl: result.wordpressUrl, wordpressStatus: "draft", createdAt: new Date().toISOString() });
   }
   return getSiteBuildWorkspace(site).wordpressDrafts;
+}
+
+export async function updateBuildWordPressDraftContent(site: SiteConfiguration, writer = writeGenesisWordPressDraft) {
+  const workspace = getSiteBuildWorkspace(site); const assembly = workspace.currentAssembly;
+  if (workspace.stale || !workspace.session || assembly?.status !== "APPROVED" || !assembly.pages.every((item) => item.status === "APPROVED" && item.quality.ready)) throw new Error("APPROVED_SITE_ASSEMBLY_REQUIRED");
+  if (site.publishingStatus !== "disabled" || site.enabled) throw new Error("DRAFT_ONLY_SITE_BOUNDARY_REQUIRED");
+  const completed = new Set(workspace.wordpressContentUpdates.map((item) => item.pageRevisionId));
+  for (const page of assembly.pages.filter((item) => !completed.has(item.pageRevisionId))) {
+    const receipt = workspace.wordpressDrafts.find((item) => item.draftId === `${page.pageId}-draft`); if (!receipt) throw new Error(`WORDPRESS_DRAFT_RECEIPT_REQUIRED:${page.name}`);
+    const result = await writer({ operation: "UPDATE", site, wordpressObjectId: receipt.wordpressObjectId, artifact: { title: page.name, slug: page.slug || "home", excerpt: page.metaDescription, contentHtml: page.contentHtml, seo: { focusKeyphrase: page.h1, seoTitle: page.seoTitle, metaDescription: page.metaDescription } } });
+    if (!result.ok) throw new Error(`WORDPRESS_CONTENT_UPDATE_FAILED:${page.name}:${result.state}`);
+    recordSiteBuildWordPressContentUpdate({ buildSessionId: workspace.session.buildSessionId, pageRevisionId: page.pageRevisionId, wordpressObjectId: result.wordpressObjectId, wordpressUrl: result.wordpressUrl, wordpressStatus: "draft", updatedAt: new Date().toISOString() });
+  }
+  return getSiteBuildWorkspace(site).wordpressContentUpdates;
 }

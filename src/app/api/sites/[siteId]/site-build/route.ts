@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { startSiteBuild } from "@/modules/foundation/site-generation-readiness-repository";
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
-import { approveBuildDrafts, approveBuildPlan, createBuildWordPressDrafts, generateBuildDrafts, generateBuildPlan, getSiteBuildWorkspace, rejectBuildPlan, reviseBuildPlan } from "@/modules/foundation/site-build-service";
+import { approveAllGeneratedPages, approveBuildDrafts, approveBuildPlan, createBuildWordPressDrafts, decideGeneratedPage, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, getSiteBuildWorkspace, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
 import { getSiteById } from "@/modules/foundation/site-repository";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest, context: Context) {
 export async function POST(request: NextRequest, context: Context) {
   const auth = authorizeRequest(request, "sites:manage_integrations"); if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const site = await scoped(request, context); if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
-  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string } | null;
+  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string } | null;
   const confirm = body?.confirm ?? "";
   try {
     if (confirm === "START_SITE_BUILD") {
@@ -32,7 +32,14 @@ export async function POST(request: NextRequest, context: Context) {
     else if (confirm === "GENERATE_SITE_DRAFTS") generateBuildDrafts(site, "site-owner");
     else if (confirm === "APPROVE_SITE_DRAFTS") approveBuildDrafts(site, "site-owner");
     else if (confirm === "CREATE_WORDPRESS_DRAFTS") await createBuildWordPressDrafts(site);
+    else if (confirm === "GENERATE_FULL_SITE") generateFullSiteAssembly(site, "site-owner", body?.instructions ?? "");
+    else if (confirm === "APPROVE_GENERATED_PAGE") decideGeneratedPage(site, "site-owner", body?.pageId ?? "", "APPROVE");
+    else if (confirm === "REQUEST_GENERATED_PAGE_CHANGES") decideGeneratedPage(site, "site-owner", body?.pageId ?? "", "REQUEST_CHANGES", body?.instructions ?? "");
+    else if (confirm === "REGENERATE_GENERATED_PAGE") regenerateGeneratedPage(site, "site-owner", body?.pageId ?? "", body?.instructions ?? "");
+    else if (confirm === "APPROVE_ALL_READY_PAGES") approveAllGeneratedPages(site, "site-owner");
+    else if (confirm === "REQUEST_SITE_WIDE_CHANGES") generateFullSiteAssembly(site, "site-owner", body?.instructions ?? "");
+    else if (confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT") await updateBuildWordPressDraftContent(site);
     else return NextResponse.json({ error: "Explicit supported Site Build action is required." }, { status: 400 });
-    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS", publicationMutation: false, siteEnabledMutation: false });
+    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT", publicationMutation: false, siteEnabledMutation: false });
   } catch (cause) { return NextResponse.json({ error: cause instanceof Error ? cause.message : "SITE_BUILD_ACTION_FAILED" }, { status: 409 }); }
 }

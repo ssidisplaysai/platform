@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
 import type { GenerationAuthoritySnapshot, GenerationReadinessResult } from "./site-generation-readiness";
 import type { SiteBuildPageAuthority, SiteBuildPlanChangeRequest, SiteBuildPlanProposal } from "./site-build-plan";
+import type { SiteAssemblyProposal, SiteGeneratedPageRevision } from "./site-page-generation";
 
 export type SiteGenerationReadinessCertification = GenerationAuthoritySnapshot & {
   certificationId: string;
@@ -56,6 +57,7 @@ export type SiteBuildWordPressDraft = {
   wordpressStatus: "draft";
   createdAt: string;
 };
+export type SiteBuildWordPressContentUpdate = { buildSessionId: string; pageRevisionId: string; wordpressObjectId: string; wordpressUrl: string; wordpressStatus: "draft"; updatedAt: string };
 
 type State = {
   certifications: SiteGenerationReadinessCertification[];
@@ -64,13 +66,15 @@ type State = {
   buildPlanChangeRequests?: SiteBuildPlanChangeRequest[];
   draftSets?: SiteBuildDraftSet[];
   wordpressDrafts?: SiteBuildWordPressDraft[];
+  siteAssemblies?: SiteAssemblyProposal[];
+  wordpressContentUpdates?: SiteBuildWordPressContentUpdate[];
 };
 
 const NAMESPACE = "site-generation-readiness-repository";
 const seed = (): State => ({ certifications: [], buildSessions: [] });
 function load() {
   const loaded = loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed });
-  return { ...loaded, state: { ...loaded.state, buildPlans: loaded.state.buildPlans ?? [], buildPlanChangeRequests: loaded.state.buildPlanChangeRequests ?? [], draftSets: loaded.state.draftSets ?? [], wordpressDrafts: loaded.state.wordpressDrafts ?? [] } };
+  return { ...loaded, state: { ...loaded.state, buildPlans: loaded.state.buildPlans ?? [], buildPlanChangeRequests: loaded.state.buildPlanChangeRequests ?? [], draftSets: loaded.state.draftSets ?? [], wordpressDrafts: loaded.state.wordpressDrafts ?? [], siteAssemblies: loaded.state.siteAssemblies ?? [], wordpressContentUpdates: loaded.state.wordpressContentUpdates ?? [] } };
 }
 function escapeHtml(value: string): string { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
 
@@ -135,7 +139,9 @@ export function getSiteBuildRecords(input: { organizationId: string; siteId: str
   const changeRequests = state.buildPlanChangeRequests.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId);
   const draftSets = state.draftSets.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId);
   const wordpressDrafts = state.wordpressDrafts.filter((item) => item.buildSessionId === input.buildSessionId);
-  return deepClone({ plans, changeRequests, currentPlan: plans.at(-1) ?? null, draftSet: draftSets.at(-1) ?? null, wordpressDrafts });
+  const assemblies = state.siteAssemblies.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId);
+  const wordpressContentUpdates = state.wordpressContentUpdates.filter((item) => item.buildSessionId === input.buildSessionId);
+  return deepClone({ plans, changeRequests, currentPlan: plans.at(-1) ?? null, draftSet: draftSets.at(-1) ?? null, wordpressDrafts, assemblies, currentAssembly: assemblies.at(-1) ?? null, wordpressContentUpdates });
 }
 
 export function saveBuildPlanProposal(plan: SiteBuildPlanProposal): SiteBuildPlanProposal {
@@ -201,4 +207,38 @@ export function recordSiteBuildWordPressDraft(input: SiteBuildWordPressDraft): S
   loaded.state.wordpressDrafts.push(input);
   savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
   return deepClone(input);
+}
+
+export function saveSiteAssemblyProposal(assembly: SiteAssemblyProposal): SiteAssemblyProposal {
+  const loaded = load(); const existing = loaded.state.siteAssemblies.find((item) => item.assemblyId === assembly.assemblyId);
+  if (existing) return deepClone(existing);
+  loaded.state.siteAssemblies.push(assembly); savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(assembly);
+}
+
+export function decideSiteAssemblyPage(input: { organizationId: string; siteId: string; buildSessionId: string; assemblyId: string; pageId: string; decision: "APPROVE" | "REQUEST_CHANGES"; instructions?: string; actor: string }): SiteAssemblyProposal {
+  const loaded = load(); const assemblyIndex = loaded.state.siteAssemblies.findIndex((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId && item.assemblyId === input.assemblyId);
+  if (assemblyIndex < 0) throw new Error("SITE_ASSEMBLY_NOT_FOUND"); const assembly = loaded.state.siteAssemblies[assemblyIndex]; const pageIndex = assembly.pages.findIndex((item) => item.pageId === input.pageId);
+  if (pageIndex < 0) throw new Error("SITE_ASSEMBLY_PAGE_NOT_FOUND"); if (input.decision === "APPROVE" && !assembly.pages[pageIndex].quality.ready) throw new Error("PAGE_QUALITY_NOT_READY");
+  assembly.pages[pageIndex] = { ...assembly.pages[pageIndex], status: input.decision === "APPROVE" ? "APPROVED" : "REVISION_REQUESTED", requestedChanges: input.decision === "REQUEST_CHANGES" ? input.instructions?.trim() || null : assembly.pages[pageIndex].requestedChanges, decidedAt: new Date().toISOString(), decidedBy: input.actor };
+  if (assembly.pages.every((item) => item.status === "APPROVED")) assembly.status = "APPROVED";
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(assembly);
+}
+
+export function approveAllReadySiteAssemblyPages(input: { organizationId: string; siteId: string; buildSessionId: string; assemblyId: string; actor: string }): SiteAssemblyProposal {
+  const loaded = load(); const index = loaded.state.siteAssemblies.findIndex((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId && item.assemblyId === input.assemblyId);
+  if (index < 0) throw new Error("SITE_ASSEMBLY_NOT_FOUND"); const timestamp = new Date().toISOString(); const assembly = loaded.state.siteAssemblies[index];
+  assembly.pages = assembly.pages.map((item) => item.quality.ready ? { ...item, status: "APPROVED", decidedAt: timestamp, decidedBy: input.actor } : item); assembly.status = assembly.pages.every((item) => item.status === "APPROVED") ? "APPROVED" : assembly.status;
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(assembly);
+}
+
+export function replaceSiteAssemblyPageRevision(input: { organizationId: string; siteId: string; buildSessionId: string; priorAssemblyId: string; page: SiteGeneratedPageRevision; actor: string }): SiteAssemblyProposal {
+  const loaded = load(); const prior = loaded.state.siteAssemblies.find((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && item.buildSessionId === input.buildSessionId && item.assemblyId === input.priorAssemblyId);
+  if (!prior) throw new Error("SITE_ASSEMBLY_NOT_FOUND"); const revision = (loaded.state.siteAssemblies.filter((item) => item.buildSessionId === input.buildSessionId).at(-1)?.revision ?? prior.revision) + 1;
+  const assembly: SiteAssemblyProposal = { ...deepClone(prior), assemblyId: `${input.buildSessionId}-assembly-${revision}`, revision, status: "READY_FOR_OWNER_REVIEW", pages: prior.pages.map((item) => item.pageId === input.page.pageId ? input.page : item), createdAt: new Date().toISOString(), createdBy: input.actor };
+  loaded.state.siteAssemblies.push(assembly); savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(assembly);
+}
+
+export function recordSiteBuildWordPressContentUpdate(input: SiteBuildWordPressContentUpdate): SiteBuildWordPressContentUpdate {
+  const loaded = load(); const existing = loaded.state.wordpressContentUpdates.find((item) => item.buildSessionId === input.buildSessionId && item.pageRevisionId === input.pageRevisionId);
+  if (existing) return deepClone(existing); loaded.state.wordpressContentUpdates.push(input); savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(input);
 }
