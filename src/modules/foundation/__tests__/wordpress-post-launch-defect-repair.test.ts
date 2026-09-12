@@ -4,6 +4,8 @@ describe("CSC post-launch defect repair", () => {
   test("removes only theme post titles, clears only the default tagline, and binds exact market IDs", () => {
     const code = WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET.code;
     expect(code).toContain("get_option('blogdescription') === 'Just another WordPress site'");
+    expect(code).toContain("get_option('blogname') === 'My blog'");
+    expect(code).toContain("update_option('blogname', 'Commercial Stainless Counters', true)");
     expect(code).toContain("($block['blockName'] ?? '') === 'core/post-title'");
     expect(code).toContain("is_page(GENESIS_CSC_PAGE_IDS_V1)");
     for (const [id, path] of [[17, "markets/education"], [18, "markets/foodservice"], [19, "markets/healthcare"], [20, "markets/hospitality"], [21, "markets/industrial"], [22, "markets/labs"]]) expect(code).toContain(`${id} => '${path}'`);

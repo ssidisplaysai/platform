@@ -18,6 +18,9 @@ const GENESIS_CSC_MARKET_PATHS_V1 = array(
 if (get_option('blogdescription') === 'Just another WordPress site') {
     update_option('blogdescription', '', true);
 }
+if (get_option('blogname') === 'My blog') {
+    update_option('blogname', 'Commercial Stainless Counters', true);
+}
 
 add_filter('render_block', function ($content, $block) {
     if (($block['blockName'] ?? '') === 'core/post-title' && is_page(GENESIS_CSC_PAGE_IDS_V1)) {
