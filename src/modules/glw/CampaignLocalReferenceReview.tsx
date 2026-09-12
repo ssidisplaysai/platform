@@ -12,6 +12,7 @@ export function CampaignLocalReferenceReview(props: {
   requestRoles: readonly string[];
   reference: GlwLocalReferenceDraft;
   canonicalReferenceApproved?: boolean;
+  currentReleaseAuthorizationActive?: boolean;
   imageCandidate?: GlwReferenceImageCandidate | null;
   imageHistory?: readonly GlwReferenceImageCandidate[];
   imagePreviewDataUrl?: string | null;
@@ -150,7 +151,7 @@ export function CampaignLocalReferenceReview(props: {
           <dd className={props.canonicalReferenceApproved ? "text-emerald-300" : "text-zinc-200"}>
             {props.canonicalReferenceApproved ? "APPROVED" : referenceReadyForOwnerApproval ? "Ready for owner approval" : "Image approval required"}
           </dd>
-          {props.canonicalReferenceApproved ? <><dt className="text-zinc-500">Authorization</dt><dd className="text-amber-300">REQUIRED</dd></> : null}
+          {props.canonicalReferenceApproved ? <><dt className="text-zinc-500">Authorization</dt><dd className={props.currentReleaseAuthorizationActive ? "text-emerald-300" : "text-amber-300"}>{props.currentReleaseAuthorizationActive ? "AUTHORIZED" : "REQUIRED"}</dd></> : null}
         </dl>
         {!props.canonicalReferenceApproved ? (
           <button type="button" disabled={busy || !referenceReadyForOwnerApproval} onClick={() => request("PATCH", "APPROVE_CANONICAL_REFERENCE")} className="mt-3 border border-emerald-600 px-3 py-2 text-xs font-semibold text-emerald-200 disabled:border-zinc-700 disabled:text-zinc-600">Approve Reference</button>

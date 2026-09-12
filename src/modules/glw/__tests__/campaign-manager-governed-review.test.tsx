@@ -8,17 +8,19 @@ jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: jest.fn() }) 
 
 describe("Agent 2 Campaign Manager governed review integration", () => {
   test("enables authorization after reference approval while keeping activation disabled without a grant", () => {
-    const html = renderToStaticMarkup(<CampaignActivationAuthorityPanel organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} readiness={{ knowledgePackReady: true, approvedReferenceCount: 1, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: "TX", referenceCitySlug: "austin", releaseIdentityReady: true, releaseIdentityReason: null }} globalPromotionAvailable={true} globalPromotionReason="" />);
+    const html = renderToStaticMarkup(<CampaignActivationAuthorityPanel organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} readiness={{ knowledgePackReady: true, approvedReferenceCount: 1, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: "TX", referenceCitySlug: "austin", releaseIdentityReady: true, releaseIdentityReason: null, releaseCapabilityStatus: "READY", releaseCapabilityReleaseSha: "a".repeat(40) }} globalPromotionAvailable={true} globalPromotionReason="" />);
     expect(html).toMatch(/<button[^>]*(?!disabled)[^>]*>Authorize This Campaign for Activation<\/button>/);
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Activate Campaign<\/button>/);
     expect(html).not.toContain("Approved campaign reference</li>");
     expect(html).toContain("Scoped activation authorization");
     expect(html).toContain("Step: Activation Authorization");
     expect(html).toContain("REQUIRED");
+    expect(html).toContain("Release capability");
+    expect(html).toContain("READY");
   });
 
   test("shows the exact release blocker and disables authorization when runtime identity is absent", () => {
-    const html = renderToStaticMarkup(<CampaignActivationAuthorityPanel organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} readiness={{ knowledgePackReady: true, approvedReferenceCount: 1, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: "TX", referenceCitySlug: "austin", releaseIdentityReady: false, releaseIdentityReason: "Exact running release identity is required." }} globalPromotionAvailable={false} globalPromotionReason="Campaign launch is disabled." />);
+    const html = renderToStaticMarkup(<CampaignActivationAuthorityPanel organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} readiness={{ knowledgePackReady: true, approvedReferenceCount: 1, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: "TX", referenceCitySlug: "austin", releaseIdentityReady: false, releaseIdentityReason: "Exact running release identity is required.", releaseCapabilityStatus: "MISSING", releaseCapabilityReleaseSha: null }} globalPromotionAvailable={false} globalPromotionReason="Campaign launch is disabled." />);
     expect(html).toContain("Authorization unavailable: Exact running release identity is required.");
     expect(html).toMatch(/<button[^>]*disabled[^>]*>Authorize This Campaign for Activation<\/button>/);
   });
@@ -84,7 +86,7 @@ describe("Agent 2 Campaign Manager governed review integration", () => {
     const html = renderToStaticMarkup(<GlwCampaignManager organizationId="ssi" siteId={campaign.siteId} sites={[{ siteId: campaign.siteId, organizationId: "ssi", displayName: "ProjectorEnclosure.com" }]} products={[{ productId: campaign.productId, organizationId: "ssi", displayName: "Fan Cooled Projector Enclosures", assignedSiteIds: [campaign.siteId] }]} initialCampaigns={[campaign]} governedReviewByCampaign={{ [campaign.campaignId]: {
       knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: campaign.siteId, instructions: "Governed Texas instructions", references: [], revision: 1, status: "ready", ownerApprovalRequired: false, updatedAt: "2030-01-01" },
       reference, canonicalReferenceApproved: false, imageCandidate: candidate, imageHistory: [candidate], imagePreviewDataUrl: "data:image/jpeg;base64,/9j/",
-      activationReadiness: { knowledgePackReady: true, approvedReferenceCount: 0, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: null, referenceCitySlug: null, releaseIdentityReady: true, releaseIdentityReason: null },
+      activationReadiness: { knowledgePackReady: true, approvedReferenceCount: 0, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: null, referenceCitySlug: null, releaseIdentityReady: true, releaseIdentityReason: null, releaseCapabilityStatus: "READY", releaseCapabilityReleaseSha: "a".repeat(40) },
     } }} />);
 
     expect(html).toContain("0/4 complete");

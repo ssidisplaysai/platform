@@ -17,6 +17,8 @@ export type CampaignActivationReadiness = {
   referenceCitySlug: string | null;
   releaseIdentityReady: boolean;
   releaseIdentityReason: string | null;
+  releaseCapabilityStatus: "MISSING" | "WRONG_RELEASE" | "OPERATION_NOT_ENABLED" | "READY";
+  releaseCapabilityReleaseSha: string | null;
 };
 
 export function CampaignActivationAuthorityPanel(props: {
@@ -116,6 +118,7 @@ export function CampaignActivationAuthorityPanel(props: {
         <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-[8rem_1fr]">
           <dt className="text-zinc-500">Reference</dt><dd className={referenceApproved ? "text-emerald-300" : "text-amber-300"}>{referenceApproved ? "APPROVED" : "REQUIRED"}</dd>
           <dt className="text-zinc-500">Authorization</dt><dd className={authorizationState === "AUTHORIZED" ? "text-emerald-300" : authorizationState === "FAILED" ? "text-red-300" : "text-amber-300"}>{authorizationState === "FAILED" ? "AUTHORIZATION FAILED" : authorizationState}</dd>
+          <dt className="text-zinc-500">Release capability</dt><dd className={props.globalPromotionAvailable ? "text-emerald-300" : "text-amber-300"}>{props.globalPromotionAvailable ? "READY" : props.readiness.releaseCapabilityStatus.replaceAll("_", " ")}</dd>
         </dl>
         {authorizationState === "FAILED" && message ? <p className="mt-2 text-sm text-red-300" role="alert">Authorization failed: {message}</p> : null}
         {!props.readiness.releaseIdentityReady ? <p className="mt-2 text-sm text-amber-300">Authorization unavailable: {props.readiness.releaseIdentityReason}</p> : null}
@@ -147,6 +150,7 @@ export function CampaignActivationAuthorityPanel(props: {
           <dt>Prepared targets</dt><dd>{props.readiness.preparedTargetCount}</dd>
           <dt>Target fingerprint</dt><dd className="break-all">{props.readiness.targetFingerprint ?? "Unavailable"}</dd>
           <dt>Certified release</dt><dd className="break-all">{props.readiness.certifiedReleaseSha ?? "Not authorized"}</dd>
+          <dt>Capability release</dt><dd className="break-all">{props.readiness.releaseCapabilityReleaseSha ?? "Not enabled"}</dd>
           <dt>Expires</dt><dd>{props.readiness.grantExpiresAt ?? "Not authorized"}</dd>
         </dl>
       </details>

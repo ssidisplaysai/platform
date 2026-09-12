@@ -16,6 +16,7 @@ import {
   listGlwCampaignActivationGrants,
 } from "@/modules/glw/campaign-activation-authorization";
 import { selectDeterministicCityReference } from "@/modules/glw/projector-enclosure-texas-reference";
+import { resolveGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
 import { GlwCampaignManager, type GovernedReview } from "@/modules/glw/GlwCampaignManager";
 
 export const dynamic = "force-dynamic";
@@ -88,6 +89,11 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
     }
     const runningRelease = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
     const releaseIdentityReady = /^[0-9a-f]{40}$/.test(runningRelease);
+    const releaseCapability = resolveGlwCampaignActivationReleaseCapability({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      runningReleaseSha: runningRelease,
+    });
     const grantActive = Boolean(
       grant
       && !grant.claimedAt
@@ -120,7 +126,9 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
         referenceStateCode: approvals[0]?.stateCode ?? null,
         referenceCitySlug: approvals[0]?.citySlug ?? null,
         releaseIdentityReady,
-        releaseIdentityReason: releaseIdentityReady ? null : "Exact running release identity is required. Restart the supervised sidecar from a committed target HEAD.",
+        releaseIdentityReason: !releaseIdentityReady ? "Exact running release identity is required. Restart the supervised sidecar from a committed target HEAD." : releaseCapability.reason,
+        releaseCapabilityStatus: releaseCapability.status,
+        releaseCapabilityReleaseSha: releaseCapability.capability?.releaseSha ?? null,
       },
     }]];
   }));

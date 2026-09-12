@@ -23,6 +23,7 @@ import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { recordGlwCampaignLaunchActivated, requireGlwCampaignLaunchReservationOwnership } from "@/modules/glw/campaign-launch-authority";
 import { claimGlwCampaignActivationGrant, consumeGlwCampaignActivationGrant } from "@/modules/glw/campaign-activation-authorization";
+import { requireGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -157,6 +158,19 @@ export async function POST(
     );
   }
 
+  try {
+    requireGlwCampaignActivationReleaseCapability({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      runningReleaseSha: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
+    });
+  } catch (error) {
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "Campaign activation release capability is required.",
+      code: "GLW_CAMPAIGN_ACTIVATION_RELEASE_CAPABILITY_REQUIRED",
+    }, { status: 503 });
+  }
+
   const body = await request.json().catch(() => null) as {
     referenceStateCode?: string;
     referenceCitySlug?: string;
@@ -227,17 +241,15 @@ export async function POST(
     );
   }
 
-  if (approval.approvalKind === "GOVERNED_LOCAL_REFERENCE") {
-    return NextResponse.json(
-      { error: "Campaign activation requires a separately materialized and approved WordPress draft reference." },
-      { status: 409 },
-    );
-  }
+  const governedReferenceApproval = referenceCitySlug
+    ? getGovernedLocalCampaignReferenceApproval(campaign.campaignId, referenceStateCode, referenceCitySlug)
+    : null;
+  const wordpressApproval = approval.approvalKind === "GOVERNED_LOCAL_REFERENCE" ? null : approval;
+  const referenceJob = wordpressApproval
+    ? await glwPageExecutionRepository.getById(wordpressApproval.jobId)
+    : null;
 
-  const referenceJob =
-    await glwPageExecutionRepository.getById(approval.jobId);
-
-  if (
+  if (!governedReferenceApproval && (
     !referenceJob
     || referenceJob.organizationId !== campaign.organizationId
     || referenceJob.siteId !== campaign.siteId
@@ -247,13 +259,10 @@ export async function POST(
     || referenceJob.status !== "COMPLETE"
     || referenceJob.qaStatus !== "COMPLETE"
     || referenceJob.wordpressStatus !== "draft"
-    || referenceJob.wordpressObjectId !== approval.wordpressObjectId
+    || referenceJob.wordpressObjectId !== wordpressApproval?.wordpressObjectId
     || !referenceJob.wordpressObjectId
-    || (
-      campaign.imageRequired
-      && referenceJob.featuredImagePresent !== true
-    )
-  ) {
+    || (campaign.imageRequired && referenceJob.featuredImagePresent !== true)
+  )) {
     return NextResponse.json(
       {
         error:
@@ -276,8 +285,8 @@ export async function POST(
           stateCode: referenceStateCode,
           citySlug: referenceCitySlug!,
         },
-        referenceJobId: referenceJob.jobId,
-        referenceWordpressObjectId: referenceJob.wordpressObjectId,
+        referenceJobId: referenceJob?.jobId ?? null,
+        referenceWordpressObjectId: referenceJob?.wordpressObjectId ?? null,
       })
     : initializeGlwCampaignTargets({
         campaignId: campaign.campaignId,
@@ -286,8 +295,8 @@ export async function POST(
         productId: campaign.productId,
         stateCodes: campaign.stateCodes,
         referenceStateCode,
-        referenceJobId: referenceJob.jobId,
-        referenceWordpressObjectId: referenceJob.wordpressObjectId,
+        referenceJobId: referenceJob!.jobId,
+        referenceWordpressObjectId: referenceJob!.wordpressObjectId!,
       });
 
   let recoveredTargetCount = 0;
@@ -370,9 +379,6 @@ export async function POST(
 
   let activationGrant;
   try {
-    const governedReferenceApproval = referenceCitySlug
-      ? getGovernedLocalCampaignReferenceApproval(campaign.campaignId, referenceStateCode, referenceCitySlug)
-      : null;
     if (!governedReferenceApproval) throw new Error("GOVERNED_REFERENCE_APPROVAL_REQUIRED");
     activationGrant = claimGlwCampaignActivationGrant({
       campaign,
@@ -435,9 +441,9 @@ export async function POST(
       referenceStateCode,
       referenceCitySlug,
       referenceCityName: cityTarget?.cityName ?? null,
-      referenceJobId: referenceJob.jobId,
+      referenceJobId: referenceJob?.jobId ?? null,
       referenceWordpressObjectId:
-        referenceJob.wordpressObjectId,
+        referenceJob?.wordpressObjectId ?? null,
       totalTargets: targets.length,
       referenceComplete: referenceTargets.length,
       recovered: recoveredTargetCount,

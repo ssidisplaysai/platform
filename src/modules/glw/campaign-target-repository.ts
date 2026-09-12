@@ -208,8 +208,8 @@ export function initializeGlwCityCampaignTargets(input: {
     stateCode: string;
     citySlug: string;
   };
-  referenceJobId: string;
-  referenceWordpressObjectId: string;
+  referenceJobId: string | null;
+  referenceWordpressObjectId: string | null;
 }): readonly GlwCampaignTarget[] {
   loadState();
 
