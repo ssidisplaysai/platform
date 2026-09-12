@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { startSiteBuild } from "@/modules/foundation/site-generation-readiness-repository";
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
-import { approveAllGeneratedPages, approveAllReadySiteDesigns, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, assembleRemainingSiteVisuals, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, decideSiteVisualDesign, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, reassembleSiteVisualDesign, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
+import { approveAllGeneratedPages, approveAllReadySiteDesigns, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, assembleRemainingSiteVisuals, authorizeSitePublication, confirmSitePublicationReadiness, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, decideSiteNavigation, decideSiteVisualDesign, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, reassembleSiteNavigation, reassembleSiteVisualDesign, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, startSiteNavigationReview, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
+import { inspectSiteBuildWordPressDrafts } from "@/modules/foundation/site-build-wordpress-review";
 import { getSiteById } from "@/modules/foundation/site-repository";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -18,7 +19,7 @@ export async function GET(request: NextRequest, context: Context) {
 export async function POST(request: NextRequest, context: Context) {
   const auth = authorizeRequest(request, "sites:manage_integrations"); if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const site = await scoped(request, context); if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
-  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string; slotId?: string; candidateId?: string; visualAssemblyId?: string } | null;
+  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string; slotId?: string; candidateId?: string; visualAssemblyId?: string; navigationReviewId?: string } | null;
   const confirm = body?.confirm ?? "";
   try {
     if (confirm === "START_SITE_BUILD") {
@@ -50,6 +51,15 @@ export async function POST(request: NextRequest, context: Context) {
     else if (confirm === "REQUEST_SITE_VISUAL_CHANGES") decideSiteVisualDesign(site, "site-owner", body?.visualAssemblyId ?? "", "REQUEST_CHANGES");
     else if (confirm === "REASSEMBLE_SITE_VISUAL") await reassembleSiteVisualDesign(site, "site-owner", body?.visualAssemblyId ?? "", body?.instructions ?? "");
     else if (confirm === "APPROVE_ALL_READY_VISUALS") approveAllReadySiteDesigns(site, "site-owner");
+    else if (confirm === "CONTINUE_TO_NAVIGATION_REVIEW") {
+      const review = await inspectSiteBuildWordPressDrafts(site);
+      startSiteNavigationReview(site, "site-owner", review.qa.readyForSiteQa);
+    }
+    else if (confirm === "APPROVE_NAVIGATION") decideSiteNavigation(site, "site-owner", body?.navigationReviewId ?? "", "APPROVE");
+    else if (confirm === "REQUEST_NAVIGATION_CHANGES") decideSiteNavigation(site, "site-owner", body?.navigationReviewId ?? "", "REQUEST_CHANGES");
+    else if (confirm === "REASSEMBLE_NAVIGATION") reassembleSiteNavigation(site, "site-owner", body?.instructions ?? "");
+    else if (confirm === "CONFIRM_PUBLICATION_READINESS") confirmSitePublicationReadiness(site, "site-owner");
+    else if (confirm === "AUTHORIZE_PUBLICATION") authorizeSitePublication(site, "site-owner");
     else return NextResponse.json({ error: "Explicit supported Site Build action is required." }, { status: 400 });
     return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT" || confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL" || confirm === "ASSEMBLE_REMAINING_VISUALS", publicationMutation: false, siteEnabledMutation: false });
   } catch (cause) { return NextResponse.json({ error: cause instanceof Error ? cause.message : "SITE_BUILD_ACTION_FAILED" }, { status: 409 }); }

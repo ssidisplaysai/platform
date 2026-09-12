@@ -144,4 +144,17 @@ describe("Site Detail workflow resume resolver", () => {
     expect(result.primaryAction).toEqual({ key: "REVIEW_SITE_QA", title: "Site QA", description: next.detail, label: next.label, href: next.route });
     expect(result.stages.find((stage) => stage.key === "publication")?.status).toBe("DISABLED");
   });
+
+  test("remaining governed stages resume to their exact action routes", () => {
+    const base = { site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true };
+    for (const next of [
+      { stage: "NAVIGATION_REVIEW", action: "REVIEW_NAVIGATION", label: "REVIEW NAVIGATION", route: "/build/navigation", key: "REVIEW_NAVIGATION" },
+      { stage: "PUBLICATION_READINESS", action: "REVIEW_PUBLICATION_READINESS", label: "REVIEW PUBLICATION READINESS", route: "/build/publication-readiness", key: "REVIEW_PUBLICATION_READINESS" },
+      { stage: "PUBLICATION_AUTHORIZATION", action: "AUTHORIZE_PUBLICATION", label: "REVIEW PUBLICATION AUTHORIZATION", route: "/build/publication-authorization", key: "AUTHORIZE_PUBLICATION" },
+    ]) {
+      const result = resolveSiteWorkflowResume({ ...base, siteBuildStage: next.stage, siteBuildNext: { action: next.action, label: next.label, detail: "Governed continuation.", route: next.route } });
+      expect(result.primaryAction).toMatchObject({ key: next.key, label: next.label, href: next.route });
+      expect(result.stages.find((stage) => stage.key === "publication")?.status).toBe("DISABLED");
+    }
+  });
 });
