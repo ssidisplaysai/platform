@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type QueueSummary = {
@@ -25,8 +25,6 @@ type SchedulePreview = {
     stateCode: string;
     citySlug: string | null;
     cityName: string | null;
-    citySlug?: string | null;
-    cityName?: string | null;
     status: string;
   }[];
 };
@@ -82,6 +80,8 @@ type PublishPreviewPayload = {
     jobId: string | null;
   }[];
   publicationPerformed: boolean;
+  policyBlocked?: boolean;
+  policyReason?: string;
   error?: string;
 };
 
@@ -113,6 +113,8 @@ type SeoRefreshPreviewPayload = {
   eligibleCount: number;
   eligible: readonly {
     stateCode: string;
+    citySlug: string | null;
+    cityName: string | null;
     jobId: string;
     wordpressObjectId: string;
   }[];
@@ -129,6 +131,8 @@ type SeoRefreshRunPayload = {
   failed: number;
   results: readonly {
     stateCode: string;
+    citySlug: string | null;
+    cityName: string | null;
     jobId: string;
     wordpressObjectId: string | null;
     ok: boolean;
@@ -170,16 +174,16 @@ export function GlwCampaignOperatorControls({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function requestHeaders(includeJson = false): HeadersInit {
+  const requestHeaders = useCallback((includeJson = false): HeadersInit => {
     return {
       ...(includeJson ? { "Content-Type": "application/json" } : {}),
       "x-gcp-roles": "platform_admin",
       "x-gcp-organization-id": organizationId,
       "x-gcp-site-id": siteId,
     };
-  }
+  }, [organizationId, siteId]);
 
-  async function loadScheduler() {
+  const loadScheduler = useCallback(async () => {
     setLoading(true);
 
     const [schedulerResponse, seoResponse, publishResponse] = await Promise.all([
@@ -214,22 +218,26 @@ export function GlwCampaignOperatorControls({
     setScheduler(schedulerPayload);
     setSeoPreview(seoResponse.ok && seoPayload ? seoPayload : null);
     setPublishPreview(publishResponse.ok && publishPayload ? publishPayload : null);
+    setError(null);
     setLoading(false);
+  }, [campaignId, requestHeaders]);
+
+  async function refreshWorkspace() {
+    await loadScheduler();
+    router.refresh();
   }
 
   useEffect(() => {
-    if (campaignStatus !== "active") {
-      setLoading(false);
-      return;
-    }
+    if (campaignStatus !== "active") return;
 
-    void loadScheduler();
-  }, [campaignId, campaignStatus, organizationId, siteId]);
+    const timeout = window.setTimeout(() => void loadScheduler(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [campaignStatus, loadScheduler]);
 
   async function runNextBatch() {
     if (!scheduler || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length < 1) return;
 
-    const stateList = scheduler.schedule.nextTargets.map((target) => target.stateCode).join(", ");
+    const stateList = scheduler.schedule.nextTargets.map((target) => target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode).join(", ");
     const confirmed = window.confirm(
       `Run the next draft-only GLW batch for ${stateList}? This dispatches generation jobs only. Publication remains blocked.`,
     );
@@ -254,7 +262,7 @@ export function GlwCampaignOperatorControls({
 
     setMessage(`Draft batch dispatched: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
     setDispatching(false);
-    await loadScheduler();
+    await refreshWorkspace();
   }
 
   async function reconcileCampaign() {
@@ -288,7 +296,7 @@ export function GlwCampaignOperatorControls({
     if (failed > 0) {
       const details = payload.results
         .filter((entry) => entry.action === "failed" || entry.action === "error" || entry.action === "continue_error")
-        .map((entry) => `${entry.stateCode}: ${entry.error ?? entry.action}`)
+        .map((entry) => `${entry.cityName ? `${entry.cityName}, ${entry.stateCode}` : entry.stateCode}: ${entry.error ?? entry.action}`)
         .join(" | ");
       setError(`Campaign reconciliation completed with ${draftReady} draft-ready, ${waiting} waiting, and ${failed} requiring review. ${details}`);
     } else {
@@ -296,8 +304,7 @@ export function GlwCampaignOperatorControls({
     }
 
     setReconciling(false);
-    await loadScheduler();
-    router.refresh();
+    await refreshWorkspace();
   }
 
   async function publishDraftReady() {
@@ -347,7 +354,7 @@ export function GlwCampaignOperatorControls({
     }
 
     setPublishing(false);
-    await loadScheduler();
+    await refreshWorkspace();
   }
 
   async function refreshCampaignSeo() {
@@ -386,7 +393,7 @@ export function GlwCampaignOperatorControls({
     }
 
     setRefreshingSeo(false);
-    await loadScheduler();
+    await refreshWorkspace();
   }
 
   if (campaignStatus !== "active") return null;
@@ -394,18 +401,18 @@ export function GlwCampaignOperatorControls({
   const busy = loading || dispatching || reconciling || publishing || refreshingSeo;
 
   return (
-    <section className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+    <section id="campaign-actions" className="border border-zinc-800 bg-zinc-900/50 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-red-400">Operator Controls</p>
-          <h2 className="mt-2 text-lg font-semibold text-white">Draft Batch Dispatch</h2>
-          <p className="mt-1 max-w-3xl text-sm text-zinc-400">Review today&apos;s scheduler allowance, reconcile exact jobs, and publish only verified draft-ready campaign targets.</p>
+          <p className="text-xs uppercase tracking-[0.25em] text-red-400">Owner Actions</p>
+          <h2 className="mt-2 text-lg font-semibold text-white">Campaign Controls</h2>
+          <p className="mt-1 max-w-3xl text-sm text-zinc-400">The primary action follows the current lifecycle stage. Maintenance and publication remain separate.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void reconcileCampaign()} disabled={busy} className="rounded-lg border border-sky-700 bg-sky-950/30 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-sky-200 transition hover:border-sky-500 disabled:cursor-not-allowed disabled:opacity-40">
+          <button type="button" onClick={() => void reconcileCampaign()} disabled={busy || !scheduler || scheduler.queue.running + scheduler.queue.failed < 1} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
             {reconciling ? "Reconciling..." : "Reconcile Campaign"}
           </button>
-          <button type="button" onClick={() => void loadScheduler()} disabled={busy} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
+          <button type="button" onClick={() => void refreshWorkspace()} disabled={busy} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
             {loading ? "Refreshing..." : "Refresh Preview"}
           </button>
         </div>
@@ -451,7 +458,12 @@ export function GlwCampaignOperatorControls({
         </div>
       ) : null}
 
-      {publishPreview ? (
+      {publishPreview?.policyBlocked ? (
+        <div className="mt-5 border-y border-amber-900/60 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Publication Blocked by Policy</p>
+          <p className="mt-1 text-sm text-zinc-400">{publishPreview.policyReason ?? "Campaign publication is not permitted."} No publish action is available.</p>
+        </div>
+      ) : publishPreview ? (
         <div className="mt-5 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -478,7 +490,7 @@ export function GlwCampaignOperatorControls({
               <p className="mt-1 text-sm text-zinc-300">{seoPreview.eligibleCount > 0 ? `${seoPreview.eligibleCount} draft-ready pages eligible: ${seoPreview.eligible.map((target) => target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode).join(", ")}` : "No draft-ready pages currently require campaign SEO maintenance."}</p>
               <p className="mt-1 text-xs text-zinc-500">Not required for draft persistence · no regeneration · no image generation · no publication</p>
             </div>
-            <button type="button" onClick={() => void refreshCampaignSeo()} disabled={busy || seoPreview.eligibleCount < 1} className="rounded-lg border border-emerald-700 bg-emerald-950/30 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="button" onClick={() => void refreshCampaignSeo()} disabled={busy || seoPreview.eligibleCount < 1} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
               {refreshingSeo ? "Refreshing SEO..." : "Refresh SEO on Draft-Ready Pages"}
             </button>
           </div>

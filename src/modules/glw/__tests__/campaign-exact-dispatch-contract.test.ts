@@ -19,8 +19,8 @@ describe("campaign exact dispatch contract", () => {
       join(process.cwd(), "src/modules/glw/GlwCampaignOperatorControls.tsx"),
       "utf8",
     );
-    const detailPage = readFileSync(
-      join(process.cwd(), "src/app/glw/campaigns/[campaignId]/page.tsx"),
+    const operatorOverview = readFileSync(
+      join(process.cwd(), "src/modules/glw/GlwCampaignOperationsOverview.tsx"),
       "utf8",
     );
 
@@ -43,7 +43,7 @@ describe("campaign exact dispatch contract", () => {
     expect(controls).toContain('`${target.cityName}, ${target.stateCode}`');
     expect(controls).toContain("router.refresh()");
     expect(controls).toContain("Not required for draft persistence");
-    expect(detailPage).toContain('`${target.cityName}, ${target.stateCode}`');
+    expect(operatorOverview).toContain("target.identity");
     expect(repository).toContain("Math.min(allowance, input.maxTargets ?? allowance)");
   });
 

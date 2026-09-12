@@ -593,7 +593,7 @@ useEffect(() => {
           </nav>
         </aside>
 
-        <section className="relative flex-1 p-6 md:p-10 xl:p-12">
+        <section className="relative min-w-0 flex-1 p-6 md:p-10 xl:p-12">
           <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">
