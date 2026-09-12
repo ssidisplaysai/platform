@@ -227,6 +227,13 @@ export async function POST(
     );
   }
 
+  if (approval.approvalKind === "GOVERNED_LOCAL_REFERENCE") {
+    return NextResponse.json(
+      { error: "Campaign activation requires a separately materialized and approved WordPress draft reference." },
+      { status: 409 },
+    );
+  }
+
   const referenceJob =
     await glwPageExecutionRepository.getById(approval.jobId);
 

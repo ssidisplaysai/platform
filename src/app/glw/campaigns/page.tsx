@@ -99,6 +99,9 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
     return [[campaign.campaignId, {
       knowledgePack: pack,
       reference,
+      canonicalReferenceApproved: approvals.some((approval) =>
+        approval.stateCode === target.stateCode
+        && approval.citySlug === target.citySlug),
       imageCandidate,
       imageHistory: listGlwReferenceImageCandidates(scope),
       imagePreviewDataUrl: stored ? `data:${stored.candidate.mimeType};base64,${stored.bytes.toString("base64")}` : null,

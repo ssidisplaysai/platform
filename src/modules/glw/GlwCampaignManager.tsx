@@ -17,6 +17,7 @@ type ProductOption = { productId: string; organizationId: string; displayName: s
 export type GovernedReview = {
   knowledgePack: GlwCampaignKnowledgePackRecord | null;
   reference: GlwLocalReferenceDraft;
+  canonicalReferenceApproved: boolean;
   imageCandidate: GlwReferenceImageCandidate | null;
   imageHistory: readonly GlwReferenceImageCandidate[];
   imagePreviewDataUrl: string | null;
@@ -236,7 +237,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
                   </dl>
                   {pack?.instructions ? <details className="mt-3 border-t border-zinc-800 pt-3"><summary className="cursor-pointer text-xs text-zinc-300">Governed instructions</summary><pre className="mt-3 whitespace-pre-wrap text-xs leading-5 text-zinc-400">{pack.instructions}</pre></details> : null}
                 </section>
-                <CampaignLocalReferenceReview organizationId={organizationId} siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} reference={governed.reference} imageCandidate={governed.imageCandidate} imageHistory={governed.imageHistory} imagePreviewDataUrl={governed.imagePreviewDataUrl} />
+                <CampaignLocalReferenceReview organizationId={organizationId} siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} reference={governed.reference} canonicalReferenceApproved={governed.canonicalReferenceApproved} imageCandidate={governed.imageCandidate} imageHistory={governed.imageHistory} imagePreviewDataUrl={governed.imagePreviewDataUrl} />
                 <CampaignActivationAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} readiness={governed.activationReadiness} globalPromotionAvailable={false} globalPromotionReason="Campaign activation remains disabled until the release capability is explicitly enabled." />
               </>;
             })() : campaign.status === "draft" ? <GlwCampaignKnowledgePack campaign={campaign} organizationId={organizationId} /> : null}

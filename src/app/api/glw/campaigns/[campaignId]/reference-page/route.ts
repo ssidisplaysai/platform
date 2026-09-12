@@ -240,6 +240,7 @@ export async function GET(request: NextRequest, context: Context) {
     approval,
     approved:
       Boolean(approval)
+      && approval?.approvalKind !== "GOVERNED_LOCAL_REFERENCE"
       && approval?.jobId === job.jobId
       && approval?.wordpressObjectId === job.wordpressObjectId,
     recoveryError: null,

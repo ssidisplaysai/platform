@@ -1,10 +1,43 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GlwCampaignManager } from "../GlwCampaignManager";
+import { CampaignLocalReferenceReview } from "../CampaignLocalReferenceReview";
+import { CampaignActivationAuthorityPanel } from "../CampaignActivationAuthorityPanel";
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: jest.fn() }) }));
 
 describe("Agent 2 Campaign Manager governed review integration", () => {
+  test("enables authorization after reference approval while keeping activation disabled without a grant", () => {
+    const html = renderToStaticMarkup(<CampaignActivationAuthorityPanel organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} readiness={{ knowledgePackReady: true, approvedReferenceCount: 1, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: "TX", referenceCitySlug: "austin" }} globalPromotionAvailable={true} globalPromotionReason="" />);
+    expect(html).toMatch(/<button[^>]*(?!disabled)[^>]*>Authorize This Campaign for Activation<\/button>/);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>Activate Campaign<\/button>/);
+    expect(html).not.toContain("Approved campaign reference</li>");
+    expect(html).toContain("Scoped activation authorization");
+  });
+
+  test("enables canonical reference approval after the exact required image is approved", () => {
+    const reference = {
+      referenceDraftId: "local-reference-1", campaignId: "campaign-1", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", productId: "product-1",
+      stateCode: "TX", citySlug: "austin", cityName: "Austin", canonicalPath: "fan-cooled-projector-enclosures/texas/austin", revision: 1,
+      status: "OWNER_APPROVED_LOCAL" as const, title: "Fan Cooled Projector Enclosures in Austin, Texas", seoTitle: "Austin SEO", metaDescription: "Austin meta",
+      h1: "Austin", excerpt: "Austin", sections: [], internalLinks: [],
+      image: { required: true, requirementPurpose: "PROJECTOR_ENCLOSURE_APPLICATION_VISUAL" as const, candidateId: "candidate-1", candidateRevision: 1, status: "APPROVED" as const, assetReference: "candidate-1", classification: "GENERATED_VISUAL" as const, altText: "Illustrative enclosure", ownerApproved: true },
+      provenance: { parentCampaignId: "parent", knowledgePackRevision: 1, authorityReferences: ["product:product-1"] }, reviewInstructions: null, createdAt: "2030-01-01", updatedAt: "2030-01-01",
+    };
+    const candidate = {
+      candidateId: "candidate-1", organizationId: "ssi", siteId: reference.siteId, campaignId: reference.campaignId, referenceDraftId: reference.referenceDraftId,
+      requirementPurpose: "PROJECTOR_ENCLOSURE_APPLICATION_VISUAL" as const, revision: 1, sourceType: "GENERATED_VISUAL" as const, status: "APPROVED" as const,
+      mimeType: "image/jpeg" as const, byteSize: 10, sha256: "a".repeat(64), storageKey: "candidate.jpg", generationPrompt: "prompt", visualBrief: "brief",
+      sourceAssetReference: "wordpress-media:10757", generationBasis: { provider: "LOCAL_GOVERNED_COMPOSITOR" as const, imageProfileReference: "profile-image", knowledgePackRevision: 1, authorityReferences: [], referenceOnlyInputsUsed: false as const, competitorInputsUsed: false as const },
+      altText: "Illustrative enclosure", ownerInstructions: null, priorCandidateId: null, createdAt: "2030-01-01", createdBy: "platform_admin", decidedAt: "2030-01-02", decidedBy: "platform_admin",
+    };
+    const html = renderToStaticMarkup(<CampaignLocalReferenceReview organizationId="ssi" siteId={reference.siteId} campaignId={reference.campaignId} requestRoles={["platform_admin"]} reference={reference} canonicalReferenceApproved={false} imageCandidate={candidate} imageHistory={[candidate]} imagePreviewDataUrl="data:image/jpeg;base64,/9j/" />);
+    expect(html).toContain("Step: Reference Approval");
+    expect(html).toContain("Ready for owner approval");
+    expect(html).toMatch(/<button[^>]*(?!disabled)[^>]*>Approve Reference<\/button>/);
+    expect(html).toContain("does not publish, mutate WordPress, authorize activation, activate the campaign, or dispatch targets");
+  });
+
   test("renders the existing Texas/Austin review and bypasses the California legacy workflow", () => {
     const campaign = {
       campaignId: "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-texas-cities",
@@ -42,7 +75,7 @@ describe("Agent 2 Campaign Manager governed review integration", () => {
     };
     const html = renderToStaticMarkup(<GlwCampaignManager organizationId="ssi" siteId={campaign.siteId} sites={[{ siteId: campaign.siteId, organizationId: "ssi", displayName: "ProjectorEnclosure.com" }]} products={[{ productId: campaign.productId, organizationId: "ssi", displayName: "Fan Cooled Projector Enclosures", assignedSiteIds: [campaign.siteId] }]} initialCampaigns={[campaign]} governedReviewByCampaign={{ [campaign.campaignId]: {
       knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: campaign.siteId, instructions: "Governed Texas instructions", references: [], revision: 1, status: "ready", ownerApprovalRequired: false, updatedAt: "2030-01-01" },
-      reference, imageCandidate: candidate, imageHistory: [candidate], imagePreviewDataUrl: "data:image/jpeg;base64,/9j/",
+      reference, canonicalReferenceApproved: false, imageCandidate: candidate, imageHistory: [candidate], imagePreviewDataUrl: "data:image/jpeg;base64,/9j/",
       activationReadiness: { knowledgePackReady: true, approvedReferenceCount: 0, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: null, referenceCitySlug: null },
     } }} />);
 

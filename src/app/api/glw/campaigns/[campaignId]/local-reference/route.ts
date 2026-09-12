@@ -21,6 +21,10 @@ import {
   selectDeterministicCityReference,
 } from "@/modules/glw/projector-enclosure-texas-reference";
 import { generateProjectorEnclosureReferenceVisual } from "@/modules/glw/projector-enclosure-reference-image-service";
+import {
+  approveGovernedLocalCampaignReference,
+  getGlwCampaignReferenceApproval,
+} from "@/modules/glw/campaign-reference-approval-repository";
 
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ campaignId: string }> };
@@ -71,6 +75,7 @@ export async function GET(request: NextRequest, context: Context) {
     imageCandidate: candidate,
     imageHistory: scope ? listGlwReferenceImageCandidates(scope) : [],
     readiness: readiness(reference, candidate),
+    canonicalApproval: getGlwCampaignReferenceApproval(result.campaign.campaignId, target.stateCode, target.citySlug),
     canonicalApprovalPerformed: false,
     wordpressMutationPerformed: false,
     mutationPerformed: false,
@@ -193,6 +198,44 @@ export async function PATCH(request: NextRequest, context: Context) {
       const candidate = decideGlwReferenceImageCandidate({ organizationId: result.campaign.organizationId, siteId: result.campaign.siteId, campaignId: result.campaign.campaignId, candidateId: body.candidateId, decision: body.operation === "APPROVE_IMAGE" ? "APPROVE" : "REJECT", actor: actor(auth.roles) });
       const reference = updateGlwLocalReferenceImage({ campaignId: result.campaign.campaignId, stateCode: target.stateCode, citySlug: target.citySlug, candidateId: candidate.candidateId, candidateRevision: candidate.revision, status: candidate.status, sourceType: candidate.sourceType, assetReference: candidate.candidateId, altText: candidate.altText });
       return NextResponse.json({ reference, imageCandidate: candidate, readiness: readiness(reference, candidate), canonicalApprovalPerformed: false, wordpressMutationPerformed: false });
+    }
+    if (body?.operation === "APPROVE_CANONICAL_REFERENCE") {
+      if (!auth.roles.includes("platform_admin")) throw new Error("Canonical reference approval requires platform_admin.");
+      const existingReference = getGlwLocalReferenceDraft(result.campaign.campaignId, target.stateCode, target.citySlug);
+      if (!existingReference || !new Set(["READY_FOR_OWNER_REVIEW", "OWNER_APPROVED_LOCAL"]).has(existingReference.status)) {
+        throw new Error("Reference content is not ready for canonical owner approval.");
+      }
+      const candidate = getLatestGlwReferenceImageCandidate(imageScope(result.campaign, existingReference.referenceDraftId));
+      if (
+        !candidate
+        || candidate.status !== "APPROVED"
+        || candidate.candidateId !== existingReference.image.candidateId
+        || candidate.revision !== existingReference.image.candidateRevision
+        || !existingReference.image.ownerApproved
+      ) throw new Error("Exact required image candidate must be owner-approved before canonical reference approval.");
+      const approval = approveGovernedLocalCampaignReference({
+        campaignId: result.campaign.campaignId,
+        stateCode: target.stateCode,
+        citySlug: target.citySlug,
+        referenceDraftId: existingReference.referenceDraftId,
+        referenceRevision: existingReference.revision,
+        imageCandidateId: candidate.candidateId,
+        imageCandidateRevision: candidate.revision,
+        imageSha256: candidate.sha256,
+        provenance: existingReference.provenance,
+        approvedBy: actor(auth.roles),
+      });
+      return NextResponse.json({
+        reference: existingReference,
+        imageCandidate: candidate,
+        canonicalApproval: approval,
+        canonicalApprovalPerformed: true,
+        wordpressMutationPerformed: false,
+        publicationPerformed: false,
+        activationAuthorizationCreated: false,
+        activationPerformed: false,
+        dispatchPerformed: false,
+      });
     }
     const reference = body?.operation === "REQUEST_CHANGES"
       ? requestGlwLocalReferenceChanges({ campaignId: result.campaign.campaignId, stateCode: target.stateCode, citySlug: target.citySlug, instructions: body.instructions ?? "" })

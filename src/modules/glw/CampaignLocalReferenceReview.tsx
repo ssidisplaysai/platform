@@ -11,6 +11,7 @@ export function CampaignLocalReferenceReview(props: {
   campaignId: string;
   requestRoles: readonly string[];
   reference: GlwLocalReferenceDraft;
+  canonicalReferenceApproved?: boolean;
   imageCandidate?: GlwReferenceImageCandidate | null;
   imageHistory?: readonly GlwReferenceImageCandidate[];
   imagePreviewDataUrl?: string | null;
@@ -21,6 +22,9 @@ export function CampaignLocalReferenceReview(props: {
   const [imageInstructions, setImageInstructions] = useState("");
   const [ownerFile, setOwnerFile] = useState<File | null>(null);
   const imageApproved = !props.reference.image.required || props.imageCandidate?.status === "APPROVED";
+  const referenceReadyForOwnerApproval = imageApproved
+    && !props.canonicalReferenceApproved
+    && new Set(["READY_FOR_OWNER_REVIEW", "OWNER_APPROVED_LOCAL"]).has(props.reference.status);
 
   async function request(method: "POST" | "PATCH", operation: string, instructions?: string, candidateId?: string) {
     setBusy(true);
@@ -38,8 +42,10 @@ export function CampaignLocalReferenceReview(props: {
       });
       const payload = await response.json() as { error?: string };
       if (!response.ok) throw new Error(payload.error ?? "Reference action failed.");
-      setMessage(operation === "APPROVE_LOCAL_REFERENCE"
-        ? "Approved for a separately authorized WordPress draft materialization. Canonical reference approval is still pending."
+      setMessage(operation === "APPROVE_CANONICAL_REFERENCE"
+        ? "Canonical campaign reference approved. Activation authorization remains a separate owner action."
+        : operation === "APPROVE_LOCAL_REFERENCE"
+          ? "Approved for a separately authorized WordPress draft materialization. Canonical reference approval is still pending."
         : "Reference review state updated.");
       router.refresh();
     } catch (error) {
@@ -87,7 +93,13 @@ export function CampaignLocalReferenceReview(props: {
         <div>
           <p className="text-xs font-bold uppercase text-sky-300">Reference review</p>
           <h4 className="mt-1 font-semibold text-white">{props.reference.title}</h4>
-          <p className="mt-1 text-xs text-zinc-500">Revision {props.reference.revision} · {props.reference.status.replaceAll("_", " ")}</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            Revision {props.reference.revision} · {props.canonicalReferenceApproved
+              ? "APPROVED"
+              : referenceReadyForOwnerApproval
+                ? "READY FOR OWNER APPROVAL"
+                : props.reference.status.replaceAll("_", " ")}
+          </p>
         </div>
         <span className="border border-sky-800 px-2 py-1 text-xs text-sky-200">Genesis local · not published</span>
       </div>
@@ -129,14 +141,30 @@ export function CampaignLocalReferenceReview(props: {
         </div>
         {props.imageCandidate ? <details className="mt-3 border-t border-zinc-800 pt-3"><summary className="cursor-pointer text-zinc-400">Advanced image details</summary><p className="mt-2 text-zinc-500">Candidate revision {props.imageCandidate.revision}</p><p className="text-zinc-500">Visual brief: {props.imageCandidate.visualBrief}</p><p className="text-zinc-500">History: {(props.imageHistory ?? []).map((candidate) => `Revision ${candidate.revision}: ${candidate.status.replaceAll("_", " ")}`).join("; ")}</p></details> : null}
       </div>
+      <div className="mt-4 border border-zinc-800 p-3" aria-label="Reference approval step">
+        <p className="text-xs font-bold uppercase text-sky-300">
+          Step: {props.canonicalReferenceApproved ? "Activation Authorization" : "Reference Approval"}
+        </p>
+        <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-[8rem_1fr]">
+          <dt className="text-zinc-500">Reference</dt>
+          <dd className={props.canonicalReferenceApproved ? "text-emerald-300" : "text-zinc-200"}>
+            {props.canonicalReferenceApproved ? "APPROVED" : referenceReadyForOwnerApproval ? "Ready for owner approval" : "Image approval required"}
+          </dd>
+          {props.canonicalReferenceApproved ? <><dt className="text-zinc-500">Authorization</dt><dd className="text-amber-300">REQUIRED</dd></> : null}
+        </dl>
+        {!props.canonicalReferenceApproved ? (
+          <button type="button" disabled={busy || !referenceReadyForOwnerApproval} onClick={() => request("PATCH", "APPROVE_CANONICAL_REFERENCE")} className="mt-3 border border-emerald-600 px-3 py-2 text-xs font-semibold text-emerald-200 disabled:border-zinc-700 disabled:text-zinc-600">Approve Reference</button>
+        ) : (
+          <p className="mt-3 text-xs text-zinc-400">Continue below to authorize this campaign for activation. Authorization remains explicit and campaign-scoped.</p>
+        )}
+      </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" disabled={busy || props.reference.status !== "READY_FOR_OWNER_REVIEW" || !imageApproved} onClick={() => request("PATCH", "APPROVE_LOCAL_REFERENCE")} className="border border-emerald-600 px-3 py-2 text-xs font-semibold text-emerald-200 disabled:border-zinc-700 disabled:text-zinc-600">Approve Reference</button>
         <button type="button" disabled={busy} onClick={() => askForChanges("REQUEST_CHANGES")} className="border border-amber-600 px-3 py-2 text-xs font-semibold text-amber-200 disabled:text-zinc-600">Request Changes</button>
         <button type="button" disabled={busy} onClick={() => request("POST", "REGENERATE")} className="border border-zinc-600 px-3 py-2 text-xs text-zinc-200 disabled:text-zinc-600">Regenerate</button>
         <button type="button" disabled={busy} onClick={() => askForChanges("REGENERATE_WITH_INSTRUCTIONS")} className="border border-zinc-600 px-3 py-2 text-xs text-zinc-200 disabled:text-zinc-600">Regenerate With Instructions</button>
       </div>
-      <p className="mt-3 text-xs text-zinc-500">Content ready · {imageApproved ? "Reference ready for approval" : "Image review required"}</p>
-      <p className="mt-3 text-xs text-zinc-500">Local approval does not approve the canonical WordPress reference. WordPress draft materialization and canonical approval remain separate owner-controlled steps.</p>
+      <p className="mt-3 text-xs text-zinc-500">Content ready · {props.canonicalReferenceApproved ? "Canonical reference approved" : imageApproved ? "Reference ready for owner approval" : "Image review required"}</p>
+      <p className="mt-3 text-xs text-zinc-500">Canonical campaign reference approval records this exact local content and image revision. It does not publish, mutate WordPress, authorize activation, activate the campaign, or dispatch targets.</p>
       {message ? <p className="mt-3 text-sm text-zinc-300" role="status">{message}</p> : null}
       <details className="mt-4 text-xs text-zinc-500">
         <summary className="cursor-pointer text-zinc-400">Advanced provenance</summary>

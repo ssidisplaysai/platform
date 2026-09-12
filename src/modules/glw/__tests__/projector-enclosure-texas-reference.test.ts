@@ -21,6 +21,7 @@ import type { GlwCampaign } from "../campaign-types";
 import type { GlwCampaignKnowledgePack } from "../campaign-reference-types";
 import { approveGlwLocalReferenceForMaterialization, getGlwLocalReferenceDraft, requestGlwLocalReferenceChanges, saveGlwLocalReferenceDraft, updateGlwLocalReferenceImage } from "../campaign-local-reference-repository";
 import { buildProjectorEnclosureAustinReference, buildProjectorEnclosureTexasKnowledgePack, PROJECTOR_TEXAS_PARENT_CAMPAIGN_ID, selectDeterministicCityReference } from "../projector-enclosure-texas-reference";
+import { approveGovernedLocalCampaignReference, getGlwCampaignReferenceApproval } from "../campaign-reference-approval-repository";
 
 const campaign: GlwCampaign = {
   campaignId: "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-texas-cities",
@@ -91,5 +92,27 @@ describe("ProjectorEnclosure Texas local reference", () => {
     expect(() => approveGlwLocalReferenceForMaterialization({ campaignId: campaign.campaignId, stateCode: "TX", citySlug: "austin" })).toThrow("owner-approved");
     updateGlwLocalReferenceImage({ campaignId: campaign.campaignId, stateCode: "TX", citySlug: "austin", candidateId: "candidate-1", candidateRevision: 1, status: "APPROVED", sourceType: "GENERATED_VISUAL", assetReference: "candidate-1", altText: "Illustrative enclosure" });
     expect(approveGlwLocalReferenceForMaterialization({ campaignId: campaign.campaignId, stateCode: "TX", citySlug: "austin" }).status).toBe("OWNER_APPROVED_LOCAL");
+  });
+
+  test("records an immutable idempotent canonical receipt for the exact reference and image revisions", () => {
+    const input = {
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "austin",
+      referenceDraftId: "local-reference-1",
+      referenceRevision: 1,
+      imageCandidateId: "candidate-1",
+      imageCandidateRevision: 1,
+      imageSha256: "a".repeat(64),
+      provenance: { parentCampaignId: PROJECTOR_TEXAS_PARENT_CAMPAIGN_ID, knowledgePackRevision: 1 },
+      approvedBy: "platform_admin",
+    };
+    const first = approveGovernedLocalCampaignReference(input);
+    const repeated = approveGovernedLocalCampaignReference(input);
+    expect(repeated).toEqual(first);
+    expect(getGlwCampaignReferenceApproval(campaign.campaignId, "TX", "austin")).toEqual(first);
+    expect(first).toMatchObject({ approvalKind: "GOVERNED_LOCAL_REFERENCE", referenceRevision: 1, imageCandidateRevision: 1 });
+    expect(first.receiptSha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(() => approveGovernedLocalCampaignReference({ ...input, imageCandidateRevision: 2 })).toThrow("ALREADY_RECORDED");
   });
 });

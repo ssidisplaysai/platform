@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import {
   deepClone,
   loadPersistedState,
@@ -9,12 +10,27 @@ import {
 const PERSISTENCE_NAMESPACE = "glw-campaign-reference-approval-repository";
 
 export type GlwCampaignReferenceApproval = {
+  approvalKind?: "WORDPRESS_DRAFT";
   campaignId: string;
   stateCode: string;
   citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
   approvedAt: string;
+} | {
+  approvalKind: "GOVERNED_LOCAL_REFERENCE";
+  campaignId: string;
+  stateCode: string;
+  citySlug: string;
+  referenceDraftId: string;
+  referenceRevision: number;
+  imageCandidateId: string;
+  imageCandidateRevision: number;
+  imageSha256: string;
+  provenanceSha256: string;
+  receiptSha256: string;
+  approvedAt: string;
+  approvedBy: string;
 };
 
 type RepositoryState = {
@@ -63,13 +79,16 @@ function snapshotState(): RepositoryState {
   };
 }
 
-const loaded = loadPersistedState<RepositoryState>({
-  namespace: PERSISTENCE_NAMESPACE,
-  seedFactory: () => ({ approvals: [] }),
-});
+function loadState(): void {
+  const loaded = loadPersistedState<RepositoryState>({
+    namespace: PERSISTENCE_NAMESPACE,
+    seedFactory: () => ({ approvals: [] }),
+  });
+  applyState(loaded.state);
+  stateRevision = loaded.revision;
+}
 
-applyState(loaded.state);
-stateRevision = loaded.revision;
+loadState();
 
 function persistState(): void {
   const saved = savePersistedState({
@@ -86,11 +105,13 @@ export function getGlwCampaignReferenceApproval(
   stateCode: string,
   citySlug?: string | null,
 ): GlwCampaignReferenceApproval | null {
+  loadState();
   const approval = approvalStore.get(key(campaignId, stateCode, citySlug));
   return approval ? deepClone(approval) : null;
 }
 
 export function listGlwCampaignReferenceApprovals(campaignId: string): readonly GlwCampaignReferenceApproval[] {
+  loadState();
   return Array.from(approvalStore.values())
     .filter((approval) => approval.campaignId === campaignId)
     .map((approval) => deepClone(approval));
@@ -103,7 +124,9 @@ export function approveGlwCampaignReference(input: {
   jobId: string;
   wordpressObjectId: string;
 }): GlwCampaignReferenceApproval {
+  loadState();
   const approval: GlwCampaignReferenceApproval = {
+    approvalKind: "WORDPRESS_DRAFT",
     campaignId: input.campaignId,
     stateCode: input.stateCode.trim().toUpperCase(),
     citySlug: normalizeCitySlug(input.citySlug),
@@ -119,5 +142,55 @@ export function approveGlwCampaignReference(input: {
 
   persistState();
 
+  return deepClone(approval);
+}
+
+export function approveGovernedLocalCampaignReference(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug: string;
+  referenceDraftId: string;
+  referenceRevision: number;
+  imageCandidateId: string;
+  imageCandidateRevision: number;
+  imageSha256: string;
+  provenance: unknown;
+  approvedBy: string;
+}): Extract<GlwCampaignReferenceApproval, { approvalKind: "GOVERNED_LOCAL_REFERENCE" }> {
+  loadState();
+  const stateCode = input.stateCode.trim().toUpperCase();
+  const citySlug = normalizeCitySlug(input.citySlug);
+  if (!citySlug || input.referenceRevision < 1 || input.imageCandidateRevision < 1 || !/^[0-9a-f]{64}$/i.test(input.imageSha256)) {
+    throw new Error("GOVERNED_REFERENCE_APPROVAL_IDENTITY_INVALID");
+  }
+  const provenanceSha256 = createHash("sha256").update(JSON.stringify(input.provenance)).digest("hex");
+  const receiptIdentity = {
+    approvalKind: "GOVERNED_LOCAL_REFERENCE" as const,
+    campaignId: input.campaignId,
+    stateCode,
+    citySlug,
+    referenceDraftId: input.referenceDraftId,
+    referenceRevision: input.referenceRevision,
+    imageCandidateId: input.imageCandidateId,
+    imageCandidateRevision: input.imageCandidateRevision,
+    imageSha256: input.imageSha256.toLowerCase(),
+    provenanceSha256,
+  };
+  const receiptSha256 = createHash("sha256").update(JSON.stringify(receiptIdentity)).digest("hex");
+  const existing = approvalStore.get(key(input.campaignId, stateCode, citySlug));
+  if (existing) {
+    if (existing.approvalKind === "GOVERNED_LOCAL_REFERENCE" && existing.receiptSha256 === receiptSha256) {
+      return deepClone(existing);
+    }
+    throw new Error("GOVERNED_REFERENCE_APPROVAL_ALREADY_RECORDED");
+  }
+  const approval: Extract<GlwCampaignReferenceApproval, { approvalKind: "GOVERNED_LOCAL_REFERENCE" }> = {
+    ...receiptIdentity,
+    receiptSha256,
+    approvedAt: new Date().toISOString(),
+    approvedBy: input.approvedBy,
+  };
+  approvalStore.set(key(approval.campaignId, approval.stateCode, approval.citySlug), approval);
+  persistState();
   return deepClone(approval);
 }
