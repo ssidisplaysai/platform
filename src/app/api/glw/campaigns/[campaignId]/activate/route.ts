@@ -22,6 +22,7 @@ import {
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { recordGlwCampaignLaunchActivated, requireGlwCampaignLaunchReservationOwnership } from "@/modules/glw/campaign-launch-authority";
+import { claimGlwCampaignActivationGrant, consumeGlwCampaignActivationGrant } from "@/modules/glw/campaign-activation-authorization";
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -360,6 +361,21 @@ export async function POST(
     );
   }
 
+  let activationGrant;
+  try {
+    activationGrant = claimGlwCampaignActivationGrant({
+      campaign,
+      targets,
+      certifiedReleaseSha: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
+      claimedBy: auth.roles.includes("platform_admin") ? "platform_admin" : "authorized_scheduler",
+    });
+  } catch (error) {
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "Campaign-scoped activation authorization is required.",
+      code: "CAMPAIGN_ACTIVATION_AUTHORIZATION_REQUIRED",
+    }, { status: 403 });
+  }
+
   const activation = activateGlwCampaign(campaign.campaignId);
 
   if (!activation.campaign) {
@@ -369,6 +385,21 @@ export async function POST(
       },
       { status: 409 },
     );
+  }
+
+  try {
+    consumeGlwCampaignActivationGrant({
+      grantId: activationGrant.grant.grantId,
+      claimId: activationGrant.claimId,
+      consumedBy: auth.roles.includes("platform_admin") ? "platform_admin" : "authorized_scheduler",
+    });
+  } catch (error) {
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "Campaign activated but scoped authorization recovery is required.",
+      campaign: activation.campaign,
+      targets,
+      activationAuthorizationRecoveryRequired: true,
+    }, { status: 503 });
   }
 
   try {

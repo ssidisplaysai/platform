@@ -49,7 +49,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const [scope, setScope] = useState("campaign");
   const [message, setMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [referenceState, setReferenceState] = useState("CA");
+  const [referenceState, setReferenceState] = useState(campaign.stateCodes[0] ?? "");
   const [generatingReference, setGeneratingReference] = useState(false);
   const [recoveringReference, setRecoveringReference] = useState(false);
   const [continuingReference, setContinuingReference] = useState(false);
@@ -340,8 +340,9 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const instructionsApproved = Boolean(pack?.instructions.trim()) && pack?.instructions === instructions;
   const stateOptions = campaign.stateCodes.map((code) => ({
     code,
-    label: code === "CA" ? "California" : code,
+    label: code === "CA" ? "California" : code === "TX" ? "Texas" : code,
   }));
+  const selectedStateLabel = stateOptions.find((state) => state.code === referenceState)?.label ?? referenceState;
 
   const job = referenceResult?.job ?? null;
   const jobStatus = String(job?.status ?? "");
@@ -538,11 +539,11 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
 
           <button
             type="button"
-            disabled={!instructionsApproved || generationBusy || referenceState !== "CA"}
+            disabled={!instructionsApproved || generationBusy || !campaign.stateCodes.includes(referenceState)}
             onClick={generateReferencePage}
             className="h-10 rounded-lg bg-red-600 px-4 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {generationBusy ? "Recovering Reference..." : job?.status === "COMPLETE" ? "Regenerate Reference Content" : "Generate California Reference Page"}
+            {generationBusy ? "Recovering Reference..." : job?.status === "COMPLETE" ? "Regenerate Reference Content" : `Generate ${selectedStateLabel} Reference Page`}
           </button>
         </div>
 

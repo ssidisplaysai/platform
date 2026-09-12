@@ -188,6 +188,8 @@ export function createGlwCampaign(input: NewGlwCampaignInput): {
     status: "draft",
     completedTargetCount: 0,
     failedTargetCount: 0,
+    parentCampaignId: input.parentCampaignId?.trim() || null,
+    originReason: input.originReason?.trim() || null,
     createdAt: timestamp,
     updatedAt: timestamp,
   };

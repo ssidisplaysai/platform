@@ -6,10 +6,12 @@ import {
   savePersistedState,
 } from "@/modules/foundation/foundation-persistence";
 import type { GlwCampaignCityTarget } from "@/modules/glw/campaign-types";
+import type { GlwCampaignPublicationPolicy } from "@/modules/glw/campaign-types";
 
 const PERSISTENCE_NAMESPACE = "glw-campaign-target-repository";
 
 export type GlwCampaignTargetStatus =
+  | "prepared"
   | "reference_complete"
   | "queued"
   | "running"
@@ -24,9 +26,15 @@ export type GlwCampaignTarget = {
   organizationId: string;
   siteId: string;
   productId: string;
+  pageType?: "state_service" | "city_service";
   stateCode: string;
   citySlug?: string | null;
   cityName?: string | null;
+  applicationPath?: string | null;
+  canonicalPath?: string | null;
+  canonicalParentId?: string | null;
+  parentCampaignId?: string | null;
+  publicationPolicy?: GlwCampaignPublicationPolicy;
   status: GlwCampaignTargetStatus;
   jobId: string | null;
   wordpressObjectId: string | null;
@@ -214,6 +222,25 @@ export function initializeGlwCityCampaignTargets(input: {
       );
     }
 
+    if (existing.every((target) => target.status === "prepared")) {
+      const referenceStateCode = input.referenceTarget.stateCode.trim().toUpperCase();
+      const referenceCitySlug = normalizeCitySlug(input.referenceTarget.citySlug);
+      const timestamp = new Date().toISOString();
+      for (const target of existing) {
+        const isReference = target.stateCode === referenceStateCode && target.citySlug === referenceCitySlug;
+        targetStore.set(keyForTarget(target), {
+          ...target,
+          status: isReference ? "reference_complete" : "queued",
+          jobId: isReference ? input.referenceJobId : null,
+          wordpressObjectId: isReference ? input.referenceWordpressObjectId : null,
+          attemptCount: isReference ? 1 : 0,
+          updatedAt: timestamp,
+        });
+      }
+      persistState();
+      return listGlwCampaignTargets(input.campaignId);
+    }
+
     return existing;
   }
 
@@ -276,6 +303,7 @@ export function initializeGlwCityCampaignTargets(input: {
 
 export type GlwCampaignTargetQueueSummary = {
   total: number;
+  prepared: number;
   referenceComplete: number;
   queued: number;
   running: number;
@@ -292,6 +320,7 @@ export function summarizeGlwCampaignTargets(
 
   return {
     total: targets.length,
+    prepared: targets.filter((target) => target.status === "prepared").length,
     referenceComplete: targets.filter(
       (target) => target.status === "reference_complete",
     ).length,

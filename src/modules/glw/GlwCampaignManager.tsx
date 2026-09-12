@@ -1,16 +1,30 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 import { GlwCampaignKnowledgePack } from "./GlwCampaignKnowledgePack";
+import { CampaignLocalReferenceReview } from "./CampaignLocalReferenceReview";
+import { CampaignActivationAuthorityPanel, type CampaignActivationReadiness } from "./CampaignActivationAuthorityPanel";
+import type { GlwLocalReferenceDraft } from "./campaign-local-reference-repository";
+import type { GlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
+import type { GlwCampaignKnowledgePack as GlwCampaignKnowledgePackRecord } from "./campaign-reference-types";
 
 type SiteOption = { siteId: string; organizationId: string; displayName: string };
 type ProductOption = { productId: string; organizationId: string; displayName: string; assignedSiteIds: readonly string[] };
-type Props = { organizationId: string; siteId: string | null; sites: readonly SiteOption[]; products: readonly ProductOption[]; initialCampaigns: readonly GlwCampaign[] };
+export type GovernedReview = {
+  knowledgePack: GlwCampaignKnowledgePackRecord | null;
+  reference: GlwLocalReferenceDraft;
+  imageCandidate: GlwReferenceImageCandidate | null;
+  imageHistory: readonly GlwReferenceImageCandidate[];
+  imagePreviewDataUrl: string | null;
+  activationReadiness: CampaignActivationReadiness;
+};
+type Props = { organizationId: string; siteId: string | null; sites: readonly SiteOption[]; products: readonly ProductOption[]; initialCampaigns: readonly GlwCampaign[]; governedReviewByCampaign?: Record<string, GovernedReview> };
 
-export function GlwCampaignManager({ organizationId, siteId, sites, products, initialCampaigns }: Props) {
+export function GlwCampaignManager({ organizationId, siteId, sites, products, initialCampaigns, governedReviewByCampaign = {} }: Props) {
   const initialSiteId = siteId ?? sites[0]?.siteId ?? "";
   const [selectedSiteId, setSelectedSiteId] = useState(initialSiteId);
   const availableProducts = useMemo(() => products.filter((product) => product.organizationId === organizationId && product.assignedSiteIds.includes(selectedSiteId)), [organizationId, products, selectedSiteId]);
@@ -180,7 +194,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
                 ? queue.failed
                 : campaign.failedTargetCount;
 
-              const totalCount = queue?.total ?? campaign.stateCodes.length;
+              const totalCount = queue?.total ?? campaign.cityTargets?.length ?? campaign.stateCodes.length;
               const queuedCount = queue?.queued ?? null;
               const runningCount = queue?.running ?? null;
 
@@ -209,7 +223,23 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
             })()}
 
             <Link href={`/glw/campaigns/${campaign.campaignId}`} className="mt-3 inline-block text-xs uppercase tracking-wider text-red-400 hover:text-red-300">Open campaign</Link>
-            {campaign.status === "draft" ? <GlwCampaignKnowledgePack campaign={campaign} organizationId={organizationId} /> : null}
+            {campaign.status === "draft" && governedReviewByCampaign[campaign.campaignId] ? (() => {
+              const governed = governedReviewByCampaign[campaign.campaignId];
+              const pack = governed.knowledgePack;
+              return <>
+                <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4" aria-label="Campaign knowledge authority">
+                  <h4 className="font-semibold text-white">Campaign Knowledge Pack</h4>
+                  <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-[11rem_1fr]">
+                    <dt className="text-zinc-500">Uploaded references</dt><dd className="text-zinc-200">{pack?.references.length ?? 0}</dd>
+                    <dt className="text-zinc-500">Governed knowledge pack</dt><dd className="text-emerald-300">READY · revision {pack?.revision ?? 1}</dd>
+                    <dt className="text-zinc-500">Campaign instructions</dt><dd className="text-zinc-200">{pack?.ownerApprovalRequired ? "OWNER APPROVAL REQUIRED" : "GOVERNED · NO ADDITIONAL APPROVAL REQUIRED"}</dd>
+                  </dl>
+                  {pack?.instructions ? <details className="mt-3 border-t border-zinc-800 pt-3"><summary className="cursor-pointer text-xs text-zinc-300">Governed instructions</summary><pre className="mt-3 whitespace-pre-wrap text-xs leading-5 text-zinc-400">{pack.instructions}</pre></details> : null}
+                </section>
+                <CampaignLocalReferenceReview organizationId={organizationId} siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} reference={governed.reference} imageCandidate={governed.imageCandidate} imageHistory={governed.imageHistory} imagePreviewDataUrl={governed.imagePreviewDataUrl} />
+                <CampaignActivationAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} readiness={governed.activationReadiness} globalPromotionAvailable={false} globalPromotionReason="Campaign activation remains disabled until the release capability is explicitly enabled." />
+              </>;
+            })() : campaign.status === "draft" ? <GlwCampaignKnowledgePack campaign={campaign} organizationId={organizationId} /> : null}
           </article>)}
         </div>
       </div>

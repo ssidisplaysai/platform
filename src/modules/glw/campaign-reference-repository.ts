@@ -56,6 +56,9 @@ export function updateGlwCampaignInstructions(input: {
   organizationId: string;
   siteId: string;
   instructions: string;
+  parentCampaignId?: string | null;
+  authorityReferences?: GlwCampaignKnowledgePack["authorityReferences"];
+  ownerApprovalRequired?: boolean;
 }): GlwCampaignKnowledgePack {
   load();
   const existing = store.get(input.campaignId);
@@ -65,6 +68,12 @@ export function updateGlwCampaignInstructions(input: {
     siteId: input.siteId,
     instructions: input.instructions.trim(),
     references: existing?.references ?? [],
+    revision: (existing?.revision ?? 0) + 1,
+    status: "ready",
+    parentCampaignId: input.parentCampaignId ?? existing?.parentCampaignId ?? null,
+    authorityReferences: input.authorityReferences ?? existing?.authorityReferences ?? [],
+    ownerApprovalRequired: input.ownerApprovalRequired ?? existing?.ownerApprovalRequired ?? false,
+    approvedAt: existing?.approvedAt ?? null,
     updatedAt: new Date().toISOString(),
   };
   store.set(input.campaignId, pack);

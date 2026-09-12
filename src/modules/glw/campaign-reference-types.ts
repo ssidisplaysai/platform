@@ -27,5 +27,15 @@ export type GlwCampaignKnowledgePack = {
   siteId: string;
   instructions: string;
   references: readonly GlwCampaignReference[];
+  revision?: number;
+  status?: "ready";
+  parentCampaignId?: string | null;
+  authorityReferences?: readonly {
+    sourceType: "product" | "profile" | "parent_campaign" | "approved_reference" | "canonical_registry";
+    sourceId: string;
+    scope: "stable_fact" | "guidance" | "quality_evidence" | "geography";
+  }[];
+  ownerApprovalRequired?: boolean;
+  approvedAt?: string | null;
   updatedAt: string;
 };
