@@ -11,6 +11,7 @@ describe("post-visual approval Site QA UI", () => {
   const publication = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SitePublicationGateWorkflow.tsx"), "utf8");
   const execution = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SitePublicationExecutionWorkflow.tsx"), "utf8");
   const executor = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/site-publication-executor.ts"), "utf8");
+  const executionPlan = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/site-publication-execution-plan.ts"), "utf8");
 
   test("removes stale Home and remaining-design continuation from WordPress Review", () => {
     expect(review).not.toContain("Review the designed Home");
@@ -25,6 +26,16 @@ describe("post-visual approval Site QA UI", () => {
     for (const text of ["Exact WordPress page publications", "Navigation/menu operation", "Static front page", "Media and SEO verification", "Genesis state transition", "Final verification", "EXECUTE APPROVED PUBLICATION", "REVIEW COMPLETED SITE"]) expect(execution).toContain(text);
     for (const text of ["publishGenesisWordPressDraft", "checkpointSitePublicationExecutionPlan", 'operation.status === "SUCCEEDED"', "FINAL_WORDPRESS_VERIFICATION_FAILED"]) expect(executor).toContain(text);
     expect(execution).not.toContain('onClick={execute()}');
+  });
+
+  test("fails closed on draft-only policy and orders front-page and Genesis mutations safely", () => {
+    for (const text of ["Execution Blocked", "AUTHORIZE PUBLICATION POLICY", "This changes only the policy", "disabled={busy || !preflight.ready}"]) expect(execution).toContain(text);
+    expect(executionPlan).toContain("GENESIS_PUBLICATION_POLICY_TRANSITION_REQUIRED");
+    expect(executionPlan.indexOf('kind: "SET_STATIC_FRONT_PAGE"')).toBeGreaterThan(executionPlan.indexOf('kind: "PUBLISH_PAGE"'));
+    expect(executionPlan.indexOf('kind: "TRANSITION_GENESIS_SITE"')).toBeGreaterThan(executionPlan.indexOf('kind: "FINAL_VERIFICATION"'));
+    expect(executor).toContain('operation.status === "SUCCEEDED"');
+    expect(executor.indexOf("updateSite(site.siteId")).toBeGreaterThan(executor.indexOf("FINAL_WORDPRESS_VERIFICATION_FAILED"));
+    expect(executor).not.toContain('publicationPolicy: "publish_after_gates"');
   });
 
   test("renders explicit QA, navigation, readiness, and authorization actions without publication", () => {

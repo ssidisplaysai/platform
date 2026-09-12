@@ -9,13 +9,13 @@ export type SitePublicationExecutionPlan = { executionPlanId: string; organizati
 type State = { plans: SitePublicationExecutionPlan[] };
 const NAMESPACE = "site-publication-execution-repository";
 const load = () => loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: () => ({ plans: [] }) });
-const fingerprint = (operations: SitePublicationOperation[]) => createHash("sha256").update(JSON.stringify(operations.map((operation) => ({ kind: operation.kind, label: operation.label, targetId: operation.targetId, currentState: operation.currentState, intendedState: operation.intendedState, mutation: operation.mutation, idempotencyKey: operation.idempotencyKey })))).digest("hex");
+export const createSitePublicationExecutionFingerprint = (operations: Array<Pick<SitePublicationOperation, "kind" | "label" | "targetId" | "intendedState" | "mutation" | "idempotencyKey">>) => createHash("sha256").update(JSON.stringify(operations.map((operation) => ({ kind: operation.kind, label: operation.label, targetId: operation.targetId, intendedState: operation.intendedState, mutation: operation.mutation, idempotencyKey: operation.idempotencyKey })))).digest("hex");
 
 export function listSitePublicationExecutionPlans(input: { organizationId: string; siteId: string; buildSessionId: string }): SitePublicationExecutionPlan[] { return deepClone(load().state.plans.filter((plan) => plan.organizationId === input.organizationId && plan.siteId === input.siteId && plan.buildSessionId === input.buildSessionId)); }
 export function saveSitePublicationExecutionPlan(input: { organizationId: string; siteId: string; buildSessionId: string; authorizationReviewId: string; operations: Array<Omit<SitePublicationOperation, "operationId" | "status" | "attemptCount" | "completedAt" | "error">> }): SitePublicationExecutionPlan {
   const loaded = load();
   const operations = input.operations.map((operation) => ({ ...operation, operationId: `publication-operation-${randomUUID()}`, status: "PENDING" as const, attemptCount: 0, completedAt: null, error: null }));
-  const planFingerprint = fingerprint(operations);
+  const planFingerprint = createSitePublicationExecutionFingerprint(operations);
   const existing = loaded.state.plans.find((plan) => plan.organizationId === input.organizationId && plan.siteId === input.siteId && plan.buildSessionId === input.buildSessionId && plan.authorizationReviewId === input.authorizationReviewId && plan.fingerprint === planFingerprint);
   if (existing) return deepClone(existing);
   const timestamp = new Date().toISOString();

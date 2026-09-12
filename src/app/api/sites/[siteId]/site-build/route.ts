@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { startSiteBuild } from "@/modules/foundation/site-generation-readiness-repository";
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
-import { approveAllGeneratedPages, approveAllReadySiteDesigns, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, assembleRemainingSiteVisuals, authorizeSitePublication, confirmSitePublicationReadiness, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, decideSiteNavigation, decideSiteVisualDesign, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, reassembleSiteNavigation, reassembleSiteVisualDesign, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, startSiteNavigationReview, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
+import { approveAllGeneratedPages, approveAllReadySiteDesigns, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, assembleRemainingSiteVisuals, authorizeSitePublication, authorizeSitePublicationPolicy, confirmSitePublicationReadiness, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, decideSiteNavigation, decideSiteVisualDesign, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, reassembleSiteNavigation, reassembleSiteVisualDesign, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, startSiteNavigationReview, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
 import { inspectSiteBuildWordPressDrafts } from "@/modules/foundation/site-build-wordpress-review";
 import { executeSitePublication } from "@/modules/foundation/site-publication-executor";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest, context: Context) {
     else if (confirm === "REASSEMBLE_NAVIGATION") reassembleSiteNavigation(site, "site-owner", body?.instructions ?? "");
     else if (confirm === "CONFIRM_PUBLICATION_READINESS") confirmSitePublicationReadiness(site, "site-owner");
     else if (confirm === "AUTHORIZE_PUBLICATION") authorizeSitePublication(site, "site-owner");
+    else if (confirm === "AUTHORIZE_PUBLICATION_POLICY") authorizeSitePublicationPolicy(site);
     else if (confirm === "EXECUTE_APPROVED_PUBLICATION") {
       const workspace = getSiteBuildWorkspace(site);
       if (!workspace.currentPublicationExecutionPlan || workspace.currentPublicationExecutionPlan.executionPlanId !== body?.executionPlanId) return NextResponse.json({ error: "Current approved publication execution plan is required." }, { status: 409 });

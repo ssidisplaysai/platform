@@ -60,7 +60,7 @@ export async function executeSitePublication(site: SiteConfiguration): Promise<S
   plan = checkpointSitePublicationExecutionPlan({ executionPlanId: plan.executionPlanId, status: "VERIFYING", operations: plan.operations });
 
   const genesisIndex = plan.operations.findIndex((operation) => operation.kind === "TRANSITION_GENESIS_SITE");
-  const updated = updateSite(site.siteId, { lifecycleState: "active", publishingStatus: "ready", publicationPolicy: "publish_after_gates", enabled: true, lastSuccessfulPublication: new Date().toISOString() });
+  const updated = updateSite(site.siteId, { lifecycleState: "active", publishingStatus: "ready", enabled: true, lastSuccessfulPublication: new Date().toISOString() });
   if (!updated.validation.valid || !updated.site) {
     plan.operations[genesisIndex] = failed(plan.operations[genesisIndex], new Error("GENESIS_SITE_TRANSITION_FAILED"));
     return checkpointSitePublicationExecutionPlan({ executionPlanId: plan.executionPlanId, status: "PARTIALLY_FAILED", operations: plan.operations });

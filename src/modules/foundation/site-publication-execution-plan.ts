@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-authority";
 import { getSiteBuildWorkspace } from "./site-build-service";
 import { inspectSiteBuildWordPressDrafts } from "./site-build-wordpress-review";
-import { saveSitePublicationExecutionPlan, type SitePublicationExecutionPlan } from "./site-publication-execution-repository";
+import { createSitePublicationExecutionFingerprint, saveSitePublicationExecutionPlan, type SitePublicationExecutionPlan } from "./site-publication-execution-repository";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import type { SiteConfiguration } from "./types";
 
@@ -16,6 +16,7 @@ export type SitePublicationExecutionPreflight = {
   navigation: { mode: "VERIFY_EMBEDDED_APPROVED_NAVIGATION" | "WORDPRESS_MENU_MUTATION_REQUIRED"; topLevelCount: number; childCount: number; restRoutes: string[]; mutationRequired: boolean };
   home: { wordpressObjectId: string; assignmentRequired: boolean };
   genesis: { current: string; intended: string };
+  checks: { allObjectsStillDraft: boolean; allObjectsInExpectedState: boolean; allObjectIdsMatch: boolean; allSlugsMatch: boolean; allContentRevisionsMatch: boolean; allMediaVerified: boolean; allSeoVerified: boolean; navigationVerified: boolean; frontPageTargetVerified: boolean; duplicateCanonicalCount: number; authorizationStillValid: boolean; executionFingerprintValid: boolean };
   blockers: string[];
 };
 
@@ -50,7 +51,6 @@ export async function prepareSitePublicationExecutionPlan(site: SiteConfiguratio
   const embeddedNavigationVerified = review.qa.contentMismatchCount === 0 && review.summary.verifiedDraftCount === review.summary.expectedCount;
   const navigationMode = embeddedNavigationVerified ? "VERIFY_EMBEDDED_APPROVED_NAVIGATION" as const : "WORDPRESS_MENU_MUTATION_REQUIRED" as const;
   const blockers = [
-    ...(!review.qa.readyForSiteQa ? ["SITE_QA_NOT_CURRENT"] : []),
     ...(assignmentRequired && !settingsWritable ? ["WORDPRESS_FRONT_PAGE_SETTINGS_NOT_WRITABLE"] : []),
     ...(navigationMode === "WORDPRESS_MENU_MUTATION_REQUIRED" && menuRoutes.length === 0 ? ["WORDPRESS_MENU_AUTHORITY_UNAVAILABLE"] : []),
     ...(site.publicationPolicy !== "publish_after_gates" ? ["GENESIS_PUBLICATION_POLICY_TRANSITION_REQUIRED"] : []),
@@ -64,6 +64,13 @@ export async function prepareSitePublicationExecutionPlan(site: SiteConfiguratio
     { kind: "FINAL_VERIFICATION" as const, label: "Authenticate final WordPress launch state", targetId: site.siteId, currentState: "pending", intendedState: "15 published pages verified", mutation: false, idempotencyKey: idempotencyKey(["FINAL_VERIFY", workspace.session.buildSessionId]) },
     { kind: "TRANSITION_GENESIS_SITE" as const, label: "Transition Genesis site state after verification", targetId: site.siteId, currentState: `${site.lifecycleState}:${site.publishingStatus}:${site.enabled}`, intendedState: "active:ready:true", mutation: true, idempotencyKey: idempotencyKey(["GENESIS_STATE", workspace.session.buildSessionId]) },
   ];
-  const plan = workspace.currentPublicationExecutionPlan ?? saveSitePublicationExecutionPlan({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, authorizationReviewId: workspace.currentNavigationReview.navigationReviewId, operations });
-  return { ready: blockers.filter((blocker) => blocker !== "GENESIS_PUBLICATION_POLICY_TRANSITION_REQUIRED").length === 0, plan, pagePublishCount: review.items.length, settings: { showOnFront, pageOnFront, permalinkStructure, settingsWritable }, navigation: { mode: navigationMode, topLevelCount: workspace.currentNavigationReview.items.length, childCount, restRoutes: menuRoutes, mutationRequired: navigationMode === "WORDPRESS_MENU_MUTATION_REQUIRED" }, home: { wordpressObjectId: homeDraft.wordpressObjectId, assignmentRequired }, genesis: { current: `${site.lifecycleState}:${site.publishingStatus}:${site.enabled}`, intended: "active:ready:true" }, blockers };
+  const currentFingerprint = createSitePublicationExecutionFingerprint(operations);
+  const existingPlan = workspace.currentPublicationExecutionPlan;
+  const replaceUnusedLegacyPlan = Boolean(existingPlan && existingPlan.status === "READY_FOR_EXECUTION" && existingPlan.operations.every((operation) => operation.attemptCount === 0) && existingPlan.fingerprint !== currentFingerprint);
+  const plan = !existingPlan || replaceUnusedLegacyPlan ? saveSitePublicationExecutionPlan({ organizationId: site.organizationId, siteId: site.siteId, buildSessionId: workspace.session.buildSessionId, authorizationReviewId: workspace.currentNavigationReview.navigationReviewId, operations }) : existingPlan;
+  const allObjectsInExpectedState = review.items.every((item) => { const receipt = plan.operations.find((operation) => operation.kind === "PUBLISH_PAGE" && operation.targetId === item.wordpressObjectId); return item.wordpressStatus === (receipt?.status === "SUCCEEDED" ? "publish" : "draft"); });
+  const checks = { allObjectsStillDraft: review.items.every((item) => item.wordpressStatus === "draft"), allObjectsInExpectedState, allObjectIdsMatch: review.summary.allObjectIdsMatchReceipts, allSlugsMatch: review.summary.allCanonicalSlugsCorrect, allContentRevisionsMatch: review.qa.contentMismatchCount === 0, allMediaVerified: review.media.imagesAttachedToPages === review.summary.expectedCount, allSeoVerified: review.qa.seoMismatchCount === 0, navigationVerified: embeddedNavigationVerified, frontPageTargetVerified: review.items.some((item) => item.wordpressObjectId === homeDraft.wordpressObjectId && ["draft", "publish"].includes(item.wordpressStatus ?? "")), duplicateCanonicalCount: review.summary.duplicateObjectCount + review.qa.duplicateSlugCount, authorizationStillValid: workspace.currentNavigationReview.status === "PUBLICATION_AUTHORIZED", executionFingerprintValid: plan.fingerprint === currentFingerprint };
+  const requiredChecksPass = checks.allObjectsInExpectedState && checks.allObjectIdsMatch && checks.allSlugsMatch && checks.allContentRevisionsMatch && checks.allMediaVerified && checks.allSeoVerified && checks.navigationVerified && checks.frontPageTargetVerified && checks.duplicateCanonicalCount === 0 && checks.authorizationStillValid && checks.executionFingerprintValid;
+  if (!requiredChecksPass) blockers.push("CURRENT_APPROVED_STATE_FINGERPRINT_MISMATCH");
+  return { ready: blockers.length === 0, plan, pagePublishCount: review.items.length, settings: { showOnFront, pageOnFront, permalinkStructure, settingsWritable }, navigation: { mode: navigationMode, topLevelCount: workspace.currentNavigationReview.items.length, childCount, restRoutes: menuRoutes, mutationRequired: navigationMode === "WORDPRESS_MENU_MUTATION_REQUIRED" }, home: { wordpressObjectId: homeDraft.wordpressObjectId, assignmentRequired }, genesis: { current: `${site.lifecycleState}:${site.publishingStatus}:${site.enabled}`, intended: "active:ready:true" }, checks, blockers };
 }

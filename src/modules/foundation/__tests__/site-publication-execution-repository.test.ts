@@ -17,5 +17,6 @@ describe("site publication execution repository", () => {
     const checkpoint = repository.checkpointSitePublicationExecutionPlan({ executionPlanId: first.executionPlanId, status: "EXECUTING", operations });
     expect(checkpoint.status).toBe("EXECUTING");
     expect(checkpoint.operations[0]).toMatchObject({ operationId: first.operations[0].operationId, idempotencyKey: "publish-10", status: "SUCCEEDED" });
+    expect(repository.createSitePublicationExecutionFingerprint(first.operations)).toBe(repository.createSitePublicationExecutionFingerprint(first.operations.map((operation) => ({ ...operation, currentState: "publish" }))));
   });
 });
