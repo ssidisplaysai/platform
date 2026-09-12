@@ -1,7 +1,7 @@
-import { areRequiredPageImagesApproved, summarizeSitePageReview } from "../site-page-image-review";
+import { areRequiredPageImagesApproved, selectApprovedSitePageImageCandidate, summarizeSitePageReview } from "../site-page-image-review";
 
 const page = { pageId: "home", pageRevisionId: "home-r5", imageRequirements: [{ slotId: "hero", status: "GENERATED_CANDIDATE_NEEDED", publishableAssetId: null }] } as never;
-function candidate(revision: number, status: "READY_FOR_OWNER_REVIEW" | "APPROVED" | "REJECTED", pageRevisionId = "home-r5") { return { pageId: "home", pageRevisionId, slotId: "hero", revision, status } as never; }
+function candidate(revision: number, status: "READY_FOR_OWNER_REVIEW" | "APPROVED" | "REJECTED", pageRevisionId = "home-r5", slotId = "hero") { return { candidateId: `${slotId}-${revision}`, pageId: "home", pageRevisionId, slotId, revision, status } as never; }
 
 describe("required page image review", () => {
   test("fails closed until the latest candidate is approved", () => {
@@ -13,6 +13,18 @@ describe("required page image review", () => {
 
   test("accepts an existing approved publishable asset without a candidate", () => {
     expect(areRequiredPageImagesApproved({ ...page, imageRequirements: [{ slotId: "hero", status: "READY", publishableAssetId: "asset-1" }] } as never, [])).toBe(true);
+  });
+
+  test("selects exact approved slots and does not reuse another slot candidate", () => {
+    const multiSlotPage = { ...page, imageRequirements: [
+      { slotId: "product", status: "GENERATED_CANDIDATE_NEEDED", publishableAssetId: null },
+      { slotId: "contextual", status: "GENERATED_CANDIDATE_NEEDED", publishableAssetId: null },
+    ] } as never;
+    const product = candidate(1, "APPROVED", "home-r5", "product");
+    const contextual = candidate(2, "APPROVED", "home-r5", "contextual");
+    expect(selectApprovedSitePageImageCandidate({ page: multiSlotPage, slotId: "product", candidates: [product, contextual] })?.candidateId).toBe("product-1");
+    expect(areRequiredPageImagesApproved(multiSlotPage, [product])).toBe(false);
+    expect(areRequiredPageImagesApproved(multiSlotPage, [product, contextual])).toBe(true);
   });
 
   test("completes page review only when every page, quality gate, and required image is approved", () => {

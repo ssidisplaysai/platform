@@ -9,6 +9,7 @@ import { updateSite } from "./site-repository";
 import type { SiteConfiguration } from "./types";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import { publishGenesisWordPressDraft } from "./wordpress-publish-writer";
+import { certifyPublicWordPressSite } from "./public-wordpress-certification";
 
 function completed(operation: SitePublicationOperation): SitePublicationOperation { return { ...operation, status: "SUCCEEDED", attemptCount: operation.attemptCount + 1, completedAt: new Date().toISOString(), error: null }; }
 function failed(operation: SitePublicationOperation, error: unknown): SitePublicationOperation { return { ...operation, status: "FAILED", attemptCount: operation.attemptCount + 1, completedAt: new Date().toISOString(), error: error instanceof Error ? error.message : "PUBLICATION_OPERATION_FAILED" }; }
@@ -52,7 +53,21 @@ export async function executeSitePublication(site: SiteConfiguration): Promise<S
 
   const finalIndex = plan.operations.findIndex((operation) => operation.kind === "FINAL_VERIFICATION");
   const finalReview = await inspectSiteBuildWordPressDrafts(site, undefined, "publish");
-  if (!finalReview.qa.readyForSiteQa || finalReview.summary.publishedCount !== finalReview.summary.expectedCount || finalReview.media.imagesAttachedToPages !== finalReview.summary.expectedCount || finalReview.qa.seoMismatchCount !== 0) {
+  const finalWorkspace = getSiteBuildWorkspace(site);
+  const publicCertification = finalWorkspace.currentAssembly
+    ? await certifyPublicWordPressSite({
+        spec: {
+          canonicalOrigin: site.canonicalUrl,
+          wordpressSettings: { home: preflight.settings.home, siteUrl: preflight.settings.siteUrl },
+          expectedBrand: site.displayName,
+          routes: finalWorkspace.currentAssembly.pages.map((page) => ({
+            path: page.canonicalPath,
+            expectedH1: page.h1,
+          })),
+        },
+      })
+    : null;
+  if (!finalReview.qa.readyForSiteQa || finalReview.summary.publishedCount !== finalReview.summary.expectedCount || finalReview.media.imagesAttachedToPages !== finalReview.summary.expectedCount || finalReview.qa.seoMismatchCount !== 0 || !publicCertification?.ready) {
     plan.operations[finalIndex] = failed(plan.operations[finalIndex], new Error("FINAL_WORDPRESS_VERIFICATION_FAILED"));
     return checkpointSitePublicationExecutionPlan({ executionPlanId: plan.executionPlanId, status: "PARTIALLY_FAILED", operations: plan.operations });
   }

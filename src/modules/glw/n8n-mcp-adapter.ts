@@ -313,3 +313,33 @@ export function createGlwN8nMcpExecutionReader(input?: {
     },
   };
 }
+
+export async function preflightGlwN8nMcpExecution(input?: {
+  environment?: NodeJS.ProcessEnv;
+  listTools?: () => Promise<readonly string[]>;
+}): Promise<{
+  ready: boolean;
+  configured: boolean;
+  requiredTools: readonly ["execute_workflow", "get_workflow_execution"];
+  availableTools: readonly string[];
+  reason: string | null;
+}> {
+  const environment = input?.environment ?? process.env;
+  const configured = getGlwN8nMcpConfigurationStatus(environment).configured;
+  const requiredTools = ["execute_workflow", "get_workflow_execution"] as const;
+  if (!configured) return { ready: false, configured: false, requiredTools, availableTools: [], reason: "GLW n8n MCP execution is not configured." };
+  try {
+    const availableTools = input?.listTools
+      ? [...await input.listTools()]
+      : await withMcpClient({
+          environment,
+          operation: async (client) => (await client.listTools()).tools.map((tool) => tool.name),
+        });
+    const missing = requiredTools.filter((tool) => !availableTools.includes(tool));
+    return missing.length
+      ? { ready: false, configured: true, requiredTools, availableTools, reason: `GLW n8n MCP tools unavailable: ${missing.join(", ")}.` }
+      : { ready: true, configured: true, requiredTools, availableTools, reason: null };
+  } catch (error) {
+    return { ready: false, configured: true, requiredTools, availableTools: [], reason: redactGlwExecutionError(error) };
+  }
+}

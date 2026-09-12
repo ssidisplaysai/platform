@@ -12,7 +12,7 @@ export type SitePublicationExecutionPreflight = {
   ready: boolean;
   plan: SitePublicationExecutionPlan;
   pagePublishCount: number;
-  settings: { showOnFront: string | null; pageOnFront: number | null; permalinkStructure: string | null; settingsWritable: boolean };
+  settings: { home: string | null; siteUrl: string | null; showOnFront: string | null; pageOnFront: number | null; permalinkStructure: string | null; settingsWritable: boolean };
   navigation: { mode: "VERIFY_EMBEDDED_APPROVED_NAVIGATION" | "WORDPRESS_MENU_MUTATION_REQUIRED"; topLevelCount: number; childCount: number; restRoutes: string[]; mutationRequired: boolean };
   home: { wordpressObjectId: string; assignmentRequired: boolean };
   genesis: { current: string; intended: string };
@@ -40,6 +40,8 @@ export async function prepareSitePublicationExecutionPlan(site: SiteConfiguratio
   const menuRoutes = Object.keys(index.routes ?? {}).filter((route) => /menu|navigation/.test(route)).sort();
   const settingsMethods = index.routes?.["/wp/v2/settings"]?.methods ?? [];
   const showOnFront = typeof settings.show_on_front === "string" ? settings.show_on_front : null;
+  const home = typeof settings.home === "string" ? new URL(settings.home).origin : null;
+  const siteUrl = typeof settings.url === "string" ? new URL(settings.url).origin : null;
   const pageOnFront = Number.isSafeInteger(settings.page_on_front) ? Number(settings.page_on_front) : null;
   const permalinkStructure = typeof settings.permalink_structure === "string" ? settings.permalink_structure : null;
   const homePage = workspace.currentAssembly.pages.find((page) => page.pageRole === "HOME");
@@ -72,5 +74,5 @@ export async function prepareSitePublicationExecutionPlan(site: SiteConfiguratio
   const checks = { allObjectsStillDraft: review.items.every((item) => item.wordpressStatus === "draft"), allObjectsInExpectedState, allObjectIdsMatch: review.summary.allObjectIdsMatchReceipts, allSlugsMatch: review.summary.allCanonicalSlugsCorrect, allContentRevisionsMatch: review.qa.contentMismatchCount === 0, allMediaVerified: review.media.imagesAttachedToPages === review.summary.expectedCount, allSeoVerified: review.qa.seoMismatchCount === 0, navigationVerified: embeddedNavigationVerified, frontPageTargetVerified: review.items.some((item) => item.wordpressObjectId === homeDraft.wordpressObjectId && ["draft", "publish"].includes(item.wordpressStatus ?? "")), duplicateCanonicalCount: review.summary.duplicateObjectCount + review.qa.duplicateSlugCount, authorizationStillValid: workspace.currentNavigationReview.status === "PUBLICATION_AUTHORIZED", executionFingerprintValid: plan.fingerprint === currentFingerprint };
   const requiredChecksPass = checks.allObjectsInExpectedState && checks.allObjectIdsMatch && checks.allSlugsMatch && checks.allContentRevisionsMatch && checks.allMediaVerified && checks.allSeoVerified && checks.navigationVerified && checks.frontPageTargetVerified && checks.duplicateCanonicalCount === 0 && checks.authorizationStillValid && checks.executionFingerprintValid;
   if (!requiredChecksPass) blockers.push("CURRENT_APPROVED_STATE_FINGERPRINT_MISMATCH");
-  return { ready: blockers.length === 0, plan, pagePublishCount: review.items.length, settings: { showOnFront, pageOnFront, permalinkStructure, settingsWritable }, navigation: { mode: navigationMode, topLevelCount: workspace.currentNavigationReview.items.length, childCount, restRoutes: menuRoutes, mutationRequired: navigationMode === "WORDPRESS_MENU_MUTATION_REQUIRED" }, home: { wordpressObjectId: homeDraft.wordpressObjectId, assignmentRequired }, genesis: { current: `${site.lifecycleState}:${site.publishingStatus}:${site.enabled}`, intended: "active:ready:true" }, checks, blockers };
+  return { ready: blockers.length === 0, plan, pagePublishCount: review.items.length, settings: { home, siteUrl, showOnFront, pageOnFront, permalinkStructure, settingsWritable }, navigation: { mode: navigationMode, topLevelCount: workspace.currentNavigationReview.items.length, childCount, restRoutes: menuRoutes, mutationRequired: navigationMode === "WORDPRESS_MENU_MUTATION_REQUIRED" }, home: { wordpressObjectId: homeDraft.wordpressObjectId, assignmentRequired }, genesis: { current: `${site.lifecycleState}:${site.publishingStatus}:${site.enabled}`, intended: "active:ready:true" }, checks, blockers };
 }

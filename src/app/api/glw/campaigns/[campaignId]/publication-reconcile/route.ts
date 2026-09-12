@@ -25,6 +25,7 @@ import {
 
 type Result = {
   stateCode: string;
+  citySlug: string | null;
   wordpressObjectId: string | null;
   classification:
     | "RECONCILED_PUBLISHED"
@@ -109,8 +110,24 @@ export async function POST(
     const execution = executions.find((record) => record.jobId === target.jobId) ?? null;
     const state = GLW_CAMPAIGN_US_STATES.find((entry) => entry.code === target.stateCode);
     if (target.status !== "draft_ready" || !target.jobId || !target.wordpressObjectId || !execution || !state) {
-      results.push({ stateCode: target.stateCode, wordpressObjectId: target.wordpressObjectId, classification: "UNTOUCHED_OTHER" });
+      results.push({ stateCode: target.stateCode, citySlug: target.citySlug ?? null, wordpressObjectId: target.wordpressObjectId, classification: "UNTOUCHED_OTHER" });
       continue;
+    }
+
+    let expectedLeafParentId = expectedParentId;
+    if (target.citySlug) {
+      const stateParentRead = await authority.getJson({
+        path: "/pages",
+        query: new URLSearchParams({ slug: state.slug, parent: expectedParentId, status: "any", context: "edit", _fields: "id,slug,parent,status" }),
+      });
+      const stateParents = stateParentRead.ok && Array.isArray(stateParentRead.body)
+        ? (stateParentRead.body as WordPressPublicationPage[]).filter((page) => page.slug === state.slug && String(page.parent ?? "") === expectedParentId)
+        : [];
+      if (stateParents.length !== 1 || !stateParents[0].id) {
+        results.push({ stateCode: target.stateCode, citySlug: target.citySlug, wordpressObjectId: target.wordpressObjectId, classification: "UNRESOLVED_ERROR", message: "Canonical WordPress state parent could not be uniquely verified by authenticated GET." });
+        continue;
+      }
+      expectedLeafParentId = String(stateParents[0].id);
     }
 
     const read = await authority.getJson({
@@ -118,19 +135,20 @@ export async function POST(
       query: new URLSearchParams({ context: "edit", _fields: "id,slug,parent,status,link" }),
     });
     if (!read.ok || !isPage(read.body)) {
-      results.push({ stateCode: target.stateCode, wordpressObjectId: target.wordpressObjectId, classification: "UNRESOLVED_ERROR", message: "Authoritative WordPress GET failed." });
+      results.push({ stateCode: target.stateCode, citySlug: target.citySlug ?? null, wordpressObjectId: target.wordpressObjectId, classification: "UNRESOLVED_ERROR", message: "Authoritative WordPress GET failed." });
       continue;
     }
 
     const classification = classifyGlwPublicationRead({
       page: read.body,
       expectedWordpressObjectId: target.wordpressObjectId,
-      expectedSlug: state.slug,
-      expectedParentId,
+      expectedSlug: target.citySlug ?? state.slug,
+      expectedParentId: expectedLeafParentId,
     });
     if (classification !== "RECONCILED_PUBLISHED") {
       results.push({
         stateCode: target.stateCode,
+        citySlug: target.citySlug ?? null,
         wordpressObjectId: target.wordpressObjectId,
         classification,
         message: classification === "HIERARCHY_MISMATCH" ? "Manual remediation required." : undefined,
@@ -146,10 +164,11 @@ export async function POST(
     reconcileGlwCampaignTargetPublished({
       campaignId,
       stateCode: target.stateCode,
+      citySlug: target.citySlug,
       jobId: target.jobId,
       wordpressObjectId: target.wordpressObjectId,
     });
-    results.push({ stateCode: target.stateCode, wordpressObjectId: target.wordpressObjectId, classification });
+    results.push({ stateCode: target.stateCode, citySlug: target.citySlug ?? null, wordpressObjectId: target.wordpressObjectId, classification });
   }
 
   const count = (classification: Result["classification"]) => results.filter((result) => result.classification === classification).length;

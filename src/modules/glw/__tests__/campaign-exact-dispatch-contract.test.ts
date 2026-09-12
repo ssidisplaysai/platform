@@ -30,9 +30,12 @@ describe("campaign exact dispatch contract", () => {
     expect(route).toContain("const MAX_CONCURRENT_EXECUTION = 1");
     expect(route).toContain("MAX_CONCURRENT_EXECUTION - queue.running");
     expect(route).toContain("GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED");
+    expect(route).toContain("Dispatch date cannot be overridden for a mutating scheduler request.");
     expect(route).toContain("maxTargets: MAX_CONCURRENT_EXECUTION");
     expect(route).toContain("GLW_N8N_MCP_NOT_CONFIGURED");
+    expect(route).toContain("GLW_N8N_MCP_PREFLIGHT_FAILED");
     expect(route.indexOf("GLW_N8N_MCP_NOT_CONFIGURED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
+    expect(route.indexOf("await preflightGlwN8nMcpExecution()")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
     expect(route).toContain('payload?.job?.status === "FAILED"');
     expect(controls).toContain("!scheduler.executionReadiness.configured");
     expect(controls).toContain("scheduler.schedule.availableConcurrency < 1");
@@ -62,8 +65,9 @@ describe("campaign exact dispatch contract", () => {
         referenceWordpressObjectId: "1",
       });
       expect(repository.previewGlwCampaignTargetLease({ campaignId: "campaign-exact", pagesPerDay: 10, dispatchDate: "2026-09-05", maxTargets: 1 }).selected.map((target) => target.stateCode)).toEqual(["TN"]);
-      expect(repository.leaseGlwCampaignTargets({ campaignId: "campaign-exact", pagesPerDay: 10, dispatchDate: "2026-09-05", leaseId: "lease", maxTargets: 1 }).map((target) => target.stateCode)).toEqual(["TN"]);
+      expect(repository.leaseGlwCampaignTargets({ campaignId: "campaign-exact", pagesPerDay: 10, dispatchDate: "2026-09-05", leaseId: "lease", maxTargets: 1, maxConcurrentExecution: 1 }).map((target) => target.stateCode)).toEqual(["TN"]);
       expect(repository.listGlwCampaignTargets("campaign-exact").find((target) => target.stateCode === "TX")?.status).toBe("queued");
+      expect(() => repository.leaseGlwCampaignTargets({ campaignId: "campaign-exact", pagesPerDay: 10, dispatchDate: "2026-09-05", leaseId: "lease-2", maxTargets: 1, maxConcurrentExecution: 1 })).toThrow("GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED");
     } finally {
       if (originalRoot === undefined) delete process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
       else process.env.GCP_FOUNDATION_PERSISTENCE_DIR = originalRoot;

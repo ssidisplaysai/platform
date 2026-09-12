@@ -1,14 +1,24 @@
 import type { SitePageImageCandidate } from "./site-page-image-candidate-repository";
 import type { SiteAssemblyProposal, SiteGeneratedPageRevision } from "./site-page-generation";
+export function selectApprovedSitePageImageCandidate(input: {
+  page: Pick<SiteGeneratedPageRevision, "pageId" | "pageRevisionId">;
+  slotId: string;
+  candidates: readonly SitePageImageCandidate[];
+}): SitePageImageCandidate | null {
+  const latest = input.candidates
+    .filter((candidate) =>
+      candidate.pageId === input.page.pageId
+      && candidate.pageRevisionId === input.page.pageRevisionId
+      && candidate.slotId === input.slotId)
+    .sort((left, right) => left.revision - right.revision)
+    .at(-1) ?? null;
+  return latest?.status === "APPROVED" ? latest : null;
+}
 
 export function areRequiredPageImagesApproved(page: SiteGeneratedPageRevision, candidates: SitePageImageCandidate[]): boolean {
   return page.imageRequirements.every((slot) => {
     if (slot.status === "READY" && slot.publishableAssetId) return true;
-    const latest = candidates
-      .filter((candidate) => candidate.pageId === page.pageId && candidate.pageRevisionId === page.pageRevisionId && candidate.slotId === slot.slotId)
-      .sort((left, right) => left.revision - right.revision)
-      .at(-1);
-    return latest?.status === "APPROVED";
+    return Boolean(selectApprovedSitePageImageCandidate({ page, slotId: slot.slotId, candidates }));
   });
 }
 

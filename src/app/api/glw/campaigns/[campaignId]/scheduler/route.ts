@@ -23,7 +23,7 @@ import {
   summarizeGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
 import { recordGlwCampaignLaunchDispatch } from "@/modules/glw/campaign-launch-authority";
-import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
+import { getGlwN8nMcpConfigurationStatus, preflightGlwN8nMcpExecution } from "@/modules/glw/n8n-mcp-adapter";
 
 const MAX_CONCURRENT_EXECUTION = 1;
 
@@ -41,12 +41,16 @@ function normalizeCitySlug(value?: string | null): string {
 
 function resolveDispatchDate(
   request: NextRequest,
+  allowOverride = true,
 ): string {
   const requested = request.nextUrl.searchParams
     .get("dispatchDate")
     ?.trim();
 
   if (requested) {
+    if (!allowOverride) {
+      throw new Error("Dispatch date cannot be overridden for a mutating scheduler request.");
+    }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(requested)) {
       throw new Error(
         "dispatchDate must use YYYY-MM-DD.",
@@ -258,6 +262,13 @@ export async function POST(
       code: "GLW_N8N_MCP_NOT_CONFIGURED",
     }, { status: 503 });
   }
+  const executionPreflight = await preflightGlwN8nMcpExecution();
+  if (!executionPreflight.ready) {
+    return NextResponse.json({
+      error: executionPreflight.reason ?? "GLW n8n MCP execution capability is unavailable. No targets were leased.",
+      code: "GLW_N8N_MCP_PREFLIGHT_FAILED",
+    }, { status: 503 });
+  }
 
   const queueBeforeDispatch = summarizeGlwCampaignTargets(campaign.campaignId);
   if (queueBeforeDispatch.running >= MAX_CONCURRENT_EXECUTION) {
@@ -295,7 +306,12 @@ export async function POST(
     );
   }
 
-  const dispatchDate = resolveDispatchDate(request);
+  let dispatchDate: string;
+  try {
+    dispatchDate = resolveDispatchDate(request, false);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid dispatch date." }, { status: 400 });
+  }
   const leaseId = randomUUID();
 
   let leased;
@@ -426,6 +442,7 @@ export async function POST(
       pagesPerDay: campaign.pagesPerDay,
       dispatchDate,
       maxTargets: MAX_CONCURRENT_EXECUTION,
+      maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
     });
     const selectedIdentities = preview.selected.map((target) =>
       `${target.stateCode}::${target.citySlug ?? ""}`,
@@ -450,6 +467,7 @@ export async function POST(
       dispatchDate,
       leaseId,
       maxTargets: MAX_CONCURRENT_EXECUTION,
+      maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
     });
   } else {
     leased = leaseGlwCampaignTargets({
@@ -458,6 +476,7 @@ export async function POST(
       dispatchDate,
       leaseId,
       maxTargets: MAX_CONCURRENT_EXECUTION,
+      maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
     });
   }
 

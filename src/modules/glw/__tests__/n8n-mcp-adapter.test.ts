@@ -4,6 +4,7 @@ import {
   createGlwN8nMcpDispatcher,
   createGlwN8nMcpExecutionReader,
   getGlwN8nMcpConfigurationStatus,
+  preflightGlwN8nMcpExecution,
   GLW_N8N_MCP_ENGINE_WORKFLOW_ID,
   GLW_N8N_MCP_RECOVERY_WORKFLOW_ID,
 } from "../n8n-mcp-adapter";
@@ -174,6 +175,35 @@ describe("GLW n8n MCP recovery adapter", () => {
   test("missing MCP token fails closed at configuration detection", () => {
     expect(getGlwN8nMcpConfigurationStatus(environment({ GLW_N8N_MCP_TOKEN: "" })))
       .toMatchObject({ configured: false, tokenConfigured: false });
+  });
+
+  test("preflight requires authenticated execution and read tools", async () => {
+    await expect(preflightGlwN8nMcpExecution({
+      environment: environment(),
+      listTools: async () => ["execute_workflow", "get_workflow_execution"],
+    })).resolves.toMatchObject({ ready: true, configured: true, reason: null });
+
+    await expect(preflightGlwN8nMcpExecution({
+      environment: environment(),
+      listTools: async () => ["execute_workflow"],
+    })).resolves.toMatchObject({ ready: false, configured: true, reason: "GLW n8n MCP tools unavailable: get_workflow_execution." });
+  });
+
+  test("preflight fails closed without configuration and redacts connection failures", async () => {
+    const listTools = jest.fn();
+    await expect(preflightGlwN8nMcpExecution({
+      environment: environment({ GLW_N8N_MCP_TOKEN: "" }),
+      listTools,
+    })).resolves.toMatchObject({ ready: false, configured: false });
+    expect(listTools).not.toHaveBeenCalled();
+
+    const failed = await preflightGlwN8nMcpExecution({
+      environment: environment(),
+      listTools: async () => { throw new Error("token=top-secret denied"); },
+    });
+    expect(failed.ready).toBe(false);
+    expect(failed.reason).toContain("[REDACTED]");
+    expect(failed.reason).not.toContain("top-secret");
   });
 
   test("missing MCP token prevents dispatch before a tool call", async () => {

@@ -405,17 +405,24 @@ export function leaseGlwCampaignTargets(input: {
   dispatchDate: string;
   leaseId: string;
   maxTargets?: number;
+  maxConcurrentExecution?: number;
   leaseDurationMs?: number;
   now?: Date;
 }): readonly GlwCampaignTarget[] {
   loadState();
 
   const now = input.now ?? new Date();
+  const runningCount = listGlwCampaignTargets(input.campaignId)
+    .filter((target) => target.status === "running").length;
+  const availableConcurrency = Math.max(0, (input.maxConcurrentExecution ?? Number.MAX_SAFE_INTEGER) - runningCount);
+  if (availableConcurrency < 1) {
+    throw new Error("GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED");
+  }
   const preview = previewGlwCampaignTargetLease({
     campaignId: input.campaignId,
     pagesPerDay: input.pagesPerDay,
     dispatchDate: input.dispatchDate,
-    maxTargets: input.maxTargets,
+    maxTargets: Math.min(input.maxTargets ?? availableConcurrency, availableConcurrency),
     now,
   });
 
