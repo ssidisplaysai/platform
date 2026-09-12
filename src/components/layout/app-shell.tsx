@@ -21,72 +21,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     [foundationContext.user.roles],
   );
 
-  const initialSelection = useMemo(() => {
-    if (typeof window === "undefined") {
-      return {
-        organizationId: foundationContext.selectedOrganizationId,
-        siteId: foundationContext.selectedSiteId,
-        message: null as string | null,
-      };
-    }
-
-    const persistedOrganizationId = localStorage.getItem(ORGANIZATION_STORAGE_KEY);
-    const persistedSiteId = localStorage.getItem(SITE_STORAGE_KEY);
-    const requested = new URLSearchParams(globalThis.location?.search ?? "");
-    const requestedOrganizationId = requested.get("organizationId");
-    const requestedSiteId = requested.get("siteId");
-
-    const organizationId =
-      requestedOrganizationId &&
-      foundationContext.organizations.some(
-        (organization) => organization.id === requestedOrganizationId,
-      )
-        ? requestedOrganizationId
-        : persistedOrganizationId &&
-      foundationContext.organizations.some(
-        (organization) => organization.id === persistedOrganizationId,
-      )
-        ? persistedOrganizationId
-        : foundationContext.selectedOrganizationId;
-
-    const preferredSiteId = requestedSiteId ?? persistedSiteId;
-    if (!preferredSiteId) {
-      return {
-        organizationId,
-        siteId: foundationContext.selectedSiteId,
-        message: null as string | null,
-      };
-    }
-
-    if (foundationContext.sites.some((site) => site.id === preferredSiteId)) {
-      return {
-        organizationId,
-        siteId: preferredSiteId,
-        message: null as string | null,
-      };
-    }
-
-    return {
-      organizationId,
-      siteId: "",
-      message: `Selected site ${preferredSiteId} is unavailable or unauthorized in this context.`,
-    };
-  }, [
-    foundationContext.organizations,
-    foundationContext.selectedOrganizationId,
-    foundationContext.selectedSiteId,
-    foundationContext.sites,
-  ]);
-
   const [selectedOrganizationId, setSelectedOrganizationId] = useState(
-    initialSelection.organizationId,
+    foundationContext.selectedOrganizationId,
   );
-
-  const [selectedSiteId, setSelectedSiteId] = useState(initialSelection.siteId);
+  const [selectedSiteId, setSelectedSiteId] = useState(foundationContext.selectedSiteId);
   const [canonicalSites, setCanonicalSites] = useState<readonly SiteContext[]>(foundationContext.sites);
-  const [siteSelectionMessage, setSiteSelectionMessage] = useState<string | null>(
-    initialSelection.message,
-  );
+  const [siteSelectionMessage, setSiteSelectionMessage] = useState<string | null>(null);
+  const [workspaceContextResolved, setWorkspaceContextResolved] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
 
@@ -118,6 +59,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 
   useEffect(() => {
+    const persistedOrganizationId = localStorage.getItem(ORGANIZATION_STORAGE_KEY);
+    const persistedSiteId = localStorage.getItem(SITE_STORAGE_KEY);
+    const requested = new URLSearchParams(globalThis.location?.search ?? "");
+    const requestedOrganizationId = requested.get("organizationId");
+    const requestedSiteId = requested.get("siteId");
+    const organizationId =
+      requestedOrganizationId && foundationContext.organizations.some((organization) => organization.id === requestedOrganizationId)
+        ? requestedOrganizationId
+        : persistedOrganizationId && foundationContext.organizations.some((organization) => organization.id === persistedOrganizationId)
+          ? persistedOrganizationId
+          : foundationContext.selectedOrganizationId;
+    setSelectedOrganizationId(organizationId);
+    setSelectedSiteId(requestedSiteId ?? persistedSiteId ?? foundationContext.selectedSiteId);
+    setWorkspaceContextResolved(true);
+  }, [foundationContext.organizations, foundationContext.selectedOrganizationId, foundationContext.selectedSiteId]);
+
+  useEffect(() => {
+    if (!workspaceContextResolved) return;
     let active = true;
     void fetch("/api/sites", {
       headers: {
@@ -147,19 +106,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (active) setSiteSelectionMessage("Configured sites could not be loaded for this organization.");
     });
     return () => { active = false; };
-  }, [foundationContext.user.roles, pathname, router, selectedOrganizationId, selectedSiteId]);
+  }, [foundationContext.user.roles, pathname, router, selectedOrganizationId, selectedSiteId, workspaceContextResolved]);
 
   useEffect(() => {
-    if (selectedOrganizationId) {
+    if (workspaceContextResolved && selectedOrganizationId) {
       localStorage.setItem(ORGANIZATION_STORAGE_KEY, selectedOrganizationId);
     }
-  }, [selectedOrganizationId]);
+  }, [selectedOrganizationId, workspaceContextResolved]);
 
   useEffect(() => {
-    if (selectedSiteId) {
+    if (workspaceContextResolved && selectedSiteId) {
       localStorage.setItem(SITE_STORAGE_KEY, selectedSiteId);
     }
-  }, [selectedSiteId]);
+  }, [selectedSiteId, workspaceContextResolved]);
 
   function handleOrganizationChange(nextOrganizationId: string) {
     setSelectedOrganizationId(nextOrganizationId);
