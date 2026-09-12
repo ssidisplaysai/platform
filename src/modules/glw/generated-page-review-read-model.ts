@@ -2,6 +2,8 @@ import "server-only";
 
 import { createAuthenticatedWordPressReadAuthority, normalizeWordPressApiBaseUrl } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { getProductById } from "@/modules/foundation/product-repository";
+import { getRenderedVisualCertificationState } from "@/modules/foundation/rendered-visual-certification-repository";
+import { hashRenderedVisualContent, renderedVisualUtilization, type RenderedVisualCertification, type RenderedVisualFinding, type RenderedVisualOwnerDecision, type RenderedVisualPageIdentity } from "@/modules/foundation/rendered-visual-certification";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import type { GlwCampaign } from "./campaign-types";
@@ -14,6 +16,20 @@ import { glwPageExecutionRepository } from "./page-execution-repository";
 
 export type ReviewSignal = "PASS" | "WARNING" | "BLOCKED" | "NOT_EVALUATED";
 export type ReviewIssue = { category: "CONTENT" | "SEO" | "IMAGE" | "WORDPRESS" | "POLICY"; severity: "WARNING" | "BLOCKED"; what: string; effect: string; safeNextStep: string };
+export type GeneratedPageVisualQaReview = {
+  contractExists: true;
+  certificationState: "NOT_CERTIFIED" | "CURRENT" | "STALE";
+  overallState: ReviewSignal;
+  layoutClass: string | null;
+  captureSetId: string | null;
+  captures: readonly { captureId: string; viewportClass: "DESKTOP" | "MOBILE"; viewportWidth: number; viewportHeight: number; documentWidth: number; documentHeight: number; primaryContentWidth: number | null; utilization: number | null; horizontalOverflow: number; artifactReference: string; artifactSha256: string; heroState: ReviewSignal; mediaRendered: number; mediaAssigned: number; sectionCount: number }[];
+  findings: readonly RenderedVisualFinding[];
+  decision: RenderedVisualOwnerDecision | null;
+  decisionState: "PENDING" | "CURRENT" | "STALE";
+  stale: boolean;
+  safeNextStep: string;
+  authority: string;
+};
 
 export type GeneratedPageReviewModel = {
   identity: { title: string; target: string; product: string; site: string; domain: string | null; campaign: string; campaignId: string; targetId: string; canonicalPath: string; lifecycleState: string; publicationPolicy: string };
@@ -31,7 +47,7 @@ export type GeneratedPageReviewModel = {
   issues: readonly ReviewIssue[];
   reviewState: "READY_FOR_OWNER_REVIEW" | "NEEDS_ATTENTION" | "BLOCKED";
   actions: { canonical: { label: string; href: string } | null; campaignHref: string; listHref: string };
-  visualQa: { contractExists: false; gapIdentified: true; desktopLayout: "NOT_EVALUATED"; heroComposition: "NOT_EVALUATED"; sectionComposition: "NOT_EVALUATED"; mediaPlacement: "NOT_EVALUATED"; mobileLayout: "NOT_EVALUATED"; authority: string };
+  visualQa: GeneratedPageVisualQaReview;
   durableReviewDecisionExists: false;
 };
 
@@ -58,6 +74,7 @@ export function deriveGeneratedPageReviewModel(input: {
   wordpressMedia: WordPressMedia | null;
   wordpressReadState: string;
   wordpressEditUrl: string | null;
+  visualCertification?: { certification: RenderedVisualCertification | null; decision: RenderedVisualOwnerDecision | null; certificationState: "NOT_CERTIFIED" | "CURRENT" | "STALE"; decisionState: "PENDING" | "CURRENT" | "STALE" };
 }): GeneratedPageReviewModel {
   const artifact = input.job.generatedDraft;
   const sourceHtml = artifact?.contentHtml ?? "";
@@ -94,6 +111,7 @@ export function deriveGeneratedPageReviewModel(input: {
   if (!contextualReady) issues.push({ category: "IMAGE", severity: "WARNING", what: "Contextual image unavailable", effect: "No durable featured-media receipt is available for this draft.", safeNextStep: "Review media evidence in campaign detail; do not infer an image assignment." });
   const reviewState = issues.some((issue) => issue.severity === "BLOCKED") ? "BLOCKED" : issues.length > 0 ? "NEEDS_ATTENTION" : "READY_FOR_OWNER_REVIEW";
   const listQuery = `organizationId=${encodeURIComponent(input.campaign.organizationId)}&siteId=${encodeURIComponent(input.campaign.siteId)}`;
+  const visualQa = deriveGeneratedPageVisualQaReview(input.visualCertification ?? { certification: null, decision: null, certificationState: "NOT_CERTIFIED", decisionState: "PENDING" });
 
   return {
     identity: { title: artifact?.title ?? input.job.title, target: input.target.cityName ? `${input.target.cityName}, ${input.target.stateCode}` : input.target.stateCode, product: input.productName, site: input.siteName, domain: input.domain, campaign: input.campaign.name, campaignId: input.campaign.campaignId, targetId: input.target.targetId, canonicalPath: input.target.canonicalPath ?? input.job.slug, lifecycleState: input.target.status, publicationPolicy: input.campaign.publicationPolicy },
@@ -117,8 +135,27 @@ export function deriveGeneratedPageReviewModel(input: {
     issues,
     reviewState,
     actions: { canonical: input.wordpressEditUrl ? { label: "Open WordPress Draft", href: input.wordpressEditUrl } : null, campaignHref: `/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}?${listQuery}`, listHref: `/glw/campaigns?${listQuery}` },
-    visualQa: { contractExists: false, gapIdentified: true, desktopLayout: "NOT_EVALUATED", heroComposition: "NOT_EVALUATED", sectionComposition: "NOT_EVALUATED", mediaPlacement: "NOT_EVALUATED", mobileLayout: "NOT_EVALUATED", authority: "Rendered preview is the review authority. No durable screenshot/render certification is persisted for this legacy page." },
+    visualQa,
     durableReviewDecisionExists: false,
+  };
+}
+
+export function deriveGeneratedPageVisualQaReview(input: { certification: RenderedVisualCertification | null; decision: RenderedVisualOwnerDecision | null; certificationState: "NOT_CERTIFIED" | "CURRENT" | "STALE"; decisionState: "PENDING" | "CURRENT" | "STALE" }): GeneratedPageVisualQaReview {
+  const certification = input.certification;
+  if (!certification) return { contractExists: true, certificationState: "NOT_CERTIFIED", overallState: "NOT_EVALUATED", layoutClass: null, captureSetId: null, captures: [], findings: [], decision: null, decisionState: "PENDING", stale: false, safeNextStep: "Capture the exact governed page identity through a future authorized capture workflow.", authority: "The durable rendered visual certification contract is available, but no capture set exists for this page revision." };
+  return {
+    contractExists: true,
+    certificationState: input.certificationState,
+    overallState: input.certificationState === "STALE" ? "NOT_EVALUATED" : certification.overallState,
+    layoutClass: certification.layoutClass,
+    captureSetId: certification.captureSetId,
+    captures: certification.captures.map((capture) => ({ captureId: capture.captureId, viewportClass: capture.viewportClass, viewportWidth: capture.viewportWidth, viewportHeight: capture.viewportHeight, documentWidth: capture.documentWidth, documentHeight: capture.documentHeight, primaryContentWidth: capture.primaryContentBounds?.width ?? null, utilization: renderedVisualUtilization(capture), horizontalOverflow: capture.horizontalOverflow, artifactReference: capture.screenshotArtifact.reference, artifactSha256: capture.screenshotArtifact.sha256, heroState: capture.hero.authority === "NOT_IDENTIFIED" ? "NOT_EVALUATED" : capture.hero.present ? "PASS" : "WARNING", mediaRendered: capture.media.filter((item) => item.rendered).length, mediaAssigned: capture.media.filter((item) => item.assigned).length, sectionCount: capture.sections.length })),
+    findings: certification.findings,
+    decision: input.decision,
+    decisionState: input.decisionState,
+    stale: input.certificationState === "STALE" || input.decisionState === "STALE",
+    safeNextStep: input.certificationState === "STALE" ? "Recapture and re-run visual review for the current page identity." : input.decisionState === "PENDING" ? "Review the exact capture set before recording an owner decision through a governed decision workflow." : "No visual review continuation is required for the current evidence.",
+    authority: `Certification ${certification.certificationId} · capture set ${certification.captureSetId} · ${certification.capturedAt}`,
   };
 }
 
@@ -157,5 +194,9 @@ export async function buildGeneratedPageReviewModel(input: { jobId: string; orga
     wordpressReadState = "WORDPRESS_READ_UNAVAILABLE";
   }
 
-  return deriveGeneratedPageReviewModel({ campaign, target, job, siteName: site.displayName, domain: site.domain, productName: product.displayName, productAuthorityReference: product.media.primaryImageReference, productAuthoritySource: product.authorityProvenance?.sourceType ?? null, knowledgePack: getGlwCampaignKnowledgePack(campaign.campaignId), wordpressDraft, wordpressMedia, wordpressReadState, wordpressEditUrl });
+  const sourceHtml = job.generatedDraft?.contentHtml ?? "";
+  const renderedHtml = text(wordpressDraft?.content?.raw ?? wordpressDraft?.content?.rendered);
+  const currentIdentity: RenderedVisualPageIdentity = { organizationId: job.organizationId, siteId: job.siteId, pageId: target.targetId, pageRevisionIdentity: `job:${job.jobId}:${job.updatedAt}`, canonicalPath: target.canonicalPath ?? job.slug, contentHash: hashRenderedVisualContent(sourceHtml), renderedContentHash: renderedHtml ? hashRenderedVisualContent(renderedHtml) : null, campaignId: campaign.campaignId, targetId: target.targetId, jobId: job.jobId, externalExecutionId: job.externalExecutionId, wordpressObjectId: objectId, wordpressStatus: job.wordpressStatus };
+  const visualCertification = getRenderedVisualCertificationState({ currentIdentity });
+  return deriveGeneratedPageReviewModel({ campaign, target, job, siteName: site.displayName, domain: site.domain, productName: product.displayName, productAuthorityReference: product.media.primaryImageReference, productAuthoritySource: product.authorityProvenance?.sourceType ?? null, knowledgePack: getGlwCampaignKnowledgePack(campaign.campaignId), wordpressDraft, wordpressMedia, wordpressReadState, wordpressEditUrl, visualCertification });
 }

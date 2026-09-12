@@ -2,8 +2,9 @@ jest.mock("server-only", () => ({}));
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveGeneratedPageReviewModel } from "../generated-page-review-read-model";
+import { deriveGeneratedPageReviewModel, deriveGeneratedPageVisualQaReview } from "../generated-page-review-read-model";
 import { GlwGeneratedPageReviewWorkspace } from "../GlwGeneratedPageReviewWorkspace";
+import type { RenderedVisualCertification } from "../../foundation/rendered-visual-certification";
 import type { GlwCampaign } from "../campaign-types";
 import type { GlwCampaignTarget } from "../campaign-target-repository";
 import type { GlwPageExecutionRecord } from "../page-execution";
@@ -48,7 +49,7 @@ describe("Genesis generated page review workspace", () => {
     expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ category: "IMAGE", severity: "WARNING", what: "Product authority not wired" })]));
     expect(result.issues.some((issue) => issue.category === "POLICY")).toBe(false);
     expect(result.reviewState).toBe("NEEDS_ATTENTION");
-    expect(result.visualQa).toMatchObject({ contractExists: false, gapIdentified: true, desktopLayout: "NOT_EVALUATED", heroComposition: "NOT_EVALUATED", sectionComposition: "NOT_EVALUATED", mediaPlacement: "NOT_EVALUATED", mobileLayout: "NOT_EVALUATED" });
+    expect(result.visualQa).toMatchObject({ contractExists: true, certificationState: "NOT_CERTIFIED", overallState: "NOT_EVALUATED", captures: [], decisionState: "PENDING" });
   });
 
   test("renders live and source previews, readable review evidence, and no publish action", () => {
@@ -59,7 +60,7 @@ describe("Genesis generated page review workspace", () => {
     expect(html).toContain("DRAFT READY");
     expect(html).toContain("Actual WordPress Draft");
     expect(html).toContain("Genesis Source / Assembly Preview");
-    expect(html).toContain("Rendered Visual QA");
+    expect(html).toContain("Rendered Visual Certification");
     expect(html).toContain("Browser viewport");
     expect(html).toContain("NOT EVALUATED");
     expect(html).toContain("Product Authority");
@@ -79,5 +80,24 @@ describe("Genesis generated page review workspace", () => {
     expect(html).toContain("Authenticated draft content is unavailable: AUTH FAILURE");
     expect(html).toContain("/glw/campaigns/campaign-texas?organizationId=ssi&amp;siteId=site-projector");
     expect(html).toContain("/glw/campaigns?organizationId=ssi&amp;siteId=site-projector");
+  });
+
+  test("renders persisted capture geometry, findings, decision currency, and stale review state", () => {
+    const capture = (viewportClass: "DESKTOP" | "MOBILE", width: number) => ({ captureId: `capture-${viewportClass}`, viewportClass, viewportWidth: width, viewportHeight: 900, documentWidth: width, documentHeight: 4000, primaryContentBounds: { x: 100, y: 0, width: width - 200, height: 4000 }, horizontalOverflow: 0, screenshotArtifact: { reference: `/visual/${viewportClass}.png`, sha256: "a".repeat(64), byteSize: 1000, width, height: 900, mediaType: "image/png" as const }, capturedAt: "2026-09-12T12:00:00.000Z", source: { origin: "https://projectorenclosure.com", pathname: "/fan-cooled-projector-enclosures/texas/dallas/" }, renderer: { engine: "Chromium", version: "140", userAgent: null }, hero: { authority: "NOT_IDENTIFIED" as const, present: null, bounds: null, headingBounds: null, headingLineCount: null, primaryCtaBounds: null, mediaBounds: null, mediaBeforeHero: null, containerAligned: null }, media: [{ assignmentId: null, semanticRole: "CONTEXTUAL_IN_USE" as const, mediaId: "10757", assigned: false, rendered: true, renderedBounds: { x: 100, y: 100, width: 500, height: 250 }, contextId: "featured", aboveFold: true }], sections: [{ sectionId: "section-1", bounds: { x: 100, y: 400, width: 800, height: 500 }, headingBounds: null, headingLineCount: null, contentBounds: null, mediaBounds: null, gapBefore: 40 }] });
+    const certification = { certificationId: "cert-1", contract: "rendered-visual-certification-v1", schemaVersion: 1, identity: { organizationId: "ssi", siteId: "site-projector", pageId: "target-dallas", pageRevisionIdentity: "job:job-dallas:2026-09-12T02:00:00.000Z", canonicalPath: target.canonicalPath, contentHash: "b".repeat(64), renderedContentHash: "c".repeat(64), campaignId: campaign.campaignId, targetId: target.targetId, jobId: job.jobId, externalExecutionId: "579510", wordpressObjectId: "13084", wordpressStatus: "draft" }, layoutClass: "CONTENT_ARTICLE", captureSetId: "capture-set-1", captures: [capture("DESKTOP", 1440), capture("MOBILE", 375)], findings: [{ findingCode: "DESKTOP_HERO_GEOMETRY", category: "HERO", state: "NOT_EVALUATED", summary: "No authoritative hero identity was supplied.", evidenceReferences: ["capture-DESKTOP"], rule: { ruleId: "RVC_HERO_AUTHORITY_MISSING", version: "genesis-rendered-visual-rules-v1", thresholds: {} }, safeRecommendation: null }], overallState: "PASS", capturedAt: "2026-09-12T12:00:00.000Z", createdAt: "2026-09-12T12:01:00.000Z", createdBy: "owner", mutationPerformed: false } as RenderedVisualCertification;
+    const decision = { decisionId: "decision-1", certificationId: "cert-1", captureSetId: "capture-set-1", pageRevisionIdentity: certification.identity.pageRevisionIdentity, contentHash: certification.identity.contentHash, renderedContentHash: certification.identity.renderedContentHash, decision: "APPROVED", note: "Exact captures reviewed.", decidedAt: "2026-09-12T12:02:00.000Z", decidedBy: "owner", publicationAuthorized: false } as const;
+    const current = deriveGeneratedPageVisualQaReview({ certification, decision, certificationState: "CURRENT", decisionState: "CURRENT" });
+    const stale = deriveGeneratedPageVisualQaReview({ certification, decision, certificationState: "STALE", decisionState: "STALE" });
+    const currentHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={{ ...model(), visualQa: current }} />);
+    const staleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={{ ...model(), visualQa: stale }} />);
+    expect(currentHtml).toContain("DESKTOP Capture");
+    expect(currentHtml).toContain("MOBILE Capture");
+    expect(currentHtml).toContain("86%");
+    expect(currentHtml).toContain("RVC_HERO_AUTHORITY_MISSING");
+    expect(currentHtml).toContain("APPROVED");
+    expect(currentHtml).toContain("Evidence currency: CURRENT");
+    expect(staleHtml).toContain("VISUAL REVIEW STALE");
+    expect(staleHtml).toContain("Recapture and re-run visual review");
+    expect(stale.overallState).toBe("NOT_EVALUATED");
   });
 });
