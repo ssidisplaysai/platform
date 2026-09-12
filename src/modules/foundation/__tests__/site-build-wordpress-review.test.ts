@@ -25,4 +25,12 @@ describe("Site Build WordPress draft review", () => {
     expect(review.qa.duplicateSlugCount).toBe(1);
     expect(review.items[0].syncStatus).toBe("ATTENTION_REQUIRED");
   });
+
+  test("verifies the same exact object as published during final publication verification", async () => {
+    const authority = { getJson: jest.fn(async ({ path }: { path: string }) => path === "/pages/10" ? { ok: true, body: { id: 10, slug: "home", status: "publish", featured_media: 41, title: { raw: "Home" }, content: { raw: "<section>Visual Home</section>" }, meta: {} }, pagination: { total: null, totalPages: null } } : { ok: true, body: [{ id: 10, slug: "home", status: "publish" }], pagination: { total: 1, totalPages: 1 } }) };
+    const review = await inspectSiteBuildWordPressDrafts(site as never, authority as never, "publish");
+    expect(review.items[0]).toMatchObject({ wordpressObjectId: "10", wordpressStatus: "publish", contentMatch: true, imageAttached: true, syncStatus: "VERIFIED" });
+    expect(review.summary).toMatchObject({ verifiedDraftCount: 1, publishedCount: 1, allStatusesDraft: false });
+    expect(review.qa.readyForSiteQa).toBe(true);
+  });
 });

@@ -5,6 +5,7 @@ import { startSiteBuild } from "@/modules/foundation/site-generation-readiness-r
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
 import { approveAllGeneratedPages, approveAllReadySiteDesigns, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, assembleRemainingSiteVisuals, authorizeSitePublication, confirmSitePublicationReadiness, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, decideSiteNavigation, decideSiteVisualDesign, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, reassembleSiteNavigation, reassembleSiteVisualDesign, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, startSiteNavigationReview, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
 import { inspectSiteBuildWordPressDrafts } from "@/modules/foundation/site-build-wordpress-review";
+import { executeSitePublication } from "@/modules/foundation/site-publication-executor";
 import { getSiteById } from "@/modules/foundation/site-repository";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest, context: Context) {
 export async function POST(request: NextRequest, context: Context) {
   const auth = authorizeRequest(request, "sites:manage_integrations"); if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const site = await scoped(request, context); if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
-  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string; slotId?: string; candidateId?: string; visualAssemblyId?: string; navigationReviewId?: string } | null;
+  const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string; slotId?: string; candidateId?: string; visualAssemblyId?: string; navigationReviewId?: string; executionPlanId?: string } | null;
   const confirm = body?.confirm ?? "";
   try {
     if (confirm === "START_SITE_BUILD") {
@@ -60,7 +61,12 @@ export async function POST(request: NextRequest, context: Context) {
     else if (confirm === "REASSEMBLE_NAVIGATION") reassembleSiteNavigation(site, "site-owner", body?.instructions ?? "");
     else if (confirm === "CONFIRM_PUBLICATION_READINESS") confirmSitePublicationReadiness(site, "site-owner");
     else if (confirm === "AUTHORIZE_PUBLICATION") authorizeSitePublication(site, "site-owner");
+    else if (confirm === "EXECUTE_APPROVED_PUBLICATION") {
+      const workspace = getSiteBuildWorkspace(site);
+      if (!workspace.currentPublicationExecutionPlan || workspace.currentPublicationExecutionPlan.executionPlanId !== body?.executionPlanId) return NextResponse.json({ error: "Current approved publication execution plan is required." }, { status: 409 });
+      await executeSitePublication(site);
+    }
     else return NextResponse.json({ error: "Explicit supported Site Build action is required." }, { status: 400 });
-    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT" || confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL" || confirm === "ASSEMBLE_REMAINING_VISUALS", publicationMutation: false, siteEnabledMutation: false });
+    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT" || confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL" || confirm === "ASSEMBLE_REMAINING_VISUALS" || confirm === "EXECUTE_APPROVED_PUBLICATION", publicationMutation: confirm === "EXECUTE_APPROVED_PUBLICATION", siteEnabledMutation: confirm === "EXECUTE_APPROVED_PUBLICATION" });
   } catch (cause) { return NextResponse.json({ error: cause instanceof Error ? cause.message : "SITE_BUILD_ACTION_FAILED" }, { status: 409 }); }
 }

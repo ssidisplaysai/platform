@@ -9,6 +9,8 @@ describe("post-visual approval Site QA UI", () => {
   const siteQaAction = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteQaContinuationAction.tsx"), "utf8");
   const navigation = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SiteNavigationReviewWorkflow.tsx"), "utf8");
   const publication = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SitePublicationGateWorkflow.tsx"), "utf8");
+  const execution = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/SitePublicationExecutionWorkflow.tsx"), "utf8");
+  const executor = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/site-publication-executor.ts"), "utf8");
 
   test("removes stale Home and remaining-design continuation from WordPress Review", () => {
     expect(review).not.toContain("Review the designed Home");
@@ -16,6 +18,13 @@ describe("post-visual approval Site QA UI", () => {
     expect(route).not.toContain("SiteVisualPropagationAction");
     expect(route).toContain("All Site Designs Approved");
     expect(route).toContain("workspace.next.route");
+  });
+
+  test("renders authorized execution review and a receipt-driven final action without auto-execution", () => {
+    expect(publication).toContain("REVIEW PUBLICATION EXECUTION");
+    for (const text of ["Exact WordPress page publications", "Navigation/menu operation", "Static front page", "Media and SEO verification", "Genesis state transition", "Final verification", "EXECUTE APPROVED PUBLICATION", "REVIEW COMPLETED SITE"]) expect(execution).toContain(text);
+    for (const text of ["publishGenesisWordPressDraft", "checkpointSitePublicationExecutionPlan", 'operation.status === "SUCCEEDED"', "FINAL_WORDPRESS_VERIFICATION_FAILED"]) expect(executor).toContain(text);
+    expect(execution).not.toContain('onClick={execute()}');
   });
 
   test("renders explicit QA, navigation, readiness, and authorization actions without publication", () => {
