@@ -5,7 +5,7 @@ export type SiteBuildVisualContinuation = {
   action: "REVIEW_DESIGNED_HOME" | "REVIEW_REMAINING_DESIGNS" | "REVIEW_SITE_QA";
   label: string;
   detail: string;
-  path: "home-design" | "designs" | "wordpress-review";
+  path: "home-design" | "designs" | "site-qa";
 };
 
 export function resolveSiteBuildVisualContinuation(input: {
@@ -16,7 +16,7 @@ export function resolveSiteBuildVisualContinuation(input: {
   if (input.baseStage !== "WORDPRESS_DRAFT_REVIEW") return null;
   if (input.homeStatus === "READY_FOR_OWNER_REVIEW") return { stage: "HOME_DESIGN_REVIEW", action: "REVIEW_DESIGNED_HOME", label: "REVIEW DESIGNED HOME", detail: "Review the rendered Home visual assembly before any design is propagated to the remaining pages.", path: "home-design" };
   if (input.homeStatus !== "APPROVED" || input.remaining.expected === 0) return null;
-  if (input.remaining.approved === input.remaining.expected) return { stage: "SITE_QA", action: "REVIEW_SITE_QA", label: "REVIEW SITE QA", detail: "All page designs are approved. Verify the exact drafts, media, SEO, links, and publication safeguards.", path: "wordpress-review" };
+  if (input.remaining.approved === input.remaining.expected) return { stage: "SITE_QA", action: "REVIEW_SITE_QA", label: "REVIEW SITE QA", detail: "All page designs are approved. Verify the exact drafts, media, SEO, links, and publication safeguards.", path: "site-qa" };
   if (input.remaining.assembled === input.remaining.expected) return { stage: "SITE_VISUAL_REVIEW", action: "REVIEW_REMAINING_DESIGNS", label: `REVIEW REMAINING ${input.remaining.expected} DESIGNS`, detail: `Review ${input.remaining.assembled} page-specific visual assemblies before site QA or publication.`, path: "designs" };
   return null;
 }

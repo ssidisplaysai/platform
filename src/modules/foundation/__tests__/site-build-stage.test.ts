@@ -24,7 +24,7 @@ describe("Site Build stage transition", () => {
 
   test("advances all approved designs to Site QA without a publication action", () => {
     const result = resolveSiteBuildVisualContinuation({ baseStage: "WORDPRESS_DRAFT_REVIEW", homeStatus: "APPROVED", remaining: { expected: 14, assembled: 14, approved: 14 } });
-    expect(result).toMatchObject({ stage: "SITE_QA", action: "REVIEW_SITE_QA", path: "wordpress-review" });
+    expect(result).toMatchObject({ stage: "SITE_QA", action: "REVIEW_SITE_QA", path: "site-qa" });
     expect(JSON.stringify(result)).not.toMatch(/publish_pages|enable_site|publish_navigation/i);
   });
 });

@@ -137,4 +137,11 @@ describe("Site Detail workflow resume resolver", () => {
     const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true, siteBuildStage: "SITE_VISUAL_REVIEW", siteBuildNext: next });
     expect(result.primaryAction).toEqual({ key: "REVIEW_REMAINING_DESIGNS", title: "Site Visual Review", description: next.detail, label: next.label, href: next.route });
   });
+
+  test("an approved visual build resumes directly to the governed Site QA route", () => {
+    const next = { action: "REVIEW_SITE_QA", label: "REVIEW SITE QA", detail: "Verify exact drafts and publication safeguards.", route: "/sites/site-rj/build/site-qa?organizationId=rj-metal&siteId=site-rj" };
+    const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true, siteBuildStage: "SITE_QA", siteBuildNext: next });
+    expect(result.primaryAction).toEqual({ key: "REVIEW_SITE_QA", title: "Site QA", description: next.detail, label: next.label, href: next.route });
+    expect(result.stages.find((stage) => stage.key === "publication")?.status).toBe("DISABLED");
+  });
 });

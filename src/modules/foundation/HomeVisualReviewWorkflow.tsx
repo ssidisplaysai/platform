@@ -85,7 +85,7 @@ export function HomeVisualReviewWorkflow({
         <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-white">
-              Review Designed Home
+              {assembly.status === "APPROVED" ? "Approved Home Design" : "Review Designed Home"}
             </h1>
             <p className="mt-2 text-sm text-zinc-300">
               Actual Genesis-rendered preview of the exact visual assembly
