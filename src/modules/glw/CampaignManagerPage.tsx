@@ -71,6 +71,10 @@ export function CampaignManagerPage(input: { organizationId?: string; siteId?: s
     const imagePreviewDataUrl = stored ? `data:${stored.candidate.mimeType};base64,${stored.bytes.toString("base64")}` : null;
     return [[campaign.campaignId, { reference, imageCandidate, imageHistory: listGlwReferenceImageCandidates(scope), imagePreviewDataUrl }]];
   }));
+  const knowledgePacksByCampaign = Object.fromEntries(campaigns.flatMap((campaign) => {
+    const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
+    return pack ? [[campaign.campaignId, pack]] : [];
+  }));
   return (
     <div className="space-y-6">
       <header className="border-b border-zinc-800 pb-6">
@@ -92,6 +96,7 @@ export function CampaignManagerPage(input: { organizationId?: string; siteId?: s
         globalPromotionAvailable={promotion.available}
         globalPromotionReason={promotion.reason}
         localReferencesByCampaign={localReferencesByCampaign}
+        knowledgePacksByCampaign={knowledgePacksByCampaign}
       />
     </div>
   );

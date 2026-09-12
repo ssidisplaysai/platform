@@ -12,6 +12,7 @@ import { CampaignGeographicMap } from "./CampaignGeographicMap";
 import { CampaignLocalReferenceReview } from "./CampaignLocalReferenceReview";
 import type { GlwLocalReferenceDraft } from "./campaign-local-reference-repository";
 import type { GlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
+import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 import {
   CampaignActivationAuthorityPanel,
   type CampaignActivationReadiness,
@@ -76,6 +77,7 @@ export function CampaignManager({
   globalPromotionAvailable = false,
   globalPromotionReason = "Campaign activation is unavailable for this runtime.",
   localReferencesByCampaign = {},
+  knowledgePacksByCampaign = {},
 }: {
   organizationId: string;
   siteId: string;
@@ -89,6 +91,7 @@ export function CampaignManager({
   globalPromotionAvailable?: boolean;
   globalPromotionReason?: string;
   localReferencesByCampaign?: Record<string, { reference: GlwLocalReferenceDraft; imageCandidate: GlwReferenceImageCandidate | null; imageHistory: readonly GlwReferenceImageCandidate[]; imagePreviewDataUrl: string | null }>;
+  knowledgePacksByCampaign?: Record<string, GlwCampaignKnowledgePack>;
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
@@ -285,6 +288,23 @@ export function CampaignManager({
                     ? ` · Completed ${formatDate(record.completedAt)}`
                     : ""}
                 </p>
+                {knowledgePacksByCampaign[record.campaign.campaignId] ? (
+                  <div className="mt-4 border border-zinc-800 bg-zinc-900/50 p-3 text-sm" aria-label="Campaign knowledge authority">
+                    <p className="font-semibold text-white">Campaign Knowledge Pack</p>
+                    <dl className="mt-2 grid gap-1 sm:grid-cols-[11rem_1fr]">
+                      <dt className="text-zinc-500">Uploaded references</dt>
+                      <dd className="text-zinc-200">{knowledgePacksByCampaign[record.campaign.campaignId].references.length}</dd>
+                      <dt className="text-zinc-500">Governed knowledge pack</dt>
+                      <dd className="text-emerald-300">READY · revision {knowledgePacksByCampaign[record.campaign.campaignId].revision ?? 1}</dd>
+                      <dt className="text-zinc-500">Campaign instructions</dt>
+                      <dd className="text-zinc-200">
+                        {knowledgePacksByCampaign[record.campaign.campaignId].ownerApprovalRequired
+                          ? "OWNER APPROVAL REQUIRED"
+                          : "GOVERNED · NO ADDITIONAL APPROVAL REQUIRED"}
+                      </dd>
+                    </dl>
+                  </div>
+                ) : null}
                 {localReferencesByCampaign[record.campaign.campaignId] ? (
                   <CampaignLocalReferenceReview
                     organizationId={organizationId}

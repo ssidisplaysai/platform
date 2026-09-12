@@ -44,6 +44,14 @@ describe("Campaign Manager UI", () => {
     expect(html).not.toContain("nonce");
   });
 
+  it("distinguishes uploaded references from governed campaign authority", () => {
+    const html = renderToStaticMarkup(<CampaignManager organizationId="org-1" siteId="site-1" requestRoles={["platform_admin"]} records={[{ ...record, proposal: null }]} coverage={coverage} coverageByProduct={{ "product-1": coverage }} products={[{ productId: "product-1", name: "Projector Enclosure" }]} productNames={{ "product-1": "Projector Enclosure" }} knowledgePacksByCampaign={{ "campaign-1": { campaignId: "campaign-1", organizationId: "org-1", siteId: "site-1", instructions: "Use governed product authority.", references: [], revision: 1, status: "ready", ownerApprovalRequired: false, updatedAt: "2030-01-01" } }} />);
+    expect(html).toContain("Uploaded references");
+    expect(html).toContain("Governed knowledge pack");
+    expect(html).toContain("READY · revision 1");
+    expect(html).toContain("GOVERNED · NO ADDITIONAL APPROVAL REQUIRED");
+  });
+
   it("renders the Genesis-local reference review and all explicit owner actions", () => {
     const html = renderToStaticMarkup(<CampaignLocalReferenceReview organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} reference={{
       referenceDraftId: "local-reference-1", campaignId: "campaign-1", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", productId: "product-1",
