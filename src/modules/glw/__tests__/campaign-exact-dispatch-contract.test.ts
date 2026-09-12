@@ -38,6 +38,8 @@ describe("campaign exact dispatch contract", () => {
     expect(controls).toContain("scheduler.schedule.availableConcurrency < 1");
     expect(controls).toContain("No target will be leased while execution authority is unavailable.");
     expect(controls).toContain('`${target.cityName}, ${target.stateCode}`');
+    expect(controls).toContain("router.refresh()");
+    expect(controls).toContain("Not required for draft persistence");
     expect(detailPage).toContain('`${target.cityName}, ${target.stateCode}`');
     expect(repository).toContain("Math.min(allowance, input.maxTargets ?? allowance)");
   });

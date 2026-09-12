@@ -12,6 +12,8 @@ type RouteContext = {
 
 type RefreshResult = {
   stateCode: string;
+  citySlug: string | null;
+  cityName: string | null;
   jobId: string;
   wordpressObjectId: string | null;
   ok: boolean;
@@ -68,6 +70,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     .sort((a, b) => a.stateCode.localeCompare(b.stateCode))
     .map((target) => ({
       stateCode: target.stateCode,
+      citySlug: target.citySlug ?? null,
+      cityName: target.cityName ?? null,
       jobId: target.jobId,
       wordpressObjectId: target.wordpressObjectId,
     }));
@@ -123,6 +127,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (!response.ok || !payload) {
       results.push({
         stateCode: target.stateCode,
+        citySlug: target.citySlug ?? null,
+        cityName: target.cityName ?? null,
         jobId: target.jobId as string,
         wordpressObjectId: target.wordpressObjectId,
         ok: false,
@@ -133,6 +139,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     results.push({
       stateCode: target.stateCode,
+      citySlug: target.citySlug ?? null,
+      cityName: target.cityName ?? null,
       jobId: target.jobId as string,
       wordpressObjectId: payload.wordpressObjectId ?? target.wordpressObjectId,
       ok: true,

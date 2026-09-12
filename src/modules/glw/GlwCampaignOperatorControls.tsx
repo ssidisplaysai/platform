@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type QueueSummary = {
   total: number;
@@ -22,6 +23,8 @@ type SchedulePreview = {
   nextTargets: readonly {
     targetId: string;
     stateCode: string;
+    citySlug: string | null;
+    cityName: string | null;
     citySlug?: string | null;
     cityName?: string | null;
     status: string;
@@ -56,6 +59,8 @@ type ReconcilePayload = {
   reconciledTargetCount: number;
   results: readonly {
     stateCode: string;
+    citySlug: string | null;
+    cityName: string | null;
     jobId: string;
     action: string;
     wordpressObjectId?: string | null;
@@ -151,6 +156,7 @@ export function GlwCampaignOperatorControls({
   siteId,
   campaignStatus,
 }: Props) {
+  const router = useRouter();
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
   const [publishPreview, setPublishPreview] = useState<PublishPreviewPayload | null>(null);
   const [publishRun, setPublishRun] = useState<PublishRunRecord | null>(null);
@@ -291,6 +297,7 @@ export function GlwCampaignOperatorControls({
 
     setReconciling(false);
     await loadScheduler();
+    router.refresh();
   }
 
   async function publishDraftReady() {
@@ -346,7 +353,7 @@ export function GlwCampaignOperatorControls({
   async function refreshCampaignSeo() {
     if (!seoPreview || seoPreview.eligibleCount < 1) return;
 
-    const stateList = seoPreview.eligible.map((target) => target.stateCode).join(", ");
+    const stateList = seoPreview.eligible.map((target) => target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode).join(", ");
     const confirmed = window.confirm(
       `Refresh certified SEO enrichment on ${seoPreview.eligibleCount} draft-ready pages (${stateList})? Content regeneration, image generation, and publication remain blocked.`,
     );
@@ -467,9 +474,9 @@ export function GlwCampaignOperatorControls({
         <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-wider text-zinc-500">Existing Draft SEO Maintenance</p>
-              <p className="mt-1 text-sm text-zinc-300">{seoPreview.eligibleCount > 0 ? `${seoPreview.eligibleCount} draft-ready pages eligible: ${seoPreview.eligible.map((target) => target.stateCode).join(", ")}` : "No draft-ready pages currently require campaign SEO maintenance."}</p>
-              <p className="mt-1 text-xs text-zinc-500">No regeneration · no image generation · no publication</p>
+              <p className="text-xs uppercase tracking-wider text-zinc-500">Optional Existing Draft SEO Maintenance</p>
+              <p className="mt-1 text-sm text-zinc-300">{seoPreview.eligibleCount > 0 ? `${seoPreview.eligibleCount} draft-ready pages eligible: ${seoPreview.eligible.map((target) => target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode).join(", ")}` : "No draft-ready pages currently require campaign SEO maintenance."}</p>
+              <p className="mt-1 text-xs text-zinc-500">Not required for draft persistence · no regeneration · no image generation · no publication</p>
             </div>
             <button type="button" onClick={() => void refreshCampaignSeo()} disabled={busy || seoPreview.eligibleCount < 1} className="rounded-lg border border-emerald-700 bg-emerald-950/30 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40">
               {refreshingSeo ? "Refreshing SEO..." : "Refresh SEO on Draft-Ready Pages"}
