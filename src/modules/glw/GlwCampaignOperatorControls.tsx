@@ -15,6 +15,8 @@ type QueueSummary = {
 
 type SchedulePreview = {
   dailyLimit: number;
+  maxConcurrentExecution: number;
+  availableConcurrency: number;
   alreadyDispatchedToday: number;
   remainingAllowance: number;
   nextTargets: readonly {
@@ -501,7 +503,7 @@ export function GlwCampaignOperatorControls({
             <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4"><p className="text-xs uppercase tracking-wider text-zinc-500">Remaining Allowance</p><p className="mt-2 text-2xl font-bold text-white">{scheduler.schedule.remainingAllowance}</p></div>
           </div>
           <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/70 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs uppercase tracking-wider text-zinc-500">Next Targets</p><p className="mt-1 text-sm text-zinc-300">{scheduler.schedule.nextTargets.length > 0 ? scheduler.schedule.nextTargets.map((target) => target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode).join(", ") : "No queued targets are eligible for dispatch today."}</p></div><span className="rounded-full border border-zinc-700 px-3 py-1 text-xs uppercase text-zinc-300">dry run preview</span></div></div>
-          <button type="button" onClick={() => void runNextBatch()} disabled={busy || !scheduler.executionReadiness.configured || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length < 1} className="mt-5 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40">{dispatching ? "Dispatching..." : "Run Next Draft Batch"}</button>
+          <button type="button" onClick={() => void runNextBatch()} disabled={busy || !scheduler.executionReadiness.configured || scheduler.schedule.availableConcurrency < 1 || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length < 1} className="mt-5 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40">{dispatching ? "Dispatching..." : "Run Next Draft Batch"}</button>
         </>
       ) : loading ? <p className="mt-5 text-sm text-zinc-400">Loading scheduler preview...</p> : null}
     </section>

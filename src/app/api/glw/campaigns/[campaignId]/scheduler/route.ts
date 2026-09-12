@@ -159,12 +159,13 @@ export async function GET(
   const queue = summarizeGlwCampaignTargets(
     campaign.campaignId,
   );
+  const availableConcurrency = Math.max(0, MAX_CONCURRENT_EXECUTION - queue.running);
 
   const preview = previewGlwCampaignTargetLease({
     campaignId: campaign.campaignId,
     pagesPerDay: campaign.pagesPerDay,
     dispatchDate,
-    maxTargets: MAX_CONCURRENT_EXECUTION,
+    maxTargets: availableConcurrency,
   });
 
   return NextResponse.json({
@@ -181,6 +182,7 @@ export async function GET(
     schedule: {
       dailyLimit: campaign.pagesPerDay,
       maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
+      availableConcurrency,
       alreadyDispatchedToday:
         preview.alreadyDispatchedToday,
       remainingAllowance: preview.allowance,
@@ -255,6 +257,14 @@ export async function POST(
       error: "GLW n8n MCP execution is not configured. No targets were leased.",
       code: "GLW_N8N_MCP_NOT_CONFIGURED",
     }, { status: 503 });
+  }
+
+  const queueBeforeDispatch = summarizeGlwCampaignTargets(campaign.campaignId);
+  if (queueBeforeDispatch.running >= MAX_CONCURRENT_EXECUTION) {
+    return NextResponse.json({
+      error: "Campaign already has the maximum number of running targets. Reconcile the current target before dispatching another.",
+      code: "GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED",
+    }, { status: 409 });
   }
 
   const body = await request.json().catch(() => null) as {

@@ -28,11 +28,14 @@ describe("campaign exact dispatch contract", () => {
     expect(route).toContain("Exact dispatch targets must match the next deterministic queued targets.");
     expect(route).toContain("pagesPerDay: campaign.pagesPerDay");
     expect(route).toContain("const MAX_CONCURRENT_EXECUTION = 1");
+    expect(route).toContain("MAX_CONCURRENT_EXECUTION - queue.running");
+    expect(route).toContain("GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED");
     expect(route).toContain("maxTargets: MAX_CONCURRENT_EXECUTION");
     expect(route).toContain("GLW_N8N_MCP_NOT_CONFIGURED");
     expect(route.indexOf("GLW_N8N_MCP_NOT_CONFIGURED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
     expect(route).toContain('payload?.job?.status === "FAILED"');
     expect(controls).toContain("!scheduler.executionReadiness.configured");
+    expect(controls).toContain("scheduler.schedule.availableConcurrency < 1");
     expect(controls).toContain("No target will be leased while execution authority is unavailable.");
     expect(controls).toContain('`${target.cityName}, ${target.stateCode}`');
     expect(detailPage).toContain('`${target.cityName}, ${target.stateCode}`');
