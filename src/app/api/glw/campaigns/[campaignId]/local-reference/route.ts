@@ -23,7 +23,7 @@ import {
 import { generateProjectorEnclosureReferenceVisual } from "@/modules/glw/projector-enclosure-reference-image-service";
 import {
   approveGovernedLocalCampaignReference,
-  getGlwCampaignReferenceApproval,
+  getGovernedLocalCampaignReferenceApproval,
 } from "@/modules/glw/campaign-reference-approval-repository";
 
 export const dynamic = "force-dynamic";
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest, context: Context) {
     imageCandidate: candidate,
     imageHistory: scope ? listGlwReferenceImageCandidates(scope) : [],
     readiness: readiness(reference, candidate),
-    canonicalApproval: getGlwCampaignReferenceApproval(result.campaign.campaignId, target.stateCode, target.citySlug),
+    canonicalApproval: getGovernedLocalCampaignReferenceApproval(result.campaign.campaignId, target.stateCode, target.citySlug),
     canonicalApprovalPerformed: false,
     wordpressMutationPerformed: false,
     mutationPerformed: false,

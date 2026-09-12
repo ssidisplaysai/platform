@@ -53,10 +53,11 @@ function key(
   campaignId: string,
   stateCode: string,
   citySlug?: string | null,
+  approvalKind: "WORDPRESS_DRAFT" | "GOVERNED_LOCAL_REFERENCE" = "WORDPRESS_DRAFT",
 ): string {
   const base = `${campaignId}::${stateCode.trim().toUpperCase()}`;
   const city = normalizeCitySlug(citySlug);
-  return city ? `${base}::${city}` : base;
+  return `${city ? `${base}::${city}` : base}::${approvalKind}`;
 }
 
 function applyState(state: RepositoryState): void {
@@ -64,7 +65,7 @@ function applyState(state: RepositoryState): void {
 
   for (const approval of state.approvals) {
     approvalStore.set(
-      key(approval.campaignId, approval.stateCode, approval.citySlug),
+      key(approval.campaignId, approval.stateCode, approval.citySlug, approval.approvalKind ?? "WORDPRESS_DRAFT"),
       deepClone(approval),
     );
   }
@@ -106,8 +107,19 @@ export function getGlwCampaignReferenceApproval(
   citySlug?: string | null,
 ): GlwCampaignReferenceApproval | null {
   loadState();
-  const approval = approvalStore.get(key(campaignId, stateCode, citySlug));
+  const approval = approvalStore.get(key(campaignId, stateCode, citySlug, "WORDPRESS_DRAFT"))
+    ?? approvalStore.get(key(campaignId, stateCode, citySlug, "GOVERNED_LOCAL_REFERENCE"));
   return approval ? deepClone(approval) : null;
+}
+
+export function getGovernedLocalCampaignReferenceApproval(
+  campaignId: string,
+  stateCode: string,
+  citySlug: string,
+): Extract<GlwCampaignReferenceApproval, { approvalKind: "GOVERNED_LOCAL_REFERENCE" }> | null {
+  loadState();
+  const approval = approvalStore.get(key(campaignId, stateCode, citySlug, "GOVERNED_LOCAL_REFERENCE"));
+  return approval?.approvalKind === "GOVERNED_LOCAL_REFERENCE" ? deepClone(approval) : null;
 }
 
 export function listGlwCampaignReferenceApprovals(campaignId: string): readonly GlwCampaignReferenceApproval[] {
@@ -134,11 +146,15 @@ export function approveGlwCampaignReference(input: {
     wordpressObjectId: input.wordpressObjectId,
     approvedAt: new Date().toISOString(),
   };
-
-  approvalStore.set(
-    key(approval.campaignId, approval.stateCode, approval.citySlug),
-    approval,
-  );
+  const approvalKey = key(approval.campaignId, approval.stateCode, approval.citySlug, "WORDPRESS_DRAFT");
+  const existing = approvalStore.get(approvalKey);
+  if (existing) {
+    if (existing.approvalKind !== "GOVERNED_LOCAL_REFERENCE" && existing.jobId === input.jobId && existing.wordpressObjectId === input.wordpressObjectId) {
+      return deepClone(existing);
+    }
+    throw new Error("WORDPRESS_REFERENCE_APPROVAL_ALREADY_RECORDED");
+  }
+  approvalStore.set(approvalKey, approval);
 
   persistState();
 
@@ -177,7 +193,8 @@ export function approveGovernedLocalCampaignReference(input: {
     provenanceSha256,
   };
   const receiptSha256 = createHash("sha256").update(JSON.stringify(receiptIdentity)).digest("hex");
-  const existing = approvalStore.get(key(input.campaignId, stateCode, citySlug));
+  const approvalKey = key(input.campaignId, stateCode, citySlug, "GOVERNED_LOCAL_REFERENCE");
+  const existing = approvalStore.get(approvalKey);
   if (existing) {
     if (existing.approvalKind === "GOVERNED_LOCAL_REFERENCE" && existing.receiptSha256 === receiptSha256) {
       return deepClone(existing);
@@ -190,7 +207,7 @@ export function approveGovernedLocalCampaignReference(input: {
     approvedAt: new Date().toISOString(),
     approvedBy: input.approvedBy,
   };
-  approvalStore.set(key(approval.campaignId, approval.stateCode, approval.citySlug), approval);
+  approvalStore.set(approvalKey, approval);
   persistState();
   return deepClone(approval);
 }

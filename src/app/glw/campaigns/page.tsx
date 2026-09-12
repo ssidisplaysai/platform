@@ -100,6 +100,8 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
       knowledgePack: pack,
       reference,
       canonicalReferenceApproved: approvals.some((approval) =>
+        approval.approvalKind === "GOVERNED_LOCAL_REFERENCE"
+        &&
         approval.stateCode === target.stateCode
         && approval.citySlug === target.citySlug),
       imageCandidate,
