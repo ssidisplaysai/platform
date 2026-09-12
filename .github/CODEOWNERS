@@ -11,3 +11,17 @@ docs/architecture/ @genesis-architecture-review-board
 /src/sdk/ @genesis-sdk
 /test/ @genesis-testing
 /.github/ @genesis-engineering-lead @genesis-governance
+
+# Certified high-risk execution and trust boundaries
+/src/app/api/glw/campaigns/ @genesis-runtime @genesis-security @genesis-engineering-lead
+/src/app/api/glw/release-capabilities/ @genesis-runtime @genesis-security
+/src/modules/glw/campaign-* @genesis-runtime @genesis-security
+/src/modules/glw/n8n-* @genesis-runtime @genesis-security
+/src/modules/glw/reference-aware-image-service.ts @genesis-modules @genesis-security
+/src/modules/foundation/wordpress-* @genesis-runtime @genesis-security
+/src/modules/foundation/site-publication-* @genesis-runtime @genesis-security
+/src/modules/foundation/public-wordpress-certification.ts @genesis-runtime @genesis-security
+/src/modules/foundation/*credential* @genesis-security @genesis-runtime
+/src/modules/foundation/site-page-media-assignment.ts @genesis-modules @genesis-security
+/src/modules/foundation/visual-product-authority.ts @genesis-modules @genesis-security
+/scripts/start-foundation-sidecar.mjs @genesis-runtime @genesis-security
