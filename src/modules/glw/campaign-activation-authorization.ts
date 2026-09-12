@@ -25,6 +25,10 @@ export type GlwCampaignActivationGrant = {
   targetFingerprint: string;
   publicationPolicy: GlwCampaign["publicationPolicy"];
   certifiedReleaseSha: string;
+  referenceApprovalReceiptSha256: string;
+  referenceRevision: number;
+  imageCandidateId: string;
+  imageRevision: number;
   expiresAt: string;
   nonce: string;
   createdAt: string;
@@ -54,6 +58,10 @@ function grantShapeValid(grant: GlwCampaignActivationGrant): boolean {
   return grant.purpose === "ACTIVATE_ONLY"
     && Boolean(grant.grantId && grant.organizationId && grant.siteId && grant.campaignId && grant.createdBy)
     && FINGERPRINT_PATTERN.test(grant.targetFingerprint)
+    && FINGERPRINT_PATTERN.test(grant.referenceApprovalReceiptSha256)
+    && grant.referenceRevision > 0
+    && Boolean(grant.imageCandidateId)
+    && grant.imageRevision > 0
     && (grant.publicationPolicy === "draft_only" || grant.publicationPolicy === "publish_after_gates")
     && EXACT_RELEASE_PATTERN.test(grant.certifiedReleaseSha)
     && NONCE_PATTERN.test(grant.nonce)
@@ -123,6 +131,12 @@ export function createGlwCampaignActivationGrant(input: {
   campaign: GlwCampaign;
   targets: readonly GlwCampaignTarget[];
   certifiedReleaseSha: string;
+  referenceApproval: {
+    receiptSha256: string;
+    referenceRevision: number;
+    imageCandidateId: string;
+    imageCandidateRevision: number;
+  };
   expiresAt: string;
   createdBy: string;
   now?: Date;
@@ -135,6 +149,12 @@ export function createGlwCampaignActivationGrant(input: {
   }
   const nonce = (input.createNonce ?? randomUUID)();
   if (!NONCE_PATTERN.test(nonce)) throw new Error("ACTIVATION_GRANT_NONCE_INVALID");
+  if (
+    !FINGERPRINT_PATTERN.test(input.referenceApproval.receiptSha256)
+    || input.referenceApproval.referenceRevision < 1
+    || !input.referenceApproval.imageCandidateId.trim()
+    || input.referenceApproval.imageCandidateRevision < 1
+  ) throw new Error("ACTIVATION_GRANT_REFERENCE_APPROVAL_INVALID");
   const targetFingerprint = createGlwCampaignTargetFingerprint(input.campaign, input.targets);
   const certifiedReleaseSha = normalizeRelease(input.certifiedReleaseSha);
   const createdAt = now.toISOString();
@@ -154,6 +174,10 @@ export function createGlwCampaignActivationGrant(input: {
       targetFingerprint,
       publicationPolicy: input.campaign.publicationPolicy,
       certifiedReleaseSha,
+      referenceApprovalReceiptSha256: input.referenceApproval.receiptSha256,
+      referenceRevision: input.referenceApproval.referenceRevision,
+      imageCandidateId: input.referenceApproval.imageCandidateId,
+      imageRevision: input.referenceApproval.imageCandidateRevision,
       expiresAt: expiresAt.toISOString(),
       nonce,
       createdAt,
@@ -172,6 +196,12 @@ export function claimGlwCampaignActivationGrant(input: {
   campaign: GlwCampaign;
   targets: readonly GlwCampaignTarget[];
   certifiedReleaseSha: string;
+  referenceApproval: {
+    receiptSha256: string;
+    referenceRevision: number;
+    imageCandidateId: string;
+    imageCandidateRevision: number;
+  };
   claimedBy: string;
   now?: Date;
 }): { grant: GlwCampaignActivationGrant; claimId: string } {
@@ -187,6 +217,12 @@ export function claimGlwCampaignActivationGrant(input: {
     if (grant.targetFingerprint !== fingerprint) throw new Error("ACTIVATION_GRANT_TARGET_FINGERPRINT_MISMATCH");
     if (grant.publicationPolicy !== input.campaign.publicationPolicy) throw new Error("ACTIVATION_GRANT_PUBLICATION_POLICY_MISMATCH");
     if (grant.certifiedReleaseSha !== release) throw new Error("ACTIVATION_GRANT_RELEASE_MISMATCH");
+    if (
+      grant.referenceApprovalReceiptSha256 !== input.referenceApproval.receiptSha256
+      || grant.referenceRevision !== input.referenceApproval.referenceRevision
+      || grant.imageCandidateId !== input.referenceApproval.imageCandidateId
+      || grant.imageRevision !== input.referenceApproval.imageCandidateRevision
+    ) throw new Error("ACTIVATION_GRANT_REFERENCE_APPROVAL_MISMATCH");
     if (new Date(grant.expiresAt) <= now) throw new Error("ACTIVATION_GRANT_EXPIRED");
     if (grant.consumedAt) throw new Error("ACTIVATION_GRANT_CONSUMED");
     if (grant.claimedAt) throw new Error("ACTIVATION_GRANT_ALREADY_CLAIMED");

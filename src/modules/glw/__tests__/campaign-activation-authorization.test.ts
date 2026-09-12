@@ -50,12 +50,19 @@ const target: GlwCampaignTarget = {
   wordpressObjectId: null, attemptCount: 0, lastError: null, leaseId: null, leasedAt: null,
   leaseExpiresAt: null, dispatchDate: null, createdAt: now.toISOString(), updatedAt: now.toISOString(),
 };
+const referenceApproval = {
+  receiptSha256: "b".repeat(64),
+  referenceRevision: 1,
+  imageCandidateId: "reference-image-1",
+  imageCandidateRevision: 1,
+};
 
 function createGrant(overrides: Partial<Parameters<typeof createGlwCampaignActivationGrant>[0]> = {}) {
   return createGlwCampaignActivationGrant({
     campaign,
     targets: [target],
     certifiedReleaseSha: release,
+    referenceApproval,
     expiresAt: "2030-01-01T00:15:00.000Z",
     createdBy: "platform_admin",
     now,
@@ -69,6 +76,7 @@ function claim(overrides: Partial<Parameters<typeof claimGlwCampaignActivationGr
     campaign,
     targets: [target],
     certifiedReleaseSha: release,
+    referenceApproval,
     claimedBy: "platform_admin",
     now: new Date("2030-01-01T00:01:00.000Z"),
     ...overrides,
@@ -83,6 +91,10 @@ describe("campaign-scoped activation authorization", () => {
     expect(grant).toMatchObject({
       purpose: "ACTIVATE_ONLY", organizationId: campaign.organizationId, siteId: campaign.siteId,
       campaignId: campaign.campaignId, publicationPolicy: "draft_only", certifiedReleaseSha: release,
+      referenceApprovalReceiptSha256: referenceApproval.receiptSha256,
+      referenceRevision: 1,
+      imageCandidateId: "reference-image-1",
+      imageRevision: 1,
       expiresAt: "2030-01-01T00:15:00.000Z", createdBy: "platform_admin", consumedAt: null,
     });
     expect(grant.targetFingerprint).toBe(createGlwCampaignTargetFingerprint(campaign, [target]));
@@ -117,6 +129,14 @@ describe("campaign-scoped activation authorization", () => {
     expect(() => claim({ campaign: { ...campaign, publicationPolicy: "publish_after_gates" } }))
       .toThrow("ACTIVATION_GRANT_PUBLICATION_POLICY_MISMATCH");
     expect(() => claim({ certifiedReleaseSha: "b".repeat(40) })).toThrow("ACTIVATION_GRANT_RELEASE_MISMATCH");
+  });
+
+  test("fails closed when the approved reference or image revision changes", () => {
+    createGrant();
+    expect(() => claim({ referenceApproval: { ...referenceApproval, referenceRevision: 2 } }))
+      .toThrow("ACTIVATION_GRANT_REFERENCE_APPROVAL_MISMATCH");
+    expect(() => claim({ referenceApproval: { ...referenceApproval, imageCandidateRevision: 2 } }))
+      .toThrow("ACTIVATION_GRANT_REFERENCE_APPROVAL_MISMATCH");
   });
 
   test("fails closed for expired and malformed grants", () => {

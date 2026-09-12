@@ -9,7 +9,7 @@ import {
   activateGlwCampaign,
   listGlwCampaigns,
 } from "@/modules/glw/campaign-repository";
-import { getGlwCampaignReferenceApproval } from "@/modules/glw/campaign-reference-approval-repository";
+import { getGlwCampaignReferenceApproval, getGovernedLocalCampaignReferenceApproval } from "@/modules/glw/campaign-reference-approval-repository";
 import {
   initializeGlwCampaignTargets,
   initializeGlwCityCampaignTargets,
@@ -370,10 +370,15 @@ export async function POST(
 
   let activationGrant;
   try {
+    const governedReferenceApproval = referenceCitySlug
+      ? getGovernedLocalCampaignReferenceApproval(campaign.campaignId, referenceStateCode, referenceCitySlug)
+      : null;
+    if (!governedReferenceApproval) throw new Error("GOVERNED_REFERENCE_APPROVAL_REQUIRED");
     activationGrant = claimGlwCampaignActivationGrant({
       campaign,
       targets,
       certifiedReleaseSha: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
+      referenceApproval: governedReferenceApproval,
       claimedBy: auth.roles.includes("platform_admin") ? "platform_admin" : "authorized_scheduler",
     });
   } catch (error) {

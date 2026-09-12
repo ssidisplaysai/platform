@@ -15,6 +15,8 @@ export type CampaignActivationReadiness = {
   certifiedReleaseSha: string | null;
   referenceStateCode: string | null;
   referenceCitySlug: string | null;
+  releaseIdentityReady: boolean;
+  releaseIdentityReason: string | null;
 };
 
 export function CampaignActivationAuthorityPanel(props: {
@@ -29,6 +31,9 @@ export function CampaignActivationAuthorityPanel(props: {
   const router = useRouter();
   const [busy, setBusy] = useState<"authorize" | "activate" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [authorizationState, setAuthorizationState] = useState<"REQUIRED" | "AUTHORIZING" | "AUTHORIZED" | "FAILED">(
+    props.readiness.grantActive ? "AUTHORIZED" : "REQUIRED",
+  );
   const referenceApproved = props.readiness.approvedReferenceCount > 0;
   const referenceReady = props.readiness.knowledgePackReady && referenceApproved;
   const missing = [
@@ -40,6 +45,7 @@ export function CampaignActivationAuthorityPanel(props: {
   async function authorize() {
     setBusy("authorize");
     setMessage(null);
+    setAuthorizationState("AUTHORIZING");
     try {
       const response = await fetch(`/api/glw/campaigns/${props.campaignId}/activation-authorization`, {
         method: "POST",
@@ -51,11 +57,13 @@ export function CampaignActivationAuthorityPanel(props: {
         },
         body: JSON.stringify({ operation: "AUTHORIZE_ACTIVATION", expiresInMinutes: 15 }),
       });
-      const payload = await response.json() as { error?: string };
+      const payload = await response.json() as { error?: string; grant?: { status?: string } | null };
       if (!response.ok) throw new Error(payload.error ?? "Activation authorization failed.");
-      setMessage("This campaign is authorized for activation for 15 minutes.");
+      setAuthorizationState("AUTHORIZED");
+      setMessage("Authorization receipt recorded for this campaign. Activation remains a separate action.");
       router.refresh();
     } catch (error) {
+      setAuthorizationState("FAILED");
       setMessage(error instanceof Error ? error.message : "Activation authorization failed.");
     } finally {
       setBusy(null);
@@ -103,14 +111,23 @@ export function CampaignActivationAuthorityPanel(props: {
         </div>
       ) : <p className="mt-3 text-sm text-emerald-300">Reference and scoped authorization gates are ready.</p>}
       <p className="mt-3 text-sm text-zinc-400">This authorization applies only to this campaign and does not enable publishing or other campaigns.</p>
+      <div className="mt-3 border border-zinc-800 p-3" aria-label="Activation authorization status">
+        <p className="text-xs font-bold uppercase text-amber-300">Step: Activation Authorization</p>
+        <dl className="mt-2 grid gap-1 text-sm sm:grid-cols-[8rem_1fr]">
+          <dt className="text-zinc-500">Reference</dt><dd className={referenceApproved ? "text-emerald-300" : "text-amber-300"}>{referenceApproved ? "APPROVED" : "REQUIRED"}</dd>
+          <dt className="text-zinc-500">Authorization</dt><dd className={authorizationState === "AUTHORIZED" ? "text-emerald-300" : authorizationState === "FAILED" ? "text-red-300" : "text-amber-300"}>{authorizationState === "FAILED" ? "AUTHORIZATION FAILED" : authorizationState}</dd>
+        </dl>
+        {authorizationState === "FAILED" && message ? <p className="mt-2 text-sm text-red-300" role="alert">Authorization failed: {message}</p> : null}
+        {!props.readiness.releaseIdentityReady ? <p className="mt-2 text-sm text-amber-300">Authorization unavailable: {props.readiness.releaseIdentityReason}</p> : null}
+      </div>
       <div className="mt-4 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={authorize}
-          disabled={!referenceReady || props.readiness.grantActive || busy !== null}
+          disabled={!referenceReady || props.readiness.grantActive || !props.readiness.releaseIdentityReady || busy !== null}
           className="border border-amber-600 px-4 py-2 text-sm font-semibold text-amber-200 disabled:border-zinc-700 disabled:text-zinc-600"
         >
-          {busy === "authorize" ? "Authorizing..." : "Authorize This Campaign for Activation"}
+          {authorizationState === "AUTHORIZED" ? "Authorized" : authorizationState === "AUTHORIZING" ? "Authorizing..." : authorizationState === "FAILED" ? "Authorization Failed" : "Authorize This Campaign for Activation"}
         </button>
         <button
           type="button"
@@ -122,7 +139,7 @@ export function CampaignActivationAuthorityPanel(props: {
         </button>
       </div>
       {!props.globalPromotionAvailable ? <p className="mt-2 text-xs text-zinc-500">Activation unavailable: {props.globalPromotionReason}</p> : null}
-      {message ? <p className="mt-3 text-sm text-zinc-300" role="status">{message}</p> : null}
+      {message && authorizationState !== "FAILED" ? <p className="mt-3 text-sm text-zinc-300" role="status">{message}</p> : null}
       <details className="mt-4 text-xs text-zinc-500">
         <summary className="cursor-pointer text-zinc-400">Advanced Details</summary>
         <dl className="mt-2 grid gap-1 sm:grid-cols-2">

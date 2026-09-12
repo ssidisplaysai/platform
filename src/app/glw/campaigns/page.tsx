@@ -87,6 +87,7 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
       targetFingerprint = null;
     }
     const runningRelease = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
+    const releaseIdentityReady = /^[0-9a-f]{40}$/.test(runningRelease);
     const grantActive = Boolean(
       grant
       && !grant.claimedAt
@@ -118,6 +119,8 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
         certifiedReleaseSha: grant?.certifiedReleaseSha ?? null,
         referenceStateCode: approvals[0]?.stateCode ?? null,
         referenceCitySlug: approvals[0]?.citySlug ?? null,
+        releaseIdentityReady,
+        releaseIdentityReason: releaseIdentityReady ? null : "Exact running release identity is required. Restart the supervised sidecar from a committed target HEAD.",
       },
     }]];
   }));
