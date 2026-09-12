@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import {
@@ -6,6 +7,8 @@ import {
   markGlwCampaignTargetDraftReady,
   markGlwCampaignTargetFailed,
   markGlwFailedCampaignTargetDraftReady,
+  releaseExpiredGlwCampaignTargetLeases,
+  requeueGlwCampaignTargetAfterPreExecutionFailure,
 } from "@/modules/glw/campaign-target-repository";
 import {
   resolveGlwCampaignJobReconciliationDecision,
@@ -46,6 +49,10 @@ export async function POST(
     }>;
   },
 ) {
+  const auth = authorizeRequest(request, "schedules:create");
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
   const { campaignId } = await context.params;
 
   const body = await request.json().catch(() => null) as {
@@ -79,6 +86,11 @@ export async function POST(
       },
     );
   }
+  if (campaign.organizationId !== scope.organizationId || (scope.siteId && campaign.siteId !== scope.siteId)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const releasedExpiredLeaseCount = releaseExpiredGlwCampaignTargetLeases(campaignId);
 
   const reconcilableTargets =
     listGlwCampaignTargets(campaignId).filter(
@@ -254,6 +266,23 @@ export async function POST(
         continue;
       }
 
+      if (decision.action === "requeue") {
+        const updated = requeueGlwCampaignTargetAfterPreExecutionFailure({
+          campaignId,
+          stateCode: target.stateCode,
+          citySlug: target.citySlug,
+          jobId,
+          error: decision.error,
+        });
+        results.push({
+          ...targetIdentity(target),
+          jobId,
+          action: "requeued",
+          error: updated.lastError,
+        });
+        continue;
+      }
+
       results.push({
         ...targetIdentity(target),
         jobId,
@@ -278,6 +307,7 @@ export async function POST(
     campaignId,
     reconciledTargetCount:
       reconcilableTargets.length,
+    releasedExpiredLeaseCount,
     results,
     publicationIntent: "draft",
     publicationPerformed: false,

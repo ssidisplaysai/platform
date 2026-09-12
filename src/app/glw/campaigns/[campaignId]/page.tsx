@@ -73,7 +73,7 @@ export default async function GlwCampaignDetailPage({ params }: RouteProps) {
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="border-b border-zinc-800 text-xs uppercase tracking-wider text-zinc-500">
                 <tr>
-                  <th className="px-3 py-3">State</th>
+                  <th className="px-3 py-3">Target</th>
                   <th className="px-3 py-3">Status</th>
                   <th className="px-3 py-3">Job</th>
                   <th className="px-3 py-3">WordPress</th>
@@ -85,7 +85,7 @@ export default async function GlwCampaignDetailPage({ params }: RouteProps) {
               <tbody>
                 {targets.map((target) => (
                   <tr key={target.targetId} className="border-b border-zinc-900 text-zinc-300">
-                    <td className="px-3 py-3 font-semibold text-white">{target.stateCode}</td>
+                    <td className="px-3 py-3 font-semibold text-white">{target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode}</td>
                     <td className="px-3 py-3"><span className="rounded-full border border-zinc-700 px-2 py-1 text-xs uppercase">{labelStatus(target.status)}</span></td>
                     <td className="px-3 py-3 font-mono text-xs text-zinc-400">{target.jobId ?? "—"}</td>
                     <td className="px-3 py-3 font-mono text-xs text-zinc-400">{target.wordpressObjectId ?? "—"}</td>

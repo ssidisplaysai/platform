@@ -520,6 +520,34 @@ export function releaseExpiredGlwCampaignTargetLeases(
   return released;
 }
 
+export function requeueGlwCampaignTargetAfterPreExecutionFailure(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug?: string | null;
+  jobId: string;
+  error: string;
+}): GlwCampaignTarget {
+  loadState();
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+  if (!current || current.status !== "running" || current.jobId !== input.jobId) {
+    throw new Error("Campaign target does not match the pre-execution failure.");
+  }
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "queued",
+    jobId: null,
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: input.error,
+    updatedAt: new Date().toISOString(),
+  };
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
 export function requireGlwCampaignTargetResumeAuthority(input: {
   campaignId: string;
   stateCode: string;

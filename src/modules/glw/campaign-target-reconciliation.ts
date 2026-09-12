@@ -44,6 +44,10 @@ export type GlwCampaignJobReconciliationDecision =
   | {
       action: "failed";
       error: string;
+    }
+    | {
+      action: "requeue";
+      error: string;
     };
 
 function isRecoverableContentFailure(job: {
@@ -87,9 +91,23 @@ export function resolveGlwCampaignJobReconciliationDecision(
     wordpressStatus?: string | null;
     error?: string | null;
     errorCode?: string | null;
+    errorMessage?: string | null;
+    externalExecutionId?: string | null;
     generatedDraft?: unknown;
   },
 ): GlwCampaignJobReconciliationDecision {
+  if (
+    job.status === "FAILED"
+    && job.errorCode === "DISPATCH_FAILED"
+    && !job.externalExecutionId
+    && !job.generatedDraft
+    && !job.wordpressObjectId
+  ) {
+    return {
+      action: "requeue",
+      error: job.errorMessage?.trim() || job.error?.trim() || "Execution dispatch failed before an external execution was created.",
+    };
+  }
   if (
     job.status === "CONTENT_READY"
     || isRecoverableContentFailure(job)
@@ -128,7 +146,8 @@ export function resolveGlwCampaignJobReconciliationDecision(
     return {
       action: "failed",
       error:
-        job.error?.trim()
+        job.errorMessage?.trim()
+        || job.error?.trim()
         || "Generation failed.",
     };
   }

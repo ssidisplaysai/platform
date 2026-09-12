@@ -23,6 +23,9 @@ import {
   summarizeGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
 import { recordGlwCampaignLaunchDispatch } from "@/modules/glw/campaign-launch-authority";
+import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
+
+const MAX_CONCURRENT_EXECUTION = 1;
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -161,6 +164,7 @@ export async function GET(
     campaignId: campaign.campaignId,
     pagesPerDay: campaign.pagesPerDay,
     dispatchDate,
+    maxTargets: MAX_CONCURRENT_EXECUTION,
   });
 
   return NextResponse.json({
@@ -176,6 +180,7 @@ export async function GET(
     queue,
     schedule: {
       dailyLimit: campaign.pagesPerDay,
+      maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
       alreadyDispatchedToday:
         preview.alreadyDispatchedToday,
       remainingAllowance: preview.allowance,
@@ -189,6 +194,7 @@ export async function GET(
         }),
       ),
     },
+    executionReadiness: getGlwN8nMcpConfigurationStatus(),
     dryRun: true,
   });
 }
@@ -241,6 +247,14 @@ export async function POST(
       },
       { status: 409 },
     );
+  }
+
+  const executionReadiness = getGlwN8nMcpConfigurationStatus();
+  if (!executionReadiness.configured) {
+    return NextResponse.json({
+      error: "GLW n8n MCP execution is not configured. No targets were leased.",
+      code: "GLW_N8N_MCP_NOT_CONFIGURED",
+    }, { status: 503 });
   }
 
   const body = await request.json().catch(() => null) as {
@@ -306,6 +320,9 @@ export async function POST(
           { status: 400 },
         );
       }
+      if (requestedTargets.length > MAX_CONCURRENT_EXECUTION) {
+        return NextResponse.json({ error: "Only one exact target can resume at a time." }, { status: 409 });
+      }
 
       leased = requestedTargets.map((requested) => {
         const target = campaignTargets.find(
@@ -351,6 +368,9 @@ export async function POST(
           { status: 400 },
         );
       }
+      if (requestedStates.length > MAX_CONCURRENT_EXECUTION) {
+        return NextResponse.json({ error: "Only one exact target can resume at a time." }, { status: 409 });
+      }
 
       leased = requestedStates.map((stateCode) => {
         const target = campaignTargets.find(
@@ -395,7 +415,7 @@ export async function POST(
       campaignId: campaign.campaignId,
       pagesPerDay: campaign.pagesPerDay,
       dispatchDate,
-      maxTargets: requestedTargets.length,
+      maxTargets: MAX_CONCURRENT_EXECUTION,
     });
     const selectedIdentities = preview.selected.map((target) =>
       `${target.stateCode}::${target.citySlug ?? ""}`,
@@ -419,7 +439,7 @@ export async function POST(
       pagesPerDay: campaign.pagesPerDay,
       dispatchDate,
       leaseId,
-      maxTargets: requestedTargets.length,
+      maxTargets: MAX_CONCURRENT_EXECUTION,
     });
   } else {
     leased = leaseGlwCampaignTargets({
@@ -427,6 +447,7 @@ export async function POST(
       pagesPerDay: campaign.pagesPerDay,
       dispatchDate,
       leaseId,
+      maxTargets: MAX_CONCURRENT_EXECUTION,
     });
   }
 
@@ -469,6 +490,7 @@ export async function POST(
           job?: {
             jobId?: string;
             status?: string;
+            errorMessage?: string | null;
           };
           error?: string;
         } | null;
@@ -492,6 +514,18 @@ export async function POST(
             : leaseId,
         jobId,
       });
+
+      if (payload?.job?.status === "FAILED") {
+        results.push({
+          ...targetIdentity(target),
+          cityName: target.cityName ?? null,
+          targetId: target.targetId,
+          status: "dispatch_error",
+          jobId,
+          error: payload.job.errorMessage ?? "Generation failed before an external execution was created.",
+        });
+        continue;
+      }
 
       results.push({
         ...targetIdentity(target),

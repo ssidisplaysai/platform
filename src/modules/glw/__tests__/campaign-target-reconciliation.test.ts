@@ -179,6 +179,34 @@ describe("GLW campaign target reconciliation", () => {
     });
   });
 
+  test("pre-execution dispatch failure requeues through reconciliation", () => {
+    expect(resolveGlwCampaignJobReconciliationDecision({
+      status: "FAILED",
+      errorCode: "DISPATCH_FAILED",
+      errorMessage: "GLW n8n MCP execution is not configured.",
+      externalExecutionId: null,
+      generatedDraft: null,
+      wordpressObjectId: null,
+    })).toEqual({
+      action: "requeue",
+      error: "GLW n8n MCP execution is not configured.",
+    });
+  });
+
+  test("failed dispatch with an external execution cannot be requeued as pre-execution", () => {
+    expect(resolveGlwCampaignJobReconciliationDecision({
+      status: "FAILED",
+      errorCode: "DISPATCH_FAILED",
+      errorMessage: "Execution failed after acceptance.",
+      externalExecutionId: "execution-1",
+      generatedDraft: null,
+      wordpressObjectId: null,
+    })).toEqual({
+      action: "failed",
+      error: "Execution failed after acceptance.",
+    });
+  });
+
   test("running generation waits", () => {
     expect(
       resolveGlwCampaignJobReconciliationDecision({
