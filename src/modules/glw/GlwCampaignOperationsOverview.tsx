@@ -33,6 +33,10 @@ function activity(value: string): string {
   return value.replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
 }
 
+function reviewHref(model: GlwCampaignOperatorReadModel, jobId: string): string {
+  return `/glw/pages/${encodeURIComponent(jobId)}/review?organizationId=${encodeURIComponent(model.campaign.organizationId)}&siteId=${encodeURIComponent(model.campaign.siteId)}`;
+}
+
 function Capability(props: { label: string; state: string; detail: string }) {
   const ready = props.state === "READY";
   const blocked = props.state === "BLOCKED" || props.state === "DRAFT_ONLY";
@@ -131,7 +135,7 @@ export function GlwCampaignOperationsOverview({ model }: { model: GlwCampaignOpe
             <tbody>
               {model.targets.map((target) => (
                 <tr key={target.targetId} className="border-b border-zinc-900 align-top text-zinc-300 last:border-b-0">
-                  <td className="px-4 py-4 font-semibold text-white">{target.identity}</td>
+                  <td className="px-4 py-4 font-semibold text-white">{target.identity}{target.jobId ? <Link href={reviewHref(model, target.jobId)} className="mt-2 block text-[11px] uppercase tracking-wider text-red-400 hover:text-red-300">Review generated page</Link> : null}</td>
                   <td className="px-4 py-4 text-xs font-semibold uppercase text-zinc-200">{label(target.lifecycleState)}</td>
                   <td className="px-4 py-4"><code className="text-xs text-zinc-300" title={target.jobId ?? undefined}>{shortId(target.jobId)}</code></td>
                   <td className="px-4 py-4"><p className="text-xs text-zinc-300">{target.executionState ? label(target.executionState) : "Not started"}</p>{target.executionId ? <code className="mt-1 block text-xs text-zinc-500" title={target.executionId}>{shortId(target.executionId)}</code> : null}</td>
@@ -148,7 +152,7 @@ export function GlwCampaignOperationsOverview({ model }: { model: GlwCampaignOpe
         <div className="divide-y divide-zinc-800 lg:hidden">
           {model.targets.map((target) => (
             <article key={target.targetId} className="space-y-4 px-4 py-5">
-              <div className="flex items-start justify-between gap-3"><h3 className="font-semibold text-white">{target.identity}</h3><span className="text-xs font-semibold uppercase text-zinc-300">{label(target.lifecycleState)}</span></div>
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-semibold text-white">{target.identity}</h3>{target.jobId ? <Link href={reviewHref(model, target.jobId)} className="mt-2 block text-[11px] uppercase tracking-wider text-red-400 hover:text-red-300">Review generated page</Link> : null}</div><span className="text-xs font-semibold uppercase text-zinc-300">{label(target.lifecycleState)}</span></div>
               <dl className="grid grid-cols-[7rem_1fr] gap-x-3 gap-y-2 text-xs">
                 <dt className="text-zinc-500">Job</dt><dd><code title={target.jobId ?? undefined}>{shortId(target.jobId)}</code></dd>
                 <dt className="text-zinc-500">Execution</dt><dd>{target.executionState ? `${label(target.executionState)} · ${shortId(target.executionId)}` : "Not started"}</dd>

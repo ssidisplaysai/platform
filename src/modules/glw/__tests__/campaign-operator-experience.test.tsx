@@ -152,6 +152,7 @@ describe("campaign operator experience", () => {
     expect(html).toContain("Product Authority");
     expect(html).toContain("Contextual In-Use");
     expect(html).toContain("NOT WIRED");
+    expect(html).toContain(`/glw/pages/${dallasJob.jobId}/review?organizationId=ssi&amp;siteId=site-projector`);
   });
 
   test("refreshes server state after every successful mutation and demotes policy-blocked publication", () => {
