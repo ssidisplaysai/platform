@@ -14,6 +14,16 @@ import type { GlwCampaignKnowledgePack as GlwCampaignKnowledgePackRecord } from 
 
 type SiteOption = { siteId: string; organizationId: string; displayName: string };
 type ProductOption = { productId: string; organizationId: string; displayName: string; assignedSiteIds: readonly string[] };
+type CampaignQueueSummary = {
+  total: number;
+  referenceComplete: number;
+  queued: number;
+  running: number;
+  draftReady: number;
+  published: number;
+  failed: number;
+  skipped: number;
+};
 export type GovernedReview = {
   knowledgePack: GlwCampaignKnowledgePackRecord | null;
   reference: GlwLocalReferenceDraft;
@@ -23,9 +33,9 @@ export type GovernedReview = {
   imagePreviewDataUrl: string | null;
   activationReadiness: CampaignActivationReadiness;
 };
-type Props = { organizationId: string; siteId: string | null; sites: readonly SiteOption[]; products: readonly ProductOption[]; initialCampaigns: readonly GlwCampaign[]; governedReviewByCampaign?: Record<string, GovernedReview> };
+type Props = { organizationId: string; siteId: string | null; sites: readonly SiteOption[]; products: readonly ProductOption[]; initialCampaigns: readonly GlwCampaign[]; initialQueueSummaries?: Record<string, CampaignQueueSummary>; governedReviewByCampaign?: Record<string, GovernedReview> };
 
-export function GlwCampaignManager({ organizationId, siteId, sites, products, initialCampaigns, governedReviewByCampaign = {} }: Props) {
+export function GlwCampaignManager({ organizationId, siteId, sites, products, initialCampaigns, initialQueueSummaries = {}, governedReviewByCampaign = {} }: Props) {
   const initialSiteId = siteId ?? sites[0]?.siteId ?? "";
   const [selectedSiteId, setSelectedSiteId] = useState(initialSiteId);
   const availableProducts = useMemo(() => products.filter((product) => product.organizationId === organizationId && product.assignedSiteIds.includes(selectedSiteId)), [organizationId, products, selectedSiteId]);
@@ -37,16 +47,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
   const [campaigns, setCampaigns] = useState<readonly GlwCampaign[]>(initialCampaigns);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [queueSummaries, setQueueSummaries] = useState<Record<string, {
-    total: number;
-    referenceComplete: number;
-    queued: number;
-    running: number;
-    draftReady: number;
-    published: number;
-    failed: number;
-    skipped: number;
-  }>>({});
+  const [queueSummaries, setQueueSummaries] = useState<Record<string, CampaignQueueSummary>>(initialQueueSummaries);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,16 +108,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
         return;
       }
 
-      const next: Record<string, {
-        total: number;
-        referenceComplete: number;
-        queued: number;
-        running: number;
-        draftReady: number;
-        published: number;
-        failed: number;
-        skipped: number;
-      }> = {};
+      const next: Record<string, CampaignQueueSummary> = {};
 
       for (const entry of entries) {
         if (entry) {
@@ -224,6 +216,26 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
             })()}
 
             <Link href={`/glw/campaigns/${campaign.campaignId}`} className="mt-3 inline-block text-xs uppercase tracking-wider text-red-400 hover:text-red-300">Open campaign</Link>
+            {campaign.status === "active" ? (() => {
+              const queue = queueSummaries[campaign.campaignId];
+              const dispatchReady = Boolean(queue && queue.queued > 0 && queue.running === 0);
+              return (
+                <section className="mt-4 border-t border-zinc-800 pt-4" aria-label="Dispatch continuation">
+                  <p className="text-xs uppercase tracking-[0.2em] text-red-400">Step: Dispatch</p>
+                  <dl className="mt-3 grid gap-1 text-xs sm:grid-cols-[9rem_1fr]">
+                    <dt className="text-zinc-500">Campaign</dt><dd className="text-emerald-300">ACTIVE</dd>
+                    <dt className="text-zinc-500">Reference target</dt><dd className="text-zinc-200">{queue ? `${queue.referenceComplete} ready` : "Loading"}</dd>
+                    <dt className="text-zinc-500">Queued targets</dt><dd className="text-zinc-200">{queue?.queued ?? "Loading"}</dd>
+                  </dl>
+                  {dispatchReady ? (
+                    <Link href={`/glw/campaigns/${campaign.campaignId}`} className="mt-3 inline-flex border border-red-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-red-200 hover:border-red-400 hover:text-white">Review &amp; Dispatch Ready Targets</Link>
+                  ) : (
+                    <span aria-disabled="true" className="mt-3 inline-flex cursor-not-allowed border border-zinc-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-600">No Targets Ready for Dispatch</span>
+                  )}
+                  <p className="mt-2 text-xs text-zinc-500">Dispatch remains an explicit action in campaign detail. Opening the controls does not run the scheduler.</p>
+                </section>
+              );
+            })() : null}
             {campaign.status === "draft" && governedReviewByCampaign[campaign.campaignId] ? (() => {
               const governed = governedReviewByCampaign[campaign.campaignId];
               const pack = governed.knowledgePack;

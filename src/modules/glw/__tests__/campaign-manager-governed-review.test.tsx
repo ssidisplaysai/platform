@@ -7,6 +7,41 @@ import { CampaignActivationAuthorityPanel } from "../CampaignActivationAuthority
 jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: jest.fn() }) }));
 
 describe("Agent 2 Campaign Manager governed review integration", () => {
+  test("shows a non-automatic dispatch continuation for an active queued campaign", () => {
+    const campaign = {
+      campaignId: "campaign-texas",
+      organizationId: "ssi",
+      siteId: "site-ssi-projectorenclosure",
+      productId: "prod-projector",
+      name: "Texas Cities",
+      pageType: "city_service" as const,
+      stateCodes: ["TX"],
+      cityTargets: [
+        { stateCode: "TX", citySlug: "austin", cityName: "Austin" },
+        { stateCode: "TX", citySlug: "dallas", cityName: "Dallas" },
+        { stateCode: "TX", citySlug: "houston", cityName: "Houston" },
+        { stateCode: "TX", citySlug: "san-antonio", cityName: "San Antonio" },
+      ],
+      pagesPerDay: 10,
+      publicationPolicy: "draft_only" as const,
+      imageRequired: true,
+      status: "active" as const,
+      completedTargetCount: 1,
+      failedTargetCount: 0,
+      createdAt: "2030-01-01T00:00:00.000Z",
+      updatedAt: "2030-01-01T00:00:00.000Z",
+    };
+    const html = renderToStaticMarkup(<GlwCampaignManager organizationId="ssi" siteId={campaign.siteId} sites={[{ siteId: campaign.siteId, organizationId: "ssi", displayName: "ProjectorEnclosure.com" }]} products={[]} initialCampaigns={[campaign]} initialQueueSummaries={{ [campaign.campaignId]: { total: 4, referenceComplete: 1, queued: 3, running: 0, draftReady: 0, published: 0, failed: 0, skipped: 0 } }} />);
+    expect(html).toContain("Step: Dispatch");
+    expect(html).toContain("ACTIVE");
+    expect(html).toContain("1 ready");
+    expect(html).toContain("Queued targets</dt><dd class=\"text-zinc-200\">3");
+    expect(html).toContain("Review &amp; Dispatch Ready Targets");
+    expect(html).toContain(`/glw/campaigns/${campaign.campaignId}`);
+    expect(html).toContain("Opening the controls does not run the scheduler.");
+    expect(html).not.toContain("Run Next Draft Batch");
+  });
+
   test("enables authorization after reference approval while keeping activation disabled without a grant", () => {
     const html = renderToStaticMarkup(<CampaignActivationAuthorityPanel organizationId="ssi" siteId="site-ssi-projectorenclosure" campaignId="campaign-1" requestRoles={["platform_admin"]} readiness={{ knowledgePackReady: true, approvedReferenceCount: 1, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: "TX", referenceCitySlug: "austin", releaseIdentityReady: true, releaseIdentityReason: null, releaseCapabilityStatus: "READY", releaseCapabilityReleaseSha: "a".repeat(40) }} globalPromotionAvailable={true} globalPromotionReason="" />);
     expect(html).toMatch(/<button[^>]*(?!disabled)[^>]*>Authorize This Campaign for Activation<\/button>/);

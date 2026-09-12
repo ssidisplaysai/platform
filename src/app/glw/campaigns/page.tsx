@@ -58,6 +58,21 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
       (!requestedSiteId || campaign.siteId === requestedSiteId),
   );
   const allTargets = listAllGlwCampaignTargets();
+  const initialQueueSummaries = Object.fromEntries(campaigns
+    .filter((campaign) => campaign.status === "active")
+    .map((campaign) => {
+      const targets = allTargets.filter((target) => target.campaignId === campaign.campaignId);
+      return [campaign.campaignId, {
+        total: targets.length,
+        referenceComplete: targets.filter((target) => target.status === "reference_complete").length,
+        queued: targets.filter((target) => target.status === "queued").length,
+        running: targets.filter((target) => target.status === "running").length,
+        draftReady: targets.filter((target) => target.status === "draft_ready").length,
+        published: targets.filter((target) => target.status === "published").length,
+        failed: targets.filter((target) => target.status === "failed").length,
+        skipped: targets.filter((target) => target.status === "skipped").length,
+      }];
+    }));
   const governedReviewByCampaign: Record<string, GovernedReview> = Object.fromEntries(campaigns.flatMap((campaign) => {
     if (campaign.pageType !== "city_service" || !campaign.cityTargets?.length) return [];
     const target = selectDeterministicCityReference(campaign);
@@ -150,6 +165,7 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
           assignedSiteIds: product.assignedSiteIds,
         }))}
         initialCampaigns={campaigns}
+        initialQueueSummaries={initialQueueSummaries}
         governedReviewByCampaign={governedReviewByCampaign}
       />
     </AppShell>
