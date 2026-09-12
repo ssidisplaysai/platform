@@ -52,7 +52,7 @@ export function bindHeaderNavigation(content: string, navigationId: number): str
 
 export function buildApprovedFooterBlocks(footerLinks: Array<{ label: string; href: string }>): string {
   const links = footerLinks.map((item) => navigationLink(item, true)).join("\n");
-  return `<!-- wp:group {"align":"wide","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"space-between"}} -->\n<div class="wp-block-group alignwide">\n<!-- wp:site-title {"level":0} /-->\n<!-- wp:navigation {"overlayMenu":"never","layout":{"type":"flex","justifyContent":"right"}} -->\n${links}\n<!-- /wp:navigation -->\n</div>\n<!-- /wp:group -->`;
+  return `<!-- wp:group {"align":"wide","layout":{"type":"flex","flexWrap":"wrap","justifyContent":"right"}} -->\n<div class="wp-block-group alignwide">\n<!-- wp:navigation {"overlayMenu":"never","layout":{"type":"flex","justifyContent":"right"}} -->\n${links}\n<!-- /wp:navigation -->\n</div>\n<!-- /wp:group -->`;
 }
 
 function authorization(username: string, password: string): string {

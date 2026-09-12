@@ -24,7 +24,7 @@ describe("CSC WordPress theme shell repair", () => {
 
   test("builds a minimal approved footer without Twenty Twenty-Five demo artifacts", () => {
     const content = buildApprovedFooterBlocks([{ label: "About", href: "/about/" }, { label: "Request a Quote", href: "/request-a-quote/" }]);
-    expect(content).toContain("wp:site-title");
+    expect(content).not.toContain("wp:site-title");
     expect(content).toContain("https://commercialstainlesscounters.com/about/");
     expect(content).not.toMatch(/Blog|FAQs|Authors|Events|Shop|Patterns|Themes|Twenty Twenty-Five|Designed with WordPress|"#"/);
   });
