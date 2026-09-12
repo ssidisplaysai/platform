@@ -7,7 +7,7 @@ import { CampaignActivationAuthorityPanel } from "../CampaignActivationAuthority
 jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: jest.fn() }) }));
 
 describe("Agent 2 Campaign Manager governed review integration", () => {
-  test("shows a non-automatic dispatch continuation for an active queued campaign", () => {
+  test("shows a non-automatic detail continuation for an active queued campaign", () => {
     const campaign = {
       campaignId: "campaign-texas",
       organizationId: "ssi",
@@ -31,15 +31,17 @@ describe("Agent 2 Campaign Manager governed review integration", () => {
       createdAt: "2030-01-01T00:00:00.000Z",
       updatedAt: "2030-01-01T00:00:00.000Z",
     };
-    const html = renderToStaticMarkup(<GlwCampaignManager organizationId="ssi" siteId={campaign.siteId} sites={[{ siteId: campaign.siteId, organizationId: "ssi", displayName: "ProjectorEnclosure.com" }]} products={[]} initialCampaigns={[campaign]} initialQueueSummaries={{ [campaign.campaignId]: { total: 4, referenceComplete: 1, queued: 3, running: 0, draftReady: 0, published: 0, failed: 0, skipped: 0 } }} />);
-    expect(html).toContain("Step: Dispatch");
-    expect(html).toContain("ACTIVE");
-    expect(html).toContain("1 ready");
-    expect(html).toContain("Queued targets</dt><dd class=\"text-zinc-200\">3");
-    expect(html).toContain("Review &amp; Dispatch Ready Targets");
+    const html = renderToStaticMarkup(<GlwCampaignManager organizationId="ssi" siteId={campaign.siteId} sites={[{ siteId: campaign.siteId, organizationId: "ssi", displayName: "ProjectorEnclosure.com" }]} products={[]} initialCampaigns={[campaign]} initialOperatorSummaries={[{
+      campaignId: campaign.campaignId, name: campaign.name, organizationId: "ssi", siteId: campaign.siteId, siteName: "ProjectorEnclosure.com", domain: "projectorenclosure.com", productName: "Projector Enclosure", scope: "4 city targets", lifecycle: "Dispatch", attention: "ACTION_REQUIRED", attentionPriority: 1, nextAction: "Run Next Draft Batch", nextActionEnabled: true, nextTarget: "Houston, TX", blocker: null,
+      counts: { referenceComplete: 1, queued: 3, running: 0, contentReady: 0, draftReady: 0, published: 0, failed: 0 }, executionReadiness: "READY", capabilityDetails: ["Release READY", "MCP READY", "Scheduler READY"], policy: "DRAFT ONLY", imagePackage: "PARTIAL", productAuthorityImage: "NOT_WIRED", contextualInUseImage: "APPROVED", updatedAt: campaign.updatedAt,
+      href: `/glw/campaigns/${campaign.campaignId}?organizationId=ssi&siteId=${campaign.siteId}`,
+    }]} />);
+    expect(html).toContain("Campaign Control Surface");
+    expect(html).toContain("ACTION REQUIRED");
+    expect(html).toContain("Run Next Draft Batch");
+    expect(html).toContain("Next target: Houston, TX");
     expect(html).toContain(`/glw/campaigns/${campaign.campaignId}`);
-    expect(html).toContain("Opening the controls does not run the scheduler.");
-    expect(html).not.toContain("Run Next Draft Batch");
+    expect(html).not.toContain("Run Next Draft Batch</button>");
   });
 
   test("enables authorization after reference approval while keeping activation disabled without a grant", () => {
@@ -83,7 +85,7 @@ describe("Agent 2 Campaign Manager governed review integration", () => {
     expect(html).toContain("does not publish, mutate WordPress, authorize activation, activate the campaign, or dispatch targets");
   });
 
-  test("renders the existing Texas/Austin review and bypasses the California legacy workflow", () => {
+  test("keeps the existing Texas/Austin governed controls available as detail-level components", () => {
     const campaign = {
       campaignId: "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-texas-cities",
       organizationId: "ssi",
@@ -118,16 +120,8 @@ describe("Agent 2 Campaign Manager governed review integration", () => {
       sourceAssetReference: "wordpress-media:10757", generationBasis: { provider: "LOCAL_GOVERNED_COMPOSITOR" as const, imageProfileReference: "profile-image", knowledgePackRevision: 1, authorityReferences: [], referenceOnlyInputsUsed: false as const, competitorInputsUsed: false as const },
       altText: "Illustrative enclosure", ownerInstructions: null, priorCandidateId: null, createdAt: "2030-01-01", createdBy: "platform_admin", decidedAt: null, decidedBy: null,
     };
-    const html = renderToStaticMarkup(<GlwCampaignManager organizationId="ssi" siteId={campaign.siteId} sites={[{ siteId: campaign.siteId, organizationId: "ssi", displayName: "ProjectorEnclosure.com" }]} products={[{ productId: campaign.productId, organizationId: "ssi", displayName: "Fan Cooled Projector Enclosures", assignedSiteIds: [campaign.siteId] }]} initialCampaigns={[campaign]} governedReviewByCampaign={{ [campaign.campaignId]: {
-      knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: campaign.siteId, instructions: "Governed Texas instructions", references: [], revision: 1, status: "ready", ownerApprovalRequired: false, updatedAt: "2030-01-01" },
-      reference, canonicalReferenceApproved: false, imageCandidate: candidate, imageHistory: [candidate], imagePreviewDataUrl: "data:image/jpeg;base64,/9j/",
-      activationReadiness: { knowledgePackReady: true, approvedReferenceCount: 0, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: null, referenceCitySlug: null, releaseIdentityReady: true, releaseIdentityReason: null, releaseCapabilityStatus: "READY", releaseCapabilityReleaseSha: "a".repeat(40) },
-    } }} />);
+    const html = renderToStaticMarkup(<><CampaignLocalReferenceReview organizationId="ssi" siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} reference={reference} canonicalReferenceApproved={false} imageCandidate={candidate} imageHistory={[candidate]} imagePreviewDataUrl="data:image/jpeg;base64,/9j/" /><CampaignActivationAuthorityPanel organizationId="ssi" siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} readiness={{ knowledgePackReady: true, approvedReferenceCount: 0, preparedTargetCount: 4, grantActive: false, grantStatus: "NONE", grantExpiresAt: null, targetFingerprint: "fingerprint", certifiedReleaseSha: null, referenceStateCode: null, referenceCitySlug: null, releaseIdentityReady: true, releaseIdentityReason: null, releaseCapabilityStatus: "READY", releaseCapabilityReleaseSha: "a".repeat(40) }} globalPromotionAvailable={true} globalPromotionReason="" /></>);
 
-    expect(html).toContain("0/4 complete");
-    expect(html).toContain("Uploaded references");
-    expect(html).toContain("READY · revision 1");
-    expect(html).toContain("GOVERNED · NO ADDITIONAL APPROVAL REQUIRED");
     expect(html).toContain("Fan Cooled Projector Enclosures in Austin, Texas");
     expect(html).toContain("Approve Image");
     expect(html).toContain("Replace With Owner Asset");

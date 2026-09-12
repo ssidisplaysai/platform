@@ -2,22 +2,9 @@ import { AppShell } from "@/components/layout/app-shell";
 import { listProducts } from "@/modules/foundation/product-repository";
 import { listSites } from "@/modules/foundation/site-repository";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
-import { listAllGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
-import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
-import { listGlwCampaignReferenceApprovals } from "@/modules/glw/campaign-reference-approval-repository";
-import { getGlwLocalReferenceDraft } from "@/modules/glw/campaign-local-reference-repository";
-import {
-  getLatestGlwReferenceImageCandidate,
-  listGlwReferenceImageCandidates,
-  readGlwReferenceImageCandidateBytes,
-} from "@/modules/glw/campaign-reference-image-candidate-repository";
-import {
-  createGlwCampaignTargetFingerprint,
-  listGlwCampaignActivationGrants,
-} from "@/modules/glw/campaign-activation-authorization";
-import { selectDeterministicCityReference } from "@/modules/glw/projector-enclosure-texas-reference";
-import { resolveGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
-import { GlwCampaignManager, type GovernedReview } from "@/modules/glw/GlwCampaignManager";
+import { buildGlwCampaignOperatorReadModel } from "@/modules/glw/campaign-operator-read-model";
+import { deriveGlwCampaignListOperatorSummary, orderGlwCampaignListOperatorSummaries } from "@/modules/glw/campaign-list-operator-read-model";
+import { GlwCampaignManager } from "@/modules/glw/GlwCampaignManager";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -57,96 +44,19 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
       campaign.organizationId === organizationId &&
       (!requestedSiteId || campaign.siteId === requestedSiteId),
   );
-  const allTargets = listAllGlwCampaignTargets();
-  const initialQueueSummaries = Object.fromEntries(campaigns
-    .filter((campaign) => campaign.status === "active")
-    .map((campaign) => {
-      const targets = allTargets.filter((target) => target.campaignId === campaign.campaignId);
-      return [campaign.campaignId, {
-        total: targets.length,
-        referenceComplete: targets.filter((target) => target.status === "reference_complete").length,
-        queued: targets.filter((target) => target.status === "queued").length,
-        running: targets.filter((target) => target.status === "running").length,
-        draftReady: targets.filter((target) => target.status === "draft_ready").length,
-        published: targets.filter((target) => target.status === "published").length,
-        failed: targets.filter((target) => target.status === "failed").length,
-        skipped: targets.filter((target) => target.status === "skipped").length,
-      }];
-    }));
-  const governedReviewByCampaign: Record<string, GovernedReview> = Object.fromEntries(campaigns.flatMap((campaign) => {
-    if (campaign.pageType !== "city_service" || !campaign.cityTargets?.length) return [];
-    const target = selectDeterministicCityReference(campaign);
-    const reference = getGlwLocalReferenceDraft(campaign.campaignId, target.stateCode, target.citySlug);
-    if (!reference) return [];
-    const scope = {
-      organizationId: campaign.organizationId,
-      siteId: campaign.siteId,
-      campaignId: campaign.campaignId,
-      referenceDraftId: reference.referenceDraftId,
-    };
-    const imageCandidate = getLatestGlwReferenceImageCandidate(scope);
-    const stored = imageCandidate ? readGlwReferenceImageCandidateBytes({
-      organizationId: campaign.organizationId,
-      siteId: campaign.siteId,
-      campaignId: campaign.campaignId,
-      candidateId: imageCandidate.candidateId,
-    }) : null;
-    const targets = allTargets.filter((item) => item.campaignId === campaign.campaignId);
-    const preparedTargets = targets.filter((item) => item.status === "prepared");
-    const approvals = listGlwCampaignReferenceApprovals(campaign.campaignId);
-    const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
-    const grant = listGlwCampaignActivationGrants(campaign.campaignId).at(-1) ?? null;
-    let targetFingerprint: string | null = null;
-    try {
-      if (preparedTargets.length > 0) targetFingerprint = createGlwCampaignTargetFingerprint(campaign, preparedTargets);
-    } catch {
-      targetFingerprint = null;
-    }
-    const runningRelease = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
-    const releaseIdentityReady = /^[0-9a-f]{40}$/.test(runningRelease);
-    const releaseCapability = resolveGlwCampaignActivationReleaseCapability({
-      organizationId: campaign.organizationId,
-      siteId: campaign.siteId,
-      runningReleaseSha: runningRelease,
+  const operatorSummaries = orderGlwCampaignListOperatorSummaries((await Promise.all(campaigns.map(async (campaign) => {
+    const model = await buildGlwCampaignOperatorReadModel(campaign.campaignId);
+    if (!model) return null;
+    const site = organizationSites.find((entry) => entry.siteId === campaign.siteId);
+    const product = products.find((entry) => entry.productId === campaign.productId);
+    return deriveGlwCampaignListOperatorSummary({
+      model,
+      siteName: site?.displayName ?? campaign.siteId,
+      domain: site?.domain ?? null,
+      productName: product?.displayName ?? campaign.productId,
+      updatedAt: campaign.updatedAt,
     });
-    const grantActive = Boolean(
-      grant
-      && !grant.claimedAt
-      && !grant.consumedAt
-      && new Date(grant.expiresAt) > new Date()
-      && grant.targetFingerprint === targetFingerprint
-      && grant.publicationPolicy === campaign.publicationPolicy
-      && grant.certifiedReleaseSha === runningRelease,
-    );
-    return [[campaign.campaignId, {
-      knowledgePack: pack,
-      reference,
-      canonicalReferenceApproved: approvals.some((approval) =>
-        approval.approvalKind === "GOVERNED_LOCAL_REFERENCE"
-        &&
-        approval.stateCode === target.stateCode
-        && approval.citySlug === target.citySlug),
-      imageCandidate,
-      imageHistory: listGlwReferenceImageCandidates(scope),
-      imagePreviewDataUrl: stored ? `data:${stored.candidate.mimeType};base64,${stored.bytes.toString("base64")}` : null,
-      activationReadiness: {
-        knowledgePackReady: Boolean(pack?.instructions.trim()),
-        approvedReferenceCount: approvals.length,
-        preparedTargetCount: preparedTargets.length,
-        grantActive,
-        grantStatus: !grant ? "NONE" : grant.consumedAt ? "CONSUMED" : grant.claimedAt ? "CLAIMED" : new Date(grant.expiresAt) <= new Date() ? "EXPIRED" : grantActive ? "ACTIVE" : "INVALIDATED",
-        grantExpiresAt: grant?.expiresAt ?? null,
-        targetFingerprint,
-        certifiedReleaseSha: grant?.certifiedReleaseSha ?? null,
-        referenceStateCode: approvals[0]?.stateCode ?? null,
-        referenceCitySlug: approvals[0]?.citySlug ?? null,
-        releaseIdentityReady,
-        releaseIdentityReason: !releaseIdentityReady ? "Exact running release identity is required. Restart the supervised sidecar from a committed target HEAD." : releaseCapability.reason,
-        releaseCapabilityStatus: releaseCapability.status,
-        releaseCapabilityReleaseSha: releaseCapability.capability?.releaseSha ?? null,
-      },
-    }]];
-  }));
+  }))).filter((summary) => summary !== null));
 
   return (
     <AppShell>
@@ -165,8 +75,7 @@ export default async function GlwCampaignsPage({ searchParams }: RouteProps) {
           assignedSiteIds: product.assignedSiteIds,
         }))}
         initialCampaigns={campaigns}
-        initialQueueSummaries={initialQueueSummaries}
-        governedReviewByCampaign={governedReviewByCampaign}
+        initialOperatorSummaries={operatorSummaries}
       />
     </AppShell>
   );

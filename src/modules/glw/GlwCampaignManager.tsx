@@ -1,41 +1,17 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
-import { GlwCampaignKnowledgePack } from "./GlwCampaignKnowledgePack";
-import { CampaignLocalReferenceReview } from "./CampaignLocalReferenceReview";
-import { CampaignActivationAuthorityPanel, type CampaignActivationReadiness } from "./CampaignActivationAuthorityPanel";
-import type { GlwLocalReferenceDraft } from "./campaign-local-reference-repository";
-import type { GlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
-import type { GlwCampaignKnowledgePack as GlwCampaignKnowledgePackRecord } from "./campaign-reference-types";
+import { GlwCampaignOperationsList } from "./GlwCampaignOperationsList";
+import type { GlwCampaignListOperatorSummary } from "./campaign-list-operator-read-model";
 
 type SiteOption = { siteId: string; organizationId: string; displayName: string };
 type ProductOption = { productId: string; organizationId: string; displayName: string; assignedSiteIds: readonly string[] };
-type CampaignQueueSummary = {
-  total: number;
-  referenceComplete: number;
-  queued: number;
-  running: number;
-  draftReady: number;
-  published: number;
-  failed: number;
-  skipped: number;
-};
-export type GovernedReview = {
-  knowledgePack: GlwCampaignKnowledgePackRecord | null;
-  reference: GlwLocalReferenceDraft;
-  canonicalReferenceApproved: boolean;
-  imageCandidate: GlwReferenceImageCandidate | null;
-  imageHistory: readonly GlwReferenceImageCandidate[];
-  imagePreviewDataUrl: string | null;
-  activationReadiness: CampaignActivationReadiness;
-};
-type Props = { organizationId: string; siteId: string | null; sites: readonly SiteOption[]; products: readonly ProductOption[]; initialCampaigns: readonly GlwCampaign[]; initialQueueSummaries?: Record<string, CampaignQueueSummary>; governedReviewByCampaign?: Record<string, GovernedReview> };
+type Props = { organizationId: string; siteId: string | null; sites: readonly SiteOption[]; products: readonly ProductOption[]; initialCampaigns: readonly GlwCampaign[]; initialOperatorSummaries: readonly GlwCampaignListOperatorSummary[] };
 
-export function GlwCampaignManager({ organizationId, siteId, sites, products, initialCampaigns, initialQueueSummaries = {}, governedReviewByCampaign = {} }: Props) {
+export function GlwCampaignManager({ organizationId, siteId, sites, products, initialCampaigns, initialOperatorSummaries }: Props) {
   const initialSiteId = siteId ?? sites[0]?.siteId ?? "";
   const [selectedSiteId, setSelectedSiteId] = useState(initialSiteId);
   const availableProducts = useMemo(() => products.filter((product) => product.organizationId === organizationId && product.assignedSiteIds.includes(selectedSiteId)), [organizationId, products, selectedSiteId]);
@@ -47,84 +23,6 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
   const [campaigns, setCampaigns] = useState<readonly GlwCampaign[]>(initialCampaigns);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [queueSummaries, setQueueSummaries] = useState<Record<string, CampaignQueueSummary>>(initialQueueSummaries);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadQueueSummaries() {
-      const activeCampaigns = campaigns.filter(
-        (campaign) => campaign.status === "active",
-      );
-
-      if (activeCampaigns.length === 0) {
-        return;
-      }
-
-      const entries = await Promise.all(
-        activeCampaigns.map(async (campaign) => {
-          const response = await fetch(
-            `/api/glw/campaigns/${campaign.campaignId}/scheduler`,
-            {
-              method: "GET",
-              headers: {
-                "x-gcp-roles": "platform_admin",
-                "x-gcp-organization-id": organizationId,
-                "x-gcp-site-id": campaign.siteId,
-              },
-              cache: "no-store",
-            },
-          );
-
-          if (!response.ok) {
-            return null;
-          }
-
-          const payload = await response.json() as {
-            queue?: {
-              total: number;
-              referenceComplete: number;
-              queued: number;
-              running: number;
-              draftReady: number;
-              published: number;
-              failed: number;
-              skipped: number;
-            };
-          };
-
-          if (!payload.queue) {
-            return null;
-          }
-
-          return {
-            campaignId: campaign.campaignId,
-            queue: payload.queue,
-          };
-        }),
-      );
-
-      if (cancelled) {
-        return;
-      }
-
-      const next: Record<string, CampaignQueueSummary> = {};
-
-      for (const entry of entries) {
-        if (entry) {
-          next[entry.campaignId] = entry.queue;
-        }
-      }
-
-      setQueueSummaries(next);
-    }
-
-    void loadQueueSummaries();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [campaigns, organizationId]);
 
   async function createCampaign() {
     setSaving(true); setMessage(null);
@@ -135,7 +33,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
     });
     const payload = (await response.json()) as { campaign?: GlwCampaign; errors?: string[]; error?: string };
     if (!response.ok || !payload.campaign) { setMessage(payload.errors?.join(" ") ?? payload.error ?? "Unable to create campaign."); setSaving(false); return; }
-    setCampaigns((current) => [payload.campaign!, ...current]); setName(""); setProductId(""); setMessage("Campaign saved as draft. Add references and approve a reference page before activation."); setSaving(false);
+    setCampaigns((current) => [payload.campaign!, ...current]); setName(""); setProductId(""); setMessage("Campaign saved as draft. Refreshing operator state..."); window.location.reload();
   }
 
   return <div className="space-y-6">
@@ -145,7 +43,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
       <p className="mt-2 max-w-3xl text-sm text-zinc-300">Configure the campaign, attach source material, generate a reference page, and approve it before production activation.</p>
     </header>
     <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
+      <div className="order-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
         <h2 className="text-lg font-semibold text-white">New Campaign</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <label className="text-sm text-zinc-300">Site<select value={selectedSiteId} onChange={(event) => {
@@ -171,90 +69,8 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
         {message ? <p className="mt-4 text-sm text-amber-300">{message}</p> : null}
         <button type="button" disabled={saving || !selectedSiteId || !productId || !name.trim()} onClick={createCampaign} className="mt-5 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40">{saving ? "Saving..." : "Save Campaign Draft"}</button>
       </div>
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-        <h2 className="text-lg font-semibold text-white">Campaigns</h2>
-        <div className="mt-4 space-y-3">
-          {campaigns.length === 0 ? <p className="text-sm text-zinc-400">No campaigns configured yet.</p> : campaigns.map((campaign) => <article key={campaign.campaignId} className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4 transition hover:border-zinc-700">
-            <div className="flex items-start justify-between gap-3"><div><Link href={`/glw/campaigns/${campaign.campaignId}`} className="font-semibold text-white hover:text-red-300">{campaign.name}</Link><p className="mt-1 text-xs text-zinc-500">{campaign.stateCodes.length} states · {campaign.pagesPerDay}/day</p></div><span className="rounded-full border border-zinc-700 px-2 py-1 text-xs uppercase text-zinc-300">{campaign.status}</span></div>
-            {(() => {
-              const queue = queueSummaries[campaign.campaignId];
-
-              const completeCount = queue
-                ? queue.referenceComplete + queue.draftReady + queue.published
-                : campaign.completedTargetCount;
-
-              const failedCount = queue
-                ? queue.failed
-                : campaign.failedTargetCount;
-
-              const totalCount = queue?.total ?? campaign.cityTargets?.length ?? campaign.stateCodes.length;
-              const queuedCount = queue?.queued ?? null;
-              const runningCount = queue?.running ?? null;
-
-              return (
-                <>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-800">
-                    <div
-                      className="h-full bg-red-600"
-                      style={{
-                        width: `${
-                          totalCount > 0
-                            ? Math.round((completeCount / totalCount) * 100)
-                            : 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-
-                  <p className="mt-2 text-xs text-zinc-500">
-                    {completeCount}/{totalCount} complete · {failedCount} failed
-                    {queuedCount !== null ? ` · ${queuedCount} queued` : ""}
-                    {runningCount !== null ? ` · ${runningCount} running` : ""}
-                  </p>
-                </>
-              );
-            })()}
-
-            <Link href={`/glw/campaigns/${campaign.campaignId}`} className="mt-3 inline-block text-xs uppercase tracking-wider text-red-400 hover:text-red-300">Open campaign</Link>
-            {campaign.status === "active" ? (() => {
-              const queue = queueSummaries[campaign.campaignId];
-              const dispatchReady = Boolean(queue && queue.queued > 0 && queue.running === 0);
-              return (
-                <section className="mt-4 border-t border-zinc-800 pt-4" aria-label="Dispatch continuation">
-                  <p className="text-xs uppercase tracking-[0.2em] text-red-400">Step: Dispatch</p>
-                  <dl className="mt-3 grid gap-1 text-xs sm:grid-cols-[9rem_1fr]">
-                    <dt className="text-zinc-500">Campaign</dt><dd className="text-emerald-300">ACTIVE</dd>
-                    <dt className="text-zinc-500">Reference target</dt><dd className="text-zinc-200">{queue ? `${queue.referenceComplete} ready` : "Loading"}</dd>
-                    <dt className="text-zinc-500">Queued targets</dt><dd className="text-zinc-200">{queue?.queued ?? "Loading"}</dd>
-                  </dl>
-                  {dispatchReady ? (
-                    <Link href={`/glw/campaigns/${campaign.campaignId}`} className="mt-3 inline-flex border border-red-600 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-red-200 hover:border-red-400 hover:text-white">Review &amp; Dispatch Ready Targets</Link>
-                  ) : (
-                    <span aria-disabled="true" className="mt-3 inline-flex cursor-not-allowed border border-zinc-700 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-600">No Targets Ready for Dispatch</span>
-                  )}
-                  <p className="mt-2 text-xs text-zinc-500">Dispatch remains an explicit action in campaign detail. Opening the controls does not run the scheduler.</p>
-                </section>
-              );
-            })() : null}
-            {campaign.status === "draft" && governedReviewByCampaign[campaign.campaignId] ? (() => {
-              const governed = governedReviewByCampaign[campaign.campaignId];
-              const pack = governed.knowledgePack;
-              return <>
-                <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4" aria-label="Campaign knowledge authority">
-                  <h4 className="font-semibold text-white">Campaign Knowledge Pack</h4>
-                  <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-[11rem_1fr]">
-                    <dt className="text-zinc-500">Uploaded references</dt><dd className="text-zinc-200">{pack?.references.length ?? 0}</dd>
-                    <dt className="text-zinc-500">Governed knowledge pack</dt><dd className="text-emerald-300">READY · revision {pack?.revision ?? 1}</dd>
-                    <dt className="text-zinc-500">Campaign instructions</dt><dd className="text-zinc-200">{pack?.ownerApprovalRequired ? "OWNER APPROVAL REQUIRED" : "GOVERNED · NO ADDITIONAL APPROVAL REQUIRED"}</dd>
-                  </dl>
-                  {pack?.instructions ? <details className="mt-3 border-t border-zinc-800 pt-3"><summary className="cursor-pointer text-xs text-zinc-300">Governed instructions</summary><pre className="mt-3 whitespace-pre-wrap text-xs leading-5 text-zinc-400">{pack.instructions}</pre></details> : null}
-                </section>
-                <CampaignLocalReferenceReview organizationId={organizationId} siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} reference={governed.reference} canonicalReferenceApproved={governed.canonicalReferenceApproved} currentReleaseAuthorizationActive={governed.activationReadiness.grantActive} imageCandidate={governed.imageCandidate} imageHistory={governed.imageHistory} imagePreviewDataUrl={governed.imagePreviewDataUrl} />
-                <CampaignActivationAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} campaignId={campaign.campaignId} requestRoles={["platform_admin"]} readiness={governed.activationReadiness} globalPromotionAvailable={governed.activationReadiness.releaseCapabilityStatus === "READY"} globalPromotionReason={governed.activationReadiness.releaseCapabilityStatus === "READY" ? "" : governed.activationReadiness.releaseIdentityReason ?? "GLW campaign activation release capability is not ready for this running release."} />
-              </>;
-            })() : campaign.status === "draft" ? <GlwCampaignKnowledgePack campaign={campaign} organizationId={organizationId} /> : null}
-          </article>)}
-        </div>
+      <div className="order-1 min-w-0 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 xl:col-span-2">
+        {campaigns.length === 0 ? <p className="text-sm text-zinc-400">No campaigns configured yet.</p> : <GlwCampaignOperationsList summaries={initialOperatorSummaries} />}
       </div>
     </section>
   </div>;
