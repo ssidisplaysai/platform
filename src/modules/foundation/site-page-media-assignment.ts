@@ -4,7 +4,7 @@ import { deepClone, loadPersistedState, savePersistedState } from "./foundation-
 
 const NAMESPACE = "site-page-media-assignment-v1";
 
-export type SitePageMediaRole = "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE";
+export type SitePageMediaRole = "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE";
 export type SitePageMediaReferenceRole = "PRODUCT_TRUTH" | "ENVIRONMENT" | "STYLE";
 
 export type SitePageMediaAssignment = {
@@ -98,12 +98,12 @@ function validate(input: Omit<SitePageMediaAssignment, "assignmentId" | "created
   }
 
   if (input.asset.type === "GENERATED") {
-    if (input.role !== "CONTEXTUAL_IN_USE") throw new Error("GENERATED_PRODUCT_AUTHORITY_MEDIA_FORBIDDEN");
+    if (input.role === "PRODUCT_AUTHORITY") throw new Error("GENERATED_PRODUCT_AUTHORITY_MEDIA_FORBIDDEN");
     required(input.asset.provider, "GENERATED_MEDIA_PROVIDER_REQUIRED");
     required(input.asset.model, "GENERATED_MEDIA_MODEL_REQUIRED");
     required(input.asset.effectivePrompt, "GENERATED_MEDIA_PROMPT_REQUIRED");
     sha(input.asset.outputSha256, "GENERATED_MEDIA_SHA256_INVALID");
-    if (!input.asset.referenceInputs.some((reference) => reference.role === "PRODUCT_TRUTH")) {
+    if ((input.role === "CONTEXTUAL_IN_USE" || input.role === "APPLICATION_EXPERIENCE") && !input.asset.referenceInputs.some((reference) => reference.role === "PRODUCT_TRUTH")) {
       throw new Error("CONTEXTUAL_MEDIA_PRODUCT_TRUTH_REFERENCE_REQUIRED");
     }
     for (const reference of input.asset.referenceInputs) {

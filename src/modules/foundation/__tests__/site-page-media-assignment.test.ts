@@ -60,6 +60,8 @@ describe("site page media assignment", () => {
     const generated = { type: "GENERATED" as const, provider: "OPENAI_IMAGE", model: "image-model", generationJobId: null, effectivePrompt: "Scene", referenceInputs: [], outputSha256: digest("b") };
     expect(() => repository.saveSitePageMediaAssignment({ ...base(), slotId: "product", role: "PRODUCT_AUTHORITY", asset: generated })).toThrow("PRODUCT_AUTHORITY_MEDIA_MUST_USE_APPROVED_PRODUCT_ASSET");
     expect(() => repository.saveSitePageMediaAssignment({ ...base(), slotId: "contextual", role: "CONTEXTUAL_IN_USE", asset: generated })).toThrow("CONTEXTUAL_MEDIA_PRODUCT_TRUTH_REFERENCE_REQUIRED");
+    expect(() => repository.saveSitePageMediaAssignment({ ...base(), slotId: "application", role: "APPLICATION_EXPERIENCE", asset: generated })).toThrow("CONTEXTUAL_MEDIA_PRODUCT_TRUTH_REFERENCE_REQUIRED");
+    expect(repository.saveSitePageMediaAssignment({ ...base(), slotId: "atmosphere", role: "LOCAL_CONTEXTUAL_ATMOSPHERE", asset: generated })).toMatchObject({ role: "LOCAL_CONTEXTUAL_ATMOSPHERE" });
   });
 
   test("rejects duplicate slot assignments and stale role reuse", async () => {

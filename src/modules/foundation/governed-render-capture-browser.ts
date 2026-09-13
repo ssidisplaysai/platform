@@ -6,7 +6,7 @@ import sharp from "sharp";
 import { GOVERNED_RENDER_CAPTURE_LIMITS, GOVERNED_RENDER_CAPTURE_VERSION, validateCaptureRedirectChain, validateGovernedCaptureUrl } from "./governed-render-capture-security";
 import { hashRenderedVisualContent, type RenderedVisualBounds, type RenderedVisualCaptureEvidence, type RenderedVisualViewportClass } from "./rendered-visual-certification";
 
-export type CaptureMediaAssignment = { assignmentId: string | null; semanticRole: "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE"; mediaId: string | null; sourceUrl: string | null; contextId: string | null };
+export type CaptureMediaAssignment = { assignmentId: string | null; semanticRole: "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE"; mediaId: string | null; sourceUrl: string | null; contextId: string | null };
 export type GovernedBrowserCaptureInput = {
   targetUrl: string;
   allowedOrigins: readonly string[];

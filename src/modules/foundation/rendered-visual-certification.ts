@@ -54,7 +54,7 @@ export type RenderedVisualCaptureEvidence = {
   };
   media: readonly {
     assignmentId: string | null;
-    semanticRole: "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE";
+    semanticRole: "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE";
     mediaId: string | null;
     assigned: boolean;
     rendered: boolean;
