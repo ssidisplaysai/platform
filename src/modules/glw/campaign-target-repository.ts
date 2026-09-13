@@ -771,6 +771,21 @@ export function markGlwCampaignTargetPublished(input: {
   return deepClone(updated);
 }
 
+export function reconcileGlwCampaignTargetPublishedWithoutDispatch(input: { campaignId: string; stateCode: string; citySlug: string; targetId: string; wordpressObjectId: string }): GlwCampaignTarget {
+  loadState();
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+  if (!current || current.targetId !== input.targetId || current.status !== "queued" || current.jobId || current.wordpressObjectId || current.leaseId) throw new Error("Campaign direct publication reconciliation requires the exact queued target without job, WordPress, or lease history.");
+  const updated: GlwCampaignTarget = { ...current, status: "published", wordpressObjectId: input.wordpressObjectId, lastError: null, updatedAt: new Date().toISOString() };
+  targetStore.set(targetKey, updated); persistState(); return deepClone(updated);
+}
+
+export function reconcileGlwCampaignTargetQueuedAfterDirectPublicationFailure(input: { campaignId: string; stateCode: string; citySlug: string; targetId: string; wordpressObjectId: string }): GlwCampaignTarget {
+  loadState(); const targetKey = key(input.campaignId, input.stateCode, input.citySlug); const current = targetStore.get(targetKey);
+  if (!current || current.targetId !== input.targetId || current.status !== "published" || current.wordpressObjectId !== input.wordpressObjectId || current.jobId || current.leaseId) throw new Error("Campaign direct publication rollback requires the exact published target without job or lease history.");
+  const updated: GlwCampaignTarget = { ...current, status: "queued", wordpressObjectId: null, lastError: "PUBLIC_CERTIFICATION_FAILED", updatedAt: new Date().toISOString() }; targetStore.set(targetKey, updated); persistState(); return deepClone(updated);
+}
+
 export function reconcileGlwCampaignTargetPublished(input: {
   campaignId: string;
   stateCode: string;

@@ -55,7 +55,7 @@ async function verifyLinks(urls: readonly string[]) {
   return results;
 }
 
-export async function inspectHoustonWordPressAuthority(wordpressObjectId: string, expectedStatus: "draft" = "draft") {
+export async function inspectHoustonWordPressAuthority(wordpressObjectId: string, expectedStatus: "draft" | "publish" = "draft") {
   if (!/^\d+$/.test(wordpressObjectId)) throw new Error("HOUSTON_WORDPRESS_OBJECT_INVALID");
   const wp = await authority();
   const response = await wp.reader.getJson({ path: `/pages/${wordpressObjectId}`, query: new URLSearchParams({ context: "edit", _fields: "id,status,slug,parent,template,link,title,excerpt,content,featured_media,meta" }) });
@@ -64,6 +64,13 @@ export async function inspectHoustonWordPressAuthority(wordpressObjectId: string
   if (String(page.id) !== wordpressObjectId || page.status !== expectedStatus || page.slug !== "houston" || page.parent !== 13083) throw new Error("HOUSTON_WORDPRESS_READBACK_IDENTITY_MISMATCH");
   const raw = page.content?.raw?.trim() ?? ""; const rendered = page.content?.rendered?.trim() ?? ""; const seoWriter = createWordPressSeoWriter(wp.site); const seo = seoWriter ? await seoWriter.read(Number(wordpressObjectId)) : { ok: false, stored: null };
   return { identity: { wordpressObjectId, status: page.status, slug: page.slug, parent: page.parent, template: page.template ?? "default", link: page.link ?? "", title: page.title?.raw?.trim() ?? "" }, meta: page.meta ?? {}, body: { raw, rendered, hash: hashHoustonDraftContent(raw), h1Count: (raw.match(/<h1\b/gi) ?? []).length, links: [...raw.matchAll(/href=["']([^"']+)/gi)].map((match) => match[1]), roles: [...raw.matchAll(/data-media-role=["']([^"']+)/gi)].map((match) => match[1]) }, excerpt: page.excerpt?.raw?.trim() ?? "", featuredMediaId: Number(page.featured_media ?? 0), seo: { verified: seo.ok, stored: seo.stored, hash: hash(JSON.stringify(seo.stored)) } };
+}
+
+export async function listHoustonWordPressObjects() {
+  const wp = await authority();
+  const response = await wp.reader.getJson({ path: "/pages", query: new URLSearchParams({ slug: "houston", parent: "13083", status: "publish,draft,pending,private,future", context: "edit", per_page: "100", _fields: "id,status,slug,parent" }) });
+  if (!response.ok || !Array.isArray(response.body)) throw new Error("HOUSTON_DUPLICATE_CHECK_FAILED");
+  return response.body.map((item) => item as { id: number; status: string; slug: string; parent: number });
 }
 
 export async function buildHoustonDraftPreflight() {
