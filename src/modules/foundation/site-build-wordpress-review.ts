@@ -35,9 +35,9 @@ function text(value: unknown): string { return typeof value === "string" ? value
 function safeReviewUrl(apiBaseUrl: string, objectId: string): string | null { try { const origin = new URL(normalizeWordPressApiBaseUrl(apiBaseUrl)).origin; return `${origin}/wp-admin/post.php?post=${encodeURIComponent(objectId)}&action=edit`; } catch { return null; } }
 async function mapLimit<T, R>(items: readonly T[], limit: number, work: (item: T) => Promise<R>): Promise<R[]> { const output = new Array<R>(items.length); let cursor = 0; await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => { while (cursor < items.length) { const index = cursor++; output[index] = await work(items[index]); } })); return output; }
 
-export async function inspectSiteBuildWordPressDrafts(site: SiteConfiguration, suppliedAuthority?: AuthenticatedWordPressReadAuthority, expectedStatus: "draft" | "publish" = "draft"): Promise<SiteBuildWordPressDraftReview> {
+export async function inspectSiteBuildWordPressDrafts(site: SiteConfiguration, suppliedAuthority?: AuthenticatedWordPressReadAuthority, expectedStatus: "draft" | "publish" = "draft", requireCompletedPageReview = true): Promise<SiteBuildWordPressDraftReview> {
   const workspace = getSiteBuildWorkspace(site); const assembly = workspace.currentAssembly;
-  if (!workspace.session || !assembly || !workspace.pageReview.complete) throw new Error("COMPLETED_PAGE_REVIEW_REQUIRED");
+  if (!workspace.session || !assembly || (requireCompletedPageReview && !workspace.pageReview.complete)) throw new Error("COMPLETED_PAGE_REVIEW_REQUIRED");
   const credential = suppliedAuthority ? null : resolveWordPressCredentialReference(site.integrations.wordpressCredentialReference);
   if (!suppliedAuthority && (!credential || !site.integrations.wordpressApiBaseUrl)) throw new Error("WORDPRESS_READ_AUTHORITY_REQUIRED");
   const authority = suppliedAuthority ?? createAuthenticatedWordPressReadAuthority({ configuration: { apiBaseUrl: site.integrations.wordpressApiBaseUrl!, username: credential!.username, applicationPassword: credential!.applicationPassword, timeoutMs: 30_000 } });

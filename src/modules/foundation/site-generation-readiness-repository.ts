@@ -57,7 +57,7 @@ export type SiteBuildWordPressDraft = {
   wordpressStatus: "draft";
   createdAt: string;
 };
-export type SiteBuildWordPressContentUpdate = { buildSessionId: string; pageRevisionId: string; wordpressObjectId: string; wordpressUrl: string; wordpressStatus: "draft"; updatedAt: string };
+export type SiteBuildWordPressContentUpdate = { buildSessionId: string; pageRevisionId: string; wordpressObjectId: string; wordpressUrl: string; wordpressStatus: "draft" | "publish"; updatedAt: string };
 
 type State = {
   certifications: SiteGenerationReadinessCertification[];

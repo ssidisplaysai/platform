@@ -3,6 +3,7 @@ import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { getSiteById } from "./site-repository";
 import { getSiteBuildRecords, getSiteBuildSession } from "./site-generation-readiness-repository";
+import { listSiteVisualAssemblies } from "./site-visual-assembly-repository";
 import { captureGovernedRenderedPage, type CaptureMediaAssignment, type GovernedBrowserCaptureInput, type GovernedBrowserCaptureResult } from "./governed-render-capture-browser";
 import { governedCaptureFailureCode, GOVERNED_RENDER_CAPTURE_LIMITS, type GovernedCaptureMode, withGovernedCaptureLock } from "./governed-render-capture-security";
 import { appendRenderedVisualCaptureAudit, getRenderedVisualCertificationState, listRenderedVisualCertifications, saveRenderedVisualCertification, storeRenderedVisualCaptureArtifact } from "./rendered-visual-certification-repository";
@@ -55,8 +56,10 @@ export function resolveSiteHomeCaptureAuthority(input: { organizationId: string;
   const page = records.currentAssembly?.pages.find((item) => item.pageRole === "HOME") ?? null;
   const update = page ? records.wordpressContentUpdates.find((item) => item.pageRevisionId === page.pageRevisionId) ?? null : null;
   if (!page || !update) throw new Error("PAGE_NOT_FOUND");
+  const visual = listSiteVisualAssemblies({ ...input, buildSessionId: session.buildSessionId }).filter((item) => item.pageId === page.pageId).at(-1) ?? null;
+  if (!visual || visual.pageRevisionId !== page.pageRevisionId || visual.wordpressObjectId !== update.wordpressObjectId) throw new Error("AUTHORITY_MISMATCH");
   const origin = new URL(`https://${site.domain.replace(/^www\./, "")}`).origin;
-  return { identity: { organizationId: input.organizationId, siteId: input.siteId, pageId: page.pageId, pageRevisionIdentity: page.pageRevisionId, canonicalPath: "/", contentHash: page.contentFingerprint, renderedContentHash: null, campaignId: null, targetId: null, jobId: null, externalExecutionId: null, wordpressObjectId: update.wordpressObjectId, wordpressStatus: "publish" }, targetUrl: `${origin}/`, allowedOrigins: [origin], internalGenesisOrigin: null, internalAuthorization: null, layoutClass: "FULL_WIDTH_MARKETING_PAGE", mediaAssignments: [] };
+  return { identity: { organizationId: input.organizationId, siteId: input.siteId, pageId: page.pageId, pageRevisionIdentity: page.pageRevisionId, canonicalPath: "/", contentHash: page.contentFingerprint, renderedContentHash: null, campaignId: null, targetId: null, jobId: null, externalExecutionId: null, wordpressObjectId: update.wordpressObjectId, wordpressStatus: "publish" }, targetUrl: `${origin}/`, allowedOrigins: [origin], internalGenesisOrigin: null, internalAuthorization: null, layoutClass: "FULL_WIDTH_MARKETING_PAGE", mediaAssignments: [{ assignmentId: visual.assemblyId, semanticRole: "CONTEXTUAL_IN_USE", mediaId: visual.wordpressMediaId, sourceUrl: visual.wordpressMediaUrl, contextId: visual.designSystemVersion }] };
 }
 
 function currentCertification(authority: CaptureAuthority): RenderedVisualCertification | null {

@@ -53,12 +53,16 @@ async function geometry(page: Page, assignments: readonly CaptureMediaAssignment
     const cta = hero?.querySelector("a,button,[role=button]") ?? null;
     const allMedia = Array.from(document.querySelectorAll("img,video,picture"));
     const heroTop = hero ? box(hero)?.y ?? null : null;
-    const heroMedia = hero?.querySelector("img,video,picture") ?? (heroTop === null ? null : allMedia.filter((item) => (box(item)?.y ?? Number.POSITIVE_INFINITY) < heroTop).at(-1) ?? null);
+    const heroBackground = hero && getComputedStyle(hero).backgroundImage !== "none" ? hero : null;
+    const heroMedia = hero?.querySelector("img,video,picture") ?? heroBackground ?? (heroTop === null ? null : allMedia.filter((item) => (box(item)?.y ?? Number.POSITIVE_INFINITY) < heroTop).at(-1) ?? null);
     const normalize = (value: string) => { try { return new URL(value, document.baseURI).pathname.replace(/\/$/, ""); } catch { return ""; } };
     const images = Array.from(document.images);
+    const backgroundElements = Array.from(document.querySelectorAll("[class]"));
     const media = knownAssignments.map((assignment) => {
-      const match = assignment.sourceUrl ? images.find((image) => normalize(image.currentSrc || image.src) === normalize(assignment.sourceUrl!)) ?? null : null;
-      return { assignmentId: assignment.assignmentId, semanticRole: assignment.semanticRole, mediaId: assignment.mediaId, assigned: true, rendered: Boolean(match && visible(match)), renderedBounds: box(match), contextId: assignment.contextId, aboveFold: match ? box(match)!.y < innerHeight : null };
+      const sourcePath = assignment.sourceUrl ? normalize(assignment.sourceUrl) : "";
+      const match = assignment.sourceUrl ? images.find((image) => normalize(image.currentSrc || image.src) === sourcePath && visible(image)) ?? backgroundElements.find((element) => getComputedStyle(element).backgroundImage.includes(sourcePath) && visible(element)) ?? null : null;
+      const renderedBounds = box(match);
+      return { assignmentId: assignment.assignmentId, semanticRole: assignment.semanticRole, mediaId: assignment.mediaId, assigned: true, rendered: Boolean(renderedBounds), renderedBounds, contextId: assignment.contextId, aboveFold: renderedBounds ? renderedBounds.y < innerHeight : null };
     });
     const sectionElements = Array.from(document.querySelectorAll("main section, article section, .gva-home > section, .gvs-page > section"));
     const explicitSections = sectionElements.slice(0, 60).map((section, index) => {
@@ -120,7 +124,9 @@ export async function captureGovernedRenderedPage(input: GovernedBrowserCaptureI
     const chain: string[] = []; let cursor: Request | null = response.request(); while (cursor) { chain.unshift(cursor.url()); cursor = cursor.redirectedFrom(); }
     validateCaptureRedirectChain({ requestedUrl: input.targetUrl, responseUrls: chain, allowedOrigins: input.allowedOrigins });
     await settle(page);
-    const measured = await geometry(page, input.mediaAssignments);
+    let measured: Awaited<ReturnType<typeof geometry>>;
+    try { measured = await geometry(page, input.mediaAssignments); }
+    catch { throw new Error("GEOMETRY_EXTRACTION_FAILED"); }
     const imageHeight = Math.min(Math.ceil(measured.documentHeight), GOVERNED_RENDER_CAPTURE_LIMITS.maximumScreenshotHeight);
     const bytes = await page.screenshot({ type: "png", clip: { x: 0, y: 0, width: input.viewport.width, height: imageHeight }, timeout: GOVERNED_RENDER_CAPTURE_LIMITS.captureTimeoutMs });
     if (bytes.byteLength > GOVERNED_RENDER_CAPTURE_LIMITS.maximumArtifactBytes) throw new Error("ARTIFACT_TOO_LARGE");
