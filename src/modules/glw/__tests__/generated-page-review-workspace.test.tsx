@@ -61,6 +61,7 @@ describe("Genesis generated page review workspace", () => {
     expect(html).toContain("Actual WordPress Draft");
     expect(html).toContain("Genesis Source / Assembly Preview");
     expect(html).toContain("Rendered Visual Certification");
+    expect(html).toContain("Run Visual Review");
     expect(html).toContain("Browser viewport");
     expect(html).toContain("NOT EVALUATED");
     expect(html).toContain("Product Authority");
@@ -96,7 +97,11 @@ describe("Genesis generated page review workspace", () => {
     expect(currentHtml).toContain("RVC_HERO_AUTHORITY_MISSING");
     expect(currentHtml).toContain("APPROVED");
     expect(currentHtml).toContain("Evidence currency: CURRENT");
+    expect(currentHtml).toContain("Visual Review Current");
+    expect(currentHtml).toContain("Recapture");
+    expect(currentHtml).toContain("/api/glw/visual-certifications/cert-1/artifacts/capture-DESKTOP");
     expect(staleHtml).toContain("VISUAL REVIEW STALE");
+    expect(staleHtml).toContain("Re-run Visual Review");
     expect(staleHtml).toContain("Recapture and re-run visual review");
     expect(stale.overallState).toBe("NOT_EVALUATED");
   });

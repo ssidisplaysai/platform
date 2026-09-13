@@ -22,7 +22,7 @@ export type GeneratedPageVisualQaReview = {
   overallState: ReviewSignal;
   layoutClass: string | null;
   captureSetId: string | null;
-  captures: readonly { captureId: string; viewportClass: "DESKTOP" | "MOBILE"; viewportWidth: number; viewportHeight: number; documentWidth: number; documentHeight: number; primaryContentWidth: number | null; utilization: number | null; horizontalOverflow: number; artifactReference: string; artifactSha256: string; heroState: ReviewSignal; mediaRendered: number; mediaAssigned: number; sectionCount: number }[];
+  captures: readonly { captureId: string; viewportClass: "DESKTOP" | "MOBILE"; viewportWidth: number; viewportHeight: number; documentWidth: number; documentHeight: number; primaryContentWidth: number | null; utilization: number | null; horizontalOverflow: number; artifactReference: string; artifactUrl: string; artifactSha256: string; heroState: ReviewSignal; mediaRendered: number; mediaAssigned: number; sectionCount: number }[];
   findings: readonly RenderedVisualFinding[];
   decision: RenderedVisualOwnerDecision | null;
   decisionState: "PENDING" | "CURRENT" | "STALE";
@@ -46,7 +46,7 @@ export type GeneratedPageReviewModel = {
   qaChecks: readonly { label: string; state: ReviewSignal; detail: string }[];
   issues: readonly ReviewIssue[];
   reviewState: "READY_FOR_OWNER_REVIEW" | "NEEDS_ATTENTION" | "BLOCKED";
-  actions: { canonical: { label: string; href: string } | null; campaignHref: string; listHref: string };
+  actions: { canonical: { label: string; href: string } | null; campaignHref: string; listHref: string; visualCapture: { endpoint: string; organizationId: string; siteId: string } };
   visualQa: GeneratedPageVisualQaReview;
   durableReviewDecisionExists: false;
 };
@@ -134,7 +134,7 @@ export function deriveGeneratedPageReviewModel(input: {
     qaChecks,
     issues,
     reviewState,
-    actions: { canonical: input.wordpressEditUrl ? { label: "Open WordPress Draft", href: input.wordpressEditUrl } : null, campaignHref: `/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}?${listQuery}`, listHref: `/glw/campaigns?${listQuery}` },
+    actions: { canonical: input.wordpressEditUrl ? { label: "Open WordPress Draft", href: input.wordpressEditUrl } : null, campaignHref: `/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}?${listQuery}`, listHref: `/glw/campaigns?${listQuery}`, visualCapture: { endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/visual-certification`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId } },
     visualQa,
     durableReviewDecisionExists: false,
   };
@@ -149,7 +149,7 @@ export function deriveGeneratedPageVisualQaReview(input: { certification: Render
     overallState: input.certificationState === "STALE" ? "NOT_EVALUATED" : certification.overallState,
     layoutClass: certification.layoutClass,
     captureSetId: certification.captureSetId,
-    captures: certification.captures.map((capture) => ({ captureId: capture.captureId, viewportClass: capture.viewportClass, viewportWidth: capture.viewportWidth, viewportHeight: capture.viewportHeight, documentWidth: capture.documentWidth, documentHeight: capture.documentHeight, primaryContentWidth: capture.primaryContentBounds?.width ?? null, utilization: renderedVisualUtilization(capture), horizontalOverflow: capture.horizontalOverflow, artifactReference: capture.screenshotArtifact.reference, artifactSha256: capture.screenshotArtifact.sha256, heroState: capture.hero.authority === "NOT_IDENTIFIED" ? "NOT_EVALUATED" : capture.hero.present ? "PASS" : "WARNING", mediaRendered: capture.media.filter((item) => item.rendered).length, mediaAssigned: capture.media.filter((item) => item.assigned).length, sectionCount: capture.sections.length })),
+    captures: certification.captures.map((capture) => { const artifactUrl = `/api/glw/visual-certifications/${encodeURIComponent(certification.certificationId)}/artifacts/${encodeURIComponent(capture.captureId)}?organizationId=${encodeURIComponent(certification.identity.organizationId)}&siteId=${encodeURIComponent(certification.identity.siteId)}`; return { captureId: capture.captureId, viewportClass: capture.viewportClass, viewportWidth: capture.viewportWidth, viewportHeight: capture.viewportHeight, documentWidth: capture.documentWidth, documentHeight: capture.documentHeight, primaryContentWidth: capture.primaryContentBounds?.width ?? null, utilization: renderedVisualUtilization(capture), horizontalOverflow: capture.horizontalOverflow, artifactReference: artifactUrl, artifactUrl, artifactSha256: capture.screenshotArtifact.sha256, heroState: capture.hero.authority === "NOT_IDENTIFIED" ? "NOT_EVALUATED" : capture.hero.present ? "PASS" : "WARNING", mediaRendered: capture.media.filter((item) => item.rendered).length, mediaAssigned: capture.media.filter((item) => item.assigned).length, sectionCount: capture.sections.length }; }),
     findings: certification.findings,
     decision: input.decision,
     decisionState: input.decisionState,

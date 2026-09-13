@@ -17,9 +17,23 @@ import {
 } from "./rendered-visual-certification";
 
 const NAMESPACE = "rendered-visual-certification-v1";
-type State = { certifications: RenderedVisualCertification[]; decisions: RenderedVisualOwnerDecision[] };
-const seed = (): State => ({ certifications: [], decisions: [] });
-const load = () => loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed });
+export type RenderedVisualCaptureAudit = {
+  auditId: string;
+  actor: string;
+  organizationId: string;
+  siteId: string;
+  pageId: string;
+  pageRevisionIdentity: string;
+  certificationId: string | null;
+  captureSetId: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  result: "STARTED" | "SUCCEEDED" | "FAILED";
+  failureReason: string | null;
+};
+type State = { certifications: RenderedVisualCertification[]; decisions: RenderedVisualOwnerDecision[]; captureAudits?: RenderedVisualCaptureAudit[] };
+const seed = (): State => ({ certifications: [], decisions: [], captureAudits: [] });
+const load = () => { const loaded = loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed }); return { ...loaded, state: { ...loaded.state, captureAudits: loaded.state.captureAudits ?? [] } }; };
 
 function bounded(value: string | null | undefined, maximum: number, code: string): string | null {
   const normalized = value?.trim() ?? "";
@@ -95,4 +109,21 @@ export function readRenderedVisualCaptureArtifact(artifact: RenderedVisualScreen
   const bytes = readFileSync(join(root, ...normalized.split("/")));
   if (bytes.byteLength !== artifact.byteSize || hashRenderedVisualContent(bytes) !== artifact.sha256) throw new Error("VISUAL_CAPTURE_ARTIFACT_HASH_MISMATCH");
   return bytes;
+}
+
+export function getRenderedVisualCertificationById(input: { organizationId: string; siteId: string; certificationId: string }): RenderedVisualCertification | null {
+  return deepClone(load().state.certifications.find((item) => item.certificationId === input.certificationId && item.identity.organizationId === input.organizationId && item.identity.siteId === input.siteId) ?? null);
+}
+
+export function appendRenderedVisualCaptureAudit(input: Omit<RenderedVisualCaptureAudit, "auditId">): RenderedVisualCaptureAudit {
+  if (JSON.stringify(input).match(/(?:password|authorization|cookie|secret|token|api[_-]?key)\s*[:=]/i)) throw new Error("VISUAL_CAPTURE_AUDIT_SENSITIVE_MATERIAL_FORBIDDEN");
+  const loaded = load();
+  const audit = { ...input, auditId: `visual-capture-audit-${randomUUID()}` };
+  loaded.state.captureAudits.push(audit);
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  return deepClone(audit);
+}
+
+export function listRenderedVisualCaptureAudits(input: { organizationId: string; siteId: string; pageId?: string }): RenderedVisualCaptureAudit[] {
+  return deepClone(load().state.captureAudits.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId && (!input.pageId || item.pageId === input.pageId)));
 }
