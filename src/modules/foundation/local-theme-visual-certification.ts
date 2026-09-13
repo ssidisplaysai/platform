@@ -17,6 +17,6 @@ export function evaluateLocalThemeVisuals(input: { captures: readonly LocalTheme
   add("LOCAL_THEME_INTEGRATION", input.localizationLevel >= 1 ? "OWNER_REVIEW" : "FAIL", `Level ${input.localizationLevel} regional expression is present; perceived authenticity requires owner judgment.`);
   add("BRAND_LOCAL_BALANCE", "OWNER_REVIEW", "Geometry cannot prove that local atmosphere remains subordinate to ProjectorEnclosure brand authority.");
   add("IN_USE_CREDIBILITY", "OWNER_REVIEW", "Product grounding is recorded, but installation plausibility requires owner review.");
-  add("APPLICATION_EXPERIENCE", "OWNER_REVIEW", "Projection-mapping prominence is measurable; application impact remains an owner-review judgment.");
+  add("APPLICATION_EXPERIENCE", "OWNER_REVIEW", "Application-experience prominence is measurable; application impact remains an owner-review judgment.");
   return findings;
 }

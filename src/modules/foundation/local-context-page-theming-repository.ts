@@ -28,7 +28,7 @@ export function saveLocalPageThemingBundle(bundle: LocalPageThemingBundle): Loca
   loaded.state.bundles.push(deepClone(bundle)); savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(bundle);
 }
 
-export function getLocalPageThemingBundle(input: { organizationId: string; siteId: string; jobId: string; bundleId?: string }): LocalPageThemingBundle | null {
+export function getLocalPageThemingBundle(input: { organizationId: string; siteId: string; jobId: string | null; bundleId?: string }): LocalPageThemingBundle | null {
   const bundles = load().state.bundles.filter((item) => item.context.identity.organizationId === input.organizationId && item.context.identity.siteId === input.siteId && item.context.identity.jobId === input.jobId && (!input.bundleId || item.bundleId === input.bundleId));
   return bundles.length ? deepClone(bundles.at(-1)!) : null;
 }
@@ -39,7 +39,7 @@ export function saveLocalPageThemingMedia(input: { bundleId: string; mediaId: st
   const extension = input.mimeType === "image/jpeg" ? "jpg" : input.mimeType === "image/png" ? "png" : "webp"; const safe = (value: string) => value.replace(/[^a-zA-Z0-9._-]/g, "-"); const storageKey = `${safe(input.bundleId)}/${safe(input.mediaId)}.${extension}`; const fullPath = join(/* turbopackIgnore: true */ resolvePersistenceRoot(), MEDIA_DIRECTORY, storageKey); mkdirSync(dirname(fullPath), { recursive: true }); writeFileSync(fullPath, input.bytes); return { storageKey, sha256: createHash("sha256").update(input.bytes).digest("hex"), byteSize: input.bytes.length };
 }
 
-export function readLocalPageThemingMedia(input: { organizationId: string; siteId: string; jobId: string; mediaId: string }): { item: LocalizedMediaPlanItem; bytes: Buffer } | null {
+export function readLocalPageThemingMedia(input: { organizationId: string; siteId: string; jobId: string | null; mediaId: string }): { item: LocalizedMediaPlanItem; bytes: Buffer } | null {
   const bundle = getLocalPageThemingBundle(input); const item = bundle?.media.find((candidate) => candidate.mediaId === input.mediaId); if (!bundle || !item || item.source !== "GENERATED_CANDIDATE") return null;
   const extension = item.mimeType === "image/jpeg" ? "jpg" : item.mimeType === "image/png" ? "png" : "webp"; const safe = (value: string) => value.replace(/[^a-zA-Z0-9._-]/g, "-"); const bytes = readFileSync(join(/* turbopackIgnore: true */ resolvePersistenceRoot(), MEDIA_DIRECTORY, `${safe(bundle.bundleId)}/${safe(item.mediaId)}.${extension}`)); if (createHash("sha256").update(bytes).digest("hex") !== item.sha256) throw new Error("LOCAL_THEME_MEDIA_STORAGE_MISMATCH"); return { item: deepClone(item), bytes };
 }
