@@ -5,6 +5,7 @@ import { getProductById } from "@/modules/foundation/product-repository";
 import { createRichPageCompositionPlan, evaluateRichPageComposition, mediaExpectationFromAssignments, type RichPageCompositionFinding, type RichPageCompositionPlan } from "@/modules/foundation/rich-page-composition";
 import { getRenderedVisualCertificationState } from "@/modules/foundation/rendered-visual-certification-repository";
 import { hashRenderedVisualContent, renderedVisualUtilization, type RenderedVisualCertification, type RenderedVisualFinding, type RenderedVisualOwnerDecision, type RenderedVisualPageIdentity } from "@/modules/foundation/rendered-visual-certification";
+import { listSitePageMediaAssignments, type SitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import type { GlwCampaign } from "./campaign-types";
@@ -38,7 +39,7 @@ export type GeneratedPageReviewModel = {
   source: { html: string; excerpt: string | null; h1: string | null; headings: readonly { level: number; text: string }[]; bodySections: readonly { heading: string; preview: string }[]; cta: string | null; faqPresent: boolean; internalLinks: readonly { label: string; url: string }[]; rawHtml: string };
   seo: { title: string | null; titleState: ReviewSignal; metaDescription: string | null; metaDescriptionState: ReviewSignal; canonicalState: ReviewSignal; redirectState: ReviewSignal; indexabilityState: ReviewSignal; h1Count: number; h1State: ReviewSignal; developmentUrlLeakState: ReviewSignal; detail: string };
   images: {
-    productAuthority: { state: "NOT_WIRED"; imageUrl: null; authority: string; provenance: string; altText: null; wordpressMediaId: null };
+    productAuthority: { state: "ASSIGNED" | "NOT_WIRED"; imageUrl: string | null; authority: string; provenance: string; altText: string | null; wordpressMediaId: string | null; renderedInCurrentWordPress: false };
     contextualInUse: { state: "LEGACY_FEATURED" | "MISSING"; imageUrl: string | null; authority: string; provenance: string; altText: string | null; wordpressMediaId: string | null; grounding: string };
     contractState: "LEGACY_IMAGE_STATE" | "MULTI_ROLE_IMAGE_STATE";
   };
@@ -49,7 +50,7 @@ export type GeneratedPageReviewModel = {
   reviewState: "READY_FOR_OWNER_REVIEW" | "NEEDS_ATTENTION" | "BLOCKED";
   actions: { canonical: { label: string; href: string } | null; campaignHref: string; listHref: string; visualCapture: { endpoint: string; organizationId: string; siteId: string } };
   visualQa: GeneratedPageVisualQaReview;
-  richComposition: { plan: RichPageCompositionPlan; identityState: "CURRENT"; currentRender: { profile: "CONTENT_ARTICLE"; certificationState: GeneratedPageVisualQaReview["certificationState"]; overallState: ReviewSignal }; proposedFindings: readonly RichPageCompositionFinding[]; safeNextAction: string };
+  richComposition: { plan: RichPageCompositionPlan; identityState: "CURRENT"; currentRender: { profile: "CONTENT_ARTICLE"; certificationState: GeneratedPageVisualQaReview["certificationState"]; overallState: ReviewSignal }; proposedFindings: readonly RichPageCompositionFinding[]; safeNextAction: string; preview: { state: "PREVIEW_ONLY"; title: string; excerpt: string | null; bodyHtml: string; productName: string; productImageUrl: string | null; productAltText: string | null; contextualImageUrl: string | null; contextualAltText: string | null; ctaLabel: string | null; href: string } };
   durableReviewDecisionExists: false;
 };
 
@@ -76,6 +77,7 @@ export function deriveGeneratedPageReviewModel(input: {
   wordpressMedia: WordPressMedia | null;
   wordpressReadState: string;
   wordpressEditUrl: string | null;
+  mediaAssignments?: readonly SitePageMediaAssignment[];
   visualCertification?: { certification: RenderedVisualCertification | null; decision: RenderedVisualOwnerDecision | null; certificationState: "NOT_CERTIFIED" | "CURRENT" | "STALE"; decisionState: "PENDING" | "CURRENT" | "STALE" };
 }): GeneratedPageReviewModel {
   const artifact = input.job.generatedDraft;
@@ -105,19 +107,20 @@ export function deriveGeneratedPageReviewModel(input: {
   const contentMatchesSource = Boolean(liveHtml && stripHtml(liveHtml) === stripHtml(sourceHtml));
   const mediaId = input.wordpressMedia?.id ? String(input.wordpressMedia.id) : text(mediaAuthority?.selectedMediaId);
   const contextualReady = Boolean(input.job.featuredImagePresent && mediaId);
+  const pageRevisionIdentity = `job:${input.job.jobId}:${input.job.updatedAt}`;
+  const productAssignment = (input.mediaAssignments ?? []).find((item) => item.pageRevisionId === pageRevisionIdentity && item.role === "PRODUCT_AUTHORITY" && item.slotId === "product-authority" && item.asset.type === "APPROVED_EXISTING") ?? null;
   const issues: ReviewIssue[] = [];
   if (!artifact) issues.push({ category: "CONTENT", severity: "BLOCKED", what: "Generated source artifact is unavailable", effect: "Structured content review cannot be completed.", safeNextStep: "Return to campaign detail and inspect the exact execution." });
   if (Object.keys(qaFailures).length > 0) issues.push({ category: "CONTENT", severity: "BLOCKED", what: "Generated content QA has failures", effect: Object.values(qaFailures).map(String).join(" "), safeNextStep: "Open campaign detail and use an existing governed repair path." });
   if (!wordpressVerified) issues.push({ category: "WORDPRESS", severity: "WARNING", what: "Live WordPress draft could not be fully verified", effect: input.wordpressReadState, safeNextStep: "Use the authenticated WordPress edit link and confirm the exact draft identity." });
-  issues.push({ category: "IMAGE", severity: "WARNING", what: "Product authority not wired", effect: "Approved product authority exists, but this legacy page has not been assigned through the multi-role media adapter.", safeNextStep: "Keep the draft unpublished and add the bounded legacy-to-multi-role media adapter." });
+  if (!productAssignment) issues.push({ category: "IMAGE", severity: "WARNING", what: "Product authority not wired", effect: "Approved product authority exists, but this legacy page has not been assigned through the multi-role media adapter.", safeNextStep: "Keep the draft unpublished and add the bounded legacy-to-multi-role media adapter." });
   if (!contextualReady) issues.push({ category: "IMAGE", severity: "WARNING", what: "Contextual image unavailable", effect: "No durable featured-media receipt is available for this draft.", safeNextStep: "Review media evidence in campaign detail; do not infer an image assignment." });
   const reviewState = issues.some((issue) => issue.severity === "BLOCKED") ? "BLOCKED" : issues.length > 0 ? "NEEDS_ATTENTION" : "READY_FOR_OWNER_REVIEW";
   const listQuery = `organizationId=${encodeURIComponent(input.campaign.organizationId)}&siteId=${encodeURIComponent(input.campaign.siteId)}`;
   const visualQa = deriveGeneratedPageVisualQaReview(input.visualCertification ?? { certification: null, decision: null, certificationState: "NOT_CERTIFIED", decisionState: "PENDING" });
-  const pageRevisionIdentity = `job:${input.job.jobId}:${input.job.updatedAt}`;
   const media = [
-    mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
-    mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
+    mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
+    mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
   ];
   const compositionPlan = createRichPageCompositionPlan({ planId: `composition-plan-${input.job.jobId}-${input.job.updatedAt}`, identity: { organizationId: input.job.organizationId, siteId: input.job.siteId, pageId: input.target.targetId, pageRevisionIdentity, canonicalPath: input.target.canonicalPath ?? input.job.slug, jobId: input.job.jobId, wordpressObjectId }, pageType: input.target.pageType ?? input.campaign.pageType, cta: cta ? { label: cta, destination: [...links].reverse().find((link) => link.label === cta)?.url ?? "" } : null, media, decisionSource: "Owner-approved Commercial Stainless evidence adapted through site-neutral Rich Page Composition V1.", evidenceReferences: ["visual-certification-424e2ea8-7efe-4e74-94aa-1d48c9fbbf4e", "visual-certification-11ccbc70-307e-4084-8d3a-7546dcf6bf5a"] });
   const proposedFindings = evaluateRichPageComposition({ plan: compositionPlan, captures: input.visualCertification?.certification?.captures ?? [], duplicateOpeningMedia: null, cardWidths: null, proseWidths: null, headerWidth: null, primaryCtaDistinct: null });
@@ -128,7 +131,7 @@ export function deriveGeneratedPageReviewModel(input: {
     source: { html: sanitizePreviewHtml(sourceHtml), excerpt: artifact?.excerpt ?? null, h1: headings.find((heading) => heading.level === 1)?.text ?? null, headings, bodySections, cta, faqPresent: headings.some((heading) => /faq|frequently asked/i.test(heading.text)), internalLinks, rawHtml: sourceHtml },
     seo: { title: artifact?.seoTitle ?? input.job.seoTitle ?? null, titleState: artifact?.seoTitle || input.job.seoTitle ? "PASS" : "WARNING", metaDescription: artifact?.metaDescription ?? input.job.metaDescription ?? null, metaDescriptionState: artifact?.metaDescription || input.job.metaDescription ? "PASS" : "WARNING", canonicalState: (input.target.canonicalPath ?? "") === (artifact?.slug ?? input.job.slug) ? "PASS" : "BLOCKED", redirectState: "NOT_EVALUATED", indexabilityState: wordpressStatus === "draft" ? "PASS" : "WARNING", h1Count, h1State: h1Count === 1 ? "PASS" : "WARNING", developmentUrlLeakState: /(?:localhost|127\.0\.0\.1|\.test)(?:[/:"'])/i.test(sourceHtml) ? "BLOCKED" : "PASS", detail: `${input.job.wordCount ?? 0} words · ${links.length} rendered links` },
     images: {
-      productAuthority: { state: "NOT_WIRED", imageUrl: null, authority: input.productAuthoritySource ?? "Approved product authority exists outside this legacy page assignment.", provenance: input.productAuthorityReference ?? "No target-level PRODUCT_AUTHORITY assignment is exposed.", altText: null, wordpressMediaId: null },
+      productAuthority: { state: productAssignment ? "ASSIGNED" : "NOT_WIRED", imageUrl: productAssignment?.asset.type === "APPROVED_EXISTING" ? productAssignment.asset.url : null, authority: productAssignment ? "Owner-approved canonical product media assigned to this exact page revision." : input.productAuthoritySource ?? "Approved product authority exists outside this legacy page assignment.", provenance: productAssignment?.asset.type === "APPROVED_EXISTING" ? `${productAssignment.asset.authorityReference} · ${productAssignment.asset.sha256}` : input.productAuthorityReference ?? "No target-level PRODUCT_AUTHORITY assignment is exposed.", altText: productAssignment?.metadata.altText ?? null, wordpressMediaId: productAssignment?.asset.type === "APPROVED_EXISTING" && productAssignment.asset.wordpressMediaId ? String(productAssignment.asset.wordpressMediaId) : null, renderedInCurrentWordPress: false },
       contextualInUse: { state: contextualReady ? "LEGACY_FEATURED" : "MISSING", imageUrl: text(input.wordpressMedia?.source_url) || null, authority: mediaAuthority ? `${text(mediaAuthority.selectedProvenance) || "Legacy execution media"}` : "Legacy execution evidence", provenance: mediaId ? `WordPress media #${mediaId}; selected by the legacy execution.` : "No WordPress media receipt persisted.", altText: text(input.wordpressMedia?.alt_text) || null, wordpressMediaId: mediaId || null, grounding: productAuthority?.exactProductMatch === true ? "Legacy exact-product match recorded; PRODUCT_TRUTH role was not persisted." : "PRODUCT_TRUTH grounding not persisted." },
       contractState: "LEGACY_IMAGE_STATE",
     },
@@ -145,7 +148,7 @@ export function deriveGeneratedPageReviewModel(input: {
     reviewState,
     actions: { canonical: input.wordpressEditUrl ? { label: "Open WordPress Draft", href: input.wordpressEditUrl } : null, campaignHref: `/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}?${listQuery}`, listHref: `/glw/campaigns?${listQuery}`, visualCapture: { endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/visual-certification`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId } },
     visualQa,
-    richComposition: { plan: compositionPlan, identityState: "CURRENT", currentRender: { profile: "CONTENT_ARTICLE", certificationState: visualQa.certificationState, overallState: visualQa.overallState }, proposedFindings, safeNextAction: compositionPlan.blockers.includes("PRODUCT_AUTHORITY_NOT_WIRED") ? "Wire the approved PRODUCT_AUTHORITY asset through site-page-media-assignment-v1 before any rich-page generation or WordPress change." : "Review the plan against current content authority before generation." },
+    richComposition: { plan: compositionPlan, identityState: "CURRENT", currentRender: { profile: "CONTENT_ARTICLE", certificationState: visualQa.certificationState, overallState: visualQa.overallState }, proposedFindings, safeNextAction: compositionPlan.blockers.includes("PRODUCT_AUTHORITY_NOT_WIRED") ? "Wire the approved PRODUCT_AUTHORITY asset through site-page-media-assignment-v1 before any rich-page generation or WordPress change." : "Review the non-mutating composition preview. WordPress draft and campaign authority remain unchanged.", preview: { state: "PREVIEW_ONLY", title: artifact?.title ?? input.job.title, excerpt: artifact?.excerpt ?? null, bodyHtml: sanitizePreviewHtml(sourceHtml).replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i, "").replace(/<img\b[^>]*>/gi, ""), productName: input.productName, productImageUrl: productAssignment?.asset.type === "APPROVED_EXISTING" ? productAssignment.asset.url : null, productAltText: productAssignment?.metadata.altText ?? null, contextualImageUrl: text(input.wordpressMedia?.source_url) || null, contextualAltText: text(input.wordpressMedia?.alt_text) || null, ctaLabel: cta, href: `/glw/pages/${encodeURIComponent(input.job.jobId)}/composition-preview?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}` } },
     durableReviewDecisionExists: false,
   };
 }
@@ -208,5 +211,6 @@ export async function buildGeneratedPageReviewModel(input: { jobId: string; orga
   const renderedHtml = text(wordpressDraft?.content?.raw ?? wordpressDraft?.content?.rendered);
   const currentIdentity: RenderedVisualPageIdentity = { organizationId: job.organizationId, siteId: job.siteId, pageId: target.targetId, pageRevisionIdentity: `job:${job.jobId}:${job.updatedAt}`, canonicalPath: target.canonicalPath ?? job.slug, contentHash: hashRenderedVisualContent(sourceHtml), renderedContentHash: renderedHtml ? hashRenderedVisualContent(renderedHtml) : null, campaignId: campaign.campaignId, targetId: target.targetId, jobId: job.jobId, externalExecutionId: job.externalExecutionId, wordpressObjectId: objectId, wordpressStatus: job.wordpressStatus };
   const visualCertification = getRenderedVisualCertificationState({ currentIdentity });
-  return deriveGeneratedPageReviewModel({ campaign, target, job, siteName: site.displayName, domain: site.domain, productName: product.displayName, productAuthorityReference: product.media.primaryImageReference, productAuthoritySource: product.authorityProvenance?.sourceType ?? null, knowledgePack: getGlwCampaignKnowledgePack(campaign.campaignId), wordpressDraft, wordpressMedia, wordpressReadState, wordpressEditUrl, visualCertification });
+  const mediaAssignments = listSitePageMediaAssignments({ organizationId: job.organizationId, siteId: job.siteId, buildSessionId: `glw-job:${job.jobId}`, pageRevisionId: currentIdentity.pageRevisionIdentity });
+  return deriveGeneratedPageReviewModel({ campaign, target, job, siteName: site.displayName, domain: site.domain, productName: product.displayName, productAuthorityReference: product.media.primaryImageReference, productAuthoritySource: product.authorityProvenance?.sourceType ?? null, knowledgePack: getGlwCampaignKnowledgePack(campaign.campaignId), wordpressDraft, wordpressMedia, wordpressReadState, wordpressEditUrl, mediaAssignments, visualCertification });
 }

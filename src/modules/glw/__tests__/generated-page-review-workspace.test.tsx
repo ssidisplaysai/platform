@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { deriveGeneratedPageReviewModel, deriveGeneratedPageVisualQaReview } from "../generated-page-review-read-model";
 import { GlwGeneratedPageReviewWorkspace } from "../GlwGeneratedPageReviewWorkspace";
 import type { RenderedVisualCertification } from "../../foundation/rendered-visual-certification";
+import type { SitePageMediaAssignment } from "../../foundation/site-page-media-assignment";
 import type { GlwCampaign } from "../campaign-types";
 import type { GlwCampaignTarget } from "../campaign-target-repository";
 import type { GlwPageExecutionRecord } from "../page-execution";
@@ -22,13 +23,13 @@ const job = {
   jobId: "job-dallas", correlationId: "corr", executionTransport: "N8N_MCP", organizationId: "ssi", siteId: "site-projector", productId: "product-enclosure", productTopic: "Fan Cooled Projector Enclosures", state: "Texas", city: "Dallas", slug: target.canonicalPath, title: "Fan Cooled Projector Enclosures in Dallas", seoTitle: "Fan Cooled Projector Enclosures Dallas Texas | ProjectorEnclosure.com", metaDescription: "Discover fan cooled projector enclosures Dallas Texas for commercial AV, classrooms, and venues.", publicationIntent: "draft", status: "COMPLETE", externalExecutionId: "579510", wordpressObjectId: "13084", wordpressUrl: "https://projectorenclosure.com/?page_id=13084", wordpressStatus: "draft", generatedDraft: { title: "Fan Cooled Projector Enclosures in Dallas", contentHtml, slug: target.canonicalPath, excerpt: "Commercial projector enclosure planning for Dallas.", seoTitle: "Fan Cooled Projector Enclosures Dallas Texas | ProjectorEnclosure.com", metaDescription: "Discover fan cooled projector enclosures Dallas Texas for commercial AV, classrooms, and venues.", focusKeyphrase: "fan cooled projector enclosures dallas texas" }, errorCode: null, errorMessage: null, requestedPublicationMode: "draft", disposition: "DRAFT_READY", qaStatus: "COMPLETE", qaChecks: { contentPresent: { ok: true, message: "Generated content is present." }, expectedCity: { ok: true, message: "Expected city is present." }, productAuthority: { exactProductMatch: true }, internalLinks: { linksRendered: 1 }, mediaAuthority: { selectedMediaId: 10757, selectedProvenance: "PRODUCT_INTELLIGENCE" } }, qaFailureReasons: {}, focusKeyphrase: "fan cooled projector enclosures dallas texas", wordCount: 2208, featuredImagePresent: true, createdAt: "2026-09-12T00:00:00.000Z", dispatchedAt: "2026-09-12T01:00:00.000Z", updatedAt: "2026-09-12T02:00:00.000Z", completedAt: "2026-09-12T02:00:00.000Z",
 } as GlwPageExecutionRecord;
 
-function model(overrides: { wordpressDraft?: object | null; wordpressMedia?: object | null; readState?: string } = {}) {
+function model(overrides: { wordpressDraft?: object | null; wordpressMedia?: object | null; readState?: string; mediaAssignments?: readonly SitePageMediaAssignment[] } = {}) {
   return deriveGeneratedPageReviewModel({
     campaign, target, job, siteName: "ProjectorEnclosure.com", domain: "projectorenclosure.com", productName: "Fan Cooled Projector Enclosures", productAuthorityReference: "wordpress-media:10757", productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
     knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: "site-projector", instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: "product-enclosure", scope: "stable_fact" }], updatedAt: "2026-09-12" },
     wordpressDraft: overrides.wordpressDraft === undefined ? { id: 13084, slug: "dallas", status: "draft", link: "https://projectorenclosure.com/?page_id=13084", modified_gmt: "2026-09-12T02:00:00", featured_media: 10757, title: { raw: job.title }, content: { raw: contentHtml } } : overrides.wordpressDraft as never,
     wordpressMedia: overrides.wordpressMedia === undefined ? { id: 10757, source_url: "https://projectorenclosure.com/wp-content/uploads/enclosure.jpg", alt_text: "Fan cooled projector enclosure in use" } : overrides.wordpressMedia as never,
-    wordpressReadState: overrides.readState ?? "AUTHENTICATED_EXACT_DRAFT_READ", wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit",
+    wordpressReadState: overrides.readState ?? "AUTHENTICATED_EXACT_DRAFT_READ", wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit", mediaAssignments: overrides.mediaAssignments,
   });
 }
 
@@ -54,6 +55,16 @@ describe("Genesis generated page review workspace", () => {
     expect(result.richComposition.plan.media).toEqual(expect.arrayContaining([expect.objectContaining({ role: "PRODUCT_AUTHORITY", readiness: "NOT_WIRED" }), expect.objectContaining({ role: "CONTEXTUAL_IN_USE", readiness: "LEGACY" })]));
     expect(result.richComposition.plan.blockers).toContain("PRODUCT_AUTHORITY_NOT_WIRED");
     expect(result.richComposition.safeNextAction).toContain("site-page-media-assignment-v1");
+  });
+
+  test("uses an exact product assignment without claiming current WordPress rendering", () => {
+    const assignment = { assignmentId: "media-assignment-dallas", organizationId: "ssi", siteId: "site-projector", buildSessionId: "glw-job:job-dallas", pageId: "target-dallas", pageRevisionId: "job:job-dallas:2026-09-12T02:00:00.000Z", slotId: "product-authority", role: "PRODUCT_AUTHORITY", asset: { type: "APPROVED_EXISTING", authorityReference: "wordpress-media:10757", productId: "product-enclosure", wordpressMediaId: 10757, url: "https://projectorenclosure.com/wp-content/uploads/enclosure.webp", sha256: "a".repeat(64) }, metadata: { altText: "Fan cooled projector enclosure", caption: null, title: "Fan cooled enclosure", description: "Approved product image" }, approval: { candidateId: "candidate", approvedBy: "owner", approvedAt: "2026-09-05T00:00:00.000Z" }, wordpressReceipt: null, createdAt: "2026-09-13T00:00:00.000Z" } as SitePageMediaAssignment;
+    const result = model({ mediaAssignments: [assignment] });
+    expect(result.images.productAuthority).toMatchObject({ state: "ASSIGNED", wordpressMediaId: "10757", renderedInCurrentWordPress: false });
+    expect(result.images.contextualInUse.state).toBe("LEGACY_FEATURED");
+    expect(result.richComposition.plan).toMatchObject({ validationState: "READY", blockers: [] });
+    expect(result.richComposition.plan.media).toEqual(expect.arrayContaining([expect.objectContaining({ role: "PRODUCT_AUTHORITY", readiness: "READY", assignmentId: "media-assignment-dallas" }), expect.objectContaining({ role: "CONTEXTUAL_IN_USE", readiness: "LEGACY" })]));
+    expect(result.issues.some((issue) => issue.what === "Product authority not wired")).toBe(false);
   });
 
   test("renders live and source previews, readable review evidence, and no publish action", () => {
