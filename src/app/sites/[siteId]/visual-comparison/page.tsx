@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
-import { getRenderedVisualCertificationById } from "@/modules/foundation/rendered-visual-certification-repository";
+import { getRenderedVisualCertificationById, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
 import { renderedVisualUtilization, type RenderedVisualCertification } from "@/modules/foundation/rendered-visual-certification";
 
 export const dynamic = "force-dynamic";
@@ -26,5 +26,6 @@ export default async function SiteVisualComparisonPage({ params, searchParams }:
   if (!organizationId || !beforeId || !afterId) notFound();
   const before = getRenderedVisualCertificationById({ organizationId, siteId, certificationId: beforeId }); const after = getRenderedVisualCertificationById({ organizationId, siteId, certificationId: afterId });
   if (!before || !after || before.identity.pageId !== after.identity.pageId) notFound();
-  return <AppShell><main className="space-y-6"><header><p className="text-xs font-bold uppercase text-red-400">Owner Visual Review</p><h1 className="mt-2 text-3xl font-black text-white">Commercial Stainless composition comparison</h1><p className="mt-2 text-sm text-zinc-400">Immutable evidence only. This comparison does not approve visual review or authorize publication.</p></header><div className="grid gap-6 xl:grid-cols-2"><EvidenceColumn label="BEFORE" certification={before} /><EvidenceColumn label="AFTER" certification={after} /></div><section className="border border-zinc-800 bg-zinc-900/50 p-5"><p className="text-xs uppercase text-zinc-500">Owner Decision</p><p className="mt-2 font-bold text-white">PENDING</p><p className="mt-2 text-sm text-zinc-400">Review desktop and mobile evidence before recording a separate governed decision.</p></section></main></AppShell>;
+  const decision = listRenderedVisualOwnerDecisions(after.certificationId).at(-1) ?? null;
+  return <AppShell><main className="space-y-6"><header><p className="text-xs font-bold uppercase text-red-400">Owner Visual Review</p><h1 className="mt-2 text-3xl font-black text-white">Commercial Stainless composition comparison</h1><p className="mt-2 text-sm text-zinc-400">Immutable evidence only. This comparison does not authorize publication.</p></header><div className="grid gap-6 xl:grid-cols-2"><EvidenceColumn label="BEFORE" certification={before} /><EvidenceColumn label="AFTER" certification={after} /></div><section className="border border-zinc-800 bg-zinc-900/50 p-5"><p className="text-xs uppercase text-zinc-500">Owner Decision</p><p className={`mt-2 font-bold ${decision?.decision === "APPROVED" ? "text-emerald-300" : "text-white"}`}>{decision?.decision ?? "PENDING"}</p><p className="mt-2 text-sm text-zinc-400">Bound to certification {after.certificationId}. Publication authority remains false.</p></section></main></AppShell>;
 }

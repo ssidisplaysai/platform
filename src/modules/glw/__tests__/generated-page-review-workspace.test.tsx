@@ -50,6 +50,10 @@ describe("Genesis generated page review workspace", () => {
     expect(result.issues.some((issue) => issue.category === "POLICY")).toBe(false);
     expect(result.reviewState).toBe("NEEDS_ATTENTION");
     expect(result.visualQa).toMatchObject({ contractExists: true, certificationState: "NOT_CERTIFIED", overallState: "NOT_EVALUATED", captures: [], decisionState: "PENDING" });
+    expect(result.richComposition.plan).toMatchObject({ contract: "site-page-composition-plan-v1", profile: "LOCATION_SERVICE", validationState: "BLOCKED" });
+    expect(result.richComposition.plan.media).toEqual(expect.arrayContaining([expect.objectContaining({ role: "PRODUCT_AUTHORITY", readiness: "NOT_WIRED" }), expect.objectContaining({ role: "CONTEXTUAL_IN_USE", readiness: "LEGACY" })]));
+    expect(result.richComposition.plan.blockers).toContain("PRODUCT_AUTHORITY_NOT_WIRED");
+    expect(result.richComposition.safeNextAction).toContain("site-page-media-assignment-v1");
   });
 
   test("renders live and source previews, readable review evidence, and no publish action", () => {
@@ -61,6 +65,13 @@ describe("Genesis generated page review workspace", () => {
     expect(html).toContain("Actual WordPress Draft");
     expect(html).toContain("Genesis Source / Assembly Preview");
     expect(html).toContain("Rendered Visual Certification");
+    expect(html).toContain("CURRENT RENDER");
+    expect(html).toContain("PROPOSED COMPOSITION PLAN");
+    expect(html).toContain("LOCATION SERVICE");
+    expect(html).toContain("PRODUCT AUTHORITY");
+    expect(html).toContain("NOT WIRED");
+    expect(html).toContain("CONTEXTUAL IN USE");
+    expect(html).toContain("LEGACY");
     expect(html).toContain("Run Visual Review");
     expect(html).toContain("Browser viewport");
     expect(html).toContain("NOT EVALUATED");

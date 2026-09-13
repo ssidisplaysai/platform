@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAuthenticatedWordPressReadAuthority, normalizeWordPressApiBaseUrl } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { getProductById } from "@/modules/foundation/product-repository";
+import { createRichPageCompositionPlan, evaluateRichPageComposition, mediaExpectationFromAssignments, type RichPageCompositionFinding, type RichPageCompositionPlan } from "@/modules/foundation/rich-page-composition";
 import { getRenderedVisualCertificationState } from "@/modules/foundation/rendered-visual-certification-repository";
 import { hashRenderedVisualContent, renderedVisualUtilization, type RenderedVisualCertification, type RenderedVisualFinding, type RenderedVisualOwnerDecision, type RenderedVisualPageIdentity } from "@/modules/foundation/rendered-visual-certification";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -48,6 +49,7 @@ export type GeneratedPageReviewModel = {
   reviewState: "READY_FOR_OWNER_REVIEW" | "NEEDS_ATTENTION" | "BLOCKED";
   actions: { canonical: { label: string; href: string } | null; campaignHref: string; listHref: string; visualCapture: { endpoint: string; organizationId: string; siteId: string } };
   visualQa: GeneratedPageVisualQaReview;
+  richComposition: { plan: RichPageCompositionPlan; identityState: "CURRENT"; currentRender: { profile: "CONTENT_ARTICLE"; certificationState: GeneratedPageVisualQaReview["certificationState"]; overallState: ReviewSignal }; proposedFindings: readonly RichPageCompositionFinding[]; safeNextAction: string };
   durableReviewDecisionExists: false;
 };
 
@@ -112,6 +114,13 @@ export function deriveGeneratedPageReviewModel(input: {
   const reviewState = issues.some((issue) => issue.severity === "BLOCKED") ? "BLOCKED" : issues.length > 0 ? "NEEDS_ATTENTION" : "READY_FOR_OWNER_REVIEW";
   const listQuery = `organizationId=${encodeURIComponent(input.campaign.organizationId)}&siteId=${encodeURIComponent(input.campaign.siteId)}`;
   const visualQa = deriveGeneratedPageVisualQaReview(input.visualCertification ?? { certification: null, decision: null, certificationState: "NOT_CERTIFIED", decisionState: "PENDING" });
+  const pageRevisionIdentity = `job:${input.job.jobId}:${input.job.updatedAt}`;
+  const media = [
+    mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
+    mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
+  ];
+  const compositionPlan = createRichPageCompositionPlan({ planId: `composition-plan-${input.job.jobId}-${input.job.updatedAt}`, identity: { organizationId: input.job.organizationId, siteId: input.job.siteId, pageId: input.target.targetId, pageRevisionIdentity, canonicalPath: input.target.canonicalPath ?? input.job.slug, jobId: input.job.jobId, wordpressObjectId }, pageType: input.target.pageType ?? input.campaign.pageType, cta: cta ? { label: cta, destination: [...links].reverse().find((link) => link.label === cta)?.url ?? "" } : null, media, decisionSource: "Owner-approved Commercial Stainless evidence adapted through site-neutral Rich Page Composition V1.", evidenceReferences: ["visual-certification-424e2ea8-7efe-4e74-94aa-1d48c9fbbf4e", "visual-certification-11ccbc70-307e-4084-8d3a-7546dcf6bf5a"] });
+  const proposedFindings = evaluateRichPageComposition({ plan: compositionPlan, captures: input.visualCertification?.certification?.captures ?? [], duplicateOpeningMedia: null, cardWidths: null, proseWidths: null, headerWidth: null, primaryCtaDistinct: null });
 
   return {
     identity: { title: artifact?.title ?? input.job.title, target: input.target.cityName ? `${input.target.cityName}, ${input.target.stateCode}` : input.target.stateCode, product: input.productName, site: input.siteName, domain: input.domain, campaign: input.campaign.name, campaignId: input.campaign.campaignId, targetId: input.target.targetId, canonicalPath: input.target.canonicalPath ?? input.job.slug, lifecycleState: input.target.status, publicationPolicy: input.campaign.publicationPolicy },
@@ -136,6 +145,7 @@ export function deriveGeneratedPageReviewModel(input: {
     reviewState,
     actions: { canonical: input.wordpressEditUrl ? { label: "Open WordPress Draft", href: input.wordpressEditUrl } : null, campaignHref: `/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}?${listQuery}`, listHref: `/glw/campaigns?${listQuery}`, visualCapture: { endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/visual-certification`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId } },
     visualQa,
+    richComposition: { plan: compositionPlan, identityState: "CURRENT", currentRender: { profile: "CONTENT_ARTICLE", certificationState: visualQa.certificationState, overallState: visualQa.overallState }, proposedFindings, safeNextAction: compositionPlan.blockers.includes("PRODUCT_AUTHORITY_NOT_WIRED") ? "Wire the approved PRODUCT_AUTHORITY asset through site-page-media-assignment-v1 before any rich-page generation or WordPress change." : "Review the plan against current content authority before generation." },
     durableReviewDecisionExists: false,
   };
 }
