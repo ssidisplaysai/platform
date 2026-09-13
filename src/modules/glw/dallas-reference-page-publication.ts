@@ -6,14 +6,29 @@ import type {
   DallasApplyReceipt,
   DallasPreviewWordPressComparison,
 } from "./dallas-rich-composition-apply";
+import type { DallasThemeCertification, DallasThemeRepairReceipt } from "./dallas-public-theme-integration";
 
 export const DALLAS_REFERENCE_PAGE_PUBLICATION_CONTRACT = "dallas-reference-page-certify-and-publish-v1" as const;
+export const DALLAS_REFERENCE_PAGE_REPUBLICATION_CONTRACT = "dallas-reference-page-republish-after-theme-repair-v1" as const;
 export const DALLAS_CAMPAIGN_ID = "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-texas-cities" as const;
 export const DALLAS_TARGET_ID = `${DALLAS_CAMPAIGN_ID.replace(/^campaign-/, "target-campaign-")}-tx-dallas` as const;
 export const DALLAS_JOB_ID = "2ca74016-252b-4587-bf3c-ec9b7eb839c9" as const;
 export const DALLAS_WORDPRESS_OBJECT_ID = "13084" as const;
 export const DALLAS_APPROVED_CONTENT_HASH = "77df4b25869341cadbce741bf0932e6abe7f97728b1e9207e66a5306f8c9200b" as const;
 export const DALLAS_CANONICAL_PATH = "fan-cooled-projector-enclosures/texas/dallas" as const;
+export const DALLAS_THEME_REPAIR_COMMIT = "92a88872998ed697edad8975068f1c3a30fd43fe" as const;
+
+export type DallasThemePublicationIdentity = {
+  repairCommit: typeof DALLAS_THEME_REPAIR_COMMIT;
+  repairReceiptId: string;
+  certificationId: string;
+  certificationHash: string;
+  ownerReviewArtifact: string;
+  template: "elementor_header_footer";
+  hideTitle: "yes";
+  themeIntegrationReady: true;
+  drift: "NONE" | "MINOR";
+};
 
 export type DallasPublicationIdentity = {
   organizationId: "ssi";
@@ -42,6 +57,7 @@ export type DallasPublicationIdentity = {
   actualVisualCertificationHash: string;
   previewWordPressComparisonId: string;
   previewWordPressDrift: "NONE" | "MINOR";
+  themeIntegration: DallasThemePublicationIdentity;
 };
 
 export type DallasPublicationReadiness = {
@@ -52,15 +68,18 @@ export type DallasPublicationReadiness = {
   VISUAL_READY: boolean;
   CLAIM_SAFE: boolean;
   RESPONSIVE_READY: boolean;
+  THEME_INTEGRATION_READY: boolean;
+  OWNER_APPROVED: boolean;
+  PUBLICATION_READY: boolean;
   PUBLICATION_APPROVED: boolean;
   failures: readonly string[];
 };
 
-export type DallasPublicationApproval = { approvalId: string; decision: "APPROVED_FOR_PUBLICATION"; ownerStatement: "approved"; source: "OWNER_ACTUAL_WORDPRESS_COMPARISON_REVIEW"; identity: DallasPublicationIdentity; approvedAt: string };
-export type DallasPublicationIntent = { intentId: string; contract: typeof DALLAS_REFERENCE_PAGE_PUBLICATION_CONTRACT; approvalId: string; identity: DallasPublicationIdentity; expectedPublicUrl: string; rollbackArtifactId: string; createdAt: string; state: "READY" | "CONSUMED" };
+export type DallasPublicationApproval = { approvalId: string; decision: "APPROVED_FOR_PUBLICATION" | "APPROVED_FOR_REPUBLICATION_AFTER_THEME_REPAIR"; ownerStatement: "approved"; source: "OWNER_ACTUAL_WORDPRESS_COMPARISON_REVIEW" | "OWNER_REPAIRED_THEME_INTEGRATION_REVIEW"; identity: DallasPublicationIdentity; approvedAt: string };
+export type DallasPublicationIntent = { intentId: string; contract: typeof DALLAS_REFERENCE_PAGE_PUBLICATION_CONTRACT | typeof DALLAS_REFERENCE_PAGE_REPUBLICATION_CONTRACT; approvalId: string; identity: DallasPublicationIdentity; expectedPublicUrl: string; rollbackArtifactId: string; createdAt: string; state: "READY" | "CONSUMED" };
 export type DallasWordPressPublicationReceipt = { publicationReceiptId: string; intentId: string; approvalId: string; wordpressObjectId: typeof DALLAS_WORDPRESS_OBJECT_ID; beforeStatus: "draft"; afterStatus: "publish"; contentHash: typeof DALLAS_APPROVED_CONTENT_HASH; seoHash: string; publicUrl: string; mutationPerformed: boolean; verifiedAt: string };
 export type DallasPublicLinkResult = { url: string; classification: "INTERNAL_DIRECT" | "INTERNAL_REDIRECT" | "INTERNAL_BROKEN" | "EXTERNAL_VERIFIED" | "EXTERNAL_UNAVAILABLE"; status: number; finalUrl: string | null };
-export type DallasPublicCapture = { captureId: string; viewport: "DESKTOP_1440" | "DESKTOP_1024" | "TABLET_768" | "MOBILE_375"; width: number; height: number; documentWidth: number; documentHeight: number; horizontalOverflow: number; renderedContentHash: string; mediaRolesRendered: readonly string[]; artifact: { reference: string; sha256: string; bytes: number; width: number; height: number }; capturedAt: string };
+export type DallasPublicCapture = { captureId: string; viewport: "DESKTOP_1440" | "DESKTOP_1024" | "TABLET_768" | "MOBILE_375"; width: number; height: number; documentWidth: number; documentHeight: number; horizontalOverflow: number; renderedContentHash: string; mediaRolesRendered: readonly string[]; themeIntegration: { visibleH1Count: number; visibleH1Texts: readonly string[]; duplicateThemeTitleVisible: boolean; duplicateThemeFeaturedMediaVisible: boolean; globalHeaderPresent: boolean; globalFooterPresent: boolean; fontAuthorityExpected: boolean; headerActionsContained: boolean; quoteCtaContained: boolean }; artifact: { reference: string; sha256: string; bytes: number; width: number; height: number }; capturedAt: string };
 export type DallasPublicVisualCertification = { certificationId: string; publicationReceiptId: string; publicUrl: string; captures: readonly DallasPublicCapture[]; findings: readonly { code: string; state: "PASS" | "WARNING" | "FAIL"; summary: string }[]; overallState: "PASS" | "WARNING" | "FAIL"; createdAt: string };
 export type DallasPublicVerification = { verificationId: string; publicationReceiptId: string; requestedUrl: string; finalUrl: string; redirectChain: readonly string[]; httpStatus: number; https: boolean; canonical: string; title: string; metaDescription: string; indexability: "INDEXABLE" | "NOINDEX" | "UNKNOWN"; h1Count: number; semanticMediaRoles: readonly string[]; mediaLoaded: readonly { role: string; url: string; status: number; sha256: string | null }[]; links: readonly DallasPublicLinkResult[]; contentHash: string; seoHash: string; featuredMediaId: number; claimSafe: boolean; devLeak: boolean; verifiedAt: string };
 export type DallasDraftPublicComparison = { comparisonId: string; publicationReceiptId: string; publicVerificationId: string; publicVisualCertificationId: string; classification: "NONE" | "MINOR" | "MATERIAL" | "CRITICAL"; reasons: readonly string[]; createdAt: string };
@@ -84,6 +103,10 @@ export function freezeDallasPublicationIdentity(input: {
   receipt: DallasApplyReceipt;
   certification: DallasActualVisualCertification;
   comparison: DallasPreviewWordPressComparison;
+  themeReceipt: DallasThemeRepairReceipt;
+  themeCertification: DallasThemeCertification;
+  repairCommit: string;
+  ownerReviewArtifact: string;
   readback: {
     organizationId: string;
     siteId: string;
@@ -98,7 +121,7 @@ export function freezeDallasPublicationIdentity(input: {
     semanticMediaRoles: readonly string[];
   };
 }): DallasPublicationIdentity {
-  const { receipt, certification, comparison, readback } = input;
+  const { receipt, certification, comparison, themeReceipt, themeCertification, readback } = input;
   const roles = [...new Set(readback.semanticMediaRoles)].sort();
   const expectedRoles = [...REQUIRED_ROLES].sort();
   if (
@@ -127,6 +150,20 @@ export function freezeDallasPublicationIdentity(input: {
     || comparison.receiptId !== receipt.receiptId
     || comparison.actualCertificationId !== certification.certificationId
     || (comparison.drift.classification !== "NONE" && comparison.drift.classification !== "MINOR")
+    || input.repairCommit !== DALLAS_THEME_REPAIR_COMMIT
+    || themeReceipt.wordpressObjectId !== DALLAS_WORDPRESS_OBJECT_ID
+    || themeReceipt.afterTemplate !== "elementor_header_footer"
+    || themeReceipt.afterPageSettings.hide_title !== "yes"
+    || themeReceipt.bodyHashAfter !== readback.contentHash
+    || themeReceipt.seoHashAfter !== readback.seoHash
+    || themeReceipt.featuredMediaAfter !== 10757
+    || themeCertification.receiptId !== themeReceipt.receiptId
+    || !themeCertification.themeIntegrationReady
+    || themeCertification.overallState !== "PASS"
+    || (themeCertification.drift !== "NONE" && themeCertification.drift !== "MINOR")
+    || themeCertification.captures.length !== 4
+    || themeCertification.captures.some((capture) => capture.horizontalOverflow !== 0 || capture.themeIntegration.visibleH1Count !== 1 || capture.themeIntegration.duplicateThemeTitleVisible || capture.themeIntegration.duplicateThemeFeaturedMediaVisible)
+    || !input.ownerReviewArtifact
   ) {
     throw new Error("DALLAS_PUBLICATION_APPROVAL_IDENTITY_STALE");
   }
@@ -158,6 +195,17 @@ export function freezeDallasPublicationIdentity(input: {
     actualVisualCertificationHash: hash(certification),
     previewWordPressComparisonId: comparison.comparisonId,
     previewWordPressDrift: comparison.drift.classification,
+    themeIntegration: {
+      repairCommit: DALLAS_THEME_REPAIR_COMMIT,
+      repairReceiptId: themeReceipt.receiptId,
+      certificationId: themeCertification.certificationId,
+      certificationHash: hash(themeCertification),
+      ownerReviewArtifact: input.ownerReviewArtifact,
+      template: "elementor_header_footer",
+      hideTitle: "yes",
+      themeIntegrationReady: true,
+      drift: themeCertification.drift,
+    },
   };
 }
 
@@ -168,12 +216,13 @@ export function evaluateDallasPublicationReadiness(input: {
   linksValid: boolean;
   mediaValid: boolean;
   responsiveValid: boolean;
+  themeIntegrationReady: boolean;
   publicationApproved: boolean;
 }): DallasPublicationReadiness {
   const devLeak = /(?:localhost|127\.0\.0\.1|:(?:3001|3002|3003)\b|\/glw\/|composition-preview|staging)/i.test(input.html);
   const unsupportedClaim = /(?:our|the) Dallas (?:office|staff|team)|Dallas (?:customer|installation|project|venue) (?:uses|using|completed by)/i.test(input.html);
   const contentReady = input.identity.contentHash === DALLAS_APPROVED_CONTENT_HASH && input.h1Count === 1 && !devLeak;
-  const checks = {
+  const gates = {
     CONTENT_READY: contentReady,
     SEO_READY: /^[a-f0-9]{64}$/.test(input.identity.seoHash),
     MEDIA_READY: input.mediaValid && input.identity.semanticMediaRoles.length === 4,
@@ -181,8 +230,11 @@ export function evaluateDallasPublicationReadiness(input: {
     VISUAL_READY: Boolean(input.identity.actualVisualCertificationId),
     CLAIM_SAFE: !unsupportedClaim,
     RESPONSIVE_READY: input.responsiveValid,
+    THEME_INTEGRATION_READY: input.themeIntegrationReady && input.identity.themeIntegration.themeIntegrationReady,
+    OWNER_APPROVED: input.publicationApproved,
     PUBLICATION_APPROVED: input.publicationApproved,
   };
+  const checks = { ...gates, PUBLICATION_READY: Object.values(gates).every(Boolean) };
   return {
     ...checks,
     failures: Object.entries(checks).filter(([, ready]) => !ready).map(([name]) => name),

@@ -17,7 +17,7 @@ export type GovernedBrowserCaptureInput = {
   captureId: string;
   mediaAssignments: readonly CaptureMediaAssignment[];
 };
-export type ThemeIntegrationEvidence = { visibleH1Count: number; visibleH1Texts: readonly string[]; duplicateThemeTitleVisible: boolean; duplicateThemeFeaturedMediaVisible: boolean; globalHeaderPresent: boolean; globalFooterPresent: boolean; overflowElements: readonly { selector: string; left: number; right: number; width: number; clientWidth: number; scrollWidth: number; position: string; minWidth: string; maxWidth: string }[] };
+export type ThemeIntegrationEvidence = { visibleH1Count: number; visibleH1Texts: readonly string[]; duplicateThemeTitleVisible: boolean; duplicateThemeFeaturedMediaVisible: boolean; globalHeaderPresent: boolean; globalFooterPresent: boolean; fontAuthorityExpected: boolean; headerActionsContained: boolean; quoteCtaContained: boolean; overflowElements: readonly { selector: string; left: number; right: number; width: number; clientWidth: number; scrollWidth: number; position: string; minWidth: string; maxWidth: string }[] };
 export type GovernedBrowserCaptureResult = { evidence: Omit<RenderedVisualCaptureEvidence, "screenshotArtifact">; themeIntegration: ThemeIntegrationEvidence; bytes: Uint8Array; imageWidth: number; imageHeight: number; renderedContentHash: string };
 
 function edgeExecutable(): string {
@@ -82,13 +82,18 @@ async function geometry(page: Page, assignments: readonly CaptureMediaAssignment
     const sections = explicitSections.length > 0 ? explicitSections : headingSections;
     const heroBounds = box(hero);
     const visibleH1s = Array.from(document.querySelectorAll("h1")).filter(visible);
+    const header = document.querySelector("header,[role=banner],#cafe-site-header");
+    const headerActions = header ? Array.from(header.querySelectorAll("a,button")).filter(visible) : [];
+    const contained = (element: Element) => { const bounds = element.getBoundingClientRect(); return bounds.left >= -1 && bounds.right <= document.documentElement.clientWidth + 1; };
+    const quoteCtas = headerActions.filter((element) => /quote/i.test(element.textContent ?? ""));
+    const fontAuthorityExpected = Array.from(document.fonts).some((face) => /Barlow Condensed/i.test(face.family) && face.status === "loaded");
     const overflowElements = Array.from(document.querySelectorAll<HTMLElement>("body *")).map((element) => { const bounds = element.getBoundingClientRect(); const style = getComputedStyle(element); const selector = `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ""}${typeof element.className === "string" && element.className.trim() ? `.${element.className.trim().replace(/\s+/g, ".")}` : ""}`; return { selector: selector.slice(0, 240), left: Math.round(bounds.left), right: Math.round(bounds.right), width: Math.round(bounds.width), clientWidth: element.clientWidth, scrollWidth: element.scrollWidth, position: style.position, minWidth: style.minWidth, maxWidth: style.maxWidth }; }).filter((item) => item.left < -1 || item.right > document.documentElement.clientWidth + 1 || item.scrollWidth > item.clientWidth + 1).sort((left, right) => Math.max(right.right - document.documentElement.clientWidth, -right.left, right.scrollWidth - right.clientWidth) - Math.max(left.right - document.documentElement.clientWidth, -left.left, left.scrollWidth - left.clientWidth)).slice(0, 16);
     return {
       documentWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth), documentHeight: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
       primaryContentBounds: box(primary), horizontalOverflow: Math.max(0, Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - document.documentElement.clientWidth),
       hero: { authority: hero ? "SEMANTIC_HERO" as const : "NOT_IDENTIFIED" as const, present: hero ? visible(hero) : null, bounds: heroBounds, headingBounds: box(heading), headingLineCount: lineCount(heading), primaryCtaBounds: box(cta), mediaBounds: box(heroMedia), mediaBeforeHero: heroMedia && heroBounds ? box(heroMedia)!.y < heroBounds.y : null, containerAligned: heroBounds && box(primary) ? Math.abs(heroBounds.x - box(primary)!.x) < 4 : null },
       media, sections,
-      themeIntegration: { visibleH1Count: visibleH1s.length, visibleH1Texts: visibleH1s.map((item) => item.textContent?.trim() ?? "").filter(Boolean), duplicateThemeTitleVisible: visible(document.querySelector(".page-title.the-title")), duplicateThemeFeaturedMediaVisible: visible(document.querySelector(".post-media.single-image")), globalHeaderPresent: visible(document.querySelector("header,[role=banner],#cafe-site-header")), globalFooterPresent: visible(document.querySelector("footer,[role=contentinfo],#cafe-site-footer")), overflowElements },
+      themeIntegration: { visibleH1Count: visibleH1s.length, visibleH1Texts: visibleH1s.map((item) => item.textContent?.trim() ?? "").filter(Boolean), duplicateThemeTitleVisible: visible(document.querySelector(".page-title.the-title")), duplicateThemeFeaturedMediaVisible: visible(document.querySelector(".post-media.single-image")), globalHeaderPresent: visible(header), globalFooterPresent: visible(document.querySelector("footer,[role=contentinfo],#cafe-site-footer")), fontAuthorityExpected, headerActionsContained: headerActions.length > 0 && headerActions.every(contained), quoteCtaContained: quoteCtas.length > 0 && quoteCtas.every(contained), overflowElements },
     };
   }, assignments);
 }

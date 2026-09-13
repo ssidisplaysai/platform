@@ -16,6 +16,7 @@ import type {
   DallasReferencePageRevocation,
   DallasWordPressPublicationReceipt,
 } from "./dallas-reference-page-publication";
+import { DALLAS_REFERENCE_PAGE_REPUBLICATION_CONTRACT } from "./dallas-reference-page-publication";
 
 const NAMESPACE = "dallas-reference-page-publication-v1";
 type State = { approvals: DallasPublicationApproval[]; intents: DallasPublicationIntent[]; publicationReceipts: DallasWordPressPublicationReceipt[]; publicVerifications: DallasPublicVerification[]; visualCertifications: DallasPublicVisualCertification[]; comparisons: DallasDraftPublicComparison[]; reconciliations: DallasCampaignReconciliationReceipt[]; referenceCertifications: DallasReferencePageCertification[]; referenceRevocations: DallasReferencePageRevocation[]; audit: DallasPublicationAuditEvent[] };
@@ -27,10 +28,10 @@ const audit = (state: State, action: DallasPublicationAuditEvent["action"], deta
 export function getDallasPublicationState(): State { return deepClone(load().state); }
 export function persistDallasPublicationApprovalAndIntent(input: { identity: DallasPublicationIdentity; expectedPublicUrl: string; rollbackArtifactId: string; now: string }) {
   const loaded = load();
-  const existing = loaded.state.approvals.find((item) => item.identity.contentHash === input.identity.contentHash);
+  const existing = loaded.state.approvals.find((item) => item.decision === "APPROVED_FOR_REPUBLICATION_AFTER_THEME_REPAIR" && item.identity.themeIntegration?.certificationHash === input.identity.themeIntegration.certificationHash);
   if (existing) return { approval: deepClone(existing), intent: deepClone(loaded.state.intents.find((item) => item.approvalId === existing.approvalId)!) };
-  const approval: DallasPublicationApproval = { approvalId: `dallas-publication-approval-${randomUUID()}`, decision: "APPROVED_FOR_PUBLICATION", ownerStatement: "approved", source: "OWNER_ACTUAL_WORDPRESS_COMPARISON_REVIEW", identity: deepClone(input.identity), approvedAt: input.now };
-  const intent: DallasPublicationIntent = { intentId: `dallas-publication-intent-${randomUUID()}`, contract: "dallas-reference-page-certify-and-publish-v1", approvalId: approval.approvalId, identity: deepClone(input.identity), expectedPublicUrl: input.expectedPublicUrl, rollbackArtifactId: input.rollbackArtifactId, createdAt: input.now, state: "READY" };
+  const approval: DallasPublicationApproval = { approvalId: `dallas-theme-repair-publication-approval-${randomUUID()}`, decision: "APPROVED_FOR_REPUBLICATION_AFTER_THEME_REPAIR", ownerStatement: "approved", source: "OWNER_REPAIRED_THEME_INTEGRATION_REVIEW", identity: deepClone(input.identity), approvedAt: input.now };
+  const intent: DallasPublicationIntent = { intentId: `dallas-theme-repair-publication-intent-${randomUUID()}`, contract: DALLAS_REFERENCE_PAGE_REPUBLICATION_CONTRACT, approvalId: approval.approvalId, identity: deepClone(input.identity), expectedPublicUrl: input.expectedPublicUrl, rollbackArtifactId: input.rollbackArtifactId, createdAt: input.now, state: "READY" };
   loaded.state.approvals.push(approval); loaded.state.intents.push(intent); audit(loaded.state, "OWNER_PUBLICATION_APPROVED", { approvalId: approval.approvalId, contentHash: input.identity.contentHash }, input.now); audit(loaded.state, "PUBLICATION_INTENT_CREATED", { intentId: intent.intentId, expectedPublicUrl: input.expectedPublicUrl }, input.now); save(loaded); return { approval: deepClone(approval), intent: deepClone(intent) };
 }
 export function saveDallasPublicationRecord<K extends "publicationReceipts" | "publicVerifications" | "visualCertifications" | "comparisons" | "reconciliations" | "referenceCertifications">(key: K, record: State[K][number], action: DallasPublicationAuditEvent["action"], at: string) { const loaded = load(); const records = loaded.state[key] as unknown as Record<string, unknown>[]; const id = Object.entries(record as Record<string, unknown>).find(([name]) => name.endsWith("Id"))?.[1]; const existing = records.find((item) => Object.values(item).includes(id)); if (existing) return deepClone(existing) as State[K][number]; records.push(deepClone(record) as Record<string, unknown>); audit(loaded.state, action, { recordId: String(id ?? "unknown") }, at); save(loaded); return deepClone(record); }
