@@ -5,6 +5,7 @@ import {
   leaseGlwCampaignTargets,
   markGlwCampaignTargetDraftReady,
   markGlwCampaignTargetPublished,
+  reconcileGlwCampaignTargetDraftAfterPublicationFailure,
 } from "../campaign-target-repository";
 
 describe("campaign publication target identity", () => {
@@ -18,6 +19,8 @@ describe("campaign publication target identity", () => {
     expect(() => markGlwCampaignTargetPublished({ campaignId, stateCode: "CA", citySlug: "wrong", wordpressObjectId: "101" })).toThrow("exact draft-ready");
     expect(markGlwCampaignTargetPublished({ campaignId, stateCode: "CA", citySlug: "fresno", wordpressObjectId: "101" }).status).toBe("published");
     expect(() => markGlwCampaignTargetPublished({ campaignId, stateCode: "CA", citySlug: "fresno", wordpressObjectId: "101" })).toThrow("exact draft-ready");
+    expect(() => reconcileGlwCampaignTargetDraftAfterPublicationFailure({ campaignId, stateCode: "CA", citySlug: "los-angeles", jobId: "reference-job", wordpressObjectId: "100" })).toThrow("exact published target");
+    expect(reconcileGlwCampaignTargetDraftAfterPublicationFailure({ campaignId, stateCode: "CA", citySlug: "fresno", jobId: "job-fresno", wordpressObjectId: "101" }).status).toBe("draft_ready");
   });
 
   test("keeps state targets valid without city identity and enforces WordPress ownership", () => {

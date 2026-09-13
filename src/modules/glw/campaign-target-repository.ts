@@ -810,6 +810,12 @@ export function reconcileGlwCampaignTargetPublished(input: {
   return deepClone(updated);
 }
 
+export function reconcileGlwCampaignTargetDraftAfterPublicationFailure(input: { campaignId: string; stateCode: string; citySlug: string; jobId: string; wordpressObjectId: string }): GlwCampaignTarget {
+  loadState(); const targetKey = key(input.campaignId, input.stateCode, input.citySlug); const current = targetStore.get(targetKey);
+  if (!current || current.status !== "published" || current.jobId !== input.jobId || current.wordpressObjectId !== input.wordpressObjectId) throw new Error("Campaign publication rollback requires the exact published target.");
+  const updated: GlwCampaignTarget = { ...current, status: "draft_ready", lastError: "PUBLIC_CERTIFICATION_FAILED", updatedAt: new Date().toISOString() }; targetStore.set(targetKey, updated); persistState(); return deepClone(updated);
+}
+
 export function markGlwCampaignTargetFailed(input: {
   campaignId: string;
   stateCode: string;

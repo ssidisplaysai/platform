@@ -115,3 +115,8 @@ export async function reconcileGlwPageExecutionPublished(input: {
     updatedAt: new Date().toISOString(),
   });
 }
+
+export async function reconcileGlwPageExecutionDraftAfterPublicationFailure(input: { jobId: string; wordpressObjectId: string; wordpressUrl: string | null; reason: string }): Promise<GlwPageExecutionRecord> {
+  const record = await glwPageExecutionRepository.getById(input.jobId); if (!record || record.status !== "COMPLETE" || record.wordpressStatus !== "publish" || record.wordpressObjectId !== input.wordpressObjectId) throw new Error("Execution publication rollback requires the exact published record.");
+  return glwPageExecutionRepository.update(input.jobId, { wordpressStatus: "draft", wordpressUrl: input.wordpressUrl, qaChecks: { ...(record.qaChecks ?? {}), publicationVerification: { state: "REVOKED", reason: input.reason, rolledBackAt: new Date().toISOString() } }, updatedAt: new Date().toISOString() });
+}
