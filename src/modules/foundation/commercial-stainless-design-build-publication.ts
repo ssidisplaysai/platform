@@ -6,7 +6,10 @@ import {
   COMMERCIAL_STAINLESS_ORIGIN,
   COMMERCIAL_STAINLESS_SITE_ID,
 } from "./commercial-stainless-rich-composition";
-import { listCommercialStainlessDesignBuildStageRecords } from "./commercial-stainless-design-build-staging";
+import {
+  COMMERCIAL_STAINLESS_DESIGN_BUILD_MOBILE_OVERFLOW_REPAIR_AUTHORIZATION,
+  listCommercialStainlessDesignBuildStageRecords,
+} from "./commercial-stainless-design-build-staging";
 import {
   deepClone,
   loadPersistedState,
@@ -21,13 +24,19 @@ import { resolveWordPressCredentialReference } from "./wordpress-credential-reso
 import { verifyWordPressTemplateStructure } from "./wordpress-post-content-publication-verifier";
 
 export const DESIGN_BUILD_PUBLICATION_OPERATION =
-  "COMMERCIAL_STAINLESS_DESIGN_BUILD_OWNER_APPROVED_PUBLICATION_V1";
-export const DESIGN_BUILD_APPROVED_REVISION = 116;
+  "COMMERCIAL_STAINLESS_DESIGN_BUILD_REPAIRED_CANDIDATE_PUBLICATION_V2";
+export const DESIGN_BUILD_APPROVED_REVISION = 119;
 export const DESIGN_BUILD_APPROVED_HASH =
+  "60d0a538b3d90c3c542b06c1ac55282c1b28ffa94bb04d5756bcbbc968e8a691";
+const DESIGN_BUILD_PRE_REPAIR_HASH =
   "6a7fd9a24b5eaef25d4beaf858ad294e46c23dc35c22422a722be580d1904669";
 export const DESIGN_BUILD_PREVIOUS_HASH =
   "f6b02c55646697fbe89a503834f550a22f896a42dc462397517c0ff3d590b5be";
-const NAMESPACE = "commercial-stainless-design-build-publication-v1";
+const DESIGN_BUILD_OVERFLOW_RULE =
+  ".wr-page{width:100vw!important;max-width:none!important;margin:0 0 0 calc(50% - 50vw)!important;padding:0!important}";
+const DESIGN_BUILD_REPAIRED_OVERFLOW_RULE =
+  ".wp-block-post-content:has(>.wr-page--design-build){padding-left:0!important;padding-right:0!important}.wr-page{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}";
+const NAMESPACE = "commercial-stainless-design-build-repaired-publication-v2";
 const URL = `${COMMERCIAL_STAINLESS_ORIGIN}/design-build-fabrication/`;
 type Value = { raw?: string; rendered?: string };
 type Page = {
@@ -47,6 +56,10 @@ type Page = {
 export type DesignBuildViewport = {
   width: 1440 | 1024 | 768 | 375;
   pass: boolean;
+  viewportWidth: number;
+  documentScrollWidth: number;
+  wrPageLeft: number;
+  wrPageRight: number;
   headerHeroGap: number;
   horizontalOverflow: number;
   globalHeaderCount: number;
@@ -68,6 +81,12 @@ export type DesignBuildViewport = {
   darkOnDarkFailures: number;
   lightOnLightFailures: number;
   unreadableTextFailures: number;
+  ctaClipping: number;
+  imageCroppingFailures: number;
+  gridCollapseCount: number;
+  negativeSideGutterCount: number;
+  brokenCardCount: number;
+  headerFooterOverflow: number;
 };
 export type DesignBuildReceipt = {
   receiptId: string;
@@ -80,8 +99,12 @@ export type DesignBuildReceipt = {
     | "BLOCKED";
   previousPublishedHash: string;
   candidateHash: string;
-  candidateRevision: 116;
+  candidateRevision: 119;
+  publicationAttempted: true;
   publicationWriteExecuted: boolean;
+  contentReconstructed: false;
+  copyChanged: false;
+  mediaChanged: false;
   pre: {
     contentRaw: string;
     publicHash: string;
@@ -97,6 +120,7 @@ export type DesignBuildReceipt = {
     httpStatus: number;
     finalUrl: string;
     headers: Record<string, string | null>;
+    cacheClassification: "NO_CACHE_HEADER" | "CACHE_BYPASS" | "CACHE_HIT" | "CACHE_OTHER";
     bodyComplete: boolean;
     renderHash: string;
     predicates: Record<string, boolean>;
@@ -106,6 +130,12 @@ export type DesignBuildReceipt = {
     certificationId: string;
     authority: "ACTUAL_PUBLIC_HOST_RENDER";
     viewports: DesignBuildViewport[];
+    brokenInternalLinks: number;
+    devLinks: number;
+    previewLinks: number;
+    overflowMaskUsed: false;
+    claimSafety: "PASS";
+    unsupportedClaims: number;
   };
   rollbackExecuted: boolean;
   rollbackVerified: boolean;
@@ -168,9 +198,21 @@ async function publicRead() {
       server: r.headers.get("server"),
       cacheControl: r.headers.get("cache-control"),
       etag: r.headers.get("etag"),
+      age: r.headers.get("age"),
+      xCache: r.headers.get("x-cache"),
+      cfCacheStatus: r.headers.get("cf-cache-status"),
     },
     html: await r.text(),
   };
+}
+function cacheClassification(headers: Record<string, string | null>) {
+  const cacheControl = headers.cacheControl;
+  if (/\bhit\b/i.test(`${headers.xCache} ${headers.cfCacheStatus}`) || Number(headers.age) > 0)
+    return "CACHE_HIT" as const;
+  if (!cacheControl) return "NO_CACHE_HEADER" as const;
+  if (/\b(?:no-cache|no-store|private|bypass)\b/i.test(cacheControl))
+    return "CACHE_BYPASS" as const;
+  return "CACHE_OTHER" as const;
 }
 function load() {
   return loadPersistedState<State>({
@@ -264,6 +306,9 @@ function inspect(html: string, httpStatus = 200) {
       media.pass &&
       media.instances.length === 5 &&
       new Set(media.instances.map((x) => x.mediaSourceIdentity)).size === 5,
+    noOverflowMask: !/body\s*\{[^}]*overflow-x\s*:\s*hidden/i.test(html),
+    noDevLinks: !/href=["'](?:https?:\/\/(?:localhost|127\.0\.0\.1)|[^"']*(?:preview=true|_preview=))/i.test(html),
+    claimSafety: !/\b(?:certified|licensed|engineering services|installation included|code compliant|nationwide service|lead time)\b/i.test(main(html)),
   };
   return {
     matrix,
@@ -274,19 +319,24 @@ function inspect(html: string, httpStatus = 200) {
 }
 export async function publishDesignBuild(site: SiteConfiguration) {
   const existing = listDesignBuildPublicationReceipts().find(
-    (r) => r.receiptId === "csc-design-build-publication-v1-14-6a7fd9a24b5e",
+    (r) => r.receiptId === "csc-design-build-repaired-publication-v2-14-60d0a538b3d9",
   );
   if (existing) return existing;
   const stage = listCommercialStainlessDesignBuildStageRecords().find(
     (r) =>
-      r.candidateRevision === 116 &&
+      r.candidateRevision === DESIGN_BUILD_APPROVED_REVISION &&
       r.candidateStoredHash === DESIGN_BUILD_APPROVED_HASH &&
       r.status === "OWNER_REVIEW_READY" &&
+      r.repairAuthorization ===
+        COMMERCIAL_STAINLESS_DESIGN_BUILD_MOBILE_OVERFLOW_REPAIR_AUTHORIZATION &&
+      r.geometryRepair?.sourceRevision === 116 &&
       r.rollbackReady &&
       r.responsiveCertification?.authority === "NATIVE_EQUIVALENT_RENDER",
   );
   if (!stage)
     throw new Error("DESIGN_BUILD_EXACT_OWNER_APPROVED_STAGE_REQUIRED");
+  if (sha(stage.rollbackContentRaw) !== DESIGN_BUILD_PREVIOUS_HASH)
+    throw new Error("DESIGN_BUILD_EXACT_ROLLBACK_AUTHORITY_REQUIRED");
   const a = authority(site);
   const [page, revision, before] = await Promise.all([
     get<Page>(
@@ -294,13 +344,19 @@ export async function publishDesignBuild(site: SiteConfiguration) {
       a.headers,
     ),
     get<Page>(
-      `${a.apiBase}/pages/14/autosaves/116?context=edit&_fields=id,parent,content&_dbpub=${crypto.randomUUID()}`,
+      `${a.apiBase}/pages/14/autosaves/${DESIGN_BUILD_APPROVED_REVISION}?context=edit&_fields=id,parent,content&_dbpub=${crypto.randomUUID()}`,
       a.headers,
     ),
     publicRead(),
   ]);
   const p = page.body ?? {},
     candidate = text(revision.body?.content?.raw);
+  const reversedCandidate = candidate.replace(
+    DESIGN_BUILD_REPAIRED_OVERFLOW_RULE,
+    DESIGN_BUILD_OVERFLOW_RULE,
+  );
+  const repairedViewportEvidence =
+    stage.responsiveCertification?.viewports ?? [];
   const precheck =
     page.status === 200 &&
     Number(p.id) === 14 &&
@@ -309,9 +365,21 @@ export async function publishDesignBuild(site: SiteConfiguration) {
     Number(p.parent) === 0 &&
     sha(text(p.content?.raw)) === DESIGN_BUILD_PREVIOUS_HASH &&
     revision.status === 200 &&
-    Number(revision.body?.id) === 116 &&
+    Number(revision.body?.id) === DESIGN_BUILD_APPROVED_REVISION &&
     Number(revision.body?.parent) === 14 &&
     sha(candidate) === DESIGN_BUILD_APPROVED_HASH &&
+    candidate.split(DESIGN_BUILD_REPAIRED_OVERFLOW_RULE).length === 2 &&
+    !candidate.includes(DESIGN_BUILD_OVERFLOW_RULE) &&
+    !/body\s*\{[^}]*overflow-x\s*:\s*hidden/i.test(candidate) &&
+    sha(reversedCandidate) === DESIGN_BUILD_PRE_REPAIR_HASH &&
+    repairedViewportEvidence.length === 4 &&
+    repairedViewportEvidence.every(
+      (viewport) =>
+        viewport.horizontalOverflow === 0 &&
+        viewport.documentScrollWidth <= viewport.viewportWidth &&
+        viewport.wrPageLeft >= 0 &&
+        viewport.wrPageRight <= viewport.viewportWidth,
+    ) &&
     stage.candidateRenderedHtml !== null &&
     before.status === 200 &&
     canonical(before.html) === URL &&
@@ -324,13 +392,17 @@ export async function publishDesignBuild(site: SiteConfiguration) {
     throw new Error("DESIGN_BUILD_EXACT_AUTHORITY_PREFLIGHT_FAILED");
   const now = new Date().toISOString();
   let receipt = save({
-    receiptId: "csc-design-build-publication-v1-14-6a7fd9a24b5e",
+    receiptId: "csc-design-build-repaired-publication-v2-14-60d0a538b3d9",
     operation: DESIGN_BUILD_PUBLICATION_OPERATION,
     status: "PREPARED",
     previousPublishedHash: DESIGN_BUILD_PREVIOUS_HASH,
     candidateHash: DESIGN_BUILD_APPROVED_HASH,
-    candidateRevision: 116,
+    candidateRevision: 119,
+    publicationAttempted: true,
     publicationWriteExecuted: false,
+    contentReconstructed: false,
+    copyChanged: false,
+    mediaChanged: false,
     pre: {
       contentRaw: text(p.content?.raw),
       publicHash: sha(main(before.html)),
@@ -382,6 +454,7 @@ export async function publishDesignBuild(site: SiteConfiguration) {
         httpStatus: pub.status,
         finalUrl: pub.url.split("?")[0],
         headers: pub.headers,
+        cacheClassification: cacheClassification(pub.headers),
         bodyComplete: /<\/html>\s*$/i.test(pub.html),
         renderHash: sha(main(pub.html)),
         predicates: result.matrix,
@@ -424,12 +497,12 @@ export async function publishDesignBuild(site: SiteConfiguration) {
 }
 export async function recoverDesignBuildPublication(site: SiteConfiguration) {
   const existing = listDesignBuildPublicationReceipts().find(
-    (r) => r.receiptId === "csc-design-build-publication-v1-14-6a7fd9a24b5e",
+    (r) => r.receiptId === "csc-design-build-repaired-publication-v2-14-60d0a538b3d9",
   );
   if (existing) return existing;
   const stage = listCommercialStainlessDesignBuildStageRecords().find(
     (r) =>
-      r.candidateRevision === 116 &&
+      r.candidateRevision === DESIGN_BUILD_APPROVED_REVISION &&
       r.candidateStoredHash === DESIGN_BUILD_APPROVED_HASH &&
       r.status === "OWNER_REVIEW_READY" &&
       r.rollbackReady &&
@@ -459,13 +532,17 @@ export async function recoverDesignBuildPublication(site: SiteConfiguration) {
     throw new Error("DESIGN_BUILD_RECOVERY_IDENTITY_FAILED");
   const now = new Date().toISOString();
   let receipt = save({
-    receiptId: "csc-design-build-publication-v1-14-6a7fd9a24b5e",
+    receiptId: "csc-design-build-repaired-publication-v2-14-60d0a538b3d9",
     operation: DESIGN_BUILD_PUBLICATION_OPERATION,
     status: "PREPARED",
     previousPublishedHash: DESIGN_BUILD_PREVIOUS_HASH,
     candidateHash: DESIGN_BUILD_APPROVED_HASH,
-    candidateRevision: 116,
+    candidateRevision: 119,
+    publicationAttempted: true,
     publicationWriteExecuted: true,
+    contentReconstructed: false,
+    copyChanged: false,
+    mediaChanged: false,
     pre: {
       contentRaw: stage.rollbackContentRaw,
       publicHash: stage.publicHashBefore,
@@ -494,6 +571,7 @@ export async function recoverDesignBuildPublication(site: SiteConfiguration) {
         httpStatus: pub.status,
         finalUrl: pub.url.split("?")[0],
         headers: pub.headers,
+        cacheClassification: cacheClassification(pub.headers),
         bodyComplete: /<\/html>\s*$/i.test(pub.html),
         renderHash: sha(main(pub.html)),
         predicates: result.matrix,
@@ -542,6 +620,12 @@ export async function certifyDesignBuild(
     certificationId: string;
     authority: "ACTUAL_PUBLIC_HOST_RENDER";
     viewports: DesignBuildViewport[];
+    brokenInternalLinks: number;
+    devLinks: number;
+    previewLinks: number;
+    overflowMaskUsed: false;
+    claimSafety: "PASS";
+    unsupportedClaims: number;
   },
 ) {
   const receipt = listDesignBuildPublicationReceipts().find(
@@ -557,6 +641,9 @@ export async function certifyDesignBuild(
         (v) =>
           v.width === width &&
           v.pass &&
+          v.documentScrollWidth <= v.viewportWidth &&
+          v.wrPageLeft >= 0 &&
+          v.wrPageRight <= v.viewportWidth &&
           v.headerHeroGap === 0 &&
           v.horizontalOverflow === 0 &&
           v.globalHeaderCount === 1 &&
@@ -577,18 +664,44 @@ export async function certifyDesignBuild(
           v.finalCtaEyebrowContrast >= 4.5 &&
           v.darkOnDarkFailures === 0 &&
           v.lightOnLightFailures === 0 &&
-          v.unreadableTextFailures === 0,
+          v.unreadableTextFailures === 0 &&
+          v.ctaClipping === 0 &&
+          v.imageCroppingFailures === 0 &&
+          v.gridCollapseCount === 0 &&
+          v.negativeSideGutterCount === 0 &&
+          v.brokenCardCount === 0 &&
+          v.headerFooterOverflow === 0,
       ),
-    );
+    ) &&
+    visual.brokenInternalLinks === 0 &&
+    visual.devLinks === 0 &&
+    visual.previewLinks === 0 &&
+    visual.overflowMaskUsed === false &&
+    visual.claimSafety === "PASS" &&
+    visual.unsupportedClaims === 0;
   const a = authority(site),
     page = await get<Page>(
-      `${a.apiBase}/pages/14?context=edit&_fields=id,status,content&_dbcert=${crypto.randomUUID()}`,
+      `${a.apiBase}/pages/14?context=edit&_fields=id,status,slug,parent,featured_media,content,yoast_head_json&_dbcert=${crypto.randomUUID()}`,
       a.headers,
-    );
+    ),
+    current = page.body ?? {},
+    finalPublic = await publicRead(),
+    finalInspection = inspect(finalPublic.html, finalPublic.status),
+    identityPreserved =
+      text(current.status) === "publish" &&
+      text(current.slug) === receipt.pre.slug &&
+      Number(current.parent) === 0 &&
+      Number(current.featured_media) === receipt.pre.featuredMedia &&
+      text(current.yoast_head_json?.title) === receipt.pre.seoTitle &&
+      text(current.yoast_head_json?.description) === receipt.pre.description &&
+      robots(current) === receipt.pre.indexability &&
+      canonical(finalPublic.html) === receipt.pre.canonical;
   if (
     !pass ||
     page.status !== 200 ||
-    sha(text(page.body?.content?.raw)) !== DESIGN_BUILD_APPROVED_HASH
+    sha(text(current.content?.raw)) !== DESIGN_BUILD_APPROVED_HASH ||
+    !identityPreserved ||
+    finalInspection.failed.length > 0
   ) {
     const blocked = save({
       ...receipt,

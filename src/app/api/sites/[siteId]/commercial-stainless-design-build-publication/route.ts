@@ -69,12 +69,18 @@ export async function POST(request: NextRequest, context: Context) {
       certificationId: string;
       authority: "ACTUAL_PUBLIC_HOST_RENDER";
       viewports: DesignBuildViewport[];
+      brokenInternalLinks: number;
+      devLinks: number;
+      previewLinks: number;
+      overflowMaskUsed: false;
+      claimSafety: "PASS";
+      unsupportedClaims: number;
     };
   };
   if (
     !body ||
     body.objectId !== 14 ||
-    body.revision !== 116 ||
+    body.revision !== 119 ||
     body.candidateHash !== DESIGN_BUILD_APPROVED_HASH
   )
     return NextResponse.json(
@@ -82,14 +88,14 @@ export async function POST(request: NextRequest, context: Context) {
       { status: 403 },
     );
   try {
-    if (body.confirm === "PUBLISH_EXACT_DESIGN_BUILD_CANDIDATE_V1")
+    if (body.confirm === "PUBLISH_EXACT_REPAIRED_DESIGN_BUILD_CANDIDATE_V2")
       return NextResponse.json({
         receipt: summarizeDesignBuildPublicationReceipt(
           await publishDesignBuild(site),
         ),
         publicationMutation: true,
       });
-    if (body.confirm === "RECOVER_EXACT_DESIGN_BUILD_COMMITTED_PUBLICATION_V1")
+    if (body.confirm === "RECOVER_EXACT_REPAIRED_DESIGN_BUILD_PUBLICATION_V2")
       return NextResponse.json({
         receipt: summarizeDesignBuildPublicationReceipt(
           await recoverDesignBuildPublication(site),
@@ -97,7 +103,7 @@ export async function POST(request: NextRequest, context: Context) {
         publicationMutation: false,
       });
     if (
-      body.confirm === "CERTIFY_EXACT_DESIGN_BUILD_ACTUAL_PUBLIC_RENDER_V1" &&
+      body.confirm === "CERTIFY_EXACT_REPAIRED_DESIGN_BUILD_PUBLIC_RENDER_V2" &&
       body.receiptId &&
       body.visual
     )
