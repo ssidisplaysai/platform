@@ -87,9 +87,10 @@ function genesis_pe_bridge_update_v1(WP_REST_Request $request) {
     $backup_id = hash('sha256', $read['raw']);
     update_option('genesis_pe_elementor_bridge_backup_v1_' . $read['pair']['document_id'] . '_' . $backup_id, ['raw' => $read['raw'], 'widget_html' => $read['widget_html'], 'document_hash' => $backup_id, 'widget_hash' => hash('sha256', $read['widget_html']), 'created_gmt' => gmdate('c')], false);
     update_post_meta($read['pair']['document_id'], '_elementor_data', wp_slash($updated));
+    delete_post_meta($read['pair']['document_id'], '_elementor_element_cache');
     clean_post_cache($read['pair']['document_id']);
     $after = genesis_pe_bridge_read_v1($read['pair']['document_id'], $read['pair']['widget_id']);
-    if (is_wp_error($after) || str_replace($after_token, $before_token, $after['raw'], $reverse_count) !== $read['raw'] || $reverse_count !== 1) { update_post_meta($read['pair']['document_id'], '_elementor_data', wp_slash($read['raw'])); clean_post_cache($read['pair']['document_id']); return new WP_Error('genesis_bridge_readback_failed', 'Unrelated Elementor normalization detected; original restored.', ['status' => 409]); }
+    if (is_wp_error($after) || str_replace($after_token, $before_token, $after['raw'], $reverse_count) !== $read['raw'] || $reverse_count !== 1) { update_post_meta($read['pair']['document_id'], '_elementor_data', wp_slash($read['raw'])); delete_post_meta($read['pair']['document_id'], '_elementor_element_cache'); clean_post_cache($read['pair']['document_id']); return new WP_Error('genesis_bridge_readback_failed', 'Unrelated Elementor normalization detected; original restored.', ['status' => 409]); }
     return rest_ensure_response(['backupId' => $backup_id, 'authority' => genesis_pe_bridge_response_v1($after)]);
 }
 
@@ -101,7 +102,7 @@ function genesis_pe_bridge_rollback_v1(WP_REST_Request $request) {
     if (!hash_equals(hash('sha256', $read['raw']), $expected)) return new WP_Error('genesis_bridge_rollback_hash_conflict', 'Exact current document hash required.', ['status' => 409]);
     $backup = get_option('genesis_pe_elementor_bridge_backup_v1_' . $read['pair']['document_id'] . '_' . $backup_id);
     if (!is_array($backup) || !isset($backup['raw']) || !hash_equals(hash('sha256', (string) $backup['raw']), $backup_id)) return new WP_Error('genesis_bridge_backup_invalid', 'Exact rollback backup required.', ['status' => 409]);
-    update_post_meta($read['pair']['document_id'], '_elementor_data', wp_slash((string) $backup['raw'])); clean_post_cache($read['pair']['document_id']);
+    update_post_meta($read['pair']['document_id'], '_elementor_data', wp_slash((string) $backup['raw'])); delete_post_meta($read['pair']['document_id'], '_elementor_element_cache'); clean_post_cache($read['pair']['document_id']);
     return rest_ensure_response(['rolledBack' => true, 'authority' => genesis_pe_bridge_response_v1(genesis_pe_bridge_read_v1($read['pair']['document_id'], $read['pair']['widget_id']))]);
 }
 
