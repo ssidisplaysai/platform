@@ -141,7 +141,8 @@ export function deriveGeneratedPageReviewModel(input: {
   const productMediaQa = evaluateProductAuthorityMediaRequirement({ approvedMediaAvailable: Boolean(input.productAuthorityReference), resolvedAssignment: productAssignment });
   const expectedState = input.job.state ?? input.target.stateCode;
   const locationLabel = input.target.cityName ? `${input.target.cityName}, ${expectedState}` : expectedState;
-  const localBundle = input.localThemingBundle && input.localThemingBundle.context.identity.pageRevisionIdentity === pageRevisionIdentity ? input.localThemingBundle : null;
+  const stagingPreservesApprovedBundle = Boolean(input.wordpressStagingReceipt && input.wordpressStagingReceipt.jobId === input.job.jobId && input.wordpressStagingReceipt.artifactSha === hashRenderedVisualContent(sourceHtml));
+  const localBundle = input.localThemingBundle && (input.localThemingBundle.context.identity.pageRevisionIdentity === pageRevisionIdentity || stagingPreservesApprovedBundle) ? input.localThemingBundle : null;
   const localizationQa = evaluateLocalizationContamination({
     expectedLocation: { city: input.target.cityName ?? "", state: expectedState },
     allowedContextLocations: localBundle ? [{ label: localBundle.context.geography.region, authority: localBundle.context.contextId }] : [],
