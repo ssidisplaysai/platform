@@ -174,6 +174,102 @@ These gaps are operator-context risks, not publication failures. An operator mus
 - Archive superseded site-publication plans without deleting their audit history.
 - Expand the general research-source registry before launching a new market not covered by a bespoke governed evidence bundle.
 
+## Automated execution recovery V1
+
+Recovery was performed after the original audit without dispatching a target or executing a workflow. The executable recovery commit is `3c19b4b8bc7c4e61116979c9b80f15182ca70d0e`; port 3003 runs with that exact `GIT_COMMIT`. Documentation may advance repository HEAD without changing the executable identity.
+
+### MCP and n8n recovery
+
+- Original state: `UNCONFIGURED` because port 3003 loaded the bounded shared-persistence environment only. Next environment loading is project-root cached and did not merge the approved onboarding environment.
+- Configuration authority: `glw-site-onboarding/.env.local` contains the existing governed `GLW_N8N_MCP_URL` and `GLW_N8N_MCP_TOKEN`; no secret was copied to source control or printed. Shared persistence remains under the bounded environment.
+- Runtime repair: port 3003 was restarted only, with MCP values read from the approved onboarding environment, bounded shared state retained, and exact executable SHA set.
+- MCP session establishment and tool discovery passed. `execute_workflow` and `get_workflow_execution` are both available.
+- Recovery workflow `9WTjTDXX0QNgF6Mw` and engine workflow `bIDXxyWnY22G8zJC` are visible and active.
+- Timeout remains the adapter's bounded default of 15 seconds. Execution reads use bounded retry. The scheduler serializes one target per campaign invocation; MCP clients are bounded per operation and reconnect on a subsequent operation.
+- No `execute_workflow` call was made. Historical lookups used `get_workflow_execution` with execution data omitted.
+
+Final state: MCP `READY`; n8n `READY`.
+
+### Release authority recovery
+
+- Original port 3003 identity: absent `GIT_COMMIT`, so exact release capability resolved `MISSING` regardless of repository HEAD.
+- Prior ProjectorEnclosure authority ended at certified source `dae8b1c3d4dcbb451a4801aa26536b5b02a28c6e`; SSI Displays had no scoped capability.
+- No deployed artifact existed for the certified source or the readiness-documentation HEAD. Port 3001 remains the unrelated immutable production release `03860b9b5d03f20aebf13519e95719ed2fe9bd77`.
+- Existing architecture defines release authority as an `ORGANIZATION_SITE` capability for exact `GIT_COMMIT` and operation `GLW_CAMPAIGN_ACTIVATION`. Capability enablement explicitly creates no owner grant, activation, dispatch, or publication authority.
+- Exact capabilities were enabled for executable SHA `3c19b4b8bc7c4e61116979c9b80f15182ca70d0e` on `site-ssi-projectorenclosure` and `site-ssi-screen-solutions-international` by the existing platform-admin endpoint.
+- The scheduler now verifies exact scoped release capability and WordPress authority before MCP preflight and before any lease. Its GET returns the same evidence as a non-mutating dry preflight.
+
+Final state: release authority `READY` for the two current SSI production sites on port 3003. A per-action owner confirmation remains required before dispatch.
+
+### Stale execution dispositions
+
+The original count of six combined four active-state orphans with two `CONTENT_READY` records. `CONTENT_READY` is terminal under the execution service and was preserved.
+
+| Job / external execution | Scope and target | Prior state | Authoritative evidence | Disposition |
+|---|---|---|---|---|
+| `4b03d3f0-3e7b-488f-999d-f8e928724d08` / `320913` | SSI Displays; Accent Texas Austin; no current target binding | `RUNNING`, `POLL_TIMEOUT`, last activity 2026-08-31 | n8n no longer retains ID; no target job binding; no lease; no WordPress object | `ORPHANED`, reconciled terminal `FAILED`; receipt `orphan-reconciliation-4b03d3f0-3e7b-488f-999d-f8e928724d08` |
+| `783c3281-f46b-43d7-bc42-3a414ec4c686` / `338978` | Legacy LED Display Warehouse; California; no current target binding | `RUNNING`, `POLL_TIMEOUT`, last activity 2026-08-31 | n8n ID not retained; no binding/lease/object | `ORPHANED`, reconciled terminal `FAILED`; receipt `orphan-reconciliation-783c3281-f46b-43d7-bc42-3a414ec4c686` |
+| `b67d762e-57fa-4ad5-a998-52d22b2a7258` / `376492` | Legacy LED Display Warehouse; Alaska; no current target binding | `RUNNING`, `POLL_TIMEOUT`, last activity 2026-09-02 | n8n ID not retained; no binding/lease/object | `ORPHANED`, reconciled terminal `FAILED`; receipt `orphan-reconciliation-b67d762e-57fa-4ad5-a998-52d22b2a7258` |
+| `44e467c5-e927-45eb-9c75-887a7d09709e` / `377402` | Legacy LED Display Warehouse; Alaska; no current target binding | `CONTENT_READY`, last activity 2026-09-02 | Generated content is durably present; execution service treats `CONTENT_READY` as terminal | `COMPLETED_BUT_UNRECONCILED`; preserved, not runnable |
+| `0ce549f3-13fa-44e3-803d-59495a53a24e` / `381416` | Legacy LED Display Warehouse; Delaware; no current target binding | `CONTENT_READY`, WordPress identity `19845`, last activity 2026-09-02 | Content/identity evidence is durable; execution service treats `CONTENT_READY` as terminal | `COMPLETED_BUT_UNRECONCILED`; preserved, not runnable |
+| `0a25f6d8-186d-4086-b4ce-d3518aab7b8a` / `427973` | SSI Displays; Accent Texas San Antonio; no current target binding | `DISPATCHED`, last activity 2026-09-05 | n8n ID not retained; no binding/lease/object | `ORPHANED`, reconciled terminal `FAILED`; receipt `orphan-reconciliation-0a25f6d8-186d-4086-b4ce-d3518aab7b8a` |
+
+After recovery: active-state stale executions `0`; active leases `0`; dangling leases `0`; active orphan jobs `0`; stuck executions `0`. The two detached content-ready artifacts remain historical evidence and cannot consume concurrency.
+
+### SSI benchmark failure
+
+The exact target is `target-campaign-ssi-site-ssi-screen-solutions-international-ssi-accent-rear-projection-film-multi-state-benchmark-tn`, job `9fa54ac3-36fe-48ce-b0f8-25e3e7e798c6`.
+
+- Target state: terminal `failed`, one attempt, no lease, no WordPress object.
+- Execution state: terminal `FAILED`, `DISPATCH_FAILED`, no external execution ID, no generated content, no publication state.
+- Failure stage: MCP transport dispatch failed on an upstream 502 before an external execution was created.
+- Classification: `BENCHMARK_ONLY_FAILURE` and valid historical terminal failure.
+- Disposition: preserve as failed evidence. Do not retry or convert to pass. It blocks that campaign target, not other campaigns or global scheduler concurrency.
+
+### Final dry execution preflight
+
+Subject: ProjectorEnclosure Texas / San Antonio, inspected only through scheduler GET.
+
+| Gate | Result |
+|---|---|
+| Target identity | `READY`: exact queued San Antonio target |
+| Campaign eligibility | `READY`: campaign active |
+| Release authority | `READY`: exact executable SHA and scoped capability |
+| WordPress credentials | `READY`: API and credential references configured |
+| MCP | `READY`: configured and connected |
+| n8n | `READY`: required tools and both workflows visible |
+| Concurrency | `READY`: 0 running, 1 slot available |
+| Daily allowance | `READY`: 0 used, 10 remaining for 2026-09-13 |
+| Publication policy | `READY`: `draft_only` |
+| Owner authorization | `REQUIRED`: exact dispatch confirmation remains absent |
+
+No POST was sent. San Antonio remains queued with no lease, job, execution, or WordPress object. The point at which dispatch becomes possible is the separate owner-authorized exact-target scheduler POST after rechecking this preflight.
+
+### Operator context safety
+
+Classification: `DISPLAY_ONLY`.
+
+The shell and Page Studio can display stale LED Display Warehouse labels under another query scope, but mutating campaign APIs resolve request organization/site authority and require the campaign to match that scope. Scheduler downstream requests use the persisted campaign organization/site, not the visible shell selection. No cross-organization action-authority path was found, so no UI repair was made in this bounded recovery.
+
+### Recovery readiness matrix
+
+| Area | Final state | Basis |
+|---|---|---|
+| MCP | `READY` | Configured, connected, required tools discovered |
+| n8n | `READY` | Recovery and engine workflows visible/active; read-only lookups operational |
+| Release authority | `READY` | Exact executable SHA authorized for both SSI production sites |
+| Execution state | `READY` | No active stale executions; four orphan receipts; content-ready evidence preserved |
+| Scheduler | `READY` | Zero leases, exact-release/MCP/WordPress gates before lease, concurrency 1, deterministic target and daily allowance |
+| Operator action context | `READY` | Display-only mismatch; action APIs enforce exact organization/site/campaign scope |
+
+Overall: `AUTOMATED_EXECUTION_READY_WITH_OWNER_ACTION`.
+
+Tomorrow:
+
+- `READ_ONLY_OPERATIONS`: monitor Commercial Stainless, Dallas, Houston, campaigns, executions, public health, and dry preflight.
+- `MANUAL_GOVERNED_OPERATIONS`: review existing drafts and evidence; reconcile historical content-ready artifacts only under a separate exact decision.
+- `AUTOMATED_EXECUTION`: technically ready but stopped at explicit owner authorization. The first owner action is an exact authorization for the intended target; if San Antonio is selected, authorize San Antonio specifically. The operator must rerun dry preflight immediately before POST.
+
 ## Final determination
 
-The platform is operational for monitoring and maintaining already-certified public output. Commercial Stainless, Dallas, and Houston are `READY_NOW`. ProjectorEnclosure Texas is `READY_WITH_OWNER_ACTION`, with San Antonio intentionally stopped. New automated campaign work is `BLOCKED` until MCP configuration, exact release authority, and stale execution reconciliation are complete.
+The platform is operational for monitoring and maintaining already-certified public output. Commercial Stainless, Dallas, and Houston remain `READY_NOW`. The four technical execution blockers are resolved or correctly terminalized. Automated execution is `READY_WITH_OWNER_ACTION`: an exact owner-authorized target confirmation is still required, and San Antonio remains intentionally stopped.
