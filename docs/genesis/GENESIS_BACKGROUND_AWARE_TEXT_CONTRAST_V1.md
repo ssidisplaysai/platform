@@ -1,6 +1,6 @@
 # Genesis Background-Aware Text Contrast V1
 
-> **Invalidation notice:** The earlier San Antonio owner/publication readiness conclusion is invalidated by `GENESIS_NATIVE_PREVIEW_CONTRAST_CERTIFICATION_MISMATCH_V1`. Its evidence authority was a signed host-equivalent reconstruction, not an authenticated native WordPress preview. Owner and publication readiness are blocked until actual native-host evidence resolves the contradiction.
+> **Invalidation and supersession notice:** The earlier San Antonio owner/publication readiness conclusion was invalidated by `GENESIS_NATIVE_PREVIEW_CONTRAST_CERTIFICATION_MISMATCH_V1` because its evidence authority was a signed host-equivalent reconstruction. Authenticated native WordPress evidence now supersedes that certificate and confirms the systemic repair at all four viewports. Publication itself remains unauthorized.
 
 ## Shared Contract
 
@@ -47,11 +47,11 @@ Certification: `san-antonio-background-aware-contrast-v1_1-after-san-antonio-sys
 - State: PASS
 - Observations: 336 (84 per viewport)
 - Failures: 0
-- Owner-review contrast gate: INVALIDATED / BLOCKED by actual native owner evidence
-- Host publication contrast gate: INVALIDATED / BLOCKED
+- Owner-review contrast gate: superseded by actual native PASS
+- Host publication contrast gate: superseded by actual native PASS
 - Generated image reevaluation: performed
 
-These numeric results remain valid only for the signed host-equivalent reconstruction. WordPress object `13103` remains draft, and no publication authorization or mutation exists.
+These numeric results remain valid only for the signed host-equivalent reconstruction. The authoritative native record is `san-antonio-actual-native-contrast-13103-v1`, with 9 failures per viewport before the shared rule and 0 after. WordPress object `13103` remains draft, and no publication authorization or mutation exists.
 
 Representative persisted results:
 

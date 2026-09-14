@@ -28,9 +28,18 @@ Therefore it cannot establish the actual native preview cascade. The synthetic P
 
 The host-equivalent capture computed both disputed H2 elements as white. Its winning readable declaration was the inline shared contract rule `h2 { color: var(--genesis-heading-color) !important }` from the reconstructed POST_CONTENT style block. Cross-origin theme/plugin stylesheets were listed but their CSS rules were unreadable to CSSOM under browser origin policy.
 
-## Native Cascade Evidence Gap
+## Proven Native Cascade Divergence
 
-The actual authenticated preview tab is not available to the automation context; the shared WordPress tab resolves to the login page. Therefore the actual native foreground RGB, winning selector, stylesheet URL, specificity, and `!important` state cannot be truthfully reported yet. This is recorded as `UNAVAILABLE_UNTIL_AUTHENTICATED_PREVIEW_IS_SHARED`, and no cascade repair is authorized.
+The owner shared the authenticated preview tab. In the actual page (`logged-in`, `admin-bar`, `page-id-13103`) both headings are now white after repair. A reversible browser-only reproduction removed exactly the six shared contrast rules, measured the native cascade, and restored them without changing WordPress:
+
+- Before, both H2 elements computed to `rgb(25,25,25)`.
+- The winning declaration was Cerato `h2 { color: rgb(25,25,25) }` from `zoo-custom-style.css?ver=7.1`, specificity `0,0,0,1`, not important.
+- Product Context contrast was 1.06:1 on `rgb(23,32,34)`.
+- Application contrast was 1.03:1 on effective `rgb(24,29,30)`.
+- After restoring the shared rules, the winning declaration was `h2 { color: var(--genesis-heading-color) !important }` from the inline governed composition style block.
+- Both headings computed to white; Product Context passed at 16.59:1 and Application passed at 17.03:1.
+
+The systemic cascade repair is the existing site-neutral background-luminance contract, not a page- or heading-specific selector.
 
 ## Pipeline Repair
 
@@ -45,4 +54,4 @@ The actual authenticated preview tab is not available to the automation context;
 
 ## Required Continuation
 
-The owner must authenticate in WordPress directly and share the actual preview tab. Genesis must then capture the two disputed H2 elements at 1440, 1024, 768, and 375, persist their actual native computed color and winning rules, and only then determine whether a reusable cascade repair is necessary.
+Actual authenticated native captures now cover 1440, 1024, 768, and 375. Each viewport records 9 failures before the shared rules and 0 after, stable style samples, paired screenshot hashes, and a screenshot/style correlation ID. Owner review may resume. Publication remains separately unauthorized.

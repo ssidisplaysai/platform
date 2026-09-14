@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { deriveGenesisContrastReadiness, normalizeGenesisRenderAuthority, selectAuthoritativeContrastEvidence } from "../../foundation/background-aware-text-contrast";
 import { SAN_ANTONIO_NATIVE_PREVIEW_CONTRAST_MISMATCH_V1 } from "../san-antonio-native-preview-contrast-mismatch";
+import { SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE } from "../san-antonio-actual-native-contrast-evidence";
 
 const snapshot = readFileSync(join(process.cwd(), "src/app/api/glw/pages/[jobId]/native-wordpress-render-snapshot/route.ts"), "utf8");
 const browser = readFileSync(join(process.cwd(), "src/modules/foundation/governed-render-capture-browser.ts"), "utf8");
@@ -18,7 +19,8 @@ describe("native host render contrast authority", () => {
 
   test("blocks readiness for the owner-observed native contradiction", () => {
     expect(SAN_ANTONIO_NATIVE_PREVIEW_CONTRAST_MISMATCH_V1.state).toBe("FAIL");
-    expect(SAN_ANTONIO_NATIVE_PREVIEW_CONTRAST_MISMATCH_V1.nativeCascadeRootCauseProven).toBe(false);
+    expect(SAN_ANTONIO_NATIVE_PREVIEW_CONTRAST_MISMATCH_V1.nativeCascadeRootCauseProven).toBe(true);
+    expect(SAN_ANTONIO_NATIVE_PREVIEW_CONTRAST_MISMATCH_V1.nativeWinningRuleSourceBefore).toContain("zoo-custom-style.css");
     expect(deriveGenesisContrastReadiness({ state: "PASS", authority: "HOST_EQUIVALENT_RENDER", nativeHostEvidenceAvailable: true, higherAuthorityContradiction: true })).toMatchObject({ ownerReviewReady: false, publicationReady: false });
   });
 
@@ -35,5 +37,14 @@ describe("native host render contrast authority", () => {
     expect(browser).toContain("styleSettlement.signature");
     expect(browser).toContain("matchedColorDeclarations");
     expect(browser).toContain("winningColorDeclaration");
+  });
+
+  test("persists actual-native before/after cascade and screenshot evidence", () => {
+    expect(SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE.authority).toBe("ACTUAL_NATIVE_HOST_RENDER");
+    expect(SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE.captures).toHaveLength(4);
+    expect(SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE.captures.every((capture) => capture.failuresBefore === 9 && capture.failuresAfter === 0 && /^[a-f0-9]{64}$/.test(capture.correlationId))).toBe(true);
+    expect(SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE.productContext.before.winningRuleSource).toContain("zoo-custom-style.css");
+    expect(SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE.productContext.after.important).toBe(true);
+    expect(SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE.screenshotComputedStyleCorrelation).toBe(true);
   });
 });
