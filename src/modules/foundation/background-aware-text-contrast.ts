@@ -1,6 +1,8 @@
 export const GENESIS_BACKGROUND_AWARE_TEXT_CONTRAST_CONTRACT = "GENESIS_BACKGROUND_AWARE_TEXT_CONTRAST_V1" as const;
 export const NATIVE_HOST_RENDER_AUTHORITY_CONTRACT = "NATIVE_HOST_RENDER_AUTHORITY_V1" as const;
 export const GENESIS_BACKGROUND_AWARE_TEXT_CONTRAST_CSS = `[data-genesis-background-luminance="dark"]{--genesis-heading-color:#fff;--genesis-copy-color:#f5f7f7;--genesis-accent-color:#f2b84b}[data-genesis-background-luminance="light"]{--genesis-heading-color:#191919;--genesis-copy-color:#313b3b;--genesis-accent-color:#7f1d18}[data-genesis-background-luminance] :is(h1,h2,h3){color:var(--genesis-heading-color)!important}[data-genesis-background-luminance] :is(.saw-copy,.saw-note){color:var(--genesis-copy-color)!important}[data-genesis-background-luminance] .saw-kicker{color:var(--genesis-accent-color)!important}[data-genesis-accent-treatment="light"]{--genesis-accent-color:#fff}`;
+export const GENESIS_DURABLE_HEADING_CONTRAST_CONTRACT = "GENESIS_DURABLE_HEADING_CONTRAST_V1" as const;
+export const GENESIS_DURABLE_HEADING_CONTRAST_CSS = `[data-genesis-background-luminance="dark"] :is(h1,h2,h3)[data-genesis-heading-authority="governed"]{color:var(--genesis-heading-color,#fff)!important}[data-genesis-background-luminance="light"] :is(h1,h2,h3)[data-genesis-heading-authority="governed"]{color:var(--genesis-heading-color,#191919)!important}`;
 
 export type GenesisBackgroundType = "LIGHT_SOLID" | "DARK_SOLID" | "LIGHT_IMAGE" | "DARK_IMAGE" | "IMAGE_WITH_LIGHT_OVERLAY" | "IMAGE_WITH_DARK_OVERLAY" | "GRADIENT" | "MIXED_OR_UNKNOWN";
 export type GenesisLuminanceClass = "LIGHT" | "DARK" | "MIXED_OR_UNKNOWN";

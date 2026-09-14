@@ -28,6 +28,7 @@ describe("native host render contrast authority", () => {
     expect(snapshot).toContain('fetch("https://projectorenclosure.com/fan-cooled-projector-enclosures/"');
     expect(snapshot).toContain('data-native-wordpress-equivalent="13103"');
     expect(snapshot).not.toMatch(/preview_nonce|preview_id|preview=true|wordpress_logged_in/);
+    expect(snapshot).toContain("getSanAntonioDurableHeadingContrastState");
   });
 
   test("requires stable styles and correlates screenshot with computed evidence", () => {
