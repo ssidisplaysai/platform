@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { CommercialStainlessWordPressWave1Review } from "@/modules/foundation/CommercialStainlessWordPressWave1Review";
 import { COMMERCIAL_STAINLESS_SITE_ID } from "@/modules/foundation/commercial-stainless-rich-composition";
+import { listCommercialStainlessWordPressPublicationReceipts } from "@/modules/foundation/commercial-stainless-wordpress-publication";
 import { listCommercialStainlessWordPressStageRecords, renderCommercialStainlessWordPressStagedPage } from "@/modules/foundation/commercial-stainless-wordpress-staging";
 import { createSiteContext } from "@/modules/foundation/context";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -18,5 +19,5 @@ export default async function CommercialStainlessWordPressWave1Page({ params }: 
     const heights = record.targetProfile === "LANDING_CONVERSION" ? { desktopHeight: 5800, mobileHeight: 9800 } : record.targetProfile === "CAPABILITY" ? { desktopHeight: 6100, mobileHeight: 10400 } : record.targetProfile === "PRODUCT_SERVICE" ? { desktopHeight: 5800, mobileHeight: 9700 } : record.targetProfile === "INDUSTRY_APPLICATION" ? { desktopHeight: 6200, mobileHeight: 10500 } : { desktopHeight: 5000, mobileHeight: 8500 };
     return { record, currentHtml: publicHtml.replace(/<head([^>]*)>/i, '<head$1><base href="https://commercialstainlesscounters.com/">'), stagedHtml: renderCommercialStainlessWordPressStagedPage(record, publicHtml), ...heights };
   }));
-  return <AppShell resourceSite={createSiteContext(site)}><CommercialStainlessWordPressWave1Review items={items} /></AppShell>;
+  return <AppShell resourceSite={createSiteContext(site)}><CommercialStainlessWordPressWave1Review items={items} receipts={listCommercialStainlessWordPressPublicationReceipts()} /></AppShell>;
 }

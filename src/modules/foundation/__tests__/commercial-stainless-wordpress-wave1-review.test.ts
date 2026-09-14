@@ -8,13 +8,13 @@ describe("Commercial Stainless actual WordPress Wave 1 review", () => {
   test("renders actual autosave HTML beside current public pages", () => {
     expect(route).toContain("renderCommercialStainlessWordPressStagedPage");
     expect(route).toContain("listCommercialStainlessWordPressStageRecords");
-    for (const text of ["Wave 1 actual autosave renders", "Desktop evidence", "Mobile evidence", "Autosave", "Public body", "Rollback"]) expect(component).toContain(text);
+    for (const text of ["Approved compositions and public receipts", "Desktop evidence", "Mobile evidence", "Autosave", "Public body", "Rollback"]) expect(component).toContain(text);
   });
 
-  test("has no publication or mutation control", () => {
+  test("shows authorized receipt-backed publication state without a Wave 2 action", () => {
     expect(component).not.toMatch(/<button|onClick|fetch\(/i);
-    expect(component).toContain("PUBLICATION UNAVAILABLE");
-    expect(component).toContain("Publication remains unauthorized");
+    for (const text of ["PUBLICATION AUTHORIZED", 'receipt?.publishedAt ? "COMPLETED"', 'receipt?.status === "PUBLIC_CERTIFIED"', '"CERTIFIED" : "PENDING"', "REVIEW PUBLIC PAGE", "Wave 2 and Wave 3 remain locked"]) expect(component).toContain(text);
+    expect(route).toContain("listCommercialStainlessWordPressPublicationReceipts");
     expect(route).not.toMatch(/POST|publishGenesis|writeGenesis|saveRecord/);
   });
 });

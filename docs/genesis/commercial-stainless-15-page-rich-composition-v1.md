@@ -135,4 +135,22 @@ Certification uses WordPress's actual autosave `content.rendered` output within 
 
 WordPress staging review route: `/sites/site-rj-metal-commercial-stainless-counters/build/rich-composition-wave-1-wordpress?organizationId=rj-metal&siteId=site-rj-metal-commercial-stainless-counters`.
 
-Actual WordPress staging captures are under `assets/commercial-stainless-wordpress-wave-1/`: four staged widths for each object plus current desktop/mobile controls. Publication remains unavailable.
+Actual WordPress staging captures are under `assets/commercial-stainless-wordpress-wave-1/`: four staged widths for each object plus current desktop/mobile controls. Publication was unavailable until the separate owner authorization recorded below.
+
+## WordPress Wave 1 publication attempt
+
+Owner authorization `COMMERCIAL_STAINLESS_WAVE_1_PUBLICATION_V1:APPROVED` authorized only objects 24, 11, 13, 17, and 23 from autosaves 88, 89, 90, 91, and 92. The bounded publication implementation records rollback evidence before each write, verifies the exact autosave raw and rendered hashes, updates only `post_content`, and requires public semantic and responsive visual certification before allowing the next object.
+
+The first transaction, object 24 from autosave 88, failed closed during immediate public verification with `IDENTITY_DRIFT` and `SEMANTIC_FAILURE`. Genesis restored the exact pre-publication raw content before stopping the wave. The rollback receipt is `csc-wave1-publication-24-88`; its pre-publication raw-content hash is `3829c2a5e5c322552dba1c4217ca4ea41236606b98ea1ff6a3e598ba182e3b41`, and its restored public-main hash is `c5cb250d3ffe4ead59cc23a68d1b69d268eda64644a7baab5cb0c11f7a203734`.
+
+Post-rollback verification confirmed:
+
+- Object 24 is restored, published, and does not expose the staged `.wr-page` composition.
+- Autosave 88 still exists and remains associated with the certified stage record.
+- Objects 11, 13, 17, and 23 were not mutated.
+- Homepage object 10 remains at public-main hash `691fe041b4fd669e29cd7f9583524acfd1152dede8c9864493c04bdbdfc17247`.
+- Design-Build object 14 remains published at public-main hash `2b78a67a1273a3fde3cd2064e4b879f48f21b53dcf91fc9f16f55fea9fcc2d0d`.
+- The published estate remains exactly objects 10 through 24, with no duplicate URL and no unintended publication.
+- Wave 2 and Wave 3 remain untouched.
+
+The owner review route now reads durable publication receipts and exposes direct public-page links. It contains no Wave 2 mutation action. This publication attempt is stopped and must not be resumed without a new owner decision after the verification mismatch is diagnosed.
