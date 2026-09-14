@@ -19,7 +19,7 @@ describe("Commercial Stainless Page 24 publication forensic contract", () => {
   });
 
   test("maps staged, promotion, stored, and public authorities", () => {
-    for (const marker of ["stagedAuthority", "promotionAuthority", "storedPublishedAuthority", "publicRenderAuthority", "elementorEvidence", "reusableBlockReferences"]) expect(forensic).toContain(marker);
+    for (const marker of ["stagedAuthority", "promotionAuthority", "storedPublishedAuthority", "publicRenderAuthority", "elementorEvidence", "reusableBlockReferences", "templateBlockSequence", "featuredImageBeforePostContent", "twentytwentyfive//page"]) expect(forensic).toContain(marker);
   });
 
   test("captures cache headers and repeated browser-independent public hashes", () => {

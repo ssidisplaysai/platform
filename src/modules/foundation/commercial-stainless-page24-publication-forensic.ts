@@ -25,6 +25,8 @@ type WordPressDocument = {
   yoast_head_json?: { title?: string; description?: string; canonical?: string; robots?: Record<string, string> };
 };
 
+type WordPressTemplate = { id?: string; slug?: string; theme?: string; source?: string; content?: { raw?: string; rendered?: string } };
+
 const PAGE_ID = 24;
 const AUTOSAVE_ID = 88;
 const PUBLIC_URL = `${COMMERCIAL_STAINLESS_ORIGIN}/request-a-quote/`;
@@ -137,12 +139,13 @@ async function publicRead() {
 export async function inspectCommercialStainlessPage24PublicationFailure(site: SiteConfiguration) {
   const resolved = authority(site);
   const stage = listCommercialStainlessWordPressStageRecords().find((record) => record.wordpressObjectId === PAGE_ID);
-  const receipt = listCommercialStainlessWordPressPublicationReceipts().find((record) => record.wordpressObjectId === PAGE_ID);
+  const receipt = listCommercialStainlessWordPressPublicationReceipts().filter((record) => record.wordpressObjectId === PAGE_ID).sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
   if (!stage || !receipt) throw new Error("COMMERCIAL_STAINLESS_PAGE24_FORENSIC_EVIDENCE_MISSING");
-  const [autosave, page, revisions, ...publicReads] = await Promise.all([
+  const [autosave, page, revisions, template, ...publicReads] = await Promise.all([
     getJson<WordPressDocument>(`${resolved.apiBase}/pages/${PAGE_ID}/autosaves/${AUTOSAVE_ID}?context=edit&_fields=id,parent,status,date_gmt,modified_gmt,title,content,featured_media&_forensic=${crypto.randomUUID()}`, resolved.headers),
     getJson<WordPressDocument>(`${resolved.apiBase}/pages/${PAGE_ID}?context=edit&_fields=id,status,slug,link,template,featured_media,title,content,meta,yoast_head_json&_forensic=${crypto.randomUUID()}`, resolved.headers),
     getJson<WordPressDocument[]>(`${resolved.apiBase}/pages/${PAGE_ID}/revisions?context=edit&per_page=100&_fields=id,parent,status,date_gmt,modified_gmt,title,content,featured_media&_forensic=${crypto.randomUUID()}`, resolved.headers),
+    getJson<WordPressTemplate>(`${resolved.apiBase}/templates/twentytwentyfive//page?context=edit&_fields=id,slug,theme,source,content&_forensic=${crypto.randomUUID()}`, resolved.headers),
     publicRead(),
     publicRead(),
     publicRead(),
@@ -153,6 +156,8 @@ export async function inspectCommercialStainlessPage24PublicationFailure(site: S
   const promotedRevisionCandidates = revisionSummaries.filter((revision) => revision.rawHash === stage.stagedContentHash);
   const rollbackRevisionCandidates = revisionSummaries.filter((revision) => revision.rawHash === receipt.rollbackAuthority.contentHash);
   const currentRobots = Object.values(page.body?.yoast_head_json?.robots ?? {}).join(",");
+  const templateRaw = text(template.body?.content?.raw);
+  const templateBlockSequence = [...templateRaw.matchAll(/<!--\s+wp:([a-z0-9-]+(?:\/[a-z0-9-]+)?)/gi)].map((match) => match[1]);
   const currentPublic = publicReads[0];
   const currentSafe = page.status === 200 && pageSummary.id === PAGE_ID && pageSummary.status === "publish" && pageSummary.slug === "request-a-quote" && pageSummary.link === PUBLIC_URL && pageSummary.rawHash === receipt.rollbackAuthority.contentHash && currentPublic.status === 200 && currentPublic.mainHash === receipt.prePublication.publicDocumentHash && currentPublic.canonical === receipt.prePublication.canonical && text(page.body?.yoast_head_json?.title) === receipt.prePublication.seoTitle && text(page.body?.yoast_head_json?.description) === receipt.prePublication.metaDescription && currentRobots === receipt.prePublication.indexability && pageSummary.featuredMediaId === receipt.prePublication.featuredMediaId;
   return {
@@ -188,6 +193,7 @@ export async function inspectCommercialStainlessPage24PublicationFailure(site: S
       featuredMediaId: pageSummary.featuredMediaId,
       elementorEvidence: pageSummary.elementorMetaKeys.length > 0 || autosaveSummary.elementorMetaKeys.length > 0,
       reusableBlockReferences: [...new Set([...text(autosave.body?.content?.raw).matchAll(/<!--\s*wp:block\s+\{[^}]*"ref"\s*:\s*(\d+)/gi)].map((match) => Number(match[1])))],
+      template: { httpStatus: template.status, id: text(template.body?.id), slug: text(template.body?.slug), theme: text(template.body?.theme), source: text(template.body?.source), rawHash: sha256(templateRaw), renderedHash: sha256(text(template.body?.content?.rendered)), blockSequence: templateBlockSequence, featuredImageBeforePostContent: templateBlockSequence.indexOf("post-featured-image") >= 0 && templateBlockSequence.indexOf("post-featured-image") < templateBlockSequence.indexOf("post-content") },
     },
     promotionPath: {
       exactRevisionEndpointUsed: false,
