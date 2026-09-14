@@ -209,7 +209,12 @@ export async function GET(request: NextRequest, context: Context) {
         binding: generationAuthority,
         failedJobId: legacyJob.jobId,
         failedArtifactSha256: baseWorkflow.artifactSha256,
-        wordpressReadAuthority: `${wordpressAuthority.siteId}:${wordpressAuthority.authorityHealthState}`,
+        wordpressReadAuthority: [
+          wordpressAuthority.siteId,
+          siteRecord.integrations.wordpressCredentialReference,
+          wordpressAuthority.configuredUsername,
+          wordpressAuthority.authorityHealthState,
+        ].join(":"),
         exactRuntime,
       })
     : null;
