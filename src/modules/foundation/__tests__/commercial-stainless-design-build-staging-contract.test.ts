@@ -1,0 +1,16 @@
+import fs from "node:fs";
+import path from "node:path";
+
+const staging = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/commercial-stainless-design-build-staging.ts"), "utf8");
+const route = fs.readFileSync(path.join(process.cwd(), "src/app/api/sites/[siteId]/commercial-stainless-design-build-staging/route.ts"), "utf8");
+const page = fs.readFileSync(path.join(process.cwd(), "src/app/sites/[siteId]/build/design-build-modernization/page.tsx"), "utf8");
+const review = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/CommercialStainlessDesignBuildReview.tsx"), "utf8");
+
+describe("Commercial Stainless Design-Build modernization staging", () => {
+  test("binds staging to object 14 and the Design-Build capability profile", () => { for (const marker of ["COMMERCIAL_STAINLESS_DESIGN_BUILD_MODERNIZATION_V1:STAGING_ONLY", "COMMERCIAL_STAINLESS_DESIGN_BUILD_OBJECT_ID = 14", 'profile: "DESIGN_BUILD_CAPABILITY"', 'candidateCompositionType: "GENESIS_RICH_DESIGN_BUILD_CAPABILITY"']) expect(staging).toContain(marker); });
+  test("uses current rich markers, distinct workflow, and exactly five governed media assignments", () => { for (const marker of ['class="wr-page wr-page--design-build"', 'class="wr-hero wr-hero--design-build"', "Project Workflow", "Requirements", "Collaboration", "Planning", "Fabrication", "Coordination", "mediaAssignments.length !== 5", "new Set(mediaAssignments.map((item) => item.url)).size !== 5"]) expect(staging).toContain(marker); });
+  test("captures rollback before autosave and verifies no public or parent mutation", () => { expect(staging.indexOf('status:"PREPARED"')).toBeLessThan(staging.indexOf('/pages/14/autosaves`,{method:"POST"')); for (const marker of ["rollbackContentRaw:before.contentRaw", "rollbackReady:true", "PUBLISHED_PARENT_CHANGED", "PUBLIC_STATE_CHANGED", "SEO_CHANGED", "FEATURED_MEDIA_CHANGED", "publicMutation:false"]) expect(staging).toContain(marker); });
+  test("fails closed on unsupported claims and preserves semantic media policy", () => { for (const marker of ["unsupportedClaims", '"certified"', '"engineering services"', '"installation included"', '"code compliant"', '"nationwide service"', '"lead time"', "evaluateSemanticMediaReuse"]) expect(staging).toContain(marker); });
+  test("exposes only explicit staging and a read-only review surface", () => { expect(route).toContain("STAGE_COMMERCIAL_STAINLESS_DESIGN_BUILD_MODERNIZATION_V1"); expect(route).toContain("RESTAGE_COMMERCIAL_STAINLESS_DESIGN_BUILD_MODERNIZATION_V1"); expect(route).toContain("publicationMutation: false"); expect(route).not.toMatch(/publishCommercial|PUBLIC_CERTIFIED/); expect(page).toContain("CommercialStainlessDesignBuildReview"); expect(review).toContain("No publication action exists here"); expect(review).not.toMatch(/<button|onClick|fetch\(/i); });
+  test("renders native-equivalent evidence with the installed host presentation authority",()=>{expect(staging).toContain('data-authority="GENESIS_RICH_PAGE_OWNS_PRIMARY_PAGE_PRESENTATION"');expect(staging).toContain("main#wp--skip-link--target{margin-top:0!important}");expect(staging).toContain(".wr-hero .wr-eyebrow,.wr-cta .wr-eyebrow{color:#fff!important");});
+});
