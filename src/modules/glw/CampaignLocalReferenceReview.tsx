@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import type { GlwLocalReferenceDraft } from "./campaign-local-reference-repository";
 import type { GlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
 
@@ -33,12 +34,12 @@ export function CampaignLocalReferenceReview(props: {
     try {
       const response = await fetch(`/api/glw/campaigns/${props.campaignId}/local-reference`, {
         method,
-        headers: {
+        headers: operatorMutationHeaders({
           "Content-Type": "application/json",
           "x-gcp-roles": props.requestRoles.join(","),
           "x-gcp-organization-id": props.organizationId,
           "x-gcp-site-id": props.siteId,
-        },
+        }),
         body: JSON.stringify({ operation, instructions, candidateId }),
       });
       const payload = await response.json() as { error?: string };
@@ -73,7 +74,7 @@ export function CampaignLocalReferenceReview(props: {
       form.set("instructions", imageInstructions);
       const response = await fetch(`/api/glw/campaigns/${props.campaignId}/local-reference`, {
         method: "POST",
-        headers: { "x-gcp-roles": props.requestRoles.join(","), "x-gcp-organization-id": props.organizationId, "x-gcp-site-id": props.siteId },
+        headers: operatorMutationHeaders({ "x-gcp-roles": props.requestRoles.join(","), "x-gcp-organization-id": props.organizationId, "x-gcp-site-id": props.siteId }),
         body: form,
       });
       const payload = await response.json() as { error?: string };

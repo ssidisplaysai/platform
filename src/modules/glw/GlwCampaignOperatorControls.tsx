@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 
 type QueueSummary = {
   total: number;
@@ -169,14 +170,14 @@ export function GlwCampaignOperatorControls({
   const [refreshingSeo, setRefreshingSeo] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   function requestHeaders(includeJson = false): HeadersInit {
-    return {
+    const headers = {
       ...(includeJson ? { "Content-Type": "application/json" } : {}),
       "x-gcp-roles": "platform_admin",
       "x-gcp-organization-id": organizationId,
       "x-gcp-site-id": siteId,
     };
+    return includeJson ? operatorMutationHeaders(headers) : headers;
   }
 
   async function loadScheduler() {

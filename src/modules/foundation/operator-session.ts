@@ -1,0 +1,64 @@
+import "server-only";
+
+import { createHash, randomBytes, randomUUID, scrypt as scryptCallback, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
+import type { NextRequest, NextResponse } from "next/server";
+import { deepClone, FoundationPersistenceConflictError, loadPersistedState, savePersistedState } from "./foundation-persistence";
+import { resolvePermissions } from "./permissions";
+import type { AppRole, PermissionAction } from "./types";
+
+export const OPERATOR_SESSION_COOKIE = "genesis_operator_session";
+export const OPERATOR_CSRF_COOKIE = "genesis_operator_csrf";
+export const OPERATOR_CSRF_HEADER = "x-genesis-csrf-token";
+export const OPERATOR_SESSION_AUTHORITY = "GENESIS_SERVER_SESSION_V1" as const;
+export const OPERATOR_SESSION_LIFETIME_SECONDS = 3600;
+const NAMESPACE = "genesis-server-verified-operator-session-v1";
+const scrypt = promisify(scryptCallback);
+
+const ALLOWED_ROLES: readonly AppRole[] = ["platform_admin", "ops_manager", "operations", "company_operator", "analyst", "manufacturing_planner", "manufacturing_engineer", "production_supervisor", "executive", "administrator", "viewer"];
+type DirectoryEntry = { principalId: string; email: string; roles: AppRole[]; passwordHash: string; enabled?: boolean };
+type SessionRecord = { sessionId: string; principalId: string; tokenHash: string; csrfHash: string; authenticatedAt: string; expiresAt: string; revokedAt: string | null };
+type State = { sessions: SessionRecord[] };
+const seed = (): State => ({ sessions: [] });
+const digest = (value: string) => createHash("sha256").update(value).digest("hex");
+const normalize = (value: string) => value.trim();
+const sessionLifetime = (environment: NodeJS.ProcessEnv = process.env) => { const configured = Number(environment.GENESIS_OPERATOR_SESSION_LIFETIME_SECONDS); return Number.isFinite(configured) ? Math.min(28_800, Math.max(300, Math.floor(configured))) : OPERATOR_SESSION_LIFETIME_SECONDS; };
+
+export type AuthenticatedOperatorPrincipal = { principalId: string; email: string; roles: readonly AppRole[]; capabilities: readonly PermissionAction[]; sessionId: string; authenticatedAt: string; expiresAt: string; authenticationAuthority: typeof OPERATOR_SESSION_AUTHORITY };
+export type OperatorSessionResolution = { ok: true; principal: AuthenticatedOperatorPrincipal; csrfToken: string | null } | { ok: false; state: "NOT_AUTHENTICATED" | "SESSION_EXPIRED" | "SESSION_REVOKED" | "SESSION_TAMPERED" | "DIRECTORY_UNAVAILABLE"; principal: null; csrfToken: null };
+
+function directory(environment: NodeJS.ProcessEnv = process.env): DirectoryEntry[] {
+  const raw = environment.GENESIS_OPERATOR_DIRECTORY_JSON?.trim(); if (!raw) return [];
+  const parsed = JSON.parse(raw) as unknown; if (!Array.isArray(parsed)) throw new Error("GENESIS_OPERATOR_DIRECTORY_INVALID");
+  return parsed.map((item) => { const value = item as Partial<DirectoryEntry>; const principalId = normalize(value.principalId ?? ""); const email = normalize(value.email ?? "").toLowerCase(); const roles = Array.isArray(value.roles) ? value.roles.filter((role): role is AppRole => ALLOWED_ROLES.includes(role as AppRole)) : []; const passwordHash = normalize(value.passwordHash ?? ""); if (!principalId || !email || !email.includes("@") || !roles.length || !passwordHash.startsWith("scrypt$")) throw new Error("GENESIS_OPERATOR_DIRECTORY_INVALID"); return { principalId, email, roles: [...new Set(roles)], passwordHash, enabled: value.enabled !== false }; });
+}
+
+function mutate<T>(change: (state: State) => T): T { for (let attempt = 0; attempt < 8; attempt += 1) { const loaded = loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed }); const state = deepClone(loaded.state); const result = change(state); try { savePersistedState({ namespace: NAMESPACE, state, expectedRevision: loaded.revision }); return result; } catch (error) { if (!(error instanceof FoundationPersistenceConflictError) || attempt === 7) throw error; } } throw new Error("OPERATOR_SESSION_CAS_EXHAUSTED"); }
+function readState() { return loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed }).state; }
+function parseCookie(request: NextRequest, name: string) { return request.cookies.get(name)?.value?.trim() || null; }
+function secureCookie(request: NextRequest) { return request.nextUrl.protocol === "https:" || request.headers.get("x-forwarded-proto")?.toLowerCase() === "https"; }
+function cookieOptions(request: NextRequest, httpOnly: boolean) { return { httpOnly, sameSite: "strict" as const, secure: secureCookie(request), path: "/", maxAge: sessionLifetime() }; }
+
+export async function createScryptPasswordHash(password: string, salt = randomBytes(16)): Promise<string> { if (password.length < 12) throw new Error("OPERATOR_PASSWORD_TOO_SHORT"); const derived = await scrypt(password, salt, 64) as Buffer; return `scrypt$${salt.toString("base64url")}$${derived.toString("base64url")}`; }
+async function verifyPassword(password: string, encoded: string) { const [scheme, saltValue, hashValue] = encoded.split("$"); if (scheme !== "scrypt" || !saltValue || !hashValue) return false; const expected = Buffer.from(hashValue, "base64url"); const actual = await scrypt(password, Buffer.from(saltValue, "base64url"), expected.length) as Buffer; return actual.length === expected.length && timingSafeEqual(actual, expected); }
+
+export async function authenticateOperator(input: { identity: string; password: string; now?: Date; environment?: NodeJS.ProcessEnv }) { const environment = input.environment ?? process.env; const identity = normalize(input.identity).toLowerCase(); const entries = directory(environment); const entry = entries.find((candidate) => candidate.enabled !== false && (candidate.email === identity || candidate.principalId.toLowerCase() === identity)); const passwordHash = entry?.passwordHash ?? "scrypt$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"; const valid = await verifyPassword(input.password, passwordHash).catch(() => false); if (!entry || !valid) throw new Error("OPERATOR_AUTHENTICATION_FAILED"); const now = input.now ?? new Date(); const token = randomBytes(32).toString("base64url"); const csrfToken = randomBytes(32).toString("base64url"); const session: SessionRecord = { sessionId: `genesis-session-${randomUUID()}`, principalId: entry.principalId, tokenHash: digest(token), csrfHash: digest(csrfToken), authenticatedAt: now.toISOString(), expiresAt: new Date(now.getTime() + sessionLifetime(environment) * 1000).toISOString(), revokedAt: null }; mutate((state) => { state.sessions.push(session); return null; }); return { token, csrfToken, principal: buildPrincipal(session, entry) };
+}
+
+function buildPrincipal(session: SessionRecord, entry: DirectoryEntry): AuthenticatedOperatorPrincipal { return { principalId: entry.principalId, email: entry.email, roles: entry.roles, capabilities: [...resolvePermissions(entry.roles)], sessionId: session.sessionId, authenticatedAt: session.authenticatedAt, expiresAt: session.expiresAt, authenticationAuthority: OPERATOR_SESSION_AUTHORITY }; }
+function testPrincipal(request: NextRequest, environment: NodeJS.ProcessEnv): AuthenticatedOperatorPrincipal | null { if (environment.NODE_ENV !== "test") return null; const roles = (request.headers.get("x-gcp-roles") ?? "").split(",").map((item) => item.trim()).filter((role): role is AppRole => ALLOWED_ROLES.includes(role as AppRole)); if (!roles.length) return null; const principalId = request.headers.get("x-gcp-principal-id")?.trim() || "test-principal"; const sessionId = request.headers.get("x-gcp-session-id")?.trim() || "test-session"; return { principalId, email: "test-principal@invalid.test", roles, capabilities: [...resolvePermissions(roles)], sessionId, authenticatedAt: new Date(0).toISOString(), expiresAt: new Date(8_640_000_000_000_000).toISOString(), authenticationAuthority: OPERATOR_SESSION_AUTHORITY }; }
+
+export function resolveAuthenticatedOperatorPrincipal(request: NextRequest, now = new Date(), environment: NodeJS.ProcessEnv = process.env): OperatorSessionResolution {
+  const injected = testPrincipal(request, environment); if (injected) return { ok: true, principal: injected, csrfToken: null };
+  const token = parseCookie(request, OPERATOR_SESSION_COOKIE); if (!token) return { ok: false, state: "NOT_AUTHENTICATED", principal: null, csrfToken: null };
+  const state = readState(); const session = state.sessions.find((candidate) => candidate.tokenHash === digest(token)); if (!session) return { ok: false, state: "SESSION_TAMPERED", principal: null, csrfToken: null }; if (session.revokedAt) return { ok: false, state: "SESSION_REVOKED", principal: null, csrfToken: null }; if (new Date(session.expiresAt) <= now) return { ok: false, state: "SESSION_EXPIRED", principal: null, csrfToken: null };
+  let entries: DirectoryEntry[]; try { entries = directory(environment); } catch { return { ok: false, state: "DIRECTORY_UNAVAILABLE", principal: null, csrfToken: null }; } const entry = entries.find((candidate) => candidate.enabled !== false && candidate.principalId === session.principalId); if (!entry) return { ok: false, state: "DIRECTORY_UNAVAILABLE", principal: null, csrfToken: null }; const csrfToken = parseCookie(request, OPERATOR_CSRF_COOKIE); return { ok: true, principal: buildPrincipal(session, entry), csrfToken };
+}
+
+export function validateOperatorMutationRequest(request: NextRequest, resolution = resolveAuthenticatedOperatorPrincipal(request)) { if (!resolution.ok) return false; if (process.env.NODE_ENV === "test" && resolution.principal.email === "test-principal@invalid.test") return true; const origin = request.headers.get("origin"); if (!origin || origin !== request.nextUrl.origin) return false; const cookieToken = resolution.csrfToken; const headerToken = request.headers.get(OPERATOR_CSRF_HEADER)?.trim() || null; if (!cookieToken || !headerToken || cookieToken.length !== headerToken.length || !timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken))) return false; const session = readState().sessions.find((candidate) => candidate.sessionId === resolution.principal.sessionId); return Boolean(session && session.csrfHash === digest(headerToken) && !session.revokedAt);
+}
+
+export function revokeOperatorSession(sessionId: string, now = new Date()) { return mutate((state) => { const session = state.sessions.find((candidate) => candidate.sessionId === sessionId); if (!session || session.revokedAt) return false; session.revokedAt = now.toISOString(); return true; }); }
+export function setOperatorSessionCookies(response: NextResponse, request: NextRequest, token: string, csrfToken: string) { response.cookies.set(OPERATOR_SESSION_COOKIE, token, cookieOptions(request, true)); response.cookies.set(OPERATOR_CSRF_COOKIE, csrfToken, cookieOptions(request, false)); }
+export function clearOperatorSessionCookies(response: NextResponse, request: NextRequest) { response.cookies.set(OPERATOR_SESSION_COOKIE, "", { ...cookieOptions(request, true), maxAge: 0 }); response.cookies.set(OPERATOR_CSRF_COOKIE, "", { ...cookieOptions(request, false), maxAge: 0 }); }
+export function getOperatorSessionState() { return deepClone(readState()); }

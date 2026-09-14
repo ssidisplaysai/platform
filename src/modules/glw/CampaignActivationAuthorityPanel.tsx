@@ -3,6 +3,7 @@
 import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 
 export type CampaignActivationReadiness = {
   knowledgePackReady: boolean;
@@ -51,12 +52,12 @@ export function CampaignActivationAuthorityPanel(props: {
     try {
       const response = await fetch(`/api/glw/campaigns/${props.campaignId}/activation-authorization`, {
         method: "POST",
-        headers: {
+        headers: operatorMutationHeaders({
           "Content-Type": "application/json",
           "x-gcp-roles": props.requestRoles.join(","),
           "x-gcp-organization-id": props.organizationId,
           "x-gcp-site-id": props.siteId,
-        },
+        }),
         body: JSON.stringify({ operation: "AUTHORIZE_ACTIVATION", expiresInMinutes: 15 }),
       });
       const payload = await response.json() as { error?: string; grant?: { status?: string } | null };
@@ -78,12 +79,12 @@ export function CampaignActivationAuthorityPanel(props: {
     try {
       const response = await fetch(`/api/glw/campaigns/${props.campaignId}/activate`, {
         method: "POST",
-        headers: {
+        headers: operatorMutationHeaders({
           "Content-Type": "application/json",
           "x-gcp-roles": props.requestRoles.join(","),
           "x-gcp-organization-id": props.organizationId,
           "x-gcp-site-id": props.siteId,
-        },
+        }),
         body: JSON.stringify({
           referenceStateCode: props.readiness.referenceStateCode,
           referenceCitySlug: props.readiness.referenceCitySlug,

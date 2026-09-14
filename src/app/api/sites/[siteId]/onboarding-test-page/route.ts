@@ -1,18 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { authorizeRequest, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { getSiteById, updateSite } from "@/modules/foundation/site-repository";
 import { publishGenesisTestPage } from "@/modules/foundation/wordpress-onboarding-publisher";
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   context: { params: Promise<{ siteId: string }> },
 ) {
-  const roles = request.headers.get("x-gcp-roles") ?? "";
-  const organizationId = request.headers.get("x-gcp-organization-id");
-  const requestedSiteId = request.headers.get("x-gcp-site-id");
-
-  if (!roles.split(",").map((value) => value.trim()).includes("ops_manager")) {
-    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
-  }
+  const auth = authorizeRequest(request, "sites:update");
+  const scope = resolveRequestScope(request);
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const { siteId } = await context.params;
   const site = getSiteById(siteId);
@@ -22,8 +19,8 @@ export async function POST(
   }
 
   if (
-    organizationId !== site.organizationId ||
-    requestedSiteId !== site.siteId
+    scope.organizationId !== site.organizationId ||
+    scope.siteId !== site.siteId
   ) {
     return NextResponse.json({ error: "Site scope mismatch." }, { status: 403 });
   }

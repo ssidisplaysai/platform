@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { authorizeRequest, resolveRequestScope } from "@/modules/foundation/api-auth";
 
 import {
   listGlwCampaigns,
@@ -24,19 +25,9 @@ function header(
     ?.trim() ?? "";
 }
 
-function requirePlatformAdmin(
-  request: NextRequest,
-): void {
-  const roles =
-    header(
-      request,
-      "x-gcp-roles",
-    )
-      .split(",")
-      .map((role) => role.trim())
-      .filter(Boolean);
-
-  if (!roles.includes("platform_admin")) {
+function requirePlatformAdmin(request: NextRequest): void {
+  const auth = authorizeRequest(request, "sites:update");
+  if (!auth.ok || !auth.roles.includes("platform_admin")) {
     throw new Error(
       "Platform administrator authority is required.",
     );
@@ -49,17 +40,9 @@ function requireScope(
   organizationId: string;
   siteId: string;
 } {
-  const organizationId =
-    header(
-      request,
-      "x-gcp-organization-id",
-    );
-
-  const siteId =
-    header(
-      request,
-      "x-gcp-site-id",
-    );
+  const scope = resolveRequestScope(request);
+  const organizationId = scope.organizationId ?? "";
+  const siteId = scope.siteId ?? "";
 
   if (!organizationId || !siteId) {
     throw new Error(

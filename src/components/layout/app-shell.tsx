@@ -7,7 +7,8 @@ import { createFoundationContext, getSitesForOrganization } from "@/modules/foun
 import { FOUNDATION_COMMANDS, FOUNDATION_NAVIGATION_ITEMS } from "@/modules/foundation/navigation";
 import { hasPermission, resolvePermissions } from "@/modules/foundation/permissions";
 import { getVisibleCommandPaletteActions, getVisibleNavigationItems } from "@/modules/foundation/selectors";
-import type { SiteConfiguration, SiteContext } from "@/modules/foundation/types";
+import type { AppRole, SiteConfiguration, SiteContext } from "@/modules/foundation/types";
+import { OperatorSessionStatus } from "./OperatorSessionStatus";
 const ORGANIZATION_STORAGE_KEY = "gcp.selectedOrganizationId";
 const SITE_STORAGE_KEY = "gcp.selectedSiteId";
 
@@ -27,11 +28,11 @@ const COLLAPSIBLE_NAVIGATION_LABELS = new Set([
 export function AppShell({ children, resourceSite = null }: { children: React.ReactNode; resourceSite?: SiteContext | null }) {
   const pathname = usePathname();
   const foundationContext = useMemo(() => createFoundationContext(), []);
+  const [operatorRoles, setOperatorRoles] = useState<readonly AppRole[]>([]);
   const permissions = useMemo(
-    () => resolvePermissions(foundationContext.user.roles),
-    [foundationContext.user.roles],
+    () => resolvePermissions(operatorRoles),
+    [operatorRoles],
   );
-
   const initialSelection = useMemo(
     () => ({
       organizationId: resourceSite?.organizationId ?? foundationContext.selectedOrganizationId,
@@ -61,6 +62,7 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
   const [moreNavOpen, setMoreNavOpen] = useState(false);
   const effectiveOrganizationId = resourceSite?.organizationId ?? selectedOrganizationId;
   const effectiveSiteId = resourceSite?.id ?? selectedSiteId;
+  useEffect(() => { let active = true; void fetch("/api/operator-session", { cache: "no-store" }).then(async (response) => { const body = await response.json() as { principal?: { roles?: AppRole[] } | null }; if (active) setOperatorRoles(response.ok && body.principal?.roles ? body.principal.roles : []); }).catch(() => { if (active) setOperatorRoles([]); }); return () => { active = false; }; }, []);
 
   const visibleNavigationItems = useMemo(
     () => getVisibleNavigationItems(FOUNDATION_NAVIGATION_ITEMS, permissions),
@@ -454,7 +456,6 @@ useEffect(() => {
     params.set("siteId", nextSiteId);
     window.location.href = `${window.location.pathname}?${params.toString()}`;
   }
-
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="flex min-h-screen flex-col xl:flex-row">
@@ -464,11 +465,7 @@ useEffect(() => {
 
           <section className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Workspace Context</p>
-            <p className="mt-2 text-sm font-semibold text-white">{foundationContext.user.name}</p>
-            <p className="text-xs text-zinc-400">{foundationContext.user.email}</p>
-            <p className="mt-3 text-xs text-zinc-500">
-              Roles: {foundationContext.user.roles.join(", ")}
-            </p>
+            <p className="mt-2 text-sm font-semibold text-white"><OperatorSessionStatus /></p>
 
             <label className="mt-4 block text-xs uppercase tracking-widest text-zinc-500">
               Organization
