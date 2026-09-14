@@ -179,6 +179,14 @@ export function GlwGeneratedPageReviewWorkspace({
         </section>
       ) : null}
 
+      {model.heroContrastRepair ? (
+        <section className="border border-yellow-600 bg-yellow-950/15 p-5" aria-label="San Antonio hero contrast repair">
+          <div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-yellow-300">Hero Contrast Repair</p><h2 className="mt-2 text-2xl font-black text-white">Ready for Owner Hero Review</h2><p className="mt-2 text-sm text-zinc-300">The native-shell H1 changed from {model.heroContrastRepair.h1ColorBefore} to {model.heroContrastRepair.h1ColorAfter}. Hero background, copy, CTAs, media, and geometry remain unchanged.</p></div>
+          <dl className="mt-5 grid gap-4 border-t border-yellow-900 pt-5 sm:grid-cols-2 lg:grid-cols-4"><TraceItem label="Before hash" value={model.heroContrastRepair.beforeHash} /><TraceItem label="After hash" value={model.heroContrastRepair.afterHash} /><TraceItem label="Contrast gate" value={model.heroContrastRepair.certificationState} />{model.heroContrastRepair.captures.map((capture) => <TraceItem key={capture.viewport} label={capture.viewport.replaceAll("_", " ")} value={`H1 ${capture.h1Contrast.toFixed(2)}:1 · copy ${capture.supportingContrast.toFixed(2)}:1 · CTAs ${Math.min(capture.primaryCtaContrast, capture.secondaryCtaContrast).toFixed(2)}:1 · note ${capture.disclaimerContrast.toFixed(2)}:1 · overlap ${capture.overlap ? "YES" : "NO"} · overflow ${capture.overflow}`} />)}</dl>
+          <p className="mt-4 text-xs leading-5 text-zinc-500">Native preview automation remains unavailable. Open the WordPress editor and click Preview to visually approve this contrast repair before any publication authorization.</p>
+        </section>
+      ) : null}
+
       <section
         className="border border-zinc-800 bg-zinc-900/45 p-5"
         aria-label="Review issues"
