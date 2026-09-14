@@ -7,7 +7,7 @@ import { GlwVisualReviewAction } from "./GlwVisualReviewAction";
 
 const stateTone: Record<ReviewSignal | GeneratedPageReviewModel["reviewState"], string> = {
   PASS: "text-emerald-300", WARNING: "text-amber-300", BLOCKED: "text-red-300", NOT_EVALUATED: "text-zinc-500",
-  READY_FOR_OWNER_REVIEW: "text-emerald-300", NEEDS_ATTENTION: "text-amber-300",
+  READY_FOR_OWNER_REVIEW: "text-emerald-300", NEEDS_ATTENTION: "text-amber-300", REVIEW_BLOCKED: "text-red-300",
 };
 
 function State({ value }: { value: ReviewSignal }) { return <span className={`text-xs font-semibold ${stateTone[value]}`}>{value.replaceAll("_", " ")}</span>; }
@@ -52,6 +52,12 @@ export function GlwGeneratedPageReviewWorkspace({ model }: { model: GeneratedPag
       <div className="mt-4 divide-y divide-zinc-800">
         {model.issues.map((issue, index) => <div key={`${issue.category}-${index}`} className="grid gap-2 py-4 md:grid-cols-[8rem_1fr_1fr]"><p className="text-xs font-semibold text-zinc-400">{issue.category} · {issue.severity}</p><div><p className="font-semibold text-white">{issue.what}</p><p className="mt-1 text-sm text-zinc-400">{issue.effect}</p></div><p className="text-sm text-zinc-300">Safe next step: {issue.safeNextStep}</p></div>)}
       </div>
+    </section>
+
+    <section className="border border-zinc-800 bg-zinc-900/45 p-5" aria-label="Localization QA">
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.22em] text-red-400">Localization QA</p><h2 className="mt-2 text-xl font-bold text-white">Owner-visible location contamination</h2></div><State value={model.localizationQa.state === "FAIL" ? "BLOCKED" : "PASS"} /></div>
+      <p className="mt-3 text-sm text-zinc-400">{model.localizationQa.contract} · {model.localizationQa.occurrences.length} governed location occurrence{model.localizationQa.occurrences.length === 1 ? "" : "s"} inspected</p>
+      {model.localizationQa.forbiddenOccurrences.length ? <div className="mt-4 border border-red-800 bg-red-950/25 p-4">{model.localizationQa.forbiddenOccurrences.map((occurrence, index) => <p key={`${occurrence.token}-${occurrence.source}-${index}`} className="text-sm text-red-200">{occurrence.token} · {occurrence.source.replaceAll("_", " ")} · {occurrence.authority}</p>)}</div> : null}
     </section>
 
     <section className="min-w-0 max-w-full border border-zinc-800 bg-zinc-900/45 p-5" aria-label="Actual WordPress draft preview">

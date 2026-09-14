@@ -3,6 +3,7 @@ import "server-only";
 import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
 
 const NAMESPACE = "site-page-media-assignment-v1";
+export const PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE = "PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE" as const;
 
 export type SitePageMediaRole = "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE";
 export type SitePageMediaReferenceRole = "PRODUCT_TRUTH" | "ENVIRONMENT" | "STYLE";
@@ -132,6 +133,47 @@ export function listSitePageMediaAssignments(input: {
     && assignment.siteId === input.siteId
     && assignment.buildSessionId === input.buildSessionId
     && (!input.pageRevisionId || assignment.pageRevisionId === input.pageRevisionId)));
+}
+
+export function resolveApprovedProductAuthorityMedia(input: {
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  authorityReference: string;
+}): SitePageMediaAssignment | null {
+  const state = loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed }).state;
+  const candidates = state.assignments.filter((assignment) =>
+    assignment.organizationId === input.organizationId
+    && assignment.siteId === input.siteId
+    && assignment.role === "PRODUCT_AUTHORITY"
+    && assignment.asset.type === "APPROVED_EXISTING"
+    && assignment.asset.productId === input.productId
+    && assignment.asset.authorityReference === input.authorityReference
+    && assignment.approval.approvedBy.trim()
+    && Number.isFinite(Date.parse(assignment.approval.approvedAt))
+  );
+  return candidates.length
+    ? deepClone(candidates.sort((left, right) => right.approval.approvedAt.localeCompare(left.approval.approvedAt))[0])
+    : null;
+}
+
+export function evaluateProductAuthorityMediaRequirement(input: {
+  approvedMediaAvailable: boolean;
+  resolvedAssignment: SitePageMediaAssignment | null;
+}): {
+  contract: typeof PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE;
+  state: "PASS" | "FAIL";
+  code: "REQUIRED_MEDIA_UNRESOLVED" | null;
+  generatedMediaUsedAsDocumentarySubstitute: false;
+} {
+  const resolved = input.resolvedAssignment?.role === "PRODUCT_AUTHORITY"
+    && input.resolvedAssignment.asset.type === "APPROVED_EXISTING";
+  return {
+    contract: PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE,
+    state: !input.approvedMediaAvailable || resolved ? "PASS" : "FAIL",
+    code: input.approvedMediaAvailable && !resolved ? "REQUIRED_MEDIA_UNRESOLVED" : null,
+    generatedMediaUsedAsDocumentarySubstitute: false,
+  };
 }
 
 export function saveSitePageMediaAssignment(input: Omit<SitePageMediaAssignment, "assignmentId" | "createdAt">): SitePageMediaAssignment {

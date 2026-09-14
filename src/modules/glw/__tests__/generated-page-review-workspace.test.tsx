@@ -23,13 +23,13 @@ const job = {
   jobId: "job-dallas", correlationId: "corr", executionTransport: "N8N_MCP", organizationId: "ssi", siteId: "site-projector", productId: "product-enclosure", productTopic: "Fan Cooled Projector Enclosures", state: "Texas", city: "Dallas", slug: target.canonicalPath, title: "Fan Cooled Projector Enclosures in Dallas", seoTitle: "Fan Cooled Projector Enclosures Dallas Texas | ProjectorEnclosure.com", metaDescription: "Discover fan cooled projector enclosures Dallas Texas for commercial AV, classrooms, and venues.", publicationIntent: "draft", status: "COMPLETE", externalExecutionId: "579510", wordpressObjectId: "13084", wordpressUrl: "https://projectorenclosure.com/?page_id=13084", wordpressStatus: "draft", generatedDraft: { title: "Fan Cooled Projector Enclosures in Dallas", contentHtml, slug: target.canonicalPath, excerpt: "Commercial projector enclosure planning for Dallas.", seoTitle: "Fan Cooled Projector Enclosures Dallas Texas | ProjectorEnclosure.com", metaDescription: "Discover fan cooled projector enclosures Dallas Texas for commercial AV, classrooms, and venues.", focusKeyphrase: "fan cooled projector enclosures dallas texas" }, errorCode: null, errorMessage: null, requestedPublicationMode: "draft", disposition: "DRAFT_READY", qaStatus: "COMPLETE", qaChecks: { contentPresent: { ok: true, message: "Generated content is present." }, expectedCity: { ok: true, message: "Expected city is present." }, productAuthority: { exactProductMatch: true }, internalLinks: { linksRendered: 1 }, mediaAuthority: { selectedMediaId: 10757, selectedProvenance: "PRODUCT_INTELLIGENCE" } }, qaFailureReasons: {}, focusKeyphrase: "fan cooled projector enclosures dallas texas", wordCount: 2208, featuredImagePresent: true, createdAt: "2026-09-12T00:00:00.000Z", dispatchedAt: "2026-09-12T01:00:00.000Z", updatedAt: "2026-09-12T02:00:00.000Z", completedAt: "2026-09-12T02:00:00.000Z",
 } as GlwPageExecutionRecord;
 
-function model(overrides: { wordpressDraft?: object | null; wordpressMedia?: object | null; readState?: string; mediaAssignments?: readonly SitePageMediaAssignment[] } = {}) {
+function model(overrides: { wordpressDraft?: object | null; wordpressMedia?: object | null; readState?: string; mediaAssignments?: readonly SitePageMediaAssignment[]; approvedProductMedia?: SitePageMediaAssignment | null; referenceLocations?: readonly { label: string; authority: string }[]; targetStatus?: GlwCampaignTarget["status"] } = {}) {
   return deriveGeneratedPageReviewModel({
-    campaign, target, job, siteName: "ProjectorEnclosure.com", domain: "projectorenclosure.com", productName: "Fan Cooled Projector Enclosures", productAuthorityReference: "wordpress-media:10757", productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+    campaign, target: { ...target, status: overrides.targetStatus ?? target.status }, job, siteName: "ProjectorEnclosure.com", domain: "projectorenclosure.com", productName: "Fan Cooled Projector Enclosures", productAuthorityReference: "wordpress-media:10757", productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
     knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: "site-projector", instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: "product-enclosure", scope: "stable_fact" }], updatedAt: "2026-09-12" },
     wordpressDraft: overrides.wordpressDraft === undefined ? { id: 13084, slug: "dallas", status: "draft", link: "https://projectorenclosure.com/?page_id=13084", modified_gmt: "2026-09-12T02:00:00", featured_media: 10757, title: { raw: job.title }, content: { raw: contentHtml } } : overrides.wordpressDraft as never,
     wordpressMedia: overrides.wordpressMedia === undefined ? { id: 10757, source_url: "https://projectorenclosure.com/wp-content/uploads/enclosure.jpg", alt_text: "Fan cooled projector enclosure in use" } : overrides.wordpressMedia as never,
-    wordpressReadState: overrides.readState ?? "AUTHENTICATED_EXACT_DRAFT_READ", wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit", mediaAssignments: overrides.mediaAssignments,
+    wordpressReadState: overrides.readState ?? "AUTHENTICATED_EXACT_DRAFT_READ", wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit", mediaAssignments: overrides.mediaAssignments, approvedProductMedia: overrides.approvedProductMedia, referenceLocations: overrides.referenceLocations,
   });
 }
 
@@ -47,9 +47,8 @@ describe("Genesis generated page review workspace", () => {
     const result = model();
     expect(result.images).toMatchObject({ contractState: "LEGACY_IMAGE_STATE", productAuthority: { state: "NOT_WIRED", imageUrl: null, provenance: "wordpress-media:10757" }, contextualInUse: { state: "LEGACY_FEATURED", wordpressMediaId: "10757", authority: "PRODUCT_INTELLIGENCE" } });
     expect(result.images.contextualInUse.grounding).toContain("PRODUCT_TRUTH role was not persisted");
-    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ category: "IMAGE", severity: "WARNING", what: "Product authority not wired" })]));
-    expect(result.issues.some((issue) => issue.category === "POLICY")).toBe(false);
-    expect(result.reviewState).toBe("NEEDS_ATTENTION");
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ category: "IMAGE", severity: "BLOCKED", what: "Required product authority media unresolved" })]));
+    expect(result.reviewState).toBe("REVIEW_BLOCKED");
     expect(result.visualQa).toMatchObject({ contractExists: true, certificationState: "NOT_CERTIFIED", overallState: "NOT_EVALUATED", captures: [], decisionState: "PENDING" });
     expect(result.richComposition.plan).toMatchObject({ contract: "site-page-composition-plan-v1", profile: "LOCATION_SERVICE", validationState: "BLOCKED" });
     expect(result.richComposition.plan.media).toEqual(expect.arrayContaining([expect.objectContaining({ role: "PRODUCT_AUTHORITY", readiness: "NOT_WIRED" }), expect.objectContaining({ role: "CONTEXTUAL_IN_USE", readiness: "LEGACY" })]));
@@ -65,6 +64,21 @@ describe("Genesis generated page review workspace", () => {
     expect(result.richComposition.plan).toMatchObject({ validationState: "READY", blockers: [] });
     expect(result.richComposition.plan.media).toEqual(expect.arrayContaining([expect.objectContaining({ role: "PRODUCT_AUTHORITY", readiness: "READY", assignmentId: "media-assignment-dallas" }), expect.objectContaining({ role: "CONTEXTUAL_IN_USE", readiness: "LEGACY" })]));
     expect(result.issues.some((issue) => issue.what === "Product authority not wired")).toBe(false);
+  });
+
+  test("reuses only matching approved documentary product authority for non-mutating review", () => {
+    const approved = { assignmentId: "media-assignment-reference", organizationId: "ssi", siteId: "site-projector", buildSessionId: "glw-job:reference", pageId: "target-reference", pageRevisionId: "job:reference:2026-09-12T00:00:00.000Z", slotId: "product-authority", role: "PRODUCT_AUTHORITY", asset: { type: "APPROVED_EXISTING", authorityReference: "wordpress-media:10757", productId: "product-enclosure", wordpressMediaId: 10757, url: "https://projectorenclosure.com/wp-content/uploads/enclosure.webp", sha256: "a".repeat(64) }, metadata: { altText: "Fan cooled projector enclosure", caption: null, title: "Fan cooled enclosure", description: "Approved product image" }, approval: { candidateId: "candidate", approvedBy: "owner", approvedAt: "2026-09-05T00:00:00.000Z" }, wordpressReceipt: null, createdAt: "2026-09-13T00:00:00.000Z" } as SitePageMediaAssignment;
+    const result = model({ approvedProductMedia: approved });
+    expect(result.images.productAuthority).toMatchObject({ state: "RESOLVED_APPROVED", imageUrl: approved.asset.type === "APPROVED_EXISTING" ? approved.asset.url : null, wordpressMediaId: "10757", renderedInCurrentWordPress: false });
+    expect(result.richComposition.plan.media).toEqual(expect.arrayContaining([expect.objectContaining({ role: "PRODUCT_AUTHORITY", readiness: "READY", assignmentId: "media-assignment-reference" })]));
+    expect(result.richComposition.preview.productImageUrl).toBe("https://projectorenclosure.com/wp-content/uploads/enclosure.webp");
+    expect(result.issues.some((issue) => issue.what === "Required product authority media unresolved")).toBe(false);
+  });
+
+  test("blocks content-ready city review until governed localized composition exists", () => {
+    const result = model({ targetStatus: "content_ready" });
+    expect(result.reviewState).toBe("REVIEW_BLOCKED");
+    expect(result.issues).toEqual(expect.arrayContaining([expect.objectContaining({ category: "POLICY", severity: "BLOCKED", what: "Governed localized composition is unavailable" })]));
   });
 
   test("renders live and source previews, readable review evidence, and no publish action", () => {

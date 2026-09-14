@@ -87,4 +87,19 @@ describe("site page media assignment", () => {
     });
     expect(repository.evaluateSitePageImagePackage({ assignments: [product], pageRevisionId: "page-revision-1", approvedProductImageAvailable: true, contextualPolicy: "DESIRED" })).toMatchObject({ ready: true, degraded: true, warnings: ["CONTEXTUAL_IN_USE_IMAGE_UNAVAILABLE_USING_PRODUCT_IMAGE_ONLY"] });
   });
+
+  test("resolves reusable product authority only by exact approved identity", async () => {
+    const repository = await import("../site-page-media-assignment");
+    const product = repository.saveSitePageMediaAssignment({
+      ...base(),
+      slotId: "product",
+      role: "PRODUCT_AUTHORITY",
+      asset: { type: "APPROVED_EXISTING", authorityReference: "wordpress-media:10757", productId: "product-1", wordpressMediaId: 10757, url: "https://example.test/product.jpg", sha256: digest("a") },
+    });
+    expect(repository.resolveApprovedProductAuthorityMedia({ organizationId: "org", siteId: "site", productId: "product-1", authorityReference: "wordpress-media:10757" })).toEqual(product);
+    expect(repository.resolveApprovedProductAuthorityMedia({ organizationId: "org", siteId: "site", productId: "other-product", authorityReference: "wordpress-media:10757" })).toBeNull();
+    expect(repository.resolveApprovedProductAuthorityMedia({ organizationId: "org", siteId: "site", productId: "product-1", authorityReference: "wordpress-media:other" })).toBeNull();
+    expect(repository.evaluateProductAuthorityMediaRequirement({ approvedMediaAvailable: true, resolvedAssignment: product })).toEqual({ contract: "PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE", state: "PASS", code: null, generatedMediaUsedAsDocumentarySubstitute: false });
+    expect(repository.evaluateProductAuthorityMediaRequirement({ approvedMediaAvailable: true, resolvedAssignment: null })).toEqual({ contract: "PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE", state: "FAIL", code: "REQUIRED_MEDIA_UNRESOLVED", generatedMediaUsedAsDocumentarySubstitute: false });
+  });
 });
