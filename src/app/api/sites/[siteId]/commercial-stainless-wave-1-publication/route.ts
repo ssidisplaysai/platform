@@ -7,11 +7,13 @@ import {
   COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA,
   COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_HOST_SPACING_SHA,
   COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORITY_SHA,
+  COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORITY_SHA,
   COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA,
   listCommercialStainlessWordPressPublicationReceipts,
   publishCommercialStainlessPage24Canary,
   publishCommercialStainlessPage24CanaryV2,
   publishCommercialStainlessPage24CanaryV3,
+  publishCommercialStainlessPage17RetryV1,
   publishCommercialStainlessRemainingWave1Page,
   publishCommercialStainlessWordPressWave1Page,
   summarizeCommercialStainlessWordPressPublicationReceipt,
@@ -48,9 +50,20 @@ export async function POST(request: NextRequest, context: Context) {
   const canaryV2 = body?.confirm === "PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE24_CANARY_V2" || body?.confirm === "CERTIFY_EXACT_COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_PUBLIC_RENDER";
   const canaryV3 = body?.confirm === "PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE24_CANARY_V3" || body?.confirm === "CERTIFY_EXACT_COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_PUBLIC_RENDER";
   const remaining = body?.confirm === "PUBLISH_EXACT_COMMERCIAL_STAINLESS_WAVE1_REMAINING_PAGE" || body?.confirm === "CERTIFY_EXACT_COMMERCIAL_STAINLESS_WAVE1_REMAINING_PUBLIC_RENDER";
-  const expectedSha = remaining ? COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORITY_SHA : canaryV3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_HOST_SPACING_SHA : canaryV2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA : canaryV1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA;
+  const page17Retry = body?.confirm === "PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE17_RETRY_V1" || body?.confirm === "CERTIFY_EXACT_COMMERCIAL_STAINLESS_PAGE17_RETRY_V1_PUBLIC_RENDER";
+  const expectedSha = page17Retry ? COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORITY_SHA : remaining ? COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORITY_SHA : canaryV3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_HOST_SPACING_SHA : canaryV2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA : canaryV1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA;
   if (!body || body.implementationSha !== expectedSha) return NextResponse.json({ error: "Exact authorized implementation SHA is required." }, { status: 400 });
   try {
+    if (body.confirm === "PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE17_RETRY_V1") {
+      if (Number(body.wordpressObjectId) !== 17) return NextResponse.json({ error: "Page 17 is the only authorized retry target." }, { status: 403 });
+      const receipt = await publishCommercialStainlessPage17RetryV1(site);
+      return NextResponse.json({ receipt: summarizeCommercialStainlessWordPressPublicationReceipt(receipt), mutationPerformed: true, publicationMutation: true });
+    }
+    if (body.confirm === "CERTIFY_EXACT_COMMERCIAL_STAINLESS_PAGE17_RETRY_V1_PUBLIC_RENDER" && body.visual) {
+      if (Number(body.wordpressObjectId) !== 17 || body.receiptId !== "csc-page17-publication-retry-v1-17-91") return NextResponse.json({ error: "Exact Page 17 retry receipt is required." }, { status: 403 });
+      const receipt = await certifyCommercialStainlessWordPressPublishedPage(site, 17, body.visual, body.receiptId);
+      return NextResponse.json({ receipt: summarizeCommercialStainlessWordPressPublicationReceipt(receipt), mutationPerformed: false, publicationMutation: false });
+    }
     if (body.confirm === "PUBLISH_EXACT_COMMERCIAL_STAINLESS_WAVE1_REMAINING_PAGE") {
       if (![11, 13, 17, 23].includes(Number(body.wordpressObjectId))) return NextResponse.json({ error: "Only objects 11, 13, 17, and 23 are authorized." }, { status: 403 });
       const receipt = await publishCommercialStainlessRemainingWave1Page(site, Number(body.wordpressObjectId));

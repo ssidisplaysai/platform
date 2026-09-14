@@ -72,6 +72,10 @@ export type PublicVerificationRead = {
   expectedStoredContentHash: string;
   actualStoredContentHash: string;
   semanticIdentity: string;
+  semanticEvidence?: {
+    mediaReuseStatus: string;
+    mediaDuplicationFindings: unknown[];
+  };
   predicateMatrix: PublicVerificationPredicateMatrix;
   failedPredicates: string[];
   cacheClassification: PublicCacheClassification;

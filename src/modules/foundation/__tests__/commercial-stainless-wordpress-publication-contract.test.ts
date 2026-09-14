@@ -33,6 +33,13 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(route).toContain("Only objects 11, 13, 17, and 23 are authorized.");
   });
 
+  test("binds Page 17 retry V1 to the repaired policy and exact autosave only", () => {
+    for (const marker of ["af3c49051cd655f2f7fb212f2c42916e41387b63", "COMMERCIAL_STAINLESS_PAGE17_PUBLICATION_RETRY_V1:APPROVED", "f615de2169fbd44c03a60bd5c739e0510709baee671acc5c61ff2c421742f1ac", "csc-page17-publication-retry-v1-17-91", "PAGE17_RETRY_V1", "publishCommercialStainlessPage17RetryV1"]) expect(publication).toContain(marker);
+    expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE17_RETRY_V1");
+    expect(route).toContain("Page 17 is the only authorized retry target.");
+    expect(route).toContain("Exact Page 17 retry receipt is required.");
+  });
+
   test("requires exact certified autosave hashes and sequential public certification", () => {
     for (const marker of ["stage.stagedContentHash", "stage.stagedRenderedHash", "stage.certification", "COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED", "PUBLISHED_PENDING_VISUAL", "PUBLIC_CERTIFIED"]) expect(publication).toContain(marker);
     expect(publication.indexOf('status: "PREPARED"')).toBeLessThan(publication.indexOf("await updateContent"));
