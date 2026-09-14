@@ -1,0 +1,20 @@
+{
+  "version": "GLW_REFERENCE_CONTENT_RECONCILIATION_V1",
+  "organizationId": "ssi",
+  "siteId": "site-ssi-screen-solutions-international",
+  "campaignId": "campaign-ssi-site-ssi-screen-solutions-international-ssi-accent-rear-projection-film-multi-state-benchmark",
+  "stateCode": "CA",
+  "jobId": "e2f30c1d-8511-4435-a15b-f0110c66eb63",
+  "wordpressObjectId": "15336",
+  "artifactSha256": "57a51b2c69d53b38767e0d67997e03b1fb25e7974904a50647634093e8c950c7",
+  "storedContentSha256": "07257007767297c0a3e3e49943fef45b796538a5786aa5ab101f42648c201872",
+  "artifactLength": 12782,
+  "storedContentLength": 13133,
+  "visibleTextSha256": "d030282b0195ff064cb246aaadaff27bdce80a987f8747b3ae614e6ed4318994",
+  "relationship": "MARKUP_ONLY",
+  "materialContentChanged": false,
+  "mediaAuthority": "UNGOVERNED",
+  "hostCertification": "PENDING",
+  "qaPolicyVersion": "GLW_REFERENCE_CLAIM_AUTHORITY_V1_1",
+  "receiptFingerprint": "31831318597e0627c29383476852744984cef3839449eb41896fe802d604a5b2"
+}

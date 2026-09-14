@@ -61,6 +61,15 @@ describe("Site Studio Product Intelligence authority", () => {
     });
   });
 
+  test("normalizes the exact SSI Accent authority from verified page 6285", async () => {
+    const ssiSite = { ...site, organizationId: "ssi", siteId: "site-ssi-screen-solutions-international", domain: "ssidisplays.com", canonicalUrl: "https://ssidisplays.com", integrations: { ...site.integrations, wordpressApiBaseUrl: "https://ssidisplays.com/wp-json/wp/v2" } } as SiteConfiguration;
+    const accent = { ...product("legacy"), productId: "prod-ssi-accent-rear-projection-film", organizationId: "ssi", productName: "Accent Rear Projection Film", specifications: [] };
+    global.fetch = jest.fn(async () => ({ ok: true, url: "https://ssidisplays.com/accent-rear-projection-film/" })) as typeof fetch;
+    const authority = await resolveSiteStudioProductAuthority({ site: ssiSite, product: accent, products: [] });
+    expect(authority.canonicalProduct).toMatchObject({ url: "https://ssidisplays.com/accent-rear-projection-film/", anchorText: "Accent Rear Projection Film", destinationValid: true });
+    expect(authority.specifications.map((item) => item.rawValue)).toEqual(["Frosted White", "79%", "175 degrees"]);
+  });
+
   test("does not leak an owning-site URL into another destination site", async () => {
     const authority = await resolveSiteStudioProductAuthority({ site, product: product("https://owner.example/exact-product/"), products: [] });
     expect(authority.canonicalProduct).toBeNull();

@@ -1,5 +1,12 @@
 import "server-only";
 
+import {
+  SSI_ACCENT_CANONICAL_URL,
+  SSI_ACCENT_ORGANIZATION_ID,
+  SSI_ACCENT_PRODUCT_ID,
+  SSI_ACCENT_SITE_ID,
+} from "@/modules/foundation/ssi-accent-product-authority";
+
 export type GlwAllowedInternalLink = {
   href: string;
   anchorText: string;
@@ -29,6 +36,38 @@ const INDOOR_DIGITAL_SPHERE_PRODUCT_LINK:
     anchorText: "Indoor Digital Sphere",
     authorityClass: "product",
   };
+
+const OUTDOOR_DIGITAL_SPHERE_PRODUCT_LINK: GlwAllowedInternalLink = {
+  href: GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_PATH,
+  anchorText: "Outdoor Digital Sphere",
+  authorityClass: "product",
+};
+
+const SSI_ACCENT_PRODUCT_PATH = "/accent-rear-projection-film/";
+const SSI_ACCENT_PRODUCT_LINK: GlwAllowedInternalLink = {
+  href: SSI_ACCENT_CANONICAL_URL,
+  anchorText: "Accent Rear Projection Film",
+  authorityClass: "product",
+};
+
+function productAuthority(input: GlwInternalLinkAuthorityRequest): { link: GlwAllowedInternalLink; path: string } | null {
+  if (
+    input.organizationId === GLW_LED_DISPLAY_WAREHOUSE_ORGANIZATION_ID
+    && input.siteId === GLW_LED_DISPLAY_WAREHOUSE_SITE_ID
+    && input.productId === GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_ID
+  ) return { link: INDOOR_DIGITAL_SPHERE_PRODUCT_LINK, path: GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH };
+  if (
+    input.organizationId === GLW_LED_DISPLAY_WAREHOUSE_ORGANIZATION_ID
+    && input.siteId === GLW_LED_DISPLAY_WAREHOUSE_SITE_ID
+    && input.productId === GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
+  ) return { link: OUTDOOR_DIGITAL_SPHERE_PRODUCT_LINK, path: GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_PATH };
+  if (
+    input.organizationId === SSI_ACCENT_ORGANIZATION_ID
+    && input.siteId === SSI_ACCENT_SITE_ID
+    && input.productId === SSI_ACCENT_PRODUCT_ID
+  ) return { link: SSI_ACCENT_PRODUCT_LINK, path: SSI_ACCENT_PRODUCT_PATH };
+  return null;
+}
 
 function isStateServiceChildPath(
   canonicalPath: string,
@@ -152,23 +191,20 @@ export function resolveGlwAllowedInternalLinks(
 ): readonly GlwAllowedInternalLink[] {
   const stateCode =
     input.stateCode.trim().toUpperCase();
+  const authority = productAuthority(input);
 
   if (
-    input.organizationId
-      !== GLW_LED_DISPLAY_WAREHOUSE_ORGANIZATION_ID
-    || input.siteId
-      !== GLW_LED_DISPLAY_WAREHOUSE_SITE_ID
-    || input.productId
-      !== GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_ID
+    !authority
     || !/^[A-Z]{2}$/.test(stateCode)
     || !isStateServiceChildPath(
       input.canonicalPath,
+      authority.path,
     )
   ) {
     return [];
   }
 
   return [
-    { ...INDOOR_DIGITAL_SPHERE_PRODUCT_LINK },
+    { ...authority.link },
   ];
 }
