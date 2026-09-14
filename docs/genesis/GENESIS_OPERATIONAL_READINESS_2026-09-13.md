@@ -299,7 +299,7 @@ Owner dispatch now follows exactly:
 
 Current principal limitation: the application has no cryptographically authenticated server session. The strongest bounded identity is the operator identity already present in Genesis plus a per-browser session UUID, both explicitly carried in request headers and bound into receipts. Raw role headers alone fail. Replacing these headers with a trusted identity-provider session remains a deferred platform hardening task.
 
-The historical San Antonio job `f518ffb7-9216-4866-a93c-7f4793e74038`, lease `aaba3a04-4f7a-493e-8893-a8a1769a4ec7`, and execution `608895` remain untouched. This repair does not reconcile that incident, create WordPress content, publish, dispatch, or execute n8n.
+The exact-target dispatch security repair at `a478108f81ea0a49027d968cb62e979bc453c68b` did not reconcile the historical San Antonio job `f518ffb7-9216-4866-a93c-7f4793e74038`, lease `aaba3a04-4f7a-493e-8893-a8a1769a4ec7`, or execution `608895`. The separately authorized reconciliation below later resolved only their local lifecycle state.
 
 ## San Antonio 608895 owner-authorized reconciliation V1
 
@@ -308,3 +308,5 @@ The owner separately authorized truthful reconciliation of the completed San Ant
 The reconciliation route requires platform-admin permission, exact organization/site scope, a principal plus browser session identity, every exact incident identifier, and the literal confirmation above. It re-reads n8n execution `608895`, requires terminal `GLW Content Ready`, verifies the generated HTML SHA-256 `0255fda847e2962dc0ae10afcd86a646a5d89aef303331286babf2dae49078d2`, and rejects any WordPress identity or publication state.
 
 Reconciliation has two append-only phases. `AUTHORIZED` freezes the original `DISPATCHED` job, `running` target, lease ID and timestamps, dispatch date, `UNAUTHORIZED_VALID_DISPATCH` classification, `HIGH` severity, owner principal/session, and security repair SHA before mutation. `RECONCILED` records job `CONTENT_READY`, target `content_ready`, cleared active lease fields, preserved dispatch date, artifact hash/length, no owner content decision, and explicit false values for WordPress mutation, publication, dispatch, and workflow execution. An interrupted authorized attempt may resume only from the exact expected partial states.
+
+Verified outcome at `2026-09-14T02:01:42.197Z`: one authorization receipt and one reconciliation outcome exist. The target is `content_ready`, the job is `CONTENT_READY`, active/dangling Texas leases and stuck Texas executions are all zero, and dispatch date `2026-09-13` is preserved. The persisted generated HTML is 19,497 characters with the frozen SHA-256. WordPress identity remains null, owner content decision remains `NONE`, and Austin, Dallas, and Houston retain their prior lifecycle states.
