@@ -59,6 +59,23 @@ add_filter('render_block', function ($content, $block) {
     if (($block['blockName'] ?? '') === 'core/post-featured-image' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
         return '';
     }
+    if (($block['blockName'] ?? '') === 'core/group' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
+        $child_names = array_map(function ($child) { return $child['blockName'] ?? ''; }, $block['innerBlocks'] ?? array());
+        $padding_top = $block['attrs']['style']['spacing']['padding']['top'] ?? '';
+        if (($block['attrs']['align'] ?? '') === 'full' && $padding_top === 'var:preset|spacing|60' && in_array('core/post-featured-image', $child_names, true) && in_array('core/post-content', $child_names, true)) {
+            $processor = new WP_HTML_Tag_Processor($content);
+            if ($processor->next_tag(array('tag_name' => 'DIV', 'class_name' => 'wp-block-group'))) {
+                $style = (string) $processor->get_attribute('style');
+                $style = trim((string) preg_replace('/(^|;)\\s*padding-top\\s*:[^;]+;?/i', '$1', $style), '; ');
+                if ($style === '') {
+                    $processor->remove_attribute('style');
+                } else {
+                    $processor->set_attribute('style', $style);
+                }
+                return $processor->get_updated_html();
+            }
+        }
+    }
     return $content;
 }, 20, 2);
 
@@ -183,6 +200,15 @@ export function isCommercialStainlessRichCompositionEligible(input: CommercialSt
 
 export function filterCommercialStainlessFeaturedImageRender(input: CommercialStainlessRichCompositionEligibilityInput & { blockName: string; renderedHtml: string }): string {
     return input.blockName === "core/post-featured-image" && isCommercialStainlessRichCompositionEligible(input) ? "" : input.renderedHtml;
+}
+
+export function filterCommercialStainlessHostSpacingRender(input: CommercialStainlessRichCompositionEligibilityInput & { blockName: string; align?: string; paddingTop?: string; directInnerBlockNames: string[]; renderedHtml: string }): string {
+    const targetGroup = input.blockName === "core/group" && input.align === "full" && input.paddingTop === "var:preset|spacing|60" && input.directInnerBlockNames.includes("core/post-featured-image") && input.directInnerBlockNames.includes("core/post-content");
+    if (!targetGroup || !isCommercialStainlessRichCompositionEligible(input)) return input.renderedHtml;
+    return input.renderedHtml.replace(/(<div\b[^>]*\bclass=["'][^"']*\bwp-block-group\b[^"']*["'][^>]*\bstyle=["'])([^"']*)(["'])/i, (_match, start: string, style: string, end: string) => {
+        const updated = style.replace(/(^|;)\s*padding-top\s*:[^;]+;?/i, "$1").replace(/^;+|;+$/g, "").trim();
+        return updated ? `${start}${updated}${end}` : start.replace(/\s*style=["']$/i, "");
+    });
 }
 
 function blocksFromRawContent(raw: string): CommercialStainlessRichCompositionEligibilityInput["blocks"] {

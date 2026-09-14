@@ -1,5 +1,5 @@
 jest.mock("server-only", () => ({}));
-import { filterCommercialStainlessFeaturedImageRender, isCommercialStainlessRichCompositionEligible, WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET } from "../wordpress-post-launch-defect-repair";
+import { filterCommercialStainlessFeaturedImageRender, filterCommercialStainlessHostSpacingRender, isCommercialStainlessRichCompositionEligible, WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET } from "../wordpress-post-launch-defect-repair";
 
 const base = { host: "commercialstainlesscounters.com", postType: "page", status: "publish" };
 const richBlock = { blockName: "core/html", innerHtml: '<style>.wr-page{width:100%}.wr-hero{min-height:610px}</style><div class="wr-page"><section class="wr-hero"><img src="hero.jpg"><h1>Page</h1></section></div>' };
@@ -16,6 +16,10 @@ describe("CSC post-launch defect repair", () => {
     expect(code).toContain("WP_HTML_Tag_Processor");
     expect(code).toContain("has_class('wr-page')");
     expect(code).toContain("has_class('wr-hero')");
+    expect(code).toContain("padding-top");
+    expect(code).toContain("var:preset|spacing|60");
+    expect(code).toContain("in_array('core/post-featured-image', $child_names, true)");
+    expect(code).toContain("in_array('core/post-content', $child_names, true)");
     expect(code).toContain("is_page(GENESIS_CSC_PAGE_IDS_V1)");
     for (const [id, path] of [[17, "markets/education"], [18, "markets/foodservice"], [19, "markets/healthcare"], [20, "markets/hospitality"], [21, "markets/industrial"], [22, "markets/labs"]]) expect(code).toContain(`${id} => '${path}'`);
     expect(code).toContain("add_rewrite_rule");
@@ -61,5 +65,24 @@ describe("CSC post-launch defect repair", () => {
     const output = filterCommercialStainlessFeaturedImageRender({ ...base, blocks: [richBlock], blockName: "core/post-featured-image", renderedHtml: "FEATURED" });
     expect(output).toBe("");
     expect(page).toEqual({ featuredMediaId: 70, seoSocialImageId: 70, postContent: richBlock.innerHtml });
+  });
+
+  test("removes only the eligible template host group's top padding", () => {
+    const renderedHtml = '<div class="wp-block-group alignfull has-global-padding" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)"><div class="wp-block-post-content"></div></div>';
+    const result = filterCommercialStainlessHostSpacingRender({ ...base, blocks: [richBlock], blockName: "core/group", align: "full", paddingTop: "var:preset|spacing|60", directInnerBlockNames: ["core/post-featured-image", "core/post-title", "core/post-content"], renderedHtml });
+    expect(result).not.toContain("padding-top");
+    expect(result).toContain("padding-bottom:var(--wp--preset--spacing--60)");
+    expect(result).toContain("wp-block-post-content");
+  });
+
+  test.each([
+    ["ordinary content", { ...base, blocks: [{ blockName: "core/paragraph", innerHtml: "ordinary" }], blockName: "core/group", align: "full", paddingTop: "var:preset|spacing|60", directInnerBlockNames: ["core/post-featured-image", "core/post-content"] }],
+    ["wrong group alignment", { ...base, blocks: [richBlock], blockName: "core/group", align: "wide", paddingTop: "var:preset|spacing|60", directInnerBlockNames: ["core/post-featured-image", "core/post-content"] }],
+    ["wrong spacing preset", { ...base, blocks: [richBlock], blockName: "core/group", align: "full", paddingTop: "var:preset|spacing|50", directInnerBlockNames: ["core/post-featured-image", "core/post-content"] }],
+    ["unrelated group", { ...base, blocks: [richBlock], blockName: "core/group", align: "full", paddingTop: "var:preset|spacing|60", directInnerBlockNames: ["core/paragraph"] }],
+    ["non-CSC host", { ...base, host: "projectorenclosure.com", blocks: [richBlock], blockName: "core/group", align: "full", paddingTop: "var:preset|spacing|60", directInnerBlockNames: ["core/post-featured-image", "core/post-content"] }],
+  ])("preserves host spacing for %s", (_name, input) => {
+    const renderedHtml = '<div class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)">CONTENT</div>';
+    expect(filterCommercialStainlessHostSpacingRender({ ...input, renderedHtml })).toBe(renderedHtml);
   });
 });

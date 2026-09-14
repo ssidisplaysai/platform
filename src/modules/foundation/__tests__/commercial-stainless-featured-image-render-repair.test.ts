@@ -1,6 +1,6 @@
 jest.mock("server-only", () => ({}));
 
-import { filterCommercialStainlessFeaturedImageRender } from "../wordpress-post-launch-defect-repair";
+import { filterCommercialStainlessFeaturedImageRender, filterCommercialStainlessHostSpacingRender } from "../wordpress-post-launch-defect-repair";
 
 const richContent = '<div class="wr-page"><section class="wr-hero"><img src="hero.jpg"><h1>Request a Quote</h1><a>Request a Quote</a></section><section>Body</section></div>';
 const authority = { host: "commercialstainlesscounters.com", postType: "page", status: "publish", blocks: [{ blockName: "core/html", innerHtml: richContent }] };
@@ -31,5 +31,13 @@ describe("Commercial Stainless rich-composition featured-image render repair", (
     expect(evidence.heroTopBefore - evidence.featuredStack).toBeCloseTo(evidence.heroTopAfter, 5);
     expect(evidence.h1TopAfter).toBeGreaterThan(evidence.heroTopAfter);
     expect(evidence.ctaBottomAfter).toBeLessThan(900);
+  });
+
+  test.each(geometry)("removes the residual host-padding delta at $viewport", (evidence) => {
+    const publicAfterFeaturedRepair = evidence.heroTopAfter + (evidence.viewport >= 1024 ? 70 : evidence.viewport === 768 ? 53.7578125 : 30);
+    const residualPadding = publicAfterFeaturedRepair - evidence.heroTopAfter;
+    expect(publicAfterFeaturedRepair - residualPadding).toBeCloseTo(evidence.heroTopAfter, 5);
+    const html = '<div class="wp-block-group alignfull" style="padding-top:var(--wp--preset--spacing--60);padding-bottom:var(--wp--preset--spacing--60)">CONTENT</div>';
+    expect(filterCommercialStainlessHostSpacingRender({ ...authority, blockName: "core/group", align: "full", paddingTop: "var:preset|spacing|60", directInnerBlockNames: ["core/post-featured-image", "core/post-content"], renderedHtml: html })).not.toContain("padding-top");
   });
 });
