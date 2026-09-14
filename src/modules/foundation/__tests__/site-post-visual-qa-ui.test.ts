@@ -41,7 +41,9 @@ describe("post-visual approval Site QA UI", () => {
   test("renders explicit QA, navigation, readiness, and authorization actions without publication", () => {
     expect(siteQa).toContain("SiteQaContinuationAction");
     for (const text of ["Site QA Passed", "REVIEW NAVIGATION"]) expect(siteQaAction).toContain(text);
-    for (const text of ["APPROVE NAVIGATION", "REQUEST CHANGES", "REGENERATE / REASSEMBLE WITH INSTRUCTIONS", "Footer navigation proposal", "Position"]) expect(navigation).toContain(text);
+    for (const text of ["APPROVE NAVIGATION", "REQUEST CHANGES", "REGENERATE / REASSEMBLE WITH INSTRUCTIONS", "Footer navigation proposal", "Position", "CONTINUE TO PUBLICATION READINESS", "Continue the approved site workflow."]) expect(navigation).toContain(text);
+    expect(navigation).toContain('site.siteId === "site-rj-metal-commercial-stainless-counters"');
+    expect(navigation).toContain('review.status === "READY_FOR_OWNER_REVIEW" || review.status === "REVISION_REQUESTED"');
     for (const text of ["REQUEST PUBLICATION AUTHORIZATION", "AUTHORIZE PUBLICATION", "does not publish pages"]) expect(publication).toContain(text);
     expect(siteQa).not.toMatch(/PUBLISH SITE|ENABLE SITE/);
     expect(navigation).not.toMatch(/PUBLISH SITE|ENABLE SITE/);
