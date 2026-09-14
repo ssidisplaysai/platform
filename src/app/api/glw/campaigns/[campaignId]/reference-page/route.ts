@@ -461,6 +461,7 @@ export async function POST(request: NextRequest, context: Context) {
     citySlug?: string;
     action?: "continue";
     jobId?: string;
+    referenceAuthorityBinding?: GlwReferenceGenerationAuthorityBinding;
   } | null;
 
   let target;
