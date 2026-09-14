@@ -27,6 +27,19 @@ const failedJob = {
   status: "FAILED",
   errorCode: "GENERATED_CONTENT_QA_FAILED",
   errorMessage: "State product authority link is missing.",
+  qaFailureReasons: {
+    stateProductAuthorityLink:
+      "State pages must link Outdoor Digital Sphere to /outdoor-digital-sphere/.",
+  },
+  generatedDraft: {
+    title: "Outdoor Digital Sphere in Illinois",
+    contentHtml: "<h1>Outdoor Digital Sphere in Illinois</h1>",
+    slug: "outdoor-digital-sphere/illinois",
+    excerpt: null,
+    seoTitle: null,
+    metaDescription: null,
+    focusKeyphrase: null,
+  },
   createdAt: "2026-09-14T21:33:29.878Z",
   updatedAt: "2026-09-14T21:34:34.294Z",
 } as GlwPageExecutionRecord;
@@ -43,11 +56,18 @@ describe("GLW reference workflow projection", () => {
 
   test("projects the failed existing operation with a no-retry action", () => {
     expect(projectGlwReferenceWorkflow(failedJob)).toMatchObject({
-      state: "REFERENCE_GENERATION_FAILED",
+      state: "REFERENCE_BLOCKED",
       operationId: "job-il",
       targetStateCode: "IL",
       durable: true,
       safeOwnerAction: "DO_NOT_RETRY_ESCALATE",
+      qaFailures: [
+        expect.objectContaining({
+          predicateId: "stateProductAuthorityLink",
+          severity: "BLOCKING",
+        }),
+      ],
+      proposedRecoveryAction: "REQUEST_NEW_EXACT_RETRY_AUTHORIZATION_AFTER_QA_REPAIR",
     });
   });
 
@@ -76,7 +96,7 @@ describe("GLW reference recovery contract", () => {
   });
 
   test("operator UI exposes exact state and blocks duplicate generation", () => {
-    for (const marker of ["REFERENCE_GENERATION_FAILED", "Operation:", "Lastupdate:", "Safeowneraction:", "existingOperationBlocksGeneration", "projectedReferenceState.current===referenceState", "StartingReferenceGeneration...", "CheckingExistingReference..."])
+    for (const marker of ["REFERENCE_BLOCKED", "Operation:", "Lastupdate:", "Safeowneraction:", "Expected:", "Observed:", "Evidence:", "Proposedrecovery:", "existingOperationBlocksGeneration", "projectedReferenceState.current===referenceState", "StartingReferenceGeneration...", "CheckingExistingReference..."])
       expect(ui).toContain(marker);
     expect(ui).not.toContain('generationBusy?"RecoveringReference..."');
   });

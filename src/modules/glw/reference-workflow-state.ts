@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwPageExecutionRecord } from "./page-execution";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
@@ -7,7 +8,8 @@ export type GlwReferenceWorkflowState =
   | "REFERENCE_GENERATION_IN_PROGRESS"
   | "REFERENCE_DRAFT_READY"
   | "REFERENCE_RECOVERY_REQUIRED"
-  | "REFERENCE_GENERATION_FAILED";
+  | "REFERENCE_GENERATION_FAILED"
+  | "REFERENCE_BLOCKED";
 
 export type GlwReferenceWorkflowProjection = {
   state: GlwReferenceWorkflowState;
@@ -24,7 +26,42 @@ export type GlwReferenceWorkflowProjection = {
     | "DO_NOT_RETRY_ESCALATE";
   errorCode: string | null;
   errorMessage: string | null;
+  artifactSha256: string | null;
+  qaFailures: ReadonlyArray<{
+    predicateId: string;
+    predicateName: string;
+    expected: string;
+    observed: string;
+    evidence: string;
+    severity: "BLOCKING";
+  }>;
+  proposedRecoveryAction: "REQUEST_NEW_EXACT_RETRY_AUTHORIZATION_AFTER_QA_REPAIR" | null;
 };
+
+function artifactSha256(job: GlwPageExecutionRecord): string | null {
+  const html = job.generatedDraft?.contentHtml;
+  return html ? createHash("sha256").update(html).digest("hex") : null;
+}
+
+function qaFailures(job: GlwPageExecutionRecord): GlwReferenceWorkflowProjection["qaFailures"] {
+  return Object.entries(job.qaFailureReasons ?? {}).map(([predicateId, evidence]) => ({
+    predicateId,
+    predicateName:
+      predicateId === "stateProductAuthorityLink"
+        ? "Required state-page product authority link"
+        : predicateId.replace(/([a-z])([A-Z])/g, "$1 $2"),
+    expected:
+      predicateId === "stateProductAuthorityLink"
+        ? "Visible exact anchor Outdoor Digital Sphere linking to /outdoor-digital-sphere/."
+        : "Predicate passes.",
+    observed:
+      predicateId === "stateProductAuthorityLink"
+        ? "No anchor elements were present in the persisted artifact."
+        : "Predicate failed.",
+    evidence: String(evidence),
+    severity: "BLOCKING" as const,
+  }));
+}
 
 function stateCodeForName(name: string | null): string | null {
   return GLW_CAMPAIGN_US_STATES.find((state) => state.name === name)?.code ?? null;
@@ -44,6 +81,9 @@ export function projectGlwReferenceWorkflow(
       safeOwnerAction: "GENERATE_REFERENCE",
       errorCode: null,
       errorMessage: null,
+      artifactSha256: null,
+      qaFailures: [],
+      proposedRecoveryAction: null,
     };
   }
   const targetStateCode = stateCodeForName(job.state);
@@ -58,6 +98,9 @@ export function projectGlwReferenceWorkflow(
       safeOwnerAction: "OPEN_REFERENCE_DRAFT_FOR_REVIEW",
       errorCode: null,
       errorMessage: null,
+      artifactSha256: artifactSha256(job),
+      qaFailures: [],
+      proposedRecoveryAction: null,
     };
   }
   if (job.status === "CONTENT_READY") {
@@ -71,11 +114,18 @@ export function projectGlwReferenceWorkflow(
       safeOwnerAction: "CONTINUE_EXISTING_REFERENCE",
       errorCode: job.errorCode,
       errorMessage: job.errorMessage,
+      artifactSha256: artifactSha256(job),
+      qaFailures: qaFailures(job),
+      proposedRecoveryAction: null,
     };
   }
   if (job.status === "FAILED") {
+    const failures = qaFailures(job);
     return {
-      state: "REFERENCE_GENERATION_FAILED",
+      state:
+        job.errorCode === "GENERATED_CONTENT_QA_FAILED" && failures.length > 0
+          ? "REFERENCE_BLOCKED"
+          : "REFERENCE_GENERATION_FAILED",
       operationId: job.jobId,
       targetStateCode,
       targetStateName: job.state,
@@ -84,6 +134,12 @@ export function projectGlwReferenceWorkflow(
       safeOwnerAction: "DO_NOT_RETRY_ESCALATE",
       errorCode: job.errorCode,
       errorMessage: job.errorMessage,
+      artifactSha256: artifactSha256(job),
+      qaFailures: failures,
+      proposedRecoveryAction:
+        job.errorCode === "GENERATED_CONTENT_QA_FAILED" && failures.length > 0
+          ? "REQUEST_NEW_EXACT_RETRY_AUTHORIZATION_AFTER_QA_REPAIR"
+          : null,
     };
   }
   return {
@@ -96,6 +152,9 @@ export function projectGlwReferenceWorkflow(
     safeOwnerAction: "WAIT_FOR_EXISTING_GENERATION",
     errorCode: job.errorCode,
     errorMessage: job.errorMessage,
+    artifactSha256: artifactSha256(job),
+    qaFailures: qaFailures(job),
+    proposedRecoveryAction: null,
   };
 }
 

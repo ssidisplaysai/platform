@@ -55,7 +55,8 @@ type ReferenceWorkflowProjection = {
     | "REFERENCE_GENERATION_IN_PROGRESS"
     | "REFERENCE_DRAFT_READY"
     | "REFERENCE_RECOVERY_REQUIRED"
-    | "REFERENCE_GENERATION_FAILED";
+    | "REFERENCE_GENERATION_FAILED"
+    | "REFERENCE_BLOCKED";
   operationId: string | null;
   targetStateCode: string | null;
   targetStateName: string | null;
@@ -64,6 +65,16 @@ type ReferenceWorkflowProjection = {
   safeOwnerAction: string;
   errorCode: string | null;
   errorMessage: string | null;
+  artifactSha256: string | null;
+  qaFailures: ReadonlyArray<{
+    predicateId: string;
+    predicateName: string;
+    expected: string;
+    observed: string;
+    evidence: string;
+    severity: "BLOCKING";
+  }>;
+  proposedRecoveryAction: string | null;
 };
 
 type WordPressAuthorityStatus = {
@@ -493,6 +504,8 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
               ? "Reference Recovery Required"
               : referenceWorkflow?.state === "REFERENCE_GENERATION_FAILED"
                 ? "Reference Generation Failed"
+                : referenceWorkflow?.state === "REFERENCE_BLOCKED"
+                  ? "Reference Blocked"
                 : `Generate ${selectedStateLabel} Reference Page`;
 
   return (
@@ -663,6 +676,20 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
               <p className="mt-1 text-zinc-500">Last update: {new Date(referenceWorkflow.lastUpdatedAt).toLocaleString()}</p>
             ) : null}
             <p className="mt-1 text-zinc-400">Safe owner action: {referenceWorkflow.safeOwnerAction.replaceAll("_", " ")}</p>
+            {referenceWorkflow.artifactSha256 ? (
+              <p className="mt-1 break-all font-mono text-zinc-500">Artifact: {referenceWorkflow.artifactSha256}</p>
+            ) : null}
+            {referenceWorkflow.qaFailures.map((failure) => (
+              <div key={failure.predicateId} className="mt-2 border-l-2 border-red-600 pl-3 text-zinc-300">
+                <p className="font-semibold text-red-300">{failure.predicateName}</p>
+                <p>Expected: {failure.expected}</p>
+                <p>Observed: {failure.observed}</p>
+                <p>Evidence: {failure.evidence}</p>
+              </div>
+            ))}
+            {referenceWorkflow.proposedRecoveryAction ? (
+              <p className="mt-2 font-semibold text-amber-300">Proposed recovery: {referenceWorkflow.proposedRecoveryAction.replaceAll("_", " ")}</p>
+            ) : null}
           </div>
         ) : null}
 
