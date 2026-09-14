@@ -17,6 +17,7 @@ const marketMatch = { bundleId: "market-bundle", intelligence: { organizationId:
 test("renders every semantic role, useful links, claim disclosures, and no mutation control", () => {
   const html = renderToStaticMarkup(<GlwLocalizedRichCompositionPreview bundle={bundle} />);
   for (const role of media.map((item) => item.role)) expect(html).toContain(`data-media-role="${role}"`);
+  expect(html).toContain('data-product-authority-balance="PROMINENT_MEDIA"'); expect(html).toContain("data-product-authority-figure"); expect(html).toContain("data-product-authority-image"); expect(html).toContain("lg:grid-cols-[minmax(0,1.1fr)_minmax(0,.9fr)]"); expect(html).toContain("object-contain");
   expect(html).toContain("Proposed Localized Rich Composition V2"); expect(html).toContain("Preview - Not Applied to WordPress"); expect(html).toContain("Application visualization"); expect(html).toContain("Not a real Chicago venue or SSI project"); expect(html).toContain("Chicago, Illinois"); expect(html).toContain("Great Lakes Planning Context"); expect(html).toContain("Regional authority"); expect(html).not.toContain("Dallas"); expect(html).not.toMatch(/>Apply</);
 });
 

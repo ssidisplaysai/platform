@@ -29,7 +29,7 @@ import { generateGenesisFeaturedImageWithCampaignReferences } from "./reference-
 
 export const SAN_ANTONIO_LOCALIZED_JOB_ID = "f518ffb7-9216-4866-a93c-7f4793e74038";
 export const SAN_ANTONIO_LOCALIZED_BUNDLE_ID = `local-theming-san-antonio-${SAN_ANTONIO_LOCALIZED_JOB_ID}-v1`;
-export const SAN_ANTONIO_LOCALIZED_RENDERER_VERSION = "localized-rich-preview-v2.5";
+export const SAN_ANTONIO_LOCALIZED_RENDERER_VERSION = "localized-rich-preview-v2.7";
 const ARTIFACT_SHA256 = "0255fda847e2962dc0ae10afcd86a646a5d89aef303331286babf2dae49078d2";
 const PRODUCT_ID = "prod-ssi-fan-cooled-projector-enclosures";
 const PRODUCT_MEDIA_REFERENCE = "wordpress-media:10757";
