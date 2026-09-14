@@ -40,6 +40,13 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(route).toContain("Exact Page 17 retry receipt is required.");
   });
 
+  test("binds final Page 23 publication to the optimized Genesis authority only", () => {
+    for (const marker of ["COMMERCIAL_STAINLESS_PAGE23_FINAL_PUBLICATION_V1:APPROVED", "5f7cc22571fe56cee554fc8279ec071585268ab8", "811e123dc6844275a1cdb97f54d7e27c4f4c83e6", "be5502d40b41472769109d613bf6151349781567838d837c438d2fb005fca095", "csc-page23-final-publication-v1-23-be5502d4", "PAGE23_FINAL_V1", "FINAL_OWNER_CANDIDATE", "publishCommercialStainlessPage23FinalV1", "compositionGeometry"]) expect(publication).toContain(marker);
+    expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE23_FINAL_V1");
+    expect(route).toContain("Page 23 is the only authorized final publication target.");
+    expect(route).toContain("Exact Page 23 final receipt is required.");
+  });
+
   test("requires exact certified autosave hashes and sequential public certification", () => {
     for (const marker of ["stage.stagedContentHash", "stage.stagedRenderedHash", "stage.certification", "COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED", "PUBLISHED_PENDING_VISUAL", "PUBLIC_CERTIFIED"]) expect(publication).toContain(marker);
     expect(publication.indexOf('status: "PREPARED"')).toBeLessThan(publication.indexOf("await updateContent"));

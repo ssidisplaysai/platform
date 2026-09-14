@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-authority";
 import { COMMERCIAL_STAINLESS_ORIGIN, COMMERCIAL_STAINLESS_SITE_ID } from "./commercial-stainless-rich-composition";
 import { commercialStainlessMediaReuseDeclarations, commercialStainlessSemanticReuseStatus, type CommercialStainlessSemanticReuseStatus } from "./commercial-stainless-semantic-media-authority";
-import { listCommercialStainlessWordPressStageRecords } from "./commercial-stainless-wordpress-staging";
+import { listCommercialStainlessPage23LengthEvidence, listCommercialStainlessWordPressStageRecords } from "./commercial-stainless-wordpress-staging";
 import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
 import { evaluateSemanticMediaReuse, extractRenderedMediaInstances, type MediaDuplicationFinding } from "./semantic-media-reuse-policy";
 import type { SiteConfiguration } from "./types";
@@ -27,6 +27,11 @@ export const COMMERCIAL_STAINLESS_WAVE1_REMAINING_ORDER = [11, 13, 17, 23] as co
 export const COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORITY_SHA = "af3c49051cd655f2f7fb212f2c42916e41387b63";
 export const COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORIZATION = "COMMERCIAL_STAINLESS_PAGE17_PUBLICATION_RETRY_V1:APPROVED";
 export const COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTOSAVE_HASH = "f615de2169fbd44c03a60bd5c739e0510709baee671acc5c61ff2c421742f1ac";
+export const COMMERCIAL_STAINLESS_PAGE23_FINAL_AUTHORITY_SHA = "5f7cc22571fe56cee554fc8279ec071585268ab8";
+export const COMMERCIAL_STAINLESS_PAGE23_FINAL_AUTHORIZATION = "COMMERCIAL_STAINLESS_PAGE23_FINAL_PUBLICATION_V1:APPROVED";
+export const COMMERCIAL_STAINLESS_PAGE23_FINAL_CONTENT_HASH = "be5502d40b41472769109d613bf6151349781567838d837c438d2fb005fca095";
+export const COMMERCIAL_STAINLESS_PAGE23_MEDIA_REPAIR_SHA = "811e123dc6844275a1cdb97f54d7e27c4f4c83e6";
+export const COMMERCIAL_STAINLESS_SEMANTIC_MEDIA_POLICY_SHA = "af3c49051cd655f2f7fb212f2c42916e41387b63";
 
 export const COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS = [
   { wordpressObjectId: 24, autosaveId: 88, path: "/request-a-quote/", profile: "LANDING_CONVERSION" },
@@ -108,6 +113,7 @@ export type CommercialStainlessPublicVisualCertification = {
   noGiantWhitespace: boolean;
   headerFooterCorrect: boolean;
   layoutEvidence: RenderedLayoutEvidence[];
+  compositionGeometry?: Array<{ width: 1440 | 1024 | 768 | 375; height: number; largestBlankRegion: number; hostResidualSpacing: number }>;
 };
 
 export type CommercialStainlessWordPressPublicationReceipt = {
@@ -330,18 +336,20 @@ async function rollback(input: { apiBase: string; headers: Record<string, string
   return write.ok && read.status === 200 && sha256(text(read.body?.content?.raw)) === input.receipt.rollbackAuthority.contentHash && text(read.body?.status) === "publish";
 }
 
-async function publishCommercialStainlessWordPressPage(site: SiteConfiguration, wordpressObjectId: number, mode: 1 | 2 | 3 | "REMAINING" | "PAGE17_RETRY_V1" | null): Promise<CommercialStainlessWordPressPublicationReceipt> {
+async function publishCommercialStainlessWordPressPage(site: SiteConfiguration, wordpressObjectId: number, mode: 1 | 2 | 3 | "REMAINING" | "PAGE17_RETRY_V1" | "PAGE23_FINAL_V1" | null): Promise<CommercialStainlessWordPressPublicationReceipt> {
   const canaryVersion = typeof mode === "number" ? mode : null;
   const canary = canaryVersion !== null;
   const remaining = mode === "REMAINING";
   const page17Retry = mode === "PAGE17_RETRY_V1";
+  const page23Final = mode === "PAGE23_FINAL_V1";
   const expected = expectedPublication(wordpressObjectId);
   if (!expected) throw new Error(`COMMERCIAL_STAINLESS_UNAUTHORIZED_PUBLICATION_TARGET:${wordpressObjectId}`);
   if (canary && (wordpressObjectId !== 24 || expected.autosaveId !== 88)) throw new Error(`COMMERCIAL_STAINLESS_PAGE24_CANARY_SCOPE_MISMATCH:${wordpressObjectId}`);
   if (remaining && !COMMERCIAL_STAINLESS_WAVE1_REMAINING_ORDER.includes(wordpressObjectId as (typeof COMMERCIAL_STAINLESS_WAVE1_REMAINING_ORDER)[number])) throw new Error(`COMMERCIAL_STAINLESS_REMAINING_SCOPE_MISMATCH:${wordpressObjectId}`);
   if (page17Retry && (wordpressObjectId !== 17 || expected.autosaveId !== 91)) throw new Error(`COMMERCIAL_STAINLESS_PAGE17_RETRY_SCOPE_MISMATCH:${wordpressObjectId}`);
+  if (page23Final && (wordpressObjectId !== 23 || expected.autosaveId !== 92)) throw new Error(`COMMERCIAL_STAINLESS_PAGE23_FINAL_SCOPE_MISMATCH:${wordpressObjectId}`);
   const receipts = listCommercialStainlessWordPressPublicationReceipts();
-  const receiptId = page17Retry ? "csc-page17-publication-retry-v1-17-91" : remaining ? `csc-wave1-remaining-v1-${wordpressObjectId}-${expected.autosaveId}` : canaryVersion === 3 ? "csc-page24-canary-publication-retry-v3-24-88" : canaryVersion === 2 ? "csc-page24-canary-publication-retry-v2-24-88" : canaryVersion === 1 ? "csc-page24-canary-publication-retry-v1-24-88" : `csc-wave1-publication-${wordpressObjectId}-${expected.autosaveId}`;
+  const receiptId = page23Final ? "csc-page23-final-publication-v1-23-be5502d4" : page17Retry ? "csc-page17-publication-retry-v1-17-91" : remaining ? `csc-wave1-remaining-v1-${wordpressObjectId}-${expected.autosaveId}` : canaryVersion === 3 ? "csc-page24-canary-publication-retry-v3-24-88" : canaryVersion === 2 ? "csc-page24-canary-publication-retry-v2-24-88" : canaryVersion === 1 ? "csc-page24-canary-publication-retry-v1-24-88" : `csc-wave1-publication-${wordpressObjectId}-${expected.autosaveId}`;
   const existing = receipts.find((item) => item.receiptId === receiptId);
   if (existing?.status === "PUBLIC_CERTIFIED") return existing;
   if (existing) throw new Error(`COMMERCIAL_STAINLESS_PUBLICATION_REVIEW_REQUIRED:${wordpressObjectId}:${existing.status}`);
@@ -349,14 +357,16 @@ async function publishCommercialStainlessWordPressPage(site: SiteConfiguration, 
     const expectedIndex = COMMERCIAL_STAINLESS_WAVE1_REMAINING_ORDER.indexOf(wordpressObjectId as (typeof COMMERCIAL_STAINLESS_WAVE1_REMAINING_ORDER)[number]);
     const priorIds = COMMERCIAL_STAINLESS_WAVE1_REMAINING_ORDER.slice(0, expectedIndex);
     if (!priorIds.every((id) => receipts.some((receipt) => receipt.receiptId.startsWith(`csc-wave1-remaining-v1-${id}-`) && receipt.status === "PUBLIC_CERTIFIED"))) throw new Error(`COMMERCIAL_STAINLESS_REMAINING_SEQUENCE_BLOCKED:${wordpressObjectId}`);
-  } else if (!canary && !page17Retry) {
+  } else if (!canary && !page17Retry && !page23Final) {
     const expectedIndex = COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS.findIndex((item) => item.wordpressObjectId === wordpressObjectId);
     const priorIds = COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS.slice(0, expectedIndex).map((item) => item.wordpressObjectId);
     if (!priorIds.every((id) => receipts.some((receipt) => receipt.wordpressObjectId === id && receipt.status === "PUBLIC_CERTIFIED"))) throw new Error(`COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED:${wordpressObjectId}`);
   }
 
   const stage = listCommercialStainlessWordPressStageRecords().find((record) => record.wordpressObjectId === wordpressObjectId);
-  if (!stage || stage.status !== "PUBLICATION_READY" || stage.autosaveId !== expected.autosaveId || !stage.certification || !stage.stagedRenderedHash) throw new Error(`COMMERCIAL_STAINLESS_EXACT_CERTIFIED_REVISION_REQUIRED:${wordpressObjectId}:${expected.autosaveId}`);
+  const page23Evidence = page23Final ? listCommercialStainlessPage23LengthEvidence().find((item) => item.status === "FINAL_OWNER_CANDIDATE" && item.optimizedStoredContentHash === COMMERCIAL_STAINLESS_PAGE23_FINAL_CONTENT_HASH) : null;
+  const stageReady = page23Final ? stage?.status === "OWNER_REVIEW_READY" && page23Evidence?.visualCertification !== null : stage?.status === "PUBLICATION_READY";
+  if (!stage || !stageReady || stage.autosaveId !== expected.autosaveId || !stage.certification || !stage.stagedRenderedHash) throw new Error(`COMMERCIAL_STAINLESS_EXACT_CERTIFIED_REVISION_REQUIRED:${wordpressObjectId}:${expected.autosaveId}`);
   const resolved = authority(site);
   const [autosaveRead, pageRead, publicRead] = await Promise.all([
     getJson<WordPressAutosave>(`${resolved.apiBase}/pages/${wordpressObjectId}/autosaves/${expected.autosaveId}?context=edit&_fields=id,parent,content&_publish=${crypto.randomUUID()}`, resolved.headers),
@@ -368,6 +378,7 @@ async function publishCommercialStainlessWordPressPage(site: SiteConfiguration, 
   const autosaveRendered = text(autosaveRead.body?.content?.rendered);
   if (canary && sha256(autosaveRaw) !== COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTOSAVE_HASH) throw new Error("COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTOSAVE_HASH_MISMATCH");
   if (page17Retry && sha256(autosaveRaw) !== COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTOSAVE_HASH) throw new Error("COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTOSAVE_HASH_MISMATCH");
+  if (page23Final && (sha256(autosaveRaw) !== COMMERCIAL_STAINLESS_PAGE23_FINAL_CONTENT_HASH || stage.stagedContentHash !== COMMERCIAL_STAINLESS_PAGE23_FINAL_CONTENT_HASH || page23Evidence?.optimizedStoredContentHash !== COMMERCIAL_STAINLESS_PAGE23_FINAL_CONTENT_HASH)) throw new Error("COMMERCIAL_STAINLESS_PAGE23_FINAL_CONTENT_HASH_MISMATCH");
   const before = snapshot(page, publicRead.html);
   const precheck = autosaveRead.status === 200 && Number(autosaveRead.body?.id ?? 0) === expected.autosaveId && Number(autosaveRead.body?.parent ?? 0) === wordpressObjectId && sha256(autosaveRaw) === stage.stagedContentHash && sha256(autosaveRendered) === stage.stagedRenderedHash && pageRead.status === 200 && Number(page.id ?? 0) === wordpressObjectId && before.status === "publish" && new URL(before.url).pathname === expected.path && before.slug === expected.path.split("/").filter(Boolean).at(-1) && before.contentHash === stage.rollbackEvidence.contentHash && before.featuredMediaId === stage.rollbackEvidence.featuredMediaId && before.seoTitle === stage.rollbackEvidence.seoTitle && before.metaDescription === stage.rollbackEvidence.metaDescription && before.canonical === stage.rollbackEvidence.canonical && before.indexability === stage.rollbackEvidence.indexability && publicRead.status === 200;
   if (!precheck) throw new Error(`COMMERCIAL_STAINLESS_EXACT_REVISION_PREFLIGHT_BLOCKED:${wordpressObjectId}:${expected.autosaveId}`);
@@ -377,8 +388,8 @@ async function publishCommercialStainlessWordPressPage(site: SiteConfiguration, 
     receiptId,
     wordpressObjectId,
     authorizedAutosaveId: expected.autosaveId,
-    ownerAuthorizationReference: page17Retry ? COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORIZATION : remaining ? COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORIZATION : canaryVersion === 3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_AUTHORIZATION : canaryVersion === 2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_AUTHORIZATION : canaryVersion === 1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTHORIZATION : COMMERCIAL_STAINLESS_PUBLICATION_OWNER_AUTHORIZATION,
-    implementationSha: page17Retry ? COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORITY_SHA : remaining ? COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORITY_SHA : canaryVersion === 3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_HOST_SPACING_SHA : canaryVersion === 2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA : canaryVersion === 1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA,
+    ownerAuthorizationReference: page23Final ? COMMERCIAL_STAINLESS_PAGE23_FINAL_AUTHORIZATION : page17Retry ? COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORIZATION : remaining ? COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORIZATION : canaryVersion === 3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_AUTHORIZATION : canaryVersion === 2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_AUTHORIZATION : canaryVersion === 1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTHORIZATION : COMMERCIAL_STAINLESS_PUBLICATION_OWNER_AUTHORIZATION,
+    implementationSha: page23Final ? COMMERCIAL_STAINLESS_PAGE23_FINAL_AUTHORITY_SHA : page17Retry ? COMMERCIAL_STAINLESS_PAGE17_RETRY_AUTHORITY_SHA : remaining ? COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORITY_SHA : canaryVersion === 3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_HOST_SPACING_SHA : canaryVersion === 2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA : canaryVersion === 1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA,
     profile: expected.profile,
     status: "PREPARED",
     publicUrl: before.url,
@@ -476,6 +487,10 @@ export async function publishCommercialStainlessPage17RetryV1(site: SiteConfigur
   return publishCommercialStainlessWordPressPage(site, 17, "PAGE17_RETRY_V1");
 }
 
+export async function publishCommercialStainlessPage23FinalV1(site: SiteConfiguration): Promise<CommercialStainlessWordPressPublicationReceipt> {
+  return publishCommercialStainlessWordPressPage(site, 23, "PAGE23_FINAL_V1");
+}
+
 function visualPass(value: CommercialStainlessPublicVisualCertification): boolean {
   const geometryPass = value.layoutEvidence.length === 4 && value.layoutEvidence.every((evidence) => verifyRenderedWhitespace(evidence).pass);
   return value.desktop1440 && value.desktop1024 && value.tablet768 && value.mobile375 && value.horizontalOverflow === 0 && value.heroValid && value.h1Visible && value.ctaValid && value.mediaResolved && value.textMeasureAcceptable && value.noOverlap && value.noBrokenGrids && value.noGiantWhitespace && value.headerFooterCorrect && geometryPass;
@@ -486,7 +501,10 @@ export async function certifyCommercialStainlessWordPressPublishedPage(site: Sit
   const expected = expectedPublication(wordpressObjectId);
   const receipt = listCommercialStainlessWordPressPublicationReceipts().find((item) => receiptId ? item.receiptId === receiptId : item.wordpressObjectId === wordpressObjectId && item.status === "PUBLISHED_PENDING_VISUAL");
   if (!expected || !receipt || receipt.authorizedAutosaveId !== expected.autosaveId || receipt.status !== "PUBLISHED_PENDING_VISUAL") throw new Error(`COMMERCIAL_STAINLESS_PUBLIC_VISUAL_CERTIFICATION_BLOCKED:${wordpressObjectId}`);
-  if (!visual.visualCertificationId.trim() || !visualPass(visual)) {
+  const page23GeometryPass = receipt.receiptId === "csc-page23-final-publication-v1-23-be5502d4" ? [
+    { width: 1440, expected: 2572.67 }, { width: 1024, expected: 2574.67 }, { width: 768, expected: 3329.85 }, { width: 375, expected: 3735.12 },
+  ].every(({ width, expected }) => visual.compositionGeometry?.some((item) => item.width === width && Math.abs(item.height - expected) <= 120 && item.largestBlankRegion <= 120 && item.hostResidualSpacing === 0)) : true;
+  if (!visual.visualCertificationId.trim() || !visualPass(visual) || !page23GeometryPass) {
     const updatedAt = new Date().toISOString();
     const blocked = saveReceipt({ ...receipt, status: "BLOCKED", visualCertification: visual, blockers: [...receipt.blockers, "PUBLIC_VISUAL_CERTIFICATION_FAILED"], updatedAt });
     const storedRestored = await rollback({ ...resolved, receipt: blocked });
