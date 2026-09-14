@@ -187,6 +187,14 @@ export function GlwGeneratedPageReviewWorkspace({
         </section>
       ) : null}
 
+      {model.backgroundAwareContrast ? (
+        <section className="border border-cyan-800 bg-cyan-950/15 p-5" aria-label="Background-aware text contrast">
+          <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Genesis Background-Aware Text Contrast V1</p><h2 className="mt-2 text-2xl font-black text-white">Full Render Contrast Audit</h2><p className="mt-2 text-sm text-zinc-300">{model.backgroundAwareContrast.authority.replaceAll("_", " ")} · generated image reevaluation {model.backgroundAwareContrast.generatedImageReevaluationPerformed ? "performed" : "not observed"}</p></div><p className={`text-sm font-bold ${model.backgroundAwareContrast.state === "PASS" ? "text-emerald-300" : "text-red-300"}`}>{model.backgroundAwareContrast.state} · {model.backgroundAwareContrast.failureCount} failures</p></div>
+          <dl className="mt-5 grid gap-4 border-t border-cyan-900 pt-5 sm:grid-cols-2 lg:grid-cols-4"><TraceItem label="Owner review contrast gate" value={model.backgroundAwareContrast.ownerReviewReady ? "PASS" : "BLOCKED"} /><TraceItem label="Host publication contrast gate" value={model.backgroundAwareContrast.publicationReady ? "PASS" : "BLOCKED"} />{model.backgroundAwareContrast.viewports.map((viewport) => <TraceItem key={viewport.viewport} label={viewport.viewport.replaceAll("_", " ")} value={`${viewport.observations} observations · ${viewport.failures} failures`} />)}</dl>
+          <p className="mt-4 text-xs leading-5 text-zinc-500">A PASS host-render contrast gate is required evidence for future publication readiness. It is not publication authorization and exposes no Publish action.</p>
+        </section>
+      ) : null}
+
       <section
         className="border border-zinc-800 bg-zinc-900/45 p-5"
         aria-label="Review issues"

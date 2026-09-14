@@ -4,6 +4,7 @@ import { verifyGovernedSnapshotPath } from "@/modules/foundation/governed-render
 import { inspectSanAntonioWordPressDraft } from "@/modules/glw/san-antonio-wordpress-staging-service";
 import { getSanAntonioNativeRepairState } from "@/modules/glw/san-antonio-native-wordpress-render-repair-service";
 import { getSanAntonioHeroContrastState } from "@/modules/glw/san-antonio-hero-contrast-repair-service";
+import { getSanAntonioBackgroundAwareContrastState } from "@/modules/glw/san-antonio-background-aware-contrast-update-service";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ job
   const { jobId } = await context.params;
   if (jobId !== "f518ffb7-9216-4866-a93c-7f4793e74038" || request.nextUrl.searchParams.get("organizationId") !== "ssi" || request.nextUrl.searchParams.get("siteId") !== "site-ssi-projectorenclosure") return new NextResponse("Not found", { status: 404 });
   const receipt = getSanAntonioNativeRepairState().receipts.at(-1); if (!receipt) return new NextResponse("Repair receipt required", { status: 409 });
-  const heroReceipt = getSanAntonioHeroContrastState().receipts.at(-1); const expectedHash = heroReceipt?.afterHash ?? receipt.afterHash; const current = await inspectSanAntonioWordPressDraft("13103"); if (current.identity.status !== "draft" || current.identity.template !== "elementor_header_footer" || current.featuredMediaId !== 10757 || current.hash !== expectedHash || current.authority !== "POST_CONTENT") return new NextResponse("Repair identity stale", { status: 409 });
+  const heroReceipt = getSanAntonioHeroContrastState().receipts.at(-1); const systemicReceipt = getSanAntonioBackgroundAwareContrastState().receipts.at(-1); const expectedHash = systemicReceipt?.afterHash ?? heroReceipt?.afterHash ?? receipt.afterHash; const current = await inspectSanAntonioWordPressDraft("13103"); if (current.identity.status !== "draft" || current.identity.template !== "elementor_header_footer" || current.featuredMediaId !== 10757 || current.hash !== expectedHash || current.authority !== "POST_CONTENT") return new NextResponse("Repair identity stale", { status: 409 });
   const shellResponse = await fetch("https://projectorenclosure.com/fan-cooled-projector-enclosures/", { cache: "no-store", signal: AbortSignal.timeout(30_000) }); if (!shellResponse.ok) return new NextResponse("Theme shell unavailable", { status: 502 });
   const $ = load(await shellResponse.text()); $("base").remove(); $("head").prepend('<base href="https://projectorenclosure.com/">'); const body = $("body"); body.attr("class", (body.attr("class") ?? "").replace(/page-id-\d+/g, "page-id-13103").concat(" page-id-13103 page-template-elementor_header_footer"));
   const header = $("header#cafe-site-header").first(); const footer = $("footer#cafe-site-footer").first(); if (!header.length || !footer.length) return new NextResponse("Theme shell malformed", { status: 502 });
