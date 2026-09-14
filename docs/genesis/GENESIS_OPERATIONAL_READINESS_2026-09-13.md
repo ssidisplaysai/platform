@@ -300,3 +300,11 @@ Owner dispatch now follows exactly:
 Current principal limitation: the application has no cryptographically authenticated server session. The strongest bounded identity is the operator identity already present in Genesis plus a per-browser session UUID, both explicitly carried in request headers and bound into receipts. Raw role headers alone fail. Replacing these headers with a trusted identity-provider session remains a deferred platform hardening task.
 
 The historical San Antonio job `f518ffb7-9216-4866-a93c-7f4793e74038`, lease `aaba3a04-4f7a-493e-8893-a8a1769a4ec7`, and execution `608895` remain untouched. This repair does not reconcile that incident, create WordPress content, publish, dispatch, or execute n8n.
+
+## San Antonio 608895 owner-authorized reconciliation V1
+
+The owner separately authorized truthful reconciliation of the completed San Antonio execution only. `SAN_ANTONIO_608895_OWNER_AUTHORIZED_RECONCILIATION_V1` binds the exact organization, site, campaign, target, job, lease, execution, canonical path, generated-artifact SHA-256, and security repair SHA. It does not authorize content acceptance, WordPress creation, publication, regeneration, another workflow execution, another dispatch, or an allowance refund.
+
+The reconciliation route requires platform-admin permission, exact organization/site scope, a principal plus browser session identity, every exact incident identifier, and the literal confirmation above. It re-reads n8n execution `608895`, requires terminal `GLW Content Ready`, verifies the generated HTML SHA-256 `0255fda847e2962dc0ae10afcd86a646a5d89aef303331286babf2dae49078d2`, and rejects any WordPress identity or publication state.
+
+Reconciliation has two append-only phases. `AUTHORIZED` freezes the original `DISPATCHED` job, `running` target, lease ID and timestamps, dispatch date, `UNAUTHORIZED_VALID_DISPATCH` classification, `HIGH` severity, owner principal/session, and security repair SHA before mutation. `RECONCILED` records job `CONTENT_READY`, target `content_ready`, cleared active lease fields, preserved dispatch date, artifact hash/length, no owner content decision, and explicit false values for WordPress mutation, publication, dispatch, and workflow execution. An interrupted authorized attempt may resume only from the exact expected partial states.

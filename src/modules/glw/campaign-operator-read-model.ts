@@ -83,7 +83,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
   const failed = input.targets.filter((target) => target.status === "failed").length;
   const contentReady = input.targets.filter((target) => {
     const job = target.jobId ? jobs.get(target.jobId) : null;
-    return target.status === "running" && job?.status === "CONTENT_READY";
+    return target.status === "content_ready" || (target.status === "running" && job?.status === "CONTENT_READY");
   }).length;
   const authorized = Boolean(input.latestGrant?.consumedAt || input.latestGrant?.claimedAt || (input.latestGrant && !input.latestGrant.consumedAt && new Date(input.latestGrant.expiresAt) > new Date()));
   const active = input.campaign.status === "active" || input.campaign.status === "complete";
@@ -93,7 +93,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
   const draftOnly = input.campaign.publicationPolicy === "draft_only";
   const reconcilable = input.targets.some((target) => {
     const job = target.jobId ? jobs.get(target.jobId) : null;
-    return Boolean(job && (target.status === "running" || target.status === "failed") && ["CONTENT_READY", "COMPLETE", "FAILED"].includes(job.status));
+    return Boolean(job && (target.status === "content_ready" || target.status === "running" || target.status === "failed") && ["CONTENT_READY", "COMPLETE", "FAILED"].includes(job.status));
   });
 
   let currentStage = "Reference";

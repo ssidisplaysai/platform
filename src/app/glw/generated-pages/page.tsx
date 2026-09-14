@@ -21,7 +21,7 @@ export default async function GeneratedPagesPage({ searchParams }: { searchParam
   const siteMap = new Map(listSites().map((site) => [site.siteId, site]));
   const jobs = new Map((await glwPageExecutionRepository.list()).map((job) => [job.jobId, job]));
   const scoped = listAllGlwCampaignTargets().filter((target) => (!organizationId || target.organizationId === organizationId) && (!siteId || target.siteId === siteId));
-  const targets = scoped.filter((target) => view === "all" ? ["reference_complete", "draft_ready", "published", "failed"].includes(target.status) : ["draft_ready", "failed"].includes(target.status));
+  const targets = scoped.filter((target) => view === "all" ? ["reference_complete", "content_ready", "draft_ready", "published", "failed"].includes(target.status) : ["content_ready", "draft_ready", "failed"].includes(target.status));
   const reviewCount = scoped.filter((target) => target.status === "draft_ready").length;
 
   return <AppShell><div className="space-y-6">

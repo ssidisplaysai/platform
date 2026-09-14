@@ -15,6 +15,7 @@ export type GlwCampaignTargetStatus =
   | "reference_complete"
   | "queued"
   | "running"
+  | "content_ready"
   | "draft_ready"
   | "published"
   | "failed"
@@ -307,6 +308,7 @@ export type GlwCampaignTargetQueueSummary = {
   referenceComplete: number;
   queued: number;
   running: number;
+  contentReady: number;
   draftReady: number;
   published: number;
   failed: number;
@@ -329,6 +331,9 @@ export function summarizeGlwCampaignTargets(
     ).length,
     running: targets.filter(
       (target) => target.status === "running",
+    ).length,
+    contentReady: targets.filter(
+      (target) => target.status === "content_ready",
     ).length,
     draftReady: targets.filter(
       (target) => target.status === "draft_ready",
@@ -553,6 +558,50 @@ export function requeueGlwCampaignTargetAfterPreExecutionFailure(input: {
   targetStore.set(targetKey, updated);
   persistState();
   return deepClone(updated);
+}
+
+export function reconcileGlwCampaignTargetContentReady(input: {
+  campaignId: string;
+  targetId: string;
+  stateCode: string;
+  citySlug?: string | null;
+  jobId: string;
+  leaseId: string;
+  externalExecutionId: string;
+  now?: Date;
+}): { target: GlwCampaignTarget; leaseHistory: { leaseId: string; leasedAt: string; expiredAt: string; jobId: string; externalExecutionId: string; dispatchDate: string } } {
+  loadState();
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+  const now = input.now ?? new Date();
+  if (!current || current.targetId !== input.targetId || current.status !== "running" || current.jobId !== input.jobId || current.leaseId !== input.leaseId) {
+    throw new Error("CONTENT_READY_TARGET_IDENTITY_MISMATCH");
+  }
+  if (current.wordpressObjectId) throw new Error("CONTENT_READY_TARGET_WORDPRESS_OBJECT_FORBIDDEN");
+  if (!current.leasedAt || !current.leaseExpiresAt || !current.dispatchDate) throw new Error("CONTENT_READY_TARGET_LEASE_HISTORY_REQUIRED");
+  const expiresAt = new Date(current.leaseExpiresAt);
+  if (!Number.isFinite(expiresAt.getTime()) || expiresAt > now) throw new Error("CONTENT_READY_TARGET_LEASE_NOT_EXPIRED");
+  const timestamp = now.toISOString();
+  const leaseHistory = {
+    leaseId: current.leaseId,
+    leasedAt: current.leasedAt,
+    expiredAt: current.leaseExpiresAt,
+    jobId: current.jobId,
+    externalExecutionId: input.externalExecutionId,
+    dispatchDate: current.dispatchDate,
+  };
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "content_ready",
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: null,
+    updatedAt: timestamp,
+  };
+  targetStore.set(targetKey, updated);
+  persistState();
+  return { target: deepClone(updated), leaseHistory: deepClone(leaseHistory) };
 }
 
 export function requireGlwCampaignTargetResumeAuthority(input: {
