@@ -10,7 +10,7 @@ export default async function CommercialStainlessWordPressWave1Page({ params }: 
   const { siteId } = await params;
   const site = getSiteById(siteId);
   if (!site || site.siteId !== COMMERCIAL_STAINLESS_SITE_ID) return <AppShell><p className="p-6 text-zinc-300">Commercial Stainless WordPress staging review is unavailable.</p></AppShell>;
-  const records = listCommercialStainlessWordPressStageRecords().filter((record) => ["STAGED", "PUBLICATION_READY", "BLOCKED"].includes(record.status));
+  const records = listCommercialStainlessWordPressStageRecords().filter((record) => ["STAGED", "OWNER_REVIEW_READY", "PUBLICATION_READY", "BLOCKED"].includes(record.status));
   if (records.length !== 5) return <AppShell resourceSite={createSiteContext(site)}><p className="p-6 text-zinc-300">Complete Wave 1 WordPress staging is required.</p></AppShell>;
   const items = await Promise.all(records.map(async (record) => {
     const response = await fetch(`${record.currentPublicUrl}?_staged_review=${crypto.randomUUID()}`, { cache: "no-store", signal: AbortSignal.timeout(20_000) });

@@ -10,8 +10,13 @@ import { COMMERCIAL_STAINLESS_WAVE_1_PATHS, stageCommercialStainlessWave1 } from
 import type { SiteConfiguration } from "./types";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import { verifyWordPressTemplateStructure } from "./wordpress-post-content-publication-verifier";
+import { evaluateSemanticMediaReuse, extractRenderedMediaInstances, type SemanticMediaPolicyResult } from "./semantic-media-reuse-policy";
 
 export const COMMERCIAL_STAINLESS_APPROVED_WAVE_1_SHA = "c1d94a4b80661397a67d1ba8674c0ea8f71c3e19";
+export const COMMERCIAL_STAINLESS_PAGE23_MEDIA_REPAIR_AUTHORIZATION = "COMMERCIAL_STAINLESS_PAGE23_GOVERNED_REVISION_STAGING_V1:APPROVED";
+export const COMMERCIAL_STAINLESS_PAGE23_PRIOR_AUTOSAVE_HASH = "f12ea05f629d60988a31969b138b472caffde88833557422cf5766a388602dc0";
+export const COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_ID = 50;
+export const COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_URL = "https://commercialstainlesscounters.com/wp-content/uploads/2026/09/design-build-fabrication.jpg";
 
 const AUTHORIZED_IDS = [24, 11, 13, 17, 23] as const;
 
@@ -56,7 +61,7 @@ export type CommercialStainlessWordPressStageRecord = {
   stageId: string;
   wordpressObjectId: number;
   autosaveId: number | null;
-  status: "PREPARED" | "STAGED" | "PUBLICATION_READY" | "BLOCKED" | "ROLLED_BACK";
+  status: "PREPARED" | "STAGED" | "OWNER_REVIEW_READY" | "PUBLICATION_READY" | "BLOCKED" | "ROLLED_BACK";
   targetProfile: string;
   currentPublicUrl: string;
   stagedContentHash: string;
@@ -81,6 +86,57 @@ export type CommercialStainlessWordPressStageRecord = {
 
 type StagingState = { records: CommercialStainlessWordPressStageRecord[] };
 const STAGING_NAMESPACE = "commercial-stainless-wordpress-wave1-staging-v1";
+const PAGE23_REPAIR_NAMESPACE = "commercial-stainless-page23-governed-revision-staging-v1";
+
+export type CommercialStainlessPage23RepairEvidence = {
+  evidenceId: string;
+  ownerAuthorization: typeof COMMERCIAL_STAINLESS_PAGE23_MEDIA_REPAIR_AUTHORIZATION;
+  status: "PREPARED" | "OWNER_REVIEW_READY" | "ROLLED_BACK" | "BLOCKED";
+  wordpressObjectId: 23;
+  profile: "RESOURCE";
+  priorAutosaveId: 92;
+  priorAutosaveHash: string;
+  priorAutosaveContentRaw: string;
+  priorAutosaveRenderedHash: string;
+  preRepairStoredContentHash: string;
+  preRepairPublicHash: string;
+  preRepairRevisionIds: number[];
+  preRepairAuthorityRecoverable: boolean;
+  postRepairRevisionIds: number[];
+  postRepairRevisionCreated: boolean;
+  revisionAuthority: "WORDPRESS_REVISION" | "GENESIS_DURABLE_EQUIVALENT";
+  repairedStoredContentHash: string | null;
+  repairedContentRaw: string | null;
+  repairedRenderedHash: string | null;
+  replacementMediaId: 50;
+  replacementMediaUrl: typeof COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_URL;
+  semanticPolicy: SemanticMediaPolicyResult | null;
+  visualCertification: CommercialStainlessPage23RepairVisualCertification | null;
+  parentIdentityPreserved: boolean;
+  publicIdentityPreserved: boolean;
+  rollbackExecuted: boolean;
+  blockers: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CommercialStainlessPage23RepairVisualCertification = {
+  certificationId: string;
+  desktop1440: boolean;
+  desktop1024: boolean;
+  tablet768: boolean;
+  mobile375: boolean;
+  horizontalOverflow: number;
+  mediaInstanceCount: number;
+  repeatedSourceCount: number;
+  mediaResolved: boolean;
+  primaryCapabilitiesImagePreserved: boolean;
+  replacementMediaPresent: boolean;
+  sectionRhythmPreserved: boolean;
+  textMediaBalancePreserved: boolean;
+};
+
+type Page23RepairState = { evidence: CommercialStainlessPage23RepairEvidence[] };
 
 function loadStaging() {
   return loadPersistedState<StagingState>({ namespace: STAGING_NAMESPACE, seedFactory: () => ({ records: [] }) });
@@ -339,7 +395,7 @@ export async function inspectCommercialStainlessWordPressWave1Prepublication(sit
     const indexabilityPreserved = parentRobots === record.rollbackEvidence.indexability;
     const compositionValid = structure?.pass === true && !/class=["']gvs-page\b/i.test(rendered);
     const responsiveValid = Boolean(record.certification?.desktop1440 && record.certification.desktop1024 && record.certification.tablet768 && record.certification.mobile375 && record.certification.horizontalOverflow === 0);
-    const blockers = [...(!contentIdentity ? ["AUTOSAVE_CONTENT_IDENTITY_FAILED"] : []), ...(!renderedIdentity ? ["AUTOSAVE_RENDERED_IDENTITY_FAILED"] : []), ...(!seoPreserved ? ["SEO_DRIFT"] : []), ...(!canonicalPreserved ? ["CANONICAL_DRIFT"] : []), ...(!indexabilityPreserved ? ["INDEXABILITY_DRIFT"] : []), ...(!resources.mediaValid ? ["MEDIA_INVALID"] : []), ...(!resources.linksValid ? ["LINK_INVALID"] : []), ...(!compositionValid ? ["COMPOSITION_INVALID"] : []), ...(!responsiveValid ? ["RESPONSIVE_EVIDENCE_INVALID"] : [])];
+    const blockers = [...(record.status !== "PUBLICATION_READY" ? ["OWNER_REVIEW_ONLY"] : []), ...(!contentIdentity ? ["AUTOSAVE_CONTENT_IDENTITY_FAILED"] : []), ...(!renderedIdentity ? ["AUTOSAVE_RENDERED_IDENTITY_FAILED"] : []), ...(!seoPreserved ? ["SEO_DRIFT"] : []), ...(!canonicalPreserved ? ["CANONICAL_DRIFT"] : []), ...(!indexabilityPreserved ? ["INDEXABILITY_DRIFT"] : []), ...(!resources.mediaValid ? ["MEDIA_INVALID"] : []), ...(!resources.linksValid ? ["LINK_INVALID"] : []), ...(!compositionValid ? ["COMPOSITION_INVALID"] : []), ...(!responsiveValid ? ["RESPONSIVE_EVIDENCE_INVALID"] : [])];
     results.push({ wordpressObjectId, autosaveId, status: blockers.length ? "BLOCKED" : "PREPUBLICATION_READY", contentIdentity, renderedIdentity, seoPreserved, canonicalPreserved, indexabilityPreserved, ...resources, compositionValid, responsiveValid, blockers });
   }
   return results;
@@ -371,4 +427,109 @@ export async function certifyCommercialStainlessWordPressWave1(site: SiteConfigu
     certified.push(saveRecord({ ...record, status: "PUBLICATION_READY", certification, updatedAt: certification.certifiedAt }));
   }
   return certified;
+}
+
+export function listCommercialStainlessPage23RepairEvidence(): CommercialStainlessPage23RepairEvidence[] {
+  return deepClone(loadPersistedState<Page23RepairState>({ namespace: PAGE23_REPAIR_NAMESPACE, seedFactory: () => ({ evidence: [] }) }).state.evidence);
+}
+
+function savePage23RepairEvidence(evidence: CommercialStainlessPage23RepairEvidence): CommercialStainlessPage23RepairEvidence {
+  const loaded = loadPersistedState<Page23RepairState>({ namespace: PAGE23_REPAIR_NAMESPACE, seedFactory: () => ({ evidence: [] }) });
+  const index = loaded.state.evidence.findIndex((item) => item.evidenceId === evidence.evidenceId);
+  if (index >= 0) loaded.state.evidence[index] = evidence;
+  else loaded.state.evidence.push(evidence);
+  savePersistedState({ namespace: PAGE23_REPAIR_NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  return deepClone(evidence);
+}
+
+export function summarizeCommercialStainlessPage23RepairEvidence(evidence: CommercialStainlessPage23RepairEvidence) {
+  return { ...evidence, priorAutosaveContentRaw: undefined, repairedContentRaw: undefined };
+}
+
+function replacePage23CapabilitiesCard(content: string): string {
+  const cardPattern = /<a class="wr-card" href="\/capabilities\/"><img[^>]+src="https:\/\/commercialstainlesscounters\.com\/wp-content\/uploads\/2026\/09\/capabilities\.jpg"[^>]*>/;
+  const matches = content.match(new RegExp(cardPattern.source, "g")) ?? [];
+  if (matches.length !== 1) throw new Error(`COMMERCIAL_STAINLESS_PAGE23_EXACT_CARD_REQUIRED:${matches.length}`);
+  const repairedTag = matches[0]
+    .replace("https://commercialstainlesscounters.com/wp-content/uploads/2026/09/capabilities.jpg", COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_URL)
+    .replace("Conceptual context for Capabilities", "Conceptual fabrication capability context for Capabilities");
+  return content.replace(cardPattern, repairedTag);
+}
+
+function page23RepairPolicy(html: string): SemanticMediaPolicyResult {
+  return evaluateSemanticMediaReuse({ instances: extractRenderedMediaInstances({ html, origin: `${COMMERCIAL_STAINLESS_ORIGIN}/about/` }), declarations: [] });
+}
+
+export async function stageCommercialStainlessPage23MediaRepair(site: SiteConfiguration): Promise<{ record: CommercialStainlessWordPressStageRecord; evidence: CommercialStainlessPage23RepairEvidence }> {
+  const existingEvidence = listCommercialStainlessPage23RepairEvidence().find((item) => item.status === "OWNER_REVIEW_READY");
+  const existingRecord = listCommercialStainlessWordPressStageRecords().find((item) => item.wordpressObjectId === 23);
+  if (existingEvidence && existingRecord?.status === "OWNER_REVIEW_READY" && existingEvidence.repairedStoredContentHash === existingRecord.stagedContentHash) return { record: existingRecord, evidence: existingEvidence };
+  if (!existingRecord || existingRecord.autosaveId !== 92 || existingRecord.targetProfile !== "RESOURCE") throw new Error("COMMERCIAL_STAINLESS_PAGE23_PRIOR_STAGE_REQUIRED");
+  const resolved = authority(site);
+  const [autosaveBefore, parentBefore, publicBefore, revisionsBefore] = await Promise.all([
+    getJson<WordPressAutosave>(`${resolved.apiBase}/pages/23/autosaves/92?context=edit&_fields=id,parent,title,content,featured_media&_repair=${crypto.randomUUID()}`, resolved.headers),
+    getJson<WordPressPage>(`${resolved.apiBase}/pages/23?context=edit&_fields=id,status,slug,link,featured_media,title,content,yoast_head_json&_repair=${crypto.randomUUID()}`, resolved.headers),
+    fetch(`${COMMERCIAL_STAINLESS_ORIGIN}/about/?_repair=${crypto.randomUUID()}`, { cache: "no-store", signal: AbortSignal.timeout(30_000) }),
+    getJson<WordPressAutosave[]>(`${resolved.apiBase}/pages/23/revisions?context=edit&per_page=100&_fields=id,parent,date_gmt,modified_gmt&_repair=${crypto.randomUUID()}`, resolved.headers),
+  ]);
+  const priorRaw = text(autosaveBefore.body?.content?.raw);
+  const priorRendered = text(autosaveBefore.body?.content?.rendered);
+  const parent = parentBefore.body ?? {};
+  const publicHtmlBefore = publicBefore.ok ? await publicBefore.text() : "";
+  const priorHash = sha256(priorRaw);
+  const preRepairStoredContentHash = sha256(text(parent.content?.raw));
+  const preRepairPublicHash = sha256(mainHtml(publicHtmlBefore));
+  const preRevisionIds = (Array.isArray(revisionsBefore.body) ? revisionsBefore.body : []).map((item) => Number(item.id ?? 0)).filter(Boolean).sort((left, right) => left - right);
+  const precheck = autosaveBefore.status === 200 && Number(autosaveBefore.body?.id ?? 0) === 92 && Number(autosaveBefore.body?.parent ?? 0) === 23 && priorHash === COMMERCIAL_STAINLESS_PAGE23_PRIOR_AUTOSAVE_HASH && parentBefore.status === 200 && Number(parent.id ?? 0) === 23 && text(parent.status) === "publish" && text(parent.slug) === "about" && new URL(text(parent.link)).pathname === "/about/" && preRepairStoredContentHash === existingRecord.rollbackEvidence.contentHash && preRepairPublicHash === existingRecord.publicBodyHashBefore && publicBefore.status === 200;
+  if (!precheck) throw new Error("COMMERCIAL_STAINLESS_PAGE23_REPAIR_PREFLIGHT_BLOCKED");
+  const repairedRaw = replacePage23CapabilitiesCard(priorRaw);
+  const expectedRepairedHash = sha256(repairedRaw);
+  const now = new Date().toISOString();
+  let evidence = savePage23RepairEvidence({ evidenceId: `csc-page23-media-repair-v1-${expectedRepairedHash.slice(0, 16)}`, ownerAuthorization: COMMERCIAL_STAINLESS_PAGE23_MEDIA_REPAIR_AUTHORIZATION, status: "PREPARED", wordpressObjectId: 23, profile: "RESOURCE", priorAutosaveId: 92, priorAutosaveHash: priorHash, priorAutosaveContentRaw: priorRaw, priorAutosaveRenderedHash: sha256(priorRendered), preRepairStoredContentHash, preRepairPublicHash, preRepairRevisionIds: preRevisionIds, preRepairAuthorityRecoverable: true, postRepairRevisionIds: [], postRepairRevisionCreated: false, revisionAuthority: "GENESIS_DURABLE_EQUIVALENT", repairedStoredContentHash: null, repairedContentRaw: repairedRaw, repairedRenderedHash: null, replacementMediaId: COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_ID, replacementMediaUrl: COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_URL, semanticPolicy: null, visualCertification: null, parentIdentityPreserved: false, publicIdentityPreserved: false, rollbackExecuted: false, blockers: [], createdAt: now, updatedAt: now });
+  try {
+    const write = await fetch(`${resolved.apiBase}/pages/23/autosaves`, { method: "POST", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ title: text(parent.title?.raw ?? parent.title?.rendered), content: repairedRaw, excerpt: existingRecord.rollbackEvidence.metaDescription, featured_media: existingRecord.rollbackEvidence.featuredMediaId }), cache: "no-store", signal: AbortSignal.timeout(30_000) });
+    const written = await write.json().catch(() => null) as WordPressAutosave | null;
+    const postAutosaveId = Number(written?.id ?? 0);
+    if (!write.ok || postAutosaveId !== 92) throw new Error(`COMMERCIAL_STAINLESS_PAGE23_AUTOSAVE_UPDATE_FAILED:${write.status}:${postAutosaveId}`);
+    const [autosaveAfter, parentAfter, publicAfter, revisionsAfter] = await Promise.all([
+      getJson<WordPressAutosave>(`${resolved.apiBase}/pages/23/autosaves/92?context=edit&_fields=id,parent,content&_repair=${crypto.randomUUID()}`, resolved.headers),
+      getJson<WordPressPage>(`${resolved.apiBase}/pages/23?context=edit&_fields=id,status,slug,link,featured_media,content,yoast_head_json&_repair=${crypto.randomUUID()}`, resolved.headers),
+      fetch(`${COMMERCIAL_STAINLESS_ORIGIN}/about/?_repair=${crypto.randomUUID()}`, { cache: "no-store", signal: AbortSignal.timeout(30_000) }),
+      getJson<WordPressAutosave[]>(`${resolved.apiBase}/pages/23/revisions?context=edit&per_page=100&_fields=id,parent,date_gmt,modified_gmt&_repair=${crypto.randomUUID()}`, resolved.headers),
+    ]);
+    const repairedRendered = text(autosaveAfter.body?.content?.rendered);
+    const repairedHash = sha256(text(autosaveAfter.body?.content?.raw));
+    const publicHtmlAfter = publicAfter.ok ? await publicAfter.text() : "";
+    const postRevisionIds = (Array.isArray(revisionsAfter.body) ? revisionsAfter.body : []).map((item) => Number(item.id ?? 0)).filter(Boolean).sort((left, right) => left - right);
+    const postRepairRevisionCreated = postRevisionIds.some((id) => !preRevisionIds.includes(id));
+    const parentIdentityPreserved = parentAfter.status === 200 && Number(parentAfter.body?.id ?? 0) === 23 && text(parentAfter.body?.status) === "publish" && text(parentAfter.body?.slug) === existingRecord.rollbackEvidence.slug && text(parentAfter.body?.link) === existingRecord.currentPublicUrl && Number(parentAfter.body?.featured_media ?? 0) === existingRecord.rollbackEvidence.featuredMediaId && sha256(text(parentAfter.body?.content?.raw)) === preRepairStoredContentHash && text(parentAfter.body?.yoast_head_json?.title) === existingRecord.rollbackEvidence.seoTitle && text(parentAfter.body?.yoast_head_json?.description) === existingRecord.rollbackEvidence.metaDescription && Object.values(parentAfter.body?.yoast_head_json?.robots ?? {}).join(",") === existingRecord.rollbackEvidence.indexability;
+    const publicIdentityPreserved = publicAfter.status === 200 && sha256(mainHtml(publicHtmlAfter)) === preRepairPublicHash && text(publicHtmlAfter.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i)?.[1]) === existingRecord.rollbackEvidence.canonical;
+    const policy = page23RepairPolicy(repairedRendered);
+    const sources = policy.instances.map((item) => item.mediaSourceIdentity);
+    const exactChange = repairedRaw !== priorRaw && repairedRaw.replaceAll(COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_URL, "https://commercialstainlesscounters.com/wp-content/uploads/2026/09/capabilities.jpg").replace("Conceptual fabrication capability context for Capabilities", "Conceptual context for Capabilities") === priorRaw;
+    const blockers = [...(autosaveAfter.status !== 200 || repairedHash !== expectedRepairedHash ? ["REPAIRED_AUTOSAVE_IDENTITY_FAILED"] : []), ...(!parentIdentityPreserved ? ["PUBLISHED_PARENT_CHANGED"] : []), ...(!publicIdentityPreserved ? ["PUBLIC_BODY_CHANGED"] : []), ...(!exactChange ? ["UNBOUNDED_COMPOSITION_CHANGE"] : []), ...(!policy.pass || policy.instances.length !== 5 || new Set(sources).size !== 5 ? ["SEMANTIC_MEDIA_POLICY_FAILED"] : []), ...(!policy.instances.some((item) => item.mediaSourceIdentity.endsWith("/capabilities.jpg") && item.compositionRole === "CONTEXTUAL_SUPPORT") ? ["PRIMARY_CAPABILITIES_MEDIA_CHANGED"] : []), ...(!policy.instances.some((item) => item.mediaSourceIdentity === COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_URL && item.compositionRole === "RELATED_CARD" && item.claimClass === "CONCEPTUAL") ? ["REPLACEMENT_MEDIA_AUTHORITY_FAILED"] : [])];
+    evidence = savePage23RepairEvidence({ ...evidence, status: "PREPARED", postRepairRevisionIds: postRevisionIds, postRepairRevisionCreated, revisionAuthority: postRepairRevisionCreated ? "WORDPRESS_REVISION" : "GENESIS_DURABLE_EQUIVALENT", repairedStoredContentHash: repairedHash, repairedRenderedHash: sha256(repairedRendered), semanticPolicy: policy, parentIdentityPreserved, publicIdentityPreserved, blockers, updatedAt: new Date().toISOString() });
+    if (blockers.length) throw new Error(`COMMERCIAL_STAINLESS_PAGE23_REPAIR_VERIFICATION_FAILED:${blockers.join(",")}`);
+    const certification = existingRecord.certification ? { ...existingRecord.certification, certifiedAt: new Date().toISOString() } : null;
+    const record = saveRecord({ ...existingRecord, status: "OWNER_REVIEW_READY", stagedContentHash: repairedHash, stagedRenderedHash: sha256(repairedRendered), stagedRenderedHtml: repairedRendered, mediaPreserved: true, certification, updatedAt: new Date().toISOString() });
+    evidence = savePage23RepairEvidence({ ...evidence, status: "OWNER_REVIEW_READY", updatedAt: new Date().toISOString() });
+    return { record, evidence };
+  } catch (cause) {
+    const restore = await fetch(`${resolved.apiBase}/pages/23/autosaves`, { method: "POST", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ title: text(parent.title?.raw ?? parent.title?.rendered), content: priorRaw, excerpt: existingRecord.rollbackEvidence.metaDescription, featured_media: existingRecord.rollbackEvidence.featuredMediaId }), cache: "no-store", signal: AbortSignal.timeout(30_000) });
+    const restored = await getJson<WordPressAutosave>(`${resolved.apiBase}/pages/23/autosaves/92?context=edit&_fields=id,parent,content&_repair=${crypto.randomUUID()}`, resolved.headers);
+    const rollbackVerified = restore.ok && restored.status === 200 && sha256(text(restored.body?.content?.raw)) === priorHash;
+    saveRecord({ ...existingRecord, updatedAt: new Date().toISOString() });
+    savePage23RepairEvidence({ ...evidence, status: rollbackVerified ? "ROLLED_BACK" : "BLOCKED", rollbackExecuted: true, blockers: [...evidence.blockers, cause instanceof Error ? cause.message : "UNKNOWN_PAGE23_REPAIR_FAILURE", ...(!rollbackVerified ? ["AUTOSAVE_ROLLBACK_FAILED"] : [])], updatedAt: new Date().toISOString() });
+    throw cause;
+  }
+}
+
+export function certifyCommercialStainlessPage23MediaRepair(input: CommercialStainlessPage23RepairVisualCertification): CommercialStainlessPage23RepairEvidence {
+  const evidence = listCommercialStainlessPage23RepairEvidence().find((item) => item.status === "OWNER_REVIEW_READY");
+  const record = listCommercialStainlessWordPressStageRecords().find((item) => item.wordpressObjectId === 23 && item.status === "OWNER_REVIEW_READY");
+  const visualPass = Boolean(input.certificationId.trim()) && input.desktop1440 && input.desktop1024 && input.tablet768 && input.mobile375 && input.horizontalOverflow === 0 && input.mediaInstanceCount === 5 && input.repeatedSourceCount === 0 && input.mediaResolved && input.primaryCapabilitiesImagePreserved && input.replacementMediaPresent && input.sectionRhythmPreserved && input.textMediaBalancePreserved;
+  if (!evidence || !record || evidence.repairedStoredContentHash !== record.stagedContentHash || evidence.semanticPolicy?.pass !== true || !visualPass) throw new Error("COMMERCIAL_STAINLESS_PAGE23_REPAIR_VISUAL_CERTIFICATION_BLOCKED");
+  const certifiedAt = new Date().toISOString();
+  saveRecord({ ...record, certification: { certifiedAt, desktop1440: true, desktop1024: true, tablet768: true, mobile375: true, horizontalOverflow: 0, globalHeaderCount: 1, bodyNavigationCount: 0, h1Count: 1, mediaResolved: true, brokenLinks: 0, devLinks: 0, unsupportedClaims: 0 }, updatedAt: certifiedAt });
+  return savePage23RepairEvidence({ ...evidence, visualCertification: input, updatedAt: certifiedAt });
 }

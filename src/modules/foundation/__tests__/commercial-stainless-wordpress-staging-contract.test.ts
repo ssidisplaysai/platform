@@ -40,4 +40,24 @@ describe("Commercial Stainless WordPress Wave 1 staging contract", () => {
     for (const marker of ["VISUAL_CERTIFICATION_FAILED", "WORDPRESS_INVARIANT_FAILED", "PUBLICATION_READY", "stagedRenderedHash", "publicBodyHashBefore"]) expect(staging).toContain(marker);
     expect(route).toContain("wordpressMutation: false");
   });
+
+  test("binds the Page 23 media repair to exact prior evidence and one approved replacement", () => {
+    for (const marker of ["COMMERCIAL_STAINLESS_PAGE23_GOVERNED_REVISION_STAGING_V1:APPROVED", "f12ea05f629d60988a31969b138b472caffde88833557422cf5766a388602dc0", "COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_ID = 50", "design-build-fabrication.jpg", "stageCommercialStainlessPage23MediaRepair", 'wordpressObjectId: 23', 'profile: "RESOURCE"']) expect(staging).toContain(marker);
+    expect(route).toContain("STAGE_COMMERCIAL_STAINLESS_PAGE23_MEDIA_REPAIR_V1");
+  });
+
+  test("persists Genesis authority before mutation and never claims publication readiness", () => {
+    expect(staging.indexOf('status: "PREPARED", wordpressObjectId: 23')).toBeLessThan(staging.indexOf('`${resolved.apiBase}/pages/23/autosaves`, { method: "POST"'));
+    for (const marker of ["priorAutosaveContentRaw", "preRepairRevisionIds", "postRepairRevisionIds", 'revisionAuthority: "GENESIS_DURABLE_EQUIVALENT"', 'status: "OWNER_REVIEW_READY"', "parentIdentityPreserved", "publicIdentityPreserved"]) expect(staging).toContain(marker);
+    expect(staging).toContain("content: priorRaw");
+    expect(staging).toContain("AUTOSAVE_ROLLBACK_FAILED");
+    expect(route).toContain("publicationMutation: false");
+  });
+
+  test("persists repaired responsive evidence without another WordPress mutation", () => {
+    for (const marker of ["certifyCommercialStainlessPage23MediaRepair", "CommercialStainlessPage23RepairVisualCertification", "mediaInstanceCount === 5", "repeatedSourceCount === 0", "primaryCapabilitiesImagePreserved", "replacementMediaPresent"]) expect(staging).toContain(marker);
+    expect(route).toContain("CERTIFY_COMMERCIAL_STAINLESS_PAGE23_MEDIA_REPAIR_V1");
+    expect(route).toContain("wordpressMutation: false");
+    expect(staging).toContain('record.status !== "PUBLICATION_READY" ? ["OWNER_REVIEW_ONLY"]');
+  });
 });
