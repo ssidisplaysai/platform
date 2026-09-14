@@ -9,6 +9,12 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     for (const marker of ["3a2dd3980bf03022d6fabc7403b4c18bfba5ed31", "wordpressObjectId: 24, autosaveId: 88", "wordpressObjectId: 11, autosaveId: 89", "wordpressObjectId: 13, autosaveId: 90", "wordpressObjectId: 17, autosaveId: 91", "wordpressObjectId: 23, autosaveId: 92", "LANDING_CONVERSION", "CAPABILITY", "PRODUCT_SERVICE", "INDUSTRY_APPLICATION", "RESOURCE"]) expect(publication).toContain(marker);
   });
 
+  test("binds the Page 24 canary retry independently from the earlier rolled-back receipt", () => {
+    for (const marker of ["32c2d638d1a0e2e9d35d94bdb426fed9e9725808", "COMMERCIAL_STAINLESS_PAGE24_CANARY_PUBLICATION_RETRY_V1:APPROVED", "csc-page24-canary-publication-retry-v1-24-88", "COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTOSAVE_HASH", "publishCommercialStainlessPage24Canary"]) expect(publication).toContain(marker);
+    expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE24_CANARY");
+    expect(route).toContain("Page 24 is the only authorized canary target.");
+  });
+
   test("requires exact certified autosave hashes and sequential public certification", () => {
     for (const marker of ["stage.stagedContentHash", "stage.stagedRenderedHash", "stage.certification", "COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED", "PUBLISHED_PENDING_VISUAL", "PUBLIC_CERTIFIED"]) expect(publication).toContain(marker);
     expect(publication.indexOf('status: "PREPARED"')).toBeLessThan(publication.indexOf("await updateContent"));
@@ -26,11 +32,17 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(publication.indexOf('status: "BLOCKED"')).toBeLessThan(publication.indexOf("const restored = await rollback"));
   });
 
+  test("persists failed visual evidence before exact rollback and public restoration verification", () => {
+    expect(publication.indexOf('status: "BLOCKED", visualCertification: visual')).toBeLessThan(publication.indexOf("const storedRestored = await rollback"));
+    for (const marker of ["ROLLBACK_STORED_IDENTITY_FAILED", "ROLLBACK_PUBLIC_IDENTITY_FAILED", "receipt.prePublication.publicDocumentHash"]) expect(publication).toContain(marker);
+  });
+
   test("exposes only explicit authenticated publish and public-certification commands", () => {
     expect(route).toContain('authorizeRequest(request, "sites:manage_integrations")');
     expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_WAVE_1_REVISION");
     expect(route).toContain("CERTIFY_EXACT_COMMERCIAL_STAINLESS_WAVE_1_PUBLIC_RENDER");
-    expect(route).toContain("implementationSha !== COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA");
+    expect(route).toContain("body.implementationSha !== expectedSha");
+    expect(route).toContain("canary ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA");
   });
 
   test("redacts exact rollback bodies from API responses", () => {

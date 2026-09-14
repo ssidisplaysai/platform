@@ -12,6 +12,9 @@ import { classifyPublicVerificationRead, convergePublicVerification, verifyRende
 
 export const COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA = "3a2dd3980bf03022d6fabc7403b4c18bfba5ed31";
 export const COMMERCIAL_STAINLESS_PUBLICATION_OWNER_AUTHORIZATION = "COMMERCIAL_STAINLESS_WAVE_1_PUBLICATION_V1:APPROVED";
+export const COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA = "32c2d638d1a0e2e9d35d94bdb426fed9e9725808";
+export const COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTHORIZATION = "COMMERCIAL_STAINLESS_PAGE24_CANARY_PUBLICATION_RETRY_V1:APPROVED";
+export const COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTOSAVE_HASH = "080dc3d3e2a8e68225c79a32a3343da219a9ad244e725accbd816616d08ac499";
 
 export const COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS = [
   { wordpressObjectId: 24, autosaveId: 88, path: "/request-a-quote/", profile: "LANDING_CONVERSION" },
@@ -89,8 +92,8 @@ export type CommercialStainlessWordPressPublicationReceipt = {
   receiptId: string;
   wordpressObjectId: number;
   authorizedAutosaveId: number;
-  ownerAuthorizationReference: typeof COMMERCIAL_STAINLESS_PUBLICATION_OWNER_AUTHORIZATION;
-  implementationSha: typeof COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA;
+  ownerAuthorizationReference: string;
+  implementationSha: string;
   profile: string;
   status: "PREPARED" | "PUBLISHED_PENDING_VISUAL" | "PUBLIC_CERTIFIED" | "ROLLED_BACK" | "BLOCKED";
   publicUrl: string;
@@ -290,16 +293,20 @@ async function rollback(input: { apiBase: string; headers: Record<string, string
   return write.ok && read.status === 200 && sha256(text(read.body?.content?.raw)) === input.receipt.rollbackAuthority.contentHash && text(read.body?.status) === "publish";
 }
 
-export async function publishCommercialStainlessWordPressWave1Page(site: SiteConfiguration, wordpressObjectId: number): Promise<CommercialStainlessWordPressPublicationReceipt> {
+async function publishCommercialStainlessWordPressPage(site: SiteConfiguration, wordpressObjectId: number, canary: boolean): Promise<CommercialStainlessWordPressPublicationReceipt> {
   const expected = expectedPublication(wordpressObjectId);
   if (!expected) throw new Error(`COMMERCIAL_STAINLESS_UNAUTHORIZED_PUBLICATION_TARGET:${wordpressObjectId}`);
+  if (canary && (wordpressObjectId !== 24 || expected.autosaveId !== 88)) throw new Error(`COMMERCIAL_STAINLESS_PAGE24_CANARY_SCOPE_MISMATCH:${wordpressObjectId}`);
   const receipts = listCommercialStainlessWordPressPublicationReceipts();
-  const existing = receipts.find((item) => item.wordpressObjectId === wordpressObjectId);
+  const receiptId = canary ? "csc-page24-canary-publication-retry-v1-24-88" : `csc-wave1-publication-${wordpressObjectId}-${expected.autosaveId}`;
+  const existing = receipts.find((item) => item.receiptId === receiptId);
   if (existing?.status === "PUBLIC_CERTIFIED") return existing;
   if (existing) throw new Error(`COMMERCIAL_STAINLESS_PUBLICATION_REVIEW_REQUIRED:${wordpressObjectId}:${existing.status}`);
-  const expectedIndex = COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS.findIndex((item) => item.wordpressObjectId === wordpressObjectId);
-  const priorIds = COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS.slice(0, expectedIndex).map((item) => item.wordpressObjectId);
-  if (!priorIds.every((id) => receipts.some((receipt) => receipt.wordpressObjectId === id && receipt.status === "PUBLIC_CERTIFIED"))) throw new Error(`COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED:${wordpressObjectId}`);
+  if (!canary) {
+    const expectedIndex = COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS.findIndex((item) => item.wordpressObjectId === wordpressObjectId);
+    const priorIds = COMMERCIAL_STAINLESS_AUTHORIZED_PUBLICATIONS.slice(0, expectedIndex).map((item) => item.wordpressObjectId);
+    if (!priorIds.every((id) => receipts.some((receipt) => receipt.wordpressObjectId === id && receipt.status === "PUBLIC_CERTIFIED"))) throw new Error(`COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED:${wordpressObjectId}`);
+  }
 
   const stage = listCommercialStainlessWordPressStageRecords().find((record) => record.wordpressObjectId === wordpressObjectId);
   if (!stage || stage.status !== "PUBLICATION_READY" || stage.autosaveId !== expected.autosaveId || !stage.certification || !stage.stagedRenderedHash) throw new Error(`COMMERCIAL_STAINLESS_EXACT_CERTIFIED_REVISION_REQUIRED:${wordpressObjectId}:${expected.autosaveId}`);
@@ -312,17 +319,18 @@ export async function publishCommercialStainlessWordPressWave1Page(site: SiteCon
   const page = pageRead.body ?? {};
   const autosaveRaw = text(autosaveRead.body?.content?.raw);
   const autosaveRendered = text(autosaveRead.body?.content?.rendered);
+  if (canary && sha256(autosaveRaw) !== COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTOSAVE_HASH) throw new Error("COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTOSAVE_HASH_MISMATCH");
   const before = snapshot(page, publicRead.html);
   const precheck = autosaveRead.status === 200 && Number(autosaveRead.body?.id ?? 0) === expected.autosaveId && Number(autosaveRead.body?.parent ?? 0) === wordpressObjectId && sha256(autosaveRaw) === stage.stagedContentHash && sha256(autosaveRendered) === stage.stagedRenderedHash && pageRead.status === 200 && Number(page.id ?? 0) === wordpressObjectId && before.status === "publish" && new URL(before.url).pathname === expected.path && before.slug === expected.path.split("/").filter(Boolean).at(-1) && before.contentHash === stage.rollbackEvidence.contentHash && before.featuredMediaId === stage.rollbackEvidence.featuredMediaId && before.seoTitle === stage.rollbackEvidence.seoTitle && before.metaDescription === stage.rollbackEvidence.metaDescription && before.canonical === stage.rollbackEvidence.canonical && before.indexability === stage.rollbackEvidence.indexability && publicRead.status === 200;
   if (!precheck) throw new Error(`COMMERCIAL_STAINLESS_EXACT_REVISION_PREFLIGHT_BLOCKED:${wordpressObjectId}:${expected.autosaveId}`);
 
   const now = new Date().toISOString();
   let receipt = saveReceipt({
-    receiptId: `csc-wave1-publication-${wordpressObjectId}-${expected.autosaveId}`,
+    receiptId,
     wordpressObjectId,
     authorizedAutosaveId: expected.autosaveId,
-    ownerAuthorizationReference: COMMERCIAL_STAINLESS_PUBLICATION_OWNER_AUTHORIZATION,
-    implementationSha: COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA,
+    ownerAuthorizationReference: canary ? COMMERCIAL_STAINLESS_PAGE24_CANARY_AUTHORIZATION : COMMERCIAL_STAINLESS_PUBLICATION_OWNER_AUTHORIZATION,
+    implementationSha: canary ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA,
     profile: expected.profile,
     status: "PREPARED",
     publicUrl: before.url,
@@ -396,19 +404,34 @@ export async function publishCommercialStainlessWordPressWave1Page(site: SiteCon
   }
 }
 
+export async function publishCommercialStainlessWordPressWave1Page(site: SiteConfiguration, wordpressObjectId: number): Promise<CommercialStainlessWordPressPublicationReceipt> {
+  return publishCommercialStainlessWordPressPage(site, wordpressObjectId, false);
+}
+
+export async function publishCommercialStainlessPage24Canary(site: SiteConfiguration): Promise<CommercialStainlessWordPressPublicationReceipt> {
+  return publishCommercialStainlessWordPressPage(site, 24, true);
+}
+
 function visualPass(value: CommercialStainlessPublicVisualCertification): boolean {
   const geometryPass = value.layoutEvidence.length === 4 && value.layoutEvidence.every((evidence) => verifyRenderedWhitespace(evidence).pass);
   return value.desktop1440 && value.desktop1024 && value.tablet768 && value.mobile375 && value.horizontalOverflow === 0 && value.heroValid && value.h1Visible && value.ctaValid && value.mediaResolved && value.textMeasureAcceptable && value.noOverlap && value.noBrokenGrids && value.noGiantWhitespace && value.headerFooterCorrect && geometryPass;
 }
 
-export async function certifyCommercialStainlessWordPressPublishedPage(site: SiteConfiguration, wordpressObjectId: number, visual: CommercialStainlessPublicVisualCertification): Promise<CommercialStainlessWordPressPublicationReceipt> {
-  authority(site);
+export async function certifyCommercialStainlessWordPressPublishedPage(site: SiteConfiguration, wordpressObjectId: number, visual: CommercialStainlessPublicVisualCertification, receiptId?: string): Promise<CommercialStainlessWordPressPublicationReceipt> {
+  const resolved = authority(site);
   const expected = expectedPublication(wordpressObjectId);
-  const receipt = listCommercialStainlessWordPressPublicationReceipts().find((item) => item.wordpressObjectId === wordpressObjectId);
+  const receipt = listCommercialStainlessWordPressPublicationReceipts().find((item) => receiptId ? item.receiptId === receiptId : item.wordpressObjectId === wordpressObjectId && item.status === "PUBLISHED_PENDING_VISUAL");
   if (!expected || !receipt || receipt.authorizedAutosaveId !== expected.autosaveId || receipt.status !== "PUBLISHED_PENDING_VISUAL") throw new Error(`COMMERCIAL_STAINLESS_PUBLIC_VISUAL_CERTIFICATION_BLOCKED:${wordpressObjectId}`);
   if (!visual.visualCertificationId.trim() || !visualPass(visual)) {
     const updatedAt = new Date().toISOString();
-    saveReceipt({ ...receipt, status: "BLOCKED", visualCertification: visual, blockers: [...receipt.blockers, "PUBLIC_VISUAL_CERTIFICATION_FAILED"], updatedAt });
+    const blocked = saveReceipt({ ...receipt, status: "BLOCKED", visualCertification: visual, blockers: [...receipt.blockers, "PUBLIC_VISUAL_CERTIFICATION_FAILED"], updatedAt });
+    const storedRestored = await rollback({ ...resolved, receipt: blocked });
+    let publicRestored = false;
+    for (let attempt = 0; attempt < 5 && !publicRestored; attempt += 1) {
+      const restoredPublic = await getPublic(receipt.publicUrl);
+      publicRestored = restoredPublic.status === 200 && sha256(mainHtml(restoredPublic.html)) === receipt.prePublication.publicDocumentHash;
+    }
+    saveReceipt({ ...blocked, status: storedRestored && publicRestored ? "ROLLED_BACK" : "BLOCKED", rollbackAuthority: { ...blocked.rollbackAuthority, ready: storedRestored && publicRestored, executed: true }, blockers: [...blocked.blockers, ...(!storedRestored ? ["ROLLBACK_STORED_IDENTITY_FAILED"] : []), ...(!publicRestored ? ["ROLLBACK_PUBLIC_IDENTITY_FAILED"] : [])], updatedAt: new Date().toISOString() });
     throw new Error(`COMMERCIAL_STAINLESS_PUBLIC_VISUAL_CERTIFICATION_FAILED:${wordpressObjectId}`);
   }
   const certifiedAt = new Date().toISOString();

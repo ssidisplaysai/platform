@@ -13,7 +13,8 @@ describe("Commercial Stainless actual WordPress Wave 1 review", () => {
 
   test("shows authorized receipt-backed publication state without a Wave 2 action", () => {
     expect(component).not.toMatch(/<button|onClick|fetch\(/i);
-    for (const text of ["PUBLICATION AUTHORIZED", 'receipt?.publishedAt ? "COMPLETED"', 'receipt?.status === "PUBLIC_CERTIFIED"', '"CERTIFIED" : "PENDING"', "REVIEW PUBLIC PAGE", "Wave 2 and Wave 3 remain locked"]) expect(component).toContain(text);
+    for (const text of ["PREPUBLICATION READY", "Latest publication receipt", 'receipt?.status === "PUBLIC_CERTIFIED"', '"CERTIFIED" : "NOT CERTIFIED"', "REVIEW PUBLIC PAGE", "Wave 2 and Wave 3 remain locked"]) expect(component).toContain(text);
+    expect(component).toContain("right.updatedAt.localeCompare(left.updatedAt)");
     expect(route).toContain("listCommercialStainlessWordPressPublicationReceipts");
     expect(route).not.toMatch(/POST|publishGenesis|writeGenesis|saveRecord/);
   });
