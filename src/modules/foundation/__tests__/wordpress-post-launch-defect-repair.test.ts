@@ -1,5 +1,10 @@
 jest.mock("server-only", () => ({}));
 import { filterCommercialStainlessFeaturedImageRender, filterCommercialStainlessHostSpacingRender, isCommercialStainlessRichCompositionEligible, isCommercialStainlessRichCompositionEligibleFromAuthorities, WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET } from "../wordpress-post-launch-defect-repair";
+import fs from "node:fs";
+import path from "node:path";
+
+const repairSource = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/wordpress-post-launch-defect-repair.ts"), "utf8");
+const repairRoute = fs.readFileSync(path.join(process.cwd(), "src/app/api/sites/[siteId]/post-launch-repair/route.ts"), "utf8");
 
 const base = { host: "commercialstainlesscounters.com", postType: "page", status: "publish" };
 const richBlock = { blockName: "core/html", innerHtml: '<style>.wr-page{width:100%}.wr-hero{min-height:610px}</style><div class="wr-page"><section class="wr-hero"><img src="hero.jpg"><h1>Page</h1></section></div>' };
@@ -28,6 +33,9 @@ describe("CSC post-launch defect repair", () => {
     expect(code).toContain("$revision->post_parent === (int) $post_id");
     expect(code).toContain("add_action('enqueue_block_assets'");
     expect(code).toContain(".editor-styles-wrapper .wp-block-post-title{display:none!important}");
+    expect(code).toContain("add_action('wp_enqueue_scripts'");
+    expect(code).toContain("main#wp--skip-link--target{margin-top:0!important}");
+    expect(code).toContain(".wr-hero .wr-eyebrow,.wr-cta .wr-eyebrow{color:#fff!important;-webkit-text-fill-color:#fff!important}");
     for (const [id, path] of [[17, "markets/education"], [18, "markets/foodservice"], [19, "markets/healthcare"], [20, "markets/hospitality"], [21, "markets/industrial"], [22, "markets/labs"]]) expect(code).toContain(`${id} => '${path}'`);
     expect(code).toContain("add_rewrite_rule");
     expect(code).toContain("flush_rewrite_rules(false)");
@@ -40,6 +48,12 @@ describe("CSC post-launch defect repair", () => {
     expect(code).toContain("add_filter('rest_post_dispatch'");
     expect(code).toContain("add_filter('redirect_canonical'");
     expect(code).not.toMatch(/wp_insert_post|wp_update_post|media_handle|update_post_meta/);
+  });
+
+  test("persists exact actual-host repair evidence without page or publication mutation", () => {
+    for (const marker of ["COMMERCIAL_STAINLESS_RICH_PAGE_HOST_SPACING_AND_CONTRAST_REPAIR_V1:APPROVED", "b2e2f2b690e3d518472bd56e08886701293314d2215838b37d7a3c7fdbf4ddc3", "commercial-stainless-rich-page-host-spacing-and-contrast-repair-v1", "headerHeroGap === 0", "heroEyebrowContrast >= 4.5", "finalCtaEyebrowContrast >= 4.5", "convergenceReads.length >= 2", "publicationWrite === false", "agentInjectedCssUsed === false", "publicCertified === true"]) expect(repairSource).toContain(marker);
+    expect(repairRoute).toContain("CERTIFY_COMMERCIAL_STAINLESS_HOST_PRESENTATION_REPAIR_V1");
+    expect(repairRoute).toContain("publicationMutation: false");
   });
 
   test("suppresses only the theme featured block for an eligible rich composition", () => {

@@ -3,10 +3,12 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-authority";
+import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import type { SiteConfiguration } from "./types";
 
 export const COMMERCIAL_STAINLESS_RICH_PAGE_PRIMARY_PRESENTATION_CONTRACT = "GENESIS_RICH_PAGE_OWNS_PRIMARY_PAGE_PRESENTATION";
+export const COMMERCIAL_STAINLESS_HOST_PRESENTATION_REPAIR_AUTHORIZATION = "COMMERCIAL_STAINLESS_RICH_PAGE_HOST_SPACING_AND_CONTRAST_REPAIR_V1:APPROVED";
 const SNIPPET_NAME = "Genesis CSC Post Launch Defect Repair V1";
 const SNIPPET_CODE = `const GENESIS_CSC_PAGE_IDS_V1 = array(10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24);
 const GENESIS_CSC_MARKET_PATHS_V1 = array(
@@ -117,6 +119,16 @@ add_filter('render_block', function ($content, $block) {
     }
     return $content;
 }, 20, 2);
+
+add_action('wp_enqueue_scripts', function () {
+    $post_id = (int) get_queried_object_id();
+    if (!(is_front_page() || is_page()) || !genesis_csc_is_rich_composition_v1($post_id)) {
+        return;
+    }
+    wp_register_style('genesis-csc-rich-host-v1', false, array(), null);
+    wp_enqueue_style('genesis-csc-rich-host-v1');
+    wp_add_inline_style('genesis-csc-rich-host-v1', 'main#wp--skip-link--target{margin-top:0!important}.wr-hero .wr-eyebrow,.wr-cta .wr-eyebrow{color:#fff!important;-webkit-text-fill-color:#fff!important}');
+});
 
 add_action('enqueue_block_assets', function () {
     if (!is_admin()) {
@@ -244,6 +256,41 @@ export async function inspectCommercialStainlessHomepageAuthority(site: SiteConf
 }
 export async function repairWordPressPostLaunchDefects(site: SiteConfiguration) { const resolved = authority(site); const existing = (await list(resolved.origin, resolved.headers)).find((item) => item.name === SNIPPET_NAME) ?? null; if (existing && existing.active === true && existing.code === SNIPPET_CODE) return { snippetId: Number(existing.id), created: false, activated: false, updated: false }; if (existing?.id) { const update = await fetch(`${resolved.origin}/wp-json/code-snippets/v1/snippets/${existing.id}`, { method: "PUT", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ code: SNIPPET_CODE, active: true, scope: "global", priority: 2 }), cache: "no-store", signal: AbortSignal.timeout(30_000) }); if (!update.ok) throw new Error(`POST_LAUNCH_SNIPPET_UPDATE_FAILED:${update.status}`); return { snippetId: Number(existing.id), created: false, activated: existing.active !== true, updated: true }; } const response = await fetch(`${resolved.origin}/wp-json/code-snippets/v1/snippets`, { method: "POST", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ name: SNIPPET_NAME, desc: "Mechanical public-rendering and approved market-path repairs for Commercial Stainless Counters.", code: SNIPPET_CODE, tags: ["genesis", "post-launch", "canonical"], scope: "global", active: false, priority: 2 }), cache: "no-store", signal: AbortSignal.timeout(30_000) }); const body = await response.json().catch(() => null) as Snippet | null; if (!response.ok || !body?.id) throw new Error(`POST_LAUNCH_SNIPPET_CREATE_FAILED:${response.status}`); const activate = await fetch(`${resolved.origin}/wp-json/code-snippets/v1/snippets/${body.id}/activate`, { method: "POST", headers: resolved.headers, cache: "no-store", signal: AbortSignal.timeout(30_000) }); if (!activate.ok) throw new Error(`POST_LAUNCH_SNIPPET_ACTIVATION_FAILED:${activate.status}`); return { snippetId: Number(body.id), created: true, activated: true, updated: false }; }
 export const WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET = { name: SNIPPET_NAME, code: SNIPPET_CODE };
+
+export type CommercialStainlessHostPresentationEvidence = {
+    evidenceId: string;
+    authorization: typeof COMMERCIAL_STAINLESS_HOST_PRESENTATION_REPAIR_AUTHORIZATION;
+    wordpressObjectId: 12;
+    storedHashBefore: string;
+    storedHashAfter: string;
+    publicUrl: "https://commercialstainlesscounters.com/commercial-stainless-counters/";
+    authority: "ACTUAL_PUBLIC_HOST_RENDER";
+    viewports: Array<{ width: 1440 | 1024 | 768 | 375; headerHeroGap: number; horizontalOverflow: number; darkOnDarkFailures: number; lightOnLightFailures: number; unreadableTextFailures: number; brokenMedia: number; mainContentImageCount: number; uniqueMainContentImageCount: number }>;
+    heroEyebrowContrast: number;
+    finalCtaEyebrowContrast: number;
+    convergenceReads: Array<{ httpStatus: number; bodyComplete: boolean; publicRenderHash: string; predicatesPass: boolean }>;
+    contentChanged: false;
+    mediaChanged: false;
+    seoChanged: false;
+    publicationWrite: false;
+    agentInjectedCssUsed: false;
+    publicCertified: true;
+    certifiedAt: string;
+};
+type HostPresentationState = { records: CommercialStainlessHostPresentationEvidence[] };
+const HOST_PRESENTATION_NAMESPACE = "commercial-stainless-rich-page-host-spacing-and-contrast-repair-v1";
+export function listCommercialStainlessHostPresentationEvidence() { return deepClone(loadPersistedState<HostPresentationState>({ namespace: HOST_PRESENTATION_NAMESPACE, seedFactory: () => ({ records: [] }) }).state.records); }
+export async function certifyCommercialStainlessHostPresentationRepair(site: SiteConfiguration, evidence: CommercialStainlessHostPresentationEvidence) {
+    const expectedHash = "b2e2f2b690e3d518472bd56e08886701293314d2215838b37d7a3c7fdbf4ddc3";
+    const resolved = authority(site);
+    const page = await readEligibilityPage(`${resolved.apiBase}/pages/12?context=edit&_fields=id,status,content,featured_media,yoast_head_json&_hostcert=${crypto.randomUUID()}`, resolved.headers);
+    const currentHash = createHash("sha256").update(page.content?.raw ?? "").digest("hex");
+    const widths = [1440, 1024, 768, 375];
+    const valid = evidence.authorization === COMMERCIAL_STAINLESS_HOST_PRESENTATION_REPAIR_AUTHORIZATION && evidence.wordpressObjectId === 12 && evidence.storedHashBefore === expectedHash && evidence.storedHashAfter === expectedHash && currentHash === expectedHash && page.status === "publish" && evidence.authority === "ACTUAL_PUBLIC_HOST_RENDER" && evidence.viewports.length === 4 && widths.every((width) => evidence.viewports.some((item) => item.width === width && item.headerHeroGap === 0 && item.horizontalOverflow === 0 && item.darkOnDarkFailures === 0 && item.lightOnLightFailures === 0 && item.unreadableTextFailures === 0 && item.brokenMedia === 0 && item.mainContentImageCount === 5 && item.uniqueMainContentImageCount === 5)) && evidence.heroEyebrowContrast >= 4.5 && evidence.finalCtaEyebrowContrast >= 4.5 && evidence.convergenceReads.length >= 2 && evidence.convergenceReads.slice(-2).every((item) => item.httpStatus === 200 && item.bodyComplete && item.predicatesPass && item.publicRenderHash === evidence.convergenceReads.at(-1)!.publicRenderHash) && evidence.contentChanged === false && evidence.mediaChanged === false && evidence.seoChanged === false && evidence.publicationWrite === false && evidence.agentInjectedCssUsed === false && evidence.publicCertified === true;
+    if (!valid) throw new Error("COMMERCIAL_STAINLESS_HOST_PRESENTATION_CERTIFICATION_FAILED");
+    for (let attempt = 0; attempt < 8; attempt += 1) { const loaded = loadPersistedState<HostPresentationState>({ namespace: HOST_PRESENTATION_NAMESPACE, seedFactory: () => ({ records: [] }) }); const index = loaded.state.records.findIndex((item) => item.evidenceId === evidence.evidenceId); if (index >= 0) loaded.state.records[index] = evidence; else loaded.state.records.push(evidence); try { savePersistedState({ namespace: HOST_PRESENTATION_NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(evidence); } catch (error) { if (attempt === 7) throw error; } }
+    throw new Error("COMMERCIAL_STAINLESS_HOST_PRESENTATION_CAS_EXHAUSTED");
+}
 
 export type CommercialStainlessRichCompositionEligibilityInput = {
     host: string;
