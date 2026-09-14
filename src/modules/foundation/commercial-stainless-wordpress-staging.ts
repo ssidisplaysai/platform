@@ -17,6 +17,9 @@ export const COMMERCIAL_STAINLESS_PAGE23_MEDIA_REPAIR_AUTHORIZATION = "COMMERCIA
 export const COMMERCIAL_STAINLESS_PAGE23_PRIOR_AUTOSAVE_HASH = "f12ea05f629d60988a31969b138b472caffde88833557422cf5766a388602dc0";
 export const COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_ID = 50;
 export const COMMERCIAL_STAINLESS_PAGE23_REPLACEMENT_MEDIA_URL = "https://commercialstainlesscounters.com/wp-content/uploads/2026/09/design-build-fabrication.jpg";
+export const COMMERCIAL_STAINLESS_PAGE23_LENGTH_OPTIMIZATION_AUTHORIZATION = "COMMERCIAL_STAINLESS_PAGE23_OWNER_APPROVED_LENGTH_OPTIMIZATION_V1:APPROVED";
+export const COMMERCIAL_STAINLESS_PAGE23_REPAIRED_HASH = "7408944090acce3b273c48e875f5eeace9f646ec31801a4a4865a70785d1c89d";
+const PAGE23_LENGTH_OPTIMIZATION_STYLE = ".wr-page>.wr-section{padding-block:64px}.wr-page>.wr-section .wr-grid{margin-top:28px}.wr-page>.wr-cta{padding-block:48px}.wr-page>.wr-related{padding-block:24px}@media(max-width:800px){.wr-page>.wr-section{padding-block:52px}.wr-page>.wr-cta{padding-block:48px}.wr-page>.wr-related{padding-block:24px}}@media(max-width:520px){.wr-page>.wr-section{padding-block:48px}.wr-page>.wr-cta{padding-block:44px}.wr-page>.wr-related{padding-block:20px}}";
 
 const AUTHORIZED_IDS = [24, 11, 13, 17, 23] as const;
 
@@ -87,6 +90,7 @@ export type CommercialStainlessWordPressStageRecord = {
 type StagingState = { records: CommercialStainlessWordPressStageRecord[] };
 const STAGING_NAMESPACE = "commercial-stainless-wordpress-wave1-staging-v1";
 const PAGE23_REPAIR_NAMESPACE = "commercial-stainless-page23-governed-revision-staging-v1";
+const PAGE23_LENGTH_NAMESPACE = "commercial-stainless-page23-owner-approved-length-optimization-v1";
 
 export type CommercialStainlessPage23RepairEvidence = {
   evidenceId: string;
@@ -137,6 +141,31 @@ export type CommercialStainlessPage23RepairVisualCertification = {
 };
 
 type Page23RepairState = { evidence: CommercialStainlessPage23RepairEvidence[] };
+
+export type CommercialStainlessPage23LengthGeometry = { width: 1440 | 1024 | 768 | 375; totalHeightBefore: number; totalHeightAfter: number; largestBlankBefore: number; largestBlankAfter: number; horizontalOverflow: number };
+export type CommercialStainlessPage23LengthEvidence = {
+  evidenceId: string;
+  ownerAuthorization: typeof COMMERCIAL_STAINLESS_PAGE23_LENGTH_OPTIMIZATION_AUTHORIZATION;
+  status: "PREPARED" | "STAGED" | "FINAL_OWNER_CANDIDATE" | "ROLLED_BACK" | "BLOCKED";
+  wordpressObjectId: 23;
+  profile: "RESOURCE";
+  priorRepairedHash: string;
+  priorRepairedContentRaw: string;
+  optimizedStoredContentHash: string | null;
+  optimizedContentRaw: string | null;
+  optimizedRenderedHash: string | null;
+  preRepairPublicHash: string;
+  semanticPolicy: SemanticMediaPolicyResult | null;
+  visualCertification: null | { certificationId: string; geometry: CommercialStainlessPage23LengthGeometry[]; noContentRemoved: boolean; noSectionRemoved: boolean; visualHierarchyPreserved: boolean; noClipping: boolean; noOverlap: boolean; mediaCropsValid: boolean; ctaFooterCollisionFree: boolean };
+  parentIdentityPreserved: boolean;
+  publicIdentityPreserved: boolean;
+  rollbackExecuted: boolean;
+  blockers: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Page23LengthState = { evidence: CommercialStainlessPage23LengthEvidence[] };
 
 function loadStaging() {
   return loadPersistedState<StagingState>({ namespace: STAGING_NAMESPACE, seedFactory: () => ({ records: [] }) });
@@ -532,4 +561,95 @@ export function certifyCommercialStainlessPage23MediaRepair(input: CommercialSta
   const certifiedAt = new Date().toISOString();
   saveRecord({ ...record, certification: { certifiedAt, desktop1440: true, desktop1024: true, tablet768: true, mobile375: true, horizontalOverflow: 0, globalHeaderCount: 1, bodyNavigationCount: 0, h1Count: 1, mediaResolved: true, brokenLinks: 0, devLinks: 0, unsupportedClaims: 0 }, updatedAt: certifiedAt });
   return savePage23RepairEvidence({ ...evidence, visualCertification: input, updatedAt: certifiedAt });
+}
+
+export function listCommercialStainlessPage23LengthEvidence(): CommercialStainlessPage23LengthEvidence[] {
+  return deepClone(loadPersistedState<Page23LengthState>({ namespace: PAGE23_LENGTH_NAMESPACE, seedFactory: () => ({ evidence: [] }) }).state.evidence);
+}
+
+function savePage23LengthEvidence(evidence: CommercialStainlessPage23LengthEvidence): CommercialStainlessPage23LengthEvidence {
+  const loaded = loadPersistedState<Page23LengthState>({ namespace: PAGE23_LENGTH_NAMESPACE, seedFactory: () => ({ evidence: [] }) });
+  const index = loaded.state.evidence.findIndex((item) => item.evidenceId === evidence.evidenceId);
+  if (index >= 0) loaded.state.evidence[index] = evidence;
+  else loaded.state.evidence.push(evidence);
+  savePersistedState({ namespace: PAGE23_LENGTH_NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  return deepClone(evidence);
+}
+
+export function summarizeCommercialStainlessPage23LengthEvidence(evidence: CommercialStainlessPage23LengthEvidence) {
+  return { ...evidence, priorRepairedContentRaw: undefined, optimizedContentRaw: undefined };
+}
+
+function optimizePage23Length(content: string): string {
+  if (content.includes(PAGE23_LENGTH_OPTIMIZATION_STYLE)) return content;
+  const styleClosures = content.match(/<\/style>/g) ?? [];
+  if (styleClosures.length !== 1) throw new Error(`COMMERCIAL_STAINLESS_PAGE23_SINGLE_STYLE_REQUIRED:${styleClosures.length}`);
+  return content.replace("</style>", `${PAGE23_LENGTH_OPTIMIZATION_STYLE}</style>`);
+}
+
+export async function stageCommercialStainlessPage23LengthOptimization(site: SiteConfiguration): Promise<{ record: CommercialStainlessWordPressStageRecord; evidence: CommercialStainlessPage23LengthEvidence }> {
+  const existingEvidence = listCommercialStainlessPage23LengthEvidence().find((item) => item.status === "STAGED" || item.status === "FINAL_OWNER_CANDIDATE");
+  const existingRecord = listCommercialStainlessWordPressStageRecords().find((item) => item.wordpressObjectId === 23);
+  if (existingEvidence && existingRecord?.status === "OWNER_REVIEW_READY" && existingEvidence.optimizedStoredContentHash === existingRecord.stagedContentHash) return { record: existingRecord, evidence: existingEvidence };
+  const mediaEvidence = listCommercialStainlessPage23RepairEvidence().find((item) => item.status === "OWNER_REVIEW_READY");
+  if (!existingRecord || existingRecord.status !== "OWNER_REVIEW_READY" || existingRecord.targetProfile !== "RESOURCE" || existingRecord.stagedContentHash !== COMMERCIAL_STAINLESS_PAGE23_REPAIRED_HASH || !mediaEvidence || mediaEvidence.repairedStoredContentHash !== COMMERCIAL_STAINLESS_PAGE23_REPAIRED_HASH) throw new Error("COMMERCIAL_STAINLESS_PAGE23_REPAIRED_AUTHORITY_REQUIRED");
+  const resolved = authority(site);
+  const [autosaveBefore, parentBefore, publicBefore] = await Promise.all([
+    getJson<WordPressAutosave>(`${resolved.apiBase}/pages/23/autosaves/92?context=edit&_fields=id,parent,title,content,featured_media&_length=${crypto.randomUUID()}`, resolved.headers),
+    getJson<WordPressPage>(`${resolved.apiBase}/pages/23?context=edit&_fields=id,status,slug,link,featured_media,title,content,yoast_head_json&_length=${crypto.randomUUID()}`, resolved.headers),
+    fetch(`${COMMERCIAL_STAINLESS_ORIGIN}/about/?_length=${crypto.randomUUID()}`, { cache: "no-store", signal: AbortSignal.timeout(30_000) }),
+  ]);
+  const priorRaw = text(autosaveBefore.body?.content?.raw);
+  const parent = parentBefore.body ?? {};
+  const publicHtmlBefore = publicBefore.ok ? await publicBefore.text() : "";
+  const publicHashBefore = sha256(mainHtml(publicHtmlBefore));
+  const precheck = autosaveBefore.status === 200 && Number(autosaveBefore.body?.id ?? 0) === 92 && Number(autosaveBefore.body?.parent ?? 0) === 23 && sha256(priorRaw) === COMMERCIAL_STAINLESS_PAGE23_REPAIRED_HASH && parentBefore.status === 200 && text(parent.status) === "publish" && text(parent.slug) === "about" && new URL(text(parent.link)).pathname === "/about/" && sha256(text(parent.content?.raw)) === existingRecord.rollbackEvidence.contentHash && publicBefore.status === 200 && publicHashBefore === existingRecord.publicBodyHashBefore;
+  if (!precheck) throw new Error("COMMERCIAL_STAINLESS_PAGE23_LENGTH_PREFLIGHT_BLOCKED");
+  const optimizedRaw = optimizePage23Length(priorRaw);
+  const optimizedHash = sha256(optimizedRaw);
+  const now = new Date().toISOString();
+  let evidence = savePage23LengthEvidence({ evidenceId: `csc-page23-length-v1-${optimizedHash.slice(0, 16)}`, ownerAuthorization: COMMERCIAL_STAINLESS_PAGE23_LENGTH_OPTIMIZATION_AUTHORIZATION, status: "PREPARED", wordpressObjectId: 23, profile: "RESOURCE", priorRepairedHash: sha256(priorRaw), priorRepairedContentRaw: priorRaw, optimizedStoredContentHash: null, optimizedContentRaw: optimizedRaw, optimizedRenderedHash: null, preRepairPublicHash: publicHashBefore, semanticPolicy: null, visualCertification: null, parentIdentityPreserved: false, publicIdentityPreserved: false, rollbackExecuted: false, blockers: [], createdAt: now, updatedAt: now });
+  try {
+    const write = await fetch(`${resolved.apiBase}/pages/23/autosaves`, { method: "POST", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ title: text(parent.title?.raw ?? parent.title?.rendered), content: optimizedRaw, excerpt: existingRecord.rollbackEvidence.metaDescription, featured_media: existingRecord.rollbackEvidence.featuredMediaId }), cache: "no-store", signal: AbortSignal.timeout(30_000) });
+    const written = await write.json().catch(() => null) as WordPressAutosave | null;
+    if (!write.ok || Number(written?.id ?? 0) !== 92) throw new Error(`COMMERCIAL_STAINLESS_PAGE23_LENGTH_AUTOSAVE_UPDATE_FAILED:${write.status}`);
+    const [autosaveAfter, parentAfter, publicAfter] = await Promise.all([
+      getJson<WordPressAutosave>(`${resolved.apiBase}/pages/23/autosaves/92?context=edit&_fields=id,parent,content&_length=${crypto.randomUUID()}`, resolved.headers),
+      getJson<WordPressPage>(`${resolved.apiBase}/pages/23?context=edit&_fields=id,status,slug,link,featured_media,content,yoast_head_json&_length=${crypto.randomUUID()}`, resolved.headers),
+      fetch(`${COMMERCIAL_STAINLESS_ORIGIN}/about/?_length=${crypto.randomUUID()}`, { cache: "no-store", signal: AbortSignal.timeout(30_000) }),
+    ]);
+    const afterRaw = text(autosaveAfter.body?.content?.raw);
+    const afterRendered = text(autosaveAfter.body?.content?.rendered);
+    const afterHash = sha256(afterRaw);
+    const publicHtmlAfter = publicAfter.ok ? await publicAfter.text() : "";
+    const parentIdentityPreserved = parentAfter.status === 200 && Number(parentAfter.body?.id ?? 0) === 23 && text(parentAfter.body?.status) === "publish" && text(parentAfter.body?.slug) === existingRecord.rollbackEvidence.slug && text(parentAfter.body?.link) === existingRecord.currentPublicUrl && Number(parentAfter.body?.featured_media ?? 0) === existingRecord.rollbackEvidence.featuredMediaId && sha256(text(parentAfter.body?.content?.raw)) === existingRecord.rollbackEvidence.contentHash && text(parentAfter.body?.yoast_head_json?.title) === existingRecord.rollbackEvidence.seoTitle && text(parentAfter.body?.yoast_head_json?.description) === existingRecord.rollbackEvidence.metaDescription && Object.values(parentAfter.body?.yoast_head_json?.robots ?? {}).join(",") === existingRecord.rollbackEvidence.indexability;
+    const publicIdentityPreserved = publicAfter.status === 200 && sha256(mainHtml(publicHtmlAfter)) === publicHashBefore && text(publicHtmlAfter.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i)?.[1]) === existingRecord.rollbackEvidence.canonical;
+    const policy = page23RepairPolicy(afterRendered);
+    const exactChange = afterRaw.replace(PAGE23_LENGTH_OPTIMIZATION_STYLE, "") === priorRaw;
+    const sources = policy.instances.map((item) => item.mediaSourceIdentity);
+    const blockers = [...(autosaveAfter.status !== 200 || afterHash !== optimizedHash ? ["OPTIMIZED_AUTOSAVE_IDENTITY_FAILED"] : []), ...(!parentIdentityPreserved ? ["PUBLISHED_PARENT_CHANGED"] : []), ...(!publicIdentityPreserved ? ["PUBLIC_BODY_CHANGED"] : []), ...(!exactChange ? ["UNBOUNDED_LENGTH_CHANGE"] : []), ...(!policy.pass || policy.instances.length !== 5 || new Set(sources).size !== 5 ? ["SEMANTIC_MEDIA_POLICY_FAILED"] : [])];
+    evidence = savePage23LengthEvidence({ ...evidence, status: blockers.length ? "BLOCKED" : "STAGED", optimizedStoredContentHash: afterHash, optimizedRenderedHash: sha256(afterRendered), semanticPolicy: policy, parentIdentityPreserved, publicIdentityPreserved, blockers, updatedAt: new Date().toISOString() });
+    if (blockers.length) throw new Error(`COMMERCIAL_STAINLESS_PAGE23_LENGTH_VERIFICATION_FAILED:${blockers.join(",")}`);
+    const record = saveRecord({ ...existingRecord, status: "OWNER_REVIEW_READY", stagedContentHash: afterHash, stagedRenderedHash: sha256(afterRendered), stagedRenderedHtml: afterRendered, certification: null, updatedAt: new Date().toISOString() });
+    return { record, evidence };
+  } catch (cause) {
+    const restore = await fetch(`${resolved.apiBase}/pages/23/autosaves`, { method: "POST", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ title: text(parent.title?.raw ?? parent.title?.rendered), content: priorRaw, excerpt: existingRecord.rollbackEvidence.metaDescription, featured_media: existingRecord.rollbackEvidence.featuredMediaId }), cache: "no-store", signal: AbortSignal.timeout(30_000) });
+    const restored = await getJson<WordPressAutosave>(`${resolved.apiBase}/pages/23/autosaves/92?context=edit&_fields=id,parent,content&_length=${crypto.randomUUID()}`, resolved.headers);
+    const rollbackVerified = restore.ok && restored.status === 200 && sha256(text(restored.body?.content?.raw)) === COMMERCIAL_STAINLESS_PAGE23_REPAIRED_HASH;
+    saveRecord({ ...existingRecord, updatedAt: new Date().toISOString() });
+    savePage23LengthEvidence({ ...evidence, status: rollbackVerified ? "ROLLED_BACK" : "BLOCKED", rollbackExecuted: true, blockers: [...evidence.blockers, cause instanceof Error ? cause.message : "UNKNOWN_PAGE23_LENGTH_FAILURE", ...(!rollbackVerified ? ["AUTOSAVE_ROLLBACK_FAILED"] : [])], updatedAt: new Date().toISOString() });
+    throw cause;
+  }
+}
+
+export function certifyCommercialStainlessPage23LengthOptimization(input: { certificationId: string; geometry: CommercialStainlessPage23LengthGeometry[]; noContentRemoved: boolean; noSectionRemoved: boolean; visualHierarchyPreserved: boolean; noClipping: boolean; noOverlap: boolean; mediaCropsValid: boolean; ctaFooterCollisionFree: boolean }): CommercialStainlessPage23LengthEvidence {
+  const evidence = listCommercialStainlessPage23LengthEvidence().find((item) => item.status === "STAGED" || item.status === "FINAL_OWNER_CANDIDATE");
+  const record = listCommercialStainlessWordPressStageRecords().find((item) => item.wordpressObjectId === 23 && item.status === "OWNER_REVIEW_READY");
+  const widths = [1440, 1024, 768, 375];
+  const geometryPass = input.geometry.length === 4 && widths.every((width) => input.geometry.some((item) => item.width === width && item.totalHeightAfter < item.totalHeightBefore && item.largestBlankAfter < item.largestBlankBefore && item.horizontalOverflow === 0));
+  const pass = Boolean(input.certificationId.trim()) && geometryPass && input.noContentRemoved && input.noSectionRemoved && input.visualHierarchyPreserved && input.noClipping && input.noOverlap && input.mediaCropsValid && input.ctaFooterCollisionFree;
+  if (!evidence || !record || evidence.optimizedStoredContentHash !== record.stagedContentHash || evidence.semanticPolicy?.pass !== true || !pass) throw new Error("COMMERCIAL_STAINLESS_PAGE23_LENGTH_VISUAL_CERTIFICATION_BLOCKED");
+  const certifiedAt = new Date().toISOString();
+  saveRecord({ ...record, certification: { certifiedAt, desktop1440: true, desktop1024: true, tablet768: true, mobile375: true, horizontalOverflow: 0, globalHeaderCount: 1, bodyNavigationCount: 0, h1Count: 1, mediaResolved: true, brokenLinks: 0, devLinks: 0, unsupportedClaims: 0 }, updatedAt: certifiedAt });
+  return savePage23LengthEvidence({ ...evidence, status: "FINAL_OWNER_CANDIDATE", visualCertification: input, updatedAt: certifiedAt });
 }

@@ -60,4 +60,10 @@ describe("Commercial Stainless WordPress Wave 1 staging contract", () => {
     expect(route).toContain("wordpressMutation: false");
     expect(staging).toContain('record.status !== "PUBLICATION_READY" ? ["OWNER_REVIEW_ONLY"]');
   });
+
+  test("binds owner-approved Page 23 length optimization to the repaired authority", () => {
+    for (const marker of ["COMMERCIAL_STAINLESS_PAGE23_OWNER_APPROVED_LENGTH_OPTIMIZATION_V1:APPROVED", "7408944090acce3b273c48e875f5eeace9f646ec31801a4a4865a70785d1c89d", "PAGE23_LENGTH_OPTIMIZATION_STYLE", "stageCommercialStainlessPage23LengthOptimization", "certifyCommercialStainlessPage23LengthOptimization", 'status: "FINAL_OWNER_CANDIDATE"', "OWNER_REVIEW_ONLY"]) expect(staging).toContain(marker);
+    expect(route).toContain("STAGE_COMMERCIAL_STAINLESS_PAGE23_LENGTH_OPTIMIZATION_V1");
+    expect(route).toContain("CERTIFY_COMMERCIAL_STAINLESS_PAGE23_LENGTH_OPTIMIZATION_V1");
+  });
 });
