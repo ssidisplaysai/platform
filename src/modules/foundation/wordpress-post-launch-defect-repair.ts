@@ -4,6 +4,7 @@ import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-aut
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import type { SiteConfiguration } from "./types";
 
+export const COMMERCIAL_STAINLESS_RICH_PAGE_PRIMARY_PRESENTATION_CONTRACT = "GENESIS_RICH_PAGE_OWNS_PRIMARY_PAGE_PRESENTATION";
 const SNIPPET_NAME = "Genesis CSC Post Launch Defect Repair V1";
 const SNIPPET_CODE = `const GENESIS_CSC_PAGE_IDS_V1 = array(10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24);
 const GENESIS_CSC_MARKET_PATHS_V1 = array(
@@ -21,7 +22,11 @@ function genesis_csc_is_rich_composition_v1($post_id) {
     if ($host !== 'commercialstainlesscounters.com' || get_post_type($post_id) !== 'page' || get_post_status($post_id) !== 'publish') {
         return false;
     }
-    $blocks = parse_blocks((string) get_post_field('post_content', $post_id, 'raw'));
+    $queried_post = get_queried_object();
+    $raw_content = $queried_post instanceof WP_Post && (int) $queried_post->ID === (int) $post_id
+        ? (string) $queried_post->post_content
+        : (string) get_post_field('post_content', $post_id, 'raw');
+    $blocks = parse_blocks($raw_content);
     $inspect = function ($items) use (&$inspect) {
         foreach ($items as $block) {
             if (($block['blockName'] ?? '') === 'core/html') {
@@ -53,7 +58,7 @@ if (get_option('blogname') === 'My blog') {
 }
 
 add_filter('render_block', function ($content, $block) {
-    if (($block['blockName'] ?? '') === 'core/post-title' && is_page(GENESIS_CSC_PAGE_IDS_V1)) {
+    if (($block['blockName'] ?? '') === 'core/post-title' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
         return '';
     }
     if (($block['blockName'] ?? '') === 'core/post-featured-image' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
@@ -202,6 +207,10 @@ export function filterCommercialStainlessFeaturedImageRender(input: CommercialSt
     return input.blockName === "core/post-featured-image" && isCommercialStainlessRichCompositionEligible(input) ? "" : input.renderedHtml;
 }
 
+export function filterCommercialStainlessThemePageTitleRender(input: CommercialStainlessRichCompositionEligibilityInput & { blockName: string; renderedHtml: string }): string {
+    return input.blockName === "core/post-title" && isCommercialStainlessRichCompositionEligible(input) ? "" : input.renderedHtml;
+}
+
 export function filterCommercialStainlessHostSpacingRender(input: CommercialStainlessRichCompositionEligibilityInput & { blockName: string; align?: string; paddingTop?: string; directInnerBlockNames: string[]; renderedHtml: string }): string {
     const targetGroup = input.blockName === "core/group" && input.align === "full" && input.paddingTop === "var:preset|spacing|60" && input.directInnerBlockNames.includes("core/post-featured-image") && input.directInnerBlockNames.includes("core/post-content");
     if (!targetGroup || !isCommercialStainlessRichCompositionEligible(input)) return input.renderedHtml;
@@ -231,12 +240,12 @@ export async function inspectCommercialStainlessFeaturedImageEligibility(site: S
             readEligibilityPage(`${resolved.apiBase}/pages/${wordpressObjectId}/autosaves/${autosaveId}?context=edit&_fields=id,parent,content&_eligibility=${crypto.randomUUID()}`, resolved.headers),
         ]);
         const raw = autosave.content?.raw ?? "";
-        return { wordpressObjectId, autosaveId, featuredMediaId: Number(page.featured_media ?? 0), themeWouldRenderFeaturedMedia: Number(page.featured_media ?? 0) > 0, richCompositionOwnsMedia: /<img\b/i.test(raw), eligibleAfterExactPromotion: isCommercialStainlessRichCompositionEligible({ host: site.domain, postType: "page", status: "publish", blocks: blocksFromRawContent(raw) }) };
+        return { wordpressObjectId, autosaveId, featuredMediaId: Number(page.featured_media ?? 0), themeWouldRenderFeaturedMedia: Number(page.featured_media ?? 0) > 0, richCompositionOwnsMedia: /<img\b/i.test(raw), eligibleAfterExactPromotion: isCommercialStainlessRichCompositionEligible({ host: site.domain ?? "", postType: "page", status: "publish", blocks: blocksFromRawContent(raw) }) };
     }));
     const futureResults = await Promise.all(future.map(async (wordpressObjectId) => {
         const page = await readEligibilityPage(`${resolved.apiBase}/pages/${wordpressObjectId}?context=edit&_fields=id,status,featured_media,content&_eligibility=${crypto.randomUUID()}`, resolved.headers);
         const raw = page.content?.raw ?? "";
-        return { wordpressObjectId, featuredMediaId: Number(page.featured_media ?? 0), currentlyEligible: isCommercialStainlessRichCompositionEligible({ host: site.domain, postType: "page", status: page.status ?? "", blocks: blocksFromRawContent(raw) }), requiresFutureApprovedMarkers: true };
+        return { wordpressObjectId, featuredMediaId: Number(page.featured_media ?? 0), currentlyEligible: isCommercialStainlessRichCompositionEligible({ host: site.domain ?? "", postType: "page", status: page.status ?? "", blocks: blocksFromRawContent(raw) }), requiresFutureApprovedMarkers: true };
     }));
     return { wave1: wave1Results, future: futureResults, eligibleWave1Count: wave1Results.filter((item) => item.eligibleAfterExactPromotion).length, currentlyEligibleFutureCount: futureResults.filter((item) => item.currentlyEligible).length, mutationPerformed: false as const };
 }

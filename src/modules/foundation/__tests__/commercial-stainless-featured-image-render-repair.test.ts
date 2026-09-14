@@ -1,6 +1,6 @@
 jest.mock("server-only", () => ({}));
 
-import { filterCommercialStainlessFeaturedImageRender, filterCommercialStainlessHostSpacingRender } from "../wordpress-post-launch-defect-repair";
+import { COMMERCIAL_STAINLESS_RICH_PAGE_PRIMARY_PRESENTATION_CONTRACT, filterCommercialStainlessFeaturedImageRender, filterCommercialStainlessHostSpacingRender, filterCommercialStainlessThemePageTitleRender, WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET } from "../wordpress-post-launch-defect-repair";
 
 const richContent = '<div class="wr-page"><section class="wr-hero"><img src="hero.jpg"><h1>Request a Quote</h1><a>Request a Quote</a></section><section>Body</section></div>';
 const authority = { host: "commercialstainlesscounters.com", postType: "page", status: "publish", blocks: [{ blockName: "core/html", innerHtml: richContent }] };
@@ -25,6 +25,17 @@ describe("Commercial Stainless rich-composition featured-image render repair", (
     expect(rendered).toContain(richContent);
     expect(rendered.match(/hero\.jpg/g)).toHaveLength(1);
     expect(rendered).not.toContain("<figure>");
+  });
+
+  test("suppresses only the host title for content-eligible rich pages", () => {
+    const themeTitle = '<h1 class="wp-block-post-title">Request a Quote</h1>';
+    const arbitraryHeading = "<h2>Project requirements</h2>";
+    expect(filterCommercialStainlessThemePageTitleRender({ ...authority, blockName: "core/post-title", renderedHtml: themeTitle })).toBe("");
+    expect(filterCommercialStainlessThemePageTitleRender({ ...authority, blockName: "core/heading", renderedHtml: arbitraryHeading })).toBe(arbitraryHeading);
+    expect(filterCommercialStainlessThemePageTitleRender({ ...authority, blocks: [{ blockName: "core/html", innerHtml: "<div>Ordinary page</div>" }], blockName: "core/post-title", renderedHtml: themeTitle })).toBe(themeTitle);
+    expect(COMMERCIAL_STAINLESS_RICH_PAGE_PRIMARY_PRESENTATION_CONTRACT).toBe("GENESIS_RICH_PAGE_OWNS_PRIMARY_PAGE_PRESENTATION");
+    expect(WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET.code).toContain("genesis_csc_is_rich_composition_v1((int) get_queried_object_id())");
+    expect(WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET.code).not.toContain("'core/post-title' && is_page(GENESIS_CSC_PAGE_IDS_V1)");
   });
 
   test.each(geometry)("restores the approved geometry envelope at $viewport", (evidence) => {

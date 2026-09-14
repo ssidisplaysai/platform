@@ -20,7 +20,8 @@ describe("CSC post-launch defect repair", () => {
     expect(code).toContain("var:preset|spacing|60");
     expect(code).toContain("in_array('core/post-featured-image', $child_names, true)");
     expect(code).toContain("in_array('core/post-content', $child_names, true)");
-    expect(code).toContain("is_page(GENESIS_CSC_PAGE_IDS_V1)");
+    expect(code).toContain("'core/post-title' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())");
+    expect(code).not.toContain("'core/post-title' && is_page(GENESIS_CSC_PAGE_IDS_V1)");
     for (const [id, path] of [[17, "markets/education"], [18, "markets/foodservice"], [19, "markets/healthcare"], [20, "markets/hospitality"], [21, "markets/industrial"], [22, "markets/labs"]]) expect(code).toContain(`${id} => '${path}'`);
     expect(code).toContain("add_rewrite_rule");
     expect(code).toContain("flush_rewrite_rules(false)");
