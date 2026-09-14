@@ -71,7 +71,7 @@ async function geometry(page: Page, assignments: readonly CaptureMediaAssignment
       const prior = index > 0 ? box(sectionElements[index - 1]) : null;
       const sectionHeading = section.querySelector("h2,h3");
       const sectionMedia = section.querySelector("img,video,picture");
-      return { sectionId: section.id || section.getAttribute("data-section-id") || `section-${index + 1}`, bounds, headingBounds: box(sectionHeading), headingLineCount: lineCount(sectionHeading), contentBounds: box(section.querySelector("p,ul,ol,.gvs-wrap")), mediaBounds: box(sectionMedia), gapBefore: prior ? Math.max(0, bounds.y - (prior.y + prior.height)) : null };
+      return { sectionId: section.id || section.getAttribute("data-section-id") || `section-${index + 1}`, bounds, headingBounds: box(sectionHeading), headingLineCount: lineCount(sectionHeading), contentBounds: box(section.querySelector("[data-prose-content]") ?? section.querySelector("p,ul,ol,.gvs-wrap")), mediaBounds: box(sectionMedia), gapBefore: prior ? Math.max(0, bounds.y - (prior.y + prior.height)) : null };
     }).filter((section) => section.bounds);
     const headings = Array.from(primary.querySelectorAll("h2")).slice(0, 60);
     const headingSections = headings.map((sectionHeading, index) => {

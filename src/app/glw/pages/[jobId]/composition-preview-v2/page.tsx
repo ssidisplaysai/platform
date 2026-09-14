@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getLocalPageThemingBundle } from "@/modules/foundation/local-context-page-theming-repository";
-import { DALLAS_LOCALIZED_PREVIEW_V2_BUNDLE_ID } from "@/modules/glw/dallas-localized-preview-v2-service";
 import { GlwLocalizedRichCompositionPreview } from "@/modules/glw/GlwLocalizedRichCompositionPreview";
+import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -10,6 +10,7 @@ const first = (value: string | string[] | undefined) => typeof value === "string
 
 export default async function GlwLocalizedCompositionPreviewV2Route({ params, searchParams }: Props) {
   const [{ jobId }, query] = await Promise.all([params, searchParams]); const organizationId = first(query.organizationId); const siteId = first(query.siteId);
-  if (!organizationId || !siteId) notFound(); const bundle = getLocalPageThemingBundle({ organizationId, siteId, jobId, bundleId: DALLAS_LOCALIZED_PREVIEW_V2_BUNDLE_ID }); if (!bundle) notFound();
-  return <main className="min-h-screen bg-[#cbc8c0] p-0 xl:p-8"><div className="mx-auto max-w-[1600px] shadow-2xl"><GlwLocalizedRichCompositionPreview bundle={bundle} /></div></main>;
+  if (!organizationId || !siteId) notFound(); const bundle = getLocalPageThemingBundle({ organizationId, siteId, jobId }); if (!bundle) notFound();
+  const job = await glwPageExecutionRepository.getById(jobId); const sourceHtml = job?.generatedDraft?.contentHtml.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "").replace(/<(?:iframe|object|embed|form)\b[^>]*>[\s\S]*?<\/(?:iframe|object|embed|form)>/gi, "").replace(/\son[a-z]+\s*=\s*(["']).*?\1/gi, "").replace(/javascript:/gi, "").replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i, "").replace(/<img\b[^>]*>/gi, "") ?? null;
+  return <main className="min-h-screen bg-[#cbc8c0] p-0 xl:p-8"><div className="mx-auto max-w-[1600px] shadow-2xl"><GlwLocalizedRichCompositionPreview bundle={bundle} sourceHtml={sourceHtml} /></div></main>;
 }

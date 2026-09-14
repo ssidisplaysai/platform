@@ -22,3 +22,14 @@ export function saveLocalThemeVisualCertification(certification: LocalThemeVisua
 }
 
 export function getLocalThemeVisualCertification(bundleId: string, rendererVersion?: string): LocalThemeVisualCertification | null { const item = load().state.certifications.filter((candidate) => candidate.bundleId === bundleId && (!rendererVersion || candidate.rendererVersion === rendererVersion)).at(-1); return item ? deepClone(item) : null; }
+
+export function readLocalThemeVisualArtifact(input: { certificationId: string; captureId: string }): { certification: LocalThemeVisualCertification; capture: LocalThemeVisualCertification["captures"][number]; bytes: Buffer } | null {
+  const certification = load().state.certifications.find((item) => item.certificationId === input.certificationId) ?? null;
+  const capture = certification?.captures.find((item) => item.captureId === input.captureId) ?? null;
+  if (!certification || !capture) return null;
+  const path = join(resolvePersistenceRoot(), ...capture.screenshotArtifact.reference.split("/"));
+  if (!existsSync(path)) return null;
+  const bytes = readFileSync(path);
+  if (hashRenderedVisualContent(bytes) !== capture.screenshotArtifact.sha256) throw new Error("LOCAL_THEME_CAPTURE_STORAGE_MISMATCH");
+  return { certification: deepClone(certification), capture: deepClone(capture), bytes };
+}
