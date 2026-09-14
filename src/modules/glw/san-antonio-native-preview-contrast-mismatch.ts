@@ -1,0 +1,38 @@
+import type { GenesisRenderAuthority } from "@/modules/foundation/background-aware-text-contrast";
+
+export const SAN_ANTONIO_NATIVE_PREVIEW_CONTRAST_MISMATCH_V1 = {
+  contract: "GENESIS_NATIVE_PREVIEW_CONTRAST_CERTIFICATION_MISMATCH_V1",
+  wordpressObjectId: "13103",
+  wordpressStatus: "draft",
+  storedContentHash: "3d0a848aae7128153381defb7334addb1f5324deba7ab3a17ba6683f9e9b36e2",
+  authority: "ACTUAL_NATIVE_HOST_RENDER" as GenesisRenderAuthority,
+  evidenceSource: "OWNER_AUTHENTICATED_NATIVE_PREVIEW",
+  state: "FAIL" as const,
+  observations: [
+    {
+      sectionId: "contextual-in-use",
+      textExcerpt: "A credible covered commercial AV environment.",
+      priorCertifiedColor: "rgb(255, 255, 255)",
+      actualNativeColor: "DARK_OR_BLACK_UNMEASURED",
+      contrastState: "FAIL" as const,
+      winningRule: null,
+      winningRuleSource: null,
+    },
+    {
+      sectionId: "APPLICATION_EXPERIENCE",
+      textExcerpt: "Convention and Event Venues with the enclosure planned as part of the system.",
+      priorCertifiedColor: "rgb(255, 255, 255)",
+      actualNativeColor: "DARK_OR_BLACK_UNMEASURED",
+      contrastState: "FAIL" as const,
+      winningRule: null,
+      winningRuleSource: null,
+    },
+  ],
+  cascadeProvenanceState: "UNAVAILABLE_UNTIL_AUTHENTICATED_PREVIEW_IS_SHARED" as const,
+  mismatchRootCause: "HOST_EQUIVALENT_CAPTURE_MISCLASSIFIED_AS_HOST_RENDER",
+  mismatchRootCauseProven: true,
+  nativeCascadeRootCauseProven: false,
+  ownerReviewReady: false,
+  publicationReady: false,
+  recordedAt: "2026-09-14T00:00:00.000Z",
+} as const;

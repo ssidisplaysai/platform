@@ -1,12 +1,14 @@
 # Genesis Background-Aware Text Contrast V1
 
+> **Invalidation notice:** The earlier San Antonio owner/publication readiness conclusion is invalidated by `GENESIS_NATIVE_PREVIEW_CONTRAST_CERTIFICATION_MISMATCH_V1`. Its evidence authority was a signed host-equivalent reconstruction, not an authenticated native WordPress preview. Owner and publication readiness are blocked until actual native-host evidence resolves the contradiction.
+
 ## Shared Contract
 
 `GENESIS_BACKGROUND_AWARE_TEXT_CONTRAST_V1` is a site-neutral rendered contrast contract. It supports light/dark solids, light/dark images, image overlays, gradients, and mixed/unknown backgrounds. It evaluates eyebrow, H1-H3, display heading, body, primary/secondary CTA, caption, disclaimer, and label roles.
 
 Every rendered observation persists foreground color, effective background color, background type/luminance, overlay authority, required contrast, actual ratio, pass state, and resolved treatment. Image-backed regions without a sufficiently opaque approved overlay fail closed as `IMAGE_REGION_UNRESOLVED`. Generated image regions are reevaluated during each viewport capture.
 
-The shared capture service runs 1440, 1024, 768, and 375 independently. Owner-review readiness requires a PASS. Publication contrast readiness additionally requires PASS evidence whose authority is `HOST_RENDER`; this evidence does not authorize publication.
+The shared capture service runs 1440, 1024, 768, and 375 independently. Authority order is `ACTUAL_NATIVE_HOST_RENDER > HOST_EQUIVALENT_RENDER > GENESIS_COMPOSITION_RENDER > STATIC_CSS_EXPECTATION`. A lower authority cannot grant readiness when native evidence contradicts it. Publication contrast readiness requires stable PASS evidence from `ACTUAL_NATIVE_HOST_RENDER`; this evidence still does not authorize publication.
 
 ## Fixtures
 
@@ -45,11 +47,11 @@ Certification: `san-antonio-background-aware-contrast-v1_1-after-san-antonio-sys
 - State: PASS
 - Observations: 336 (84 per viewport)
 - Failures: 0
-- Owner-review contrast gate: PASS
-- Host publication contrast gate: PASS
+- Owner-review contrast gate: INVALIDATED / BLOCKED by actual native owner evidence
+- Host publication contrast gate: INVALIDATED / BLOCKED
 - Generated image reevaluation: performed
 
-The host publication contrast gate establishes contrast eligibility only. WordPress object `13103` remains draft, and no publication authorization or mutation exists.
+These numeric results remain valid only for the signed host-equivalent reconstruction. WordPress object `13103` remains draft, and no publication authorization or mutation exists.
 
 Representative persisted results:
 
