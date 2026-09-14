@@ -120,3 +120,47 @@ export async function reconcileGlwPageExecutionDraftAfterPublicationFailure(inpu
   const record = await glwPageExecutionRepository.getById(input.jobId); if (!record || record.status !== "COMPLETE" || record.wordpressStatus !== "publish" || record.wordpressObjectId !== input.wordpressObjectId) throw new Error("Execution publication rollback requires the exact published record.");
   return glwPageExecutionRepository.update(input.jobId, { wordpressStatus: "draft", wordpressUrl: input.wordpressUrl, qaChecks: { ...(record.qaChecks ?? {}), publicationVerification: { state: "REVOKED", reason: input.reason, rolledBackAt: new Date().toISOString() } }, updatedAt: new Date().toISOString() });
 }
+
+export async function reconcileGlwOrphanedPageExecution(input: {
+  jobId: string;
+  externalExecutionId: string;
+  n8nExecutionNotRetained: true;
+  campaignTargetBindingAbsent: true;
+  activeLeaseAbsent: true;
+  reconciledBy: string;
+  reconciledAt?: string;
+}): Promise<GlwPageExecutionRecord> {
+  const record = await glwPageExecutionRepository.getById(input.jobId);
+  if (!record || (record.status !== "DISPATCHED" && record.status !== "RUNNING")) {
+    throw new Error("Orphan reconciliation requires an exact dispatched or running execution record.");
+  }
+  if (!input.externalExecutionId.trim() || record.externalExecutionId !== input.externalExecutionId.trim()) {
+    throw new Error("Orphan reconciliation requires the exact external execution identity.");
+  }
+  if (!input.reconciledBy.trim()) throw new Error("Orphan reconciliation requires an actor.");
+
+  const reconciledAt = input.reconciledAt ?? new Date().toISOString();
+  const receipt = {
+    receiptId: `orphan-reconciliation-${record.jobId}`,
+    classification: "ORPHANED" as const,
+    priorStatus: record.status,
+    externalExecutionId: record.externalExecutionId,
+    n8nExecutionNotRetained: input.n8nExecutionNotRetained,
+    campaignTargetBindingAbsent: input.campaignTargetBindingAbsent,
+    activeLeaseAbsent: input.activeLeaseAbsent,
+    wordpressMutationPerformed: false as const,
+    dispatchPerformed: false as const,
+    reconciledAt,
+    reconciledBy: input.reconciledBy.trim(),
+  };
+
+  return glwPageExecutionRepository.update(record.jobId, {
+    status: "FAILED",
+    errorCode: "EXECUTION_ORPHANED",
+    errorMessage: "The historical n8n execution is no longer retained and has no campaign target binding or active lease.",
+    disposition: "FAILED",
+    qaChecks: { ...(record.qaChecks ?? {}), operationalReconciliation: receipt },
+    updatedAt: reconciledAt,
+    completedAt: reconciledAt,
+  });
+}

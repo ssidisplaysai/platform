@@ -34,6 +34,12 @@ describe("campaign exact dispatch contract", () => {
     expect(route).toContain("maxTargets: MAX_CONCURRENT_EXECUTION");
     expect(route).toContain("GLW_N8N_MCP_NOT_CONFIGURED");
     expect(route).toContain("GLW_N8N_MCP_PREFLIGHT_FAILED");
+    expect(route).toContain("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED");
+    expect(route).toContain("GLW_WORDPRESS_AUTHORITY_REQUIRED");
+    expect(route).toContain("ownerAuthorizationRequired: true");
+    expect(route).toContain("executionPreflight");
+    expect(route.indexOf("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
+    expect(route.indexOf("GLW_WORDPRESS_AUTHORITY_REQUIRED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
     expect(route.indexOf("GLW_N8N_MCP_NOT_CONFIGURED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
     expect(route.indexOf("await preflightGlwN8nMcpExecution()")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
     expect(route).toContain('payload?.job?.status === "FAILED"');

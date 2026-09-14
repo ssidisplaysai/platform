@@ -7,6 +7,7 @@ import {
   hasOrganizationScope,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
+import { getSiteById } from "@/modules/foundation/site-repository";
 import {
   buildGlwCampaignProductionGenerationForm,
 } from "@/modules/glw/campaign-production-generation";
@@ -23,9 +24,11 @@ import {
   summarizeGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
 import { recordGlwCampaignLaunchDispatch } from "@/modules/glw/campaign-launch-authority";
+import { resolveGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
 import { getGlwN8nMcpConfigurationStatus, preflightGlwN8nMcpExecution } from "@/modules/glw/n8n-mcp-adapter";
 
 const MAX_CONCURRENT_EXECUTION = 1;
+const EXACT_RELEASE_PATTERN = /^[0-9a-f]{40}$/;
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -94,6 +97,39 @@ function targetIdentity(target: {
   };
 }
 
+function resolveReleaseCapability(campaign: { organizationId: string; siteId: string }) {
+  const candidate = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
+  const runningReleaseSha = EXACT_RELEASE_PATTERN.test(candidate) ? candidate : null;
+  return {
+    runningReleaseSha,
+    capability: resolveGlwCampaignActivationReleaseCapability({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      runningReleaseSha: runningReleaseSha ?? "",
+    }),
+  };
+}
+
+function resolveWordPressReadiness(campaign: { organizationId: string; siteId: string }) {
+  const site = getSiteById(campaign.siteId);
+  const scoped = site?.organizationId === campaign.organizationId;
+  const ready = Boolean(
+    scoped
+    && site?.enabled
+    && site.lifecycleState === "active"
+    && site.publishingStatus === "ready"
+    && site.integrations.wordpressApiBaseUrl
+    && site.integrations.wordpressCredentialReference,
+  );
+  return {
+    ready,
+    siteId: campaign.siteId,
+    apiConfigured: Boolean(scoped && site?.integrations.wordpressApiBaseUrl),
+    credentialReferenceConfigured: Boolean(scoped && site?.integrations.wordpressCredentialReference),
+    reason: ready ? null : "Exact active site WordPress authority is unavailable.",
+  };
+}
+
 export async function GET(
   request: NextRequest,
   context: Context,
@@ -111,8 +147,9 @@ export async function GET(
   }
 
   const scope = resolveRequestScope(request);
+  const organizationId = scope.organizationId;
 
-  if (!hasOrganizationScope(scope)) {
+  if (!hasOrganizationScope(scope) || !organizationId) {
     return NextResponse.json(
       { error: "Organization scope is required." },
       { status: 403 },
@@ -123,8 +160,8 @@ export async function GET(
 
   const campaign = findScopedCampaign({
     campaignId,
-    organizationId: scope.organizationId,
-    siteId: scope.siteId,
+    organizationId,
+    siteId: scope.siteId ?? undefined,
   });
 
   if (!campaign) {
@@ -171,6 +208,9 @@ export async function GET(
     dispatchDate,
     maxTargets: availableConcurrency,
   });
+  const releaseAuthority = resolveReleaseCapability(campaign);
+  const wordpressReadiness = resolveWordPressReadiness(campaign);
+  const executionPreflight = await preflightGlwN8nMcpExecution();
 
   return NextResponse.json({
     campaign: {
@@ -200,7 +240,11 @@ export async function GET(
         }),
       ),
     },
+    releaseAuthority,
+    wordpressReadiness,
     executionReadiness: getGlwN8nMcpConfigurationStatus(),
+    executionPreflight,
+    ownerAuthorizationRequired: true,
     dryRun: true,
   });
 }
@@ -222,8 +266,9 @@ export async function POST(
   }
 
   const scope = resolveRequestScope(request);
+  const organizationId = scope.organizationId;
 
-  if (!hasOrganizationScope(scope)) {
+  if (!hasOrganizationScope(scope) || !organizationId) {
     return NextResponse.json(
       { error: "Organization scope is required." },
       { status: 403 },
@@ -234,8 +279,8 @@ export async function POST(
 
   const campaign = findScopedCampaign({
     campaignId,
-    organizationId: scope.organizationId,
-    siteId: scope.siteId,
+    organizationId,
+    siteId: scope.siteId ?? undefined,
   });
 
   if (!campaign) {
@@ -253,6 +298,23 @@ export async function POST(
       },
       { status: 409 },
     );
+  }
+
+  const releaseAuthority = resolveReleaseCapability(campaign);
+  if (!releaseAuthority.capability.ready) {
+    return NextResponse.json({
+      error: releaseAuthority.capability.reason ?? "Exact running release capability is unavailable. No targets were leased.",
+      code: "GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED",
+      releaseAuthority,
+    }, { status: 503 });
+  }
+  const wordpressReadiness = resolveWordPressReadiness(campaign);
+  if (!wordpressReadiness.ready) {
+    return NextResponse.json({
+      error: wordpressReadiness.reason ?? "WordPress authority is unavailable. No targets were leased.",
+      code: "GLW_WORDPRESS_AUTHORITY_REQUIRED",
+      wordpressReadiness,
+    }, { status: 503 });
   }
 
   const executionReadiness = getGlwN8nMcpConfigurationStatus();
@@ -442,7 +504,6 @@ export async function POST(
       pagesPerDay: campaign.pagesPerDay,
       dispatchDate,
       maxTargets: MAX_CONCURRENT_EXECUTION,
-      maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
     });
     const selectedIdentities = preview.selected.map((target) =>
       `${target.stateCode}::${target.citySlug ?? ""}`,
