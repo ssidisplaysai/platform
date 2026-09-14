@@ -86,3 +86,33 @@ Viewport capture evidence:
 The captures preserve the visible global-header/content boundary. The review route itself uses measured full-document iframe heights and is the authoritative uncropped whole-page comparison.
 
 The route is read-only and deliberately provides no Apply, Apply All, Publish, or Generate Media action. Stop after presenting this proof and wait for explicit owner direction.
+
+## Controlled rollout Wave 1
+
+Approved design-system reference: `d86c133510b7848865308dfc2b51e20b754192c9`.
+
+Wave 1 creates deterministic local preview equivalents only. It does not update the five published WordPress objects, create draft duplicates, or publish anything.
+
+| Object | Page | Profile | Primary intent | Primary CTA | Media roles |
+|---:|---|---|---|---|---|
+| 24 | Request a Quote | LANDING_CONVERSION | Convert available project context into a focused conversation | Request a Quote | Hero, solution context, capability context |
+| 11 | Capabilities | CAPABILITY | Explain fabrication pathways, process, project inputs, and applications | Discuss Your Project | Capability hero, fabrication process, product pathways |
+| 13 | Commercial Worktables & Prep Tables | PRODUCT_SERVICE | Present the approved worktable/prep-table pathway with configuration and application context | Request a Quote | Product hero, product detail, application context |
+| 17 | Education Solutions | INDUSTRY_APPLICATION | Connect education requirements to appropriate products and capabilities | Discuss an Education Project | Industry hero, application context, relevant solutions |
+| 23 | About | RESOURCE | Provide useful company/process context and informed next steps | Explore Capabilities | Resource hero, capability context, related pathways |
+
+Composition diversity is deliberate: five hero variants, five section sequences, five media layouts, and five CTA-placement patterns. Shared primitives remain consistent, but no two staged pages use the same complete layout sequence.
+
+Wave 1 certification passed all 20 page/viewport combinations: each of the five pages passed at 1440, 1024, 768, and 375 pixels with one global header, zero body navigation, one H1, above-fold identity and primary CTA, resolved approved media, no legacy top gap, no development links, and no horizontal overflow. Every original page-level internal link remains present in a contextual link band that is not navigation markup.
+
+Wave 1 review route: `/sites/site-rj-metal-commercial-stainless-counters/build/rich-composition-wave-1?organizationId=rj-metal&siteId=site-rj-metal-commercial-stainless-counters`.
+
+Wave 1 capture evidence is under `assets/commercial-stainless-wave-1/`, with current/proposed desktop/mobile images for each selected page.
+
+### Future waves (plan only)
+
+- **Wave 2:** object 12 Commercial Stainless Counters; object 15 Mobile & Modular Stainless Workstations; object 16 Stainless Countertops; object 18 Foodservice Solutions; object 19 Healthcare Solutions.
+- **Wave 3:** object 20 Hospitality Solutions; object 21 Industrial Solutions; object 22 Labs Solutions.
+- **Preservation hold:** object 10 Home remains unchanged and outside future rollout waves.
+
+No Wave 2 or Wave 3 staging or mutation is authorized by this document.
