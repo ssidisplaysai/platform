@@ -125,10 +125,10 @@ export function createSanAntonio608895ReconciliationService(input?: {
 
   return async function reconcile(principal: Principal, reconciliationRuntimeSha: string) {
     const completed = getReceipt();
-    if (completed?.outcome === "RECONCILED") return { receipt: completed, reused: true };
     if (!principal.principalId.trim() || !principal.sessionId.trim()) throw new Error("SAN_ANTONIO_RECONCILIATION_PRINCIPAL_REQUIRED");
     if (!/^[0-9a-f]{40}$/.test(reconciliationRuntimeSha)) throw new Error("SAN_ANTONIO_RECONCILIATION_RUNTIME_SHA_INVALID");
     if (completed && (completed.principal.principalId !== principal.principalId.trim() || completed.principal.sessionId !== principal.sessionId.trim())) throw new Error("SAN_ANTONIO_RECONCILIATION_PRINCIPAL_MISMATCH");
+    if (completed?.outcome === "RECONCILED") return { receipt: completed, reused: true };
     const beforeState = validateIdentity(await getJob(), getTarget());
     const { job, target } = beforeState;
     if (!completed && (job.status !== "DISPATCHED" || target.status !== "running" || target.leaseId !== SAN_ANTONIO_608895_IDENTITY.leaseId || !target.leasedAt || !target.leaseExpiresAt)) throw new Error("SAN_ANTONIO_RECONCILIATION_BEFORE_STATE_MISMATCH");

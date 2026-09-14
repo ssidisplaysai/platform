@@ -60,4 +60,10 @@ describe("San Antonio execution 608895 reconciliation", () => {
     expect(transitionTarget).not.toHaveBeenCalled();
     expect(saveReceipt).toHaveBeenCalledTimes(1);
   });
+
+  test("rejects completed-receipt replay from a different principal or session", async () => {
+    const completed = { ...authorizedReceipt(), outcome: "RECONCILED" as const, reconciledAt: timestamp, after: { jobStatus: "CONTENT_READY" as const, targetStatus: "content_ready" as const, leaseCleared: true as const, dispatchDate: "2026-09-13" }, generatedArtifact: { sha256: SAN_ANTONIO_608895_IDENTITY.artifactSha256, htmlLength: 19497 } };
+    const reconcile = createSanAntonio608895ReconciliationService({ getReceipt: () => completed });
+    await expect(reconcile({ principalId: completed.principal.principalId, sessionId: "different-session" }, runtimeSha)).rejects.toThrow("SAN_ANTONIO_RECONCILIATION_PRINCIPAL_MISMATCH");
+  });
 });
