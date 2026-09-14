@@ -128,7 +128,7 @@ describe("GLW operator authority contract", () => {
   });
 
   test("binds generation to READY plus existing prerequisites", () => {
-    expect(ui).toContain("disabled={!instructionsApproved||generationBusy||!wordpressAuthorityReady||!campaign.stateCodes.includes(referenceState)}");
+    expect(ui).toContain("disabled={!instructionsApproved||generationBusy||existingOperationBlocksGeneration||!wordpressAuthorityReady||!campaign.stateCodes.includes(referenceState)}");
     expect(ui).toContain('wordpressAuthorityState==="READY"');
   });
 

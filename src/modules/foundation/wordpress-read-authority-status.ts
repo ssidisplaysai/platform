@@ -28,7 +28,7 @@ export type SiteWordPressReadAuthorityStatus = {
   authenticatedUserId: number | null;
   anonymousReadHttp: number | null;
   authenticatedReadHttp: number | null;
-  inventory: Array<{
+  inventory: ReadonlyArray<{
     endpoint: "/pages" | "/posts" | "/media";
     url: string;
     httpStatus: number | null;
@@ -170,8 +170,8 @@ export async function inspectSiteWordPressReadAuthority(
     return { ...base, configuredUsername: credential.username, credentialConfigured: true, anonymousReadHttp, authenticatedReadHttp: response.status, authorityHealthState: "REPAIR_REQUIRED", reason: "WordPress returned no usable authenticated identity.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
   }
 
-  const inventory: SiteWordPressReadAuthorityStatus["inventory"] = [];
-  for (const endpoint of ["/pages", "/posts", "/media"] as const) {
+  const inventory = await Promise.all(
+    (["/pages", "/posts", "/media"] as const).map(async (endpoint) => {
     const query = new URLSearchParams({
       context: "edit",
       per_page: "100",
@@ -194,11 +194,10 @@ export async function inspectSiteWordPressReadAuthority(
         signal: AbortSignal.timeout(15_000),
       });
     } catch {
-      inventory.push({ endpoint, url: `${apiBaseUrl}${endpoint}`, httpStatus: null, ok: false, wordpressErrorCode: "NETWORK_ERROR", total: null, totalPages: null });
-      continue;
+      return { endpoint, url: `${apiBaseUrl}${endpoint}`, httpStatus: null, ok: false, wordpressErrorCode: "NETWORK_ERROR", total: null, totalPages: null };
     }
     const inventoryBody = await inventoryResponse.json().catch(() => null) as { code?: unknown } | null;
-    inventory.push({
+    return {
       endpoint,
       url: `${apiBaseUrl}${endpoint}`,
       httpStatus: inventoryResponse.status,
@@ -213,8 +212,9 @@ export async function inspectSiteWordPressReadAuthority(
       totalPages: /^\d+$/.test(inventoryResponse.headers?.get("X-WP-TotalPages") ?? "")
         ? Number(inventoryResponse.headers?.get("X-WP-TotalPages"))
         : null,
-    });
-  }
+    };
+    }),
+  );
   const failedInventory = inventory.find((entry) => !entry.ok);
   if (failedInventory) {
     return {

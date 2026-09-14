@@ -16,6 +16,7 @@ import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchRefere
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
+import { findEvidenceBoundLegacyReferenceJob, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -186,6 +187,22 @@ export async function GET(request: NextRequest, context: Context) {
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   let job = candidates[0] ?? null;
+  const legacyJob = job
+    ? null
+    : findEvidenceBoundLegacyReferenceJob({
+        campaign,
+        campaigns: listGlwCampaigns(),
+        records,
+      });
+  const workflow = projectGlwReferenceWorkflow(job ?? legacyJob);
+  const relatedReference = !job && legacyJob
+    ? {
+        stateCode: workflow.targetStateCode,
+        attribution: "UNIQUE_CAMPAIGN_SITE_PRODUCT_RECOVERY" as const,
+        job: legacyJob,
+        workflow,
+      }
+    : null;
   const approval = getGlwCampaignReferenceApproval(
     campaign.campaignId,
     target.state.code,
@@ -201,6 +218,8 @@ export async function GET(request: NextRequest, context: Context) {
       approved: false,
       recoveryError: null,
       wordpressAuthority,
+      workflow,
+      relatedReference,
     });
   }
 
@@ -232,6 +251,8 @@ export async function GET(request: NextRequest, context: Context) {
         job,
         recoveryError: recovered?.recoveryError ?? null,
         wordpressAuthority,
+        workflow: projectGlwReferenceWorkflow(job),
+        relatedReference: null,
       },
       { status: recoveryResponse.ok ? 200 : recoveryResponse.status },
     );
@@ -249,6 +270,8 @@ export async function GET(request: NextRequest, context: Context) {
       && approval?.wordpressObjectId === job.wordpressObjectId,
     recoveryError: null,
     wordpressAuthority,
+    workflow: projectGlwReferenceWorkflow(job),
+    relatedReference: null,
   });
 }
 

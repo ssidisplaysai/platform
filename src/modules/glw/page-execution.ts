@@ -68,6 +68,7 @@ export type GlwGeneratedDraftArtifact = {
 export type GlwPageExecutionRecord = {
   jobId: string;
   correlationId: string;
+  campaignId?: string | null;
   executionTransport: GlwExecutionTransport;
   organizationId: string;
   siteId: string;
@@ -854,6 +855,7 @@ export function createGlwDraftExecutionService(input: {
       const queued = await input.repository.create({
         jobId,
         correlationId: jobId,
+        campaignId: request.campaignId ?? null,
         executionTransport: input.executionTransport ?? "N8N_WEBHOOK",
         organizationId: request.organizationId,
         siteId: request.siteId,

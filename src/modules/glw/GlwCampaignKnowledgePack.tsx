@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 
@@ -15,6 +15,7 @@ type ReferenceJob = Record<string, unknown> & {
   featuredImagePresent?: boolean | null;
   errorCode?: string | null;
   errorMessage?: string | null;
+  updatedAt?: string;
   generatedDraft?: {
     title?: string;
     seoTitle?: string | null;
@@ -39,6 +40,30 @@ type ReferenceResult = Record<string, unknown> & {
   error?: string;
   recoveryError?: string | null;
   wordpressAuthority?: WordPressAuthorityStatus;
+  workflow?: ReferenceWorkflowProjection;
+  relatedReference?: {
+    stateCode: string | null;
+    attribution: "UNIQUE_CAMPAIGN_SITE_PRODUCT_RECOVERY";
+    job: ReferenceJob;
+    workflow: ReferenceWorkflowProjection;
+  } | null;
+};
+
+type ReferenceWorkflowProjection = {
+  state:
+    | "READY_TO_GENERATE_REFERENCE"
+    | "REFERENCE_GENERATION_IN_PROGRESS"
+    | "REFERENCE_DRAFT_READY"
+    | "REFERENCE_RECOVERY_REQUIRED"
+    | "REFERENCE_GENERATION_FAILED";
+  operationId: string | null;
+  targetStateCode: string | null;
+  targetStateName: string | null;
+  lastUpdatedAt: string | null;
+  durable: boolean;
+  safeOwnerAction: string;
+  errorCode: string | null;
+  errorMessage: string | null;
 };
 
 type WordPressAuthorityStatus = {
@@ -71,6 +96,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const [continuationAttemptedJobId, setContinuationAttemptedJobId] = useState<string | null>(null);
   const [referenceResult, setReferenceResult] = useState<ReferenceResult | null>(null);
   const [wordpressAuthority, setWordpressAuthority] = useState<WordPressAuthorityStatus | null>(null);
+  const projectedReferenceState = useRef<string | null>(null);
 
   const headers = {
     "x-gcp-roles": "platform_admin",
@@ -113,10 +139,17 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
         setMessage(payload.error ?? "Unable to recover the reference-page job.");
         return;
       }
-
-      if (payload.job) {
-        setReferenceResult(payload);
+      if (payload.relatedReference?.job && payload.relatedReference.stateCode) {
+        projectedReferenceState.current = payload.relatedReference.stateCode;
+        setReferenceState(payload.relatedReference.stateCode);
+        setReferenceResult({
+          ...payload,
+          job: payload.relatedReference.job,
+          workflow: payload.relatedReference.workflow,
+        });
+        return;
       }
+      setReferenceResult(payload);
     } finally {
       setRecoveringReference(false);
     }
@@ -127,6 +160,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const continueReference = useEffectEvent(continueReferencePage);
 
   useEffect(() => {
+    if (projectedReferenceState.current === referenceState) {
+      projectedReferenceState.current = null;
+      return;
+    }
     queueMicrotask(() => {
       void loadCampaignPack();
       void recoverReference(false);
@@ -437,6 +474,26 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       : wordpressAuthorityState === "REPAIR_REQUIRED"
         ? "REPAIR REQUIRED"
         : wordpressAuthorityState;
+  const referenceWorkflow = referenceResult?.workflow ?? null;
+  const existingOperationBlocksGeneration = Boolean(
+    referenceWorkflow &&
+      referenceWorkflow.state !== "READY_TO_GENERATE_REFERENCE",
+  );
+  const referenceActionLabel = generatingReference
+    ? "Starting Reference Generation..."
+    : recoveringReference
+      ? "Checking Existing Reference..."
+      : continuingReference
+        ? "Continuing Existing Reference..."
+        : referenceWorkflow?.state === "REFERENCE_GENERATION_IN_PROGRESS"
+          ? "Reference Generation In Progress"
+          : referenceWorkflow?.state === "REFERENCE_DRAFT_READY"
+            ? "Reference Draft Ready"
+            : referenceWorkflow?.state === "REFERENCE_RECOVERY_REQUIRED"
+              ? "Reference Recovery Required"
+              : referenceWorkflow?.state === "REFERENCE_GENERATION_FAILED"
+                ? "Reference Generation Failed"
+                : `Generate ${selectedStateLabel} Reference Page`;
 
   return (
     <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
@@ -587,13 +644,27 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
 
           <button
             type="button"
-            disabled={!instructionsApproved || generationBusy || !wordpressAuthorityReady || !campaign.stateCodes.includes(referenceState)}
+            disabled={!instructionsApproved || generationBusy || existingOperationBlocksGeneration || !wordpressAuthorityReady || !campaign.stateCodes.includes(referenceState)}
             onClick={generateReferencePage}
             className="h-10 rounded-lg bg-red-600 px-4 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {generationBusy ? "Recovering Reference..." : job?.status === "COMPLETE" ? "Regenerate Reference Content" : `Generate ${selectedStateLabel} Reference Page`}
+            {referenceActionLabel}
           </button>
         </div>
+
+        {referenceWorkflow ? (
+          <div className="mt-3 border border-zinc-800 bg-zinc-950 px-3 py-3 text-xs">
+            <p className="font-semibold text-white">Reference Workflow: {referenceWorkflow.state.replaceAll("_", " ")}</p>
+            <p className="mt-1 text-zinc-400">
+              Target: {referenceWorkflow.targetStateCode ?? referenceState}
+              {referenceWorkflow.operationId ? ` · Operation: ${referenceWorkflow.operationId}` : ""}
+            </p>
+            {referenceWorkflow.lastUpdatedAt ? (
+              <p className="mt-1 text-zinc-500">Last update: {new Date(referenceWorkflow.lastUpdatedAt).toLocaleString()}</p>
+            ) : null}
+            <p className="mt-1 text-zinc-400">Safe owner action: {referenceWorkflow.safeOwnerAction.replaceAll("_", " ")}</p>
+          </div>
+        ) : null}
 
         {!instructionsApproved ? (
           <p className="mt-2 text-xs text-zinc-500">
