@@ -6,12 +6,12 @@ This work creates one non-mutating Design-Build Fabrication proof and a rollout 
 
 ## Current weaknesses
 
-The current Design-Build page is constrained by the active theme to a 645px page/hero canvas at a 1425px desktop viewport, with a 605px internal wrap. The page body also embeds a second utility bar, brand header, navigation, and footer below the certified global shell. Repeated narrow prose/card sections create an SEO-document rhythm, underuse approved media, and weaken CTA hierarchy.
+The current Design-Build page is constrained by the active theme to a 645px page/hero canvas at a 1425px desktop viewport, with a 605px internal wrap. The global header ends at `Y=119`, while the actual body hero starts at `Y=904.19`, leaving a `785.19px` desktop gap. Mobile leaves approximately `445.59px`. The page body also embeds a second utility bar, brand header, navigation, and footer below the certified global shell. Repeated narrow prose/card sections create an SEO-document rhythm, underuse approved media, and weaken CTA hierarchy.
 
 ## Visual principles
 
 - Use a 1240px maximum content system with readable prose measures.
-- Preserve one certified global header and one global footer; page bodies never recreate either.
+- Extract and preserve the exact live WordPress global header and footer; page bodies never recreate either.
 - Lead with an integrated, full-width image hero using black overlay, white type, and red accent.
 - Use the existing display/body typography and black, white, red, and neutral steel palette.
 - Alternate wide grids, process steps, split media/copy, industry modules, project inputs, and CTA bands.
@@ -35,7 +35,7 @@ The current Design-Build page is constrained by the active theme to a 645px page
 The proof preserves WordPress object 14, `/design-build-fabrication/`, the existing H1, title, meta description, canonical, indexability intent, valid links, and media identities. Its composition contains:
 
 1. Integrated fabrication hero with Request a Quote and Explore Capabilities.
-2. Four-part value band grounded in commercial, custom, project-focused, requirement-led positioning.
+2. Four-part value band: Commercial Grade, Custom Fabrication, Project-Focused, and Nationwide Service, with conservative project-location scope copy.
 3. Media-backed approved offering grid.
 4. Five-step requirement and fabrication-planning process.
 5. Split capability/context section.
@@ -51,7 +51,7 @@ The proof reuses current WordPress media only. Media provenance remains visible 
 
 ## Responsive rules
 
-The owner route compares current and proposed pages at 1440px and 375px and exposes additional proposed previews at 1024px and 768px. Acceptance requires no horizontal document overflow, intentional card/step collapse, readable text measure, integrated hero framing, visible CTA hierarchy, and one global shell.
+The owner route compares complete, uncropped current and proposed pages at 1440px and 375px and exposes complete proposed previews at 1024px and 768px. The proposed hero begins immediately at the exact global header boundary (`HeaderToHeroGap=0`). Acceptance requires no horizontal document overflow, intentional card/step collapse, readable text measure, integrated hero framing, visible CTA hierarchy, and one exact global shell.
 
 ## Remaining 14-page rollout plan
 
@@ -75,5 +75,14 @@ The owner route compares current and proposed pages at 1440px and 375px and expo
 ## Owner review
 
 Review route: `/sites/site-rj-metal-commercial-stainless-counters/build/rich-composition-review?organizationId=rj-metal&siteId=site-rj-metal-commercial-stainless-counters`.
+
+Viewport capture evidence:
+
+- `assets/commercial-stainless-interior-composition-v1/current-desktop-1440.png`
+- `assets/commercial-stainless-interior-composition-v1/proposed-desktop-1440.png`
+- `assets/commercial-stainless-interior-composition-v1/current-mobile-375.png`
+- `assets/commercial-stainless-interior-composition-v1/proposed-mobile-375.png`
+
+The captures preserve the visible global-header/content boundary. The review route itself uses measured full-document iframe heights and is the authoritative uncropped whole-page comparison.
 
 The route is read-only and deliberately provides no Apply, Apply All, Publish, or Generate Media action. Stop after presenting this proof and wait for explicit owner direction.

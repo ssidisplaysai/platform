@@ -9,6 +9,10 @@ describe("Commercial Stainless rich composition owner review", () => {
     expect(route).toContain("COMMERCIAL_STAINLESS_SITE_ID");
     for (const width of ["1440", "1024", "768", "375"]) expect(component).toContain(width);
     for (const text of ["Current Public Page", "Proposed Rich Composition", "Desktop Comparison", "Mobile Comparison", "Owner Review Stop"]) expect(component).toContain(text);
+    expect(component).toContain("data-full-page-comparison");
+    expect(component).toContain("fullPageHeights");
+    expect(component).toContain("Current header gap");
+    expect(component).toContain("Proposed hero gap");
   });
 
   test("has no mutation, publication, media generation, or bulk rollout controls", () => {
