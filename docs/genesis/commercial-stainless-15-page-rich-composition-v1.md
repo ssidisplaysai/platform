@@ -116,3 +116,23 @@ Wave 1 capture evidence is under `assets/commercial-stainless-wave-1/`, with cur
 - **Preservation hold:** object 10 Home remains unchanged and outside future rollout waves.
 
 No Wave 2 or Wave 3 staging or mutation is authorized by this document.
+
+## WordPress Wave 1 staging
+
+The five approved compositions are staged as private native WordPress autosave revisions under their existing published parent objects. Public parents remain `publish`; no slug, URL, SEO, media, canonical, indexability, or parent content write occurs.
+
+| Parent object | Profile | Native autosave | Operative authority | State |
+|---:|---|---:|---|---|
+| 24 | LANDING_CONVERSION | 88 | POST_CONTENT_BLOCK_HTML | PUBLICATION_READY |
+| 11 | CAPABILITY | 89 | POST_CONTENT_BLOCK_HTML | PUBLICATION_READY |
+| 13 | PRODUCT_SERVICE | 90 | POST_CONTENT_BLOCK_HTML | PUBLICATION_READY |
+| 17 | INDUSTRY_APPLICATION | 91 | POST_CONTENT_BLOCK_HTML | PUBLICATION_READY |
+| 23 | RESOURCE | 92 | POST_CONTENT_BLOCK_HTML | PUBLICATION_READY |
+
+Preflight found no existing editor autosaves and confirmed native autosave `POST`, exact revision `DELETE`, authenticated private reads, current page-body hashes, public-body hashes, SEO fields, media IDs, and exact public shell authority. Rollback evidence was persisted before each autosave write. Rollback consists of deleting the exact autosave revision; published parent restoration is unnecessary because the parent was never changed. The original raw post content is also retained in rollback evidence.
+
+Certification uses WordPress's actual autosave `content.rendered` output within the exact live global shell. All five pages passed at 1440, 1024, 768, and 375 pixels. The active theme contributes a bounded 70px desktop, 53.76px tablet, and 30px mobile main-area spacing; the legacy 445-785px gap is absent.
+
+WordPress staging review route: `/sites/site-rj-metal-commercial-stainless-counters/build/rich-composition-wave-1-wordpress?organizationId=rj-metal&siteId=site-rj-metal-commercial-stainless-counters`.
+
+Actual WordPress staging captures are under `assets/commercial-stainless-wordpress-wave-1/`: four staged widths for each object plus current desktop/mobile controls. Publication remains unavailable.

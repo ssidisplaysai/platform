@@ -51,6 +51,12 @@ describe("Commercial Stainless controlled Wave 1", () => {
     expect(stages.map((stage) => new URL(stage.page.url).pathname)).toEqual([...COMMERCIAL_STAINLESS_WAVE_1_PATHS]);
     expect(new Set(stages.map((stage) => stage.targetProfile))).toEqual(new Set(["LANDING_CONVERSION", "CAPABILITY", "PRODUCT_SERVICE", "INDUSTRY_APPLICATION", "RESOURCE"]));
     for (const stage of stages) expect(stage).toMatchObject({ status: "READY_FOR_OWNER_REVIEW", stagingMode: "LOCAL_PREVIEW_EQUIVALENT", wordpressMutation: false, publicationMutation: false, canonicalPreserved: true, urlPreserved: true, indexabilityPreserved: true });
+    for (const stage of stages) {
+      expect(stage.wordpressContent).toContain("<!-- wp:html -->");
+      expect(stage.wordpressContent).toContain('class="wr-page"');
+      expect(stage.wordpressContent).not.toMatch(/<html|<head|wp-block-template-part|gvs-header|gvs-nav/i);
+      expect(stage.wordpressContentHash).toMatch(/^[a-f0-9]{64}$/);
+    }
   });
 
   test("preserves exact SEO and shell authority while removing body navigation", () => {

@@ -41,6 +41,8 @@ export type CommercialStainlessWave1Stage = {
   ctaPlacement: string;
   currentHtml: string;
   proposedHtml: string;
+  wordpressContent: string;
+  wordpressContentHash: string;
   seoHashBefore: string;
   seoHashAfter: string;
   canonicalPreserved: true;
@@ -105,12 +107,15 @@ const commonStyles = `
 @media(max-width:520px){.wr-wrap{width:min(100% - 28px,1240px)}.wr-hero{min-height:600px}.wr-hero h1{font-size:40px}.wr-hero p{font-size:16px}.wr-actions{display:grid}.wr-band .wr-wrap,.wr-grid--4,.wr-grid--3,.wr-process--4,.wr-points{grid-template-columns:1fr}.wr-band article{border-right:0;border-bottom:1px solid #34383a}.wr-section h2,.wr-split h2,.wr-cta h2{font-size:36px}.wr-card{min-height:300px}.wr-media{min-height:300px}.wr-split-copy{padding:44px 24px}}
 `;
 
+function preservedContextLinks(page: CommercialStainlessPageInventoryItem): string {
+  const links = page.currentInternalLinks.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("");
+  return links ? `<section class="wr-related"><div class="wr-wrap"><strong>Continue exploring</strong><div class="wr-link-row">${links}</div></div></section>` : "";
+}
+
 function wrap(input: { page: CommercialStainlessPageInventoryItem; shellHtml: string; body: string }): string {
   const shell = extractCommercialStainlessPublicShell(input.shellHtml);
   const head = withSeoHead(shell.headHtml, input.page);
-  const preservedLinks = input.page.currentInternalLinks.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("");
-  const related = preservedLinks ? `<section class="wr-related"><div class="wr-wrap"><strong>Continue exploring</strong><div class="wr-link-row">${preservedLinks}</div></div></section>` : "";
-  return `<!doctype html><html lang="en"><head>${head}<base href="${COMMERCIAL_STAINLESS_ORIGIN}/"><style>${commonStyles}</style></head><body${shell.bodyAttributes}><div class="wp-site-blocks">${shell.headerHtml}<main class="wr-main">${input.body}${related}</main>${shell.footerHtml}</div></body></html>`;
+  return `<!doctype html><html lang="en"><head>${head}<base href="${COMMERCIAL_STAINLESS_ORIGIN}/"><style>${commonStyles}</style></head><body${shell.bodyAttributes}><div class="wp-site-blocks">${shell.headerHtml}<main class="wr-main"><div class="wr-page">${input.body}${preservedContextLinks(input.page)}</div></main>${shell.footerHtml}</div></body></html>`;
 }
 
 function hero(input: { item: CommercialStainlessPageInventoryItem; page: SiteGeneratedPageRevision; variant: string; eyebrow: string; primaryHref: string; primaryLabel: string; secondaryHref?: string; secondaryLabel?: string }): string {
@@ -188,6 +193,7 @@ export function stageCommercialStainlessWave1(input: { pages: SiteGeneratedPageR
     const publicHtml = input.publicHtmlByPath[path];
     if (!publicHtml) throw new Error(`COMMERCIAL_STAINLESS_WAVE_PUBLIC_HTML_MISSING:${path}`);
     const composition = item.recommendedNewProfile === "LANDING_CONVERSION" ? buildLanding(page, item, input.inventory) : item.recommendedNewProfile === "CAPABILITY" ? buildCapability(page, item, input.inventory) : item.recommendedNewProfile === "PRODUCT_SERVICE" ? buildProduct(page, item, input.inventory) : item.recommendedNewProfile === "INDUSTRY_APPLICATION" ? buildIndustry(page, item, input.inventory) : buildResource(page, item, input.inventory);
+    const wordpressContent = `<!-- wp:html --><style>${commonStyles}.wr-page{width:100vw!important;max-width:none!important;margin:0 0 0 calc(50% - 50vw)!important;padding:0!important}</style><div class="wr-page">${composition.body}${preservedContextLinks(item)}</div><!-- /wp:html -->`;
     const proposedHtml = wrap({ page: item, shellHtml: publicHtml, body: composition.body });
     const mediaIds = [...proposedHtml.matchAll(/wp-content\/uploads\/[^"')]+/g)].map((match) => `${COMMERCIAL_STAINLESS_ORIGIN}/${match[0]}`);
     const media = [...new Set(mediaIds)].map((url) => {
@@ -200,7 +206,7 @@ export function stageCommercialStainlessWave1(input: { pages: SiteGeneratedPageR
     const stageId = `csc-wave1-${createHash("sha256").update(JSON.stringify([COMMERCIAL_STAINLESS_APPROVED_DESIGN_REFERENCE_SHA, item.wordpressObjectId, proposedHtml])).digest("hex").slice(0, 20)}`;
     const heights = item.recommendedNewProfile === "LANDING_CONVERSION" ? { desktopHeight: 5800, mobileHeight: 9800 } : item.recommendedNewProfile === "CAPABILITY" ? { desktopHeight: 6100, mobileHeight: 10400 } : item.recommendedNewProfile === "PRODUCT_SERVICE" ? { desktopHeight: 5800, mobileHeight: 9700 } : item.recommendedNewProfile === "INDUSTRY_APPLICATION" ? { desktopHeight: 6200, mobileHeight: 10500 } : { desktopHeight: 5000, mobileHeight: 8500 };
     const currentHtml = publicHtml.replace(/<head([^>]*)>/i, `<head$1><base href="${COMMERCIAL_STAINLESS_ORIGIN}/">`);
-    return { stageId, status: "READY_FOR_OWNER_REVIEW", stagingMode: "LOCAL_PREVIEW_EQUIVALENT", approvedDesignReferenceSha: COMMERCIAL_STAINLESS_APPROVED_DESIGN_REFERENCE_SHA, page: item, targetProfile: item.recommendedNewProfile, heroVariant: composition.heroVariant, sectionSequence: [...composition.sequence, "PRESERVED_CONTEXT_LINKS"], mediaLayout: composition.mediaLayout, ctaPlacement: composition.ctaPlacement, currentHtml, proposedHtml, seoHashBefore: seoHash, seoHashAfter: seoHash, canonicalPreserved: true, urlPreserved: true, indexabilityPreserved: true, wordpressMutation: false, publicationMutation: false, media, links, ...heights };
+    return { stageId, status: "READY_FOR_OWNER_REVIEW", stagingMode: "LOCAL_PREVIEW_EQUIVALENT", approvedDesignReferenceSha: COMMERCIAL_STAINLESS_APPROVED_DESIGN_REFERENCE_SHA, page: item, targetProfile: item.recommendedNewProfile, heroVariant: composition.heroVariant, sectionSequence: [...composition.sequence, "PRESERVED_CONTEXT_LINKS"], mediaLayout: composition.mediaLayout, ctaPlacement: composition.ctaPlacement, currentHtml, proposedHtml, wordpressContent, wordpressContentHash: createHash("sha256").update(wordpressContent).digest("hex"), seoHashBefore: seoHash, seoHashAfter: seoHash, canonicalPreserved: true, urlPreserved: true, indexabilityPreserved: true, wordpressMutation: false, publicationMutation: false, media, links, ...heights };
   });
 }
 
