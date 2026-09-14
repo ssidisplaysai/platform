@@ -168,6 +168,17 @@ export function GlwGeneratedPageReviewWorkspace({
         </section>
       ) : null}
 
+      {model.nativeRenderRepair ? (
+        <section className="border border-amber-700 bg-amber-950/15 p-5" aria-label="Native WordPress render repair">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-300">Native WordPress Compatibility Repair</p><h2 className="mt-2 text-2xl font-black text-white">Ready for Owner Native Preview</h2><p className="mt-2 text-sm text-zinc-300">Theme title and standalone featured-image presentation are suppressed only for page 13103. Featured media 10757 remains assigned.</p></div>
+            {model.wordpressStaging ? <a href={model.wordpressStaging.reviewUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center border border-amber-600 px-4 py-3 text-sm font-bold text-amber-200 hover:border-amber-400">Open WordPress Editor, then Preview</a> : null}
+          </div>
+          <dl className="mt-5 grid gap-4 border-t border-amber-900 pt-5 sm:grid-cols-2 lg:grid-cols-4"><TraceItem label="Shell contract" value={model.nativeRenderRepair.shellContract} /><TraceItem label="Before hash" value={model.nativeRenderRepair.beforeHash} /><TraceItem label="After hash" value={model.nativeRenderRepair.afterHash} /><TraceItem label="Compatibility gate" value={model.nativeRenderRepair.certificationState} />{model.nativeRenderRepair.captures.map((capture) => <TraceItem key={capture.viewport} label={capture.viewport.replaceAll("_", " ")} value={`overflow ${capture.overflow} · media ${(capture.productMediaRatio * 100).toFixed(0)}% · copy ${Math.round(capture.productCopyWidth)}px · product/context lines ${capture.productHeadingLineCount}/${capture.contextualHeadingLineCount}`} />)}</dl>
+          <p className="mt-4 text-xs leading-5 text-zinc-500">Deterministic shell compatibility passed, but native preview automation is unavailable. Open the WordPress editor, click Preview, and visually confirm the repaired native page before any separate publication authorization.</p>
+        </section>
+      ) : null}
+
       <section
         className="border border-zinc-800 bg-zinc-900/45 p-5"
         aria-label="Review issues"
