@@ -4,6 +4,11 @@ import { listIntegrationProfiles } from "@/modules/foundation/integration-profil
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import { buildGlwExactRetryContract, generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority, type GlwReferenceGenerationAuthorityBinding } from "@/modules/glw/reference-generation-authority";
+import { getGlwReferenceStateSelection, saveGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
+import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
+import { consumeGlwReferenceOwnerGrant, GlwReferenceOwnerAuthorityError, type GlwReferenceOwnerOperationType } from "@/modules/glw/reference-owner-authority";
+import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 import {
   approveGlwCampaignReference,
   getGlwCampaignReferenceApproval,
@@ -350,6 +355,10 @@ export async function PATCH(request: NextRequest, context: Context) {
 }
 
 export async function POST(request: NextRequest, context: Context) {
+  const trustedPrincipal = resolveGlwTrustedOperatorPrincipal(request);
+  if (!trustedPrincipal.ok) {
+    return NextResponse.json({ error: trustedPrincipal.message, code: trustedPrincipal.code, generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 503 });
+  }
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
@@ -381,6 +390,12 @@ export async function POST(request: NextRequest, context: Context) {
     citySlug?: string;
     action?: "continue";
     jobId?: string;
+    referenceAuthorityBinding?: GlwReferenceGenerationAuthorityBinding;
+    ownerGrantId?: string;
+    preflightReceiptId?: string;
+    ownerOperationType?: GlwReferenceOwnerOperationType;
+    failedJobId?: string | null;
+    failedArtifactSha256?: string | null;
   } | null;
 
   let target;
@@ -412,6 +427,50 @@ export async function POST(request: NextRequest, context: Context) {
       { error: "Campaign site and product must still exist." },
       { status: 409 },
     );
+  }
+  const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);
+  if (wordpressAuthority.authorityHealthState !== "READY") {
+    return NextResponse.json(
+      {
+        error: "Authenticated WordPress read authority is required before generation or continuation.",
+        code: "WORDPRESS_READ_AUTHORITY_REQUIRED",
+        wordpressAuthority,
+        referencePageGenerated: false,
+        generationAllowanceConsumed: false,
+        leaseCreated: false,
+        generationJobCreated: false,
+        publicationPerformed: false,
+        wordpressMutationPerformed: false,
+      },
+      { status: 409 },
+    );
+  }
+  const generationAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: target.state.code });
+  if (!generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
+    return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
+  }
+  if (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType) {
+    return NextResponse.json({ error: "An exact single-use owner grant and matching preflight receipt are required.", code: "REFERENCE_OWNER_AUTHORITY_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+  }
+  let ownerClaim;
+  try {
+    const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      campaignId: campaign.campaignId,
+      referenceState: target.state.code,
+      operationType: body.ownerOperationType,
+      failedJobId: body.failedJobId,
+      failedArtifactSha256: body.failedArtifactSha256,
+    });
+    ownerClaim = consumeGlwReferenceOwnerGrant({
+      principal: trustedPrincipal.principal,
+      grantId: body.ownerGrantId,
+      preflightReceiptId: body.preflightReceiptId,
+      liveContext: liveOwnerContext,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: "Reference owner authority failed closed.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_AUTHORITY_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
   }
 
   const profileCount = listIntegrationProfiles({
@@ -450,6 +509,11 @@ export async function POST(request: NextRequest, context: Context) {
   form.additionalInstructions = generationContext.additionalInstructions;
   form.imageDirection = generationContext.imageDirection;
   form.campaignId = campaign.campaignId;
+  form.referenceAuthorityBinding = generationAuthority;
+  form.referenceOwnerAuthorityClaimId = ownerClaim.claimId;
+  form.referenceOwnerOperationType = ownerClaim.operationType;
+  form.referenceOwnerFailedJobId = ownerClaim.failedJobId;
+  form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
 
   let generationBody: Record<string, unknown> = { form };
   if (body?.action === "continue") {
