@@ -27,6 +27,12 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(route).toContain("Page 24 is the only authorized V3 canary target.");
   });
 
+  test("binds remaining Wave 1 publication to four objects in exact sequential order", () => {
+    for (const marker of ["COMMERCIAL_STAINLESS_WAVE1_REMAINING_SEQUENTIAL_PUBLICATION_V1:APPROVED", "COMMERCIAL_STAINLESS_WAVE1_REMAINING_ORDER = [11, 13, 17, 23]", "csc-wave1-remaining-v1-", "COMMERCIAL_STAINLESS_REMAINING_SEQUENCE_BLOCKED", "publishCommercialStainlessRemainingWave1Page"]) expect(publication).toContain(marker);
+    expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_WAVE1_REMAINING_PAGE");
+    expect(route).toContain("Only objects 11, 13, 17, and 23 are authorized.");
+  });
+
   test("requires exact certified autosave hashes and sequential public certification", () => {
     for (const marker of ["stage.stagedContentHash", "stage.stagedRenderedHash", "stage.certification", "COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED", "PUBLISHED_PENDING_VISUAL", "PUBLIC_CERTIFIED"]) expect(publication).toContain(marker);
     expect(publication.indexOf('status: "PREPARED"')).toBeLessThan(publication.indexOf("await updateContent"));
@@ -54,7 +60,7 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_WAVE_1_REVISION");
     expect(route).toContain("CERTIFY_EXACT_COMMERCIAL_STAINLESS_WAVE_1_PUBLIC_RENDER");
     expect(route).toContain("body.implementationSha !== expectedSha");
-    expect(route).toContain("canaryV3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_HOST_SPACING_SHA : canaryV2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA : canaryV1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA");
+    expect(route).toContain("remaining ? COMMERCIAL_STAINLESS_WAVE1_REMAINING_AUTHORITY_SHA : canaryV3 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V3_HOST_SPACING_SHA : canaryV2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA : canaryV1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA");
   });
 
   test("redacts exact rollback bodies from API responses", () => {
