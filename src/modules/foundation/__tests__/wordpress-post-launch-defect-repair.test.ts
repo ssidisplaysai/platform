@@ -1,5 +1,5 @@
 jest.mock("server-only", () => ({}));
-import { filterCommercialStainlessFeaturedImageRender, filterCommercialStainlessHostSpacingRender, isCommercialStainlessRichCompositionEligible, WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET } from "../wordpress-post-launch-defect-repair";
+import { filterCommercialStainlessFeaturedImageRender, filterCommercialStainlessHostSpacingRender, isCommercialStainlessRichCompositionEligible, isCommercialStainlessRichCompositionEligibleFromAuthorities, WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET } from "../wordpress-post-launch-defect-repair";
 
 const base = { host: "commercialstainlesscounters.com", postType: "page", status: "publish" };
 const richBlock = { blockName: "core/html", innerHtml: '<style>.wr-page{width:100%}.wr-hero{min-height:610px}</style><div class="wr-page"><section class="wr-hero"><img src="hero.jpg"><h1>Page</h1></section></div>' };
@@ -22,6 +22,10 @@ describe("CSC post-launch defect repair", () => {
     expect(code).toContain("in_array('core/post-content', $child_names, true)");
     expect(code).toContain("'core/post-title' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())");
     expect(code).not.toContain("'core/post-title' && is_page(GENESIS_CSC_PAGE_IDS_V1)");
+    expect(code).toContain("wp_get_post_autosave($post_id, get_current_user_id())");
+    expect(code).toContain("$revision->post_parent === (int) $post_id");
+    expect(code).toContain("add_action('enqueue_block_assets'");
+    expect(code).toContain(".editor-styles-wrapper .wp-block-post-title{display:none!important}");
     for (const [id, path] of [[17, "markets/education"], [18, "markets/foodservice"], [19, "markets/healthcare"], [20, "markets/hospitality"], [21, "markets/industrial"], [22, "markets/labs"]]) expect(code).toContain(`${id} => '${path}'`);
     expect(code).toContain("add_rewrite_rule");
     expect(code).toContain("flush_rewrite_rules(false)");
@@ -59,6 +63,13 @@ describe("CSC post-launch defect repair", () => {
 
   test("supports structurally nested approved HTML blocks without object-number eligibility", () => {
     expect(isCommercialStainlessRichCompositionEligible({ ...base, blocks: [{ blockName: "core/group", innerBlocks: [richBlock] }] })).toBe(true);
+  });
+
+  test("uses a parent-owned rich autosave when current post content remains legacy", () => {
+    const legacy = '<!-- wp:paragraph --><p>Legacy post content</p><!-- /wp:paragraph -->';
+    const approvedAutosave = `<!-- wp:html -->${richBlock.innerHtml}<!-- /wp:html -->`;
+    expect(isCommercialStainlessRichCompositionEligibleFromAuthorities({ ...base, contentAuthorities: [legacy, approvedAutosave] })).toBe(true);
+    expect(isCommercialStainlessRichCompositionEligibleFromAuthorities({ ...base, contentAuthorities: [legacy] })).toBe(false);
   });
 
   test("preserves featured-media and SEO authority because the filter is render-only", () => {

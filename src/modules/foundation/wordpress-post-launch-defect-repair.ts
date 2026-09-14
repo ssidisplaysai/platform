@@ -16,17 +16,8 @@ const GENESIS_CSC_MARKET_PATHS_V1 = array(
     22 => 'markets/labs',
 );
 
-function genesis_csc_is_rich_composition_v1($post_id) {
-    $host = strtolower((string) wp_parse_url(home_url('/'), PHP_URL_HOST));
-    $host = preg_replace('/^www\./', '', $host);
-    if ($host !== 'commercialstainlesscounters.com' || get_post_type($post_id) !== 'page' || get_post_status($post_id) !== 'publish') {
-        return false;
-    }
-    $queried_post = get_queried_object();
-    $raw_content = $queried_post instanceof WP_Post && (int) $queried_post->ID === (int) $post_id
-        ? (string) $queried_post->post_content
-        : (string) get_post_field('post_content', $post_id, 'raw');
-    $blocks = parse_blocks($raw_content);
+function genesis_csc_content_is_rich_composition_v1($raw_content) {
+    $blocks = parse_blocks((string) $raw_content);
     $inspect = function ($items) use (&$inspect) {
         foreach ($items as $block) {
             if (($block['blockName'] ?? '') === 'core/html') {
@@ -48,6 +39,43 @@ function genesis_csc_is_rich_composition_v1($post_id) {
         return false;
     };
     return $inspect($blocks);
+}
+
+function genesis_csc_is_rich_composition_v1($post_id) {
+    $host = strtolower((string) wp_parse_url(home_url('/'), PHP_URL_HOST));
+    $host = preg_replace('/^www\./', '', $host);
+    if ($host !== 'commercialstainlesscounters.com' || get_post_type($post_id) !== 'page' || get_post_status($post_id) !== 'publish') {
+        return false;
+    }
+    $candidates = array();
+    global $post;
+    if ($post instanceof WP_Post && (int) $post->ID === (int) $post_id) {
+        $candidates[] = (string) $post->post_content;
+    }
+    $queried_post = get_queried_object();
+    if ($queried_post instanceof WP_Post && (int) $queried_post->ID === (int) $post_id) {
+        $candidates[] = (string) $queried_post->post_content;
+    }
+    $revision_id = absint($_GET['revision'] ?? 0);
+    if ($revision_id > 0) {
+        $revision = get_post($revision_id);
+        if ($revision instanceof WP_Post && $revision->post_type === 'revision' && (int) $revision->post_parent === (int) $post_id) {
+            $candidates[] = (string) $revision->post_content;
+        }
+    }
+    if (is_user_logged_in()) {
+        $autosave = wp_get_post_autosave($post_id, get_current_user_id());
+        if ($autosave instanceof WP_Post && (int) $autosave->post_parent === (int) $post_id) {
+            $candidates[] = (string) $autosave->post_content;
+        }
+    }
+    $candidates[] = (string) get_post_field('post_content', $post_id, 'raw');
+    foreach (array_unique($candidates) as $candidate) {
+        if (genesis_csc_content_is_rich_composition_v1($candidate)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 if (get_option('blogdescription') === 'Just another WordPress site') {
@@ -83,6 +111,19 @@ add_filter('render_block', function ($content, $block) {
     }
     return $content;
 }, 20, 2);
+
+add_action('enqueue_block_assets', function () {
+    if (!is_admin()) {
+        return;
+    }
+    $post_id = absint($_GET['post'] ?? 0);
+    if ($post_id < 1 || !current_user_can('edit_post', $post_id) || !genesis_csc_is_rich_composition_v1($post_id)) {
+        return;
+    }
+    wp_register_style('genesis-csc-rich-editor-v1', false, array(), null);
+    wp_enqueue_style('genesis-csc-rich-editor-v1');
+    wp_add_inline_style('genesis-csc-rich-editor-v1', '.editor-styles-wrapper .wp-block-post-title{display:none!important}');
+});
 
 add_filter('page_link', function ($link, $post_id) {
     if (isset(GENESIS_CSC_MARKET_PATHS_V1[(int) $post_id])) {
@@ -201,6 +242,10 @@ export function isCommercialStainlessRichCompositionEligible(input: CommercialSt
         return block.innerBlocks ? inspect(block.innerBlocks) : false;
     });
     return inspect(input.blocks);
+}
+
+export function isCommercialStainlessRichCompositionEligibleFromAuthorities(input: Omit<CommercialStainlessRichCompositionEligibilityInput, "blocks"> & { contentAuthorities: string[] }): boolean {
+    return input.contentAuthorities.some((raw) => isCommercialStainlessRichCompositionEligible({ ...input, blocks: blocksFromRawContent(raw) }));
 }
 
 export function filterCommercialStainlessFeaturedImageRender(input: CommercialStainlessRichCompositionEligibilityInput & { blockName: string; renderedHtml: string }): string {
