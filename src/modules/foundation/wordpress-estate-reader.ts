@@ -117,8 +117,10 @@ function requiresPagination(kind: WordPressEstateObjectKind): boolean {
 export function createWordPressEstateReader(input: {
   authority: AuthenticatedWordPressReadAuthority;
   perPage?: number;
+  maxPages?: number;
 }): WordPressEstateReader {
   const perPage = Math.min(Math.max(input.perPage ?? 100, 1), 100);
+  const maxPages = Math.max(input.maxPages ?? Number.MAX_SAFE_INTEGER, 1);
 
   const readCollection = async (
     kind: WordPressEstateObjectKind,
@@ -210,6 +212,8 @@ export function createWordPressEstateReader(input: {
         .map((value) => normalizeObject(kind, value));
 
       objects.push(...batch);
+
+      if (page >= maxPages) break;
 
       if (totalPages !== null) {
         if (page >= totalPages) break;

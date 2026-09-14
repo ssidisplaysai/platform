@@ -130,6 +130,27 @@ describe("Genesis WordPress estate reader", () => {
     expect(callCount).toBe(2);
   });
 
+  test("supports bounded inventory summaries using authoritative totals", async () => {
+    let callCount = 0;
+    const authority = authorityFrom(async () => {
+      callCount += 1;
+      return {
+        ok: true,
+        body: [{ id: 1, slug: "sample" }],
+        pagination: { total: 6106, totalPages: 62 },
+      };
+    });
+    const reader = createWordPressEstateReader({ authority, maxPages: 1 });
+    const result = await reader.readPages();
+    expect(result).toMatchObject({
+      ok: true,
+      collection: { total: 6106, totalPages: 62 },
+    });
+    if (!result.ok) throw new Error("Expected success");
+    expect(result.collection.objects).toHaveLength(1);
+    expect(callCount).toBe(1);
+  });
+
   test.each([
     ["media", "/media", "readMedia"],
     ["categories", "/categories", "readCategories"],

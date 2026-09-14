@@ -28,6 +28,15 @@ export type SiteWordPressReadAuthorityStatus = {
   authenticatedUserId: number | null;
   anonymousReadHttp: number | null;
   authenticatedReadHttp: number | null;
+  inventory: Array<{
+    endpoint: "/pages" | "/posts" | "/media";
+    url: string;
+    httpStatus: number | null;
+    ok: boolean;
+    wordpressErrorCode: string | null;
+    total: number | null;
+    totalPages: number | null;
+  }>;
   reason: string;
   recoveryAction: "CONNECT_WORDPRESS" | "REPAIR_WORDPRESS_AUTHORITY" | null;
   recoveryHref: string | null;
@@ -87,6 +96,7 @@ export async function inspectSiteWordPressReadAuthority(
     authenticatedUserId: null,
     anonymousReadHttp: null,
     authenticatedReadHttp: null,
+    inventory: [],
     lastCheckedAt: checkedAt,
   } as const;
   const href = recoveryHref(site);
@@ -160,6 +170,69 @@ export async function inspectSiteWordPressReadAuthority(
     return { ...base, configuredUsername: credential.username, credentialConfigured: true, anonymousReadHttp, authenticatedReadHttp: response.status, authorityHealthState: "REPAIR_REQUIRED", reason: "WordPress returned no usable authenticated identity.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
   }
 
+  const inventory: SiteWordPressReadAuthorityStatus["inventory"] = [];
+  for (const endpoint of ["/pages", "/posts", "/media"] as const) {
+    const query = new URLSearchParams({
+      context: "edit",
+      per_page: "100",
+      page: "1",
+      _fields: "id",
+      _genesis_authority: crypto.randomUUID(),
+    });
+    if (endpoint !== "/media") query.set("status", "any");
+    let inventoryResponse: Response;
+    try {
+      inventoryResponse = await fetcher(`${apiBaseUrl}${endpoint}?${query.toString()}`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Basic ${Buffer.from(`${credential.username}:${credential.applicationPassword}`).toString("base64")}`,
+          "Cache-Control": "no-cache, no-store",
+          Pragma: "no-cache",
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(15_000),
+      });
+    } catch {
+      inventory.push({ endpoint, url: `${apiBaseUrl}${endpoint}`, httpStatus: null, ok: false, wordpressErrorCode: "NETWORK_ERROR", total: null, totalPages: null });
+      continue;
+    }
+    const inventoryBody = await inventoryResponse.json().catch(() => null) as { code?: unknown } | null;
+    inventory.push({
+      endpoint,
+      url: `${apiBaseUrl}${endpoint}`,
+      httpStatus: inventoryResponse.status,
+      ok: inventoryResponse.ok && Array.isArray(inventoryBody),
+      wordpressErrorCode:
+        inventoryBody && typeof inventoryBody.code === "string"
+          ? inventoryBody.code
+          : null,
+      total: /^\d+$/.test(inventoryResponse.headers?.get("X-WP-Total") ?? "")
+        ? Number(inventoryResponse.headers?.get("X-WP-Total"))
+        : null,
+      totalPages: /^\d+$/.test(inventoryResponse.headers?.get("X-WP-TotalPages") ?? "")
+        ? Number(inventoryResponse.headers?.get("X-WP-TotalPages"))
+        : null,
+    });
+  }
+  const failedInventory = inventory.find((entry) => !entry.ok);
+  if (failedInventory) {
+    return {
+      ...base,
+      configuredUsername: typeof identity?.username === "string" && identity.username.trim() ? identity.username.trim() : credential.username,
+      credentialConfigured: true,
+      authenticatedIdentityResolved: true,
+      authenticatedUserId: userId,
+      anonymousReadHttp,
+      authenticatedReadHttp: response.status,
+      inventory,
+      authorityHealthState: "REPAIR_REQUIRED",
+      reason: `Authenticated WordPress inventory failed at ${failedInventory.endpoint} (${failedInventory.httpStatus ?? failedInventory.wordpressErrorCode ?? "unknown"}).`,
+      recoveryAction: "REPAIR_WORDPRESS_AUTHORITY",
+      recoveryHref: href,
+    };
+  }
+
   return {
     ...base,
     configuredUsername: typeof identity?.username === "string" && identity.username.trim() ? identity.username.trim() : credential.username,
@@ -168,6 +241,7 @@ export async function inspectSiteWordPressReadAuthority(
     authenticatedUserId: userId,
     anonymousReadHttp,
     authenticatedReadHttp: response.status,
+    inventory,
     authorityHealthState: "READY",
     reason: "Authenticated WordPress read authority is ready for this site.",
     recoveryAction: null,

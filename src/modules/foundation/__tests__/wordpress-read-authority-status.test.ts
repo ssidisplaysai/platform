@@ -29,7 +29,10 @@ describe("site-scoped WordPress read authority status", () => {
   test("reports READY only after anonymous reachability and authenticated identity read", async () => {
     const fetcher = jest.fn()
       .mockResolvedValueOnce(response(200, [{ id: 1 }]))
-      .mockResolvedValueOnce(response(200, { id: 42, username: "operator" }));
+      .mockResolvedValueOnce(response(200, { id: 42, username: "operator" }))
+      .mockResolvedValueOnce(response(200, [{ id: 1 }]))
+      .mockResolvedValueOnce(response(200, [{ id: 2 }]))
+      .mockResolvedValueOnce(response(200, [{ id: 3 }]));
     const result = await inspectSiteWordPressReadAuthority(site(), {
       resolver: () => credential,
       fetcher,
@@ -43,7 +46,12 @@ describe("site-scoped WordPress read authority status", () => {
       anonymousReadHttp: 200,
       credentialConfigured: true,
     });
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(result.inventory).toEqual([
+      expect.objectContaining({ endpoint: "/pages", ok: true }),
+      expect.objectContaining({ endpoint: "/posts", ok: true }),
+      expect.objectContaining({ endpoint: "/media", ok: true }),
+    ]);
+    expect(fetcher).toHaveBeenCalledTimes(5);
   });
 
   test("reports CONNECTION_REQUIRED for missing identity or missing credential", async () => {
@@ -74,6 +82,28 @@ describe("site-scoped WordPress read authority status", () => {
     });
   });
 
+  test("reports the exact failed inventory collection after identity succeeds", async () => {
+    const fetcher = jest.fn()
+      .mockResolvedValueOnce(response(200, [{ id: 1 }]))
+      .mockResolvedValueOnce(response(200, { id: 42, username: "operator" }))
+      .mockResolvedValueOnce(response(200, [{ id: 1 }]))
+      .mockResolvedValueOnce(response(200, [{ id: 2 }]))
+      .mockResolvedValueOnce(response(403, { code: "rest_cannot_view" }));
+    const result = await inspectSiteWordPressReadAuthority(site(), {
+      resolver: () => credential,
+      fetcher,
+    });
+    expect(result).toMatchObject({
+      authorityHealthState: "REPAIR_REQUIRED",
+      authenticatedIdentityResolved: true,
+      inventory: [
+        { endpoint: "/pages", ok: true },
+        { endpoint: "/posts", ok: true },
+        { endpoint: "/media", ok: false, httpStatus: 403, wordpressErrorCode: "rest_cannot_view" },
+      ],
+    });
+  });
+
   test("rejects a durable credential reference owned by another site", () => {
     const resolver = jest.fn(() => credential);
     const result = resolveSiteScopedWordPressCredential(site({
@@ -89,6 +119,7 @@ const referenceRoute = fs.readFileSync(path.join(process.cwd(), "src/app/api/glw
 const generationRoute = fs.readFileSync(path.join(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8").replace(/\s/g, "");
 const onboarding = fs.readFileSync(path.join(process.cwd(), "src/modules/foundation/FreshSiteOnboardingFlow.tsx"), "utf8").replace(/\s/g, "");
 const onboardingPage = fs.readFileSync(path.join(process.cwd(), "src/app/sites/[siteId]/onboarding/page.tsx"), "utf8").replace(/\s/g, "");
+const assessmentRoute = fs.readFileSync(path.join(process.cwd(), "src/app/api/sites/[siteId]/onboarding-assessment/route.ts"), "utf8").replace(/\s/g, "");
 
 describe("GLW operator authority contract", () => {
   test("distinguishes checking, ready, connection, repair, and blocked states", () => {
@@ -130,5 +161,11 @@ describe("GLW operator authority contract", () => {
     expect(onboarding).toContain("/wordpress-credentials");
     expect(onboarding).toContain('type="password"');
     expect(onboarding).toContain("setApplicationPassword(\"\")");
+  });
+
+  test("bounded inventory verification preserves an active site lifecycle", () => {
+    expect(assessmentRoute).toContain("createWordPressEstateReader({authority,maxPages:1})");
+    expect(assessmentRoute).toContain('existing.lifecycleState==="active"?"active":"configuring"');
+    expect(assessmentRoute).toContain("resolveSiteScopedWordPressCredential(existing)");
   });
 });

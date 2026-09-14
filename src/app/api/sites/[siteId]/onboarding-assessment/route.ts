@@ -5,7 +5,7 @@ import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequest
 import { inspectFreshWordPressSite, readWordPressOperatorCapabilities } from "@/modules/foundation/fresh-site-onboarding";
 import { resolvePermissions } from "@/modules/foundation/permissions";
 import { getSiteById, updateSite } from "@/modules/foundation/site-repository";
-import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
+import { resolveSiteScopedWordPressCredential } from "@/modules/foundation/wordpress-read-authority-status";
 import { createWordPressEstateReader } from "@/modules/foundation/wordpress-estate-reader";
 import type { SiteConfiguration } from "@/modules/foundation/types";
 
@@ -22,8 +22,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   if (!existing || !isRecordInScope({ recordOrganizationId: existing.organizationId, recordSiteId: existing.siteId, scope })) {
     return NextResponse.json({ error: "Site not found" }, { status: 404 });
   }
-  const reference = existing.integrations.wordpressCredentialReference;
-  const credential = reference ? resolveWordPressCredentialReference(reference) : null;
+  const credential = resolveSiteScopedWordPressCredential(existing);
   if (!credential || !existing.integrations.wordpressApiBaseUrl) {
     return NextResponse.json({ error: "WordPress credentials are not configured." }, { status: 409 });
   }
@@ -50,7 +49,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const checkedAt = new Date().toISOString();
   const connectedSite = {
     ...existing,
-    lifecycleState: "configuring",
+    lifecycleState: existing.lifecycleState === "active" ? "active" : "configuring",
     healthStatus: "healthy",
     lastConnectionTest: checkedAt,
     onboarding: {
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   } satisfies SiteConfiguration;
   const assessment = await inspectFreshWordPressSite({
     site: connectedSite,
-    reader: createWordPressEstateReader({ authority }),
+    reader: createWordPressEstateReader({ authority, maxPages: 1 }),
     organizationActive: CompanyRepository.getById(existing.organizationId)?.status === "active",
     permissions: resolvePermissions(auth.roles),
     capabilities,
