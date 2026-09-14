@@ -320,7 +320,7 @@ export async function PUT(request: NextRequest, context: Context) {
     organizationId: campaign.organizationId,
     siteId: campaign.siteId,
     stateCode: target.state.code,
-    selectedBy: auth.principal.subject,
+    selectedBy: auth.roles.join(","),
     selectedAt: new Date().toISOString(),
   });
   return NextResponse.json({ selectedReferenceState: selection, generationPerformed: false, jobCreated: false });
