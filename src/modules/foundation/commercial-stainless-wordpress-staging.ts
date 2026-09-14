@@ -115,6 +115,7 @@ export type CommercialStainlessWordPressStagingPreflight = {
   autosaveCreateSupported: boolean;
   revisionDeleteSupported: boolean;
   items: CommercialStainlessWordPressStagingPreflightItem[];
+  unauthorizedAutosaves: Array<{ wordpressObjectId: number; autosaveIds: number[] }>;
   ready: boolean;
 };
 
@@ -191,7 +192,12 @@ export async function inspectCommercialStainlessWordPressStaging(site: SiteConfi
     const rollbackEvidence = { status: text(page.status), slug: text(page.slug), title: text(page.title?.raw ?? page.title?.rendered), contentRaw: raw, contentHash: sha256(raw), renderedHash: sha256(rendered), featuredMediaId: Number(page.featured_media ?? 0), seoTitle, metaDescription, canonical: publicCanonical, indexability };
     return { wordpressObjectId, status: text(page.status), url: text(page.link), slug: text(page.slug), canonical: publicCanonical, seoTitle, metaDescription, indexability, featuredMediaId: Number(page.featured_media ?? 0), template: text(page.template), operativeAuthority, currentContentHash: rollbackEvidence.contentHash, currentRenderedHash: rollbackEvidence.renderedHash, currentPublicBodyHash: sha256(publicMain), currentPublicHttp: publicResponse.status, existingAutosaveIds: autosaves.map((item) => Number(item.id ?? 0)).filter((id) => id > 0), rollbackEvidence, ready: blockers.length === 0, blockers };
   }));
-  return { readOnly: true, authorizedObjectIds: [...AUTHORIZED_IDS], autosaveCreateSupported, revisionDeleteSupported, items, ready: autosaveCreateSupported && revisionDeleteSupported && items.every((item) => item.ready) };
+  const unauthorizedIds = Array.from({ length: 15 }, (_, index) => index + 10).filter((id) => !AUTHORIZED_IDS.includes(id as (typeof AUTHORIZED_IDS)[number]));
+  const unauthorizedAutosaves = (await Promise.all(unauthorizedIds.map(async (wordpressObjectId) => {
+    const response = await getJson<WordPressAutosave[]>(`${resolved.apiBase}/pages/${wordpressObjectId}/autosaves?context=edit&_fields=id&_staging=${crypto.randomUUID()}`, resolved.headers);
+    return { wordpressObjectId, autosaveIds: Array.isArray(response.body) ? response.body.map((item) => Number(item.id ?? 0)).filter((id) => id > 0) : [-1] };
+  }))).filter((item) => item.autosaveIds.length > 0);
+  return { readOnly: true, authorizedObjectIds: [...AUTHORIZED_IDS], autosaveCreateSupported, revisionDeleteSupported, items, unauthorizedAutosaves, ready: autosaveCreateSupported && revisionDeleteSupported && items.every((item) => item.ready) && unauthorizedAutosaves.length === 0 };
 }
 
 export function buildCommercialStainlessWave1StagingArtifacts(input: { site: SiteConfiguration; publicHtmlByPath: Record<string, string> }) {

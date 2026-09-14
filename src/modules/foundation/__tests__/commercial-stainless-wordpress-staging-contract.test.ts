@@ -9,6 +9,7 @@ describe("Commercial Stainless WordPress Wave 1 staging contract", () => {
     expect(staging).toContain('COMMERCIAL_STAINLESS_APPROVED_WAVE_1_SHA = "c1d94a4b80661397a67d1ba8674c0ea8f71c3e19"');
     expect(staging).toContain("const AUTHORIZED_IDS = [24, 11, 13, 17, 23] as const");
     expect(staging).toContain("COMMERCIAL_STAINLESS_WAVE_1_PATHS");
+    expect(staging).toContain("unauthorizedAutosaves");
   });
 
   test("uses only native autosave creation and exact revision deletion for rollback", () => {
