@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-authority";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import type { SiteConfiguration } from "./types";
@@ -16,17 +18,17 @@ const GENESIS_CSC_MARKET_PATHS_V1 = array(
     22 => 'markets/labs',
 );
 
-function genesis_csc_content_is_rich_composition_v1($raw_content) {
+function genesis_csc_content_has_markers_v1($raw_content, $page_class, $hero_class) {
     $blocks = parse_blocks((string) $raw_content);
-    $inspect = function ($items) use (&$inspect) {
+    $inspect = function ($items) use (&$inspect, $page_class, $hero_class) {
         foreach ($items as $block) {
             if (($block['blockName'] ?? '') === 'core/html') {
                 $processor = new WP_HTML_Tag_Processor((string) ($block['innerHTML'] ?? ''));
                 $has_page = false;
                 $has_hero = false;
                 while ($processor->next_tag()) {
-                    $has_page = $has_page || $processor->has_class('wr-page');
-                    $has_hero = $has_hero || $processor->has_class('wr-hero');
+                    $has_page = $has_page || $processor->has_class($page_class);
+                    $has_hero = $has_hero || $processor->has_class($hero_class);
                 }
                 if ($has_page && $has_hero) {
                     return true;
@@ -70,8 +72,11 @@ function genesis_csc_is_rich_composition_v1($post_id) {
         }
     }
     $candidates[] = (string) get_post_field('post_content', $post_id, 'raw');
+    $is_static_front_page = (int) get_option('page_on_front') === (int) $post_id;
     foreach (array_unique($candidates) as $candidate) {
-        if (genesis_csc_content_is_rich_composition_v1($candidate)) {
+        $interior_rich = genesis_csc_content_has_markers_v1($candidate, 'wr-page', 'wr-hero');
+        $homepage_rich = $is_static_front_page && genesis_csc_content_has_markers_v1($candidate, 'gvc-page', 'gvc-hero');
+        if ($interior_rich || $homepage_rich) {
             return true;
         }
     }
@@ -86,13 +91,14 @@ if (get_option('blogname') === 'My blog') {
 }
 
 add_filter('render_block', function ($content, $block) {
-    if (($block['blockName'] ?? '') === 'core/post-title' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
+    $is_page_context = is_front_page() || is_page();
+    if (($block['blockName'] ?? '') === 'core/post-title' && $is_page_context && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
         return '';
     }
-    if (($block['blockName'] ?? '') === 'core/post-featured-image' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
+    if (($block['blockName'] ?? '') === 'core/post-featured-image' && $is_page_context && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
         return '';
     }
-    if (($block['blockName'] ?? '') === 'core/group' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
+    if (($block['blockName'] ?? '') === 'core/group' && $is_page_context && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())) {
         $child_names = array_map(function ($child) { return $child['blockName'] ?? ''; }, $block['innerBlocks'] ?? array());
         $padding_top = $block['attrs']['style']['spacing']['padding']['top'] ?? '';
         if (($block['attrs']['align'] ?? '') === 'full' && $padding_top === 'var:preset|spacing|60' && in_array('core/post-featured-image', $child_names, true) && in_array('core/post-content', $child_names, true)) {
@@ -215,11 +221,27 @@ add_action('template_redirect', function () {
 }, -1000);`;
 
 type Snippet = { id?: number; name?: string; code?: string; active?: boolean; scope?: string };
-type WordPressEligibilityPage = { id?: number; status?: string; featured_media?: number; content?: { raw?: string } };
+type WordPressEligibilityPage = { id?: number; status?: string; featured_media?: number; content?: { raw?: string }; title?: { raw?: string }; yoast_head_json?: { title?: string; description?: string; canonical?: string; robots?: Record<string,string> } };
 function authorization(username: string, password: string): string { return `Basic ${Buffer.from(`${username}:${password}`, "utf8").toString("base64")}`; }
 function authority(site: SiteConfiguration) { if (site.siteId !== "site-rj-metal-commercial-stainless-counters" || site.organizationId !== "rj-metal" || site.domain !== "commercialstainlesscounters.com") throw new Error("POST_LAUNCH_REPAIR_SCOPE_MISMATCH"); const credential = resolveWordPressCredentialReference(site.integrations.wordpressCredentialReference); if (!credential || !site.integrations.wordpressApiBaseUrl) throw new Error("POST_LAUNCH_REPAIR_AUTHORITY_REQUIRED"); const apiBase = normalizeWordPressApiBaseUrl(site.integrations.wordpressApiBaseUrl); return { apiBase, origin: new URL(apiBase).origin, headers: { Accept: "application/json", Authorization: authorization(credential.username, credential.applicationPassword), "Cache-Control": "no-cache, no-store", Pragma: "no-cache" } }; }
 async function list(origin: string, headers: Record<string, string>): Promise<Snippet[]> { const response = await fetch(`${origin}/wp-json/code-snippets/v1/snippets?search=${encodeURIComponent(SNIPPET_NAME)}&per_page=100`, { headers, cache: "no-store", signal: AbortSignal.timeout(30_000) }); if (!response.ok) throw new Error(`POST_LAUNCH_SNIPPET_READ_FAILED:${response.status}`); const body = await response.json(); return Array.isArray(body) ? body : Array.isArray((body as { data?: unknown }).data) ? (body as { data: Snippet[] }).data : []; }
 export async function inspectWordPressPostLaunchRepair(site: SiteConfiguration) { const resolved = authority(site); const snippet = (await list(resolved.origin, resolved.headers)).find((item) => item.name === SNIPPET_NAME) ?? null; const index = await fetch(`${resolved.origin}/wp-json/`, { cache: "no-store", signal: AbortSignal.timeout(30_000) }); const identity = index.ok ? await index.json() as { description?: string } : {}; return { tagline: identity.description ?? null, snippet: snippet ? { id: Number(snippet.id ?? 0), active: snippet.active === true, scope: snippet.scope ?? null, exactCode: snippet.code === SNIPPET_CODE } : null, readOnly: true as const }; }
+
+export async function inspectCommercialStainlessHomepageAuthority(site: SiteConfiguration) {
+    const resolved = authority(site);
+    const [page, revisionsResponse, publicResponse] = await Promise.all([
+        readEligibilityPage(`${resolved.apiBase}/pages/10?context=edit&_fields=id,status,title,content,featured_media,yoast_head_json&_homepage=${crypto.randomUUID()}`, resolved.headers),
+        fetch(`${resolved.apiBase}/pages/10/revisions?context=edit&per_page=100&_fields=id,content&_homepage=${crypto.randomUUID()}`, { headers: resolved.headers, cache: "no-store", signal: AbortSignal.timeout(30_000) }),
+        fetch(`${resolved.origin}/?_homepage=${crypto.randomUUID()}`, { cache: "no-store", signal: AbortSignal.timeout(30_000) }),
+    ]);
+    if (Number(page.id ?? 0) !== 10 || !revisionsResponse.ok || !publicResponse.ok) throw new Error("HOMEPAGE_AUTHORITY_READ_FAILED");
+    const raw = page.content?.raw ?? "";
+    const storedHash = createHash("sha256").update(raw).digest("hex");
+    const revisions = await revisionsResponse.json() as Array<{ id?: number; content?: { raw?: string } }>;
+    const matchingRevision = revisions.find((revision) => createHash("sha256").update(revision.content?.raw ?? "").digest("hex") === storedHash);
+    const publicHtml = await publicResponse.text();
+    return { wordpressObjectId: 10, status: page.status ?? "", storedHash, revision: Number(matchingRevision?.id ?? 0) || null, featuredMedia: Number(page.featured_media ?? 0), seoIdentity: { title: page.yoast_head_json?.title ?? "", description: page.yoast_head_json?.description ?? "", robots: Object.values(page.yoast_head_json?.robots ?? {}).join(",") }, canonical: publicHtml.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i)?.[1] ?? page.yoast_head_json?.canonical ?? "", markerAuthority: { gvcPage: /class=["'][^"']*\bgvc-page\b/i.test(raw), gvcHero: /class=["'][^"']*\bgvc-hero\b/i.test(raw) }, readOnly: true as const };
+}
 export async function repairWordPressPostLaunchDefects(site: SiteConfiguration) { const resolved = authority(site); const existing = (await list(resolved.origin, resolved.headers)).find((item) => item.name === SNIPPET_NAME) ?? null; if (existing && existing.active === true && existing.code === SNIPPET_CODE) return { snippetId: Number(existing.id), created: false, activated: false, updated: false }; if (existing?.id) { const update = await fetch(`${resolved.origin}/wp-json/code-snippets/v1/snippets/${existing.id}`, { method: "PUT", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ code: SNIPPET_CODE, active: true, scope: "global", priority: 2 }), cache: "no-store", signal: AbortSignal.timeout(30_000) }); if (!update.ok) throw new Error(`POST_LAUNCH_SNIPPET_UPDATE_FAILED:${update.status}`); return { snippetId: Number(existing.id), created: false, activated: existing.active !== true, updated: true }; } const response = await fetch(`${resolved.origin}/wp-json/code-snippets/v1/snippets`, { method: "POST", headers: { ...resolved.headers, "Content-Type": "application/json" }, body: JSON.stringify({ name: SNIPPET_NAME, desc: "Mechanical public-rendering and approved market-path repairs for Commercial Stainless Counters.", code: SNIPPET_CODE, tags: ["genesis", "post-launch", "canonical"], scope: "global", active: false, priority: 2 }), cache: "no-store", signal: AbortSignal.timeout(30_000) }); const body = await response.json().catch(() => null) as Snippet | null; if (!response.ok || !body?.id) throw new Error(`POST_LAUNCH_SNIPPET_CREATE_FAILED:${response.status}`); const activate = await fetch(`${resolved.origin}/wp-json/code-snippets/v1/snippets/${body.id}/activate`, { method: "POST", headers: resolved.headers, cache: "no-store", signal: AbortSignal.timeout(30_000) }); if (!activate.ok) throw new Error(`POST_LAUNCH_SNIPPET_ACTIVATION_FAILED:${activate.status}`); return { snippetId: Number(body.id), created: true, activated: true, updated: false }; }
 export const WORDPRESS_POST_LAUNCH_REPAIR_SNIPPET = { name: SNIPPET_NAME, code: SNIPPET_CODE };
 
@@ -227,6 +249,7 @@ export type CommercialStainlessRichCompositionEligibilityInput = {
     host: string;
     postType: string;
     status: string;
+    isStaticFrontPage?: boolean;
     blocks: Array<{ blockName: string | null; innerHtml?: string; innerBlocks?: CommercialStainlessRichCompositionEligibilityInput["blocks"] }>;
 };
 
@@ -238,7 +261,10 @@ export function isCommercialStainlessRichCompositionEligible(input: CommercialSt
     const host = input.host.trim().toLowerCase().replace(/^www\./u, "");
     if (host !== "commercialstainlesscounters.com" || input.postType !== "page" || input.status !== "publish") return false;
     const inspect = (blocks: CommercialStainlessRichCompositionEligibilityInput["blocks"]): boolean => blocks.some((block) => {
-        if (block.blockName === "core/html" && hasClassToken(block.innerHtml ?? "", "wr-page") && hasClassToken(block.innerHtml ?? "", "wr-hero")) return true;
+        const html = block.innerHtml ?? "";
+        const interiorRich = hasClassToken(html, "wr-page") && hasClassToken(html, "wr-hero");
+        const homepageRich = input.isStaticFrontPage === true && hasClassToken(html, "gvc-page") && hasClassToken(html, "gvc-hero");
+        if (block.blockName === "core/html" && (interiorRich || homepageRich)) return true;
         return block.innerBlocks ? inspect(block.innerBlocks) : false;
     });
     return inspect(input.blocks);

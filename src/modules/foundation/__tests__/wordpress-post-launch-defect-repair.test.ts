@@ -14,13 +14,15 @@ describe("CSC post-launch defect repair", () => {
     expect(code).toContain("genesis_csc_is_rich_composition_v1");
     expect(code).toContain("parse_blocks");
     expect(code).toContain("WP_HTML_Tag_Processor");
-    expect(code).toContain("has_class('wr-page')");
-    expect(code).toContain("has_class('wr-hero')");
+    expect(code).toContain("'wr-page', 'wr-hero'");
+    expect(code).toContain("'gvc-page', 'gvc-hero'");
+    expect(code).toContain("use (&$inspect, $page_class, $hero_class)");
+    expect(code).toContain("is_front_page() || is_page()");
     expect(code).toContain("padding-top");
     expect(code).toContain("var:preset|spacing|60");
     expect(code).toContain("in_array('core/post-featured-image', $child_names, true)");
     expect(code).toContain("in_array('core/post-content', $child_names, true)");
-    expect(code).toContain("'core/post-title' && is_page() && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())");
+    expect(code).toContain("'core/post-title' && $is_page_context && genesis_csc_is_rich_composition_v1((int) get_queried_object_id())");
     expect(code).not.toContain("'core/post-title' && is_page(GENESIS_CSC_PAGE_IDS_V1)");
     expect(code).toContain("wp_get_post_autosave($post_id, get_current_user_id())");
     expect(code).toContain("$revision->post_parent === (int) $post_id");
@@ -63,6 +65,13 @@ describe("CSC post-launch defect repair", () => {
 
   test("supports structurally nested approved HTML blocks without object-number eligibility", () => {
     expect(isCommercialStainlessRichCompositionEligible({ ...base, blocks: [{ blockName: "core/group", innerBlocks: [richBlock] }] })).toBe(true);
+  });
+
+  test("accepts actual homepage markers only for the configured static front page", () => {
+    const homepageBlock = { blockName: "core/html", innerHtml: '<div class="gvc-page"><section class="gvc-hero"><h1>Home</h1></section></div>' };
+    expect(isCommercialStainlessRichCompositionEligible({ ...base, isStaticFrontPage: true, blocks: [homepageBlock] })).toBe(true);
+    expect(isCommercialStainlessRichCompositionEligible({ ...base, blocks: [homepageBlock] })).toBe(false);
+    expect(isCommercialStainlessRichCompositionEligible({ ...base, isStaticFrontPage: true, blocks: [{ blockName: "core/html", innerHtml: '<div class="gvc-page">No hero</div>' }] })).toBe(false);
   });
 
   test("uses a parent-owned rich autosave when current post content remains legacy", () => {
