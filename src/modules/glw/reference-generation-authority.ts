@@ -37,6 +37,7 @@ export function resolveGlwReferenceGenerationAuthority(input: {
   const productSlugById: Readonly<Record<string, string>> = {
     "prod-indoor-digital-sphere": "indoor-digital-sphere",
     "prod-outdoor-digital-sphere": "outdoor-digital-sphere",
+    "prod-ssi-accent-rear-projection-film": "accent-rear-projection-film",
   };
   const productSlug = productSlugById[input.campaign.productId] ?? "unknown";
   const productLinks = resolveGlwAllowedInternalLinks({

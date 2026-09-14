@@ -2,6 +2,7 @@ import "server-only";
 
 import { createAuthenticatedWordPressReadAuthority } from "./authenticated-wordpress-read-authority";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
+import { normalizeSsiAccentProductAuthority } from "./ssi-accent-product-authority";
 import type { ProductConfiguration, SiteConfiguration } from "./types";
 
 export type SiteStudioLinkCandidate = {
@@ -105,6 +106,7 @@ export async function resolveSiteStudioProductAuthority(input: {
   product: ProductConfiguration;
   products: readonly ProductConfiguration[];
 }): Promise<SiteStudioProductAuthority> {
+  const product = normalizeSsiAccentProductAuthority({ site: input.site, product: input.product });
   const credential = resolveWordPressCredentialReference(input.site.integrations.wordpressCredentialReference);
   const authority = credential && input.site.integrations.wordpressApiBaseUrl
     ? createAuthenticatedWordPressReadAuthority({
@@ -116,8 +118,8 @@ export async function resolveSiteStudioProductAuthority(input: {
         },
       })
     : null;
-  const canonicalUrl = sourceUrl(input.product);
-  const canonicalPageId = sourcePageId(input.product);
+  const canonicalUrl = sourceUrl(product);
+  const canonicalPageId = sourcePageId(product);
   const canonicalRead = authority && canonicalPageId
     ? await authority.getJson({
         path: `/pages/${canonicalPageId}`,
@@ -140,7 +142,7 @@ export async function resolveSiteStudioProductAuthority(input: {
     ? {
         kind: "canonical_product",
         url: canonicalUrl.toString(),
-        anchorText: input.product.productName,
+        anchorText: product.productName,
         source: "PRODUCT_INTELLIGENCE",
         destinationValid: true,
         external: false,
@@ -149,11 +151,11 @@ export async function resolveSiteStudioProductAuthority(input: {
 
   const related = (await Promise.all(input.products
     .filter((candidate) =>
-      candidate.productId !== input.product.productId
-      && candidate.organizationId === input.product.organizationId
+      candidate.productId !== product.productId
+      && candidate.organizationId === product.organizationId
       && candidate.enabled
       && candidate.assignedSiteIds.includes(input.site.siteId)
-      && candidate.categoryIds.some((categoryId) => input.product.categoryIds.includes(categoryId)),
+      && candidate.categoryIds.some((categoryId) => product.categoryIds.includes(categoryId)),
     )
     .map(async (candidate): Promise<SiteStudioLinkCandidate | null> => {
       const url = sourceUrl(candidate);
@@ -169,10 +171,10 @@ export async function resolveSiteStudioProductAuthority(input: {
     }))).filter((candidate): candidate is SiteStudioLinkCandidate => Boolean(candidate));
 
   const supportingReferences = [
-    ...input.product.documents.specSheetReferences,
-    ...input.product.documents.brochureReferences,
-    ...input.product.documents.installationGuideReferences,
-    ...input.product.specifications.map((specification) => specification.evidenceReference).filter((value): value is string => Boolean(value)),
+    ...product.documents.specSheetReferences,
+    ...product.documents.brochureReferences,
+    ...product.documents.installationGuideReferences,
+    ...product.specifications.map((specification) => specification.evidenceReference).filter((value): value is string => Boolean(value)),
   ];
   const sourceLinks = [...(canonicalPage?.content?.raw ?? "").matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)]
     .map((match) => ({
@@ -203,7 +205,7 @@ export async function resolveSiteStudioProductAuthority(input: {
     }
   }))).filter((candidate): candidate is SiteStudioLinkCandidate => Boolean(candidate));
 
-  const mediaId = wordpressId(input.product.media.primaryImageReference);
+  const mediaId = wordpressId(product.media.primaryImageReference);
   let selectedMedia: SiteStudioMediaCandidate | null = null;
   if (authority && mediaId) {
     const read = await authority.getJson({
@@ -222,7 +224,7 @@ export async function resolveSiteStudioProductAuthority(input: {
         selectedMedia = {
           wordpressMediaId: mediaId,
           url: mediaUrl.toString(),
-          altText: media.alt_text?.trim() || input.product.productName,
+          altText: media.alt_text?.trim() || product.productName,
           provenance: "PRODUCT_INTELLIGENCE",
           exactProductMatch: true,
           destinationValid: true,
@@ -237,11 +239,11 @@ export async function resolveSiteStudioProductAuthority(input: {
 
   return {
     lookupResult: "EXACT_MATCH",
-    productId: input.product.productId,
-    productName: input.product.productName,
-    productFamily: input.product.productFamily,
-    categoryIds: input.product.categoryIds,
-    specifications: input.product.specifications,
+    productId: product.productId,
+    productName: product.productName,
+    productFamily: product.productFamily,
+    categoryIds: product.categoryIds,
+    specifications: product.specifications,
     canonicalProduct,
     internalLinkCandidates,
     externalReferenceCandidates,
