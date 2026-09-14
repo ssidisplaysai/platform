@@ -9,6 +9,7 @@ import { COMMERCIAL_STAINLESS_ORIGIN, COMMERCIAL_STAINLESS_SITE_ID, extractComme
 import { COMMERCIAL_STAINLESS_WAVE_1_PATHS, stageCommercialStainlessWave1 } from "./commercial-stainless-wave1-rollout";
 import type { SiteConfiguration } from "./types";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
+import { verifyWordPressTemplateStructure } from "./wordpress-post-content-publication-verifier";
 
 export const COMMERCIAL_STAINLESS_APPROVED_WAVE_1_SHA = "c1d94a4b80661397a67d1ba8674c0ea8f71c3e19";
 
@@ -273,6 +274,76 @@ export async function stageCommercialStainlessWordPressWave1(site: SiteConfigura
 }
 
 export type CommercialStainlessWordPressCertificationResult = { stageId: string; desktop1440: boolean; desktop1024: boolean; tablet768: boolean; mobile375: boolean; horizontalOverflow: number; globalHeaderCount: number; bodyNavigationCount: number; h1Count: number; mediaResolved: boolean; brokenLinks: number; devLinks: number; unsupportedClaims: number };
+
+export type CommercialStainlessPrepublicationResult = {
+  wordpressObjectId: number;
+  autosaveId: number;
+  status: "PREPUBLICATION_READY" | "BLOCKED";
+  contentIdentity: boolean;
+  renderedIdentity: boolean;
+  seoPreserved: boolean;
+  canonicalPreserved: boolean;
+  indexabilityPreserved: boolean;
+  mediaValid: boolean;
+  linksValid: boolean;
+  compositionValid: boolean;
+  responsiveValid: boolean;
+  blockers: string[];
+};
+
+async function resourcesValid(html: string, publicUrl: string) {
+  const references = [...html.matchAll(/<(a|img)\b[^>]+(?:href|src)=["']([^"']+)["']/gi)];
+  const media = new Set<string>();
+  const links = new Set<string>();
+  for (const [, tag, value] of references) {
+    if (!value || value.startsWith("#") || value.startsWith("mailto:") || value.startsWith("tel:") || value.startsWith("data:")) continue;
+    const url = new URL(value, publicUrl);
+    if (tag.toLowerCase() === "img") media.add(url.toString());
+    else if (url.origin === COMMERCIAL_STAINLESS_ORIGIN) links.add(url.toString());
+  }
+  const valid = async (url: string) => {
+    try { return (await fetch(url, { cache: "no-store", redirect: "follow", signal: AbortSignal.timeout(30_000) })).ok; } catch { return false; }
+  };
+  return { mediaValid: (await Promise.all([...media].map(valid))).every(Boolean), linksValid: (await Promise.all([...links].map(valid))).every(Boolean) };
+}
+
+export async function inspectCommercialStainlessWordPressWave1Prepublication(site: SiteConfiguration): Promise<CommercialStainlessPrepublicationResult[]> {
+  const expectedAutosaves = new Map([[24, 88], [11, 89], [13, 90], [17, 91], [23, 92]]);
+  const records = listCommercialStainlessWordPressStageRecords().filter((record) => expectedAutosaves.has(record.wordpressObjectId));
+  const resolved = authority(site);
+  const results: CommercialStainlessPrepublicationResult[] = [];
+  for (const wordpressObjectId of AUTHORIZED_IDS) {
+    const record = records.find((item) => item.wordpressObjectId === wordpressObjectId);
+    const autosaveId = expectedAutosaves.get(wordpressObjectId)!;
+    if (!record) {
+      results.push({ wordpressObjectId, autosaveId, status: "BLOCKED", contentIdentity: false, renderedIdentity: false, seoPreserved: false, canonicalPreserved: false, indexabilityPreserved: false, mediaValid: false, linksValid: false, compositionValid: false, responsiveValid: false, blockers: ["STAGE_RECORD_MISSING"] });
+      continue;
+    }
+    const [autosave, parent, publicResponse] = await Promise.all([
+      getJson<WordPressAutosave>(`${resolved.apiBase}/pages/${wordpressObjectId}/autosaves/${autosaveId}?context=edit&_fields=id,parent,content&_prepublication=${crypto.randomUUID()}`, resolved.headers),
+      getJson<WordPressPage>(`${resolved.apiBase}/pages/${wordpressObjectId}?context=edit&_fields=id,status,slug,link,featured_media,content,yoast_head_json&_prepublication=${crypto.randomUUID()}`, resolved.headers),
+      fetch(`${record.currentPublicUrl}?_prepublication=${crypto.randomUUID()}`, { cache: "no-store", signal: AbortSignal.timeout(30_000) }),
+    ]);
+    const raw = text(autosave.body?.content?.raw);
+    const rendered = text(autosave.body?.content?.rendered);
+    const publicHtml = publicResponse.ok ? await publicResponse.text() : "";
+    const stagedDocument = record.stagedRenderedHtml && publicHtml ? renderCommercialStainlessWordPressStagedPage(record, publicHtml) : "";
+    const structure = stagedDocument ? verifyWordPressTemplateStructure({ html: stagedDocument, expectedH1Count: 1, expectedIdentityClass: "wr-page" }) : null;
+    const resources = await resourcesValid(rendered, record.currentPublicUrl);
+    const parentRobots = Object.values(parent.body?.yoast_head_json?.robots ?? {}).join(",");
+    const publicPageCanonical = text(publicHtml.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)/i)?.[1]);
+    const contentIdentity = autosave.status === 200 && Number(autosave.body?.id ?? 0) === autosaveId && Number(autosave.body?.parent ?? 0) === wordpressObjectId && sha256(raw) === record.stagedContentHash;
+    const renderedIdentity = sha256(rendered) === record.stagedRenderedHash;
+    const seoPreserved = text(parent.body?.yoast_head_json?.title) === record.rollbackEvidence.seoTitle && text(parent.body?.yoast_head_json?.description) === record.rollbackEvidence.metaDescription;
+    const canonicalPreserved = publicPageCanonical === record.rollbackEvidence.canonical;
+    const indexabilityPreserved = parentRobots === record.rollbackEvidence.indexability;
+    const compositionValid = structure?.pass === true && !/class=["']gvs-page\b/i.test(rendered);
+    const responsiveValid = Boolean(record.certification?.desktop1440 && record.certification.desktop1024 && record.certification.tablet768 && record.certification.mobile375 && record.certification.horizontalOverflow === 0);
+    const blockers = [...(!contentIdentity ? ["AUTOSAVE_CONTENT_IDENTITY_FAILED"] : []), ...(!renderedIdentity ? ["AUTOSAVE_RENDERED_IDENTITY_FAILED"] : []), ...(!seoPreserved ? ["SEO_DRIFT"] : []), ...(!canonicalPreserved ? ["CANONICAL_DRIFT"] : []), ...(!indexabilityPreserved ? ["INDEXABILITY_DRIFT"] : []), ...(!resources.mediaValid ? ["MEDIA_INVALID"] : []), ...(!resources.linksValid ? ["LINK_INVALID"] : []), ...(!compositionValid ? ["COMPOSITION_INVALID"] : []), ...(!responsiveValid ? ["RESPONSIVE_EVIDENCE_INVALID"] : [])];
+    results.push({ wordpressObjectId, autosaveId, status: blockers.length ? "BLOCKED" : "PREPUBLICATION_READY", contentIdentity, renderedIdentity, seoPreserved, canonicalPreserved, indexabilityPreserved, ...resources, compositionValid, responsiveValid, blockers });
+  }
+  return results;
+}
 
 export async function certifyCommercialStainlessWordPressWave1(site: SiteConfiguration, results: CommercialStainlessWordPressCertificationResult[]): Promise<CommercialStainlessWordPressStageRecord[]> {
   const records = listCommercialStainlessWordPressStageRecords().filter((record) => record.status === "STAGED" || record.status === "PUBLICATION_READY");

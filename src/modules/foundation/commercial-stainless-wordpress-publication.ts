@@ -8,6 +8,7 @@ import { listCommercialStainlessWordPressStageRecords } from "./commercial-stain
 import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
 import type { SiteConfiguration } from "./types";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
+import { classifyPublicVerificationRead, convergePublicVerification, verifyRenderedWhitespace, verifyWordPressTemplateStructure, type PublicReadConvergenceResult, type PublicVerificationRead, type RenderedLayoutEvidence } from "./wordpress-post-content-publication-verifier";
 
 export const COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA = "3a2dd3980bf03022d6fabc7403b4c18bfba5ed31";
 export const COMMERCIAL_STAINLESS_PUBLICATION_OWNER_AUTHORIZATION = "COMMERCIAL_STAINLESS_WAVE_1_PUBLICATION_V1:APPROVED";
@@ -81,6 +82,7 @@ export type CommercialStainlessPublicVisualCertification = {
   noBrokenGrids: boolean;
   noGiantWhitespace: boolean;
   headerFooterCorrect: boolean;
+  layoutEvidence: RenderedLayoutEvidence[];
 };
 
 export type CommercialStainlessWordPressPublicationReceipt = {
@@ -100,6 +102,9 @@ export type CommercialStainlessWordPressPublicationReceipt = {
   identityPreserved: boolean | null;
   semanticCertification: CommercialStainlessPublicSemanticCertification | null;
   visualCertification: CommercialStainlessPublicVisualCertification | null;
+  verificationAttempts?: PublicVerificationRead[];
+  convergence?: Omit<PublicReadConvergenceResult, "attempts"> | null;
+  verificationFailure?: null | { timestamp: string; failedGate: string; expectedStoredContentHash: string; actualStoredContentHash: string | null; publicRenderHash: string | null; predicateMatrix: PublicVerificationRead["predicateMatrix"] | null; failedPredicates: string[]; cacheClassification: PublicVerificationRead["cacheClassification"] | null };
   rollbackAuthority: { contentHash: string; contentRaw: string; ready: boolean; executed: boolean };
   blockers: string[];
   authorizedAt: string;
@@ -123,10 +128,9 @@ function mainHtml(html: string): string {
   return html.match(/<main\b[^>]*>[\s\S]*?<\/main>/i)?.[0] ?? "";
 }
 
-function shellHtml(html: string): string {
-  const header = html.match(/<header\b[^>]*>[\s\S]*?<\/header>/i)?.[0] ?? "";
-  const footer = html.match(/<footer\b[^>]*>[\s\S]*?<\/footer>/i)?.[0] ?? "";
-  return `${header}\n${footer}`;
+function structuralShellHash(html: string): string {
+  const structure = verifyWordPressTemplateStructure({ html, expectedH1Count: 1, expectedIdentityClass: "gvs-page" });
+  return sha256(`${structure.globalHeaderHtmlHash ?? ""}:${structure.globalFooterHtmlHash ?? ""}`);
 }
 
 function authorization(username: string, password: string): string {
@@ -148,9 +152,23 @@ async function getJson<T>(url: string, headers: Record<string, string>): Promise
   return { status: response.status, body: response.ok ? await response.json() as T : null };
 }
 
-async function getPublic(url: string): Promise<{ status: number; html: string }> {
+async function getPublic(url: string): Promise<{ status: number; html: string; headers: Record<string, string | null> }> {
   const response = await fetch(`${url}?_publication=${crypto.randomUUID()}`, { cache: "no-store", redirect: "follow", signal: AbortSignal.timeout(30_000) });
-  return { status: response.status, html: response.ok ? await response.text() : "" };
+  return {
+    status: response.status,
+    html: response.ok ? await response.text() : "",
+    headers: {
+      age: response.headers.get("age"),
+      cacheControl: response.headers.get("cache-control"),
+      etag: response.headers.get("etag"),
+      lastModified: response.headers.get("last-modified"),
+      cfCacheStatus: response.headers.get("cf-cache-status"),
+      xCache: response.headers.get("x-cache"),
+      xCacheStatus: response.headers.get("x-cache-status"),
+      server: response.headers.get("server"),
+      date: response.headers.get("date"),
+    },
+  };
 }
 
 function loadPublication() {
@@ -171,7 +189,7 @@ export function listCommercialStainlessWordPressPublicationReceipts(): Commercia
 }
 
 export function summarizeCommercialStainlessWordPressPublicationReceipt(receipt: CommercialStainlessWordPressPublicationReceipt) {
-  return { ...receipt, prePublication: { ...receipt.prePublication, contentRaw: undefined }, rollbackAuthority: { ...receipt.rollbackAuthority, contentRaw: undefined } };
+  return { ...receipt, prePublication: { ...receipt.prePublication, contentRaw: undefined }, rollbackAuthority: { ...receipt.rollbackAuthority, contentRaw: undefined }, verificationAttempts: receipt.verificationAttempts?.map((attempt) => ({ ...attempt, responseBodyHtml: undefined })) };
 }
 
 function expectedPublication(wordpressObjectId: number) {
@@ -201,7 +219,7 @@ function snapshot(page: WordPressPage, publicHtml: string): CommercialStainlessP
     url: text(page.link),
     slug: text(page.slug),
     operativeAuthority: "POST_CONTENT_BLOCK_HTML",
-    shellHash: sha256(shellHtml(publicHtml)),
+    shellHash: structuralShellHash(publicHtml),
   };
 }
 
@@ -235,14 +253,15 @@ async function countBrokenResources(publicUrl: string, html: string) {
 async function semanticCertification(publicUrl: string, status: number, html: string): Promise<CommercialStainlessPublicSemanticCertification> {
   const main = mainHtml(html);
   const resources = await countBrokenResources(publicUrl, main);
+  const structure = verifyWordPressTemplateStructure({ html, expectedH1Count: 1, expectedIdentityClass: "wr-page" });
   return {
     http200: status === 200,
-    globalHeaderCount: (html.match(/<header\b/gi) ?? []).length,
-    bodyNavigationCount: (main.match(/<nav\b/gi) ?? []).length,
-    duplicateBodyHeader: /<header\b/i.test(main),
-    h1Count: (html.match(/<h1\b/gi) ?? []).length,
-    expectedPageIdentityPresent: /class=["']wr-page\b/i.test(main),
-    legacyGiantWhitespace: /min-height:\s*(?:[5-9]\d\d|\d{4,})px/i.test(main),
+    globalHeaderCount: structure.globalHeaderCount,
+    bodyNavigationCount: structure.bodyNavigationCount,
+    duplicateBodyHeader: structure.bodyHeaderCount > 0,
+    h1Count: structure.h1Count,
+    expectedPageIdentityPresent: structure.pageIdentityCount === 1,
+    legacyGiantWhitespace: false,
     legacyNarrowComposition: /class=["']gvs-page\b/i.test(main),
     globalFooterPresent: /<footer\b/i.test(html),
     ...resources,
@@ -315,6 +334,9 @@ export async function publishCommercialStainlessWordPressWave1Page(site: SiteCon
     identityPreserved: null,
     semanticCertification: null,
     visualCertification: null,
+    verificationAttempts: [],
+    convergence: null,
+    verificationFailure: null,
     rollbackAuthority: { contentHash: before.contentHash, contentRaw: before.contentRaw, ready: true, executed: false },
     blockers: [],
     authorizedAt: now,
@@ -323,31 +345,60 @@ export async function publishCommercialStainlessWordPressWave1Page(site: SiteCon
     updatedAt: now,
   });
 
+  let actualStoredContentHash: string | null = null;
   try {
     const write = await updateContent({ ...resolved, wordpressObjectId, content: autosaveRaw });
     if (!write.ok) throw new Error(`WORDPRESS_UPDATE_HTTP_${write.status}`);
-    const [afterRead, afterPublic] = await Promise.all([
-      getJson<WordPressPage>(`${resolved.apiBase}/pages/${wordpressObjectId}?context=edit&_fields=id,status,slug,link,featured_media,title,content,yoast_head_json&_published=${crypto.randomUUID()}`, resolved.headers),
-      getPublic(before.url),
-    ]);
+    const afterRead = await getJson<WordPressPage>(`${resolved.apiBase}/pages/${wordpressObjectId}?context=edit&_fields=id,status,slug,link,featured_media,title,content,yoast_head_json&_published=${crypto.randomUUID()}`, resolved.headers);
     const after = afterRead.body ?? {};
-    const semantic = await semanticCertification(before.url, afterPublic.status, afterPublic.html);
-    const seoPreserved = text(after.yoast_head_json?.title) === before.seoTitle && text(after.yoast_head_json?.description) === before.metaDescription && publicCanonical(afterPublic.html) === before.canonical && robots(after) === before.indexability;
-    const identityPreserved = afterRead.status === 200 && Number(after.id ?? 0) === wordpressObjectId && text(after.status) === before.status && text(after.slug) === before.slug && text(after.link) === before.url && Number(after.featured_media ?? 0) === before.featuredMediaId && sha256(text(after.content?.raw)) === stage.stagedContentHash && sha256(shellHtml(afterPublic.html)) === before.shellHash;
-    if (!seoPreserved || !identityPreserved || !semanticPass(semantic)) throw new Error(`PUBLIC_VERIFICATION_FAILED:${[...(!seoPreserved ? ["SEO_DRIFT"] : []), ...(!identityPreserved ? ["IDENTITY_DRIFT"] : []), ...(!semanticPass(semantic) ? ["SEMANTIC_FAILURE"] : [])].join(",")}`);
+    actualStoredContentHash = sha256(text(after.content?.raw));
+    const storedIdentityPreserved = afterRead.status === 200 && Number(after.id ?? 0) === wordpressObjectId && text(after.status) === before.status && text(after.slug) === before.slug && text(after.link) === before.url && Number(after.featured_media ?? 0) === before.featuredMediaId && actualStoredContentHash === stage.stagedContentHash;
+    if (!storedIdentityPreserved) throw new Error("STORED_POST_CONTENT_IDENTITY_FAILED");
+    const priorPublicAuthorityHash = verifyWordPressTemplateStructure({ html: publicRead.html, expectedH1Count: 1, expectedIdentityClass: "gvs-page" }).postContentHtmlHash ?? before.publicDocumentHash;
+    const convergence = await convergePublicVerification({
+      maxAttempts: 5,
+      requiredConsecutiveReads: 2,
+      timeoutMs: 10_000,
+      attemptSpacingMs: 250,
+      read: async () => {
+        const publicRead = await getPublic(before.url);
+        const semantic = await semanticCertification(before.url, publicRead.status, publicRead.html);
+        const structure = verifyWordPressTemplateStructure({ html: publicRead.html, expectedH1Count: 1, expectedIdentityClass: "wr-page" });
+        const seoPreserved = text(after.yoast_head_json?.title) === before.seoTitle && text(after.yoast_head_json?.description) === before.metaDescription && publicCanonical(publicRead.html) === before.canonical && robots(after) === before.indexability;
+        const shellPreserved = structuralShellHash(publicRead.html) === before.shellHash;
+        const predicateMatrix = { ...structure.predicates, http200: semantic.http200, storedContentHashValid: storedIdentityPreserved, semanticIdentityValid: semanticPass(semantic), renderedGeometryValid: null };
+        const failedPredicates = [...Object.entries(predicateMatrix).filter(([, pass]) => pass === false).map(([name]) => name), ...(!seoPreserved ? ["seoPreserved"] : []), ...(!shellPreserved ? ["globalTemplateShellPreserved"] : [])];
+        const responseBodyHash = structure.postContentHtmlHash ?? sha256(mainHtml(publicRead.html));
+        const cacheClassification = classifyPublicVerificationRead({ httpStatus: publicRead.status, responseBodyHash, priorPublicBodyHash: priorPublicAuthorityHash, predicatesPass: failedPredicates.length === 0 });
+        return { timestamp: new Date().toISOString(), url: before.url, httpStatus: publicRead.status, responseHeaders: publicRead.headers, responseBodyHash, responseBodyHtml: publicRead.html, expectedStoredContentHash: stage.stagedContentHash, actualStoredContentHash, semanticIdentity: "wr-page", predicateMatrix, failedPredicates, cacheClassification, visualCertificationReference: null };
+      },
+      persistAttempt: (attempt) => {
+        receipt = saveReceipt({ ...receipt, verificationAttempts: [...(receipt.verificationAttempts ?? []), attempt], updatedAt: attempt.timestamp });
+      },
+    });
+    receipt = saveReceipt({ ...receipt, convergence: { converged: convergence.converged, classification: convergence.classification, consecutiveExpectedReads: convergence.consecutiveExpectedReads, timeoutMs: convergence.timeoutMs }, updatedAt: new Date().toISOString() });
+    if (!convergence.converged) throw new Error("PUBLIC_READ_CONVERGENCE_FAILED");
+    const finalAttempt = convergence.attempts.at(-1)!;
+    const semantic = await semanticCertification(before.url, finalAttempt.httpStatus, finalAttempt.responseBodyHtml);
+    const seoPreserved = !finalAttempt.failedPredicates.includes("seoPreserved");
+    const identityPreserved = storedIdentityPreserved && !finalAttempt.failedPredicates.includes("globalTemplateShellPreserved");
     const publishedAt = new Date().toISOString();
-    receipt = saveReceipt({ ...receipt, status: "PUBLISHED_PENDING_VISUAL", postPublicationHash: sha256(mainHtml(afterPublic.html)), seoPreserved, identityPreserved, semanticCertification: semantic, publishedAt, updatedAt: publishedAt });
+    receipt = saveReceipt({ ...receipt, status: "PUBLISHED_PENDING_VISUAL", postPublicationHash: finalAttempt.responseBodyHash, seoPreserved, identityPreserved, semanticCertification: semantic, publishedAt, updatedAt: publishedAt });
     return receipt;
   } catch (cause) {
-    const restored = await rollback({ ...resolved, receipt });
     const updatedAt = new Date().toISOString();
-    saveReceipt({ ...receipt, status: restored ? "ROLLED_BACK" : "BLOCKED", rollbackAuthority: { ...receipt.rollbackAuthority, ready: restored, executed: true }, blockers: [cause instanceof Error ? cause.message : "UNKNOWN_PUBLICATION_FAILURE", ...(!restored ? ["ROLLBACK_FAILED"] : [])], updatedAt });
+    const failedGate = cause instanceof Error ? cause.message : "UNKNOWN_PUBLICATION_FAILURE";
+    const finalAttempt = receipt.verificationAttempts?.at(-1) ?? null;
+    receipt = saveReceipt({ ...receipt, status: "BLOCKED", verificationFailure: { timestamp: updatedAt, failedGate, expectedStoredContentHash: stage.stagedContentHash, actualStoredContentHash, publicRenderHash: finalAttempt?.responseBodyHash ?? null, predicateMatrix: finalAttempt?.predicateMatrix ?? null, failedPredicates: finalAttempt?.failedPredicates ?? [failedGate], cacheClassification: finalAttempt?.cacheClassification ?? null }, blockers: [...receipt.blockers, failedGate], updatedAt });
+    const restored = await rollback({ ...resolved, receipt });
+    saveReceipt({ ...receipt, status: restored ? "ROLLED_BACK" : "BLOCKED", rollbackAuthority: { ...receipt.rollbackAuthority, ready: restored, executed: true }, blockers: [...receipt.blockers, ...(!restored ? ["ROLLBACK_FAILED"] : [])], updatedAt: new Date().toISOString() });
     throw cause;
   }
 }
 
 function visualPass(value: CommercialStainlessPublicVisualCertification): boolean {
-  return value.desktop1440 && value.desktop1024 && value.tablet768 && value.mobile375 && value.horizontalOverflow === 0 && value.heroValid && value.h1Visible && value.ctaValid && value.mediaResolved && value.textMeasureAcceptable && value.noOverlap && value.noBrokenGrids && value.noGiantWhitespace && value.headerFooterCorrect;
+  const geometryPass = value.layoutEvidence.length === 4 && value.layoutEvidence.every((evidence) => verifyRenderedWhitespace(evidence).pass);
+  return value.desktop1440 && value.desktop1024 && value.tablet768 && value.mobile375 && value.horizontalOverflow === 0 && value.heroValid && value.h1Visible && value.ctaValid && value.mediaResolved && value.textMeasureAcceptable && value.noOverlap && value.noBrokenGrids && value.noGiantWhitespace && value.headerFooterCorrect && geometryPass;
 }
 
 export async function certifyCommercialStainlessWordPressPublishedPage(site: SiteConfiguration, wordpressObjectId: number, visual: CommercialStainlessPublicVisualCertification): Promise<CommercialStainlessWordPressPublicationReceipt> {

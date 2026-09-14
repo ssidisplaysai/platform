@@ -20,6 +20,12 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     for (const marker of ["rollbackAuthority", "await rollback", "ROLLBACK_FAILED", "semanticPass", "seoPreserved", "identityPreserved"]) expect(publication).toContain(marker);
   });
 
+  test("uses structural shell authority, converged reads, and durable failed responses", () => {
+    for (const marker of ["verifyWordPressTemplateStructure", "verifyRenderedWhitespace", "layoutEvidence.length === 4", "convergePublicVerification", "requiredConsecutiveReads: 2", "maxAttempts: 5", "timeoutMs: 10_000", "responseBodyHtml", "responseHeaders", "predicateMatrix", "verificationFailure", "expectedStoredContentHash", "actualStoredContentHash", 'status: "BLOCKED"']) expect(publication).toContain(marker);
+    expect(publication).not.toContain("min-height:\\s*(?:[5-9]\\d\\d|\\d{4,})px");
+    expect(publication.indexOf('status: "BLOCKED"')).toBeLessThan(publication.indexOf("const restored = await rollback"));
+  });
+
   test("exposes only explicit authenticated publish and public-certification commands", () => {
     expect(route).toContain('authorizeRequest(request, "sites:manage_integrations")');
     expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_WAVE_1_REVISION");

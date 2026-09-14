@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { verifyRenderedWhitespace, verifyWordPressTemplateStructure } from "../wordpress-post-content-publication-verifier";
 
 function sha256(value: string) {
   return createHash("sha256").update(value).digest("hex");
@@ -37,5 +38,12 @@ describe("Commercial Stainless Page 24 verifier forensic replay", () => {
     expect(originalLegacyGiantWhitespace).toBe(true);
     expect(promoted).toContain("wr-page");
     expect(promoted).not.toContain("gvs-page");
+  });
+
+  test("the repaired verifier accepts the previous Page 24 structural and hero evidence", () => {
+    const structure = verifyWordPressTemplateStructure({ html: promoted, expectedH1Count: 1, expectedIdentityClass: "wr-page" });
+    const geometry = verifyRenderedWhitespace({ viewport: { width: 1440, height: 900 }, regions: [{ regionId: "request-a-quote-hero", role: "HERO", rect: { top: 0, bottom: 610, left: 0, right: 1440, width: 1440, height: 610 }, visible: true, textRects: [{ top: 90, bottom: 270, left: 80, right: 760, width: 680, height: 180 }], mediaRects: [{ top: 0, bottom: 610, left: 0, right: 1440, width: 1440, height: 610 }], ctaRects: [{ top: 320, bottom: 372, left: 80, right: 300, width: 220, height: 52 }] }] });
+    expect(structure.pass).toBe(true);
+    expect(geometry.pass).toBe(true);
   });
 });
