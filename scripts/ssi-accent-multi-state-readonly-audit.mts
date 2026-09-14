@@ -2,8 +2,7 @@ import { createDecipheriv, createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
-import { evaluateGlwReferenceClaimAuthority, GLW_REFERENCE_QA_POLICY_VERSION } from "../src/modules/glw/reference-claim-authority";
-import { createGlwReferenceContentReconciliationReceipt, type GlwReferenceContentReconciliationReceipt } from "../src/modules/glw/reference-content-reconciliation";
+import { evaluateGlwReferenceClaimAuthority } from "../src/modules/glw/reference-claim-authority";
 
 const require = createRequire(import.meta.url);
 const { loadEnvConfig } = require("@next/env") as { loadEnvConfig: (directory: string, dev: boolean) => void };
@@ -129,7 +128,6 @@ async function readMedia(id: string): Promise<WordPressMedia | null> {
 }
 
 const audited = [];
-let californiaReconciliation: GlwReferenceContentReconciliationReceipt | null = null;
 for (const target of targets.sort((left, right) => String(left.stateCode).localeCompare(String(right.stateCode)))) {
   const stateCode = String(target.stateCode);
   const stateName = stateNames[stateCode] ?? stateCode;
@@ -179,23 +177,6 @@ for (const target of targets.sort((left, right) => String(left.stateCode).locale
         : stripHtml(artifactHtml) === stripHtml(storedContent)
           ? "MARKUP_ONLY_DRIFT"
           : "MATERIAL_TEXT_DRIFT";
-  if (stateCode === "CA" && job?.jobId && wordpressId && artifactHtml && storedContent) {
-    californiaReconciliation = createGlwReferenceContentReconciliationReceipt({
-      organizationId: String(campaign.organizationId),
-      siteId: String(campaign.siteId),
-      campaignId,
-      stateCode,
-      jobId: job.jobId,
-      wordpressObjectId: String(wordpressId),
-      artifactHtml,
-      storedContentHtml: storedContent,
-      expectedArtifactSha256: "57a51b2c69d53b38767e0d67997e03b1fb25e7974904a50647634093e8c950c7",
-      expectedStoredContentSha256: "07257007767297c0a3e3e49943fef45b796538a5786aa5ab101f42648c201872",
-      mediaAuthority: "UNGOVERNED",
-      hostCertification: "PENDING",
-      qaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
-    });
-  }
   const mediaItems = [
     ...(featuredMedia ? [{
       mediaId: String(featuredMedia.id),
@@ -318,7 +299,6 @@ console.log(JSON.stringify({
   },
   approvals,
   enrichmentRecordCount: enrichment.length,
-  currentQaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
-  californiaReconciliation,
+  currentQaPolicyVersion: "GLW_REFERENCE_CLAIM_AUTHORITY_V1",
   targets: audited,
 }, null, 2));
