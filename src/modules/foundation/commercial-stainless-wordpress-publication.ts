@@ -4,8 +4,10 @@ import { createHash } from "node:crypto";
 
 import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-authority";
 import { COMMERCIAL_STAINLESS_ORIGIN, COMMERCIAL_STAINLESS_SITE_ID } from "./commercial-stainless-rich-composition";
+import { commercialStainlessMediaReuseDeclarations, commercialStainlessSemanticReuseStatus, type CommercialStainlessSemanticReuseStatus } from "./commercial-stainless-semantic-media-authority";
 import { listCommercialStainlessWordPressStageRecords } from "./commercial-stainless-wordpress-staging";
 import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
+import { evaluateSemanticMediaReuse, extractRenderedMediaInstances, type MediaDuplicationFinding } from "./semantic-media-reuse-policy";
 import type { SiteConfiguration } from "./types";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import { classifyPublicVerificationRead, convergePublicVerification, verifyRenderedWhitespace, verifyWordPressTemplateStructure, type PublicReadConvergenceResult, type PublicVerificationRead, type RenderedLayoutEvidence } from "./wordpress-post-content-publication-verifier";
@@ -73,6 +75,9 @@ export type CommercialStainlessPublicSemanticCertification = {
   themeFeaturedImageCount: number;
   embeddedRichMediaCount: number;
   duplicateFeaturedImage: boolean;
+  semanticMediaReusePass: boolean;
+  semanticMediaReuseStatus: CommercialStainlessSemanticReuseStatus;
+  mediaDuplicationFindings: MediaDuplicationFinding[];
   brokenMedia: number;
   brokenInternalLinks: number;
   devLinks: number;
@@ -270,8 +275,8 @@ async function semanticCertification(publicUrl: string, status: number, html: st
   const themeFeaturedImageCount = (main.match(/class=["'][^"']*\bwp-block-post-featured-image\b[^"']*["']/gi) ?? []).length;
   const richPage = main.match(/class=["'][^"']*\bwr-page\b[^"']*["'][^>]*>([\s\S]*)/i)?.[1] ?? "";
   const embeddedRichMediaCount = (richPage.match(/<img\b/gi) ?? []).length;
-  const mediaSources = [...main.matchAll(/<img\b[^>]+src=["']([^"']+)/gi)].map((match) => new URL(match[1], publicUrl).toString());
-  const duplicateFeaturedImage = new Set(mediaSources).size !== mediaSources.length;
+  const mediaPolicy = evaluateSemanticMediaReuse({ instances: extractRenderedMediaInstances({ html: main, origin: publicUrl }), declarations: commercialStainlessMediaReuseDeclarations(publicUrl) });
+  const duplicateFeaturedImage = mediaPolicy.hostDuplicateMediaCount > 0;
   return {
     http200: status === 200,
     globalHeaderCount: structure.globalHeaderCount,
@@ -285,13 +290,16 @@ async function semanticCertification(publicUrl: string, status: number, html: st
     themeFeaturedImageCount,
     embeddedRichMediaCount,
     duplicateFeaturedImage,
+    semanticMediaReusePass: mediaPolicy.pass,
+    semanticMediaReuseStatus: commercialStainlessSemanticReuseStatus(mediaPolicy),
+    mediaDuplicationFindings: mediaPolicy.findings,
     ...resources,
     unsupportedClaims: 0,
   };
 }
 
 function semanticPass(value: CommercialStainlessPublicSemanticCertification): boolean {
-  return value.http200 && value.globalHeaderCount === 1 && value.bodyNavigationCount === 0 && !value.duplicateBodyHeader && value.h1Count === 1 && value.expectedPageIdentityPresent && !value.legacyGiantWhitespace && !value.legacyNarrowComposition && value.globalFooterPresent && value.themeFeaturedImageCount === 0 && value.embeddedRichMediaCount > 0 && !value.duplicateFeaturedImage && value.brokenMedia === 0 && value.brokenInternalLinks === 0 && value.devLinks === 0 && value.unsupportedClaims === 0;
+  return value.http200 && value.globalHeaderCount === 1 && value.bodyNavigationCount === 0 && !value.duplicateBodyHeader && value.h1Count === 1 && value.expectedPageIdentityPresent && !value.legacyGiantWhitespace && !value.legacyNarrowComposition && value.globalFooterPresent && value.themeFeaturedImageCount === 0 && value.embeddedRichMediaCount > 0 && !value.duplicateFeaturedImage && value.semanticMediaReusePass && value.brokenMedia === 0 && value.brokenInternalLinks === 0 && value.devLinks === 0 && value.unsupportedClaims === 0;
 }
 
 async function updateContent(input: { apiBase: string; headers: Record<string, string>; wordpressObjectId: number; content: string }) {

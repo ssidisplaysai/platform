@@ -50,6 +50,11 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(publication.indexOf('status: "BLOCKED"')).toBeLessThan(publication.indexOf("const restored = await rollback"));
   });
 
+  test("uses governed semantic media classification instead of raw duplicate source counts", () => {
+    for (const marker of ["extractRenderedMediaInstances", "evaluateSemanticMediaReuse", "commercialStainlessMediaReuseDeclarations", "semanticMediaReusePass", "mediaDuplicationFindings", "hostDuplicateMediaCount > 0"]) expect(publication).toContain(marker);
+    expect(publication).not.toContain("new Set(mediaSources).size !== mediaSources.length");
+  });
+
   test("persists failed visual evidence before exact rollback and public restoration verification", () => {
     expect(publication.indexOf('status: "BLOCKED", visualCertification: visual')).toBeLessThan(publication.indexOf("const storedRestored = await rollback"));
     for (const marker of ["ROLLBACK_STORED_IDENTITY_FAILED", "ROLLBACK_PUBLIC_IDENTITY_FAILED", "receipt.prePublication.publicDocumentHash"]) expect(publication).toContain(marker);
