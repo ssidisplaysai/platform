@@ -15,6 +15,12 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(route).toContain("Page 24 is the only authorized canary target.");
   });
 
+  test("binds V2 to the featured-image render repair and strengthens actual public media predicates", () => {
+    for (const marker of ["222dd49cfe790cdd50fe097d8b8e7f2a9d868fd0", "COMMERCIAL_STAINLESS_PAGE24_CANARY_PUBLICATION_RETRY_V2:APPROVED", "csc-page24-canary-publication-retry-v2-24-88", "publishCommercialStainlessPage24CanaryV2", "themeFeaturedImageCount", "embeddedRichMediaCount", "duplicateFeaturedImage"]) expect(publication).toContain(marker);
+    expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_PAGE24_CANARY_V2");
+    expect(route).toContain("Page 24 is the only authorized V2 canary target.");
+  });
+
   test("requires exact certified autosave hashes and sequential public certification", () => {
     for (const marker of ["stage.stagedContentHash", "stage.stagedRenderedHash", "stage.certification", "COMMERCIAL_STAINLESS_PUBLICATION_SEQUENCE_BLOCKED", "PUBLISHED_PENDING_VISUAL", "PUBLIC_CERTIFIED"]) expect(publication).toContain(marker);
     expect(publication.indexOf('status: "PREPARED"')).toBeLessThan(publication.indexOf("await updateContent"));
@@ -42,7 +48,7 @@ describe("Commercial Stainless WordPress Wave 1 publication contract", () => {
     expect(route).toContain("PUBLISH_EXACT_COMMERCIAL_STAINLESS_WAVE_1_REVISION");
     expect(route).toContain("CERTIFY_EXACT_COMMERCIAL_STAINLESS_WAVE_1_PUBLIC_RENDER");
     expect(route).toContain("body.implementationSha !== expectedSha");
-    expect(route).toContain("canary ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA");
+    expect(route).toContain("canaryV2 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_V2_RENDER_REPAIR_SHA : canaryV1 ? COMMERCIAL_STAINLESS_PAGE24_CANARY_REPAIR_SHA : COMMERCIAL_STAINLESS_PUBLICATION_IMPLEMENTATION_SHA");
   });
 
   test("redacts exact rollback bodies from API responses", () => {
