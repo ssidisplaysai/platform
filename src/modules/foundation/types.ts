@@ -212,6 +212,10 @@ export type NavigationItem = {
   id: string;
   label: string;
   href: string;
+  group?: "DASHBOARD" | "CAMPAIGNS" | "SITES" | "RESEARCH & CONTENT" | "OPERATIONS" | "SYSTEM" | "UTILITY" | "MORE";
+  description?: string;
+  icon?: string;
+  disabled?: boolean;
   requiredPermissions?: readonly PermissionAction[];
 };
 

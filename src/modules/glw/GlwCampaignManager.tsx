@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
@@ -38,9 +39,9 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
 
   return <div className="space-y-6">
     <header className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6">
-      <p className="text-xs uppercase tracking-[0.3em] text-red-400">GLW Campaign Manager</p>
+      <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-xs uppercase tracking-[0.3em] text-red-400">GLW Campaign Manager</p>
       <h1 className="mt-3 text-3xl font-black text-white">Production Campaigns</h1>
-      <p className="mt-2 max-w-3xl text-sm text-zinc-300">Configure the campaign, attach source material, generate a reference page, and approve it before production activation.</p>
+      <p className="mt-2 max-w-3xl text-sm text-zinc-300">Configure the campaign, attach source material, generate a reference page, and approve it before production activation.</p></div><Link href="/glw/campaigns?scope=all" className="border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 hover:border-red-500">View all sites</Link></div>
     </header>
     <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
       <div className="order-2 rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">

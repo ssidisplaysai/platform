@@ -7,22 +7,12 @@ import { createFoundationContext, getSitesForOrganization } from "@/modules/foun
 import { FOUNDATION_COMMANDS, FOUNDATION_NAVIGATION_ITEMS } from "@/modules/foundation/navigation";
 import { hasPermission, resolvePermissions } from "@/modules/foundation/permissions";
 import { getVisibleCommandPaletteActions, getVisibleNavigationItems } from "@/modules/foundation/selectors";
-import type { SiteConfiguration, SiteContext } from "@/modules/foundation/types";
+import type { NavigationItem, SiteConfiguration, SiteContext } from "@/modules/foundation/types";
 const ORGANIZATION_STORAGE_KEY = "gcp.selectedOrganizationId";
 const SITE_STORAGE_KEY = "gcp.selectedSiteId";
 
-const COLLAPSIBLE_NAVIGATION_LABELS = new Set([
-  "Companies",
-  "Categories",
-  "Manufacturers",
-  "Inventory",
-  "Customers",
-  "Quotes",
-  "Sales Orders",
-  "Work Orders",
-  "Production Jobs",
-  "Operations",
-]);
+const OPERATOR_GROUPS = ["CAMPAIGNS", "SITES", "RESEARCH & CONTENT", "OPERATIONS", "SYSTEM"] as const;
+type NavigationCounts = { campaigns: number; targets: number; generatedPagesRequiringReview: number };
 
 export function AppShell({ children, resourceSite = null }: { children: React.ReactNode; resourceSite?: SiteContext | null }) {
   const pathname = usePathname();
@@ -59,6 +49,7 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [commandQuery, setCommandQuery] = useState("");
   const [moreNavOpen, setMoreNavOpen] = useState(false);
+  const [navigationCounts, setNavigationCounts] = useState<NavigationCounts | null>(null);
   const effectiveOrganizationId = resourceSite?.organizationId ?? selectedOrganizationId;
   const effectiveSiteId = resourceSite?.id ?? selectedSiteId;
 
@@ -353,6 +344,64 @@ useEffect(() => {
     };
   }, [selectedOrganizationId, selectedSiteId, resourceSite]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const params = new URLSearchParams();
+    if (effectiveOrganizationId) params.set("organizationId", effectiveOrganizationId);
+    if (effectiveSiteId) params.set("siteId", effectiveSiteId);
+    void fetch(`/api/glw/operator-navigation-summary?${params.toString()}`, {
+      headers: { "x-gcp-roles": "ops_manager" },
+      cache: "no-store",
+    }).then(async (response) => {
+      if (!response.ok) return null;
+      return response.json() as Promise<{ global: NavigationCounts }>;
+    }).then((payload) => {
+      if (!cancelled && payload) setNavigationCounts(payload.global);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [effectiveOrganizationId, effectiveSiteId]);
+
+  function navigationHref(item: NavigationItem): string {
+    if (item.id === "campaigns") {
+      const params = new URLSearchParams({ scope: "all" });
+      if (effectiveOrganizationId) params.set("organizationId", effectiveOrganizationId);
+      if (effectiveSiteId) params.set("siteId", effectiveSiteId);
+      return `/glw/campaigns?${params.toString()}`;
+    }
+    if (item.id === "wordpress" && effectiveSiteId && effectiveOrganizationId) {
+      return `/sites/${encodeURIComponent(effectiveSiteId)}/health?organizationId=${encodeURIComponent(effectiveOrganizationId)}&siteId=${encodeURIComponent(effectiveSiteId)}`;
+    }
+    if (item.id === "research" && effectiveSiteId && effectiveOrganizationId) {
+      return `/sites/${encodeURIComponent(effectiveSiteId)}/intelligence?organizationId=${encodeURIComponent(effectiveOrganizationId)}&siteId=${encodeURIComponent(effectiveSiteId)}`;
+    }
+    return item.href;
+  }
+
+  function navigationBadge(item: NavigationItem): number | null {
+    if (!navigationCounts) return null;
+    if (item.id === "campaigns") return navigationCounts.campaigns;
+    if (item.id === "targets") return navigationCounts.targets;
+    if (item.id === "generated-pages") return navigationCounts.generatedPagesRequiringReview;
+    return null;
+  }
+
+  function navigationLink(item: NavigationItem, prominent = false) {
+    const href = navigationHref(item);
+    const active = href && (pathname === href.split("?")[0] || (href !== "/" && pathname.startsWith(`${href.split("?")[0]}/`)));
+    const badge = navigationBadge(item);
+    const classes = `group flex min-h-10 w-full items-center gap-3 border-l-2 px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 ${
+      active
+        ? "border-red-500 bg-red-500/10 font-semibold text-white"
+        : prominent
+          ? "border-transparent bg-zinc-800/70 font-semibold text-white hover:border-red-500"
+          : "border-transparent text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800/70 hover:text-white"
+    }`;
+    if (item.disabled) {
+      return <span key={item.id} aria-disabled="true" title="Coming soon" className={`${classes} cursor-not-allowed opacity-45`}><span className="flex h-6 w-6 shrink-0 items-center justify-center border border-zinc-700 text-[9px] font-bold text-zinc-500">{item.icon}</span><span className="min-w-0 flex-1 truncate">{item.label}</span><span className="text-[9px] uppercase text-zinc-600">Soon</span></span>;
+    }
+    return <Link key={item.id} href={href} aria-current={active ? "page" : undefined} title={item.description ?? item.label} className={classes}><span className="flex h-6 w-6 shrink-0 items-center justify-center border border-zinc-700 text-[9px] font-bold text-zinc-400 group-hover:border-zinc-500">{item.icon}</span><span className="min-w-0 flex-1 truncate">{item.label}</span>{badge !== null ? <span className="min-w-6 border border-zinc-700 bg-zinc-950 px-1.5 py-0.5 text-center text-[10px] font-bold tabular-nums text-zinc-300">{badge}</span> : null}</Link>;
+  }
+
   async function handleOrganizationChange(
     nextOrganizationId: string,
   ) {
@@ -458,11 +507,11 @@ useEffect(() => {
   return (
     <main className="min-h-screen bg-zinc-950 text-white">
       <div className="flex min-h-screen flex-col xl:flex-row">
-        <aside className="w-full border-b border-zinc-800 bg-zinc-900 p-6 xl:w-80 xl:border-b-0 xl:border-r">
+        <aside className="flex w-full flex-col border-b border-zinc-800 bg-zinc-900 p-4 xl:sticky xl:top-0 xl:h-screen xl:w-72 xl:border-b-0 xl:border-r xl:p-5">
           <h1 className="text-2xl font-black tracking-wide text-red-500">STONER</h1>
           <p className="mt-1 text-sm text-zinc-400">Genesis Commerce Platform</p>
 
-          <section className="mt-8 rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+          <section className="mt-6 border border-zinc-800 bg-zinc-950/70 p-4">
             <p className="text-xs uppercase tracking-[0.25em] text-zinc-500">Workspace Context</p>
             <p className="mt-2 text-sm font-semibold text-white">{foundationContext.user.name}</p>
             <p className="text-xs text-zinc-400">{foundationContext.user.email}</p>
@@ -476,7 +525,7 @@ useEffect(() => {
             <select
               value={effectiveOrganizationId}
               onChange={(event) => handleOrganizationChange(event.target.value)}
-              className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500"
+              className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
             >
               {foundationContext.organizations.map((organization) => (
                 <option key={organization.id} value={organization.id}>
@@ -491,7 +540,7 @@ useEffect(() => {
             <select
               value={effectiveSiteId}
               onChange={(event) => handleSiteChange(event.target.value)}
-              className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500"
+              className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
             >
               <option value="">Select a site context</option>
               {availableSites.map((site) => (
@@ -525,39 +574,23 @@ useEffect(() => {
             ) : null}
           </section>
 
-          <nav className="mt-8 space-y-2">
-            {visibleNavigationItems
-              .filter((item) => !COLLAPSIBLE_NAVIGATION_LABELS.has(item.label))
-              .map((item) => {
-                const active = pathname === item.href;
+          <nav aria-label="Primary operator navigation" className="mt-5 flex min-h-0 flex-1 flex-col overflow-y-auto pr-1">
+            <div className="space-y-1 border-b border-zinc-800 pb-4">
+              {visibleNavigationItems.filter((item) => item.group === "DASHBOARD").map((item) => navigationLink(item, true))}
+            </div>
+            {OPERATOR_GROUPS.map((group) => {
+              const items = visibleNavigationItems.filter((item) => item.group === group);
+              if (!items.length) return null;
+              return <section key={group} aria-labelledby={`nav-${group.replaceAll(" ", "-").toLowerCase()}`} className="mt-4"><p id={`nav-${group.replaceAll(" ", "-").toLowerCase()}`} className="mb-1 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600">{group}</p><div className="space-y-0.5">{items.map((item) => navigationLink(item))}</div></section>;
+            })}
 
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className={`block w-full rounded-lg px-4 py-3 text-left text-sm transition ${
-                      active
-                        ? "bg-red-600 text-white"
-                        : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-
-            <div className="pt-2">
+            <div className="mt-4 border-t border-zinc-800 pt-3">
               <button
                 type="button"
                 onClick={() => setMoreNavOpen((open) => !open)}
-                className="flex w-full items-center justify-between rounded-lg border border-zinc-800 px-4 py-3 text-left text-sm text-zinc-300 transition hover:border-zinc-700 hover:bg-zinc-800 hover:text-white"
+                className="flex w-full items-center justify-between px-3 py-2 text-left text-xs text-zinc-500 transition hover:bg-zinc-800 hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
-                <span className="flex items-center gap-2">
-                  <span>More</span>
-                  <span className="text-[10px] uppercase tracking-wider text-zinc-600">
-                    In Development
-                  </span>
-                </span>
+                <span>More tools</span>
 
                 <span className="text-xs text-zinc-500">
                   {moreNavOpen ? "-" : "+"}
@@ -565,30 +598,15 @@ useEffect(() => {
               </button>
 
               {moreNavOpen ? (
-                <div className="mt-2 space-y-1 border-l border-zinc-800 pl-3">
+                <div className="mt-1 space-y-0.5 border-l border-zinc-800 pl-2">
                   {visibleNavigationItems
-                    .filter((item) =>
-                      COLLAPSIBLE_NAVIGATION_LABELS.has(item.label),
-                    )
-                    .map((item) => {
-                      const active = pathname === item.href;
-
-                      return (
-                        <Link
-                          key={item.id}
-                          href={item.href}
-                          className={`block w-full rounded-lg px-3 py-2 text-left text-xs transition ${
-                            active
-                              ? "bg-red-600 text-white"
-                              : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                          }`}
-                        >
-                          {item.label}
-                        </Link>
-                      );
-                    })}
+                    .filter((item) => item.group === "MORE")
+                    .map((item) => navigationLink(item))}
                 </div>
               ) : null}
+            </div>
+            <div className="mt-auto border-t border-zinc-800 pt-4">
+              {visibleNavigationItems.filter((item) => item.group === "UTILITY").map((item) => navigationLink(item))}
             </div>
           </nav>
         </aside>
@@ -605,13 +623,6 @@ useEffect(() => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Link
-                href="/search"
-                className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 transition hover:border-red-500 hover:text-white"
-              >
-                Enterprise Search
-              </Link>
-
               <button
                 type="button"
                 disabled={!canUseCommandPalette}
@@ -633,7 +644,7 @@ useEffect(() => {
                 value={commandQuery}
                 onChange={(event) => setCommandQuery(event.target.value)}
                 placeholder="Search foundation commands"
-                className="mt-2 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-white outline-none focus:border-red-500"
+                className="mt-2 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-white outline-none focus:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
               />
 
               <ul className="mt-4 space-y-2">
