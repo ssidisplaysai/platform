@@ -77,6 +77,10 @@ function genesis_pe_bridge_update_v1(WP_REST_Request $request) {
         $before_token = wp_json_encode($read['widget_html'], JSON_UNESCAPED_UNICODE);
         $after_token = wp_json_encode($replacement, JSON_UNESCAPED_UNICODE);
     }
+    if (substr_count($read['raw'], $before_token) === 0) {
+        $before_token = wp_json_encode($read['widget_html']);
+        $after_token = wp_json_encode($replacement);
+    }
     if (substr_count($read['raw'], $before_token) !== 1) return new WP_Error('genesis_bridge_widget_token_conflict', 'Exact widget token cardinality required.', ['status' => 409]);
     $updated = str_replace($before_token, $after_token, $read['raw'], $count);
     if ($count !== 1) return new WP_Error('genesis_bridge_update_cardinality', 'One widget HTML replacement required.', ['status' => 409]);
