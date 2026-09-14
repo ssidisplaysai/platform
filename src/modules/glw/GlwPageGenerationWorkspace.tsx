@@ -1,4 +1,5 @@
 "use client";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -285,11 +286,11 @@ export function GlwPageGenerationWorkspace({
     try {
       const response = await fetch("/api/glw/page-generation", {
         method: "POST",
-        headers: {
+        headers: operatorMutationHeaders({
           "Content-Type": "application/json",
           "x-gcp-roles": requestRoles.join(","),
           "x-gcp-organization-id": organizationId,
-        },
+        }),
         body: JSON.stringify({ form }),
       });
       const body = await response.json() as { job?: GlwPageExecutionRecord; error?: string };
@@ -314,11 +315,11 @@ export function GlwPageGenerationWorkspace({
     try {
       const response = await fetch("/api/glw/page-generation", {
         method: "POST",
-        headers: {
+        headers: operatorMutationHeaders({
           "Content-Type": "application/json",
           "x-gcp-roles": requestRoles.join(","),
           "x-gcp-organization-id": organizationId,
-        },
+        }),
         body: JSON.stringify({
           action: "continue",
           jobId: execution.jobId,
@@ -370,11 +371,11 @@ export function GlwPageGenerationWorkspace({
         `/api/sites/${encodeURIComponent(initialSite.siteId)}/content-discovery`,
         {
           method: "POST",
-          headers: {
+          headers: operatorMutationHeaders({
             "x-gcp-roles": requestRoles.join(","),
             "x-gcp-organization-id": organizationId,
             "x-gcp-site-id": initialSite.siteId,
-          },
+          }),
         },
       );
 
@@ -551,7 +552,7 @@ export function GlwPageGenerationWorkspace({
         `/api/sites/${encodeURIComponent(initialSite.siteId)}/content-discovery/approve`,
         {
           method: "POST",
-          headers: {
+          headers: operatorMutationHeaders({
             "content-type":
               "application/json",
             "x-gcp-roles":
@@ -560,7 +561,7 @@ export function GlwPageGenerationWorkspace({
               organizationId,
             "x-gcp-site-id":
               initialSite.siteId,
-          },
+          }),
           body: JSON.stringify({
             candidates: selectedCandidates,
           }),

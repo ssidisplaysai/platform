@@ -1,4 +1,5 @@
 "use client";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 
 import React, { useState } from "react";
 
@@ -7,7 +8,7 @@ export function GlwVisualReviewAction(props: { endpoint: string; organizationId:
   const run = async (mode: "CURRENT" | "RECAPTURE") => {
     setRunning(true); setError(null);
     try {
-      const response = await fetch(props.endpoint, { method: "POST", headers: { "content-type": "application/json", "x-gcp-roles": "ops_manager", "x-gcp-organization-id": props.organizationId, "x-gcp-site-id": props.siteId }, body: JSON.stringify({ mode }) });
+      const response = await fetch(props.endpoint, { method: "POST", headers: operatorMutationHeaders({ "content-type": "application/json", "x-gcp-roles": "ops_manager", "x-gcp-organization-id": props.organizationId, "x-gcp-site-id": props.siteId }), body: JSON.stringify({ mode }) });
       const body = await response.json().catch(() => null) as { error?: string } | null;
       if (!response.ok) throw new Error(body?.error ?? "Visual capture failed");
       window.location.reload();

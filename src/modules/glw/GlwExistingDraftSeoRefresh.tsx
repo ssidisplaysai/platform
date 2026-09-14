@@ -1,4 +1,5 @@
 "use client";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 
 import { useState } from "react";
 
@@ -53,12 +54,12 @@ export function GlwExistingDraftSeoRefresh({
     try {
       const response = await fetch("/api/glw/page-generation/seo-refresh", {
         method: "POST",
-        headers: {
+        headers: operatorMutationHeaders({
           "Content-Type": "application/json",
           "x-gcp-roles": "platform_admin",
           "x-gcp-organization-id": organizationId,
           "x-gcp-site-id": siteId,
-        },
+        }),
         body: JSON.stringify({
           jobId: exactJobId,
           confirm: "REFRESH_EXISTING_DRAFT_SEO",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 
@@ -117,7 +118,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
 
     const response = await fetch(endpoint, {
       method: "PATCH",
-      headers: { ...headers, "Content-Type": "application/json" },
+      headers: operatorMutationHeaders({ ...headers, "Content-Type": "application/json" }),
       body: JSON.stringify({ instructions }),
     });
 
@@ -141,7 +142,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
 
     const response = await fetch(generateEndpoint, {
       method: "POST",
-      headers,
+      headers: operatorMutationHeaders(headers),
     });
 
     const payload = await response.json() as {
@@ -174,7 +175,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
 
     const response = await fetch(endpoint, {
       method: "POST",
-      headers,
+      headers: operatorMutationHeaders(headers),
       body: form,
     });
 
@@ -198,10 +199,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     try {
       const response = await fetch(referenceEndpoint, {
         method: "POST",
-        headers: {
+        headers: operatorMutationHeaders({
           ...headers,
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           stateCode: referenceState,
         }),
@@ -228,10 +229,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     try {
       const response = await fetch(referenceEndpoint, {
         method: "PATCH",
-        headers: {
+        headers: operatorMutationHeaders({
           ...headers,
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           stateCode: referenceState,
           jobId,
@@ -262,7 +263,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
         `/api/glw/campaigns/${campaign.campaignId}/activate`,
         {
           method: "POST",
-          headers,
+          headers: operatorMutationHeaders(headers),
         },
       );
 
@@ -308,10 +309,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     try {
       const response = await fetch(referenceEndpoint, {
         method: "POST",
-        headers: {
+        headers: operatorMutationHeaders({
           ...headers,
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify({
           stateCode: referenceState,
           action: "continue",

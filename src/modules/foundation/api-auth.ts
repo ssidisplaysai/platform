@@ -1,20 +1,7 @@
 import type { NextRequest } from "next/server";
 import type { AppRole, PermissionAction } from "./types";
 import { resolvePermissions } from "./permissions";
-
-const ALLOWED_ROLES: readonly AppRole[] = [
-  "platform_admin",
-  "ops_manager",
-  "operations",
-  "company_operator",
-  "analyst",
-  "manufacturing_planner",
-  "manufacturing_engineer",
-  "production_supervisor",
-  "executive",
-  "administrator",
-  "viewer",
-];
+import { resolveAuthenticatedOperatorPrincipal, validateOperatorMutationRequest } from "./operator-session";
 
 export type AuthorizationResult = {
   ok: boolean;
@@ -42,39 +29,22 @@ function normalizeScopeValue(value: string | null): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function parseRequestRoles(request: NextRequest): readonly AppRole[] {
-  const header = request.headers.get("x-gcp-roles");
-  if (!header) {
-    return [];
-  }
-
-  const roles = header
-    .split(",")
-    .map((value) => value.trim())
-    .filter((value): value is AppRole =>
-      (ALLOWED_ROLES as readonly string[]).includes(value),
-    );
-
-  return roles;
+export function resolveRequestRoles(request: NextRequest, environment: NodeJS.ProcessEnv = process.env): readonly AppRole[] {
+  const resolution = resolveAuthenticatedOperatorPrincipal(request, new Date(), environment);
+  return resolution.ok ? resolution.principal.roles : ["viewer"];
 }
 
-export function resolveRequestRoles(request: NextRequest): readonly AppRole[] {
-  const roles = parseRequestRoles(request);
-  return roles.length > 0 ? roles : ["viewer"];
-}
-
-export function isAuthorized(request: NextRequest, permission: PermissionAction): boolean {
-  const roles = resolveRequestRoles(request);
-  const permissions = resolvePermissions(roles);
-  return permissions.has(permission);
+export function isAuthorized(request: NextRequest, permission: PermissionAction, environment: NodeJS.ProcessEnv = process.env): boolean {
+  return authorizeRequest(request, permission, environment).ok;
 }
 
 export function authorizeRequest(
   request: NextRequest,
   permission: PermissionAction,
+  environment: NodeJS.ProcessEnv = process.env,
 ): AuthorizationResult {
-  const roles = parseRequestRoles(request);
-  if (roles.length === 0) {
+  const resolution = resolveAuthenticatedOperatorPrincipal(request, new Date(), environment);
+  if (!resolution.ok) {
     return {
       ok: false,
       status: 401,
@@ -83,8 +53,18 @@ export function authorizeRequest(
     };
   }
 
+  const roles = resolution.principal.roles;
   const permissions = resolvePermissions(roles);
   if (!permissions.has(permission)) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Forbidden",
+      roles,
+    };
+  }
+
+  if (!["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase()) && !validateOperatorMutationRequest(request, resolution)) {
     return {
       ok: false,
       status: 403,
@@ -121,10 +101,9 @@ export function hasOrganizationScope(scope: RequestScope): boolean {
   return Boolean(scope.organizationId);
 }
 
-export function resolveRequestPrincipal(request: NextRequest): RequestPrincipal | null {
-  const principalId = normalizeScopeValue(request.headers.get("x-gcp-principal-id"));
-  const sessionId = normalizeScopeValue(request.headers.get("x-gcp-session-id"));
-  return principalId && sessionId ? { principalId, sessionId } : null;
+export function resolveRequestPrincipal(request: NextRequest, environment: NodeJS.ProcessEnv = process.env): RequestPrincipal | null {
+  const resolution = resolveAuthenticatedOperatorPrincipal(request, new Date(), environment);
+  return resolution.ok ? { principalId: resolution.principal.principalId, sessionId: resolution.principal.sessionId } : null;
 }
 
 export function isRecordInScope(input: {

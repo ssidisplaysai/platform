@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 
 type QueueSummary = {
   total: number;
@@ -173,7 +174,6 @@ export function GlwCampaignOperatorControls({
   organizationId,
   siteId,
   campaignStatus,
-  principalId,
 }: Props) {
   const router = useRouter();
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
@@ -188,28 +188,17 @@ export function GlwCampaignOperatorControls({
   const [refreshingSeo, setRefreshingSeo] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState("");
-
-  useEffect(() => {
-    const key = "gcp.ownerDispatchSessionId";
-    const existing = sessionStorage.getItem(key);
-    const resolved = existing || crypto.randomUUID();
-    if (!existing) sessionStorage.setItem(key, resolved);
-    queueMicrotask(() => setSessionId(resolved));
-  }, []);
-
   const requestHeaders = useCallback((includeJson = false): HeadersInit => {
-    return {
+    const headers = {
       ...(includeJson ? { "Content-Type": "application/json" } : {}),
       "x-gcp-roles": "platform_admin",
       "x-gcp-organization-id": organizationId,
       "x-gcp-site-id": siteId,
-      ...(sessionId ? { "x-gcp-principal-id": principalId, "x-gcp-session-id": sessionId } : {}),
     };
-  }, [organizationId, principalId, sessionId, siteId]);
+    return includeJson ? operatorMutationHeaders(headers) : headers;
+  }, [organizationId, siteId]);
 
   const loadScheduler = useCallback(async () => {
-    if (!sessionId) return;
     setLoading(true);
 
     const [schedulerResponse, seoResponse, publishResponse] = await Promise.all([
@@ -246,7 +235,7 @@ export function GlwCampaignOperatorControls({
     setPublishPreview(publishResponse.ok && publishPayload ? publishPayload : null);
     setError(null);
     setLoading(false);
-  }, [campaignId, requestHeaders, sessionId]);
+  }, [campaignId, requestHeaders]);
 
   async function refreshWorkspace() {
     await loadScheduler();

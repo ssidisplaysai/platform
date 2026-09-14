@@ -1,0 +1,3 @@
+export const OPERATOR_CSRF_HEADER = "x-genesis-csrf-token";
+export function readOperatorCsrfToken() { if (typeof document === "undefined") return ""; const cookie = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith("genesis_operator_csrf=")); return cookie ? decodeURIComponent(cookie.slice(cookie.indexOf("=") + 1)) : ""; }
+export function operatorMutationHeaders(headers: HeadersInit = {}) { return { ...Object.fromEntries(new Headers(headers).entries()), [OPERATOR_CSRF_HEADER]: readOperatorCsrfToken() }; }

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 import { GlwCampaignOperationsList } from "./GlwCampaignOperationsList";
@@ -29,7 +30,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
     setSaving(true); setMessage(null);
     const response = await fetch("/api/glw/campaigns", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-gcp-roles": "platform_admin", "x-gcp-organization-id": organizationId, ...(selectedSiteId ? { "x-gcp-site-id": selectedSiteId } : {}) },
+      headers: operatorMutationHeaders({ "Content-Type": "application/json", "x-gcp-roles": "platform_admin", "x-gcp-organization-id": organizationId, ...(selectedSiteId ? { "x-gcp-site-id": selectedSiteId } : {}) }),
       body: JSON.stringify({ organizationId, siteId: selectedSiteId, productId, name, pageType: "state_service", stateCodes: allStates ? GLW_CAMPAIGN_US_STATES.map((state) => state.code) : [], pagesPerDay, publicationPolicy, imageRequired: true }),
     });
     const payload = (await response.json()) as { campaign?: GlwCampaign; errors?: string[]; error?: string };
