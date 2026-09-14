@@ -1,0 +1,176 @@
+import "server-only";
+
+import type { SiteConfiguration } from "./types";
+import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-authority";
+import { findStoredWordPressCredentialReferenceForSite } from "./wordpress-credential-store";
+import {
+  resolveWordPressCredentialReference,
+  type ResolvedWordPressCredential,
+} from "./wordpress-credential-resolver";
+
+export type WordPressReadAuthorityHealthState =
+  | "READY"
+  | "CONNECTION_REQUIRED"
+  | "REPAIR_REQUIRED"
+  | "BLOCKED";
+
+export type SiteWordPressReadAuthorityStatus = {
+  siteId: string;
+  organizationId: string;
+  domain: string | null;
+  wordpressBaseUrl: string | null;
+  configuredIdentityReference: string | null;
+  configuredUsername: string | null;
+  authoritySource: "DURABLE_CREDENTIAL_REGISTRY" | "LEGACY_RUNTIME_ENVIRONMENT" | "NONE";
+  authorityHealthState: WordPressReadAuthorityHealthState;
+  credentialConfigured: boolean;
+  authenticatedIdentityResolved: boolean;
+  authenticatedUserId: number | null;
+  anonymousReadHttp: number | null;
+  authenticatedReadHttp: number | null;
+  reason: string;
+  recoveryAction: "CONNECT_WORDPRESS" | "REPAIR_WORDPRESS_AUTHORITY" | null;
+  recoveryHref: string | null;
+  lastCheckedAt: string;
+};
+
+type Fetcher = typeof fetch;
+type Resolver = (reference: string | null) => ResolvedWordPressCredential | null;
+
+function recoveryHref(site: SiteConfiguration): string {
+  return `/sites/${encodeURIComponent(site.siteId)}/onboarding?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}&focus=wordpress`;
+}
+
+export function resolveSiteScopedWordPressCredential(
+  site: SiteConfiguration,
+  resolver: Resolver = resolveWordPressCredentialReference,
+  ownedReferenceFinder = findStoredWordPressCredentialReferenceForSite,
+): ResolvedWordPressCredential | null {
+  const reference = site.integrations.wordpressCredentialReference?.trim() ?? "";
+  if (!reference) return null;
+  if (reference.startsWith("credref-wp-")) {
+    const ownedReference = ownedReferenceFinder({
+      organizationId: site.organizationId,
+      siteId: site.siteId,
+    });
+    if (ownedReference !== reference) return null;
+  }
+  return resolver(reference);
+}
+
+export async function inspectSiteWordPressReadAuthority(
+  site: SiteConfiguration,
+  dependencies: {
+    fetcher?: Fetcher;
+    resolver?: Resolver;
+    ownedReferenceFinder?: typeof findStoredWordPressCredentialReferenceForSite;
+  } = {},
+): Promise<SiteWordPressReadAuthorityStatus> {
+  const checkedAt = new Date().toISOString();
+  const rawBaseUrl = site.integrations.wordpressApiBaseUrl?.trim() ?? "";
+  const reference = site.integrations.wordpressCredentialReference?.trim() ?? "";
+  const authoritySource = reference.startsWith("credref-wp-")
+    ? "DURABLE_CREDENTIAL_REGISTRY"
+    : reference
+      ? "LEGACY_RUNTIME_ENVIRONMENT"
+      : "NONE";
+  const base = {
+    siteId: site.siteId,
+    organizationId: site.organizationId,
+    domain: site.domain,
+    wordpressBaseUrl: rawBaseUrl || null,
+    configuredIdentityReference: reference || null,
+    configuredUsername: null,
+    authoritySource,
+    credentialConfigured: false,
+    authenticatedIdentityResolved: false,
+    authenticatedUserId: null,
+    anonymousReadHttp: null,
+    authenticatedReadHttp: null,
+    lastCheckedAt: checkedAt,
+  } as const;
+  const href = recoveryHref(site);
+
+  if (!site.enabled) {
+    return { ...base, authorityHealthState: "BLOCKED", reason: "The campaign site is disabled.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
+  }
+  if (!rawBaseUrl || !reference) {
+    return { ...base, authorityHealthState: "CONNECTION_REQUIRED", reason: "WordPress endpoint or credential identity is not configured for this site.", recoveryAction: "CONNECT_WORDPRESS", recoveryHref: href };
+  }
+
+  let apiBaseUrl: string;
+  try {
+    apiBaseUrl = normalizeWordPressApiBaseUrl(rawBaseUrl);
+  } catch {
+    return { ...base, authorityHealthState: "REPAIR_REQUIRED", reason: "The configured WordPress endpoint is invalid.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
+  }
+
+  const fetcher = dependencies.fetcher ?? fetch;
+  let anonymousReadHttp: number | null = null;
+  try {
+    const anonymous = await fetcher(`${apiBaseUrl}/pages?per_page=1&_fields=id`, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+    anonymousReadHttp = anonymous.status;
+  } catch {
+    // The authenticated result below remains authoritative for operator readiness.
+  }
+
+  let credential: ResolvedWordPressCredential | null = null;
+  try {
+    credential = resolveSiteScopedWordPressCredential(
+      site,
+      dependencies.resolver,
+      dependencies.ownedReferenceFinder,
+    );
+  } catch {
+    return { ...base, credentialConfigured: true, anonymousReadHttp, authorityHealthState: "REPAIR_REQUIRED", reason: "The site credential exists but is unavailable to this runtime.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
+  }
+  if (!credential) {
+    return { ...base, anonymousReadHttp, authorityHealthState: "CONNECTION_REQUIRED", reason: "This site has no credential available to the operator runtime.", recoveryAction: "CONNECT_WORDPRESS", recoveryHref: href };
+  }
+
+  let response: Response;
+  try {
+    response = await fetcher(`${apiBaseUrl}/users/me?context=edit&_fields=id,username,name&_genesis_authority=${crypto.randomUUID()}`, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Basic ${Buffer.from(`${credential.username}:${credential.applicationPassword}`).toString("base64")}`,
+        "Cache-Control": "no-cache, no-store",
+        Pragma: "no-cache",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    return { ...base, configuredUsername: credential.username, credentialConfigured: true, anonymousReadHttp, authorityHealthState: "REPAIR_REQUIRED", reason: "The configured WordPress authority could not be reached.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
+  }
+
+  if (!response.ok) {
+    return { ...base, configuredUsername: credential.username, credentialConfigured: true, anonymousReadHttp, authenticatedReadHttp: response.status, authorityHealthState: "REPAIR_REQUIRED", reason: response.status === 401 || response.status === 403 ? "WordPress rejected the configured authenticated identity." : "WordPress authenticated read verification failed.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
+  }
+
+  const identity = await response.json().catch(() => null) as { id?: unknown; username?: unknown } | null;
+  const userId = Number(identity?.id ?? 0);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    return { ...base, configuredUsername: credential.username, credentialConfigured: true, anonymousReadHttp, authenticatedReadHttp: response.status, authorityHealthState: "REPAIR_REQUIRED", reason: "WordPress returned no usable authenticated identity.", recoveryAction: "REPAIR_WORDPRESS_AUTHORITY", recoveryHref: href };
+  }
+
+  return {
+    ...base,
+    configuredUsername: typeof identity?.username === "string" && identity.username.trim() ? identity.username.trim() : credential.username,
+    credentialConfigured: true,
+    authenticatedIdentityResolved: true,
+    authenticatedUserId: userId,
+    anonymousReadHttp,
+    authenticatedReadHttp: response.status,
+    authorityHealthState: "READY",
+    reason: "Authenticated WordPress read authority is ready for this site.",
+    recoveryAction: null,
+    recoveryHref: null,
+  };
+}

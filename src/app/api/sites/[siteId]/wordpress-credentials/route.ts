@@ -13,9 +13,9 @@ import {
   updateSite,
 } from "@/modules/foundation/site-repository";
 import {
-  hasStoredWordPressCredential,
   storeWordPressCredential,
 } from "@/modules/foundation/wordpress-credential-store";
+import { inspectSiteWordPressReadAuthority } from "@/modules/foundation/wordpress-read-authority-status";
 
 type RouteContext = {
   params: Promise<{
@@ -65,15 +65,12 @@ export async function GET(
     );
   }
 
-  const reference =
-    site.integrations.wordpressCredentialReference;
-
+  const authority = await inspectSiteWordPressReadAuthority(site);
   return NextResponse.json({
-    configured:
-      hasStoredWordPressCredential(reference) ||
-      Boolean(reference),
+    configured: authority.credentialConfigured,
     managedByGenesis:
-      hasStoredWordPressCredential(reference),
+      authority.authoritySource === "DURABLE_CREDENTIAL_REGISTRY",
+    authority,
   });
 }
 

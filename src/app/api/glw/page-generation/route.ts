@@ -9,7 +9,7 @@ import { listIntegrationProfiles } from "@/modules/foundation/integration-profil
 import { loadProjectorEnclosureSeoAuthority, type ProjectorEnclosureKeywordOwner, type ProjectorEnclosureSeoSelection } from "@/modules/foundation/projectorenclosure-seo-authority";
 import { getProductById, listProducts } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
-import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
+import { resolveSiteScopedWordPressCredential } from "@/modules/foundation/wordpress-read-authority-status";
 
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { attachGenesisWordPressExistingFeaturedImage, attachGenesisWordPressFeaturedImage } from "@/modules/foundation/wordpress-media-writer";
@@ -595,8 +595,16 @@ async function resolveAuthorizedPreview(form: GlwGenerationRequestInput, organiz
 
 async function verifyMutationAuthority(request: GlwGenerationRequest, siteRecord: NonNullable<ReturnType<typeof getSiteById>>) {
   const apiBaseUrl = siteRecord.integrations.wordpressApiBaseUrl?.trim() ?? "";
-  const credentialReference = siteRecord.integrations.wordpressCredentialReference?.trim() ?? "";
-  const credential = resolveWordPressCredentialReference(credentialReference);
+  let credential;
+  try {
+    credential = resolveSiteScopedWordPressCredential(siteRecord);
+  } catch {
+    return {
+      error: "Authenticated WordPress read authority could not be initialized.",
+      code: "WORDPRESS_READ_AUTHORITY_INVALID",
+      status: 503,
+    } as const;
+  }
 
   if (!apiBaseUrl || !credential) {
     return {

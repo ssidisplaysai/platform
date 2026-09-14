@@ -72,10 +72,11 @@ function normalizedDomain(value: string): string {
 export function FreshSiteOnboardingFlow(input: {
   initialSite?: SiteConfiguration | null;
   mode?: "create" | "configure";
+  focusWordPress?: boolean;
 } = {}) {
   const configureMode = input.mode === "configure" && Boolean(input.initialSite);
   const organizations = CompanyRepository.getActive();
-  const [step, setStep] = useState<Step>(configureMode ? 4 : 1);
+  const [step, setStep] = useState<Step>(configureMode ? input.focusWordPress ? 3 : 4 : 1);
   const [intent, setIntent] = useState<"fresh" | "existing">("fresh");
   const [organizationId, setOrganizationId] = useState(input.initialSite?.organizationId ?? organizations[0]?.id ?? "");
   const [siteName, setSiteName] = useState(input.initialSite?.siteName ?? "");
@@ -96,7 +97,7 @@ export function FreshSiteOnboardingFlow(input: {
   const [site, setSite] = useState<SiteConfiguration | null>(input.initialSite ?? null);
   const [username, setUsername] = useState("");
   const [applicationPassword, setApplicationPassword] = useState("");
-  const [credentialsStored, setCredentialsStored] = useState(Boolean(input.initialSite?.integrations.wordpressCredentialReference));
+  const [credentialsStored, setCredentialsStored] = useState(false);
   const [profiles, setProfiles] = useState<IntegrationProfileConfiguration[]>([]);
   const [selectedProfiles, setSelectedProfiles] = useState({
     seoProfileReference: input.initialSite?.profiles.seoProfileReference ?? "",
@@ -150,6 +151,26 @@ export function FreshSiteOnboardingFlow(input: {
     void loadProfiles();
     return () => { cancelled = true; };
   }, [organizationId]);
+
+  useEffect(() => {
+    if (!site) return;
+    const currentSite = site;
+    let cancelled = false;
+    async function loadCredentialStatus() {
+      try {
+        const response = await fetch(`/api/sites/${encodeURIComponent(currentSite.siteId)}/wordpress-credentials`, {
+          headers: headers(currentSite.organizationId, currentSite.siteId),
+          cache: "no-store",
+        });
+        const payload = await response.json() as { configured?: boolean };
+        if (!cancelled) setCredentialsStored(response.ok && payload.configured === true);
+      } catch {
+        if (!cancelled) setCredentialsStored(false);
+      }
+    }
+    void loadCredentialStatus();
+    return () => { cancelled = true; };
+  }, [site]);
 
   function resetEvidence() {
     setPreflight(null);

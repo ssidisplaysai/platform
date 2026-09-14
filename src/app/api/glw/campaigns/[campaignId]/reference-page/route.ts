@@ -3,6 +3,7 @@ import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/m
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { inspectSiteWordPressReadAuthority } from "@/modules/foundation/wordpress-read-authority-status";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import {
   approveGlwCampaignReference,
@@ -154,6 +155,7 @@ export async function GET(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
+  const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);
 
   const profileCount = listIntegrationProfiles({
     organizationId: siteRecord.organizationId,
@@ -198,6 +200,7 @@ export async function GET(request: NextRequest, context: Context) {
       approval,
       approved: false,
       recoveryError: null,
+      wordpressAuthority,
     });
   }
 
@@ -228,6 +231,7 @@ export async function GET(request: NextRequest, context: Context) {
         city: target.cityName ? { name: target.cityName, slug: target.citySlug } : null,
         job,
         recoveryError: recovered?.recoveryError ?? null,
+        wordpressAuthority,
       },
       { status: recoveryResponse.ok ? 200 : recoveryResponse.status },
     );
@@ -244,6 +248,7 @@ export async function GET(request: NextRequest, context: Context) {
       && approval?.jobId === job.jobId
       && approval?.wordpressObjectId === job.wordpressObjectId,
     recoveryError: null,
+    wordpressAuthority,
   });
 }
 
@@ -410,6 +415,23 @@ export async function POST(request: NextRequest, context: Context) {
   if (!siteRecord || !productRecord) {
     return NextResponse.json(
       { error: "Campaign site and product must still exist." },
+      { status: 409 },
+    );
+  }
+  const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);
+  if (wordpressAuthority.authorityHealthState !== "READY") {
+    return NextResponse.json(
+      {
+        error: "Authenticated WordPress read authority is required before generation or continuation.",
+        code: "WORDPRESS_READ_AUTHORITY_REQUIRED",
+        wordpressAuthority,
+        referencePageGenerated: false,
+        generationAllowanceConsumed: false,
+        leaseCreated: false,
+        generationJobCreated: false,
+        publicationPerformed: false,
+        wordpressMutationPerformed: false,
+      },
       { status: 409 },
     );
   }

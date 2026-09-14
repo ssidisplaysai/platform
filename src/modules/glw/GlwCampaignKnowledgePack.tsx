@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 
@@ -38,6 +38,19 @@ type ReferenceResult = Record<string, unknown> & {
   approved?: boolean;
   error?: string;
   recoveryError?: string | null;
+  wordpressAuthority?: WordPressAuthorityStatus;
+};
+
+type WordPressAuthorityStatus = {
+  siteId: string;
+  domain: string | null;
+  wordpressBaseUrl: string | null;
+  configuredUsername: string | null;
+  authorityHealthState: "READY" | "CONNECTION_REQUIRED" | "REPAIR_REQUIRED" | "BLOCKED";
+  reason: string;
+  recoveryAction: "CONNECT_WORDPRESS" | "REPAIR_WORDPRESS_AUTHORITY" | null;
+  recoveryHref: string | null;
+  lastCheckedAt: string;
 };
 
 export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaign: GlwCampaign; organizationId: string }) {
@@ -57,6 +70,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const [activatingCampaign, setActivatingCampaign] = useState(false);
   const [continuationAttemptedJobId, setContinuationAttemptedJobId] = useState<string | null>(null);
   const [referenceResult, setReferenceResult] = useState<ReferenceResult | null>(null);
+  const [wordpressAuthority, setWordpressAuthority] = useState<WordPressAuthorityStatus | null>(null);
 
   const headers = {
     "x-gcp-roles": "platform_admin",
@@ -93,6 +107,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       );
 
       const payload = await response.json() as ReferenceResult;
+      setWordpressAuthority(payload.wordpressAuthority ?? null);
 
       if (!response.ok) {
         setMessage(payload.error ?? "Unable to recover the reference-page job.");
@@ -107,9 +122,15 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     }
   }
 
+  const loadCampaignPack = useEffectEvent(load);
+  const recoverReference = useEffectEvent(recoverReferencePage);
+  const continueReference = useEffectEvent(continueReferencePage);
+
   useEffect(() => {
-    void load();
-    void recoverReferencePage(false);
+    queueMicrotask(() => {
+      void loadCampaignPack();
+      void recoverReference(false);
+    });
   }, [campaign.campaignId, referenceState]);
 
   async function approveInstructions() {
@@ -208,6 +229,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       });
 
       const payload = await response.json() as ReferenceResult;
+      if (payload.wordpressAuthority) setWordpressAuthority(payload.wordpressAuthority);
 
       setReferenceResult(payload);
 
@@ -356,7 +378,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       && !continuingReference
       && continuationAttemptedJobId !== jobId
     ) {
-      void continueReferencePage(jobId);
+      void continueReference(jobId);
       return;
     }
 
@@ -367,7 +389,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       || jobStatus === "RUNNING"
     ) {
       const timer = window.setTimeout(
-        () => void recoverReferencePage(true),
+        () => void recoverReference(true),
         4000,
       );
 
@@ -406,6 +428,15 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     || jobStatus === "DISCOVERING_EXECUTION"
     || jobStatus === "RUNNING"
     || jobStatus === "CONTENT_READY";
+  const wordpressAuthorityState = wordpressAuthority?.authorityHealthState ?? "CHECKING";
+  const wordpressAuthorityReady = wordpressAuthorityState === "READY";
+  const wordpressAuthorityLabel = wordpressAuthorityState === "READY"
+    ? "READY"
+    : wordpressAuthorityState === "CONNECTION_REQUIRED"
+      ? "CONNECTION REQUIRED"
+      : wordpressAuthorityState === "REPAIR_REQUIRED"
+        ? "REPAIR REQUIRED"
+        : wordpressAuthorityState;
 
   return (
     <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
@@ -517,6 +548,23 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
           Generate one state page through the draft-only GLW pipeline. Genesis now preserves and recovers the same reference job across refreshes.
         </p>
 
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950 px-3 py-3 text-xs">
+          <div>
+            <p className="font-semibold text-white">WordPress Authority: {wordpressAuthorityLabel}</p>
+            <p className="mt-1 text-zinc-400">
+              {wordpressAuthority?.reason ?? `Checking authenticated read authority for ${campaign.siteId}.`}
+            </p>
+            {wordpressAuthority?.wordpressBaseUrl ? (
+              <p className="mt-1 text-zinc-500">{wordpressAuthority.siteId} · {wordpressAuthority.domain ?? wordpressAuthority.wordpressBaseUrl}</p>
+            ) : null}
+          </div>
+          {!wordpressAuthorityReady && wordpressAuthority?.recoveryHref ? (
+            <a href={wordpressAuthority.recoveryHref} className="border border-red-600 px-3 py-2 font-semibold text-red-200 hover:bg-red-950">
+              {wordpressAuthority.recoveryAction === "CONNECT_WORDPRESS" ? "Connect WordPress" : "Repair WordPress Authority"}
+            </a>
+          ) : null}
+        </div>
+
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="text-xs text-zinc-300">
             Reference State
@@ -539,7 +587,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
 
           <button
             type="button"
-            disabled={!instructionsApproved || generationBusy || !campaign.stateCodes.includes(referenceState)}
+            disabled={!instructionsApproved || generationBusy || !wordpressAuthorityReady || !campaign.stateCodes.includes(referenceState)}
             onClick={generateReferencePage}
             className="h-10 rounded-lg bg-red-600 px-4 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -550,6 +598,11 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
         {!instructionsApproved ? (
           <p className="mt-2 text-xs text-zinc-500">
             Approve the current instructions to unlock reference generation.
+          </p>
+        ) : null}
+        {instructionsApproved && !wordpressAuthorityReady ? (
+          <p className="mt-2 text-xs text-amber-300">
+            Reference generation remains disabled until this site&apos;s WordPress read authority is ready.
           </p>
         ) : null}
 
