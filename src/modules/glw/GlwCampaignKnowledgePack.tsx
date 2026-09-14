@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
+import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 
 type ReferenceJob = Record<string, unknown> & {
   jobId?: string;
@@ -47,6 +48,16 @@ type ReferenceResult = Record<string, unknown> & {
     job: ReferenceJob;
     workflow: ReferenceWorkflowProjection;
   } | null;
+  selectedReferenceState?: { stateCode: string; selectedAt: string } | null;
+  generationAuthority?: ReferenceAuthorityBinding | null;
+  retryContract?: { referenceState: "IN"; ownerAuthorizationRequired: true; executable: false } | null;
+};
+
+type ReferenceAuthorityBinding = {
+  campaignInstructionFingerprint: string;
+  referenceFingerprint: string;
+  productAuthorityFingerprint: string;
+  qaPolicyVersion: string;
 };
 
 type ReferenceWorkflowProjection = {
@@ -56,7 +67,8 @@ type ReferenceWorkflowProjection = {
     | "REFERENCE_DRAFT_READY"
     | "REFERENCE_RECOVERY_REQUIRED"
     | "REFERENCE_GENERATION_FAILED"
-    | "REFERENCE_BLOCKED";
+    | "REFERENCE_BLOCKED"
+    | "REFERENCE_RETRY_READY";
   operationId: string | null;
   targetStateCode: string | null;
   targetStateName: string | null;
@@ -75,6 +87,9 @@ type ReferenceWorkflowProjection = {
     severity: "BLOCKING";
   }>;
   proposedRecoveryAction: string | null;
+  nextReferenceStateCode?: string | null;
+  retryRequiresNewOwnerAuthorization?: boolean;
+  retryExecutable?: boolean;
 };
 
 type WordPressAuthorityStatus = {
@@ -145,14 +160,15 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
 
       const payload = await response.json() as ReferenceResult;
       setWordpressAuthority(payload.wordpressAuthority ?? null);
+      if (payload.selectedReferenceState?.stateCode) {
+        setReferenceState(payload.selectedReferenceState.stateCode);
+      }
 
       if (!response.ok) {
         setMessage(payload.error ?? "Unable to recover the reference-page job.");
         return;
       }
       if (payload.relatedReference?.job && payload.relatedReference.stateCode) {
-        projectedReferenceState.current = payload.relatedReference.stateCode;
-        setReferenceState(payload.relatedReference.stateCode);
         setReferenceResult({
           ...payload,
           job: payload.relatedReference.job,
@@ -273,6 +289,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
         },
         body: JSON.stringify({
           stateCode: referenceState,
+          referenceAuthorityBinding: referenceResult?.generationAuthority,
         }),
       });
 
@@ -289,6 +306,23 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
     } finally {
       setGeneratingReference(false);
     }
+  }
+
+  async function persistReferenceState(stateCode: string) {
+    setMessage(null);
+    const response = await fetch(referenceEndpoint, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ stateCode }),
+    });
+    const payload = await response.json() as ReferenceResult;
+    if (!response.ok) {
+      setMessage(payload.error ?? "Unable to persist the reference state.");
+      return;
+    }
+    setReferenceState(stateCode);
+    setReferenceResult(null);
+    setContinuationAttemptedJobId(null);
   }
 
   async function approveReferencePage(jobId: string) {
@@ -410,7 +444,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const instructionsApproved = Boolean(pack?.instructions.trim()) && pack?.instructions === instructions;
   const stateOptions = campaign.stateCodes.map((code) => ({
     code,
-    label: code === "CA" ? "California" : code === "TX" ? "Texas" : code,
+    label: GLW_CAMPAIGN_US_STATES.find((state) => state.code === code)?.name ?? code,
   }));
   const selectedStateLabel = stateOptions.find((state) => state.code === referenceState)?.label ?? referenceState;
 
@@ -506,6 +540,8 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
                 ? "Reference Generation Failed"
                 : referenceWorkflow?.state === "REFERENCE_BLOCKED"
                   ? "Reference Blocked"
+                  : referenceWorkflow?.state === "REFERENCE_RETRY_READY"
+                    ? "Indiana Retry Requires New Authorization"
                 : `Generate ${selectedStateLabel} Reference Page`;
 
   return (
@@ -641,9 +677,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
             <select
               value={referenceState}
               onChange={(e) => {
-                setReferenceState(e.target.value);
-                setReferenceResult(null);
-                setContinuationAttemptedJobId(null);
+                void persistReferenceState(e.target.value);
               }}
               className="mt-2 h-10 min-w-48 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white"
             >
@@ -654,6 +688,11 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
               ))}
             </select>
           </label>
+
+          <div className="text-xs text-zinc-300">
+            <p>Reference State: <strong className="text-white">{selectedStateLabel} ({referenceState})</strong></p>
+            <p className="mt-1 text-zinc-500">The exact selection is persisted before authorization.</p>
+          </div>
 
           <button
             type="button"
@@ -668,6 +707,9 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
         {referenceWorkflow ? (
           <div className="mt-3 border border-zinc-800 bg-zinc-950 px-3 py-3 text-xs">
             <p className="font-semibold text-white">Reference Workflow: {referenceWorkflow.state.replaceAll("_", " ")}</p>
+            {referenceWorkflow.state === "REFERENCE_RETRY_READY" ? (
+              <p className="mt-1 font-semibold text-amber-300">Next Reference State: Indiana (IN)</p>
+            ) : null}
             <p className="mt-1 text-zinc-400">
               Target: {referenceWorkflow.targetStateCode ?? referenceState}
               {referenceWorkflow.operationId ? ` · Operation: ${referenceWorkflow.operationId}` : ""}
@@ -689,6 +731,9 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
             ))}
             {referenceWorkflow.proposedRecoveryAction ? (
               <p className="mt-2 font-semibold text-amber-300">Proposed recovery: {referenceWorkflow.proposedRecoveryAction.replaceAll("_", " ")}</p>
+            ) : null}
+            {referenceWorkflow.state === "REFERENCE_RETRY_READY" ? (
+              <p className="mt-2 text-zinc-300">A new single-use owner authorization is required. Retry remains disabled.</p>
             ) : null}
           </div>
         ) : null}
@@ -726,6 +771,17 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
                 </p>
               </div>
             </div>
+
+            {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? (
+              <div className="mt-4 border border-red-900/60 bg-red-950/20 p-3 text-zinc-300">
+                <p className="font-semibold text-red-300">Prior Reference Failure</p>
+                <p className="mt-1">Failed State: Illinois (IL)</p>
+                <p>Failed Job ID: {jobId}</p>
+                <p>QA failure: required Outdoor Digital Sphere product-authority link was missing; hardened claim QA also blocks unsupported factual claims.</p>
+                <p>No WordPress page was created.</p>
+                <p className="mt-1 font-semibold text-amber-300">Safe status: preserved evidence; do not retry without new exact authorization.</p>
+              </div>
+            ) : null}
 
             {job.status === "COMPLETE" ? (
               <div className="mt-4 rounded-lg border border-emerald-900/60 bg-emerald-950/20 p-3">

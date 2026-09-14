@@ -275,6 +275,12 @@ export type GlwGenerationRequestInput = {
   additionalInstructions?: string;
   imageDirection?: string;
   campaignId?: string;
+  referenceAuthorityBinding?: {
+    campaignInstructionFingerprint: string;
+    referenceFingerprint: string;
+    productAuthorityFingerprint: string;
+    qaPolicyVersion: string;
+  };
   projectorEnclosureSeoAuthority?: ProjectorEnclosureSeoRequestContext;
 };
 

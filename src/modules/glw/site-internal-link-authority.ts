@@ -22,6 +22,10 @@ const GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_ID =
   "prod-indoor-digital-sphere";
 const GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH =
   "/indoor-digital-sphere/";
+const GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID =
+  "prod-outdoor-digital-sphere";
+const GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_PATH =
+  "/outdoor-digital-sphere/";
 
 const INDOOR_DIGITAL_SPHERE_PRODUCT_LINK:
   GlwAllowedInternalLink = {
@@ -30,26 +34,39 @@ const INDOOR_DIGITAL_SPHERE_PRODUCT_LINK:
     authorityClass: "product",
   };
 
+const OUTDOOR_DIGITAL_SPHERE_PRODUCT_LINK: GlwAllowedInternalLink = {
+  href: GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_PATH,
+  anchorText: "Outdoor Digital Sphere",
+  authorityClass: "product",
+};
+
+function productAuthority(productId: string): GlwAllowedInternalLink | null {
+  if (productId === GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_ID) return INDOOR_DIGITAL_SPHERE_PRODUCT_LINK;
+  if (productId === GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID) return OUTDOOR_DIGITAL_SPHERE_PRODUCT_LINK;
+  return null;
+}
+
 function isStateServiceChildPath(
   canonicalPath: string,
+  productPath: string,
 ): boolean {
   if (
     canonicalPath
-      === GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH
+      === productPath
   ) {
     return false;
   }
 
   if (
     !canonicalPath.startsWith(
-      GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH,
+      productPath,
     )
   ) {
     return false;
   }
 
   const remainder = canonicalPath.slice(
-    GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH.length,
+    productPath.length,
   );
 
   return /^[a-z0-9-]+\/$/.test(remainder);
@@ -152,23 +169,24 @@ export function resolveGlwAllowedInternalLinks(
 ): readonly GlwAllowedInternalLink[] {
   const stateCode =
     input.stateCode.trim().toUpperCase();
+  const authority = productAuthority(input.productId);
 
   if (
     input.organizationId
       !== GLW_LED_DISPLAY_WAREHOUSE_ORGANIZATION_ID
     || input.siteId
       !== GLW_LED_DISPLAY_WAREHOUSE_SITE_ID
-    || input.productId
-      !== GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_ID
+    || !authority
     || !/^[A-Z]{2}$/.test(stateCode)
     || !isStateServiceChildPath(
       input.canonicalPath,
+      authority.href,
     )
   ) {
     return [];
   }
 
   return [
-    { ...INDOOR_DIGITAL_SPHERE_PRODUCT_LINK },
+    { ...authority },
   ];
 }

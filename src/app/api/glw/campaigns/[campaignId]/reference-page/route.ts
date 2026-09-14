@@ -5,6 +5,8 @@ import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { inspectSiteWordPressReadAuthority } from "@/modules/foundation/wordpress-read-authority-status";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import { buildGlwExactRetryContract, generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority, type GlwReferenceGenerationAuthorityBinding } from "@/modules/glw/reference-generation-authority";
+import { getGlwReferenceStateSelection, saveGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 import {
   approveGlwCampaignReference,
   getGlwCampaignReferenceApproval,
@@ -16,7 +18,7 @@ import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchRefere
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
-import { findEvidenceBoundLegacyReferenceJob, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
+import { findEvidenceBoundLegacyReferenceJob, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -135,10 +137,11 @@ export async function GET(request: NextRequest, context: Context) {
   }
 
   let target;
+  const durableSelection = getGlwReferenceStateSelection(campaign.campaignId);
   try {
     target = resolveReferenceTarget({
       campaign,
-      stateCode: request.nextUrl.searchParams.get("stateCode") ?? "",
+      stateCode: durableSelection?.stateCode ?? request.nextUrl.searchParams.get("stateCode") ?? "",
       citySlug: request.nextUrl.searchParams.get("citySlug"),
     });
   } catch (error) {
@@ -157,6 +160,10 @@ export async function GET(request: NextRequest, context: Context) {
     );
   }
   const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);
+  const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
+  const generationAuthority = pack
+    ? resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: target.state.code })
+    : null;
 
   const profileCount = listIntegrationProfiles({
     organizationId: siteRecord.organizationId,
@@ -194,7 +201,19 @@ export async function GET(request: NextRequest, context: Context) {
         campaigns: listGlwCampaigns(),
         records,
       });
-  const workflow = projectGlwReferenceWorkflow(job ?? legacyJob);
+  const baseWorkflow = projectGlwReferenceWorkflow(job ?? legacyJob);
+  const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
+  const retryContract = legacyJob && baseWorkflow.artifactSha256 && generationAuthority && /^[0-9a-f]{40}$/.test(exactRuntime)
+    ? buildGlwExactRetryContract({
+        campaign,
+        binding: generationAuthority,
+        failedJobId: legacyJob.jobId,
+        failedArtifactSha256: baseWorkflow.artifactSha256,
+        wordpressReadAuthority: `${wordpressAuthority.siteId}:${wordpressAuthority.authorityHealthState}`,
+        exactRuntime,
+      })
+    : null;
+  const workflow = projectGlwReferenceRetryReadiness(baseWorkflow, durableSelection?.stateCode ?? null, Boolean(retryContract));
   const relatedReference = !job && legacyJob
     ? {
         stateCode: workflow.targetStateCode,
@@ -218,6 +237,9 @@ export async function GET(request: NextRequest, context: Context) {
       approved: false,
       recoveryError: null,
       wordpressAuthority,
+      selectedReferenceState: durableSelection,
+      generationAuthority,
+      retryContract,
       workflow,
       relatedReference,
     });
@@ -270,9 +292,38 @@ export async function GET(request: NextRequest, context: Context) {
       && approval?.wordpressObjectId === job.wordpressObjectId,
     recoveryError: null,
     wordpressAuthority,
+    selectedReferenceState: durableSelection,
+    generationAuthority,
+    retryContract,
     workflow: projectGlwReferenceWorkflow(job),
     relatedReference: null,
   });
+}
+
+export async function PUT(request: NextRequest, context: Context) {
+  const auth = authorizeRequest(request, "sites:update");
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const scope = resolveRequestScope(request);
+  if (!hasOrganizationScope(scope)) return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
+  const { campaignId } = await context.params;
+  const campaign = listGlwCampaigns().find((candidate) => candidate.campaignId === campaignId && candidate.organizationId === scope.organizationId) ?? null;
+  if (!campaign || (scope.siteId && scope.siteId !== campaign.siteId)) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
+  const body = await request.json().catch(() => null) as { stateCode?: string } | null;
+  let target;
+  try {
+    target = resolveReferenceTarget({ campaign, stateCode: body?.stateCode ?? "" });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid campaign target." }, { status: 400 });
+  }
+  const selection = saveGlwReferenceStateSelection({
+    campaignId,
+    organizationId: campaign.organizationId,
+    siteId: campaign.siteId,
+    stateCode: target.state.code,
+    selectedBy: auth.principal.subject,
+    selectedAt: new Date().toISOString(),
+  });
+  return NextResponse.json({ selectedReferenceState: selection, generationPerformed: false, jobCreated: false });
 }
 
 export async function PATCH(request: NextRequest, context: Context) {
@@ -306,6 +357,7 @@ export async function PATCH(request: NextRequest, context: Context) {
     stateCode?: string;
     citySlug?: string;
     jobId?: string;
+    referenceAuthorityBinding?: GlwReferenceGenerationAuthorityBinding;
   } | null;
 
   let target;
@@ -432,6 +484,10 @@ export async function POST(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
+  const durableSelection = getGlwReferenceStateSelection(campaign.campaignId);
+  if (!durableSelection || durableSelection.stateCode !== target.state.code) {
+    return NextResponse.json({ error: "Generation state must exactly match the durable owner selection.", code: "REFERENCE_STATE_BINDING_MISMATCH", generationJobCreated: false }, { status: 409 });
+  }
 
   const siteRecord = getSiteById(campaign.siteId);
   const productRecord = getProductById(campaign.productId);
@@ -457,6 +513,13 @@ export async function POST(request: NextRequest, context: Context) {
       },
       { status: 409 },
     );
+  }
+  const generationAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: target.state.code });
+  if (!generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
+    return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
+  }
+  if (target.state.code === "IN") {
+    return NextResponse.json({ error: "A new single-use owner authorization is required for the Indiana retry. No executable retry grant exists in this task.", code: "REFERENCE_RETRY_AUTHORIZATION_REQUIRED", generationJobCreated: false, automaticRetry: false }, { status: 409 });
   }
 
   const profileCount = listIntegrationProfiles({
@@ -495,6 +558,7 @@ export async function POST(request: NextRequest, context: Context) {
   form.additionalInstructions = generationContext.additionalInstructions;
   form.imageDirection = generationContext.imageDirection;
   form.campaignId = campaign.campaignId;
+  form.referenceAuthorityBinding = generationAuthority;
 
   let generationBody: Record<string, unknown> = { form };
   if (body?.action === "continue") {

@@ -202,4 +202,13 @@ describe("GLW selective page generation recovery", () => {
     );
   });
 
+  test("revalidates versioned reference authority before dispatch", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const bindingCheck = source.indexOf("generationAuthorityBindingsMatch");
+    const dispatch = source.indexOf("service.execute(preview.request)");
+    expect(bindingCheck).toBeGreaterThan(0);
+    expect(dispatch).toBeGreaterThan(bindingCheck);
+    expect(source).toContain("evaluateGlwReferenceClaimAuthority");
+  });
+
 });

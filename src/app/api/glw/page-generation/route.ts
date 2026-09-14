@@ -16,13 +16,18 @@ import { attachGenesisWordPressExistingFeaturedImage, attachGenesisWordPressFeat
 import { renderSiteStudioAuthorityLinks, resolveSiteStudioProductAuthority } from "@/modules/foundation/site-studio-product-authority";
 import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-service";
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
+import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
+import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
+import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
 import { generateGenesisFeaturedImageWithCampaignReferences } from "@/modules/glw/reference-aware-image-service";
 import {
   renderGlwAllowedInternalLinks,
   resolveGlwAllowedInternalLinks,
 } from "@/modules/glw/site-internal-link-authority";
+import { glwSiteHostsMatch } from "@/modules/glw/site-identity";
 import { resolveGlwWordPressTargetHierarchy } from "@/modules/glw/wordpress-target-hierarchy";
 import {
   createGlwN8nMcpDispatcher,
@@ -84,7 +89,7 @@ function prepareGeneratedContentForSite(input: {
   siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
   keywordOwners: readonly ProjectorEnclosureKeywordOwner[];
 }) {
-  if (input.siteRecord.domain === "leddisplaywarehouse.com") {
+  if (glwSiteHostsMatch(input.siteRecord.domain, "leddisplaywarehouse.com")) {
     return {
       ...enrichGlwGeneratedContentForSeo({
       artifact: input.artifact,
@@ -94,7 +99,7 @@ function prepareGeneratedContentForSite(input: {
     };
   }
 
-  const seoAuthority: ProjectorEnclosureSeoSelection | null = input.siteRecord.domain === "projectorenclosure.com"
+  const seoAuthority: ProjectorEnclosureSeoSelection | null = glwSiteHostsMatch(input.siteRecord.domain, "projectorenclosure.com")
     && input.request.projectorEnclosureSeoAuthority
     ? loadProjectorEnclosureSeoAuthority().select({
         ...input.request.projectorEnclosureSeoAuthority,
@@ -292,6 +297,23 @@ async function finalizeContentReadyExecution(input: {
       ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
       : null,
   });
+  const claimAuthority = input.request.referenceAuthorityBinding
+    ? evaluateGlwReferenceClaimAuthority({ artifact: enrichment.artifact })
+    : null;
+  if (claimAuthority && !claimAuthority.ok) {
+    qa = {
+      ...qa,
+      ok: false,
+      checks: {
+        ...qa.checks,
+        claimAuthority: {
+          ok: false,
+          message: `Unsupported factual claims detected under ${claimAuthority.policyVersion}.`,
+        },
+      },
+      failureReasons: { ...qa.failureReasons, ...claimAuthority.failureReasons },
+    };
+  }
 
   const eligibleForBoundedRepair =
     !qa.ok
@@ -418,7 +440,7 @@ async function finalizeContentReadyExecution(input: {
     slug: enrichment.artifact.slug,
     excerpt: enrichment.artifact.excerpt,
     parentId,
-    seo: input.siteRecord.domain === "leddisplaywarehouse.com"
+    seo: glwSiteHostsMatch(input.siteRecord.domain, "leddisplaywarehouse.com")
       ? enrichment.metadata
       : null,
   };
@@ -493,6 +515,12 @@ async function finalizeContentReadyExecution(input: {
             selectionRationale: enrichment.seoAuthority.selectionRationale,
             cannibalization: enrichment.seoAuthority.cannibalization,
             provenance: enrichment.seoAuthority.provenance,
+          }
+        : null,
+      claimAuthority: claimAuthority
+        ? {
+            policyVersion: claimAuthority.policyVersion,
+            findings: claimAuthority.findings,
           }
         : null,
     },
@@ -719,6 +747,25 @@ export async function POST(request: NextRequest) {
   }
 
   const action = body.action?.trim() ?? "generate";
+  const isCampaignReferenceRequest = Boolean(
+    preview.request.campaignId
+    && preview.request.additionalInstructions?.startsWith("CAMPAIGN REFERENCE PAGE"),
+  );
+  if (isCampaignReferenceRequest) {
+    const campaign = listGlwCampaigns().find((candidate) =>
+      candidate.campaignId === preview.request.campaignId
+      && candidate.organizationId === preview.request.organizationId
+      && candidate.siteId === preview.request.siteId,
+    );
+    const pack = campaign ? getGlwCampaignKnowledgePack(campaign.campaignId) : null;
+    if (!campaign || !pack) {
+      return NextResponse.json({ error: "Current campaign generation authority is unavailable.", code: "REFERENCE_AUTHORITY_UNAVAILABLE", generationJobCreated: false }, { status: 409 });
+    }
+    const currentAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: preview.request.stateCode });
+    if (!generationAuthorityBindingsMatch(currentAuthority, preview.request.referenceAuthorityBinding)) {
+      return NextResponse.json({ error: "Campaign generation authority fingerprints are stale.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
+    }
+  }
 
   if (action === "continue") {
     const jobId = body.jobId?.trim() ?? "";

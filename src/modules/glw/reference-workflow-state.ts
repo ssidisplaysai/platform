@@ -9,7 +9,8 @@ export type GlwReferenceWorkflowState =
   | "REFERENCE_DRAFT_READY"
   | "REFERENCE_RECOVERY_REQUIRED"
   | "REFERENCE_GENERATION_FAILED"
-  | "REFERENCE_BLOCKED";
+  | "REFERENCE_BLOCKED"
+  | "REFERENCE_RETRY_READY";
 
 export type GlwReferenceWorkflowProjection = {
   state: GlwReferenceWorkflowState;
@@ -36,7 +37,27 @@ export type GlwReferenceWorkflowProjection = {
     severity: "BLOCKING";
   }>;
   proposedRecoveryAction: "REQUEST_NEW_EXACT_RETRY_AUTHORIZATION_AFTER_QA_REPAIR" | null;
+  nextReferenceStateCode?: string | null;
+  retryRequiresNewOwnerAuthorization?: boolean;
+  retryExecutable?: boolean;
 };
+
+export function projectGlwReferenceRetryReadiness(
+  workflow: GlwReferenceWorkflowProjection,
+  selectedStateCode: string | null,
+  retryContractPrepared: boolean,
+): GlwReferenceWorkflowProjection {
+  if (workflow.state !== "REFERENCE_BLOCKED" || selectedStateCode !== "IN" || !retryContractPrepared) {
+    return workflow;
+  }
+  return {
+    ...workflow,
+    state: "REFERENCE_RETRY_READY",
+    nextReferenceStateCode: "IN",
+    retryRequiresNewOwnerAuthorization: true,
+    retryExecutable: false,
+  };
+}
 
 function artifactSha256(job: GlwPageExecutionRecord): string | null {
   const html = job.generatedDraft?.contentHtml;

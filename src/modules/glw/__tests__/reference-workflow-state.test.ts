@@ -96,7 +96,7 @@ describe("GLW reference recovery contract", () => {
   });
 
   test("operator UI exposes exact state and blocks duplicate generation", () => {
-    for (const marker of ["REFERENCE_BLOCKED", "Operation:", "Lastupdate:", "Safeowneraction:", "Expected:", "Observed:", "Evidence:", "Proposedrecovery:", "existingOperationBlocksGeneration", "projectedReferenceState.current===referenceState", "StartingReferenceGeneration...", "CheckingExistingReference..."])
+    for (const marker of ["REFERENCE_BLOCKED", "REFERENCE_RETRY_READY", "ReferenceState:", "Indiana(IN)", "FailedState:Illinois(IL)", "FailedJobID:", "NoWordPresspagewascreated.", "newsingle-useownerauthorizationisrequired", "persistReferenceState", "existingOperationBlocksGeneration", "StartingReferenceGeneration...", "CheckingExistingReference..."])
       expect(ui).toContain(marker);
     expect(ui).not.toContain('generationBusy?"RecoveringReference..."');
   });
