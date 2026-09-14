@@ -281,6 +281,10 @@ export type GlwGenerationRequestInput = {
     productAuthorityFingerprint: string;
     qaPolicyVersion: string;
   };
+  referenceOwnerAuthorityClaimId?: string;
+  referenceOwnerOperationType?: "REFERENCE_GENERATION_INITIAL" | "REFERENCE_GENERATION_RETRY";
+  referenceOwnerFailedJobId?: string | null;
+  referenceOwnerFailedArtifactSha256?: string | null;
   projectorEnclosureSeoAuthority?: ProjectorEnclosureSeoRequestContext;
 };
 

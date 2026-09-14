@@ -104,6 +104,13 @@ type WordPressAuthorityStatus = {
   lastCheckedAt: string;
 };
 
+type OwnerAuthorityCapability = {
+  available: boolean;
+  principalAuthority: string;
+  principalSessionBound: boolean;
+  prerequisite: string | null;
+};
+
 export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaign: GlwCampaign; organizationId: string }) {
   const [pack, setPack] = useState<GlwCampaignKnowledgePack | null>(null);
   const [instructions, setInstructions] = useState("");
@@ -122,6 +129,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const [continuationAttemptedJobId, setContinuationAttemptedJobId] = useState<string | null>(null);
   const [referenceResult, setReferenceResult] = useState<ReferenceResult | null>(null);
   const [wordpressAuthority, setWordpressAuthority] = useState<WordPressAuthorityStatus | null>(null);
+  const [ownerAuthority, setOwnerAuthority] = useState<OwnerAuthorityCapability | null>(null);
+  const [ownerPreflightReceiptId, setOwnerPreflightReceiptId] = useState<string | null>(null);
+  const [ownerGrantId, setOwnerGrantId] = useState<string | null>(null);
+  const [ownerAuthorityBusy, setOwnerAuthorityBusy] = useState(false);
   const projectedReferenceState = useRef<string | null>(null);
 
   const headers = {
@@ -133,9 +144,15 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const endpoint = `/api/glw/campaigns/${encodeURIComponent(campaign.campaignId)}/references`;
   const generateEndpoint = `/api/glw/campaigns/${encodeURIComponent(campaign.campaignId)}/generate-instructions`;
   const referenceEndpoint = `/api/glw/campaigns/${encodeURIComponent(campaign.campaignId)}/reference-page`;
+  const ownerAuthorityEndpoint = `/api/glw/campaigns/${encodeURIComponent(campaign.campaignId)}/reference-authority`;
 
   async function load() {
-    const response = await fetch(endpoint, { headers });
+    const [response, authorityResponse] = await Promise.all([
+      fetch(endpoint, { headers }),
+      fetch(ownerAuthorityEndpoint, { headers, cache: "no-store" }),
+    ]);
+    const authorityPayload = await authorityResponse.json().catch(() => null) as OwnerAuthorityCapability | null;
+    setOwnerAuthority(authorityPayload);
     if (!response.ok) return;
 
     const payload = await response.json() as {
@@ -290,6 +307,11 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
         body: JSON.stringify({
           stateCode: referenceState,
           referenceAuthorityBinding: referenceResult?.generationAuthority,
+          ownerGrantId,
+          preflightReceiptId: ownerPreflightReceiptId,
+          ownerOperationType: referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
+          failedJobId: referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? referenceWorkflow.operationId : null,
+          failedArtifactSha256: referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? referenceWorkflow.artifactSha256 : null,
         }),
       });
 
@@ -305,6 +327,69 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       }
     } finally {
       setGeneratingReference(false);
+    }
+  }
+
+  async function runOwnerPreflight() {
+    setOwnerAuthorityBusy(true);
+    setMessage(null);
+    try {
+      const retry = referenceWorkflow?.state === "REFERENCE_RETRY_READY";
+      const response = await fetch(ownerAuthorityEndpoint, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "RUN_PREFLIGHT",
+          operationType: retry ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
+          organizationId,
+          siteId: campaign.siteId,
+          referenceState,
+          failedJobId: retry ? referenceWorkflow.operationId : null,
+          failedArtifactSha256: retry ? referenceWorkflow.artifactSha256 : null,
+        }),
+      });
+      const payload = await response.json() as { receipt?: { receiptId: string }; error?: string };
+      if (!response.ok || !payload.receipt) {
+        setMessage(payload.error ?? "Reference preflight failed closed.");
+        return;
+      }
+      setOwnerPreflightReceiptId(payload.receipt.receiptId);
+      setOwnerGrantId(null);
+      setMessage("Exact reference-generation preflight is ready for owner authorization.");
+    } finally {
+      setOwnerAuthorityBusy(false);
+    }
+  }
+
+  async function authorizeOwnerAction() {
+    if (!ownerPreflightReceiptId) return;
+    setOwnerAuthorityBusy(true);
+    setMessage(null);
+    try {
+      const retry = referenceWorkflow?.state === "REFERENCE_RETRY_READY";
+      const response = await fetch(ownerAuthorityEndpoint, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "AUTHORIZE",
+          operationType: retry ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
+          organizationId,
+          siteId: campaign.siteId,
+          referenceState,
+          failedJobId: retry ? referenceWorkflow.operationId : null,
+          failedArtifactSha256: retry ? referenceWorkflow.artifactSha256 : null,
+          preflightReceiptId: ownerPreflightReceiptId,
+        }),
+      });
+      const payload = await response.json() as { grant?: { grantId: string }; error?: string };
+      if (!response.ok || !payload.grant) {
+        setMessage(payload.error ?? "Reference owner authorization failed closed.");
+        return;
+      }
+      setOwnerGrantId(payload.grant.grantId);
+      setMessage("One expiring reference-generation owner grant is ready. No generation has occurred.");
+    } finally {
+      setOwnerAuthorityBusy(false);
     }
   }
 
@@ -522,7 +607,8 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const referenceWorkflow = referenceResult?.workflow ?? null;
   const existingOperationBlocksGeneration = Boolean(
     referenceWorkflow &&
-      referenceWorkflow.state !== "READY_TO_GENERATE_REFERENCE",
+      referenceWorkflow.state !== "READY_TO_GENERATE_REFERENCE"
+      && !(referenceWorkflow.state === "REFERENCE_RETRY_READY" && ownerGrantId),
   );
   const referenceActionLabel = generatingReference
     ? "Starting Reference Generation..."
@@ -702,6 +788,24 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
           >
             {referenceActionLabel}
           </button>
+        </div>
+
+        <div className="mt-3 border border-zinc-800 bg-zinc-950 px-3 py-3 text-xs">
+          <p className="font-semibold text-white">Owner Action Authority</p>
+          <p className="mt-1 text-zinc-300">Campaign: {campaign.name}</p>
+          <p className="text-zinc-300">State: {selectedStateLabel} ({referenceState})</p>
+          <p className="text-zinc-300">Operation: {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "Reference Generation Retry" : "Initial Reference Generation"}</p>
+          {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? <p className="text-zinc-300">Failed job: {referenceWorkflow.operationId}</p> : null}
+          <p className="mt-1 text-zinc-500">Principal authority: {ownerAuthority?.principalAuthority ?? "CHECKING"}</p>
+          {ownerAuthority?.prerequisite ? <p className="mt-1 text-amber-300">Unavailable: {ownerAuthority.prerequisite}</p> : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" disabled={!ownerAuthority?.available || ownerAuthorityBusy} onClick={() => void runOwnerPreflight()} className="border border-zinc-700 px-3 py-2 font-semibold text-white disabled:opacity-40">
+              {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "Run Retry Preflight" : "Run Preflight"}
+            </button>
+            <button type="button" disabled={!ownerAuthority?.available || !ownerPreflightReceiptId || ownerAuthorityBusy} onClick={() => void authorizeOwnerAction()} className="border border-red-600 px-3 py-2 font-semibold text-red-200 disabled:opacity-40">
+              {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "Authorize One Retry" : "Authorize Reference Generation"}
+            </button>
+          </div>
         </div>
 
         {referenceWorkflow ? (

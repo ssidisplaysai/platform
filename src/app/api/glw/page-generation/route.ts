@@ -18,6 +18,8 @@ import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-ser
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
+import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
+import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError } from "@/modules/glw/reference-owner-authority";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
@@ -747,12 +749,22 @@ export async function POST(request: NextRequest) {
   }
 
   const action = body.action?.trim() ?? "generate";
+  const matchingDraftCampaigns = listGlwCampaigns().filter((candidate) =>
+    candidate.status === "draft"
+    && candidate.organizationId === preview.request.organizationId
+    && candidate.siteId === preview.request.siteId
+    && candidate.productId === preview.request.productId
+    && candidate.stateCodes.includes(preview.request.stateCode),
+  );
+  const identityBoundReferenceCampaign = matchingDraftCampaigns.length === 1
+    ? matchingDraftCampaigns[0]
+    : null;
   const isCampaignReferenceRequest = Boolean(
-    preview.request.campaignId
-    && preview.request.additionalInstructions?.startsWith("CAMPAIGN REFERENCE PAGE"),
+    preview.request.additionalInstructions?.startsWith("CAMPAIGN REFERENCE PAGE")
+    || identityBoundReferenceCampaign,
   );
   if (isCampaignReferenceRequest) {
-    const campaign = listGlwCampaigns().find((candidate) =>
+    const campaign = identityBoundReferenceCampaign ?? listGlwCampaigns().find((candidate) =>
       candidate.campaignId === preview.request.campaignId
       && candidate.organizationId === preview.request.organizationId
       && candidate.siteId === preview.request.siteId,
@@ -764,6 +776,26 @@ export async function POST(request: NextRequest) {
     const currentAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: preview.request.stateCode });
     if (!generationAuthorityBindingsMatch(currentAuthority, preview.request.referenceAuthorityBinding)) {
       return NextResponse.json({ error: "Campaign generation authority fingerprints are stale.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
+    }
+    if (!preview.request.referenceOwnerAuthorityClaimId || !preview.request.referenceOwnerOperationType) {
+      return NextResponse.json({ error: "A consumed single-use reference owner claim is required.", code: "REFERENCE_OWNER_CLAIM_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+    }
+    try {
+      const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
+        organizationId: campaign.organizationId,
+        siteId: campaign.siteId,
+        campaignId: campaign.campaignId,
+        referenceState: preview.request.stateCode,
+        operationType: preview.request.referenceOwnerOperationType,
+        failedJobId: preview.request.referenceOwnerFailedJobId,
+        failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,
+      });
+      consumeGlwReferenceOwnerClaimForDispatch({
+        claimId: preview.request.referenceOwnerAuthorityClaimId,
+        liveContext: liveOwnerContext,
+      });
+    } catch (error) {
+      return NextResponse.json({ error: "Reference owner claim failed closed at the dispatch boundary.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_CLAIM_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
     }
   }
 

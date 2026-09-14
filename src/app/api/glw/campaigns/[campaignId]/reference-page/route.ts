@@ -7,6 +7,9 @@ import { inspectSiteWordPressReadAuthority } from "@/modules/foundation/wordpres
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { buildGlwExactRetryContract, generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority, type GlwReferenceGenerationAuthorityBinding } from "@/modules/glw/reference-generation-authority";
 import { getGlwReferenceStateSelection, saveGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
+import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
+import { consumeGlwReferenceOwnerGrant, GlwReferenceOwnerAuthorityError, type GlwReferenceOwnerOperationType } from "@/modules/glw/reference-owner-authority";
+import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 import {
   approveGlwCampaignReference,
   getGlwCampaignReferenceApproval,
@@ -435,6 +438,10 @@ export async function PATCH(request: NextRequest, context: Context) {
 }
 
 export async function POST(request: NextRequest, context: Context) {
+  const trustedPrincipal = resolveGlwTrustedOperatorPrincipal(request);
+  if (!trustedPrincipal.ok) {
+    return NextResponse.json({ error: trustedPrincipal.message, code: trustedPrincipal.code, generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 503 });
+  }
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
@@ -467,6 +474,11 @@ export async function POST(request: NextRequest, context: Context) {
     action?: "continue";
     jobId?: string;
     referenceAuthorityBinding?: GlwReferenceGenerationAuthorityBinding;
+    ownerGrantId?: string;
+    preflightReceiptId?: string;
+    ownerOperationType?: GlwReferenceOwnerOperationType;
+    failedJobId?: string | null;
+    failedArtifactSha256?: string | null;
   } | null;
 
   let target;
@@ -524,8 +536,28 @@ export async function POST(request: NextRequest, context: Context) {
   if (!generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
     return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
   }
-  if (target.state.code === "IN") {
-    return NextResponse.json({ error: "A new single-use owner authorization is required for the Indiana retry. No executable retry grant exists in this task.", code: "REFERENCE_RETRY_AUTHORIZATION_REQUIRED", generationJobCreated: false, automaticRetry: false }, { status: 409 });
+  if (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType) {
+    return NextResponse.json({ error: "An exact single-use owner grant and matching preflight receipt are required.", code: "REFERENCE_OWNER_AUTHORITY_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+  }
+  let ownerClaim;
+  try {
+    const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      campaignId: campaign.campaignId,
+      referenceState: target.state.code,
+      operationType: body.ownerOperationType,
+      failedJobId: body.failedJobId,
+      failedArtifactSha256: body.failedArtifactSha256,
+    });
+    ownerClaim = consumeGlwReferenceOwnerGrant({
+      principal: trustedPrincipal.principal,
+      grantId: body.ownerGrantId,
+      preflightReceiptId: body.preflightReceiptId,
+      liveContext: liveOwnerContext,
+    });
+  } catch (error) {
+    return NextResponse.json({ error: "Reference owner authority failed closed.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_AUTHORITY_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
   }
 
   const profileCount = listIntegrationProfiles({
@@ -565,6 +597,10 @@ export async function POST(request: NextRequest, context: Context) {
   form.imageDirection = generationContext.imageDirection;
   form.campaignId = campaign.campaignId;
   form.referenceAuthorityBinding = generationAuthority;
+  form.referenceOwnerAuthorityClaimId = ownerClaim.claimId;
+  form.referenceOwnerOperationType = ownerClaim.operationType;
+  form.referenceOwnerFailedJobId = ownerClaim.failedJobId;
+  form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
 
   let generationBody: Record<string, unknown> = { form };
   if (body?.action === "continue") {
