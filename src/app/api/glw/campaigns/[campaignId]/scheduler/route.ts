@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   authorizeRequest,
   hasOrganizationScope,
+  resolveRequestPrincipal,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -13,19 +14,20 @@ import {
 } from "@/modules/glw/campaign-production-generation";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import {
-  resolveGlwCampaignTargetRecoveryAction,
-} from "@/modules/glw/campaign-target-reconciliation";
-import {
   attachGlwCampaignTargetJob,
   leaseGlwCampaignTargets,
   listGlwCampaignTargets,
   previewGlwCampaignTargetLease,
-  requireGlwCampaignTargetResumeAuthority,
   summarizeGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
 import { recordGlwCampaignLaunchDispatch } from "@/modules/glw/campaign-launch-authority";
 import { resolveGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
 import { getGlwN8nMcpConfigurationStatus, preflightGlwN8nMcpExecution } from "@/modules/glw/n8n-mcp-adapter";
+import {
+  appendDispatchRequestOutcome,
+  authorizeExactTargetDispatchRequest,
+  saveExactTargetDispatchPreflight,
+} from "@/modules/glw/exact-target-dispatch-authority";
 
 const MAX_CONCURRENT_EXECUTION = 1;
 const EXACT_RELEASE_PATTERN = /^[0-9a-f]{40}$/;
@@ -33,14 +35,6 @@ const EXACT_RELEASE_PATTERN = /^[0-9a-f]{40}$/;
 type Context = {
   params: Promise<{ campaignId: string }>;
 };
-
-function normalizeCitySlug(value?: string | null): string {
-  return (value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 function resolveDispatchDate(
   request: NextRequest,
@@ -148,6 +142,7 @@ export async function GET(
 
   const scope = resolveRequestScope(request);
   const organizationId = scope.organizationId;
+  const principal = resolveRequestPrincipal(request);
 
   if (!hasOrganizationScope(scope) || !organizationId) {
     return NextResponse.json(
@@ -155,6 +150,7 @@ export async function GET(
       { status: 403 },
     );
   }
+  if (!principal) return NextResponse.json({ error: "Exact authenticated principal and session are required." }, { status: 403 });
 
   const { campaignId } = await context.params;
 
@@ -211,6 +207,31 @@ export async function GET(
   const releaseAuthority = resolveReleaseCapability(campaign);
   const wordpressReadiness = resolveWordPressReadiness(campaign);
   const executionPreflight = await preflightGlwN8nMcpExecution();
+  const selectedTarget = preview.selected.length === 1 ? preview.selected[0] : null;
+  let dispatchPreflight = null;
+  if (
+    selectedTarget
+    && releaseAuthority.capability.ready
+    && wordpressReadiness.ready
+    && executionPreflight.ready
+    && availableConcurrency > 0
+    && preview.allowance > 0
+  ) {
+    dispatchPreflight = saveExactTargetDispatchPreflight({
+      campaign,
+      target: selectedTarget,
+      runtimeSha: releaseAuthority.runningReleaseSha ?? "",
+      principal,
+      dailyAllowanceBefore: preview.allowance,
+      readiness: {
+        releaseAuthorityReady: true,
+        wordpressAuthorityReady: true,
+        mcpReady: true,
+        n8nReady: true,
+        concurrencyReady: true,
+      },
+    });
+  }
 
   return NextResponse.json({
     campaign: {
@@ -244,6 +265,7 @@ export async function GET(
     wordpressReadiness,
     executionReadiness: getGlwN8nMcpConfigurationStatus(),
     executionPreflight,
+    dispatchPreflight,
     ownerAuthorizationRequired: true,
     dryRun: true,
   });
@@ -267,6 +289,7 @@ export async function POST(
 
   const scope = resolveRequestScope(request);
   const organizationId = scope.organizationId;
+  const principal = resolveRequestPrincipal(request);
 
   if (!hasOrganizationScope(scope) || !organizationId) {
     return NextResponse.json(
@@ -274,6 +297,7 @@ export async function POST(
       { status: 403 },
     );
   }
+  if (!principal) return NextResponse.json({ error: "Exact authenticated principal and session are required.", code: "OWNER_DISPATCH_PRINCIPAL_REQUIRED" }, { status: 403 });
 
   const { campaignId } = await context.params;
 
@@ -300,72 +324,14 @@ export async function POST(
     );
   }
 
-  const releaseAuthority = resolveReleaseCapability(campaign);
-  if (!releaseAuthority.capability.ready) {
-    return NextResponse.json({
-      error: releaseAuthority.capability.reason ?? "Exact running release capability is unavailable. No targets were leased.",
-      code: "GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED",
-      releaseAuthority,
-    }, { status: 503 });
-  }
-  const wordpressReadiness = resolveWordPressReadiness(campaign);
-  if (!wordpressReadiness.ready) {
-    return NextResponse.json({
-      error: wordpressReadiness.reason ?? "WordPress authority is unavailable. No targets were leased.",
-      code: "GLW_WORDPRESS_AUTHORITY_REQUIRED",
-      wordpressReadiness,
-    }, { status: 503 });
-  }
-
-  const executionReadiness = getGlwN8nMcpConfigurationStatus();
-  if (!executionReadiness.configured) {
-    return NextResponse.json({
-      error: "GLW n8n MCP execution is not configured. No targets were leased.",
-      code: "GLW_N8N_MCP_NOT_CONFIGURED",
-    }, { status: 503 });
-  }
-  const executionPreflight = await preflightGlwN8nMcpExecution();
-  if (!executionPreflight.ready) {
-    return NextResponse.json({
-      error: executionPreflight.reason ?? "GLW n8n MCP execution capability is unavailable. No targets were leased.",
-      code: "GLW_N8N_MCP_PREFLIGHT_FAILED",
-    }, { status: 503 });
-  }
-
-  const queueBeforeDispatch = summarizeGlwCampaignTargets(campaign.campaignId);
-  if (queueBeforeDispatch.running >= MAX_CONCURRENT_EXECUTION) {
-    return NextResponse.json({
-      error: "Campaign already has the maximum number of running targets. Reconcile the current target before dispatching another.",
-      code: "GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED",
-    }, { status: 409 });
-  }
-
   const body = await request.json().catch(() => null) as {
     confirm?: string;
-    stateCodes?: string[];
-    targets?: Array<{
-      stateCode?: string;
-      citySlug?: string;
-    }>;
+    preflightReceiptId?: string;
+    ownerDispatchGrantId?: string;
+    targetId?: string;
   } | null;
-
-  const isExactResume =
-    body?.confirm === "RESUME_EXISTING_DRAFT_TARGETS";
-  const isExactFreshDispatch =
-    body?.confirm === "RUN_EXACT_DRAFT_TARGETS";
-
-  if (
-    body?.confirm !== "RUN_DRAFT_BATCH"
-    && !isExactResume
-    && !isExactFreshDispatch
-  ) {
-    return NextResponse.json(
-      {
-        error:
-          "Explicit RUN_DRAFT_BATCH confirmation is required.",
-      },
-      { status: 400 },
-    );
+  if (body?.confirm !== "AUTHORIZE_AND_DISPATCH_EXACT_TARGET" || !body.preflightReceiptId?.trim() || !body.ownerDispatchGrantId?.trim() || !body.targetId?.trim()) {
+    return NextResponse.json({ error: "Exact preflight receipt, owner dispatch grant, target, and confirmation are required.", code: "OWNER_EXACT_TARGET_DISPATCH_AUTHORITY_REQUIRED" }, { status: 403 });
   }
 
   let dispatchDate: string;
@@ -374,172 +340,49 @@ export async function POST(
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid dispatch date." }, { status: 400 });
   }
-  const leaseId = randomUUID();
-
-  let leased;
-
-  if (isExactResume) {
-    const campaignTargets = listGlwCampaignTargets(
-      campaign.campaignId,
-    );
-
-    if (campaign.pageType === "city_service") {
-      const requestedTargets = Array.from(
-        new Map(
-          (body?.targets ?? [])
-            .map((target) => ({
-              stateCode: target.stateCode?.trim().toUpperCase() ?? "",
-              citySlug: normalizeCitySlug(target.citySlug),
-            }))
-            .filter((target) => target.stateCode && target.citySlug)
-            .map((target) => [
-              `${target.stateCode}::${target.citySlug}`,
-              target,
-            ]),
-        ).values(),
-      );
-
-      if (requestedTargets.length === 0) {
-        return NextResponse.json(
-          {
-            error:
-              "Exact stateCode and citySlug targets are required for city-target resume.",
-          },
-          { status: 400 },
-        );
-      }
-      if (requestedTargets.length > MAX_CONCURRENT_EXECUTION) {
-        return NextResponse.json({ error: "Only one exact target can resume at a time." }, { status: 409 });
-      }
-
-      leased = requestedTargets.map((requested) => {
-        const target = campaignTargets.find(
-          (candidate) =>
-            candidate.stateCode === requested.stateCode
-            && candidate.citySlug === requested.citySlug,
-        );
-
-        if (!target) {
-          throw new Error(
-            `Campaign target ${requested.stateCode}::${requested.citySlug} was not found.`,
-          );
-        }
-
-        const action = resolveGlwCampaignTargetRecoveryAction(target);
-        if (action !== "resume_exact_target") {
-          throw new Error(
-            `Campaign target ${requested.stateCode}::${requested.citySlug} is not eligible for exact resume.`,
-          );
-        }
-
-        return requireGlwCampaignTargetResumeAuthority({
-          campaignId: campaign.campaignId,
-          stateCode: requested.stateCode,
-          citySlug: requested.citySlug,
-        });
-      });
-    } else {
-      const requestedStates = Array.from(
-        new Set(
-          (body?.stateCodes ?? [])
-            .map((stateCode) => stateCode.trim().toUpperCase())
-            .filter(Boolean),
-        ),
-      );
-
-      if (requestedStates.length === 0) {
-        return NextResponse.json(
-          {
-            error:
-              "Exact stateCodes are required for existing-target resume.",
-          },
-          { status: 400 },
-        );
-      }
-      if (requestedStates.length > MAX_CONCURRENT_EXECUTION) {
-        return NextResponse.json({ error: "Only one exact target can resume at a time." }, { status: 409 });
-      }
-
-      leased = requestedStates.map((stateCode) => {
-        const target = campaignTargets.find(
-          (candidate) => candidate.stateCode === stateCode && !candidate.citySlug,
-        );
-
-        if (!target) {
-          throw new Error(
-            `Campaign target ${stateCode} was not found.`,
-          );
-        }
-
-        const action = resolveGlwCampaignTargetRecoveryAction(target);
-        if (action !== "resume_exact_target") {
-          throw new Error(
-            `Campaign target ${stateCode} is not eligible for exact resume.`,
-          );
-        }
-
-        return requireGlwCampaignTargetResumeAuthority({
-          campaignId: campaign.campaignId,
-          stateCode,
-        });
-      });
-    }
-  } else if (isExactFreshDispatch) {
-    const requestedTargets = (body?.targets ?? [])
-      .map((target) => ({
-        stateCode: target.stateCode?.trim().toUpperCase() ?? "",
-        citySlug: normalizeCitySlug(target.citySlug),
-      }))
-      .filter((target) => target.stateCode);
-
-    if (requestedTargets.length === 0) {
-      return NextResponse.json(
-        { error: "At least one exact queued target is required." },
-        { status: 400 },
-      );
-    }
-
-    const preview = previewGlwCampaignTargetLease({
-      campaignId: campaign.campaignId,
-      pagesPerDay: campaign.pagesPerDay,
-      dispatchDate,
-      maxTargets: MAX_CONCURRENT_EXECUTION,
+  const campaignTargets = listGlwCampaignTargets(campaign.campaignId);
+  const target = campaignTargets.find((candidate) => candidate.targetId === body.targetId) ?? null;
+  if (!target) return NextResponse.json({ error: "Exact campaign target was not found.", code: "OWNER_DISPATCH_TARGET_NOT_FOUND" }, { status: 404 });
+  const allowanceBefore = Math.max(0, campaign.pagesPerDay - campaignTargets.filter((candidate) => candidate.dispatchDate === dispatchDate).length);
+  const releaseAuthority = resolveReleaseCapability(campaign);
+  let authorization;
+  try {
+    authorization = authorizeExactTargetDispatchRequest({
+      preflightReceiptId: body.preflightReceiptId,
+      ownerDispatchGrantId: body.ownerDispatchGrantId,
+      campaign,
+      target,
+      runtimeSha: releaseAuthority.runningReleaseSha ?? "",
+      principal,
+      confirmationMode: body.confirm,
+      route: request.nextUrl.pathname,
+      allowanceBefore,
     });
-    const selectedIdentities = preview.selected.map((target) =>
-      `${target.stateCode}::${target.citySlug ?? ""}`,
-    );
-    const requestedIdentities = requestedTargets.map((target) =>
-      `${target.stateCode}::${target.citySlug ?? ""}`,
-    );
-
-    if (
-      selectedIdentities.length !== requestedIdentities.length
-      || selectedIdentities.some((identity, index) => identity !== requestedIdentities[index])
-    ) {
-      return NextResponse.json(
-        { error: "Exact dispatch targets must match the next deterministic queued targets." },
-        { status: 409 },
-      );
-    }
-
-    leased = leaseGlwCampaignTargets({
-      campaignId: campaign.campaignId,
-      pagesPerDay: campaign.pagesPerDay,
-      dispatchDate,
-      leaseId,
-      maxTargets: MAX_CONCURRENT_EXECUTION,
-      maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
-    });
-  } else {
-    leased = leaseGlwCampaignTargets({
-      campaignId: campaign.campaignId,
-      pagesPerDay: campaign.pagesPerDay,
-      dispatchDate,
-      leaseId,
-      maxTargets: MAX_CONCURRENT_EXECUTION,
-      maxConcurrentExecution: MAX_CONCURRENT_EXECUTION,
-    });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Owner dispatch authority invalid.", code: "OWNER_EXACT_TARGET_DISPATCH_AUTHORITY_INVALID" }, { status: 403 });
   }
+  const requestReceiptId = authorization.requestReceipt.requestReceiptId;
+  const fail = (code: string, error: string, status = 503, patch: Parameters<typeof appendDispatchRequestOutcome>[0]["patch"] = {}) => {
+    appendDispatchRequestOutcome({ requestReceiptId, patch: { ...patch, outcome: "FAILED" } });
+    return NextResponse.json({ error, code, requestReceiptId }, { status });
+  };
+  if (!releaseAuthority.capability.ready) return fail("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED", releaseAuthority.capability.reason ?? "Release capability unavailable.", 503, { releaseAuthorityResult: "FAIL" });
+  const wordpressReadiness = resolveWordPressReadiness(campaign);
+  if (!wordpressReadiness.ready) return fail("GLW_WORDPRESS_AUTHORITY_REQUIRED", wordpressReadiness.reason ?? "WordPress authority unavailable.", 503, { releaseAuthorityResult: "PASS", wordpressAuthorityResult: "FAIL" });
+  const executionReadiness = getGlwN8nMcpConfigurationStatus();
+  if (!executionReadiness.configured) return fail("GLW_N8N_MCP_NOT_CONFIGURED", "GLW n8n MCP execution is not configured.", 503, { releaseAuthorityResult: "PASS", wordpressAuthorityResult: "PASS", mcpPreflightResult: "FAIL" });
+  const executionPreflight = await preflightGlwN8nMcpExecution();
+  if (!executionPreflight.ready) return fail("GLW_N8N_MCP_PREFLIGHT_FAILED", executionPreflight.reason ?? "MCP preflight failed.", 503, { releaseAuthorityResult: "PASS", wordpressAuthorityResult: "PASS", mcpPreflightResult: "FAIL" });
+  appendDispatchRequestOutcome({ requestReceiptId, patch: { releaseAuthorityResult: "PASS", wordpressAuthorityResult: "PASS", mcpPreflightResult: "PASS" } });
+  const queueBeforeDispatch = summarizeGlwCampaignTargets(campaign.campaignId);
+  if (queueBeforeDispatch.running >= MAX_CONCURRENT_EXECUTION) return fail("GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED", "Campaign already has the maximum number of running targets.", 409);
+  const preview = previewGlwCampaignTargetLease({ campaignId: campaign.campaignId, pagesPerDay: campaign.pagesPerDay, dispatchDate, maxTargets: 1 });
+  if (preview.allowance < 1) return fail("GLW_CAMPAIGN_DAILY_ALLOWANCE_EXHAUSTED", "Campaign daily allowance is exhausted.", 409);
+  if (preview.selected.length !== 1 || preview.selected[0].targetId !== target.targetId) return fail("OWNER_DISPATCH_TARGET_NOT_CURRENT", "Exact authorized target is not the current deterministic eligible target.", 409);
+  const leaseId = randomUUID();
+  const leased = leaseGlwCampaignTargets({ campaignId: campaign.campaignId, pagesPerDay: campaign.pagesPerDay, dispatchDate, leaseId, maxTargets: 1, maxConcurrentExecution: MAX_CONCURRENT_EXECUTION });
+  if (leased.length !== 1 || leased[0].targetId !== target.targetId) return fail("OWNER_DISPATCH_LEASE_MISMATCH", "Exact authorized target was not leased.", 409);
+  appendDispatchRequestOutcome({ requestReceiptId, patch: { leaseId, allowanceAfter: Math.max(0, preview.allowance - 1), outcome: "LEASED" } });
 
   const results: Array<Record<string, unknown>> = [];
 
@@ -581,6 +424,7 @@ export async function POST(
             jobId?: string;
             status?: string;
             errorMessage?: string | null;
+            externalExecutionId?: string | null;
           };
           error?: string;
         } | null;
@@ -594,14 +438,13 @@ export async function POST(
         );
       }
 
+      appendDispatchRequestOutcome({ requestReceiptId, patch: { jobId, externalExecutionId: payload?.job?.externalExecutionId ?? null, outcome: payload?.job?.status === "FAILED" ? "FAILED" : "DISPATCHED" } });
+
       attachGlwCampaignTargetJob({
         campaignId: campaign.campaignId,
         stateCode: target.stateCode,
         citySlug: target.citySlug,
-        leaseId:
-          isExactResume
-            ? target.leaseId!
-            : leaseId,
+        leaseId,
         jobId,
       });
 
@@ -627,6 +470,7 @@ export async function POST(
           payload?.job?.status ?? null,
       });
     } catch (error) {
+      appendDispatchRequestOutcome({ requestReceiptId, patch: { outcome: "FAILED" } });
       results.push({
         ...targetIdentity(target),
         cityName: target.cityName ?? null,
@@ -661,11 +505,8 @@ export async function POST(
       campaign.campaignId,
     ),
     executionMode:
-      isExactResume
-        ? "exact_existing_target_resume"
-        : isExactFreshDispatch
-          ? "exact_new_target_batch"
-          : "new_daily_batch",
+      "owner_exact_target_dispatch",
+    requestReceiptId,
     publicationIntent: "draft",
     publicationPerformed: false,
   });

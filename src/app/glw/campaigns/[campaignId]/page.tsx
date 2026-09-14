@@ -4,6 +4,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { GlwCampaignOperatorControls } from "@/modules/glw/GlwCampaignOperatorControls";
 import { GlwCampaignOperationsOverview } from "@/modules/glw/GlwCampaignOperationsOverview";
 import { buildGlwCampaignOperatorReadModel } from "@/modules/glw/campaign-operator-read-model";
+import { createFoundationContext } from "@/modules/foundation/context";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,6 +22,7 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
   const { campaignId } = await params;
   const query = await searchParams;
   const model = await buildGlwCampaignOperatorReadModel(campaignId);
+  const foundationContext = createFoundationContext();
 
   if (!model) {
     notFound();
@@ -57,6 +59,7 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
           organizationId={model.campaign.organizationId}
           siteId={model.campaign.siteId}
           campaignStatus={model.campaign.status}
+          principalId={foundationContext.user.email}
         />
       </div>
     </AppShell>

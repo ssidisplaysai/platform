@@ -272,4 +272,31 @@ Tomorrow:
 
 ## Final determination
 
-The platform is operational for monitoring and maintaining already-certified public output. Commercial Stainless, Dallas, and Houston remain `READY_NOW`. The four technical execution blockers are resolved or correctly terminalized. Automated execution is `READY_WITH_OWNER_ACTION`: an exact owner-authorized target confirmation is still required, and San Antonio remains intentionally stopped.
+The platform is operational for monitoring and maintaining already-certified public output. Commercial Stainless, Dallas, and Houston remain `READY_NOW`. The original technical execution blockers are resolved or correctly terminalized. The later San Antonio incident completed remotely at content-ready without WordPress mutation and remains unreconciled locally. Future automated execution is `READY_WITH_OWNER_ACTION` only through the exact-target grant boundary documented below.
+
+## Exact-target owner dispatch authority V1
+
+The San Antonio unauthorized-valid-dispatch incident established that release capability and role headers are not owner action authority. The scheduler formerly accepted `RUN_DRAFT_BATCH` after technical readiness checks, selected the next deterministic queued target, and persisted no request/caller provenance. That generic mutation authority is removed.
+
+The replacement security boundary is governed by these rules:
+
+- `RELEASE_AUTHORITY != OWNER_ACTION_AUTHORITY`: an enabled runtime release proves executable eligibility only. It cannot authorize a target dispatch.
+- `OWNER_ACTION_MUST_BE_DURABLE`: owner confirmation creates an append-only grant record rather than relying on UI state or conversation context.
+- `OWNER_ACTION_MUST_BE_EXACT_TARGET`: the grant binds organization, site, campaign, target, operation, target fingerprint, and runtime SHA.
+- `OWNER_ACTION_MUST_BE_SINGLE_USE`: a successful authorization claim creates a separate immutable consumption record; replay fails closed.
+- `OWNER_ACTION_MUST_REFERENCE_CURRENT_PREFLIGHT`: the grant references the latest exact-target preflight, must be created strictly after it, and expires after two minutes. The preflight expires after five minutes.
+- `MUTATION_REQUEST_PROVENANCE_MUST_BE_PERSISTED`: the scheduler stores a redacted append-only request receipt before release, WordPress, MCP, allowance mutation, lease, job, or external execution. Outcome records add gate results and lease/job/execution identities without rewriting the original receipt.
+
+The target fingerprint includes campaign and target identity, lifecycle state, target update time, canonical path, WordPress binding classification and object identity, product identity, publication policy, runtime SHA, and current dispatch eligibility. Any relevant state change invalidates the preflight and grant.
+
+Owner dispatch now follows exactly:
+
+1. Authenticated read-only scheduler GET creates the latest exact-target preflight receipt when one target is eligible and every technical gate is ready.
+2. Explicit `Authorize & Dispatch <target> Draft` confirmation creates a short-lived `OWNER_EXACT_TARGET_DISPATCH` grant for that receipt and target.
+3. Scheduler POST requires `preflightReceiptId`, `ownerDispatchGrantId`, exact `targetId`, and `AUTHORIZE_AND_DISPATCH_EXACT_TARGET`.
+4. The server validates and consumes the grant before release/WordPress/MCP revalidation, allowance checks, lease, job creation, and MCP dispatch.
+5. Generic `RUN_DRAFT_BATCH`, bulk target selection, stale preflights, mismatched scope/runtime/fingerprint, expired grants, consumed grants, and replay all fail before lease.
+
+Current principal limitation: the application has no cryptographically authenticated server session. The strongest bounded identity is the operator identity already present in Genesis plus a per-browser session UUID, both explicitly carried in request headers and bound into receipts. Raw role headers alone fail. Replacing these headers with a trusted identity-provider session remains a deferred platform hardening task.
+
+The historical San Antonio job `f518ffb7-9216-4866-a93c-7f4793e74038`, lease `aaba3a04-4f7a-493e-8893-a8a1769a4ec7`, and execution `608895` remain untouched. This repair does not reconcile that incident, create WordPress content, publish, dispatch, or execute n8n.

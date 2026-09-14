@@ -28,6 +28,11 @@ export type RequestScope = {
   siteId: string | null;
 };
 
+export type RequestPrincipal = {
+  principalId: string;
+  sessionId: string;
+};
+
 function normalizeScopeValue(value: string | null): string | null {
   if (!value) {
     return null;
@@ -114,6 +119,12 @@ export function resolveRequestScope(request: NextRequest): RequestScope {
 
 export function hasOrganizationScope(scope: RequestScope): boolean {
   return Boolean(scope.organizationId);
+}
+
+export function resolveRequestPrincipal(request: NextRequest): RequestPrincipal | null {
+  const principalId = normalizeScopeValue(request.headers.get("x-gcp-principal-id"));
+  const sessionId = normalizeScopeValue(request.headers.get("x-gcp-session-id"));
+  return principalId && sessionId ? { principalId, sessionId } : null;
 }
 
 export function isRecordInScope(input: {

@@ -24,20 +24,23 @@ describe("campaign exact dispatch contract", () => {
       "utf8",
     );
 
-    expect(route).toContain('body?.confirm === "RUN_EXACT_DRAFT_TARGETS"');
-    expect(route).toContain("Exact dispatch targets must match the next deterministic queued targets.");
+    expect(route).toContain('body?.confirm !== "AUTHORIZE_AND_DISPATCH_EXACT_TARGET"');
+    expect(route).toContain("Exact authorized target is not the current deterministic eligible target.");
     expect(route).toContain("pagesPerDay: campaign.pagesPerDay");
     expect(route).toContain("const MAX_CONCURRENT_EXECUTION = 1");
     expect(route).toContain("MAX_CONCURRENT_EXECUTION - queue.running");
     expect(route).toContain("GLW_CAMPAIGN_CONCURRENCY_LIMIT_REACHED");
     expect(route).toContain("Dispatch date cannot be overridden for a mutating scheduler request.");
-    expect(route).toContain("maxTargets: MAX_CONCURRENT_EXECUTION");
+    expect(route).toContain("maxTargets: 1");
     expect(route).toContain("GLW_N8N_MCP_NOT_CONFIGURED");
     expect(route).toContain("GLW_N8N_MCP_PREFLIGHT_FAILED");
     expect(route).toContain("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED");
     expect(route).toContain("GLW_WORDPRESS_AUTHORITY_REQUIRED");
     expect(route).toContain("ownerAuthorizationRequired: true");
     expect(route).toContain("executionPreflight");
+    expect(route).toContain("authorizeExactTargetDispatchRequest");
+    expect(route).toContain("ownerDispatchGrantId");
+    expect(route).toContain("preflightReceiptId");
     expect(route.indexOf("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
     expect(route.indexOf("GLW_WORDPRESS_AUTHORITY_REQUIRED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
     expect(route.indexOf("GLW_N8N_MCP_NOT_CONFIGURED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
@@ -46,6 +49,8 @@ describe("campaign exact dispatch contract", () => {
     expect(controls).toContain("!scheduler.executionReadiness.configured");
     expect(controls).toContain("scheduler.schedule.availableConcurrency < 1");
     expect(controls).toContain("No target will be leased while execution authority is unavailable.");
+    expect(controls).toContain("Authorize & Dispatch");
+    expect(controls).not.toContain('confirm: "RUN_DRAFT_BATCH"');
     expect(controls).toContain('`${target.cityName}, ${target.stateCode}`');
     expect(controls).toContain("router.refresh()");
     expect(controls).toContain("Not required for draft persistence");
