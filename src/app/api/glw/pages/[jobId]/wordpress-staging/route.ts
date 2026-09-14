@@ -1,0 +1,29 @@
+import { NextRequest, NextResponse } from "next/server";
+import { authorizeRequest, resolveRequestPrincipal, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { SAN_ANTONIO_APPROVED_ARTIFACT_SHA, SAN_ANTONIO_APPROVED_COMPOSITION_COMMIT, SAN_ANTONIO_STAGING_JOB_ID } from "@/modules/glw/san-antonio-wordpress-staging-authority";
+import { authorizeSanAntonioStaging, certifySanAntonioStoredAuthority, createSanAntonioStagingPreflight, inspectSanAntonioStagingPreflight, rollbackInterruptedSanAntonioStaging, stageApprovedSanAntonioComposition } from "@/modules/glw/san-antonio-wordpress-staging-service";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 300;
+
+function access(request: NextRequest) {
+  const auth = authorizeRequest(request, "sites:update"); const scope = resolveRequestScope(request); const principal = resolveRequestPrincipal(request);
+  return { valid: auth.ok && auth.roles.includes("platform_admin") && scope.organizationId === "ssi" && scope.siteId === "site-ssi-projectorenclosure" && principal !== null, principal };
+}
+
+export async function GET(request: NextRequest, context: { params: Promise<{ jobId: string }> }) {
+  const auth = authorizeRequest(request, "sites:read"); const scope = resolveRequestScope(request); const { jobId } = await context.params;
+  if (!auth.ok || scope.organizationId !== "ssi" || scope.siteId !== "site-ssi-projectorenclosure" || jobId !== SAN_ANTONIO_STAGING_JOB_ID) return NextResponse.json({ error: "Exact San Antonio staging scope required." }, { status: auth.ok ? 403 : auth.status });
+  try { const result = await inspectSanAntonioStagingPreflight(); const certification = result.existingReceipt ? await certifySanAntonioStoredAuthority() : null; return NextResponse.json({ existingObjectPreflight: result.existingObjectPreflight, canonicalPath: result.canonicalPath, canonicalParentId: result.canonicalParentId, title: result.title, seo: result.seo, receipt: result.existingReceipt, certification: certification?.certification ?? null, wordpressMutationPerformed: false, publicationPerformed: false, dispatchPerformed: false, workflowExecuted: false, regenerationPerformed: false }); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message.split(":")[0] : "SAN_ANTONIO_STAGING_PREFLIGHT_FAILED", wordpressMutationPerformed: false, publicationPerformed: false, dispatchPerformed: false, workflowExecuted: false, regenerationPerformed: false }, { status: 409 }); }
+}
+
+export async function POST(request: NextRequest, context: { params: Promise<{ jobId: string }> }) {
+  const allowed = access(request); const { jobId } = await context.params; if (!allowed.valid || !allowed.principal || jobId !== SAN_ANTONIO_STAGING_JOB_ID) return NextResponse.json({ error: "Exact principal-bound San Antonio owner-action authority required." }, { status: 403 });
+  const body = await request.json().catch(() => null) as { operation?: string; artifactSha?: string; approvedCompositionCommit?: string; preflightReceiptId?: string; grantId?: string } | null;
+  if (!body || body.artifactSha !== SAN_ANTONIO_APPROVED_ARTIFACT_SHA || body.approvedCompositionCommit !== SAN_ANTONIO_APPROVED_COMPOSITION_COMMIT || !["PREFLIGHT_SAN_ANTONIO_WORDPRESS_STAGING", "AUTHORIZE_SAN_ANTONIO_WORDPRESS_STAGING", "STAGE_OWNER_APPROVED_SAN_ANTONIO_COMPOSITION", "ROLLBACK_INTERRUPTED_SAN_ANTONIO_STAGING"].includes(body.operation ?? "")) return NextResponse.json({ error: "Exact approved San Antonio staging identity required." }, { status: 400 });
+  try {
+    if (body.operation === "PREFLIGHT_SAN_ANTONIO_WORDPRESS_STAGING") { if (Object.keys(body).some((key) => !["operation", "artifactSha", "approvedCompositionCommit"].includes(key))) throw new Error("SAN_ANTONIO_STAGING_BODY_INVALID"); const result = await createSanAntonioStagingPreflight({ principal: allowed.principal }); return NextResponse.json({ ...result, wordpressMutationPerformed: false, publicationPerformed: false, dispatchPerformed: false, workflowExecuted: false, regenerationPerformed: false }, { status: result.reused ? 200 : 201 }); }
+    if (body.operation === "AUTHORIZE_SAN_ANTONIO_WORDPRESS_STAGING") { if (!body.preflightReceiptId || Object.keys(body).some((key) => !["operation", "artifactSha", "approvedCompositionCommit", "preflightReceiptId"].includes(key))) throw new Error("SAN_ANTONIO_STAGING_BODY_INVALID"); const grant = authorizeSanAntonioStaging({ preflightReceiptId: body.preflightReceiptId, principal: allowed.principal }); return NextResponse.json({ grant, wordpressMutationPerformed: false, publicationPerformed: false, dispatchPerformed: false, workflowExecuted: false, regenerationPerformed: false }, { status: 201 }); }
+    if (!body.preflightReceiptId || !body.grantId || Object.keys(body).some((key) => !["operation", "artifactSha", "approvedCompositionCommit", "preflightReceiptId", "grantId"].includes(key))) throw new Error("SAN_ANTONIO_STAGING_BODY_INVALID"); if (body.operation === "ROLLBACK_INTERRUPTED_SAN_ANTONIO_STAGING") { const result = await rollbackInterruptedSanAntonioStaging({ preflightReceiptId: body.preflightReceiptId, grantId: body.grantId, principal: allowed.principal }); return NextResponse.json(result); } const result = await stageApprovedSanAntonioComposition({ preflightReceiptId: body.preflightReceiptId, grantId: body.grantId, principal: allowed.principal }); return NextResponse.json({ ...result, wordpressMutationPerformed: !result.reused, publicationPerformed: false, dispatchPerformed: false, workflowExecuted: false, regenerationPerformed: false }, { status: result.reused ? 200 : 201 });
+  } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message.split(":")[0] : "SAN_ANTONIO_WORDPRESS_STAGING_FAILED", wordpressMutationPerformed: false, publicationPerformed: false, dispatchPerformed: false, workflowExecuted: false, regenerationPerformed: false }, { status: 422 }); }
+}

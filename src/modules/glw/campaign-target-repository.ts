@@ -735,6 +735,35 @@ export function markGlwCampaignTargetDraftReady(input: {
   return deepClone(updated);
 }
 
+export function reconcileGlwContentReadyTargetDraft(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug: string;
+  targetId: string;
+  jobId: string;
+  wordpressObjectId: string;
+}): GlwCampaignTarget {
+  loadState();
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+  if (!current || current.targetId !== input.targetId || current.status !== "content_ready" || current.jobId !== input.jobId || current.wordpressObjectId || current.leaseId) {
+    throw new Error("Content-ready staging reconciliation requires the exact unbound target and existing job.");
+  }
+  const updated: GlwCampaignTarget = { ...current, status: "draft_ready", wordpressObjectId: input.wordpressObjectId, lastError: null, updatedAt: new Date().toISOString() };
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
+export function rollbackInterruptedGlwStagingTarget(input: { campaignId: string; stateCode: string; citySlug: string; targetId: string; jobId: string; wordpressObjectId: string }): GlwCampaignTarget {
+  loadState();
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+  if (!current || current.targetId !== input.targetId || current.status !== "draft_ready" || current.jobId !== input.jobId || current.wordpressObjectId !== input.wordpressObjectId || current.leaseId) throw new Error("Interrupted staging rollback requires the exact draft-ready target without a lease.");
+  const updated: GlwCampaignTarget = { ...current, status: "content_ready", wordpressObjectId: null, lastError: null, updatedAt: new Date().toISOString() };
+  targetStore.set(targetKey, updated); persistState(); return deepClone(updated);
+}
+
 export function markGlwFailedCampaignTargetDraftReady(input: {
   campaignId: string;
   stateCode: string;

@@ -23,6 +23,7 @@ import { listGlwCampaigns } from "./campaign-repository";
 import { listAllGlwCampaignTargets } from "./campaign-target-repository";
 import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
 import { glwPageExecutionRepository } from "./page-execution-repository";
+import { getSanAntonioStagingState, SAN_ANTONIO_STAGING_JOB_ID, type SanAntonioStagingReceipt, type SanAntonioStoredAuthorityCertification } from "./san-antonio-wordpress-staging-authority";
 
 export type ReviewSignal = "PASS" | "WARNING" | "BLOCKED" | "NOT_EVALUATED";
 export type ReviewIssue = { category: "CONTENT" | "SEO" | "IMAGE" | "WORDPRESS" | "POLICY"; severity: "WARNING" | "BLOCKED"; what: string; effect: string; safeNextStep: string };
@@ -66,6 +67,7 @@ export type GeneratedPageReviewModel = {
   appliedV3: null | { receiptId: string; status: "draft"; beforeHash: string; afterHash: string; decisionId: string; drift: string | null; comparisonHref: string; ownerReviewRequired: true };
   referencePage: null | { certificationId: string; publicUrl: string; visualCertificationId: string; ownerApprovalId: string; publicationReceiptId: string; href: string; state: "CERTIFIED" };
   themeIntegration: null | { receiptId: string; certificationId: string; state: "PASS" | "FAIL"; drift: string; href: string; visibleH1Count: number; overflow1024: number };
+  wordpressStaging: null | { receiptId: string; state: "WORDPRESS_STAGED"; ownerCompositionApproved: true; wordpressObjectId: string; wordpressStatus: "draft"; wordpressAuthority: "POST_CONTENT"; storedCompositionHash: string; artifactSha: string; approvedCompositionCommit: string; mediaResolved: number; localizationCertification: "PASS"; claimCertification: "PASS"; genesisResponsiveCertification: "PASS"; wordpressStoredAuthorityCertified: true; nativeWordPressDraftRenderCertified: false; nativePreviewLimitation: string; reviewUrl: string };
   durableReviewDecisionExists: false;
 };
 
@@ -101,6 +103,8 @@ export function deriveGeneratedPageReviewModel(input: {
   localThemeVisualCertification?: LocalThemeVisualCertification | null;
   marketMatchBundle?: MarketProductMatchBundle | null;
   visualCertification?: { certification: RenderedVisualCertification | null; decision: RenderedVisualOwnerDecision | null; certificationState: "NOT_CERTIFIED" | "CURRENT" | "STALE"; decisionState: "PENDING" | "CURRENT" | "STALE" };
+  wordpressStagingReceipt?: SanAntonioStagingReceipt | null;
+  wordpressStagingCertification?: SanAntonioStoredAuthorityCertification | null;
 }): GeneratedPageReviewModel {
   const artifact = input.job.generatedDraft;
   const sourceHtml = artifact?.contentHtml ?? "";
@@ -209,6 +213,7 @@ export function deriveGeneratedPageReviewModel(input: {
     appliedV3: applyReceipt ? { receiptId: applyReceipt.receiptId, status: applyReceipt.wordpressStatus, beforeHash: applyReceipt.beforeHash, afterHash: applyReceipt.afterHash, decisionId: applyReceipt.decisionId, drift: applyComparison?.drift.classification??null, comparisonHref: `/glw/pages/${encodeURIComponent(input.job.jobId)}/wordpress-comparison?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, ownerReviewRequired: true } : null,
     referencePage:reference?{certificationId:reference.certificationId,publicUrl:reference.publicUrl,visualCertificationId:reference.publicVisualCertificationId,ownerApprovalId:reference.ownerApprovalId,publicationReceiptId:reference.publicationReceiptId,href:`/glw/pages/${encodeURIComponent(input.job.jobId)}/reference-page?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`,state:reference.state}:null,
     themeIntegration:themeReceipt&&themeCertification?{receiptId:themeReceipt.receiptId,certificationId:themeCertification.certificationId,state:themeCertification.overallState,drift:themeCertification.drift,href:`/glw/pages/${encodeURIComponent(input.job.jobId)}/theme-integration-review?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`,visibleH1Count:themeCertification.captures[0]?.themeIntegration.visibleH1Count??0,overflow1024:themeCertification.captures.find(item=>item.viewport==="DESKTOP_1024")?.horizontalOverflow??-1}:null,
+    wordpressStaging: input.wordpressStagingReceipt && input.wordpressStagingCertification ? { receiptId: input.wordpressStagingReceipt.receiptId, state: "WORDPRESS_STAGED", ownerCompositionApproved: true, wordpressObjectId: input.wordpressStagingReceipt.wordpressObjectId, wordpressStatus: input.wordpressStagingReceipt.wordpressStatus, wordpressAuthority: input.wordpressStagingReceipt.wordpressAuthority, storedCompositionHash: input.wordpressStagingCertification.storedCompositionHash, artifactSha: input.wordpressStagingReceipt.artifactSha, approvedCompositionCommit: input.wordpressStagingReceipt.approvedCompositionCommit, mediaResolved: input.wordpressStagingCertification.mediaResolved, localizationCertification: input.wordpressStagingCertification.localizationContaminationGate, claimCertification: input.wordpressStagingCertification.unsupportedClaims === 0 ? "PASS" : "FAIL", genesisResponsiveCertification: input.wordpressStagingCertification.genesisCompositionCertified ? "PASS" : "FAIL", wordpressStoredAuthorityCertified: input.wordpressStagingCertification.wordpressStoredAuthorityCertified, nativeWordPressDraftRenderCertified: input.wordpressStagingCertification.nativeWordPressDraftRenderCertified, nativePreviewLimitation: input.wordpressStagingCertification.nativeWordPressPreviewLimitation, reviewUrl: input.wordpressEditUrl ?? input.wordpressStagingReceipt.wordpressUrl } : null,
     durableReviewDecisionExists: false,
   };
 }
@@ -277,5 +282,6 @@ export async function buildGeneratedPageReviewModel(input: { jobId: string; orga
   const approvedProductMedia = product.media.primaryImageReference ? resolveApprovedProductAuthorityMedia({ organizationId: job.organizationId, siteId: job.siteId, productId: job.productId, authorityReference: product.media.primaryImageReference }) : null;
   const referenceLocations = listAllGlwCampaignTargets().filter((entry) => entry.organizationId === job.organizationId && entry.siteId === job.siteId && entry.cityName && entry.targetId !== target.targetId).map((entry) => ({ label: entry.cityName!, authority: `CAMPAIGN_TARGET:${entry.targetId}` }));
   const marketMatchBundle = target.citySlug === "dallas" ? getMarketProductMatchBundle({ organizationId: job.organizationId, marketId: "market-dallas-north-texas" }) : null;
-  return deriveGeneratedPageReviewModel({ campaign, target, job, siteName: site.displayName, domain: site.domain, productName: product.displayName, productAuthorityReference: product.media.primaryImageReference, productAuthoritySource: product.authorityProvenance?.sourceType ?? null, knowledgePack: getGlwCampaignKnowledgePack(campaign.campaignId), wordpressDraft, wordpressMedia, wordpressReadState, wordpressEditUrl, mediaAssignments, approvedProductMedia, referenceLocations, localThemingBundle, localThemeVisualCertification, marketMatchBundle, visualCertification });
+  const stagingState = job.jobId === SAN_ANTONIO_STAGING_JOB_ID ? getSanAntonioStagingState() : null; const wordpressStagingReceipt = stagingState?.receipts.at(-1) ?? null; const wordpressStagingCertification = stagingState?.certifications.find((item) => item.receiptId === wordpressStagingReceipt?.receiptId) ?? null;
+  return deriveGeneratedPageReviewModel({ campaign, target, job, siteName: site.displayName, domain: site.domain, productName: product.displayName, productAuthorityReference: product.media.primaryImageReference, productAuthoritySource: product.authorityProvenance?.sourceType ?? null, knowledgePack: getGlwCampaignKnowledgePack(campaign.campaignId), wordpressDraft, wordpressMedia, wordpressReadState, wordpressEditUrl, mediaAssignments, approvedProductMedia, referenceLocations, localThemingBundle, localThemeVisualCertification, marketMatchBundle, visualCertification, wordpressStagingReceipt, wordpressStagingCertification });
 }

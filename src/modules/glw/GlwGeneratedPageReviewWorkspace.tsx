@@ -144,6 +144,30 @@ export function GlwGeneratedPageReviewWorkspace({
         </dl>
       </header>
 
+      {model.wordpressStaging ? (
+        <section className="border border-emerald-800 bg-emerald-950/20 p-5" aria-label="Owner-approved WordPress staging">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-300">Owner Composition Approved</p>
+              <h2 className="mt-2 text-2xl font-black text-white">WordPress Staged</h2>
+              <p className="mt-2 text-sm text-zinc-300">Draft #{model.wordpressStaging.wordpressObjectId} · {model.wordpressStaging.wordpressAuthority.replaceAll("_", " ")} · publication not authorized</p>
+            </div>
+            <a href={model.wordpressStaging.reviewUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center border border-emerald-700 px-4 py-3 text-sm font-bold text-emerald-200 hover:border-emerald-500">Open WordPress Draft</a>
+          </div>
+          <dl className="mt-5 grid gap-4 border-t border-emerald-900 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+            <TraceItem label="Artifact SHA" value={model.wordpressStaging.artifactSha} />
+            <TraceItem label="Composition commit" value={model.wordpressStaging.approvedCompositionCommit} />
+            <TraceItem label="Stored composition hash" value={model.wordpressStaging.storedCompositionHash} />
+            <TraceItem label="Media authority" value={`${model.wordpressStaging.mediaResolved}/4 resolved · product media 10757`} />
+            <TraceItem label="Localization" value={model.wordpressStaging.localizationCertification} />
+            <TraceItem label="Claims" value={model.wordpressStaging.claimCertification} />
+            <TraceItem label="Genesis responsive" value={model.wordpressStaging.genesisResponsiveCertification} />
+            <TraceItem label="Native WP preview" value={model.wordpressStaging.nativeWordPressDraftRenderCertified ? "CERTIFIED" : "NOT CERTIFIED"} />
+          </dl>
+          <p className="mt-4 text-xs leading-5 text-zinc-500">{model.wordpressStaging.nativePreviewLimitation}</p>
+        </section>
+      ) : null}
+
       <section
         className="border border-zinc-800 bg-zinc-900/45 p-5"
         aria-label="Review issues"
