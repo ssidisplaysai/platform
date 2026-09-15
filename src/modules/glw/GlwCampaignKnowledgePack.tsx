@@ -18,6 +18,18 @@ type ReferenceJob = Record<string, unknown> & {
   featuredImagePresent?: boolean | null;
   errorCode?: string | null;
   errorMessage?: string | null;
+  qaChecks?: {
+    claimAuthority?: {
+      policyVersion?: string;
+      findings?: Array<{
+        claimClass: string;
+        claimText: string;
+        authoritySource: string | null;
+        authorityStatus: string;
+        predicateId: string;
+      }>;
+    };
+  } | null;
   generatedDraft?: {
     title?: string;
     seoTitle?: string | null;
@@ -61,6 +73,8 @@ type ReferenceAuthorityBinding = {
   campaignInstructionFingerprint: string;
   referenceFingerprint: string;
   productAuthorityFingerprint: string;
+  claimAuthorityFingerprint: string;
+  generatorContractFingerprint: string;
   qaPolicyVersion: string;
 };
 
@@ -122,6 +136,17 @@ type OwnerAuthorityCapability = {
     valid: boolean;
   } | null;
 };
+
+function requiredAuthorityForClaim(claimClass: string): string {
+  if (["CLIMATE", "LOCATION_FACT"].includes(claimClass)) return "Approved state/local authority";
+  if (["PRODUCT_SPECIFICATION", "DURABILITY", "INTERACTIVITY"].includes(claimClass)) return "Approved product authority";
+  if (["WARRANTY", "PRICING"].includes(claimClass)) return "Approved commercial policy authority";
+  return "Approved authoritative factual source";
+}
+
+function dispositionForClaim(claimClass: string): "REWRITE_AS_CONCEPTUAL" | "REQUIRES_NEW_AUTHORITATIVE_SOURCE" {
+  return claimClass === "INTERACTIVITY" ? "REWRITE_AS_CONCEPTUAL" : "REQUIRES_NEW_AUTHORITATIVE_SOURCE";
+}
 
 export function GlwCampaignKnowledgePack({ campaign, organizationId, initialReferenceState }: { campaign: GlwCampaign; organizationId: string; initialReferenceState?: string | null }) {
   const [pack, setPack] = useState<GlwCampaignKnowledgePack | null>(null);
@@ -608,6 +633,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   ]);
 
   const generatedDraft = job?.generatedDraft ?? null;
+  const unsupportedClaimFindings = job?.qaChecks?.claimAuthority?.findings?.filter((finding) => finding.authorityStatus === "UNSUPPORTED") ?? [];
 
   let wordpressEditUrl: string | null = null;
 
@@ -937,6 +963,25 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
                 <p>QA failure: required Outdoor Digital Sphere product-authority link was missing; hardened claim QA also blocks unsupported factual claims.</p>
                 <p>No WordPress page was created.</p>
                 <p className="mt-1 font-semibold text-amber-300">Safe status: preserved evidence; do not retry without new exact authorization.</p>
+              </div>
+            ) : null}
+
+            {unsupportedClaimFindings.length > 0 ? (
+              <div className="mt-4 border border-red-900/60 bg-red-950/20 p-3 text-zinc-300">
+                <p className="font-semibold text-red-300">Unsupported Claim Evidence ({unsupportedClaimFindings.length})</p>
+                <p className="mt-1 text-zinc-400">Policy: {job?.qaChecks?.claimAuthority?.policyVersion ?? "UNKNOWN"}</p>
+                <div className="mt-3 space-y-3">
+                  {unsupportedClaimFindings.map((finding, index) => (
+                    <div key={`${finding.predicateId}-${index}`} className="border-l-2 border-red-700 pl-3">
+                      <p className="font-semibold text-white">Claim {String(index + 1).padStart(2, "0")} · {finding.claimClass}</p>
+                      <p className="mt-1">{finding.claimText}</p>
+                      <p className="mt-1 text-zinc-400">Failed predicate: {finding.predicateId}</p>
+                      <p className="text-zinc-400">Why unsupported: no supplied authoritative source supports this factual statement.</p>
+                      <p className="text-zinc-400">Required authority: {requiredAuthorityForClaim(finding.claimClass)}</p>
+                      <p className="font-semibold text-amber-300">Disposition: {dispositionForClaim(finding.claimClass)}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : null}
 

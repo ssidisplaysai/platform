@@ -4,12 +4,15 @@ import { readFileSync } from "node:fs";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 import { fingerprintGlwAuthority, GLW_REFERENCE_QA_POLICY_VERSION } from "./reference-claim-authority";
+import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT } from "./reference-generation-claim-contract";
 import { resolveGlwAllowedInternalLinks } from "./site-internal-link-authority";
 
 export type GlwReferenceGenerationAuthorityBinding = {
   campaignInstructionFingerprint: string;
   referenceFingerprint: string;
   productAuthorityFingerprint: string;
+  claimAuthorityFingerprint: string;
+  generatorContractFingerprint: string;
   qaPolicyVersion: string;
 };
 
@@ -54,6 +57,8 @@ export function resolveGlwReferenceGenerationAuthority(input: {
       ? references[0].sha256
       : fingerprintGlwAuthority(references),
     productAuthorityFingerprint: fingerprintGlwAuthority(productAuthority),
+    claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
+    generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
     qaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
     campaignInstructionsLoaded: true,
     referenceFileNames: references.map((reference) => reference.fileName),
@@ -70,6 +75,8 @@ export function generationAuthorityBindingsMatch(
     && supplied.campaignInstructionFingerprint === expected.campaignInstructionFingerprint
     && supplied.referenceFingerprint === expected.referenceFingerprint
     && supplied.productAuthorityFingerprint === expected.productAuthorityFingerprint
+    && supplied.claimAuthorityFingerprint === expected.claimAuthorityFingerprint
+    && supplied.generatorContractFingerprint === expected.generatorContractFingerprint
     && supplied.qaPolicyVersion === expected.qaPolicyVersion);
 }
 

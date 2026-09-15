@@ -10,6 +10,12 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   const request = asRecord(value);
   const page = asRecord(request.page);
   const site = asRecord(request.site);
+  const workflowContext = asRecord(request.workflowContext);
+  const claimContract = asRecord(workflowContext.referenceGenerationClaimContract);
+  const referenceAuthority = asRecord(workflowContext.referenceGenerationAuthority);
+  const additionalInstructions = typeof workflowContext.additionalInstructions === "string"
+    ? workflowContext.additionalInstructions
+    : "";
   const publishingSettings = asRecord(request.publishingSettings);
   const jobId = typeof request.jobId === "string" ? request.jobId.trim() : "";
   const operationKey = typeof request.operationKey === "string" ? request.operationKey.trim() : "";
@@ -52,6 +58,14 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
 
   if (!incomingSiteId) {
     throw new Error("GLW MCP request requires a canonical Genesis site ID.");
+  }
+  if (additionalInstructions.startsWith("CAMPAIGN REFERENCE PAGE")
+    && claimContract.version !== "GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_V1") {
+    throw new Error("GLW MCP reference generation requires the certified claim contract.");
+  }
+  if (additionalInstructions.startsWith("CAMPAIGN REFERENCE PAGE")
+    && !Array.isArray(referenceAuthority.references)) {
+    throw new Error("GLW MCP reference generation requires classified authority inventory.");
   }
 
   return value as GlwN8nDraftRequest;

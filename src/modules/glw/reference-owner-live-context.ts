@@ -78,6 +78,8 @@ export async function resolveGlwReferenceOwnerLiveContext(input: {
     referenceFingerprint: generation.referenceFingerprint,
     campaignInstructionFingerprint: generation.campaignInstructionFingerprint,
     productAuthorityFingerprint: generation.productAuthorityFingerprint,
+    claimAuthorityFingerprint: generation.claimAuthorityFingerprint,
+    generatorContractFingerprint: generation.generatorContractFingerprint,
     qaPolicyVersion: generation.qaPolicyVersion,
     wordpressReadAuthorityFingerprint: fingerprintGlwAuthority(wordpressAuthority),
     exactRuntime,

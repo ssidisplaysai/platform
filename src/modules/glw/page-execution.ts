@@ -149,6 +149,8 @@ export type GlwN8nDraftRequest = {
     category: string;
     additionalInstructions: string;
     additional_instructions: string;
+    referenceGenerationClaimContract: GlwGenerationRequest["referenceGenerationClaimContract"];
+    referenceGenerationAuthority: GlwGenerationRequest["referenceGenerationAuthority"];
     status: "draft";
   };
   promptData: { tone: string; audience: string; callToAction: string };
@@ -175,6 +177,8 @@ export type GlwN8nDraftRequest = {
     citySlug: string;
     hierarchicalSlug: string;
     additionalInstructions: string;
+    referenceGenerationClaimContract: GlwGenerationRequest["referenceGenerationClaimContract"];
+    referenceGenerationAuthority: GlwGenerationRequest["referenceGenerationAuthority"];
   };
 };
 
@@ -368,6 +372,8 @@ export function mapGenerationRequestToN8nDraft(
       category,
       additionalInstructions,
       additional_instructions: additionalInstructions,
+      referenceGenerationClaimContract: request.referenceGenerationClaimContract,
+      referenceGenerationAuthority: request.referenceGenerationAuthority,
       status: "draft",
     },
     promptData: { tone, audience, callToAction },
@@ -394,6 +400,8 @@ export function mapGenerationRequestToN8nDraft(
       citySlug: request.citySlug,
       hierarchicalSlug: request.canonicalPath,
       additionalInstructions,
+      referenceGenerationClaimContract: request.referenceGenerationClaimContract,
+      referenceGenerationAuthority: request.referenceGenerationAuthority,
     },
   };
 }

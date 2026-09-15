@@ -7,6 +7,7 @@ import type {
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 
 import type { ProjectorEnclosureSeoRequestContext } from "@/modules/foundation/projectorenclosure-seo-authority";
+import type { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT } from "./reference-generation-claim-contract";
 
 export type GlwPageType = "general_service" | "state_service" | "city_service";
 export type GlwPublicationIntent = "draft" | "publish";
@@ -274,11 +275,20 @@ export type GlwGenerationRequestInput = {
   wordpressObjectId?: string | null;
   additionalInstructions?: string;
   imageDirection?: string;
+  referenceGenerationClaimContract?: typeof GLW_REFERENCE_GENERATION_CLAIM_CONTRACT;
+  referenceGenerationAuthority?: {
+    references: ReadonlyArray<{ referenceId: string; fileName: string; role: string; scope: string }>;
+    authoritativeFactReferenceIds: readonly string[];
+    visualOrContentReferenceIds: readonly string[];
+    productAuthority: { known: boolean; path: string | null; anchorText: string };
+  };
   campaignId?: string;
   referenceAuthorityBinding?: {
     campaignInstructionFingerprint: string;
     referenceFingerprint: string;
     productAuthorityFingerprint: string;
+    claimAuthorityFingerprint: string;
+    generatorContractFingerprint: string;
     qaPolicyVersion: string;
   };
   referenceOwnerAuthorityClaimId?: string;

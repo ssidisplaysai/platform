@@ -29,6 +29,8 @@ export type GlwReferenceOwnerContext = {
   referenceFingerprint: string;
   campaignInstructionFingerprint: string;
   productAuthorityFingerprint: string;
+  claimAuthorityFingerprint: string;
+  generatorContractFingerprint: string;
   qaPolicyVersion: string;
   wordpressReadAuthorityFingerprint: string;
   exactRuntime: string;
@@ -95,6 +97,8 @@ function assertExactContext(context: GlwReferenceOwnerContext): void {
     ["REFERENCE_FINGERPRINT", context.referenceFingerprint],
     ["INSTRUCTION_FINGERPRINT", context.campaignInstructionFingerprint],
     ["PRODUCT_AUTHORITY_FINGERPRINT", context.productAuthorityFingerprint],
+    ["CLAIM_AUTHORITY_FINGERPRINT", context.claimAuthorityFingerprint],
+    ["GENERATOR_CONTRACT_FINGERPRINT", context.generatorContractFingerprint],
     ["QA_POLICY", context.qaPolicyVersion],
     ["WORDPRESS_AUTHORITY", context.wordpressReadAuthorityFingerprint],
     ["RUNTIME", context.exactRuntime],
@@ -126,6 +130,7 @@ const CONTEXT_FIELDS: ReadonlyArray<keyof GlwReferenceOwnerContext> = [
   "operationType", "principalId", "principalSessionId", "organizationId", "siteId",
   "campaignId", "referenceState", "referenceFingerprint",
   "campaignInstructionFingerprint", "productAuthorityFingerprint", "qaPolicyVersion",
+  "claimAuthorityFingerprint", "generatorContractFingerprint",
   "wordpressReadAuthorityFingerprint", "exactRuntime", "failedJobId", "failedArtifactSha256",
 ];
 
@@ -140,6 +145,8 @@ const MISMATCH_CODES: Readonly<Record<keyof GlwReferenceOwnerContext, string>> =
   referenceFingerprint: "REFERENCE_FINGERPRINT_MISMATCH",
   campaignInstructionFingerprint: "INSTRUCTION_FINGERPRINT_MISMATCH",
   productAuthorityFingerprint: "PRODUCT_AUTHORITY_FINGERPRINT_MISMATCH",
+  claimAuthorityFingerprint: "CLAIM_AUTHORITY_FINGERPRINT_MISMATCH",
+  generatorContractFingerprint: "GENERATOR_CONTRACT_FINGERPRINT_MISMATCH",
   qaPolicyVersion: "QA_POLICY_MISMATCH",
   wordpressReadAuthorityFingerprint: "WORDPRESS_AUTHORITY_MISMATCH",
   exactRuntime: "RUNTIME_MISMATCH",

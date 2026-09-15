@@ -614,6 +614,15 @@ export async function POST(request: NextRequest, context: Context) {
 
   form.additionalInstructions = generationContext.additionalInstructions;
   form.imageDirection = generationContext.imageDirection;
+  form.referenceGenerationClaimContract = generationContext.claimContract;
+  form.referenceGenerationAuthority = {
+    ...generationContext.referenceAuthority,
+    productAuthority: {
+      known: generationAuthority.productAuthorityKnown,
+      path: generationAuthority.productAuthorityPath,
+      anchorText: "Outdoor Digital Sphere",
+    },
+  };
   form.campaignId = campaign.campaignId;
   form.referenceAuthorityBinding = generationAuthority;
   form.referenceOwnerAuthorityClaimId = ownerClaim.claimId;
