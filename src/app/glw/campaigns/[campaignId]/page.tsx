@@ -8,6 +8,7 @@ import { GlwCampaignOperationsOverview } from "@/modules/glw/GlwCampaignOperatio
 import { GlwReferenceGoLiveReadiness } from "@/modules/glw/GlwReferenceGoLiveReadiness";
 import { buildGlwCampaignOperatorReadModel } from "@/modules/glw/campaign-operator-read-model";
 import { getGlwReferenceMediaAuthority } from "@/modules/glw/reference-media-authority";
+import { getGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +36,7 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
   listParams.set("organizationId", first(query.organizationId) ?? model.campaign.organizationId);
   listParams.set("siteId", first(query.siteId) ?? model.campaign.siteId);
   const referenceMediaAuthority = getGlwReferenceMediaAuthority(model.campaign.campaignId, "CA");
+  const referenceStateSelection = getGlwReferenceStateSelection(model.campaign.campaignId);
 
   return (
     <AppShell>
@@ -59,7 +61,7 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
         <GlwCampaignOperationsOverview model={model} />
 
         {model.campaign.status === "draft" ? (
-          <GlwCampaignKnowledgePack campaign={model.campaign} organizationId={model.campaign.organizationId} />
+          <GlwCampaignKnowledgePack campaign={model.campaign} organizationId={model.campaign.organizationId} initialReferenceState={referenceStateSelection?.stateCode} />
         ) : null}
 
         <GlwCampaignOperatorControls

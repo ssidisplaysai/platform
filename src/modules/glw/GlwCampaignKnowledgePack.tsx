@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import type { GlwCampaign } from "./campaign-types";
+import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 
 type ReferenceJob = Record<string, unknown> & {
@@ -39,6 +40,68 @@ type ReferenceResult = Record<string, unknown> & {
   approved?: boolean;
   error?: string;
   recoveryError?: string | null;
+  wordpressAuthority?: WordPressAuthorityStatus;
+  workflow?: ReferenceWorkflowProjection;
+  relatedReference?: {
+    stateCode: string | null;
+    attribution: "UNIQUE_CAMPAIGN_SITE_PRODUCT_RECOVERY";
+    job: ReferenceJob;
+    workflow: ReferenceWorkflowProjection;
+  } | null;
+  selectedReferenceState?: { stateCode: string; selectedAt: string } | null;
+  generationAuthority?: ReferenceAuthorityBinding | null;
+  retryContract?: { referenceState: "IN"; ownerAuthorizationRequired: true; executable: false } | null;
+};
+
+type ReferenceAuthorityBinding = {
+  campaignInstructionFingerprint: string;
+  referenceFingerprint: string;
+  productAuthorityFingerprint: string;
+  qaPolicyVersion: string;
+};
+
+type ReferenceWorkflowProjection = {
+  state:
+    | "READY_TO_GENERATE_REFERENCE"
+    | "REFERENCE_GENERATION_IN_PROGRESS"
+    | "REFERENCE_DRAFT_READY"
+    | "REFERENCE_RECOVERY_REQUIRED"
+    | "REFERENCE_GENERATION_FAILED"
+    | "REFERENCE_BLOCKED"
+    | "REFERENCE_RETRY_READY";
+  operationId: string | null;
+  targetStateCode: string | null;
+  targetStateName: string | null;
+  lastUpdatedAt: string | null;
+  durable: boolean;
+  safeOwnerAction: string;
+  errorCode: string | null;
+  errorMessage: string | null;
+  artifactSha256: string | null;
+  qaFailures: ReadonlyArray<{
+    predicateId: string;
+    predicateName: string;
+    expected: string;
+    observed: string;
+    evidence: string;
+    severity: "BLOCKING";
+  }>;
+  proposedRecoveryAction: string | null;
+  nextReferenceStateCode?: string | null;
+  retryRequiresNewOwnerAuthorization?: boolean;
+  retryExecutable?: boolean;
+};
+
+type WordPressAuthorityStatus = {
+  siteId: string;
+  domain: string | null;
+  wordpressBaseUrl: string | null;
+  configuredUsername: string | null;
+  authorityHealthState: "READY" | "CONNECTION_REQUIRED" | "REPAIR_REQUIRED" | "BLOCKED";
+  reason: string;
+  recoveryAction: "CONNECT_WORDPRESS" | "REPAIR_WORDPRESS_AUTHORITY" | null;
+  recoveryHref: string | null;
+  lastCheckedAt: string;
 };
 
 type OwnerAuthorityCapability = {
@@ -48,7 +111,7 @@ type OwnerAuthorityCapability = {
   prerequisite: string | null;
 };
 
-export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaign: GlwCampaign; organizationId: string }) {
+export function GlwCampaignKnowledgePack({ campaign, organizationId, initialReferenceState }: { campaign: GlwCampaign; organizationId: string; initialReferenceState?: string | null }) {
   const [pack, setPack] = useState<GlwCampaignKnowledgePack | null>(null);
   const [instructions, setInstructions] = useState("");
   const [provenance, setProvenance] = useState<string | null>(null);
@@ -57,7 +120,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const [scope, setScope] = useState("campaign");
   const [message, setMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [referenceState, setReferenceState] = useState(campaign.stateCodes[0] ?? "");
+  const [referenceState, setReferenceState] = useState(initialReferenceState ?? campaign.stateCodes[0] ?? "");
   const [generatingReference, setGeneratingReference] = useState(false);
   const [recoveringReference, setRecoveringReference] = useState(false);
   const [continuingReference, setContinuingReference] = useState(false);
@@ -113,21 +176,36 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
       );
 
       const payload = await response.json() as ReferenceResult;
+      setWordpressAuthority(payload.wordpressAuthority ?? null);
+      if (payload.selectedReferenceState?.stateCode && payload.selectedReferenceState.stateCode !== referenceState) {
+        projectedReferenceState.current = payload.selectedReferenceState.stateCode;
+        setReferenceState(payload.selectedReferenceState.stateCode);
+      }
 
       if (!response.ok) {
         setMessage(payload.error ?? "Unable to recover the reference-page job.");
         return;
       }
 
-      if (payload.job) {
-        setReferenceResult(payload);
+      if (payload.relatedReference?.job && payload.relatedReference.stateCode) {
+        setReferenceResult({
+          ...payload,
+          job: payload.relatedReference.job,
+          workflow: payload.relatedReference.workflow,
+        });
+        return;
       }
+      setReferenceResult(payload);
     } finally {
       setRecoveringReference(false);
     }
   }
 
   useEffect(() => {
+    if (projectedReferenceState.current === referenceState) {
+      projectedReferenceState.current = null;
+      return;
+    }
     void load();
     void recoverReferencePage(false);
   }, [campaign.campaignId, referenceState]);
@@ -446,7 +524,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
   const instructionsApproved = Boolean(pack?.instructions.trim()) && pack?.instructions === instructions;
   const stateOptions = campaign.stateCodes.map((code) => ({
     code,
-    label: code === "CA" ? "California" : code === "TX" ? "Texas" : code,
+    label: GLW_CAMPAIGN_US_STATES.find((state) => state.code === code)?.name ?? code,
   }));
   const selectedStateLabel = stateOptions.find((state) => state.code === referenceState)?.label ?? referenceState;
 
@@ -657,15 +735,22 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
           Generate one state page through the draft-only GLW pipeline. Genesis now preserves and recovers the same reference job across refreshes.
         </p>
 
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border border-zinc-800 bg-zinc-950 px-3 py-3 text-xs">
+          <div>
+            <p className="font-semibold text-white">WordPress Authority: {wordpressAuthorityLabel}</p>
+            <p className="mt-1 text-zinc-400">
+              {wordpressAuthority?.reason ?? `Checking authenticated read authority for ${campaign.siteId}.`}
+            </p>
+          </div>
+        </div>
+
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <label className="text-xs text-zinc-300">
             Reference State
             <select
               value={referenceState}
               onChange={(e) => {
-                setReferenceState(e.target.value);
-                setReferenceResult(null);
-                setContinuationAttemptedJobId(null);
+                void persistReferenceState(e.target.value);
               }}
               className="mt-2 h-10 min-w-48 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white"
             >
@@ -677,13 +762,18 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
             </select>
           </label>
 
+          <div className="text-xs text-zinc-300">
+            <p>Reference State: <strong className="text-white">{selectedStateLabel} ({referenceState})</strong></p>
+            <p className="mt-1 text-zinc-500">The exact selection is persisted before authorization.</p>
+          </div>
+
           <button
             type="button"
-            disabled={!instructionsApproved || generationBusy || !campaign.stateCodes.includes(referenceState)}
+            disabled={!instructionsApproved || generationBusy || existingOperationBlocksGeneration || !wordpressAuthorityReady || !campaign.stateCodes.includes(referenceState)}
             onClick={generateReferencePage}
             className="h-10 rounded-lg bg-red-600 px-4 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {generationBusy ? "Recovering Reference..." : job?.status === "COMPLETE" ? "Regenerate Reference Content" : `Generate ${selectedStateLabel} Reference Page`}
+            {referenceActionLabel}
           </button>
         </div>
 
@@ -744,6 +834,11 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
             Approve the current instructions to unlock reference generation.
           </p>
         ) : null}
+        {instructionsApproved && !wordpressAuthorityReady ? (
+          <p className="mt-2 text-xs text-amber-300">
+            Reference generation remains disabled until this site&apos;s WordPress read authority is ready.
+          </p>
+        ) : null}
 
         {referenceResult && job ? (
           <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950 p-4 text-xs">
@@ -767,6 +862,18 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId }: { campaig
                 </p>
               </div>
             </div>
+
+            {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? (
+              <div className="mt-4 border border-red-900/60 bg-red-950/20 p-3 text-zinc-300">
+                <p className="font-semibold text-red-300">Prior Reference Failure</p>
+                <p className="mt-1">Failed State: Illinois (IL)</p>
+                <p>Failed Job ID: {jobId}</p>
+                <p className="break-all font-mono">Failed Artifact SHA-256: {referenceWorkflow.artifactSha256}</p>
+                <p>QA failure: required Outdoor Digital Sphere product-authority link was missing; hardened claim QA also blocks unsupported factual claims.</p>
+                <p>No WordPress page was created.</p>
+                <p className="mt-1 font-semibold text-amber-300">Safe status: preserved evidence; do not retry without new exact authorization.</p>
+              </div>
+            ) : null}
 
             {job.status === "COMPLETE" ? (
               <div className="mt-4 rounded-lg border border-emerald-900/60 bg-emerald-950/20 p-3">
