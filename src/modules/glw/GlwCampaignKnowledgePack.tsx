@@ -8,6 +8,7 @@ import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 
 type ReferenceJob = Record<string, unknown> & {
   jobId?: string;
+  externalExecutionId?: string | null;
   status?: string;
   qaStatus?: string | null;
   wordCount?: number | null;
@@ -646,6 +647,9 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           || referenceWorkflow?.state === "REFERENCE_RETRY_READY"
           || Boolean(referenceResult?.retryContract);
         const sameJobRecoveryRequired = Boolean(referenceResult?.failedDispatchRecovery && jobId);
+        const terminalQaBlocked = jobStatus === "FAILED"
+          && job?.errorCode === "GENERATED_CONTENT_QA_FAILED"
+          && Boolean(job?.generatedDraft);
   const ownerGrantReady = Boolean(ownerGrantId && ownerAuthority?.grant?.valid);
   const existingOperationBlocksGeneration = Boolean(
     referenceWorkflow &&
@@ -832,13 +836,14 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           <p className="text-zinc-300">State: {selectedStateLabel} ({referenceState})</p>
           <p className="text-zinc-300">Operation: {retryOperation ? "Reference Generation Retry" : "Initial Reference Generation"}</p>
           {retryOperation && referenceWorkflow?.operationId ? <p className="text-zinc-300">Failed job: {referenceWorkflow.operationId}</p> : null}
-          <p className="text-zinc-300">Authorization: {sameJobRecoveryRequired ? "CONSUMED_FOR_EXISTING_JOB" : ownerGrantReady ? "AUTHORIZED" : "REQUIRES_OWNER_AUTHORIZATION"}</p>
+          <p className="text-zinc-300">Authorization: {terminalQaBlocked ? "BLOCKED_BY_QA" : sameJobRecoveryRequired ? "CONSUMED_FOR_EXISTING_JOB" : ownerGrantReady ? "AUTHORIZED" : "REQUIRES_OWNER_AUTHORIZATION"}</p>
           {sameJobRecoveryRequired ? <p className="text-zinc-300">Existing recovery job: {jobId}</p> : null}
+          {job?.externalExecutionId ? <p className="text-zinc-300">n8n execution: {job.externalExecutionId}</p> : null}
           <p className="text-zinc-300">MCP: {referenceResult?.mcpConfiguration?.configured ? "CONFIGURED" : "NOT_CONFIGURED"}</p>
           <p className="mt-1 text-zinc-500">Principal authority: {ownerAuthority?.principalAuthority ?? "CHECKING"}</p>
           {ownerAuthority?.prerequisite ? <p className="mt-1 text-amber-300">Unavailable: {ownerAuthority.prerequisite}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            {!ownerGrantReady && !sameJobRecoveryRequired ? (
+            {!ownerGrantReady && !sameJobRecoveryRequired && !terminalQaBlocked ? (
               <>
                 <button type="button" disabled={!ownerAuthority?.available || ownerAuthorityBusy} onClick={() => void runOwnerPreflight()} className="border border-zinc-700 px-3 py-2 font-semibold text-white disabled:opacity-40">
                   {retryOperation ? "Run Retry Preflight" : "Run Preflight"}
