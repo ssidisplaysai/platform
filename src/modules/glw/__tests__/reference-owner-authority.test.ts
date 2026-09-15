@@ -3,7 +3,7 @@ jest.mock("server-only", () => ({}));
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { NextRequest } from "next/server";
+import { NextRequest } from "next/server";
 import {
   consumeGlwReferenceOwnerClaimForDispatch,
   consumeGlwReferenceOwnerGrant,
@@ -110,7 +110,7 @@ describe("GLW reference-generation owner authority", () => {
   });
 
   test("caller-supplied role headers never resolve a trusted principal", () => {
-    const request = { headers: new Headers({ "x-gcp-roles": "platform_admin", "x-gcp-user": "owner" }) } as NextRequest;
-    expect(resolveGlwTrustedOperatorPrincipal(request)).toMatchObject({ ok: false, code: "TRUSTED_OPERATOR_SESSION_UNAVAILABLE" });
+    const request = new NextRequest("https://genesis.example/api/glw/reference", { headers: { "x-gcp-roles": "platform_admin", "x-gcp-user": "owner" } });
+    expect(resolveGlwTrustedOperatorPrincipal(request, { ...process.env, NODE_ENV: "production", GENESIS_OPERATOR_DIRECTORY_JSON: "[]" })).toMatchObject({ ok: false, code: "TRUSTED_OPERATOR_SESSION_UNAVAILABLE" });
   });
 });

@@ -1,0 +1,33 @@
+{
+  "authorityId": "glw-reference-media-ssi-accent-ca-15338-v1",
+  "organizationId": "ssi",
+  "siteId": "site-ssi-screen-solutions-international",
+  "campaignId": "campaign-ssi-site-ssi-screen-solutions-international-ssi-accent-rear-projection-film-multi-state-benchmark",
+  "stateCode": "CA",
+  "jobId": "e2f30c1d-8511-4435-a15b-f0110c66eb63",
+  "externalExecutionId": "478029",
+  "wordpressObjectId": "15336",
+  "wordpressMediaId": "15338",
+  "mediaUrl": "https://ssidisplays.com/wp-content/uploads/2026/09/california.jpg",
+  "sourceType": "GENESIS_GENERATED_MEDIA",
+  "semanticRole": "LOCAL_CONTEXTUAL_ATMOSPHERE",
+  "provenanceStatus": "PROVEN_BOUNDED",
+  "provenanceEvidence": [
+    "job:e2f30c1d-8511-4435-a15b-f0110c66eb63:qaChecks.mediaAuthority.selectedProvenance=GENERATED_MEDIA",
+    "job:e2f30c1d-8511-4435-a15b-f0110c66eb63:featuredImagePresent=true",
+    "wordpress-page:15336:featured_media=15338",
+    "wordpress-media:15338:title=Accent Rear Projection Film in California",
+    "wordpress-media:15338:file=2026/09/california.jpg",
+    "wordpress-media:15338:created=2026-09-07T16:13:34Z"
+  ],
+  "lineageLimitations": [
+    "Provider generation identifier and source-byte hash were not persisted.",
+    "Historical owner approval was not persisted and is not inferred.",
+    "The media does not establish product geometry or product specifications."
+  ],
+  "ownerApprovalStatus": "REQUIRED",
+  "approvedBy": null,
+  "approvedSessionId": null,
+  "approvedAt": null,
+  "lineageFingerprint": "568ba7b7083cf9996e1cb615adad3623841ac78982bbf91448ad0da190c600f6"
+}

@@ -127,8 +127,8 @@ type SeoRefreshPreviewPayload = {
   eligibleCount: number;
   eligible: readonly {
     stateCode: string;
-    citySlug: string | null;
-    cityName: string | null;
+    citySlug?: string | null;
+    cityName?: string | null;
     jobId: string;
     wordpressObjectId: string;
   }[];
@@ -237,14 +237,8 @@ export function GlwCampaignOperatorControls({
     setLoading(false);
   }, [campaignId, requestHeaders]);
 
-  async function refreshWorkspace() {
-    await loadScheduler();
-    router.refresh();
-  }
-
   useEffect(() => {
     if (campaignStatus !== "active") return;
-
     const timeout = window.setTimeout(() => void loadScheduler(), 0);
     return () => window.clearTimeout(timeout);
   }, [campaignStatus, loadScheduler]);
