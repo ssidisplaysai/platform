@@ -31,6 +31,8 @@ export type GlwReferenceOwnerContext = {
   productAuthorityFingerprint: string;
   claimAuthorityFingerprint: string;
   generatorContractFingerprint: string;
+  localizationPolicyFingerprint: string;
+  n8nWorkflowFingerprint: string;
   qaPolicyVersion: string;
   wordpressReadAuthorityFingerprint: string;
   exactRuntime: string;
@@ -99,6 +101,8 @@ function assertExactContext(context: GlwReferenceOwnerContext): void {
     ["PRODUCT_AUTHORITY_FINGERPRINT", context.productAuthorityFingerprint],
     ["CLAIM_AUTHORITY_FINGERPRINT", context.claimAuthorityFingerprint],
     ["GENERATOR_CONTRACT_FINGERPRINT", context.generatorContractFingerprint],
+    ["LOCALIZATION_POLICY_FINGERPRINT", context.localizationPolicyFingerprint],
+    ["N8N_WORKFLOW_FINGERPRINT", context.n8nWorkflowFingerprint],
     ["QA_POLICY", context.qaPolicyVersion],
     ["WORDPRESS_AUTHORITY", context.wordpressReadAuthorityFingerprint],
     ["RUNTIME", context.exactRuntime],
@@ -131,6 +135,7 @@ const CONTEXT_FIELDS: ReadonlyArray<keyof GlwReferenceOwnerContext> = [
   "campaignId", "referenceState", "referenceFingerprint",
   "campaignInstructionFingerprint", "productAuthorityFingerprint", "qaPolicyVersion",
   "claimAuthorityFingerprint", "generatorContractFingerprint",
+  "localizationPolicyFingerprint", "n8nWorkflowFingerprint",
   "wordpressReadAuthorityFingerprint", "exactRuntime", "failedJobId", "failedArtifactSha256",
 ];
 
@@ -147,6 +152,8 @@ const MISMATCH_CODES: Readonly<Record<keyof GlwReferenceOwnerContext, string>> =
   productAuthorityFingerprint: "PRODUCT_AUTHORITY_FINGERPRINT_MISMATCH",
   claimAuthorityFingerprint: "CLAIM_AUTHORITY_FINGERPRINT_MISMATCH",
   generatorContractFingerprint: "GENERATOR_CONTRACT_FINGERPRINT_MISMATCH",
+  localizationPolicyFingerprint: "LOCALIZATION_POLICY_FINGERPRINT_MISMATCH",
+  n8nWorkflowFingerprint: "N8N_WORKFLOW_FINGERPRINT_MISMATCH",
   qaPolicyVersion: "QA_POLICY_MISMATCH",
   wordpressReadAuthorityFingerprint: "WORDPRESS_AUTHORITY_MISMATCH",
   exactRuntime: "RUNTIME_MISMATCH",

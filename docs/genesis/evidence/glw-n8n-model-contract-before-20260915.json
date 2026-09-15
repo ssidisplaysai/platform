@@ -1,0 +1,33 @@
+{
+  "capturedAt": "2026-09-15T15:40:00.000Z",
+  "mutationExecutedWorkflow": false,
+  "parentWorkflow": {
+    "workflowId": "9WTjTDXX0QNgF6Mw",
+    "name": "GLW MCP Page Generation Recovery v1",
+    "versionId": "ce4f9923-eb38-4334-8e87-09fab7c56ec7",
+    "fingerprint": "6b5067bd97635380b7eae9187ced7b27cbae37d692866c533133462d2b957a71"
+  },
+  "childWorkflow": {
+    "workflowId": "bIDXxyWnY22G8zJC",
+    "name": "Master SEO Page Engine v1.0 - PRODUCTION",
+    "versionId": "515d8389-f901-4e5c-a203-4d52026d71d1",
+    "fingerprint": "027a4f1fe01eec8ae0428248139c122f652ad59f5b92d044eddb1e87d10071d4",
+    "nodeParameterFingerprints": {
+      "Get row(s) in sheet": "267ea3cfcc1d42e2076a3492969e0fae3d4286a3a2f896bd84d4d295c2b9b1d6",
+      "Message a model": "429704fee19b60f9564b27173e7028ff3be3fdc5f63fd4a1b10169c594e5b200",
+      "Expand GLW Content": "3a2cdc8a496c2f2aad0802e75fba5722ef8aeece725a38fdeb4adef54d9b04d0"
+    }
+  },
+  "beforeState": {
+    "structuredContractNormalized": false,
+    "primaryModelReceivesStructuredContract": false,
+    "expansionModelReceivesStructuredContract": false,
+    "freeFormOnlyFallbackPossible": true
+  },
+  "rollback": {
+    "tool": "restore_workflow_version",
+    "workflowId": "bIDXxyWnY22G8zJC",
+    "versionId": "515d8389-f901-4e5c-a203-4d52026d71d1",
+    "instruction": "Restore this exact child workflow version through the authenticated n8n MCP restore_workflow_version tool, then read back and verify fingerprint 027a4f1fe01eec8ae0428248139c122f652ad59f5b92d044eddb1e87d10071d4. Do not execute the workflow during rollback verification."
+  }
+}

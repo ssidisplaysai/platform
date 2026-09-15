@@ -281,6 +281,7 @@ export type GlwGenerationRequestInput = {
     authoritativeFactReferenceIds: readonly string[];
     visualOrContentReferenceIds: readonly string[];
     productAuthority: { known: boolean; path: string | null; anchorText: string };
+    localizationPolicy: { version: string; expectedStateCode: string; authorizedComparisonStateCodes: readonly string[] };
   };
   campaignId?: string;
   referenceAuthorityBinding?: {
@@ -289,6 +290,8 @@ export type GlwGenerationRequestInput = {
     productAuthorityFingerprint: string;
     claimAuthorityFingerprint: string;
     generatorContractFingerprint: string;
+    localizationPolicyFingerprint: string;
+    n8nWorkflowFingerprint: string;
     qaPolicyVersion: string;
   };
   referenceOwnerAuthorityClaimId?: string;

@@ -10,9 +10,10 @@ import {
 } from "./page-execution";
 import { GLW_N8N_WORKFLOW_ID } from "./n8n-draft-adapter";
 import { validateGlwN8nMcpDraftRequest } from "./n8n-mcp-recovery-contract";
+import { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
 
 export const GLW_N8N_MCP_TRANSPORT = "N8N_MCP" as const;
-export const GLW_N8N_MCP_RECOVERY_WORKFLOW_ID = "9WTjTDXX0QNgF6Mw";
+export { GLW_N8N_MCP_RECOVERY_WORKFLOW_ID } from "./n8n-workflow-identity";
 export const GLW_N8N_MCP_ENGINE_WORKFLOW_ID = GLW_N8N_WORKFLOW_ID;
 
 type McpConfiguration = {

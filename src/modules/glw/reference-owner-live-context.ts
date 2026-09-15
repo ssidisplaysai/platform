@@ -80,6 +80,8 @@ export async function resolveGlwReferenceOwnerLiveContext(input: {
     productAuthorityFingerprint: generation.productAuthorityFingerprint,
     claimAuthorityFingerprint: generation.claimAuthorityFingerprint,
     generatorContractFingerprint: generation.generatorContractFingerprint,
+    localizationPolicyFingerprint: generation.localizationPolicyFingerprint,
+    n8nWorkflowFingerprint: generation.n8nWorkflowFingerprint,
     qaPolicyVersion: generation.qaPolicyVersion,
     wordpressReadAuthorityFingerprint: fingerprintGlwAuthority(wordpressAuthority),
     exactRuntime,

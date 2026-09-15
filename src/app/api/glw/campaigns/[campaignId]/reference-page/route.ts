@@ -23,6 +23,7 @@ import { glwPageExecutionRepository } from "@/modules/glw/page-execution-reposit
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
 import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
+import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -621,6 +622,11 @@ export async function POST(request: NextRequest, context: Context) {
       known: generationAuthority.productAuthorityKnown,
       path: generationAuthority.productAuthorityPath,
       anchorText: "Outdoor Digital Sphere",
+    },
+    localizationPolicy: {
+      version: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION,
+      expectedStateCode: target.state.code,
+      authorizedComparisonStateCodes: [],
     },
   };
   form.campaignId = campaign.campaignId;

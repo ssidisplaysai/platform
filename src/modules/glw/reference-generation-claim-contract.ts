@@ -1,6 +1,7 @@
 import { fingerprintGlwAuthority, GLW_REFERENCE_CLAIM_CLASSES, GLW_REFERENCE_QA_POLICY_VERSION } from "./reference-claim-authority";
 import { GLW_REFERENCE_CLAIM_DISPOSITION_VERSION } from "./reference-claim-disposition";
 import { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "./reference-generation-claim-contract-version";
+import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "./state-localization-contamination";
 
 export { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "./reference-generation-claim-contract-version";
 
@@ -25,6 +26,13 @@ export const GLW_REFERENCE_GENERATION_CLAIM_CONTRACT = {
     anchorText: "Outdoor Digital Sphere",
     href: "/outdoor-digital-sphere/",
   },
+  localizationPolicy: {
+    version: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION,
+    expectedStateRequired: true,
+    unauthorizedNonTargetStateContextProhibited: true,
+    navigationAndMetadataExcluded: true,
+    authorizedComparisonRequiresExplicitStateCode: true,
+  },
 } as const;
 
 export const GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT = fingerprintGlwAuthority(GLW_REFERENCE_GENERATION_CLAIM_CONTRACT);
@@ -32,6 +40,13 @@ export const GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT = fingerprintGlwAuthority
   policyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
   dispositionVersion: GLW_REFERENCE_CLAIM_DISPOSITION_VERSION,
   claimClasses: GLW_REFERENCE_CLAIM_CLASSES,
+});
+export const GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT = fingerprintGlwAuthority({
+  version: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION,
+  expectedStateRequired: true,
+  nonTargetTargetContextBlocked: true,
+  navigationAndLinksExcluded: true,
+  authorizedComparisonSupported: true,
 });
 
 export function serializeGlwReferenceGenerationClaimContract(): string {

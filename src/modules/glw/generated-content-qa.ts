@@ -1,4 +1,5 @@
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
+import { evaluateGlwStateLocalizationContamination } from "./state-localization-contamination";
 import type { GlwGenerationRequest } from "./page-generation";
 
 type QaCheck = { ok: boolean; message: string };
@@ -190,6 +191,7 @@ export function evaluateGlwGeneratedContentQa(input: {
     url: string;
     anchorText: string;
   } | null;
+  authorizedComparisonStateCodes?: readonly string[];
 }): GlwGeneratedContentQaResult {
   const html = input.artifact.contentHtml ?? "";
   const text = stripHtml(html);
@@ -212,6 +214,13 @@ export function evaluateGlwGeneratedContentQa(input: {
   const expectedProduct = includesExpected(text, input.request.productTopic);
   const expectedState = includesExpected(text, input.request.stateName);
   const expectedCity = includesExpected(text, input.request.cityName);
+  const localization = input.request.pageType === "state_service"
+    ? evaluateGlwStateLocalizationContamination({
+        contentHtml: html,
+        expectedStateCode: input.request.stateCode,
+        authorizedComparisonStateCodes: input.authorizedComparisonStateCodes,
+      })
+    : null;
   const contentPresent = text.length > 0;
   const wordCountOk = wordCount >= minimumWordCount;
   const domainsOk = foreignDomains.length === 0;
@@ -237,6 +246,14 @@ export function evaluateGlwGeneratedContentQa(input: {
     textIntegrity: { ok: textIntegrityOk, message: textIntegrityOk ? "No known spacing or word-join corruption detected." : `Detected text-integrity markers: ${textIntegrityMarkers.slice(0, 12).join(", ")}.` },
     expectedProduct: { ok: expectedProduct, message: expectedProduct ? "Expected product/topic is present." : `Expected product/topic is missing: ${input.request.productTopic}.` },
     expectedState: { ok: expectedState, message: expectedState ? "Expected state is present." : `Expected state is missing: ${input.request.stateName ?? ""}.` },
+    stateLocalizationContamination: {
+      ok: localization?.ok ?? true,
+      message: localization
+        ? localization.ok
+          ? `${localization.policyVersion}: expected state present and no unauthorized non-target state context found.`
+          : `${localization.policyVersion}: ${!localization.expectedStatePresent ? "expected state missing" : localization.contaminations.map((entry) => `${entry.stateCode}: ${entry.evidence}`).join(" | ")}`
+        : "Cross-state contamination is not applicable to this page type.",
+    },
     expectedCity: { ok: expectedCity, message: expectedCity ? "Expected city is present." : `Expected city is missing: ${input.request.cityName ?? ""}.` },
     stateProductAuthorityLink: {
       ok: stateProductLinkOk,

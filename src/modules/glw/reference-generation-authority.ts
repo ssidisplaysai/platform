@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 import { fingerprintGlwAuthority, GLW_REFERENCE_QA_POLICY_VERSION } from "./reference-claim-authority";
-import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT } from "./reference-generation-claim-contract";
+import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT, GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT } from "./reference-generation-claim-contract";
+import { GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT } from "./n8n-workflow-identity";
 import { resolveGlwAllowedInternalLinks } from "./site-internal-link-authority";
 
 export type GlwReferenceGenerationAuthorityBinding = {
@@ -13,6 +14,8 @@ export type GlwReferenceGenerationAuthorityBinding = {
   productAuthorityFingerprint: string;
   claimAuthorityFingerprint: string;
   generatorContractFingerprint: string;
+  localizationPolicyFingerprint: string;
+  n8nWorkflowFingerprint: string;
   qaPolicyVersion: string;
 };
 
@@ -59,6 +62,8 @@ export function resolveGlwReferenceGenerationAuthority(input: {
     productAuthorityFingerprint: fingerprintGlwAuthority(productAuthority),
     claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
     generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+    localizationPolicyFingerprint: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
+    n8nWorkflowFingerprint: GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT,
     qaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
     campaignInstructionsLoaded: true,
     referenceFileNames: references.map((reference) => reference.fileName),
@@ -77,6 +82,8 @@ export function generationAuthorityBindingsMatch(
     && supplied.productAuthorityFingerprint === expected.productAuthorityFingerprint
     && supplied.claimAuthorityFingerprint === expected.claimAuthorityFingerprint
     && supplied.generatorContractFingerprint === expected.generatorContractFingerprint
+    && supplied.localizationPolicyFingerprint === expected.localizationPolicyFingerprint
+    && supplied.n8nWorkflowFingerprint === expected.n8nWorkflowFingerprint
     && supplied.qaPolicyVersion === expected.qaPolicyVersion);
 }
 

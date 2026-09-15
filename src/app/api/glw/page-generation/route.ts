@@ -297,6 +297,7 @@ async function finalizeContentReadyExecution(input: {
     requiredCanonicalProductLink: productAuthority.canonicalProduct
       ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
       : null,
+    authorizedComparisonStateCodes: input.request.referenceGenerationAuthority?.localizationPolicy.authorizedComparisonStateCodes,
   });
 
   const eligibleForBoundedRepair =
@@ -345,12 +346,33 @@ async function finalizeContentReadyExecution(input: {
       requiredCanonicalProductLink: productAuthority.canonicalProduct
         ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
         : null,
+      authorizedComparisonStateCodes: input.request.referenceGenerationAuthority?.localizationPolicy.authorizedComparisonStateCodes,
     });
   }
 
   const claimAuthority = input.request.referenceAuthorityBinding
     ? evaluateGlwReferenceClaimAuthority({ artifact: enrichment.artifact })
     : null;
+  const productAuthorityFailures = Object.fromEntries(
+    ["stateProductAuthorityLink", "canonicalProductReference"]
+      .filter((key) => qa.checks[key]?.ok === false)
+      .map((key) => [key, qa.checks[key].message]),
+  );
+  if (Object.keys(productAuthorityFailures).length > 0) {
+    const timestamp = new Date().toISOString();
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      generatedDraft: enrichment.artifact,
+      errorCode: "GENERATED_CONTENT_QA_FAILED",
+      errorMessage: "Required product-authority link QA failed.",
+      qaStatus: "FAILED",
+      qaChecks: qa.checks,
+      qaFailureReasons: productAuthorityFailures,
+      wordCount: qa.wordCount,
+      updatedAt: timestamp,
+      completedAt: timestamp,
+    });
+  }
   if (claimAuthority && !claimAuthority.ok) {
     const timestamp = new Date().toISOString();
     return glwPageExecutionRepository.update(input.job.jobId, {
@@ -361,6 +383,27 @@ async function finalizeContentReadyExecution(input: {
       qaStatus: "FAILED",
       qaChecks: { ...qa.checks, claimAuthority: { policyVersion: claimAuthority.policyVersion, findings: claimAuthority.findings } },
       qaFailureReasons: { ...qa.failureReasons, ...claimAuthority.failureReasons },
+      wordCount: qa.wordCount,
+      updatedAt: timestamp,
+      completedAt: timestamp,
+    });
+  }
+
+  const localizationFailures = Object.fromEntries(
+    ["expectedState", "stateLocalizationContamination"]
+      .filter((key) => qa.checks[key]?.ok === false)
+      .map((key) => [key, qa.checks[key].message]),
+  );
+  if (Object.keys(localizationFailures).length > 0) {
+    const timestamp = new Date().toISOString();
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      generatedDraft: enrichment.artifact,
+      errorCode: "GENERATED_CONTENT_QA_FAILED",
+      errorMessage: "State localization QA failed.",
+      qaStatus: "FAILED",
+      qaChecks: { ...qa.checks, claimAuthority: claimAuthority ? { policyVersion: claimAuthority.policyVersion, findings: claimAuthority.findings } : null },
+      qaFailureReasons: localizationFailures,
       wordCount: qa.wordCount,
       updatedAt: timestamp,
       completedAt: timestamp,

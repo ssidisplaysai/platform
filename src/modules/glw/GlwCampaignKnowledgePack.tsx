@@ -77,6 +77,8 @@ type ReferenceAuthorityBinding = {
   productAuthorityFingerprint: string;
   claimAuthorityFingerprint: string;
   generatorContractFingerprint: string;
+  localizationPolicyFingerprint: string;
+  n8nWorkflowFingerprint: string;
   qaPolicyVersion: string;
 };
 
