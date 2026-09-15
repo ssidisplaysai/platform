@@ -4,14 +4,38 @@ import {
   issueGlwReferenceOwnerGrant,
   issueGlwReferencePreflightReceipt,
   GlwReferenceOwnerAuthorityError,
+  projectGlwReferenceOwnerGrant,
   type GlwReferenceOwnerOperationType,
 } from "@/modules/glw/reference-owner-authority";
 import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest, context: Context) {
   const principal = resolveGlwTrustedOperatorPrincipal(request);
+  let grant = null;
+  let grantProjectionError: string | null = null;
+  const operationType = request.nextUrl.searchParams.get("operationType") as GlwReferenceOwnerOperationType | null;
+  const organizationId = request.nextUrl.searchParams.get("organizationId");
+  const siteId = request.nextUrl.searchParams.get("siteId");
+  const referenceState = request.nextUrl.searchParams.get("referenceState");
+  if (principal.ok && operationType && organizationId && siteId && referenceState) {
+    const { campaignId } = await context.params;
+    try {
+      const liveContext = await resolveGlwReferenceOwnerLiveContext({
+        operationType,
+        organizationId,
+        siteId,
+        campaignId,
+        referenceState,
+        failedJobId: request.nextUrl.searchParams.get("failedJobId"),
+        failedArtifactSha256: request.nextUrl.searchParams.get("failedArtifactSha256"),
+      });
+      grant = projectGlwReferenceOwnerGrant({ principal: principal.principal, liveContext });
+    } catch (error) {
+      grantProjectionError = error instanceof Error ? error.message : "REFERENCE_GRANT_PROJECTION_FAILED";
+    }
+  }
   return NextResponse.json({
     authorityPrimitive: "GLW_REFERENCE_GENERATION_OWNER_AUTHORITY_V1",
     principalAuthority: principal.ok ? principal.principal.authority : "UNAVAILABLE",
@@ -19,6 +43,8 @@ export async function GET(request: NextRequest) {
     callerSuppliedRoleHeadersAuthorize: false,
     available: principal.ok,
     prerequisite: principal.ok ? null : principal.message,
+    grant,
+    grantProjectionError,
   }, { status: principal.ok ? 200 : 503 });
 }
 

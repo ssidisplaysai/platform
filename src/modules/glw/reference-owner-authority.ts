@@ -162,6 +162,38 @@ function persist(state: State, revision: number): void {
   savePersistedState({ namespace: PERSISTENCE_NAMESPACE, state, expectedRevision: revision });
 }
 
+export type GlwReferenceOwnerGrantProjection = {
+  grantId: string;
+  preflightReceiptId: string;
+  issuedAt: string;
+  expiresAt: string;
+  status: "ACTIVE" | "CONSUMED" | "REVOKED" | "EXPIRED";
+  valid: boolean;
+};
+
+export function projectGlwReferenceOwnerGrant(input: {
+  principal: GlwTrustedOperatorPrincipal;
+  liveContext: Omit<GlwReferenceOwnerContext, "principalId" | "principalSessionId">;
+  now?: Date;
+}): GlwReferenceOwnerGrantProjection | null {
+  const now = input.now ?? new Date();
+  const live = contextFromPrincipal(input.principal, input.liveContext);
+  assertExactContext(live);
+  const grant = load().state.grants
+    .filter((candidate) => CONTEXT_FIELDS.every((field) => candidate[field] === live[field]))
+    .sort((left, right) => new Date(right.issuedAt).getTime() - new Date(left.issuedAt).getTime())[0];
+  if (!grant) return null;
+  const expired = new Date(grant.expiresAt) <= now;
+  return {
+    grantId: grant.grantId,
+    preflightReceiptId: grant.preflightReceiptId,
+    issuedAt: grant.issuedAt,
+    expiresAt: grant.expiresAt,
+    status: expired && grant.status === "ACTIVE" ? "EXPIRED" : grant.status,
+    valid: grant.status === "ACTIVE" && !expired,
+  };
+}
+
 export function issueGlwReferencePreflightReceipt(input: {
   principal: GlwTrustedOperatorPrincipal;
   context: Omit<GlwReferenceOwnerContext, "principalId" | "principalSessionId">;

@@ -9,6 +9,7 @@ import {
   consumeGlwReferenceOwnerGrant,
   issueGlwReferenceOwnerGrant,
   issueGlwReferencePreflightReceipt,
+  projectGlwReferenceOwnerGrant,
   revokeGlwReferenceOwnerGrant,
   validateConsumedGlwReferenceOwnerClaim,
   type GlwReferenceOwnerContext,
@@ -69,6 +70,13 @@ describe("GLW reference-generation owner authority", () => {
     expect(() => issueGlwReferenceOwnerGrant({ principal, preflightReceiptId: receipt.receiptId, liveContext: context(), now: new Date("2030-01-01T00:02:01.000Z") })).toThrow("expired");
     const active = issue();
     expect(() => consumeGlwReferenceOwnerGrant({ principal, grantId: active.grant.grantId, preflightReceiptId: active.receipt.receiptId, liveContext: active.live, now: new Date("2030-01-01T00:05:01.000Z") })).toThrow("expired");
+  });
+
+  test("projects exact grant validity without consuming authority", () => {
+    const active = issue();
+    expect(projectGlwReferenceOwnerGrant({ principal, liveContext: active.live, now })).toMatchObject({ grantId: active.grant.grantId, status: "ACTIVE", valid: true });
+    expect(projectGlwReferenceOwnerGrant({ principal, liveContext: active.live, now: new Date("2030-01-01T00:05:01.000Z") })).toMatchObject({ grantId: active.grant.grantId, status: "EXPIRED", valid: false });
+    expect(projectGlwReferenceOwnerGrant({ principal, liveContext: { ...active.live, referenceState: "IL" }, now })).toBeNull();
   });
 
   test("denies a preflight receipt used with a mismatched live context", () => {
