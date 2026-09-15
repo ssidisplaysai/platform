@@ -5,7 +5,9 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 
 const WORKFLOW_ID = "bIDXxyWnY22G8zJC";
 const BEFORE_VERSION_ID = "515d8389-f901-4e5c-a203-4d52026d71d1";
-const CONTRACT_VERSION = "GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_V1";
+const V1_WORKFLOW_FINGERPRINT = "e42c598bd0a8e358da74edeb7063d398e992ecc83dca679508a94a3ef406fb10";
+const PREVIOUS_CONTRACT_VERSION = "GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_V1";
+const CONTRACT_VERSION = "GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_V1_1";
 const FIELD_NAMES = [
   "generation_claim_contract_version",
   "generation_claim_contract_json",
@@ -119,6 +121,51 @@ MANDATORY MODEL AUTHORITY RULES
   };
 }
 
+function v11Parameters(workflow) {
+  const normalizer = node(workflow, "Get row(s) in sheet");
+  const primary = node(workflow, "Message a model");
+  const expansion = node(workflow, "Expand GLW Content");
+  const upgradeNormalizer = (value) => {
+    let code = value;
+    const previousVersionCheck = `claimContract.version !== '${PREVIOUS_CONTRACT_VERSION}'`;
+    if (!code.includes(previousVersionCheck) || code.includes("GLW_MODEL_SOURCE_TO_CLAIM_MAPPING_INVALID")) {
+      throw new Error("V1_1_NORMALIZER_PRECONDITION_FAILED");
+    }
+    code = code.replace(previousVersionCheck, `claimContract.version !== '${CONTRACT_VERSION}'`);
+    const classificationCheck = "  if (referenceAuthority.references.some((reference) => !reference.referenceId || !reference.fileName || !reference.role || !reference.scope)) throw new Error('GLW_MODEL_REFERENCE_CLASSIFICATION_INVALID');";
+    const v11Checks = `${classificationCheck}
+  if (!Array.isArray(referenceAuthority.authoritativeFactReferenceIds) || !Array.isArray(referenceAuthority.visualOrContentReferenceIds) || !Array.isArray(referenceAuthority.supportedClaimMappings)) throw new Error('GLW_MODEL_SOURCE_TO_CLAIM_MAPPING_INVALID');
+  if (referenceAuthority.productAuthority.authorityScope !== 'NAVIGATION_AND_PRODUCT_IDENTITY_ONLY') throw new Error('GLW_MODEL_PRODUCT_AUTHORITY_SCOPE_INVALID');
+  const authoritativeIds = new Set(referenceAuthority.authoritativeFactReferenceIds);
+  if (referenceAuthority.supportedClaimMappings.some((mapping) => !mapping || !authoritativeIds.has(mapping.authoritativeFactReferenceId) || !mapping.claimClass || !mapping.supportedAssertion)) throw new Error('GLW_MODEL_SOURCE_TO_CLAIM_MAPPING_INVALID');`;
+    if (!code.includes(classificationCheck)) throw new Error("V1_1_CLASSIFICATION_PRECONDITION_FAILED");
+    return code.replace(classificationCheck, v11Checks);
+  };
+  const upgradePrompt = (value) => {
+    const previousRule = "- State facts only when explicitly supported by authoritativeFactReferenceIds or productAuthority.";
+    if (!value.includes(previousRule) || value.includes("NO_AUTHORITY_MAPPING => NO_PROTECTED_FACTUAL_ASSERTION")) {
+      throw new Error("V1_1_PROMPT_PRECONDITION_FAILED");
+    }
+    return value.replace(previousRule, [
+      "- NO_AUTHORITY_MAPPING => NO_PROTECTED_FACTUAL_ASSERTION.",
+      "- Every protected factual sentence requires authoritativeFactReferenceId plus an exact supportedAssertion mapping.",
+      "- productAuthority is navigation and product identity only; it never establishes specifications, capabilities, performance, installation, service, warranty, pricing, interactivity, or remote management.",
+      "- With no mapping, use a direct buyer question beginning What, Which, Does the selected supplier confirm, or Can the selected supplier confirm.",
+      "- Omit unsupported trends, adoption, growth, popularity, market movement, industry direction, and regional demand; replace only with conceptual planning or application guidance.",
+      "- Generic product knowledge is not authority. Keep headings structurally separate from claim sentences.",
+    ].join("\n"));
+  };
+  const primaryParameters = structuredClone(primary.parameters);
+  primaryParameters.responses.values[0].content = upgradePrompt(primaryParameters.responses.values[0].content);
+  const expansionParameters = structuredClone(expansion.parameters);
+  expansionParameters.responses.values[0].content = upgradePrompt(expansionParameters.responses.values[0].content);
+  return {
+    normalizer: { ...normalizer.parameters, jsCode: upgradeNormalizer(normalizer.parameters.jsCode) },
+    primary: primaryParameters,
+    expansion: expansionParameters,
+  };
+}
+
 function verification(workflow) {
   const normalizer = JSON.stringify(node(workflow, "Get row(s) in sheet").parameters);
   const primary = JSON.stringify(node(workflow, "Message a model").parameters);
@@ -136,10 +183,19 @@ function verification(workflow) {
       "GLW_MODEL_CLAIM_AUTHORITY_REQUIRED",
       "GLW_MODEL_REFERENCE_CLASSIFICATION_INVALID",
     ].every((marker) => normalizer.includes(marker)),
+    contractVersion: normalizer.includes(CONTRACT_VERSION)
+      ? CONTRACT_VERSION
+      : normalizer.includes(PREVIOUS_CONTRACT_VERSION)
+        ? PREVIOUS_CONTRACT_VERSION
+        : null,
+    sourceToClaimMappingRequired: normalizer.includes("GLW_MODEL_SOURCE_TO_CLAIM_MAPPING_INVALID"),
+    productAuthorityNavigationOnly: normalizer.includes("NAVIGATION_AND_PRODUCT_IDENTITY_ONLY"),
     normalizedFields: Object.fromEntries(FIELD_NAMES.map((field) => [field, normalizer.includes(field)])),
     primaryModelFields: Object.fromEntries(FIELD_NAMES.map((field) => [field, primary.includes(field)])),
     expansionModelFields: Object.fromEntries(FIELD_NAMES.map((field) => [field, expansion.includes(field)])),
     freeFormOnlyFallbackPossible: !normalizer.includes("GLW_MODEL_CLAIM_CONTRACT_REQUIRED"),
+    primaryModelV11Rules: primary.includes("NO_AUTHORITY_MAPPING => NO_PROTECTED_FACTUAL_ASSERTION"),
+    expansionModelV11Rules: expansion.includes("NO_AUTHORITY_MAPPING => NO_PROTECTED_FACTUAL_ASSERTION"),
   };
 }
 
@@ -156,9 +212,10 @@ async function main() {
       console.log(JSON.stringify(verification(current), null, 2));
       return;
     }
-    if (mode !== "apply") throw new Error("Usage: node scripts/glw-n8n-model-contract-repair.mjs [verify|apply]");
-    if (current.versionId !== BEFORE_VERSION_ID) throw new Error(`WORKFLOW_VERSION_CHANGED:${current.versionId}`);
-    const parameters = patchedParameters(current);
+    if (!["apply", "apply-v1-1"].includes(mode)) throw new Error("Usage: node scripts/glw-n8n-model-contract-repair.mjs [verify|apply|apply-v1-1]");
+    if (mode === "apply" && current.versionId !== BEFORE_VERSION_ID) throw new Error(`WORKFLOW_VERSION_CHANGED:${current.versionId}`);
+    if (mode === "apply-v1-1" && fingerprint(current) !== V1_WORKFLOW_FINGERPRINT) throw new Error(`WORKFLOW_FINGERPRINT_CHANGED:${fingerprint(current)}`);
+    const parameters = mode === "apply-v1-1" ? v11Parameters(current) : patchedParameters(current);
     const result = await client.callTool({
       name: "update_workflow",
       arguments: {

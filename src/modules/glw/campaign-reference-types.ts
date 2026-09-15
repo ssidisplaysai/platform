@@ -1,4 +1,5 @@
 export type GlwCampaignReferenceKind = "document" | "image";
+import type { GlwReferenceClaimClass } from "./reference-claim-authority";
 export type GlwCampaignReferenceScope = "campaign" | "reference_only";
 export type GlwCampaignReferenceRole =
   | "authoritative_fact"
@@ -19,6 +20,10 @@ export type GlwCampaignReference = {
   sizeBytes: number;
   storagePath: string;
   createdAt: string;
+  supportedAssertions?: readonly {
+    claimClass: GlwReferenceClaimClass;
+    assertion: string;
+  }[];
 };
 
 export type GlwCampaignKnowledgePack = {

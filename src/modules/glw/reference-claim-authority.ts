@@ -8,7 +8,8 @@ export const GLW_REFERENCE_CLAIM_CLASSES = [
   "LOCATION_FACT", "MARKET_ADOPTION", "CLIMATE", "PRODUCT_CAPABILITY",
   "PRODUCT_SPECIFICATION", "DURABILITY", "INGRESS_PROTECTION", "BRIGHTNESS",
   "INTERACTIVITY", "REMOTE_MANAGEMENT", "INSTALLATION_SERVICE", "TRAINING",
-  "WARRANTY", "SERVICE_AVAILABILITY", "PRICING", "INVENTORY",
+  "WARRANTY", "SERVICE_AVAILABILITY", "PRICING", "INVENTORY", "PERFORMANCE",
+  "INSTALLATION_CAPABILITY", "SERVICE_CAPABILITY",
 ] as const;
 
 export type GlwReferenceClaimClass = typeof GLW_REFERENCE_CLAIM_CLASSES[number];
@@ -24,15 +25,21 @@ export type GlwClaimAuthorityFinding = {
   predicateId: string;
 };
 
+export type GlwProtectedClaimAuthorityMapping = {
+  authoritativeFactReferenceId: string;
+  claimClass: GlwReferenceClaimClass;
+  supportedAssertion: string;
+};
+
 type ClaimRule = {
   claimClass: GlwReferenceClaimClass;
   pattern: RegExp;
 };
 
 const RULES: readonly ClaimRule[] = [
-  { claimClass: "MARKET_ADOPTION", pattern: /(?:venues?|businesses?|organizations?).{0,80}(?:continue to adopt|increasingly adopt|growing demand|adoption)/gi },
+  { claimClass: "MARKET_ADOPTION", pattern: /(?:\btrends?\b|\badoption\b|\bgrowth\b|increasing use|\bpopularity\b|market movement|industry direction|regional demand|(?:venues?|businesses?|organizations?).{0,80}(?:continue to adopt|increasingly adopt|growing demand|adoption))/gi },
   { claimClass: "CLIMATE", pattern: /(?:climate|temperature swings?|local lighting conditions|weather conditions?)/gi },
-  { claimClass: "PRODUCT_CAPABILITY", pattern: /(?:outdoor readability|readable outdoors?|support interactivity|interactive content|broad visibility)/gi },
+  { claimClass: "PRODUCT_CAPABILITY", pattern: /(?:outdoor readability|readable outdoors?|support interactivity|interactive content|broad visibility|requires? sensors?|input devices?|networking support|control systems?)/gi },
   { claimClass: "PRODUCT_SPECIFICATION", pattern: /(?:technical specifications?|performance ratings?|product specifications?|anti-glare|dimming|color[- ]temperature)/gi },
   { claimClass: "DURABILITY", pattern: /(?:weatherproof construction|weatherproof|withstand moisture|uv exposure|durability ratings?)/gi },
   { claimClass: "INGRESS_PROTECTION", pattern: /(?:ingress protection|\bingress\b|\bIP\d{2}\b)/gi },
@@ -46,13 +53,27 @@ const RULES: readonly ClaimRule[] = [
   { claimClass: "PRICING", pattern: /(?:\bpricing\b|\bprice(?:s|d)?\b|\bcosts?\b)/gi },
   { claimClass: "INVENTORY", pattern: /(?:in stock|current inventory|inventory availability|available now)/gi },
   { claimClass: "LOCATION_FACT", pattern: /(?:Illinois|Indiana).{0,100}(?:requires?|is home to|nearly always|statewide)/gi },
+  { claimClass: "PERFORMANCE", pattern: /(?:guaranteed performance|improves? performance|performance through|high-performance)/gi },
+  { claimClass: "INSTALLATION_CAPABILITY", pattern: /(?:we|our team|the company).{0,60}(?:installs?|handles? installation|provides? installation)/gi },
+  { claimClass: "SERVICE_CAPABILITY", pattern: /(?:we|our team|the company).{0,60}(?:services?|maintains?|provides? support)/gi },
 ];
 
 function textFromHtml(html: string): string {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<h[1-6]\b[^>]*>[\s\S]*?<\/h[1-6]>/gi, ". ")
     .replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&")
     .replace(/\s+/g, " ").trim();
+}
+
+function headingsFromHtml(html: string): string[] {
+  return [...html.matchAll(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi)]
+    .map((match) => match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function normalizedAssertion(value: string): string {
+  return value.replace(/\s+/g, " ").trim().toLowerCase();
 }
 
 function sentenceAt(text: string, index: number): string {
@@ -64,29 +85,52 @@ function sentenceAt(text: string, index: number): string {
 
 export function evaluateGlwReferenceClaimAuthority(input: {
   artifact: GlwGeneratedDraftArtifact;
-  supportedClaimPatterns?: readonly RegExp[];
+  authority?: {
+    references: readonly { referenceId: string; role: string }[];
+    authoritativeFactReferenceIds: readonly string[];
+    supportedClaimMappings: readonly GlwProtectedClaimAuthorityMapping[];
+  } | null;
 }): { ok: boolean; policyVersion: string; findings: readonly GlwClaimAuthorityFinding[]; failureReasons: Readonly<Record<string, string>> } {
   const text = textFromHtml(input.artifact.contentHtml ?? "");
   const findings: GlwClaimAuthorityFinding[] = [];
   const seen = new Set<string>();
+  const classifiedAuthoritativeIds = new Set((input.authority?.references ?? [])
+    .filter((reference) => reference.role === "authoritative_fact")
+    .map((reference) => reference.referenceId));
+  const authoritativeIds = new Set((input.authority?.authoritativeFactReferenceIds ?? [])
+    .filter((referenceId) => classifiedAuthoritativeIds.has(referenceId)));
+  const mappings = (input.authority?.supportedClaimMappings ?? []).filter((mapping) =>
+    authoritativeIds.has(mapping.authoritativeFactReferenceId)
+    && mapping.supportedAssertion.trim());
+
+  const evaluate = (rule: ClaimRule, claimText: string) => {
+    const key = `${rule.claimClass}:${claimText}`;
+    if (!claimText || seen.has(key)) return;
+    seen.add(key);
+    const mapping = mappings.find((candidate) =>
+      candidate.claimClass === rule.claimClass
+      && normalizedAssertion(candidate.supportedAssertion) === normalizedAssertion(claimText));
+    const conceptual = !mapping && isGlwPlanningOrConfirmationGuidance(claimText);
+    findings.push({
+      claimClass: rule.claimClass,
+      claimText,
+      authoritySource: mapping?.authoritativeFactReferenceId ?? (conceptual ? "EXPLICIT_CONCEPTUAL_FRAMING" : null),
+      authorityStatus: mapping ? "SUPPORTED" : conceptual ? "APPROVED_CONCEPTUAL" : "UNSUPPORTED",
+      authorityKind: mapping ? "REFERENCE_SUPPORTED" : conceptual ? "CONCEPTUAL" : "UNSUPPORTED",
+      predicateId: `unsupportedClaim.${rule.claimClass}`,
+    });
+  };
 
   for (const rule of RULES) {
     for (const match of text.matchAll(new RegExp(rule.pattern.source, rule.pattern.flags))) {
       const claimText = sentenceAt(text, match.index ?? 0);
-      const key = `${rule.claimClass}:${claimText}`;
-      if (!claimText || seen.has(key)) continue;
-      seen.add(key);
-      const supported = input.supportedClaimPatterns?.some((pattern) => pattern.test(claimText)) ?? false;
-      const conceptual = !supported && isGlwPlanningOrConfirmationGuidance(claimText);
-      findings.push({
-        claimClass: rule.claimClass,
-        claimText,
-        authoritySource: supported ? "APPROVED_GENERATION_AUTHORITY" : conceptual ? "EXPLICIT_CONCEPTUAL_FRAMING" : null,
-        authorityStatus: supported ? "SUPPORTED" : conceptual ? "APPROVED_CONCEPTUAL" : "UNSUPPORTED",
-        authorityKind: supported ? "REFERENCE_SUPPORTED" : conceptual ? "CONCEPTUAL" : "UNSUPPORTED",
-        predicateId: `unsupportedClaim.${rule.claimClass}`,
-      });
+      evaluate(rule, claimText);
     }
+  }
+
+  const marketRule = RULES.find((rule) => rule.claimClass === "MARKET_ADOPTION")!;
+  for (const heading of headingsFromHtml(input.artifact.contentHtml ?? "")) {
+    if (new RegExp(marketRule.pattern.source, marketRule.pattern.flags).test(heading)) evaluate(marketRule, heading);
   }
 
   const unsupported = findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");

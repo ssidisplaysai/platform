@@ -622,6 +622,7 @@ export async function POST(request: NextRequest, context: Context) {
       known: generationAuthority.productAuthorityKnown,
       path: generationAuthority.productAuthorityPath,
       anchorText: "Outdoor Digital Sphere",
+      authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY",
     },
     localizationPolicy: {
       version: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION,

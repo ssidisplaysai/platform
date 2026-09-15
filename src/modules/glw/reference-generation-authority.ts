@@ -7,6 +7,7 @@ import { fingerprintGlwAuthority, GLW_REFERENCE_QA_POLICY_VERSION } from "./refe
 import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT, GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT } from "./reference-generation-claim-contract";
 import { GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT } from "./n8n-workflow-identity";
 import { resolveGlwAllowedInternalLinks } from "./site-internal-link-authority";
+import { buildGlwEffectiveCampaignInstructions } from "./campaign-generation-context";
 
 export type GlwReferenceGenerationAuthorityBinding = {
   campaignInstructionFingerprint: string;
@@ -31,6 +32,7 @@ export function resolveGlwReferenceGenerationAuthority(input: {
 } {
   const instructions = input.pack.instructions.trim();
   if (!instructions) throw new Error("CAMPAIGN_INSTRUCTIONS_MISSING");
+  const effectiveInstructions = buildGlwEffectiveCampaignInstructions(instructions);
   const references = [...input.pack.references]
     .sort((left, right) => left.referenceId.localeCompare(right.referenceId))
     .map((reference) => ({
@@ -55,11 +57,14 @@ export function resolveGlwReferenceGenerationAuthority(input: {
   });
   const productAuthority = productLinks.find((link) => link.authorityClass === "product") ?? null;
   return {
-    campaignInstructionFingerprint: fingerprintGlwAuthority(instructions),
+    campaignInstructionFingerprint: fingerprintGlwAuthority(effectiveInstructions),
     referenceFingerprint: references.length === 1
       ? references[0].sha256
       : fingerprintGlwAuthority(references),
-    productAuthorityFingerprint: fingerprintGlwAuthority(productAuthority),
+    productAuthorityFingerprint: fingerprintGlwAuthority({
+      authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY",
+      identity: productAuthority,
+    }),
     claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
     generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
     localizationPolicyFingerprint: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,

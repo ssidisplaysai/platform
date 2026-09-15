@@ -8,6 +8,7 @@ import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 
 import type { ProjectorEnclosureSeoRequestContext } from "@/modules/foundation/projectorenclosure-seo-authority";
 import type { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT } from "./reference-generation-claim-contract";
+import type { GlwReferenceClaimClass } from "./reference-claim-authority";
 
 export type GlwPageType = "general_service" | "state_service" | "city_service";
 export type GlwPublicationIntent = "draft" | "publish";
@@ -280,7 +281,17 @@ export type GlwGenerationRequestInput = {
     references: ReadonlyArray<{ referenceId: string; fileName: string; role: string; scope: string }>;
     authoritativeFactReferenceIds: readonly string[];
     visualOrContentReferenceIds: readonly string[];
-    productAuthority: { known: boolean; path: string | null; anchorText: string };
+    supportedClaimMappings: ReadonlyArray<{
+      authoritativeFactReferenceId: string;
+      claimClass: GlwReferenceClaimClass;
+      supportedAssertion: string;
+    }>;
+    productAuthority: {
+      known: boolean;
+      path: string | null;
+      anchorText: string;
+      authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY";
+    };
     localizationPolicy: { version: string; expectedStateCode: string; authorizedComparisonStateCodes: readonly string[] };
   };
   campaignId?: string;

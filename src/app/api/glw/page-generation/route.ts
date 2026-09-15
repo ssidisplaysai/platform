@@ -351,7 +351,16 @@ async function finalizeContentReadyExecution(input: {
   }
 
   const claimAuthority = input.request.referenceAuthorityBinding
-    ? evaluateGlwReferenceClaimAuthority({ artifact: enrichment.artifact })
+    ? evaluateGlwReferenceClaimAuthority({
+        artifact: enrichment.artifact,
+        authority: input.request.referenceGenerationAuthority
+          ? {
+              references: input.request.referenceGenerationAuthority.references,
+              authoritativeFactReferenceIds: input.request.referenceGenerationAuthority.authoritativeFactReferenceIds,
+              supportedClaimMappings: input.request.referenceGenerationAuthority.supportedClaimMappings,
+            }
+          : null,
+      })
     : null;
   const productAuthorityFailures = Object.fromEntries(
     ["stateProductAuthorityLink", "canonicalProductReference"]

@@ -3,6 +3,7 @@ import "server-only";
 import { readFileSync } from "node:fs";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack, GlwCampaignReference } from "./campaign-reference-types";
+import { GLW_REFERENCE_V1_1_INSTRUCTION_GUARDRAILS } from "./campaign-generation-context";
 
 export type GlwGeneratedCampaignInstructions = {
   instructions: string;
@@ -116,6 +117,7 @@ export async function generateGlwCampaignInstructions(input: {
     "Uploaded reference inventory:",
     referenceInventory(input.knowledgePack.references),
     "Write practical campaign instructions for the content generator and image generator. Separate factual grounding from visual inspiration. Treat authoritative_fact sources as the factual source of truth. Treat product_image and image_style sources as visual references, not proof of specifications. Never invent offices, local inventory, installations, customers, certifications, dimensions, pricing, lead times, or capabilities not supported by authoritative sources. State-specific pages must add useful market/application context and must not become thin doorway pages. Include explicit requirements for page purpose, factual boundaries, state localization, applications, buyer guidance, SEO quality, internal linking, image direction, claims to avoid, and CTA behavior. Return only the instruction text, ready for the operator to edit and approve.",
+    GLW_REFERENCE_V1_1_INSTRUCTION_GUARDRAILS,
   ].join("\n\n");
 
   let response: Response;
