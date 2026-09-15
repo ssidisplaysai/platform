@@ -70,6 +70,14 @@ describe("Indiana reference retry execution fail-closed invariant", () => {
     expect(route).toContain("generationJobCreated: false, downstreamSideEffectsPerformed: false");
   });
 
+  test("same-job refresh forwards session authority and never dispatches", () => {
+    const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8");
+    const refreshBlock = route.slice(route.indexOf("if (refresh && isRecoverableReferenceStatus"), route.indexOf("export async function PUT"));
+    expect(refreshBlock).toContain("forwardOperatorMutationContext(request");
+    expect(refreshBlock).toContain("/api/glw/page-generation?jobId=");
+    expect(refreshBlock).not.toContain("execute_workflow");
+  });
+
   test("client preserves retry projection when execution fails", () => {
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8").replace(/\s/g, "");
     const executeHandler = ui.slice(ui.indexOf("asyncfunctiongenerateReferencePage()"), ui.indexOf("asyncfunctionrunOwnerPreflight()"));

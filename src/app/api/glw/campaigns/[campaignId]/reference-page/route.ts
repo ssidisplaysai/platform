@@ -266,11 +266,11 @@ export async function GET(request: NextRequest, context: Context) {
       `${request.nextUrl.origin}/api/glw/page-generation?jobId=${encodeURIComponent(job.jobId)}&refresh=true`,
       {
         method: "GET",
-        headers: {
+        headers: forwardOperatorMutationContext(request, {
           "x-gcp-roles": "platform_admin",
           "x-gcp-organization-id": campaign.organizationId,
           "x-gcp-site-id": campaign.siteId,
-        },
+        }),
         cache: "no-store",
       },
     );
