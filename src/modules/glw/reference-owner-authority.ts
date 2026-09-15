@@ -339,6 +339,35 @@ export function validateGlwReferenceOwnerClaimForFailedDispatchRecovery(input: {
   return deepClone(claim);
 }
 
+export function validateGlwReferenceOwnerClaimForRecoveredContent(input: {
+  claimId: string;
+  job: {
+    organizationId: string;
+    siteId: string;
+    state: string | null;
+    createdAt: string;
+    status: string;
+    externalExecutionId: string | null;
+    generatedDraft: unknown;
+    wordpressObjectId: string | null;
+  };
+  liveContext: Omit<GlwReferenceOwnerContext, "principalId" | "principalSessionId" | "exactRuntime">;
+}): GlwReferenceOwnerClaim {
+  const claim = load().state.claims.find((candidate) => candidate.claimId === input.claimId);
+  if (!claim) throw new GlwReferenceOwnerAuthorityError("CLAIM_NOT_FOUND", "Consumed reference owner claim was not found.");
+  if (!claim.dispatchValidatedAt) throw new GlwReferenceOwnerAuthorityError("CLAIM_DISPATCH_NOT_VALIDATED", "Reference owner claim never crossed the dispatch boundary.");
+  if (input.job.status !== "CONTENT_READY" || !input.job.externalExecutionId || !input.job.generatedDraft || input.job.wordpressObjectId) {
+    throw new GlwReferenceOwnerAuthorityError("RECOVERED_CONTENT_NOT_FINALIZABLE", "Only recovered content without a WordPress identity can be finalized.");
+  }
+  if (claim.organizationId !== input.job.organizationId || claim.siteId !== input.job.siteId || claim.referenceState !== stateCodeForJobState(input.job.state)) {
+    throw new GlwReferenceOwnerAuthorityError("JOB_CLAIM_SCOPE_MISMATCH", "Recovered content does not match the validated claim scope.");
+  }
+  const live = { ...input.liveContext, principalId: claim.principalId, principalSessionId: claim.principalSessionId, exactRuntime: claim.exactRuntime };
+  assertExactContext(live);
+  assertContextMatch(claim, live);
+  return deepClone(claim);
+}
+
 function stateCodeForJobState(state: string | null): string | null {
   const normalized = state?.trim().toLowerCase() ?? "";
   return GLW_CAMPAIGN_US_STATES.find((candidate) => candidate.name.toLowerCase() === normalized)?.code ?? null;

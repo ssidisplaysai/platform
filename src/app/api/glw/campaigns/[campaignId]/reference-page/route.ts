@@ -485,7 +485,7 @@ export async function POST(request: NextRequest, context: Context) {
   const body = await request.json().catch(() => null) as {
     stateCode?: string;
     citySlug?: string;
-    action?: "continue" | "recover_failed_dispatch";
+    action?: "continue" | "recover_failed_dispatch" | "finalize_recovered_dispatch";
     jobId?: string;
     referenceAuthorityBinding?: GlwReferenceGenerationAuthorityBinding;
     ownerGrantId?: string;
@@ -547,7 +547,7 @@ export async function POST(request: NextRequest, context: Context) {
   if (!generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
     return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
   }
-  const failedDispatchRecovery = body?.action === "recover_failed_dispatch";
+  const failedDispatchRecovery = body?.action === "recover_failed_dispatch" || body?.action === "finalize_recovered_dispatch";
   if (!failedDispatchRecovery && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
     return NextResponse.json({ error: "An exact single-use owner grant and matching preflight receipt are required.", code: "REFERENCE_OWNER_AUTHORITY_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
   }
@@ -623,7 +623,7 @@ export async function POST(request: NextRequest, context: Context) {
 
   let generationBody: Record<string, unknown> = { form };
   if (failedDispatchRecovery) {
-    generationBody = { action: "recover_failed_dispatch", jobId: body!.jobId, form };
+    generationBody = { action: body!.action, jobId: body!.jobId, form };
   }
   if (body?.action === "continue") {
     const jobId = body.jobId?.trim() ?? "";

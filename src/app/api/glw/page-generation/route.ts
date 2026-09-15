@@ -19,7 +19,7 @@ import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-r
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
-import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery } from "@/modules/glw/reference-owner-authority";
+import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery, validateGlwReferenceOwnerClaimForRecoveredContent } from "@/modules/glw/reference-owner-authority";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
@@ -344,6 +344,25 @@ async function finalizeContentReadyExecution(input: {
       requiredCanonicalProductLink: productAuthority.canonicalProduct
         ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
         : null,
+    });
+  }
+
+  const claimAuthority = input.request.referenceAuthorityBinding
+    ? evaluateGlwReferenceClaimAuthority({ artifact: enrichment.artifact })
+    : null;
+  if (claimAuthority && !claimAuthority.ok) {
+    const timestamp = new Date().toISOString();
+    return glwPageExecutionRepository.update(input.job.jobId, {
+      status: "FAILED",
+      generatedDraft: enrichment.artifact,
+      errorCode: "GENERATED_CONTENT_QA_FAILED",
+      errorMessage: `Unsupported factual claims detected under ${claimAuthority.policyVersion}.`,
+      qaStatus: "FAILED",
+      qaChecks: { ...qa.checks, claimAuthority: { policyVersion: claimAuthority.policyVersion, findings: claimAuthority.findings } },
+      qaFailureReasons: { ...qa.failureReasons, ...claimAuthority.failureReasons },
+      wordCount: qa.wordCount,
+      updatedAt: timestamp,
+      completedAt: timestamp,
     });
   }
 
@@ -757,16 +776,16 @@ export async function POST(request: NextRequest) {
         failedJobId: preview.request.referenceOwnerFailedJobId,
         failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,
       });
-      if (action === "recover_failed_dispatch") {
+      if (action === "recover_failed_dispatch" || action === "finalize_recovered_dispatch") {
         const recoveryJobId = body.jobId?.trim() ?? "";
         const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
         if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
         const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
-        validateGlwReferenceOwnerClaimForFailedDispatchRecovery({
-          claimId: preview.request.referenceOwnerAuthorityClaimId,
-          job: recoveryJob,
-          liveContext: recoveryContext,
-        });
+        if (action === "recover_failed_dispatch") {
+          validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
+        } else {
+          validateGlwReferenceOwnerClaimForRecoveredContent({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
+        }
       } else {
         consumeGlwReferenceOwnerClaimForDispatch({
           claimId: preview.request.referenceOwnerAuthorityClaimId,
@@ -783,6 +802,14 @@ export async function POST(request: NextRequest) {
     if (!jobId) return NextResponse.json({ error: "Exact failed job is required for recovery." }, { status: 400 });
     const job = await service.recoverFailedDispatch(jobId, preview.request);
     return NextResponse.json({ ok: job.status !== "FAILED", job, sameJobRecovered: true, generationJobCreated: false, publicationPerformed: false });
+  }
+
+  if (action === "finalize_recovered_dispatch") {
+    const jobId = body.jobId?.trim() ?? "";
+    const currentJob = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
+    if (!currentJob) return NextResponse.json({ error: "Exact recovered job is required for finalization." }, { status: 400 });
+    const job = await finalizeContentReadyExecution({ job: currentJob, request: preview.request, siteRecord: preview.siteRecord });
+    return NextResponse.json({ ok: job.status === "COMPLETE", job, sameJobRecovered: true, generationJobCreated: false, publicationPerformed: false });
   }
 
   if (action === "continue") {
