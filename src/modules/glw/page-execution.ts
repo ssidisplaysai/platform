@@ -679,6 +679,7 @@ export function createGlwDraftExecutionService(input: {
 }) {
   const createJobId = input.createJobId ?? (() => crypto.randomUUID());
   const now = input.now ?? (() => new Date().toISOString());
+  const recoveringDispatches = new Set<string>();
 
   async function applyTerminalResult(
     jobId: string,
@@ -733,6 +734,54 @@ export function createGlwDraftExecutionService(input: {
 
   return {
     applyTerminalResult,
+    async recoverFailedDispatch(jobId: string, request: GlwGenerationRequest): Promise<GlwPageExecutionRecord> {
+      if (recoveringDispatches.has(jobId)) throw new GlwExecutionResultError("Exact failed dispatch recovery is already in progress.");
+      recoveringDispatches.add(jobId);
+      try {
+        const current = await input.repository.getById(jobId);
+        if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+        if (current.status !== "FAILED" || current.errorCode !== "DISPATCH_FAILED" || current.externalExecutionId || current.dispatchedAt || current.generatedDraft || current.wordpressObjectId) {
+          throw new GlwExecutionResultError("Only a side-effect-free failed dispatch can be recovered in place.");
+        }
+        const exactIdentity = current.organizationId === request.organizationId
+          && current.siteId === request.siteId
+          && current.productId === request.productId
+          && current.state === request.stateName
+          && current.city === request.cityName
+          && current.slug === request.canonicalPath
+          && current.publicationIntent === "draft";
+        if (!exactIdentity) throw new GlwExecutionResultError("Failed dispatch recovery request does not match the exact persisted job identity.");
+
+        await input.repository.update(jobId, {
+          status: "QUEUED",
+          errorCode: null,
+          errorMessage: null,
+          completedAt: null,
+          updatedAt: now(),
+        });
+        try {
+          const dispatchStartedAt = now();
+          const response = await input.dispatcher.dispatch(mapGenerationRequestToN8nDraft(jobId, request));
+          if (response.kind === "complete" || response.kind === "failed") return applyTerminalResult(jobId, response);
+          return input.repository.update(jobId, {
+            status: response.executionId && response.status === "running" ? "RUNNING" : "DISPATCHED",
+            externalExecutionId: response.executionId,
+            dispatchedAt: dispatchStartedAt,
+            updatedAt: now(),
+          });
+        } catch (error) {
+          return input.repository.update(jobId, {
+            status: "FAILED",
+            errorCode: "DISPATCH_FAILED",
+            errorMessage: redactGlwExecutionError(error),
+            updatedAt: now(),
+            completedAt: now(),
+          });
+        }
+      } finally {
+        recoveringDispatches.delete(jobId);
+      }
+    },
     async discoverExecution(
       jobId: string,
       reader: GlwN8nExecutionReader,

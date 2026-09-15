@@ -147,6 +147,43 @@ function discoveryReader(input?: {
 }
 
 describe("GLW one-draft execution recovery", () => {
+  test("recovers one side-effect-free dispatch failure using the same job identity", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const failing = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { throw new Error("GLW n8n MCP execution is not configured."); } }, createJobId: () => "same-job" });
+    const failed = await failing.execute(request);
+    expect(failed).toMatchObject({ jobId: "same-job", status: "FAILED", errorCode: "DISPATCH_FAILED", externalExecutionId: null });
+    const recovering = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { return { kind: "accepted", executionId: "700001", status: "accepted" }; } } });
+    const recovered = await recovering.recoverFailedDispatch("same-job", request);
+    expect(recovered).toMatchObject({ jobId: "same-job", status: "DISPATCHED", externalExecutionId: "700001" });
+    expect(await repository.list()).toHaveLength(1);
+  });
+
+  test("same-job recovery denies wrong site and never creates a duplicate", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const failing = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { throw new Error("not configured"); } }, createJobId: () => "same-job" });
+    await failing.execute(request);
+    await expect(failing.recoverFailedDispatch("same-job", { ...request, siteId: "wrong-site" })).rejects.toThrow("exact persisted job identity");
+    expect(await repository.list()).toHaveLength(1);
+  });
+
+  test("concurrent same-job recovery permits one dispatch only", async () => {
+    const repository = createInMemoryGlwPageExecutionRepository();
+    const failing = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { throw new Error("not configured"); } }, createJobId: () => "same-job" });
+    await failing.execute(request);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    let dispatchCount = 0;
+    const recovering = createGlwDraftExecutionService({ repository, dispatcher: { async dispatch() { dispatchCount += 1; await gate; return { kind: "accepted", executionId: "700002", status: "accepted" }; } } });
+    const first = recovering.recoverFailedDispatch("same-job", request);
+    const second = recovering.recoverFailedDispatch("same-job", request);
+    release();
+    const results = await Promise.allSettled([first, second]);
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    expect(dispatchCount).toBe(1);
+    expect(await repository.list()).toHaveLength(1);
+  });
+
   test("maps a validated local request to the historical n8n contract", () => {
     const mapped = mapGenerationRequestToN8nDraft("glw-job-001", request);
     expect(request.siteId).toBe(GLW_APPLICATION_SITE_ID);

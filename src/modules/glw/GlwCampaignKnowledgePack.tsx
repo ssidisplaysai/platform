@@ -51,6 +51,9 @@ type ReferenceResult = Record<string, unknown> & {
   selectedReferenceState?: { stateCode: string; selectedAt: string } | null;
   generationAuthority?: ReferenceAuthorityBinding | null;
   retryContract?: { referenceState: "IN"; ownerAuthorizationRequired: true; executable: false } | null;
+  durableOperation?: { operationType: "REFERENCE_GENERATION_INITIAL" | "REFERENCE_GENERATION_RETRY"; failedJobId: string | null; failedArtifactSha256: string | null };
+  mcpConfiguration?: { configured: boolean; transport: string; workflowId: string; engineWorkflowId: string };
+  failedDispatchRecovery?: boolean;
 };
 
 type ReferenceAuthorityBinding = {
@@ -639,7 +642,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
         ? "REPAIR REQUIRED"
         : wordpressAuthorityState;
   const referenceWorkflow = referenceResult?.workflow ?? null;
-        const retryOperation = referenceWorkflow?.state === "REFERENCE_RETRY_READY" || Boolean(referenceResult?.retryContract);
+        const retryOperation = referenceResult?.durableOperation?.operationType === "REFERENCE_GENERATION_RETRY"
+          || referenceWorkflow?.state === "REFERENCE_RETRY_READY"
+          || Boolean(referenceResult?.retryContract);
+        const sameJobRecoveryRequired = Boolean(referenceResult?.failedDispatchRecovery && jobId);
   const ownerGrantReady = Boolean(ownerGrantId && ownerAuthority?.grant?.valid);
   const existingOperationBlocksGeneration = Boolean(
     referenceWorkflow &&
@@ -826,11 +832,13 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           <p className="text-zinc-300">State: {selectedStateLabel} ({referenceState})</p>
           <p className="text-zinc-300">Operation: {retryOperation ? "Reference Generation Retry" : "Initial Reference Generation"}</p>
           {retryOperation && referenceWorkflow?.operationId ? <p className="text-zinc-300">Failed job: {referenceWorkflow.operationId}</p> : null}
-          <p className="text-zinc-300">Authorization: {ownerGrantReady ? "AUTHORIZED" : "REQUIRES_OWNER_AUTHORIZATION"}</p>
+          <p className="text-zinc-300">Authorization: {sameJobRecoveryRequired ? "CONSUMED_FOR_EXISTING_JOB" : ownerGrantReady ? "AUTHORIZED" : "REQUIRES_OWNER_AUTHORIZATION"}</p>
+          {sameJobRecoveryRequired ? <p className="text-zinc-300">Existing recovery job: {jobId}</p> : null}
+          <p className="text-zinc-300">MCP: {referenceResult?.mcpConfiguration?.configured ? "CONFIGURED" : "NOT_CONFIGURED"}</p>
           <p className="mt-1 text-zinc-500">Principal authority: {ownerAuthority?.principalAuthority ?? "CHECKING"}</p>
           {ownerAuthority?.prerequisite ? <p className="mt-1 text-amber-300">Unavailable: {ownerAuthority.prerequisite}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            {!ownerGrantReady ? (
+            {!ownerGrantReady && !sameJobRecoveryRequired ? (
               <>
                 <button type="button" disabled={!ownerAuthority?.available || ownerAuthorityBusy} onClick={() => void runOwnerPreflight()} className="border border-zinc-700 px-3 py-2 font-semibold text-white disabled:opacity-40">
                   {retryOperation ? "Run Retry Preflight" : "Run Preflight"}

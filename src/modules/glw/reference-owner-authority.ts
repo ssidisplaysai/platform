@@ -7,6 +7,7 @@ import {
   savePersistedState,
 } from "@/modules/foundation/foundation-persistence";
 import type { GlwTrustedOperatorPrincipal } from "./trusted-operator-principal";
+import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 
 export const GLW_REFERENCE_OWNER_AUTHORITY_VERSION =
   "GLW_REFERENCE_GENERATION_OWNER_AUTHORITY_V1";
@@ -300,6 +301,47 @@ export function validateConsumedGlwReferenceOwnerClaim(input: {
   if (!claim) throw new GlwReferenceOwnerAuthorityError("CLAIM_NOT_FOUND", "Consumed reference owner claim was not found.");
   assertContextMatch(claim, input.liveContext);
   return deepClone(claim);
+}
+
+export function validateGlwReferenceOwnerClaimForFailedDispatchRecovery(input: {
+  claimId: string;
+  job: {
+    jobId: string;
+    organizationId: string;
+    siteId: string;
+    state: string | null;
+    createdAt: string;
+    status: string;
+    errorCode: string | null;
+    externalExecutionId: string | null;
+    generatedDraft: unknown;
+    wordpressObjectId: string | null;
+  };
+  liveContext: Omit<GlwReferenceOwnerContext, "principalId" | "principalSessionId" | "exactRuntime">;
+}): GlwReferenceOwnerClaim {
+  const claim = load().state.claims.find((candidate) => candidate.claimId === input.claimId);
+  if (!claim) throw new GlwReferenceOwnerAuthorityError("CLAIM_NOT_FOUND", "Consumed reference owner claim was not found.");
+  if (!claim.dispatchValidatedAt) throw new GlwReferenceOwnerAuthorityError("CLAIM_DISPATCH_NOT_VALIDATED", "Reference owner claim never crossed the dispatch boundary.");
+  if (input.job.status !== "FAILED" || input.job.errorCode !== "DISPATCH_FAILED" || input.job.externalExecutionId || input.job.generatedDraft || input.job.wordpressObjectId) {
+    throw new GlwReferenceOwnerAuthorityError("JOB_NOT_RECOVERABLE", "Only a side-effect-free failed dispatch can be recovered.");
+  }
+  if (claim.organizationId !== input.job.organizationId || claim.siteId !== input.job.siteId || claim.referenceState !== stateCodeForJobState(input.job.state)) {
+    throw new GlwReferenceOwnerAuthorityError("JOB_CLAIM_SCOPE_MISMATCH", "Failed job does not match the validated claim scope.");
+  }
+  const dispatchAt = new Date(claim.dispatchValidatedAt).getTime();
+  const createdAt = new Date(input.job.createdAt).getTime();
+  if (!Number.isFinite(dispatchAt) || !Number.isFinite(createdAt) || createdAt < dispatchAt || createdAt - dispatchAt > 30_000) {
+    throw new GlwReferenceOwnerAuthorityError("JOB_CLAIM_TIME_MISMATCH", "Failed job is not temporally bound to the validated claim.");
+  }
+  const live = { ...input.liveContext, principalId: claim.principalId, principalSessionId: claim.principalSessionId, exactRuntime: claim.exactRuntime };
+  assertExactContext(live);
+  assertContextMatch(claim, live);
+  return deepClone(claim);
+}
+
+function stateCodeForJobState(state: string | null): string | null {
+  const normalized = state?.trim().toLowerCase() ?? "";
+  return GLW_CAMPAIGN_US_STATES.find((candidate) => candidate.name.toLowerCase() === normalized)?.code ?? null;
 }
 
 export function consumeGlwReferenceOwnerClaimForDispatch(input: {

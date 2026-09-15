@@ -11,6 +11,7 @@ import {
   issueGlwReferencePreflightReceipt,
   projectGlwReferenceOwnerGrant,
   revokeGlwReferenceOwnerGrant,
+  validateGlwReferenceOwnerClaimForFailedDispatchRecovery,
   validateConsumedGlwReferenceOwnerClaim,
   type GlwReferenceOwnerContext,
 } from "../reference-owner-authority";
@@ -56,6 +57,17 @@ describe("GLW reference-generation owner authority", () => {
     const claim = consumeGlwReferenceOwnerGrant({ principal, grantId: grant.grantId, preflightReceiptId: receipt.receiptId, liveContext: live, now });
     expect(consumeGlwReferenceOwnerClaimForDispatch({ claimId: claim.claimId, liveContext: live, now }).dispatchValidatedAt).toBe(now.toISOString());
     expect(() => consumeGlwReferenceOwnerClaimForDispatch({ claimId: claim.claimId, liveContext: live, now })).toThrow("already used");
+  });
+
+  test("binds a validated claim to one side-effect-free failed dispatch", () => {
+    const { live, receipt, grant } = issue();
+    const claim = consumeGlwReferenceOwnerGrant({ principal, grantId: grant.grantId, preflightReceiptId: receipt.receiptId, liveContext: live, now });
+    consumeGlwReferenceOwnerClaimForDispatch({ claimId: claim.claimId, liveContext: live, now });
+    const { exactRuntime: _runtime, ...recoveryContext } = live;
+    const job = { jobId: "job-in", organizationId: "org", siteId: "site", state: "Indiana", createdAt: "2030-01-01T00:00:02.000Z", status: "FAILED", errorCode: "DISPATCH_FAILED", externalExecutionId: null, generatedDraft: null, wordpressObjectId: null };
+    expect(validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: claim.claimId, job, liveContext: recoveryContext })).toMatchObject({ claimId: claim.claimId, operationType: "REFERENCE_GENERATION_RETRY" });
+    expect(() => validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: claim.claimId, job: { ...job, siteId: "other" }, liveContext: recoveryContext })).toThrow("scope");
+    expect(() => validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: claim.claimId, job: { ...job, externalExecutionId: "700" }, liveContext: recoveryContext })).toThrow("side-effect-free");
   });
 
   test("concurrent double consumption produces one allow and one deny", async () => {

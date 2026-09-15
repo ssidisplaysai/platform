@@ -21,7 +21,8 @@ import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchRefere
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
-import { findEvidenceBoundLegacyReferenceJob, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
+import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
+import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -205,6 +206,8 @@ export async function GET(request: NextRequest, context: Context) {
         records,
       });
   const baseWorkflow = projectGlwReferenceWorkflow(job ?? legacyJob);
+  const durableOperation = projectGlwDurableReferenceOperation({ campaign, campaigns: listGlwCampaigns(), records, selectedStateCode: target.state.code });
+  const mcpConfiguration = getGlwN8nMcpConfigurationStatus();
   const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
   const retryContract = legacyJob && baseWorkflow.artifactSha256 && generationAuthority && /^[0-9a-f]{40}$/.test(exactRuntime)
     ? buildGlwExactRetryContract({
@@ -250,6 +253,9 @@ export async function GET(request: NextRequest, context: Context) {
       retryContract,
       workflow,
       relatedReference,
+      durableOperation,
+      mcpConfiguration,
+      failedDispatchRecovery: job?.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
     });
   }
 
@@ -286,6 +292,9 @@ export async function GET(request: NextRequest, context: Context) {
         retryContract,
         workflow: projectGlwReferenceWorkflow(job),
         relatedReference: null,
+        durableOperation,
+        mcpConfiguration,
+        failedDispatchRecovery: false,
       },
       { status: recoveryResponse.ok ? 200 : recoveryResponse.status },
     );
@@ -308,6 +317,9 @@ export async function GET(request: NextRequest, context: Context) {
     retryContract,
     workflow: projectGlwReferenceWorkflow(job),
     relatedReference: null,
+    durableOperation,
+    mcpConfiguration,
+    failedDispatchRecovery: job.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
   });
 }
 
@@ -473,7 +485,7 @@ export async function POST(request: NextRequest, context: Context) {
   const body = await request.json().catch(() => null) as {
     stateCode?: string;
     citySlug?: string;
-    action?: "continue";
+    action?: "continue" | "recover_failed_dispatch";
     jobId?: string;
     referenceAuthorityBinding?: GlwReferenceGenerationAuthorityBinding;
     ownerGrantId?: string;
@@ -481,6 +493,7 @@ export async function POST(request: NextRequest, context: Context) {
     ownerOperationType?: GlwReferenceOwnerOperationType;
     failedJobId?: string | null;
     failedArtifactSha256?: string | null;
+    recoveryClaimId?: string;
   } | null;
 
   let target;
@@ -534,28 +547,36 @@ export async function POST(request: NextRequest, context: Context) {
   if (!generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
     return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
   }
-  if (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType) {
+  const failedDispatchRecovery = body?.action === "recover_failed_dispatch";
+  if (!failedDispatchRecovery && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
     return NextResponse.json({ error: "An exact single-use owner grant and matching preflight receipt are required.", code: "REFERENCE_OWNER_AUTHORITY_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
   }
-  let ownerClaim;
-  try {
-    const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
-      organizationId: campaign.organizationId,
-      siteId: campaign.siteId,
-      campaignId: campaign.campaignId,
-      referenceState: target.state.code,
-      operationType: body.ownerOperationType,
-      failedJobId: body.failedJobId,
-      failedArtifactSha256: body.failedArtifactSha256,
-    });
-    ownerClaim = consumeGlwReferenceOwnerGrant({
-      principal: trustedPrincipal.principal,
-      grantId: body.ownerGrantId,
-      preflightReceiptId: body.preflightReceiptId,
-      liveContext: liveOwnerContext,
-    });
-  } catch (error) {
-    return NextResponse.json({ error: "Reference owner authority failed closed.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_AUTHORITY_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+  let ownerClaim: { claimId: string; operationType: GlwReferenceOwnerOperationType; failedJobId: string | null; failedArtifactSha256: string | null };
+  if (failedDispatchRecovery) {
+    if (!body?.jobId || !body.recoveryClaimId || body.ownerOperationType !== "REFERENCE_GENERATION_RETRY" || !body.failedJobId || !body.failedArtifactSha256) {
+      return NextResponse.json({ error: "Exact failed-dispatch recovery identity is required.", code: "REFERENCE_RECOVERY_IDENTITY_REQUIRED", generationJobCreated: false }, { status: 409 });
+    }
+    ownerClaim = { claimId: body.recoveryClaimId, operationType: body.ownerOperationType, failedJobId: body.failedJobId, failedArtifactSha256: body.failedArtifactSha256 };
+  } else {
+    try {
+      const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
+        organizationId: campaign.organizationId,
+        siteId: campaign.siteId,
+        campaignId: campaign.campaignId,
+        referenceState: target.state.code,
+        operationType: body!.ownerOperationType!,
+        failedJobId: body!.failedJobId,
+        failedArtifactSha256: body!.failedArtifactSha256,
+      });
+      ownerClaim = consumeGlwReferenceOwnerGrant({
+        principal: trustedPrincipal.principal,
+        grantId: body!.ownerGrantId!,
+        preflightReceiptId: body!.preflightReceiptId!,
+        liveContext: liveOwnerContext,
+      });
+    } catch (error) {
+      return NextResponse.json({ error: "Reference owner authority failed closed.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_AUTHORITY_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+    }
   }
 
   const profileCount = listIntegrationProfiles({
@@ -601,6 +622,9 @@ export async function POST(request: NextRequest, context: Context) {
   form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
 
   let generationBody: Record<string, unknown> = { form };
+  if (failedDispatchRecovery) {
+    generationBody = { action: "recover_failed_dispatch", jobId: body!.jobId, form };
+  }
   if (body?.action === "continue") {
     const jobId = body.jobId?.trim() ?? "";
     if (!jobId) {
