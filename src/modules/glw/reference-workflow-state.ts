@@ -213,7 +213,23 @@ export function projectGlwDurableReferenceOperation(input: {
   records: readonly GlwPageExecutionRecord[];
   selectedStateCode: string;
 }): GlwDurableReferenceOperation {
-  const failed = findEvidenceBoundLegacyReferenceJob(input);
+  const owners = input.campaigns.filter((candidate) =>
+    candidate.organizationId === input.campaign.organizationId
+    && candidate.siteId === input.campaign.siteId
+    && candidate.productId === input.campaign.productId,
+  );
+  const failed = owners.length === 1 && owners[0].campaignId === input.campaign.campaignId
+    ? input.records
+        .filter((record) =>
+          record.campaignId == null
+          && record.organizationId === input.campaign.organizationId
+          && record.siteId === input.campaign.siteId
+          && record.productId === input.campaign.productId
+          && record.status === "FAILED"
+          && Boolean(record.generatedDraft?.contentHtml),
+        )
+        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null
+    : null;
   if (!failed || failed.status !== "FAILED") {
     return { operationType: "REFERENCE_GENERATION_INITIAL", failedJobId: null, failedArtifactSha256: null };
   }

@@ -45,6 +45,11 @@ describe("Indiana reference retry execution fail-closed invariant", () => {
     expect(operation([failed, failedReplacement])).toMatchObject({ operationType: "REFERENCE_GENERATION_RETRY", failedJobId: failed.jobId });
   });
 
+  test("newer artifact-free dispatch failure cannot shadow historical retry evidence", () => {
+    const dispatchFailure = { ...failed, jobId: "dispatch-in", state: "Indiana", errorCode: "DISPATCH_FAILED", generatedDraft: null, updatedAt: "2026-09-15T05:00:00.000Z" } as GlwPageExecutionRecord;
+    expect(operation([failed, dispatchFailure])).toMatchObject({ operationType: "REFERENCE_GENERATION_RETRY", failedJobId: failed.jobId });
+  });
+
   test("only a later durable successful replacement exits recovery", () => {
     const successfulReplacement = {
       ...failed,
