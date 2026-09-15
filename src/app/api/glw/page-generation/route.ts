@@ -18,6 +18,7 @@ import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-ser
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
+import { canonicalizeGlwZeroAuthorityClaims } from "@/modules/glw/zero-authority-claim-canonicalization";
 import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
 import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery, validateGlwReferenceOwnerClaimForRecoveredContent } from "@/modules/glw/reference-owner-authority";
@@ -182,6 +183,52 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
+  const rawGeneratedDraft = input.job.rawGeneratedDraft ?? input.job.generatedDraft;
+  let artifactForPipeline = input.job.canonicalizedGeneratedDraft ?? input.job.generatedDraft;
+  if (input.request.referenceAuthorityBinding
+    && input.request.referenceGenerationAuthority
+    && input.request.referenceGenerationAuthority.authoritativeFactReferenceIds.length === 0) {
+    const rawClaimAuthority = evaluateGlwReferenceClaimAuthority({
+      artifact: rawGeneratedDraft,
+      authority: {
+        references: input.request.referenceGenerationAuthority.references,
+        authoritativeFactReferenceIds: [],
+        supportedClaimMappings: [],
+      },
+    });
+    const canonicalization = canonicalizeGlwZeroAuthorityClaims({
+      rawArtifact: rawGeneratedDraft,
+      authoritativeFactReferenceIds: [],
+      findings: rawClaimAuthority.findings,
+    });
+    if (!canonicalization.ok || !canonicalization.canonicalizedArtifact) {
+      const timestamp = new Date().toISOString();
+      return glwPageExecutionRepository.update(input.job.jobId, {
+        status: "FAILED",
+        rawGeneratedDraft,
+        canonicalizedGeneratedDraft: null,
+        canonicalizationReceipt: canonicalization.receipt,
+        errorCode: "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED",
+        errorMessage: "A protected factual claim could not be safely canonicalized without authority.",
+        qaStatus: "FAILED",
+        qaChecks: { zeroAuthorityCanonicalization: canonicalization.receipt },
+        qaFailureReasons: Object.fromEntries(canonicalization.receipt.blockedClaims.map((claim, index) => [
+          `zeroAuthorityCanonicalization.${index + 1}`,
+          claim,
+        ])),
+        updatedAt: timestamp,
+        completedAt: timestamp,
+      });
+    }
+    artifactForPipeline = canonicalization.canonicalizedArtifact;
+    await glwPageExecutionRepository.update(input.job.jobId, {
+      rawGeneratedDraft,
+      canonicalizedGeneratedDraft: canonicalization.canonicalizedArtifact,
+      canonicalizationReceipt: canonicalization.receipt,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
   const productRecord = getProductById(input.request.productId);
   if (!productRecord) {
     return glwPageExecutionRepository.update(input.job.jobId, {
@@ -219,7 +266,7 @@ async function finalizeContentReadyExecution(input: {
     repairGlwCampaignReferenceCityArtifact({
       artifact: applyProjectorEnclosureHouseMappingCanary({
         request: input.request,
-        artifact: input.job.generatedDraft,
+        artifact: artifactForPipeline,
       }),
       request: input.request,
     });

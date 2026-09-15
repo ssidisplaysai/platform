@@ -1,4 +1,5 @@
 import type { GlwGenerationRequest } from "./page-generation";
+import type { GlwZeroAuthorityCanonicalizationReceipt } from "./zero-authority-claim-canonicalization";
 
 export const GLW_APPLICATION_SITE_ID = "site-led-display-warehouse-production";
 export const GLW_N8N_ENGINE_SITE_ID = "led-display-warehouse";
@@ -86,6 +87,9 @@ export type GlwPageExecutionRecord = {
   wordpressUrl: string | null;
   wordpressStatus: string | null;
   generatedDraft: GlwGeneratedDraftArtifact | null;
+  rawGeneratedDraft?: GlwGeneratedDraftArtifact | null;
+  canonicalizedGeneratedDraft?: GlwGeneratedDraftArtifact | null;
+  canonicalizationReceipt?: GlwZeroAuthorityCanonicalizationReceipt | null;
   errorCode: string | null;
   errorMessage: string | null;
   requestedPublicationMode: "draft";
