@@ -1,0 +1,4658 @@
+﻿{
+  "authenticatedInventoryRead": false,
+  "searchableTypes": [
+    {
+      "name": "Posts",
+      "restBase": "posts",
+      "slug": "post"
+    },
+    {
+      "name": "Pages",
+      "restBase": "pages",
+      "slug": "page"
+    },
+    {
+      "name": "Navigation Menu Items",
+      "restBase": "menu-items",
+      "slug": "nav_menu_item"
+    },
+    {
+      "name": "Global Styles",
+      "restBase": "global-styles",
+      "slug": "wp_global_styles"
+    },
+    {
+      "name": "Font Families",
+      "restBase": "font-families",
+      "slug": "wp_font_family"
+    },
+    {
+      "name": "Font Faces",
+      "restBase": "font-families/(?P<font_family_id>[\\d]+)/font-faces",
+      "slug": "wp_font_face"
+    },
+    {
+      "name": "Floating Elements",
+      "restBase": "e-floating-buttons",
+      "slug": "e-floating-buttons"
+    },
+    {
+      "name": "My Templates",
+      "restBase": "elementor_library",
+      "slug": "elementor_library"
+    },
+    {
+      "name": "Custom Code",
+      "restBase": "elementor_snippet",
+      "slug": "elementor_snippet"
+    },
+    {
+      "name": "Products",
+      "restBase": "product",
+      "slug": "product"
+    },
+    {
+      "name": "Media Hub",
+      "restBase": "presto-videos",
+      "slug": "pp_video_block"
+    }
+  ],
+  "inventoryFingerprint": "54b4a62030d41acd4ff57cd89555f6ffdf91308f4f59dcd10bec227b3d8fb89f",
+  "candidates": [
+    {
+      "objectId": 19817,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Florida",
+      "slug": "florida",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/florida/",
+      "featuredImageId": 19819,
+      "contentSha256": "47ffc6af4f9791b35bc1a1942de0f7bffc0825f069f6665223479d4507c58893",
+      "contentWordCount": 676,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/florida/"
+    },
+    {
+      "objectId": 19821,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Georgia",
+      "slug": "georgia",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/georgia/",
+      "featuredImageId": 19823,
+      "contentSha256": "39fed07cd7def84af07ffd0c6142720fdd95a9c51c2965f82d30cf417863b098",
+      "contentWordCount": 382,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/georgia/"
+    },
+    {
+      "objectId": 19833,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Arizona",
+      "slug": "arizona",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/arizona/",
+      "featuredImageId": 19868,
+      "contentSha256": "aa12ba97c743bcb23b27ae43c4b397b62613a7b6d1a8e010d76522620d4f8c4c",
+      "contentWordCount": 295,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "led sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/arizona/"
+    },
+    {
+      "objectId": 19841,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Connecticut",
+      "slug": "connecticut",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/connecticut/",
+      "featuredImageId": 19874,
+      "contentSha256": "08b28add77739cca6b0273595ce41835ce465048998a52473e2691ad75043848",
+      "contentWordCount": 364,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "led sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/connecticut/"
+    },
+    {
+      "objectId": 19845,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Delaware",
+      "slug": "delaware",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/delaware/",
+      "featuredImageId": 19847,
+      "contentSha256": "3aaba017c77d73b1b3bbf2c5775b3c7696ad31fb9fd99273632acdce9c98acf5",
+      "contentWordCount": 372,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "led sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/delaware/"
+    },
+    {
+      "objectId": 19912,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Idaho",
+      "slug": "idaho",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/idaho/",
+      "featuredImageId": 19914,
+      "contentSha256": "a7325dccb57031f760fa99604a9bf6ddfbabccedc4319297f4bd3862acf924da",
+      "contentWordCount": 1990,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/idaho/"
+    },
+    {
+      "objectId": 19916,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Louisiana",
+      "slug": "louisiana",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/louisiana/",
+      "featuredImageId": 19918,
+      "contentSha256": "83d241535b2b5daec2063e1947458a48513c3b99aa3a700f077b998415e461dd",
+      "contentWordCount": 1779,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "led sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/louisiana/"
+    },
+    {
+      "objectId": 19936,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Kansas",
+      "slug": "kansas",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/kansas/",
+      "featuredImageId": 19938,
+      "contentSha256": "03793e9502385fcdaff3b2848fbf8ad29efde869a5f2cae470e144ad4589498d",
+      "contentWordCount": 1997,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "led sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/kansas/"
+    },
+    {
+      "objectId": 19940,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Maine",
+      "slug": "maine",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/maine/",
+      "featuredImageId": 19942,
+      "contentSha256": "ff46a7dfd2b4543014a7fef1c17e8e8223feafb2e57b70aba8317b3bb2fd6ecf",
+      "contentWordCount": 1610,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "led sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/maine/"
+    },
+    {
+      "objectId": 20038,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Tennessee",
+      "slug": "tennessee",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/tennessee/",
+      "featuredImageId": 20040,
+      "contentSha256": "26552f046b2cdefded8b04535d512bf92b6666e0edb9523aedd6df5d12c6ca6a",
+      "contentWordCount": 2333,
+      "matchedTerms": [
+        "outdoor digital sphere",
+        "digital sphere",
+        "led sphere",
+        "sphere",
+        "outdoor digital sphere"
+      ],
+      "identitySignals": 1,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/tennessee/"
+    },
+    {
+      "objectId": 525,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Why LED Video Walls Are Replacing Traditional Signage in Retail Environments",
+      "slug": "led-video-walls-for-retail-benefits-roi",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-video-walls-for-retail-benefits-roi/",
+      "featuredImageId": 534,
+      "contentSha256": "df762458e73b0fcbff492d636f1b320d0a9ce090a832a3aad06345336dedce2b",
+      "contentWordCount": 1343,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-video-walls-for-retail-benefits-roi/"
+    },
+    {
+      "objectId": 536,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Standard DVLED Walls: The Complete Buyer's Guide for Commercial Display Projects",
+      "slug": "standard-dvled-walls-commercial-buyers-guide",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/standard-dvled-walls-commercial-buyers-guide/",
+      "featuredImageId": 537,
+      "contentSha256": "d93da8fb8d5f15379ab47a66cc7d46a28373ce08a583978d81564a772f7be10c",
+      "contentWordCount": 1436,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/standard-dvled-walls-commercial-buyers-guide/"
+    },
+    {
+      "objectId": 539,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "LED Posters: The Modern Alternative to Traditional Retail Signage",
+      "slug": "led-posters-benefits-roi-commercial-uses",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-posters-benefits-roi-commercial-uses/",
+      "featuredImageId": null,
+      "contentSha256": "f7b7122f6387489f2ce890598daa618356f07fd6bd101f159bd3a7a7b7a4a479",
+      "contentWordCount": 2098,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-posters-benefits-roi-commercial-uses/"
+    },
+    {
+      "objectId": 542,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Transparent LED Displays: How Businesses Create Stunning Visual Experiences Without Blocking Visibility",
+      "slug": "transparent-led-displays-commercial-applications",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/transparent-led-displays-commercial-applications/",
+      "featuredImageId": 543,
+      "contentSha256": "614dbd59ac03453ef14fdad619341d330e037f145fa5df0fd33e90943f84940c",
+      "contentWordCount": 1192,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/transparent-led-displays-commercial-applications/"
+    },
+    {
+      "objectId": 545,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Creative LED Displays: How Experiential Technology Drives Engagement, Traffic, and Brand Recall",
+      "slug": "creative-led-displays-experiential-marketing",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/creative-led-displays-experiential-marketing/",
+      "featuredImageId": null,
+      "contentSha256": "a96230dd9ec1102c3b09d6e0c689c29f15f313a08de3244d4642f4eb9b08e8fc",
+      "contentWordCount": 1469,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/creative-led-displays-experiential-marketing/"
+    },
+    {
+      "objectId": 548,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "LED Floor Displays: How Interactive Digital Floors Transform Customer Experiences",
+      "slug": "led-floor-displays-interactive-customer-experiences",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-floor-displays-interactive-customer-experiences/",
+      "featuredImageId": null,
+      "contentSha256": "5c1894a6c8d06b5450be1b332ed23ec9e3f240e87f0834e5de58c3609b365c50",
+      "contentWordCount": 1507,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-floor-displays-interactive-customer-experiences/"
+    },
+    {
+      "objectId": 551,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "COB All-in-One LED Systems: Why Businesses Are Replacing Projectors and Flat Panels",
+      "slug": "cob-all-in-one-led-systems-meeting-rooms",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/cob-all-in-one-led-systems-meeting-rooms/",
+      "featuredImageId": null,
+      "contentSha256": "1c33b5c6a2d34c5717dbcb3f8961d642971212e377d919043685c6adee207c4a",
+      "contentWordCount": 1475,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/cob-all-in-one-led-systems-meeting-rooms/"
+    },
+    {
+      "objectId": 556,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "SMD All-in-One LED Systems: The Flexible Display Solution for Modern Business Environments",
+      "slug": "smd-all-in-one-led-systems-business-collaboration",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/smd-all-in-one-led-systems-business-collaboration/",
+      "featuredImageId": null,
+      "contentSha256": "f00c0975cf5651450cc80647eb01dd8954d673831b21c2ebe5c8adddc79b6a71",
+      "contentWordCount": 1521,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/smd-all-in-one-led-systems-business-collaboration/"
+    },
+    {
+      "objectId": 559,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "LED Fan Displays: How Holographic Advertising Captures Attention and Increases Engagement",
+      "slug": "led-fan-displays-holographic-advertising",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-fan-displays-holographic-advertising/",
+      "featuredImageId": null,
+      "contentSha256": "84979a1007b13fbf3b8c4d5a77cdd7902db0e7f1a48dbfe1698f5fceda95b289",
+      "contentWordCount": 1272,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-fan-displays-holographic-advertising/"
+    },
+    {
+      "objectId": 562,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Flexible and Rollable LED Displays: The Future of Curved, Creative, and Architectural Digital Experiences",
+      "slug": "flexible-rollable-led-displays-creative-spaces",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/flexible-rollable-led-displays-creative-spaces/",
+      "featuredImageId": 563,
+      "contentSha256": "fbfa938d954545b87400f39eb0dc83e1e45a697af5524c818385d682b252a025",
+      "contentWordCount": 1433,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/flexible-rollable-led-displays-creative-spaces/"
+    },
+    {
+      "objectId": 568,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Exhibition LED Displays: How Trade Show Exhibitors Use LED Technology to Increase Booth Traffic and Generate More Leads",
+      "slug": "exhibition-led-displays-trade-show-success",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/exhibition-led-displays-trade-show-success/",
+      "featuredImageId": null,
+      "contentSha256": "22bb74f21babf4660c83dddfdc711d6dfde9550aa5faa307c1a8cc965f2daf65",
+      "contentWordCount": 1271,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/exhibition-led-displays-trade-show-success/"
+    },
+    {
+      "objectId": 597,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "The Ultimate Guide to Direct View LED Video Walls for Modern Businesses",
+      "slug": "ultimate-guide-direct-view-led-video-walls",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/ultimate-guide-direct-view-led-video-walls/",
+      "featuredImageId": 598,
+      "contentSha256": "5ef16aad2c82d5f324917944f9a79e9f7545042e28f552c85d363a0f4ccf9f5a",
+      "contentWordCount": 817,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/ultimate-guide-direct-view-led-video-walls/"
+    },
+    {
+      "objectId": 1631,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Exhibition LED Displays: Transform Trade Shows and Events with Impact",
+      "slug": "exhibition-led-displays-for-trade-shows-and-events",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/exhibition-led-displays-for-trade-shows-and-events/",
+      "featuredImageId": 1632,
+      "contentSha256": "248f9175444be75a8bbc7329146104e294bdd1bc283e25ff9cf7673217619458",
+      "contentWordCount": 834,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/exhibition-led-displays-for-trade-shows-and-events/"
+    },
+    {
+      "objectId": 2443,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Texas Transparent LED Displays",
+      "slug": "texas",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/texas/",
+      "featuredImageId": null,
+      "contentSha256": "984e1b1668bed6641bc7f7ed1203e2724f8da1c2e5f7c8248eb493f04c9353c3",
+      "contentWordCount": 720,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/texas/"
+    },
+    {
+      "objectId": 2496,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Texas Church LED Walls",
+      "slug": "texas",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/texas/",
+      "featuredImageId": null,
+      "contentSha256": "6c5d163aa4218ddb223871c97b7aeafa44a9d295db4144bc80d0d962defc0de6",
+      "contentWordCount": 792,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/texas/"
+    },
+    {
+      "objectId": 2573,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Austin TX",
+      "slug": "austin-2",
+      "status": "publish",
+      "parentId": 2496,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/texas/austin-2/",
+      "featuredImageId": 2574,
+      "contentSha256": "e307dd89e786a9fda0a28c1529e7972a05c5f48df41067ee1fe8f60385b734b6",
+      "contentWordCount": 862,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/texas/austin-2/"
+    },
+    {
+      "objectId": 2603,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Best LED Displays for Hotels: Enhance Guest Experiences in Style",
+      "slug": "best-led-displays-for-hotels",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/best-led-displays-for-hotels/",
+      "featuredImageId": 2606,
+      "contentSha256": "62708cf42e9e3d44ddb467616274ff33fecfb4e3caff4bb803259d7eda74a8d9",
+      "contentWordCount": 782,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/uncategorized/best-led-displays-for-hotels/"
+    },
+    {
+      "objectId": 2636,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Arlington TX",
+      "slug": "arlington",
+      "status": "publish",
+      "parentId": 2496,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/texas/arlington/",
+      "featuredImageId": 3880,
+      "contentSha256": "ba97f2bea70a1360a741bc9db1b8a8bfedff062162932167b86e1f757ea4103c",
+      "contentWordCount": 941,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/texas/arlington/"
+    },
+    {
+      "objectId": 2679,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Best LED Displays for Casinos: Top Solutions for Immersive Experiences",
+      "slug": "best-led-displays-for-casinos",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/best-led-displays-for-casinos/",
+      "featuredImageId": 2682,
+      "contentSha256": "07aedc67864eaa4b798080aab9817b6b5d6a0f54a3669800e6d554e0616ba953",
+      "contentWordCount": 851,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/best-led-displays-for-casinos/"
+    },
+    {
+      "objectId": 2762,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Best LED Displays for Churches: Top Solutions for Worship Spaces in 2024",
+      "slug": "best-led-displays-for-churches",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/best-led-displays-for-churches/",
+      "featuredImageId": 2764,
+      "contentSha256": "f6e1ef3d531b0193d1866e4ea7221111a43c5ab81affc10076ac2d13c7c97437",
+      "contentWordCount": 740,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/best-led-displays-for-churches/"
+    },
+    {
+      "objectId": 2804,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Lubbock TX",
+      "slug": "lubbock",
+      "status": "publish",
+      "parentId": 2496,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/texas/lubbock/",
+      "featuredImageId": 2805,
+      "contentSha256": "a2c486ca93c55f2049e44f93823f119c7359f6c72a732b2fd2aafbd2fd20a6a9",
+      "contentWordCount": 807,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/texas/lubbock/"
+    },
+    {
+      "objectId": 2810,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Lubbock TX",
+      "slug": "lubbock",
+      "status": "publish",
+      "parentId": 2443,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/texas/lubbock/",
+      "featuredImageId": 2811,
+      "contentSha256": "20327ccf824c79e159d96d2aea2241161e34479b709f969280b437e2deeeb733",
+      "contentWordCount": 836,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/texas/lubbock/"
+    },
+    {
+      "objectId": 2819,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Laredo TX",
+      "slug": "laredo",
+      "status": "publish",
+      "parentId": 2496,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/texas/laredo/",
+      "featuredImageId": 2820,
+      "contentSha256": "22531c306834d83110f98e88b51fa21e9e3cada98aa3bef4193334fa00d96529",
+      "contentWordCount": 882,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/texas/laredo/"
+    },
+    {
+      "objectId": 2828,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Amarillo TX",
+      "slug": "amarillo",
+      "status": "publish",
+      "parentId": 2563,
+      "permalink": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/amarillo/",
+      "featuredImageId": 2829,
+      "contentSha256": "d9dc327dc7e3ef2e0fd7c4dcfdae925dda767001fe29984bace1310b948e6b0b",
+      "contentWordCount": 807,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/direct-view-led-video-walls/texas/amarillo/"
+    },
+    {
+      "objectId": 2882,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in College Station TX",
+      "slug": "college-station",
+      "status": "publish",
+      "parentId": 2496,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/texas/college-station/",
+      "featuredImageId": 2883,
+      "contentSha256": "3997e2922073315a79a684c1e32b3a36f1db31ca385ec8a3a4dab276ef191d42",
+      "contentWordCount": 828,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/texas/college-station/"
+    },
+    {
+      "objectId": 2888,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in College Station TX",
+      "slug": "college-station",
+      "status": "publish",
+      "parentId": 2443,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/texas/college-station/",
+      "featuredImageId": 2889,
+      "contentSha256": "30ac0e48371b8afb2dfcbeef2989a8d0a3d95c1f49f9e8ab800571bfc29f3871",
+      "contentWordCount": 844,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/texas/college-station/"
+    },
+    {
+      "objectId": 2939,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Best LED Displays for Restaurants: Top Solutions for Ambiance & Engagement",
+      "slug": "best-led-displays-for-restaurants",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/best-led-displays-for-restaurants/",
+      "featuredImageId": 2940,
+      "contentSha256": "69449c46456857ab7b645f084f5ddd67301e69fd3c4b693bb36a8c470c24a802",
+      "contentWordCount": 809,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/best-led-displays-for-restaurants/"
+    },
+    {
+      "objectId": 2966,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Midland TX",
+      "slug": "midland",
+      "status": "publish",
+      "parentId": 2443,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/texas/midland/",
+      "featuredImageId": 2967,
+      "contentSha256": "d1286d993c4070eade5bb69122c2a9941295a4067ce982b0170e4008d21af714",
+      "contentWordCount": 893,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/texas/midland/"
+    },
+    {
+      "objectId": 3085,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Creative LED Displays in McKinney TX",
+      "slug": "mckinney",
+      "status": "publish",
+      "parentId": 2995,
+      "permalink": "https://leddisplaywarehouse.com/creative-led-displays/texas/mckinney/",
+      "featuredImageId": 3086,
+      "contentSha256": "ee50fc7459d033807b0038f50534ecdb36018986041ab11e08e5a5d4bd6a6520",
+      "contentWordCount": 1657,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/creative-led-displays/texas/mckinney/"
+    },
+    {
+      "objectId": 3161,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Montana",
+      "slug": "montana",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/montana/",
+      "featuredImageId": 3169,
+      "contentSha256": "0b91a274da8a0937095b05f70ab386131aa5101ee897138c03780befccf6ea5f",
+      "contentWordCount": 724,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/montana/"
+    },
+    {
+      "objectId": 3162,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Nebraska",
+      "slug": "nebraska",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/nebraska/",
+      "featuredImageId": 3167,
+      "contentSha256": "4fc82d65eb8c9399f35b781ca63772846f4146cb69cafafeaa238d8ae8959bd6",
+      "contentWordCount": 717,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/nebraska/"
+    },
+    {
+      "objectId": 3163,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Nevada",
+      "slug": "nevada",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/nevada/",
+      "featuredImageId": 3166,
+      "contentSha256": "77f63b7b8b2e9ea8e55e294be52ec3607a93ffdc15fc6d85cd7842133366f557",
+      "contentWordCount": 763,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/nevada/"
+    },
+    {
+      "objectId": 3192,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Arizona",
+      "slug": "arizona",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/arizona/",
+      "featuredImageId": 3214,
+      "contentSha256": "4c2927d27a0eec793d4a4c9eb626a597151a03c55ae51c9ab17f175d322fc734",
+      "contentWordCount": 705,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/arizona/"
+    },
+    {
+      "objectId": 3202,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Massachusetts",
+      "slug": "massachusetts",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/massachusetts/",
+      "featuredImageId": 3233,
+      "contentSha256": "104a9db9e0bf31f9926f2f647bb67a8323349fb306d1e624097e58ff658fdd1e",
+      "contentWordCount": 719,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/massachusetts/"
+    },
+    {
+      "objectId": 3206,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Pennsylvania",
+      "slug": "pennsylvania",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/pennsylvania/",
+      "featuredImageId": 3237,
+      "contentSha256": "ca761277b9734385b8ee7e5b5eb08a7fa3204d2cd04966eceebf475156d6e33b",
+      "contentWordCount": 725,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/pennsylvania/"
+    },
+    {
+      "objectId": 3208,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in South Carolina",
+      "slug": "south-carolina",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/south-carolina/",
+      "featuredImageId": 3239,
+      "contentSha256": "c93a69cf89c782a90210903e09c885af0a2853bb8af5fd92e1ae4898fdcc16eb",
+      "contentWordCount": 859,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/south-carolina/"
+    },
+    {
+      "objectId": 3283,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in West Virginia",
+      "slug": "west-virginia",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/west-virginia/",
+      "featuredImageId": 3295,
+      "contentSha256": "5a1ab777156686f6b7fc5e82d1b41ae2a38f043ac8891021ff43ffeac9d176d3",
+      "contentWordCount": 686,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/west-virginia/"
+    },
+    {
+      "objectId": 3285,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in Wyoming",
+      "slug": "wyoming",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/wyoming/",
+      "featuredImageId": 3294,
+      "contentSha256": "0cd2270f7a5c8c8b63fc148357c9c821c08db9894d41daedf28d23f56af90eed",
+      "contentWordCount": 809,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/wyoming/"
+    },
+    {
+      "objectId": 3314,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Direct View LED Video Walls in Arkansas",
+      "slug": "arkansas",
+      "status": "publish",
+      "parentId": 124,
+      "permalink": "https://leddisplaywarehouse.com/direct-view-led-video-walls/arkansas/",
+      "featuredImageId": 3326,
+      "contentSha256": "ee796d4994670596b2404a83154fe9394f1e384a41092ec963a27819aad6af6c",
+      "contentWordCount": 771,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/direct-view-led-video-walls/arkansas/"
+    },
+    {
+      "objectId": 3409,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Direct View LED Video Walls in Massachusetts",
+      "slug": "massachusetts",
+      "status": "publish",
+      "parentId": 124,
+      "permalink": "https://leddisplaywarehouse.com/direct-view-led-video-walls/massachusetts/",
+      "featuredImageId": 3423,
+      "contentSha256": "d62fb76c7ce43e044b101921d14a3e0816c34dc7f6eb37c2247251c90b0f78e0",
+      "contentWordCount": 755,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/direct-view-led-video-walls/massachusetts/"
+    },
+    {
+      "objectId": 4156,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Arkansas",
+      "slug": "arkansas",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/arkansas/",
+      "featuredImageId": null,
+      "contentSha256": "2ed00493a53a69895ebcb7e8bd37a9abfa2e3449465678f8e984766830b6ad1b",
+      "contentWordCount": 747,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/arkansas/"
+    },
+    {
+      "objectId": 4158,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Colorado",
+      "slug": "colorado",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/colorado/",
+      "featuredImageId": null,
+      "contentSha256": "39d8111309d106fd06ce08144ce7381551f840f7655ef589dfd5627cd692ab87",
+      "contentWordCount": 720,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/colorado/"
+    },
+    {
+      "objectId": 4165,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Delaware",
+      "slug": "delaware",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/delaware/",
+      "featuredImageId": null,
+      "contentSha256": "ec767df9418d52153293866469efcf60c8a6bafaf035b12860214861b70502b8",
+      "contentWordCount": 770,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/delaware/"
+    },
+    {
+      "objectId": 4168,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Hawaii",
+      "slug": "hawaii",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/hawaii/",
+      "featuredImageId": null,
+      "contentSha256": "dfc3134621784a8429bc4e96d5c362de89cdfc0211c491e5a25e4a7f900a41b8",
+      "contentWordCount": 779,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/hawaii/"
+    },
+    {
+      "objectId": 4187,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Maryland",
+      "slug": "maryland",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/maryland/",
+      "featuredImageId": null,
+      "contentSha256": "8baa93e3d97d034a1b0a230dcabb152489a43a338962dab7fdd70e3abc268b03",
+      "contentWordCount": 707,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/maryland/"
+    },
+    {
+      "objectId": 4196,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Mississippi",
+      "slug": "mississippi",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/mississippi/",
+      "featuredImageId": null,
+      "contentSha256": "cc9f772fb4839a72b512d24c158c6f99dbf3b1928dae29a842d493cdb4dac50e",
+      "contentWordCount": 806,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/mississippi/"
+    },
+    {
+      "objectId": 4206,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Nevada",
+      "slug": "nevada",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/nevada/",
+      "featuredImageId": null,
+      "contentSha256": "f4298014c01a6a70ffe99b40707f7a7120303df13876cae0b9f3538cf8f02c56",
+      "contentWordCount": 747,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/nevada/"
+    },
+    {
+      "objectId": 4216,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in North Carolina",
+      "slug": "north-carolina",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/north-carolina/",
+      "featuredImageId": null,
+      "contentSha256": "e8ce859c60f498e3a817285b3d56aaddc52d0494e09b9849be33dd4ff86acf1e",
+      "contentWordCount": 680,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/north-carolina/"
+    },
+    {
+      "objectId": 4217,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in North Dakota",
+      "slug": "north-dakota",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/north-dakota/",
+      "featuredImageId": null,
+      "contentSha256": "b9a807d92f550b8fd1a7991a8c7367430cad5a3ca0c13b3adf6187c3f979e32c",
+      "contentWordCount": 745,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/transparent-led-displays/north-dakota/"
+    },
+    {
+      "objectId": 4218,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Ohio",
+      "slug": "ohio",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/ohio/",
+      "featuredImageId": null,
+      "contentSha256": "7bdc15903e40f3d104260609d8273d76022b5cc6e66c9babd32bdf8cc97196a0",
+      "contentWordCount": 688,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/ohio/"
+    },
+    {
+      "objectId": 4225,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Oregon",
+      "slug": "oregon",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/oregon/",
+      "featuredImageId": null,
+      "contentSha256": "a296ef9fed55d0ff15b53d9801c51bbc7ebef48d19aca9875d8db7abe387535a",
+      "contentWordCount": 781,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/oregon/"
+    },
+    {
+      "objectId": 4235,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Tennessee",
+      "slug": "tennessee",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/tennessee/",
+      "featuredImageId": null,
+      "contentSha256": "b98bef883e11bef94773b75f751e51b15d0b36fc80c559ae737cf694510913c9",
+      "contentWordCount": 754,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/tennessee/"
+    },
+    {
+      "objectId": 4241,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in Virginia",
+      "slug": "virginia",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/virginia/",
+      "featuredImageId": null,
+      "contentSha256": "aa6b4bfa34b97d3bf0065e0ce1cc3225ff30a1312d32df1f639cad583fa5d56b",
+      "contentWordCount": 667,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/virginia/"
+    },
+    {
+      "objectId": 4247,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Transparent LED Displays in West Virginia",
+      "slug": "west-virginia",
+      "status": "publish",
+      "parentId": 167,
+      "permalink": "https://leddisplaywarehouse.com/transparent-led-displays/west-virginia/",
+      "featuredImageId": null,
+      "contentSha256": "f2056a29fba4004ce0e9b7992adfe0d01bb48de7db6719dc310f0e30a4b8ff5c",
+      "contentWordCount": 803,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/transparent-led-displays/west-virginia/"
+    },
+    {
+      "objectId": 4258,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Creative LED Displays in California",
+      "slug": "california",
+      "status": "publish",
+      "parentId": 226,
+      "permalink": "https://leddisplaywarehouse.com/creative-led-displays/california/",
+      "featuredImageId": null,
+      "contentSha256": "3f53e91f0a4fbaab557b0802760c54a97ebe3ecc208c5b817716e32c8495f0c8",
+      "contentWordCount": 777,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/creative-led-displays/california/"
+    },
+    {
+      "objectId": 4265,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Creative LED Displays in Connecticut",
+      "slug": "connecticut",
+      "status": "publish",
+      "parentId": 226,
+      "permalink": "https://leddisplaywarehouse.com/creative-led-displays/connecticut/",
+      "featuredImageId": null,
+      "contentSha256": "cdbbc346d602d6e5bc8db3387742c354f560cdca9690681a30b758de58ca0e1b",
+      "contentWordCount": 680,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/creative-led-displays/connecticut/"
+    },
+    {
+      "objectId": 4871,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "SMD All-in-One LED Displays in South Carolina",
+      "slug": "south-carolina",
+      "status": "publish",
+      "parentId": 330,
+      "permalink": "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/south-carolina/",
+      "featuredImageId": null,
+      "contentSha256": "5380be932e265583532e176309c3865fd73b7bee400a455d43d12bc31a6d5da6",
+      "contentWordCount": 707,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/smd-all-in-one-led-displays/south-carolina/"
+    },
+    {
+      "objectId": 4910,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Transform Nightclub Experiences with Interactive LED Floors",
+      "slug": "interactive-led-floors-for-nightclubs",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/interactive-led-floors-for-nightclubs/",
+      "featuredImageId": 4914,
+      "contentSha256": "955655c001ec122db2d1282a2039f982fc732f7e8697ebf4c915800d3d842718",
+      "contentWordCount": 724,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/interactive-led-floors-for-nightclubs/"
+    },
+    {
+      "objectId": 4952,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Interactive LED Floors in Indiana",
+      "slug": "indiana",
+      "status": "publish",
+      "parentId": 264,
+      "permalink": "https://leddisplaywarehouse.com/interactive-led-floors/indiana/",
+      "featuredImageId": null,
+      "contentSha256": "f3d9a9a0255cf85d40af1cd2d7b3d9becd4be3872424bb39a07a3c5ba91c624d",
+      "contentWordCount": 718,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/interactive-led-floors/indiana/"
+    },
+    {
+      "objectId": 5016,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Interactive LED Floors in New Jersey",
+      "slug": "new-jersey",
+      "status": "publish",
+      "parentId": 264,
+      "permalink": "https://leddisplaywarehouse.com/interactive-led-floors/new-jersey/",
+      "featuredImageId": null,
+      "contentSha256": "a9a1f7e87915619739d740b78795c1897397cfe20eca390861b37b4a4f5ead83",
+      "contentWordCount": 766,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/interactive-led-floors/new-jersey/"
+    },
+    {
+      "objectId": 5222,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Arkansas",
+      "slug": "arkansas",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/arkansas/",
+      "featuredImageId": null,
+      "contentSha256": "67c38fdd25d33df0b38534a920b91bcf5ff0df0b1d6ea1e09343c2be57bebcdd",
+      "contentWordCount": 722,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/arkansas/"
+    },
+    {
+      "objectId": 5231,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Connecticut",
+      "slug": "connecticut",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/connecticut/",
+      "featuredImageId": null,
+      "contentSha256": "07b5c95db59bb70352ff0e0c36bcde8aa9804697223eed493f8de70a1e033e67",
+      "contentWordCount": 768,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/connecticut/"
+    },
+    {
+      "objectId": 5243,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Georgia",
+      "slug": "georgia",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/georgia/",
+      "featuredImageId": null,
+      "contentSha256": "d91b8b23ae25df2615b1ce37a40a46427f3141cbf730f35cb45c3a209079d455",
+      "contentWordCount": 815,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/led-fans/georgia/"
+    },
+    {
+      "objectId": 5267,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Kentucky",
+      "slug": "kentucky",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/kentucky/",
+      "featuredImageId": null,
+      "contentSha256": "f22418edfbda0b0bcc4e2309470a1d220f343c4314e2d9896d527673a02b19ef",
+      "contentWordCount": 787,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/kentucky/"
+    },
+    {
+      "objectId": 5279,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Massachusetts",
+      "slug": "massachusetts",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/massachusetts/",
+      "featuredImageId": null,
+      "contentSha256": "cdb9da4718e27e8a6406f105a60b27912059737f4e062cc3161b6fa7cb4bd9c5",
+      "contentWordCount": 766,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/massachusetts/"
+    },
+    {
+      "objectId": 5330,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Oklahoma",
+      "slug": "oklahoma",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/oklahoma/",
+      "featuredImageId": null,
+      "contentSha256": "cb7e002a823d9fe1c3496a64a67472ba9f4f47375142ee92c9c02adbb99cb65e",
+      "contentWordCount": 805,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/oklahoma/"
+    },
+    {
+      "objectId": 5339,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Rhode Island",
+      "slug": "rhode-island",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/rhode-island/",
+      "featuredImageId": null,
+      "contentSha256": "f3e8716ff44901d947c4de20e7ba332f7046ee53219e732e656ea8007c85b90a",
+      "contentWordCount": 840,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/rhode-island/"
+    },
+    {
+      "objectId": 5360,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Vermont",
+      "slug": "vermont",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/vermont/",
+      "featuredImageId": null,
+      "contentSha256": "924a6a4295d60e3a1b727f5376db86feb405962e43e7a86f54c5dd52776b4bdc",
+      "contentWordCount": 726,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/vermont/"
+    },
+    {
+      "objectId": 5375,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Fans in Wisconsin",
+      "slug": "wisconsin",
+      "status": "publish",
+      "parentId": 349,
+      "permalink": "https://leddisplaywarehouse.com/led-fans/wisconsin/",
+      "featuredImageId": null,
+      "contentSha256": "b41e66795f1d28671b27a1866919d9875697b33046d9ccb6a29f24e0f6f10660",
+      "contentWordCount": 841,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/led-fans/wisconsin/"
+    },
+    {
+      "objectId": 5861,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Flexible & Rollable LED Displays in Maryland",
+      "slug": "maryland",
+      "status": "publish",
+      "parentId": 364,
+      "permalink": "https://leddisplaywarehouse.com/flexible-rollable-led/maryland/",
+      "featuredImageId": null,
+      "contentSha256": "66d2cfd6959dd6b8de84926f2138b0a81c4f5b1ba007a41b55a092d1f016a900",
+      "contentWordCount": 805,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/flexible-rollable-led/maryland/"
+    },
+    {
+      "objectId": 6041,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Church LED Walls in New Mexico",
+      "slug": "new-mexico",
+      "status": "publish",
+      "parentId": 2422,
+      "permalink": "https://leddisplaywarehouse.com/church-led-walls/new-mexico/",
+      "featuredImageId": null,
+      "contentSha256": "4817ce22d8191260c6d7be30a3cef286d8bf4b39c3e883eecbff9fd93dc5742f",
+      "contentWordCount": 733,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/church-led-walls/new-mexico/"
+    },
+    {
+      "objectId": 6390,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Transforming Spaces: LED Video Walls for Immersive Experiences",
+      "slug": "led-video-walls-immersive-experiences",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-video-walls-immersive-experiences/",
+      "featuredImageId": 6393,
+      "contentSha256": "ba74ac1577de67c69a986cecff5e83d46c40d1af2da83cced37d90dcfff66166",
+      "contentWordCount": 750,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-video-walls-immersive-experiences/"
+    },
+    {
+      "objectId": 6853,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "LED Displays for Experiential Retail: Captivating Shoppers with Innovation",
+      "slug": "led-displays-for-experiential-retail",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-displays-for-experiential-retail/",
+      "featuredImageId": 6857,
+      "contentSha256": "a9961bf24199afaece33fba07e687b249ef109c5a2be72e10e0a65a79fbb61c3",
+      "contentWordCount": 737,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-displays-for-experiential-retail/"
+    },
+    {
+      "objectId": 7438,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "LED Display Content Ideas for Retail Stores: Drive Sales & Engagement",
+      "slug": "led-display-content-ideas-for-retail-stores",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-retail-stores/",
+      "featuredImageId": 7441,
+      "contentSha256": "633416a9f22edab6d53fd1bdf2a4a8b20bef45fbfa3792b4bda9f18be740fcda",
+      "contentWordCount": 776,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-retail-stores/"
+    },
+    {
+      "objectId": 7552,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "LED Display Content Ideas for Restaurants: Boost Engagement & Sales",
+      "slug": "led-display-content-ideas-for-restaurants",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-restaurants/",
+      "featuredImageId": 7555,
+      "contentSha256": "035e37e406627d017a5f07399ae6a482cd3d5b1aac4bc79f85070755f6afa5fc",
+      "contentWordCount": 765,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-restaurants/"
+    },
+    {
+      "objectId": 7590,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "10 Inspiring LED Display Content Ideas for Churches in 2024",
+      "slug": "led-display-content-ideas-for-churches",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-churches/",
+      "featuredImageId": 7593,
+      "contentSha256": "557a00da114685214130b5158925574a2ed4ef5de97df62db7737fc1a3bbdaa5",
+      "contentWordCount": 830,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-churches/"
+    },
+    {
+      "objectId": 7609,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Brilliant LED Display Content Ideas for Unforgettable Events",
+      "slug": "led-display-content-ideas-for-events",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-events/",
+      "featuredImageId": 7612,
+      "contentSha256": "699bfe891944855236e38120e39873b600e5cb75022c67294b88b5cd50f0b896",
+      "contentWordCount": 808,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/led-display-content-ideas-for-events/"
+    },
+    {
+      "objectId": 8850,
+      "postType": "post",
+      "postTypeName": "Posts",
+      "title": "Frosted Rear Projection Film: Transforming Modern Displays with Versatility",
+      "slug": "frosted-rear-projection-film-modern-displays",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/uncategorized/frosted-rear-projection-film-modern-displays/",
+      "featuredImageId": 8851,
+      "contentSha256": "6b1543db05eba1106cfbd4f084534022598f6555758fea53c46cf58ecaaa124c",
+      "contentWordCount": 818,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/uncategorized/frosted-rear-projection-film-modern-displays/"
+    },
+    {
+      "objectId": 9148,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9147,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9148",
+      "featuredImageId": 9149,
+      "contentSha256": "100ca539e73f5b58975b781f9125669ca5db7aac20a25a232bd24af5dcd90ea5",
+      "contentWordCount": 776,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9148"
+    },
+    {
+      "objectId": 9176,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9175,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9176",
+      "featuredImageId": 9177,
+      "contentSha256": "c14b24961d2aa42aec08e2fce3f44db537040f153e1995ec525d61a77b8c1505",
+      "contentWordCount": 866,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9176"
+    },
+    {
+      "objectId": 9426,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9425,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9426",
+      "featuredImageId": 9427,
+      "contentSha256": "40192368430ca4bf8307e76e368d541332c66f575f08a4b5a291eaf804745e24",
+      "contentWordCount": 751,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9426"
+    },
+    {
+      "objectId": 9582,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9581,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9582",
+      "featuredImageId": 9583,
+      "contentSha256": "fd9b321abfb3eb70e44fe5b6eff5a1beb96b33f7bc2fcf9948991e62c7f579dc",
+      "contentWordCount": 869,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9582"
+    },
+    {
+      "objectId": 9614,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9613,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9614",
+      "featuredImageId": 9615,
+      "contentSha256": "122f8c0c490817edb96f6d7aa100880c2da95f03f1455c4894b63f598f07cf3f",
+      "contentWordCount": 881,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9614"
+    },
+    {
+      "objectId": 9634,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9633,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9634",
+      "featuredImageId": 9635,
+      "contentSha256": "fcb2157bcd0a96fa0fec8c6e2bbea6a2318e09cf1f37716898bbec0134ca385f",
+      "contentWordCount": 933,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9634"
+    },
+    {
+      "objectId": 9662,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9661,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9662",
+      "featuredImageId": 9663,
+      "contentSha256": "ce8fe7c3bff401411c3c9ba05e322467d6eb8744f3bab338c9be6ed89cadf504",
+      "contentWordCount": 865,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9662"
+    },
+    {
+      "objectId": 9702,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9701,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9702",
+      "featuredImageId": 9703,
+      "contentSha256": "c351cc3c28964865f7d4f10a0921c59a77000badc279b9ba4ece258afdf0285a",
+      "contentWordCount": 927,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9702"
+    },
+    {
+      "objectId": 9778,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 9777,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=9778",
+      "featuredImageId": 9779,
+      "contentSha256": "c164a0af7a5340ed6ccc04030e049e9cc6eb896ffb751d89b7a5bcdff057e29e",
+      "contentWordCount": 727,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=9778"
+    },
+    {
+      "objectId": 10134,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10133,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10134",
+      "featuredImageId": 10135,
+      "contentSha256": "ca1fb0ea69279e39899b921d2a8b7a9fa43833d36942e4dbb8afaa86ae0ed6df",
+      "contentWordCount": 780,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10134"
+    },
+    {
+      "objectId": 10146,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10145,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10146",
+      "featuredImageId": 10147,
+      "contentSha256": "1f327c7fcc07fa4090fbf1b93dedbf88233912ad91a525526d41389eb75e015b",
+      "contentWordCount": 903,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10146"
+    },
+    {
+      "objectId": 10218,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10217,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10218",
+      "featuredImageId": 10219,
+      "contentSha256": "7a769b3f6c0917778f329392f519007375561c983fc0e580305467d94a3f2567",
+      "contentWordCount": 821,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10218"
+    },
+    {
+      "objectId": 10342,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10341,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10342",
+      "featuredImageId": 10343,
+      "contentSha256": "8051b769267838543b61f27f271a8c32b7e18c6773764df4c9f8d5126e4ac13d",
+      "contentWordCount": 816,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10342"
+    },
+    {
+      "objectId": 10422,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10421,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10422",
+      "featuredImageId": 10423,
+      "contentSha256": "5ab7c945d24001e688d0efb99af96dc8538c79b1499b878ac7dd508865e0e158",
+      "contentWordCount": 774,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10422"
+    },
+    {
+      "objectId": 10694,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10693,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10694",
+      "featuredImageId": 10695,
+      "contentSha256": "a47e9c4c7faef595cd69844d41799f69de328162c2401277bd26d364a4bdc1ec",
+      "contentWordCount": 867,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10694"
+    },
+    {
+      "objectId": 10706,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10705,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10706",
+      "featuredImageId": 10707,
+      "contentSha256": "1ff501c791f3f0d9455d2e3301a2d63c779ee33080f6360c75ee67b5ec0e6f67",
+      "contentWordCount": 803,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10706"
+    },
+    {
+      "objectId": 10798,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10797,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10798",
+      "featuredImageId": 10799,
+      "contentSha256": "a75bd29790eba041221866b0a3aceaf1453c1fb492728c2906a18e4d0b731230",
+      "contentWordCount": 783,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10798"
+    },
+    {
+      "objectId": 10854,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10853,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10854",
+      "featuredImageId": 10855,
+      "contentSha256": "724fb630446dbd0242eef8c019b55f70fca20a860c0c0576345266b79479f117",
+      "contentWordCount": 855,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10854"
+    },
+    {
+      "objectId": 10874,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10873,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10874",
+      "featuredImageId": 10875,
+      "contentSha256": "5393cbea285285b9aca01f231917f7ee50036ea76a6f85031abbcf0d262e12b1",
+      "contentWordCount": 764,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10874"
+    },
+    {
+      "objectId": 10974,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 10973,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=10974",
+      "featuredImageId": 10975,
+      "contentSha256": "0b1ea1aa45056657860bb2f78126075ff933d836574b192a7e0d12e3fe27c8b1",
+      "contentWordCount": 807,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=10974"
+    },
+    {
+      "objectId": 11050,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11049,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11050",
+      "featuredImageId": 11051,
+      "contentSha256": "e5d5a7dcc005d1d6d160b5b88885b3fd1e46317a8fec26304d75dc6fd6a03011",
+      "contentWordCount": 798,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11050"
+    },
+    {
+      "objectId": 11106,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11105,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11106",
+      "featuredImageId": 11107,
+      "contentSha256": "14e340bfcc2e8d330a20c6e9063cbc987f79e8b65dca1972da1399629a1c9f8e",
+      "contentWordCount": 836,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11106"
+    },
+    {
+      "objectId": 11319,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11318,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11319",
+      "featuredImageId": 11320,
+      "contentSha256": "2b61f199880b34657a4986f2132c7437644695cdd54fb1f24264c5bd879b5b05",
+      "contentWordCount": 846,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=11319"
+    },
+    {
+      "objectId": 11363,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11362,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11363",
+      "featuredImageId": 11364,
+      "contentSha256": "52a6270428d6865bd1dbd29db877c06d991d98298cc8385ec67b37dfdc07faec",
+      "contentWordCount": 830,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11363"
+    },
+    {
+      "objectId": 11411,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11410,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11411",
+      "featuredImageId": 11412,
+      "contentSha256": "0d526bd2b76791d8e6d9446d5c8e51313af43a7e6ba5687f141e98a265ede2e1",
+      "contentWordCount": 837,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11411"
+    },
+    {
+      "objectId": 11427,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11426,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11427",
+      "featuredImageId": 11428,
+      "contentSha256": "10e416ccf0bdc55a7e717664a5dcd4670c6e133de4bbd4ac8da381b5fabfcdc5",
+      "contentWordCount": 894,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11427"
+    },
+    {
+      "objectId": 11477,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11476,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11477",
+      "featuredImageId": 11478,
+      "contentSha256": "7c20da6c2dd8f42b7e4d5195bdbc63c6c0533e8310d96c6564251b79057aa663",
+      "contentWordCount": 884,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11477"
+    },
+    {
+      "objectId": 11917,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11916,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11917",
+      "featuredImageId": 11918,
+      "contentSha256": "36a00f289117e6b1255813e077cfcee506c7a730d41210d23212f27a8383909a",
+      "contentWordCount": 872,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11917"
+    },
+    {
+      "objectId": 11989,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 11988,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=11989",
+      "featuredImageId": 11990,
+      "contentSha256": "14f5ffe85197cea97dc593d517762cf2ba40e2805dbabe930037b626e1d55f5d",
+      "contentWordCount": 857,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=11989"
+    },
+    {
+      "objectId": 12114,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 12113,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=12114",
+      "featuredImageId": 12115,
+      "contentSha256": "bf368a3505c4b4e976ec5b73fe1c578acc02a9fec85b3bf928d2e474611e8471",
+      "contentWordCount": 779,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=12114"
+    },
+    {
+      "objectId": 12314,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 12313,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=12314",
+      "featuredImageId": 12315,
+      "contentSha256": "904f9e8d995331cf2e616c4d012fc5ae4b1784e600a37500163566c97c1810d3",
+      "contentWordCount": 740,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=12314"
+    },
+    {
+      "objectId": 12350,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 12349,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=12350",
+      "featuredImageId": 12351,
+      "contentSha256": "ea9ecd1415c4855e61893c300e5c380c9da21132eebe1086c3d95d08be9faf73",
+      "contentWordCount": 906,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=12350"
+    },
+    {
+      "objectId": 12418,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 12417,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=12418",
+      "featuredImageId": 12419,
+      "contentSha256": "8daf244dd9bbde228277dcb56c40b0978bfa5cae0178e8905f5c0bd33ca340df",
+      "contentWordCount": 791,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=12418"
+    },
+    {
+      "objectId": 12617,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 12616,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=12617",
+      "featuredImageId": 12618,
+      "contentSha256": "cc9ec77a32aa74a4bc4e637db3d6a4a36d7601b84fe1f2041c3776272aaa284f",
+      "contentWordCount": 758,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=12617"
+    },
+    {
+      "objectId": 12725,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 12724,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=12725",
+      "featuredImageId": 12726,
+      "contentSha256": "9a79a432ba442e0857fbf366978c397c11de579c9b2c57b3ab36f00c4c21099f",
+      "contentWordCount": 820,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=12725"
+    },
+    {
+      "objectId": 12777,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 12776,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=12777",
+      "featuredImageId": 12778,
+      "contentSha256": "6aa6861b67f673beaa64f9aa085d727b8f2884114fe7dbbc404392237011a019",
+      "contentWordCount": 906,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=12777"
+    },
+    {
+      "objectId": 13319,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13318,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13319",
+      "featuredImageId": 13320,
+      "contentSha256": "3a66ae2c74ee97c324c49ebf9e6ee95fb8445fca16158940acac2f3fa832e719",
+      "contentWordCount": 876,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13319"
+    },
+    {
+      "objectId": 13378,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13377,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13378",
+      "featuredImageId": 13379,
+      "contentSha256": "07ff05049616b3bf034de51d88afc8808fc51c75beabc5581b0d7bf5ee3c3179",
+      "contentWordCount": 794,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13378"
+    },
+    {
+      "objectId": 13390,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13389,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13390",
+      "featuredImageId": 13391,
+      "contentSha256": "f27c7feaa971593396a31bc292a22ce24edf98786bde7d7f68e9a504930030c2",
+      "contentWordCount": 733,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13390"
+    },
+    {
+      "objectId": 13458,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13457,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13458",
+      "featuredImageId": 13459,
+      "contentSha256": "89faf488103dbb51ddd718e9fe327002b917c550eb9ff09839af0f7a57039119",
+      "contentWordCount": 889,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13458"
+    },
+    {
+      "objectId": 13482,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13481,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13482",
+      "featuredImageId": 13483,
+      "contentSha256": "2cf97c8536bfbbc799f66d33eca22760f4228a4950ee5afd410536f9943c7c0a",
+      "contentWordCount": 924,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13482"
+    },
+    {
+      "objectId": 13562,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13561,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13562",
+      "featuredImageId": 13563,
+      "contentSha256": "0888a8e26d3844a70dc8a42ec51d2096633cb50f249883f03a8bd98c99099954",
+      "contentWordCount": 974,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13562"
+    },
+    {
+      "objectId": 13615,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13614,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13615",
+      "featuredImageId": 13616,
+      "contentSha256": "be7f1c9afb4a4ba5e0eded1456b6d242bb9ab22ff84e4615b622610ca7ac96fb",
+      "contentWordCount": 856,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=13615"
+    },
+    {
+      "objectId": 13711,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13710,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13711",
+      "featuredImageId": 13712,
+      "contentSha256": "8ceafc5ad4d18991b70c10b441e62618e74720a828720dc83abaa13fe3244095",
+      "contentWordCount": 795,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13711"
+    },
+    {
+      "objectId": 13791,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13790,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13791",
+      "featuredImageId": 13792,
+      "contentSha256": "7d37d2dff89cb5a5bdb68ed040346828e6db26be9dd4446bb8085df665b5dc06",
+      "contentWordCount": 894,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13791"
+    },
+    {
+      "objectId": 13823,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13822,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13823",
+      "featuredImageId": 13824,
+      "contentSha256": "44244937d476d89e9f1deb0d41a277bd6e240c98839c59693993867e549555a7",
+      "contentWordCount": 771,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13823"
+    },
+    {
+      "objectId": 13947,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13946,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13947",
+      "featuredImageId": 13948,
+      "contentSha256": "5924f65a2348d34007f67fd02d6b71a490dba0fdf2aa29c57c613da84fe9d7c3",
+      "contentWordCount": 803,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13947"
+    },
+    {
+      "objectId": 13995,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 13994,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=13995",
+      "featuredImageId": 13996,
+      "contentSha256": "b882b84bcc7fa62019f28db536e9a853b53408ceb4da5a1dbee6edc40f94bf1b",
+      "contentWordCount": 842,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=13995"
+    },
+    {
+      "objectId": 14095,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14094,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14095",
+      "featuredImageId": 14096,
+      "contentSha256": "88d78de18ca48e5d308fc1446b542cbe2c79b5e4d743182a2f5cc0e81745e9a5",
+      "contentWordCount": 847,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14095"
+    },
+    {
+      "objectId": 14115,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14114,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14115",
+      "featuredImageId": 14116,
+      "contentSha256": "a900f5c7d90000318e0b6ec89c8ab473b5c6a63d98322db504a3054621e8827c",
+      "contentWordCount": 890,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14115"
+    },
+    {
+      "objectId": 14147,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14146,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14147",
+      "featuredImageId": 14148,
+      "contentSha256": "93c48fa1b7b7b465fb09b50d038f079cfaa7a2ffa838ac7cd6327afc29ce65dc",
+      "contentWordCount": 731,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14147"
+    },
+    {
+      "objectId": 14255,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14254,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14255",
+      "featuredImageId": 14256,
+      "contentSha256": "68bc18f722472851ef34f348d25d0ba6921d7047cbff7ae85256eead39c39efe",
+      "contentWordCount": 768,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14255"
+    },
+    {
+      "objectId": 14287,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14286,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14287",
+      "featuredImageId": 14288,
+      "contentSha256": "bfd8d275d9920d3823bc31254cb4f1b38b2eec66e4a9f0018c423659ce871ec7",
+      "contentWordCount": 815,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=14287"
+    },
+    {
+      "objectId": 14360,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14359,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14360",
+      "featuredImageId": 14361,
+      "contentSha256": "93aea760d887d36250267f3bfe95401d2a53aa011400176ea8d10bfaf27f81ae",
+      "contentWordCount": 938,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14360"
+    },
+    {
+      "objectId": 14368,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14367,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14368",
+      "featuredImageId": 14369,
+      "contentSha256": "48ea2adbb57193a627abea64607de8b0bbdbb179398572b14277fce8112b8500",
+      "contentWordCount": 909,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14368"
+    },
+    {
+      "objectId": 14392,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14391,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14392",
+      "featuredImageId": 14393,
+      "contentSha256": "0c8654e2d397f7bb32ace7a3045fb33d9a3a69694cdea695cdd0c737a3cd94ce",
+      "contentWordCount": 816,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14392"
+    },
+    {
+      "objectId": 14485,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14484,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14485",
+      "featuredImageId": 14486,
+      "contentSha256": "7ee6281645ac2883bcdc3f7e472a250732d302738f865d01f124c398f182a45c",
+      "contentWordCount": 778,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14485"
+    },
+    {
+      "objectId": 14505,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14504,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14505",
+      "featuredImageId": 14506,
+      "contentSha256": "f42263f79cde5269212dd0dc40b4570bbed72b7f869ffffaed1250623cbba169",
+      "contentWordCount": 718,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14505"
+    },
+    {
+      "objectId": 14519,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14518,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14519",
+      "featuredImageId": 14520,
+      "contentSha256": "bceed147c010967595919e12d225acc998b031ee61f68915b9b5f0e6fdeb793f",
+      "contentWordCount": 767,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14519"
+    },
+    {
+      "objectId": 14643,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14642,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14643",
+      "featuredImageId": 14644,
+      "contentSha256": "f3b4ed0f004f64a62071cf786d2792c8b2c9e870b8412ea09730d2aa724b9889",
+      "contentWordCount": 810,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=14643"
+    },
+    {
+      "objectId": 14667,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14666,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14667",
+      "featuredImageId": 14668,
+      "contentSha256": "014351b004a04408aaac38a1c3b035e6a629a2437f99857a6273161dfb40c631",
+      "contentWordCount": 892,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14667"
+    },
+    {
+      "objectId": 14876,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14875,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14876",
+      "featuredImageId": 14877,
+      "contentSha256": "4607cc5e5bd5507362aa83bb1c84c0d8799fa4a5be4ca9d6fc16c236b29d2c76",
+      "contentWordCount": 835,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14876"
+    },
+    {
+      "objectId": 14880,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 14879,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=14880",
+      "featuredImageId": 14881,
+      "contentSha256": "20c57bd82303af78fb82a9377ea511efe9c45673a66e7531275482e4f56322d9",
+      "contentWordCount": 838,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=14880"
+    },
+    {
+      "objectId": 15196,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15195,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15196",
+      "featuredImageId": 15197,
+      "contentSha256": "1e32e06c0520e6aa2f499f0536cc70e495106cebda5f81866988d25a73fb6182",
+      "contentWordCount": 756,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15196"
+    },
+    {
+      "objectId": 15308,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15307,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15308",
+      "featuredImageId": 15309,
+      "contentSha256": "20caba706d36058ef8a5d6045a17ff3897cc37ab1e9381913dc87fec27f40575",
+      "contentWordCount": 793,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15308"
+    },
+    {
+      "objectId": 15413,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15412,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15413",
+      "featuredImageId": 15414,
+      "contentSha256": "d463ed565760fd1e738be138b2e001255e4b39888cc8fd163d5a90ea7dfcbcd7",
+      "contentWordCount": 854,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15413"
+    },
+    {
+      "objectId": 15417,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15416,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15417",
+      "featuredImageId": 15418,
+      "contentSha256": "4d88c187358e83e62e5324f9d3caeb42d213e3ffe746a73238ae8e578396b455",
+      "contentWordCount": 815,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15417"
+    },
+    {
+      "objectId": 15797,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15796,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15797",
+      "featuredImageId": 15798,
+      "contentSha256": "18b5021fa287766b2f5f94c0a36cf9d4ec2ecc67c3469c825aef67b85fc9922b",
+      "contentWordCount": 932,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15797"
+    },
+    {
+      "objectId": 15825,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15824,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15825",
+      "featuredImageId": 15826,
+      "contentSha256": "62faa32595d10a1f787df667e0e0cb35bf85134ebd90de0ce71e87994f94ba4e",
+      "contentWordCount": 760,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15825"
+    },
+    {
+      "objectId": 15829,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15828,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15829",
+      "featuredImageId": 15830,
+      "contentSha256": "2b66183f3086a0b2e0d1a516f6b8daaca3390795add417d48d7e8137b8720e84",
+      "contentWordCount": 839,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15829"
+    },
+    {
+      "objectId": 15921,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 15920,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=15921",
+      "featuredImageId": 15922,
+      "contentSha256": "c775233c3d7b9044bb5c875009cc453bf80e16c6fb4fe603eab4797bab25d878",
+      "contentWordCount": 777,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=15921"
+    },
+    {
+      "objectId": 16045,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16044,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16045",
+      "featuredImageId": 16046,
+      "contentSha256": "0b4d19f8b262511a5f93a9e507834c1adef7a84f773073abb11ba8ddc6156e47",
+      "contentWordCount": 741,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16045"
+    },
+    {
+      "objectId": 16105,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16104,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16105",
+      "featuredImageId": 16106,
+      "contentSha256": "bb7e08328da4b251d0f50700d64c6286c18776f89320d854d8ad9a1b2d22fcc5",
+      "contentWordCount": 933,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16105"
+    },
+    {
+      "objectId": 16141,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16140,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16141",
+      "featuredImageId": 16142,
+      "contentSha256": "6bd13040d155cb73ba113ab7df6543dc64df7420ec5e31f0a1aeb3896ce7acd3",
+      "contentWordCount": 912,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=16141"
+    },
+    {
+      "objectId": 16173,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16172,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16173",
+      "featuredImageId": 16174,
+      "contentSha256": "af5ab5308340c0489d86feb1bdacdeae4c48ff024a95cf15382a42116537f813",
+      "contentWordCount": 833,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16173"
+    },
+    {
+      "objectId": 16390,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16389,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16390",
+      "featuredImageId": 16391,
+      "contentSha256": "46b989e5db65b01e090d9de3f780d034206bce257b7689cce6c54bad5d0d4402",
+      "contentWordCount": 847,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16390"
+    },
+    {
+      "objectId": 16446,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16445,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16446",
+      "featuredImageId": 16447,
+      "contentSha256": "4d2309b257553a06d77df7e2c25a601e6fbc284ebd7931ca17aafab1f7ce1952",
+      "contentWordCount": 820,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=16446"
+    },
+    {
+      "objectId": 16690,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16689,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16690",
+      "featuredImageId": 16691,
+      "contentSha256": "4513422682cfcdacae26881f383859747aeacd75f08a162b32c2aafda1f53ce1",
+      "contentWordCount": 856,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16690"
+    },
+    {
+      "objectId": 16778,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16777,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16778",
+      "featuredImageId": 16779,
+      "contentSha256": "f45c0b82702b0ec972625614938ff2110e9e46396a5948917df5eb4d0253109c",
+      "contentWordCount": 755,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16778"
+    },
+    {
+      "objectId": 16788,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16787,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16788",
+      "featuredImageId": 16789,
+      "contentSha256": "23980fa8a7a5aa4f48716d8c52962d4ec8ee643f68edd7ef20737c1541536194",
+      "contentWordCount": 725,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16788"
+    },
+    {
+      "objectId": 16836,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16835,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16836",
+      "featuredImageId": 16837,
+      "contentSha256": "0a973cead8815009e8ae77b5f35ca7c18f21c72bcafe5f11185010579cd5ea82",
+      "contentWordCount": 811,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16836"
+    },
+    {
+      "objectId": 16884,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 16883,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=16884",
+      "featuredImageId": 16885,
+      "contentSha256": "bd84ca69f65e4fd4ae474ab1c12efbfc7b81c01915bdf7c2ece0187ed30d6244",
+      "contentWordCount": 735,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=16884"
+    },
+    {
+      "objectId": 17197,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17196,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17197",
+      "featuredImageId": 17198,
+      "contentSha256": "e88f765d4e8155f9c0cb37996c8d49b60a2df40eec3dbbbf742530d457f5b11c",
+      "contentWordCount": 859,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=17197"
+    },
+    {
+      "objectId": 17373,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17372,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17373",
+      "featuredImageId": 17374,
+      "contentSha256": "706aa63a604b782bc6ec575364d284d31177cb98580dfb75997ba3a234a4927a",
+      "contentWordCount": 824,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=17373"
+    },
+    {
+      "objectId": 17429,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17428,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17429",
+      "featuredImageId": 17430,
+      "contentSha256": "dc58ae1712bbf4d8dd2cc2ef7359428933730e4fee80dfa0c114d50bd09b9147",
+      "contentWordCount": 771,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=17429"
+    },
+    {
+      "objectId": 17433,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17432,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17433",
+      "featuredImageId": 17434,
+      "contentSha256": "8bb2eb53378ceb7ba7558501026b175b442a683dfa4f4150482a435923835f6e",
+      "contentWordCount": 869,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=17433"
+    },
+    {
+      "objectId": 17437,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17436,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17437",
+      "featuredImageId": 17438,
+      "contentSha256": "1de7af3eefdea476a6d51b320d7a0366c065c07e1712197fcf7bf87f3351fc5c",
+      "contentWordCount": 891,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=17437"
+    },
+    {
+      "objectId": 17525,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17524,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17525",
+      "featuredImageId": 17526,
+      "contentSha256": "fbbef0df822a33c39558c7ea7ffbd045f61643dfb8ad9bbddbafa52c6717d69b",
+      "contentWordCount": 826,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=17525"
+    },
+    {
+      "objectId": 17585,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17584,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17585",
+      "featuredImageId": 17586,
+      "contentSha256": "3cfa0f6abb5f64746395b2f094c83aad6889a30d7fe7fd0247af710069cfb6c2",
+      "contentWordCount": 808,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=17585"
+    },
+    {
+      "objectId": 17597,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17596,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17597",
+      "featuredImageId": 17598,
+      "contentSha256": "294236cdd55829e970043d58ff94461d1cfc5f910367eee9bc2bd671c872f635",
+      "contentWordCount": 791,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=17597"
+    },
+    {
+      "objectId": 17833,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 17832,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=17833",
+      "featuredImageId": 17834,
+      "contentSha256": "0dce51e023bdb471fba5476fbc6f8aec56a73423388845e0fa3da10d63eab4c5",
+      "contentWordCount": 791,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=17833"
+    },
+    {
+      "objectId": 18075,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 18074,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=18075",
+      "featuredImageId": 18076,
+      "contentSha256": "73317a7357798d63cfa2bdfd547fbc36dca4da18dafce5183c4006fead3ce05a",
+      "contentWordCount": 806,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=18075"
+    },
+    {
+      "objectId": 18223,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 18222,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=18223",
+      "featuredImageId": 18224,
+      "contentSha256": "a4555d5d61ef85909a1b30329d6f0947020e857a04b4ebd15088a67a1563a077",
+      "contentWordCount": 781,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=18223"
+    },
+    {
+      "objectId": 18363,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 18362,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=18363",
+      "featuredImageId": 18364,
+      "contentSha256": "77fe80f421ea0150406e2b5334b5a518d0325e24f7196e162f75fd5c62d0079b",
+      "contentWordCount": 780,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "http://leddisplaywarehouse.com/?page_id=18363"
+    },
+    {
+      "objectId": 18670,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Wall Rental Package in Austin TX",
+      "slug": "led-wall-rental",
+      "status": "publish",
+      "parentId": 18669,
+      "permalink": "https://leddisplaywarehouse.com/austin/led-wall-rental/",
+      "featuredImageId": 18671,
+      "contentSha256": "660d7e0c1098ef0fb4e9f54d8e98158b168da4d6e034fe927c4e8ea62df306c7",
+      "contentWordCount": 886,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/austin/led-wall-rental/"
+    },
+    {
+      "objectId": 18702,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas",
+      "status": "draft",
+      "parentId": 18701,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=18702",
+      "featuredImageId": 18703,
+      "contentSha256": "28557e879f0fa83479e9c45ad5ea2d453681d49b58d44aea8754cd6e6c824967",
+      "contentWordCount": 796,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=18702"
+    },
+    {
+      "objectId": 18985,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "LED Video Walls in Dallas TX",
+      "slug": "dallas-46",
+      "status": "draft",
+      "parentId": 2563,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=18985",
+      "featuredImageId": 18986,
+      "contentSha256": "ce7325f3703bb079bf302f5155aa68d57cf49cdb7a44e54dfccb7a17cc7e8461",
+      "contentWordCount": 869,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=18985"
+    },
+    {
+      "objectId": 19729,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor LED Video Wall in Oakland 002E.3 Certification",
+      "slug": "oakland-002e3-cert-20260828",
+      "status": "draft",
+      "parentId": 3315,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=19729",
+      "featuredImageId": 19732,
+      "contentSha256": "632ec5b3b3c5db1288ca5f33e8bfb92deffdd997946823fdba9bc2c34cdc701c",
+      "contentWordCount": 1314,
+      "matchedTerms": [
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=19729"
+    },
+    {
+      "objectId": 19812,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere",
+      "slug": "indoor-digital-sphere",
+      "status": "draft",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=19812",
+      "featuredImageId": null,
+      "contentSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contentWordCount": 0,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=19812"
+    },
+    {
+      "objectId": 19813,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in California",
+      "slug": "california-6",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/california-6/",
+      "featuredImageId": 19815,
+      "contentSha256": "64748f876fa7d972a7d66073e5d33b806d3a10572f4974b51d0b0cabd11803f1",
+      "contentWordCount": 2830,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/california-6/"
+    },
+    {
+      "objectId": 19825,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Alabama",
+      "slug": "alabama",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/alabama/",
+      "featuredImageId": 19862,
+      "contentSha256": "c1c2b0910e81108b40681fded6d29c26e24557a25bc2bf6a6832faaa8e17038f",
+      "contentWordCount": 118,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/alabama/"
+    },
+    {
+      "objectId": 19829,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Alaska",
+      "slug": "alaska",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/alaska/",
+      "featuredImageId": 19859,
+      "contentSha256": "6c661f7eaa8441c88e92e183de93b31a64464ceae6bac88fdc86ad32f88e061a",
+      "contentWordCount": 452,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/alaska/"
+    },
+    {
+      "objectId": 19837,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Arkansas | LEDDisplayWarehouse.com",
+      "slug": "arkansas",
+      "status": "publish",
+      "parentId": 0,
+      "permalink": "https://leddisplaywarehouse.com/arkansas/",
+      "featuredImageId": 19865,
+      "contentSha256": "a24d9e7dbfb403640eeceff0b4a81c94a409a91864312bc29a887dc272465b23",
+      "contentWordCount": 329,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/arkansas/"
+    },
+    {
+      "objectId": 19849,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Hawaii",
+      "slug": "hawaii",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/hawaii/",
+      "featuredImageId": 19851,
+      "contentSha256": "1058327d2ef555174b5bf4d01edb3279a964dee37c403d180ea0acdc550bf51f",
+      "contentWordCount": 289,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/hawaii/"
+    },
+    {
+      "objectId": 19853,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Colorado",
+      "slug": "colorado",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/colorado/",
+      "featuredImageId": 19871,
+      "contentSha256": "dc3e8ebcb7194e41c3c5a56ac6632cbd6b848d57e40681b8b980456b039b0a18",
+      "contentWordCount": 233,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/colorado/"
+    },
+    {
+      "objectId": 19920,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Iowa | LEDDisplayWarehouse.com",
+      "slug": "iowa",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/iowa/",
+      "featuredImageId": 19922,
+      "contentSha256": "1fd0cf49201efa45a4db8fb529dd69687c37c43e391d122379515858d7a75e87",
+      "contentWordCount": 1528,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/iowa/"
+    },
+    {
+      "objectId": 19924,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Indiana",
+      "slug": "indiana",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/indiana/",
+      "featuredImageId": 19926,
+      "contentSha256": "3cbe92e82ead320f5a486fef3edc0b680a09f559a1db4a38b5035d0f17ced242",
+      "contentWordCount": 1569,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/indiana/"
+    },
+    {
+      "objectId": 19928,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Kentucky",
+      "slug": "kentucky",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/kentucky/",
+      "featuredImageId": 19930,
+      "contentSha256": "e2b7dbbfca77c26d9e338de7cb0df39aedadc9f6eb6a659de0ad25d02e89abba",
+      "contentWordCount": 1691,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/kentucky/"
+    },
+    {
+      "objectId": 19932,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Massachusetts",
+      "slug": "massachusetts",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/massachusetts/",
+      "featuredImageId": 19934,
+      "contentSha256": "209336213af2be2d551d2361cb1bae51a30c0ee41eb0ace4adbb2791dd02d0ce",
+      "contentWordCount": 1564,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/massachusetts/"
+    },
+    {
+      "objectId": 19944,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Illinois",
+      "slug": "illinois",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/illinois/",
+      "featuredImageId": 19946,
+      "contentSha256": "f7bac8a30c323e6c444bedde28330f279f0db05e590f555ddb3d63eccb18de7f",
+      "contentWordCount": 1642,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/illinois/"
+    },
+    {
+      "objectId": 19948,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Maryland",
+      "slug": "maryland",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/maryland/",
+      "featuredImageId": 19950,
+      "contentSha256": "09eb0bc02def37931e3379a933ef0ddcbc79d4a14c828dcbd501fe3d72cf05a7",
+      "contentWordCount": 1534,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/maryland/"
+    },
+    {
+      "objectId": 19958,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Nevada | LEDDisplayWarehouse.com",
+      "slug": "nevada",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/nevada/",
+      "featuredImageId": 19960,
+      "contentSha256": "01883f08ef495beafee2c2bef051a6a426ee42a54e22b49521c7f6bed8898714",
+      "contentWordCount": 2683,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/nevada/"
+    },
+    {
+      "objectId": 19962,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in New Mexico",
+      "slug": "new-mexico",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-mexico/",
+      "featuredImageId": 19964,
+      "contentSha256": "fafac1e89e89e5bcb3b67ac8f027022c8e1fab724cadf21e16252bd0ac0fd446",
+      "contentWordCount": 2215,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-mexico/"
+    },
+    {
+      "objectId": 19966,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in New York",
+      "slug": "new-york",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-york/",
+      "featuredImageId": 19968,
+      "contentSha256": "40e62fcf85e1db707a96cfaa6a304315e6af2c6c2d2c96aa7b5f2012e7ca3b2e",
+      "contentWordCount": 2275,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-york/"
+    },
+    {
+      "objectId": 19970,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Ohio",
+      "slug": "ohio",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/ohio/",
+      "featuredImageId": 19972,
+      "contentSha256": "6660970aa36adf33fb7f11acac8036b4cfb9ede187561f63b758ded4f9f11f9f",
+      "contentWordCount": 2174,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/ohio/"
+    },
+    {
+      "objectId": 19974,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Oklahoma",
+      "slug": "oklahoma",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/oklahoma/",
+      "featuredImageId": 19976,
+      "contentSha256": "54a71e69d2f46ba4dca1b598a43e26967393e2a23b7e984074f382a8bbd6ec9f",
+      "contentWordCount": 2545,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/oklahoma/"
+    },
+    {
+      "objectId": 19978,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Oregon",
+      "slug": "oregon",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/oregon/",
+      "featuredImageId": 19980,
+      "contentSha256": "3abcde77af6f538b6208be4e7e6afcaaa6125a7fc3406dba61908aedd736ba91",
+      "contentWordCount": 2270,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/oregon/"
+    },
+    {
+      "objectId": 19982,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere Solutions for Pennsylvania Venues",
+      "slug": "pennsylvania",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/pennsylvania/",
+      "featuredImageId": 19984,
+      "contentSha256": "3ecc47bbe150ffbaa5fc738ef832a1e6dfc5b936f45a796a77c3a9a6387fb345",
+      "contentWordCount": 2199,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/pennsylvania/"
+    },
+    {
+      "objectId": 19986,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Rhode Island",
+      "slug": "rhode-island",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/rhode-island/",
+      "featuredImageId": 19988,
+      "contentSha256": "a8deeeb462bcce339887bf5f753a41dc836381a5c471ffde5c0f3c89ad157849",
+      "contentWordCount": 2446,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/rhode-island/"
+    },
+    {
+      "objectId": 19990,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in South Carolina",
+      "slug": "south-carolina",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/south-carolina/",
+      "featuredImageId": 19992,
+      "contentSha256": "14394719d192c5bd8f861890fec632521a8733594d57b23db05d839165cb9cba",
+      "contentWordCount": 2164,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/south-carolina/"
+    },
+    {
+      "objectId": 19994,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in South Dakota",
+      "slug": "south-dakota",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/south-dakota/",
+      "featuredImageId": 19996,
+      "contentSha256": "c960b760bca80a657c0c5a1c494911c1b61e278b89bddfb187b5ccfa41cae81a",
+      "contentWordCount": 2193,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/south-dakota/"
+    },
+    {
+      "objectId": 19998,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Minnesota",
+      "slug": "minnesota",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/minnesota/",
+      "featuredImageId": 20000,
+      "contentSha256": "3a017e60f67205497686d332eb0f17136e71465f26eec57f9c17235478525339",
+      "contentWordCount": 2264,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/minnesota/"
+    },
+    {
+      "objectId": 20002,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Mississippi",
+      "slug": "mississippi",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/mississippi/",
+      "featuredImageId": 20004,
+      "contentSha256": "405a6a3475a635552d2b2843fa94cfa0795942073e6b84f64f35a236f9ee51a2",
+      "contentWordCount": 2461,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/mississippi/"
+    },
+    {
+      "objectId": 20006,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Missouri",
+      "slug": "missouri",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/missouri/",
+      "featuredImageId": 20008,
+      "contentSha256": "243aa1fe5794ed208e9f8906f325e70a878c86e9cfb87b461ac4fad69adc682b",
+      "contentWordCount": 2149,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/missouri/"
+    },
+    {
+      "objectId": 20010,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Montana",
+      "slug": "montana",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/montana/",
+      "featuredImageId": 20012,
+      "contentSha256": "57bb1eb0c284f01c2b23d2cb9c7445ee288f2ad68a0dcc9b93868b415d4435ca",
+      "contentWordCount": 2414,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/montana/"
+    },
+    {
+      "objectId": 20014,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Nebraska",
+      "slug": "nebraska",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/nebraska/",
+      "featuredImageId": 20036,
+      "contentSha256": "ced5a82a8d8d7d89ddfb3aa4615df3e8142c7ab2eae9ad530a1e89cc379d0c28",
+      "contentWordCount": 2424,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/nebraska/"
+    },
+    {
+      "objectId": 20016,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in New Hampshire",
+      "slug": "new-hampshire",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-hampshire/",
+      "featuredImageId": 20018,
+      "contentSha256": "2d2ee820eb9b12f78a91751a6c6ded4101f139b8d1ddc3e4b1ec6160fa42d694",
+      "contentWordCount": 2238,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-hampshire/"
+    },
+    {
+      "objectId": 20020,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in New Jersey",
+      "slug": "new-jersey",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-jersey/",
+      "featuredImageId": 20022,
+      "contentSha256": "57a76dc7cecbb6dae25d296c3c907609a72b7268dc95e9a90b42929af91ae66f",
+      "contentWordCount": 2380,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/new-jersey/"
+    },
+    {
+      "objectId": 20024,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in North Carolina",
+      "slug": "north-carolina",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/north-carolina/",
+      "featuredImageId": 20026,
+      "contentSha256": "d9573209e85294182d1eaacf1907f474371bbb169c1ed75352561d484da49639",
+      "contentWordCount": 2207,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/north-carolina/"
+    },
+    {
+      "objectId": 20028,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in North Dakota",
+      "slug": "north-dakota",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/north-dakota/",
+      "featuredImageId": 20030,
+      "contentSha256": "7252bcef52cb71f454a6d6754699b047522c84417e3f88ab51c608e75d5eaf91",
+      "contentWordCount": 2645,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/north-dakota/"
+    },
+    {
+      "objectId": 20032,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Michigan",
+      "slug": "michigan",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/michigan/",
+      "featuredImageId": 20034,
+      "contentSha256": "e2aa627cb791c188aa58ef62bc1d30e256b68c456d5f70575dea782d3c3ed369",
+      "contentWordCount": 2010,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/michigan/"
+    },
+    {
+      "objectId": 20043,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Texas",
+      "slug": "texas",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/texas/",
+      "featuredImageId": 20045,
+      "contentSha256": "04b980c2e88b80a58d54374078911b700f46e3b267a0b70ea3c1b0d09d554cd6",
+      "contentWordCount": 2281,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/texas/"
+    },
+    {
+      "objectId": 20046,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Utah | LEDDisplayWarehouse.com",
+      "slug": "utah",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/utah/",
+      "featuredImageId": 20051,
+      "contentSha256": "5f24f4c59cde1731e815ca59861d6ced5a1e36099c583e0fae1a6da6fa7a51e3",
+      "contentWordCount": 2305,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/utah/"
+    },
+    {
+      "objectId": 20049,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere Solutions for Vermont Venues",
+      "slug": "vermont",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/vermont/",
+      "featuredImageId": 20053,
+      "contentSha256": "90a6c696560a3fcd745c7bef455dc3455af0ae7eac331a66e726e5d7d1b9dbe9",
+      "contentWordCount": 2260,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/vermont/"
+    },
+    {
+      "objectId": 20054,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Virginia",
+      "slug": "virginia",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/virginia/",
+      "featuredImageId": 20059,
+      "contentSha256": "ae2ffc9b38e633de878c5106dca54f4f3e3b7308db55f77b17e289dc15a9edcb",
+      "contentWordCount": 2329,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/virginia/"
+    },
+    {
+      "objectId": 20057,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Washington",
+      "slug": "washington",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/washington/",
+      "featuredImageId": 20061,
+      "contentSha256": "4464f47cdc518a9ef4120494e22c1d6e1e3b161c0ede02d723587ab359082309",
+      "contentWordCount": 1979,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/washington/"
+    },
+    {
+      "objectId": 20062,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in West Virginia",
+      "slug": "west-virginia",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/west-virginia/",
+      "featuredImageId": 20067,
+      "contentSha256": "2376d8d97cc602d8f68914f93b7d77733d2674c97b27f5ee3ff44ac4ecf1fdb7",
+      "contentWordCount": 2083,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/west-virginia/"
+    },
+    {
+      "objectId": 20065,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Wisconsin",
+      "slug": "wisconsin",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/wisconsin/",
+      "featuredImageId": 20070,
+      "contentSha256": "2370ec563b4d5fb4189eaf45ab338dfad39b1f6efa050fd364ddfde447e97dde",
+      "contentWordCount": 2399,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/wisconsin/"
+    },
+    {
+      "objectId": 20069,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Wyoming",
+      "slug": "wyoming",
+      "status": "publish",
+      "parentId": 19812,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/wyoming/",
+      "featuredImageId": 20073,
+      "contentSha256": "8d34536e550b3afd3b34c92908230ba3ca10087a51d4b3fb5af16918daf4e615",
+      "contentWordCount": 2007,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/wyoming/"
+    },
+    {
+      "objectId": 20078,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Los Angeles",
+      "slug": "los-angeles",
+      "status": "draft",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/?page_id=20078",
+      "featuredImageId": 20079,
+      "contentSha256": "6b8bf621f05140dd4a68e3472f1846aed890ac07a4fc43a059a270c2dc3cefe0",
+      "contentWordCount": 2424,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/?page_id=20078"
+    },
+    {
+      "objectId": 20081,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Fresno",
+      "slug": "fresno",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/fresno/",
+      "featuredImageId": 20082,
+      "contentSha256": "aac1bec05ece33e0bbbfca8849ccd796c5ce8f976ed2d83ec7127c76543ee79d",
+      "contentWordCount": 2201,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/fresno/"
+    },
+    {
+      "objectId": 20084,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Long Beach",
+      "slug": "long-beach",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/long-beach/",
+      "featuredImageId": 20085,
+      "contentSha256": "4f36382c95e703a51db281670e32d3bc8a7cee4b7594d8b394411693fbf86670",
+      "contentWordCount": 2198,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/long-beach/"
+    },
+    {
+      "objectId": 20087,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Oakland | LEDDisplayWarehouse.com",
+      "slug": "oakland",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/oakland/",
+      "featuredImageId": 20088,
+      "contentSha256": "83ae6a72df96c28ba2e1856bb03fd255d15cb40339c8eaf36fc8a86878f02520",
+      "contentWordCount": 2295,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/oakland/"
+    },
+    {
+      "objectId": 20090,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Riverside: Immersive Visual Solutions",
+      "slug": "riverside",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/riverside/",
+      "featuredImageId": 20091,
+      "contentSha256": "235a9aceea5fca48f822cd1d2d96962c57c10066370ef719f6d3b6b328348b9d",
+      "contentWordCount": 2266,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/riverside/"
+    },
+    {
+      "objectId": 20093,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere for Sacramento Venues | LEDDisplayWarehouse.com",
+      "slug": "sacramento",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/sacramento/",
+      "featuredImageId": 20094,
+      "contentSha256": "13c207c9124abefcf79f3e8d933d6803c4e43775c46c726ffade40041ff9db92",
+      "contentWordCount": 2141,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/sacramento/"
+    },
+    {
+      "objectId": 20096,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in San Diego | LEDDisplayWarehouse.com",
+      "slug": "san-diego",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/san-diego/",
+      "featuredImageId": 20100,
+      "contentSha256": "8ac09729d9be3bd480b4fc44601ceacf657cfa96a8399f02d86ca0c15faac778",
+      "contentWordCount": 2179,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/san-diego/"
+    },
+    {
+      "objectId": 20102,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in San Francisco",
+      "slug": "san-francisco",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/san-francisco/",
+      "featuredImageId": 20103,
+      "contentSha256": "3e91339112af7c5a0a8ad7a12e5b66de66b7fece770a1e6651234e94d99b9b10",
+      "contentWordCount": 2204,
+      "matchedTerms": [
+        "digital sphere",
+        "led sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/san-francisco/"
+    },
+    {
+      "objectId": 20105,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in San Jose",
+      "slug": "san-jose",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/san-jose/",
+      "featuredImageId": 20106,
+      "contentSha256": "e0ba6b351c4d4e958d133db39f3e20c524dc36411a591fe07981025a74f93436",
+      "contentWordCount": 2228,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/san-jose/"
+    },
+    {
+      "objectId": 20108,
+      "postType": "page",
+      "postTypeName": "Pages",
+      "title": "Indoor Digital Sphere in Bakersfield | LEDDisplayWarehouse.com",
+      "slug": "bakersfield",
+      "status": "publish",
+      "parentId": 20077,
+      "permalink": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/bakersfield/",
+      "featuredImageId": 20109,
+      "contentSha256": "d2ec5b02fe7344b5f828567b21d26883331a090042509a2475e162880fa26e00",
+      "contentWordCount": 2607,
+      "matchedTerms": [
+        "digital sphere",
+        "sphere"
+      ],
+      "identitySignals": 0,
+      "canonical": "https://leddisplaywarehouse.com/indoor-digital-sphere/california/bakersfield/"
+    }
+  ],
+  "redirects": [
+    {
+      "url": "https://leddisplaywarehouse.com/outdoor-digital-sphere/",
+      "status": 0,
+      "location": null,
+      "canonical": null
+    },
+    {
+      "url": "https://leddisplaywarehouse.com/outdoor-led-sphere/",
+      "status": 0,
+      "location": null,
+      "canonical": null
+    },
+    {
+      "url": "https://leddisplaywarehouse.com/digital-sphere/",
+      "status": 0,
+      "location": null,
+      "canonical": null
+    },
+    {
+      "url": "https://leddisplaywarehouse.com/led-sphere/",
+      "status": 0,
+      "location": null,
+      "canonical": null
+    }
+  ],
+  "failedInventoryReads": [
+    {
+      "restBase": "presto-videos",
+      "term": "Outdoor LED Sphere",
+      "status": "future"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Outdoor LED Sphere",
+      "status": "trash"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Digital Sphere",
+      "status": "publish"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Digital Sphere",
+      "status": "draft"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Digital Sphere",
+      "status": "private"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Digital Sphere",
+      "status": "pending"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Digital Sphere",
+      "status": "future"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Digital Sphere",
+      "status": "trash"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "LED Sphere",
+      "status": "publish"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "LED Sphere",
+      "status": "draft"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "LED Sphere",
+      "status": "private"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "LED Sphere",
+      "status": "pending"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "LED Sphere",
+      "status": "future"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "LED Sphere",
+      "status": "trash"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Sphere",
+      "status": "publish"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Sphere",
+      "status": "draft"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Sphere",
+      "status": "private"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Sphere",
+      "status": "pending"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Sphere",
+      "status": "future"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "Sphere",
+      "status": "trash"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-digital-sphere",
+      "status": "publish"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-digital-sphere",
+      "status": "draft"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-digital-sphere",
+      "status": "private"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-digital-sphere",
+      "status": "pending"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-digital-sphere",
+      "status": "future"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-digital-sphere",
+      "status": "trash"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-led-sphere",
+      "status": "publish"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-led-sphere",
+      "status": "draft"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-led-sphere",
+      "status": "private"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-led-sphere",
+      "status": "pending"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-led-sphere",
+      "status": "future"
+    },
+    {
+      "restBase": "presto-videos",
+      "term": "outdoor-led-sphere",
+      "status": "trash"
+    }
+  ]
+}
