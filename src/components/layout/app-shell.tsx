@@ -19,6 +19,7 @@ export function AppShell({ children, resourceSite = null }: { children: React.Re
   const pathname = usePathname();
   const foundationContext = useMemo(() => createFoundationContext(), []);
   const [operatorRoles, setOperatorRoles] = useState<readonly AppRole[]>([]);
+  const [sessionAvailability, setSessionAvailability] = useState<"CHECKING" | "AUTHENTICATED" | "AUTHENTICATION_REQUIRED">("CHECKING");
   const permissions = useMemo(
     () => resolvePermissions(operatorRoles),
     [operatorRoles],
@@ -55,7 +56,7 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
   const effectiveOrganizationId = resourceSite?.organizationId ?? selectedOrganizationId;
   const effectiveSiteId = resourceSite?.id ?? selectedSiteId;
 
-  useEffect(() => { let active = true; void fetch("/api/operator-session", { cache: "no-store" }).then(async (response) => { const body = await response.json() as { principal?: { roles?: AppRole[] } | null }; if (active) setOperatorRoles(response.ok && body.principal?.roles ? body.principal.roles : []); }).catch(() => { if (active) setOperatorRoles([]); }); return () => { active = false; }; }, []);
+  useEffect(() => { let active = true; void fetch("/api/operator-session", { cache: "no-store" }).then(async (response) => { const body = await response.json() as { principal?: { roles?: AppRole[] } | null }; if (!active) return; setOperatorRoles(response.ok && body.principal?.roles ? body.principal.roles : []); setSessionAvailability(response.ok ? "AUTHENTICATED" : "AUTHENTICATION_REQUIRED"); }).catch(() => { if (active) { setOperatorRoles([]); setSessionAvailability("AUTHENTICATION_REQUIRED"); } }); return () => { active = false; }; }, []);
 
   const visibleNavigationItems = useMemo(
     () => getVisibleNavigationItems(FOUNDATION_NAVIGATION_ITEMS, permissions),
@@ -257,6 +258,9 @@ useEffect(() => {
     let cancelled = false;
 
     async function loadSitesForSelectedOrganization() {
+      if (sessionAvailability !== "AUTHENTICATED") {
+        return;
+      }
       if (resourceSite) {
         return;
       }
@@ -346,7 +350,7 @@ useEffect(() => {
     return () => {
       cancelled = true;
     };
-  }, [selectedOrganizationId, selectedSiteId, resourceSite]);
+  }, [selectedOrganizationId, selectedSiteId, resourceSite, sessionAvailability]);
 
   useEffect(() => {
     let cancelled = false;
@@ -523,6 +527,7 @@ useEffect(() => {
               Organization
             </label>
             <select
+              disabled={sessionAvailability !== "AUTHENTICATED"}
               value={effectiveOrganizationId}
               onChange={(event) => handleOrganizationChange(event.target.value)}
               className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
@@ -538,6 +543,7 @@ useEffect(() => {
               Site
             </label>
             <select
+              disabled={sessionAvailability !== "AUTHENTICATED"}
               value={effectiveSiteId}
               onChange={(event) => handleSiteChange(event.target.value)}
               className="mt-1 h-10 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 text-sm text-white outline-none focus:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500"
@@ -550,7 +556,7 @@ useEffect(() => {
               ))}
             </select>
 
-            {selectedSite ? (
+            {sessionAvailability === "AUTHENTICATED" && selectedSite ? (
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
                 <span className="rounded-full border border-zinc-700 px-2 py-1 text-zinc-300">
                   {selectedSite.environment}
@@ -569,7 +575,9 @@ useEffect(() => {
               </div>
             ) : null}
 
-            {siteSelectionMessage ? (
+            {sessionAvailability === "AUTHENTICATION_REQUIRED" ? (
+              <p className="mt-3 text-xs font-semibold text-amber-300">AUTHENTICATION_REQUIRED: workspace and campaign data are unavailable until sign-in is restored.</p>
+            ) : siteSelectionMessage ? (
               <p className="mt-3 text-xs text-amber-300">{siteSelectionMessage}</p>
             ) : null}
           </section>
@@ -667,7 +675,13 @@ useEffect(() => {
             </div>
           ) : null}
 
-          {children}
+          {sessionAvailability === "AUTHENTICATED" ? children : (
+            <section className="border border-amber-700/60 bg-amber-950/20 p-6" aria-live="polite">
+              <h2 className="text-lg font-semibold text-amber-200">Operator session expired / sign in required</h2>
+              <p className="mt-2 text-sm text-zinc-300">Campaign data unavailable until authentication is restored. No zero or empty values shown here represent durable campaign state.</p>
+              <Link href="/operator-login" className="mt-4 inline-flex border border-amber-600 px-3 py-2 text-sm font-semibold text-amber-100">Sign in</Link>
+            </section>
+          )}
         </section>
       </div>
     </main>

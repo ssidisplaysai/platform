@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
+import { isGlwPlanningOrConfirmationGuidance } from "./reference-claim-disposition";
 
 export const GLW_REFERENCE_QA_POLICY_VERSION = "GLW_REFERENCE_CLAIM_AUTHORITY_V1_1";
 
@@ -61,16 +62,6 @@ function sentenceAt(text: string, index: number): string {
   return text.slice(start < 0 ? 0 : start + 2, end).trim();
 }
 
-function isNonAffirmativeContext(claimText: string): boolean {
-  const normalized = claimText.replace(/\s+/g, " ").trim();
-  return normalized.endsWith("?")
-    || /\b(?:does not|do not|did not|is not|are not|cannot|can't|without|rather than|instead of|not to)\b/i.test(normalized)
-    || /^(?:if|when|before|where|depending on|ask\b|request\b|confirm\b|verify\b|consider\b)/i.test(normalized)
-    || /^the same rule applies to\b/i.test(normalized)
-    || /\b(?:if .+ (?:is|are) being considered|should be confirmed|requires? (?:its|their) own .+ review|consult .+ for official|request written confirmation|ask which|information to gather|project planning|procurement checklist|compare complete system implications)\b/i.test(normalized)
-    || /\b(?:could|may|might|concept|conceptual|ask whether|verify with|confirm with|depending on)\b/i.test(normalized);
-}
-
 export function evaluateGlwReferenceClaimAuthority(input: {
   artifact: GlwGeneratedDraftArtifact;
   supportedClaimPatterns?: readonly RegExp[];
@@ -86,7 +77,7 @@ export function evaluateGlwReferenceClaimAuthority(input: {
       if (!claimText || seen.has(key)) continue;
       seen.add(key);
       const supported = input.supportedClaimPatterns?.some((pattern) => pattern.test(claimText)) ?? false;
-      const conceptual = !supported && isNonAffirmativeContext(claimText);
+      const conceptual = !supported && isGlwPlanningOrConfirmationGuidance(claimText);
       findings.push({
         claimClass: rule.claimClass,
         claimText,

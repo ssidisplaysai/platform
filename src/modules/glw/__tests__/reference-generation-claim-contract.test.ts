@@ -65,13 +65,13 @@ describe("GLW reference generation claim contract", () => {
 
   test("campaign UI exposes persisted claim evidence and recovery guidance", () => {
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8").replace(/\s/g, "");
-    for (const marker of ["UnsupportedClaimEvidence", "Failedpredicate:", "Whyunsupported:", "Requiredauthority:", "Disposition:"])
+    for (const marker of ["UnsupportedClaimEvidence", "Failedpredicate:", "Currentpredicate:", "Reason:", "Requiredauthority:", "Disposition:"])
       expect(ui).toContain(marker);
   });
 });
 
 const forensicRoot = process.env.GLW_FORENSIC_PERSISTENCE_DIR;
-(forensicRoot ? test : test.skip)("preserved Indiana artifact remains unchanged and fails all 16 unsupported claims", () => {
+(forensicRoot ? test : test.skip)("preserved Indiana artifact remains unchanged with 12 blocking and 5 conceptual findings", () => {
   const repositoryPath = join(forensicRoot!, "glw-page-execution-repository.json");
   const envelope = JSON.parse(readFileSync(repositoryPath, "utf8")) as { data: { records: Array<{ jobId: string; generatedDraft: { contentHtml: string } }> } };
   const job = envelope.data.records.find((record) => record.jobId === "020d45a9-0289-48dd-9f42-df5798dacdb1");
@@ -79,6 +79,8 @@ const forensicRoot = process.env.GLW_FORENSIC_PERSISTENCE_DIR;
   expect(createHash("sha256").update(job!.generatedDraft.contentHtml).digest("hex")).toBe("6acc3f4cade86e291695e9e47814d0dfe675108acd70ba83d46c18bce7f47af8");
   const result = evaluateGlwReferenceClaimAuthority({ artifact: job!.generatedDraft as never });
   expect(result.policyVersion).toBe(GLW_REFERENCE_QA_POLICY_VERSION);
-  expect(result.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED")).toHaveLength(16);
+  expect(result.findings).toHaveLength(17);
+  expect(result.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED")).toHaveLength(12);
+  expect(result.findings.filter((finding) => finding.authorityStatus === "APPROVED_CONCEPTUAL")).toHaveLength(5);
   expect(result.ok).toBe(false);
 });

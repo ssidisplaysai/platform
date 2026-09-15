@@ -5,6 +5,8 @@ import { operatorMutationHeaders } from "@/modules/foundation/operator-session-c
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
+import { projectGlwClaimDisposition } from "./reference-claim-disposition";
+import { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "./reference-generation-claim-contract-version";
 
 type ReferenceJob = Record<string, unknown> & {
   jobId?: string;
@@ -136,17 +138,6 @@ type OwnerAuthorityCapability = {
     valid: boolean;
   } | null;
 };
-
-function requiredAuthorityForClaim(claimClass: string): string {
-  if (["CLIMATE", "LOCATION_FACT"].includes(claimClass)) return "Approved state/local authority";
-  if (["PRODUCT_SPECIFICATION", "DURABILITY", "INTERACTIVITY"].includes(claimClass)) return "Approved product authority";
-  if (["WARRANTY", "PRICING"].includes(claimClass)) return "Approved commercial policy authority";
-  return "Approved authoritative factual source";
-}
-
-function dispositionForClaim(claimClass: string): "REWRITE_AS_CONCEPTUAL" | "REQUIRES_NEW_AUTHORITATIVE_SOURCE" {
-  return claimClass === "INTERACTIVITY" ? "REWRITE_AS_CONCEPTUAL" : "REQUIRES_NEW_AUTHORITATIVE_SOURCE";
-}
 
 export function GlwCampaignKnowledgePack({ campaign, organizationId, initialReferenceState }: { campaign: GlwCampaign; organizationId: string; initialReferenceState?: string | null }) {
   const [pack, setPack] = useState<GlwCampaignKnowledgePack | null>(null);
@@ -866,6 +857,8 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           {sameJobRecoveryRequired ? <p className="text-zinc-300">Existing recovery job: {jobId}</p> : null}
           {job?.externalExecutionId ? <p className="text-zinc-300">n8n execution: {job.externalExecutionId}</p> : null}
           <p className="text-zinc-300">MCP: {referenceResult?.mcpConfiguration?.configured ? "CONFIGURED" : "NOT_CONFIGURED"}</p>
+          <p className="text-zinc-300">Generator contract: {GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION}</p>
+          <p className="text-zinc-300">QA policy: {job?.qaChecks?.claimAuthority?.policyVersion ?? referenceResult?.generationAuthority?.qaPolicyVersion ?? "CHECKING"}</p>
           <p className="mt-1 text-zinc-500">Principal authority: {ownerAuthority?.principalAuthority ?? "CHECKING"}</p>
           {ownerAuthority?.prerequisite ? <p className="mt-1 text-amber-300">Unavailable: {ownerAuthority.prerequisite}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">
@@ -973,12 +966,18 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
                 <div className="mt-3 space-y-3">
                   {unsupportedClaimFindings.map((finding, index) => (
                     <div key={`${finding.predicateId}-${index}`} className="border-l-2 border-red-700 pl-3">
+                      {(() => {
+                        const disposition = projectGlwClaimDisposition(finding);
+                        return <>
                       <p className="font-semibold text-white">Claim {String(index + 1).padStart(2, "0")} · {finding.claimClass}</p>
                       <p className="mt-1">{finding.claimText}</p>
                       <p className="mt-1 text-zinc-400">Failed predicate: {finding.predicateId}</p>
-                      <p className="text-zinc-400">Why unsupported: no supplied authoritative source supports this factual statement.</p>
-                      <p className="text-zinc-400">Required authority: {requiredAuthorityForClaim(finding.claimClass)}</p>
-                      <p className="font-semibold text-amber-300">Disposition: {dispositionForClaim(finding.claimClass)}</p>
+                      <p className="text-zinc-400">Current predicate: {disposition.currentPredicateResult} · {disposition.blocking ? "BLOCKING" : "NON_BLOCKING"}</p>
+                      <p className="text-zinc-400">Reason: {disposition.reason}</p>
+                      <p className="text-zinc-400">Required authority: {disposition.requiredAuthority}</p>
+                      <p className="font-semibold text-amber-300">Disposition: {disposition.disposition}</p>
+                        </>;
+                      })()}
                     </div>
                   ))}
                 </div>
