@@ -3,6 +3,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { listGlwCampaignTargets, summarizeGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { GlwCampaignOperatorControls } from "@/modules/glw/GlwCampaignOperatorControls";
+import { GlwReferenceGoLiveReadiness } from "@/modules/glw/GlwReferenceGoLiveReadiness";
+import { getGlwReferenceMediaAuthority } from "@/modules/glw/reference-media-authority";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,6 +29,7 @@ export default async function GlwCampaignDetailPage({ params }: RouteProps) {
     .slice()
     .sort((a, b) => a.stateCode.localeCompare(b.stateCode));
   const queue = summarizeGlwCampaignTargets(campaign.campaignId);
+  const referenceMediaAuthority = getGlwReferenceMediaAuthority(campaign.campaignId, "CA");
 
   return (
     <AppShell>
@@ -59,6 +62,8 @@ export default async function GlwCampaignDetailPage({ params }: RouteProps) {
           siteId={campaign.siteId}
           campaignStatus={campaign.status}
         />
+
+        {referenceMediaAuthority ? <GlwReferenceGoLiveReadiness record={referenceMediaAuthority} /> : null}
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
           <div className="flex flex-wrap items-end justify-between gap-3">

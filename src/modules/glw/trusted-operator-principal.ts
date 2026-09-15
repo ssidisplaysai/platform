@@ -19,8 +19,9 @@ export type GlwTrustedPrincipalResolution =
 
 export function resolveGlwTrustedOperatorPrincipal(
   request: NextRequest,
+  environment: NodeJS.ProcessEnv = process.env,
 ): GlwTrustedPrincipalResolution {
-  const resolution = resolveAuthenticatedOperatorPrincipal(request);
+  const resolution = resolveAuthenticatedOperatorPrincipal(request, new Date(), environment);
   if (!resolution.ok) {
     return {
       ok: false,

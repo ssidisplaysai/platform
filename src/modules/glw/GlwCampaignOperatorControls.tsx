@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 
@@ -26,8 +26,6 @@ type SchedulePreview = {
     stateCode: string;
     citySlug: string | null;
     cityName: string | null;
-    citySlug?: string | null;
-    cityName?: string | null;
     status: string;
   }[];
 };
@@ -114,6 +112,8 @@ type SeoRefreshPreviewPayload = {
   eligibleCount: number;
   eligible: readonly {
     stateCode: string;
+    citySlug?: string | null;
+    cityName?: string | null;
     jobId: string;
     wordpressObjectId: string;
   }[];
@@ -170,7 +170,7 @@ export function GlwCampaignOperatorControls({
   const [refreshingSeo, setRefreshingSeo] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  function requestHeaders(includeJson = false): HeadersInit {
+  const requestHeaders = useCallback((includeJson = false): HeadersInit => {
     const headers = {
       ...(includeJson ? { "Content-Type": "application/json" } : {}),
       "x-gcp-roles": "platform_admin",
@@ -178,9 +178,9 @@ export function GlwCampaignOperatorControls({
       "x-gcp-site-id": siteId,
     };
     return includeJson ? operatorMutationHeaders(headers) : headers;
-  }
+  }, [organizationId, siteId]);
 
-  async function loadScheduler() {
+  const loadScheduler = useCallback(async () => {
     setLoading(true);
 
     const [schedulerResponse, seoResponse, publishResponse] = await Promise.all([
@@ -215,17 +215,15 @@ export function GlwCampaignOperatorControls({
     setScheduler(schedulerPayload);
     setSeoPreview(seoResponse.ok && seoPayload ? seoPayload : null);
     setPublishPreview(publishResponse.ok && publishPayload ? publishPayload : null);
+    setError(null);
     setLoading(false);
-  }
+  }, [campaignId, requestHeaders]);
 
   useEffect(() => {
-    if (campaignStatus !== "active") {
-      setLoading(false);
-      return;
-    }
-
-    void loadScheduler();
-  }, [campaignId, campaignStatus, organizationId, siteId]);
+    if (campaignStatus !== "active") return;
+    const timeout = window.setTimeout(() => void loadScheduler(), 0);
+    return () => window.clearTimeout(timeout);
+  }, [campaignStatus, loadScheduler]);
 
   async function runNextBatch() {
     if (!scheduler || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length < 1) return;

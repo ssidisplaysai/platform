@@ -42,7 +42,10 @@ type WordPressPage = Record<string, unknown> & {
   content?: { raw?: string; rendered?: string };
 };
 type WordPressMedia = Record<string, unknown> & {
-  id?: number; source_url?: string; alt_text?: string;
+  id?: number; source_url?: string; alt_text?: string; author?: number; post?: number;
+  date_gmt?: string; modified_gmt?: string; mime_type?: string; slug?: string;
+  title?: { raw?: string; rendered?: string }; caption?: { raw?: string; rendered?: string };
+  description?: { raw?: string; rendered?: string }; media_details?: { file?: string };
 };
 
 function readEnvelope<T>(name: string): { revision: number; data: T } {
@@ -207,6 +210,15 @@ for (const target of targets.sort((left, right) => String(left.stateCode).locale
       accessibility: String(featuredMedia.alt_text ?? "").trim() ? "ALT_PRESENT" : "ALT_MISSING",
       duplicateUse: false,
       broken: !featuredMedia.source_url,
+      attachmentParentId: featuredMedia.post ? String(featuredMedia.post) : null,
+      authorId: featuredMedia.author ? String(featuredMedia.author) : null,
+      createdAt: featuredMedia.date_gmt ?? null,
+      modifiedAt: featuredMedia.modified_gmt ?? null,
+      title: featuredMedia.title?.raw ?? featuredMedia.title?.rendered ?? null,
+      caption: stripHtml(featuredMedia.caption?.raw ?? featuredMedia.caption?.rendered ?? "") || null,
+      description: stripHtml(featuredMedia.description?.raw ?? featuredMedia.description?.rendered ?? "") || null,
+      mimeType: featuredMedia.mime_type ?? null,
+      file: featuredMedia.media_details?.file ?? null,
     }] : []),
     ...images.filter((image) => image.url !== featuredMedia?.source_url).map((image) => ({
     mediaId: null,
