@@ -101,6 +101,15 @@ export function hasOrganizationScope(scope: RequestScope): boolean {
   return Boolean(scope.organizationId);
 }
 
+export function forwardOperatorMutationContext(request: NextRequest, headers: HeadersInit = {}): Headers {
+  const forwarded = new Headers(headers);
+  for (const name of ["cookie", "origin", "x-genesis-csrf-token"] as const) {
+    const value = request.headers.get(name);
+    if (value) forwarded.set(name, value);
+  }
+  return forwarded;
+}
+
 export function resolveRequestPrincipal(request: NextRequest, environment: NodeJS.ProcessEnv = process.env): RequestPrincipal | null {
   const resolution = resolveAuthenticatedOperatorPrincipal(request, new Date(), environment);
   return resolution.ok ? { principalId: resolution.principal.principalId, sessionId: resolution.principal.sessionId } : null;

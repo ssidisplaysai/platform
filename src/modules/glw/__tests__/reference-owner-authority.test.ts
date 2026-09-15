@@ -81,6 +81,17 @@ describe("GLW reference-generation owner authority", () => {
     });
   });
 
+  test.each([5, 30, 60, 299])("permits one exact execution %i seconds after authorization", (delaySeconds) => {
+    const active = issue();
+    const executionTime = new Date(now.getTime() + delaySeconds * 1000);
+    expect(consumeGlwReferenceOwnerGrant({ principal, grantId: active.grant.grantId, preflightReceiptId: active.receipt.receiptId, liveContext: active.live, now: executionTime })).toMatchObject({ grantId: active.grant.grantId });
+  });
+
+  test("denies execution after the bounded post-authorization window", () => {
+    const active = issue();
+    expect(() => consumeGlwReferenceOwnerGrant({ principal, grantId: active.grant.grantId, preflightReceiptId: active.receipt.receiptId, liveContext: active.live, now: new Date(now.getTime() + 301_000) })).toThrow("expired");
+  });
+
   test("projects exact grant validity without consuming authority", () => {
     const active = issue();
     expect(projectGlwReferenceOwnerGrant({ principal, liveContext: active.live, now })).toMatchObject({ grantId: active.grant.grantId, status: "ACTIVE", valid: true });

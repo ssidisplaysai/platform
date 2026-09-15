@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { authorizeRequest, forwardOperatorMutationContext, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -641,12 +641,12 @@ export async function POST(request: NextRequest, context: Context) {
     `${request.nextUrl.origin}/api/glw/page-generation`,
     {
       method: "POST",
-      headers: {
+      headers: forwardOperatorMutationContext(request, {
         "Content-Type": "application/json",
         "x-gcp-roles": "platform_admin",
         "x-gcp-organization-id": campaign.organizationId,
         "x-gcp-site-id": campaign.siteId,
-      },
+      }),
       body: JSON.stringify(generationBody),
       cache: "no-store",
     },
