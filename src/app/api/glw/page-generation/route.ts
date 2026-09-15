@@ -17,6 +17,7 @@ import { renderSiteStudioAuthorityLinks, resolveSiteStudioProductAuthority } fro
 import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-service";
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
 import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
 import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery, validateGlwReferenceOwnerClaimForRecoveredContent } from "@/modules/glw/reference-owner-authority";
