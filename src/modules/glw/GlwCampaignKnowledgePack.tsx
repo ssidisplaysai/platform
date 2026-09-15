@@ -869,10 +869,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           <p className="mt-1 text-zinc-500">Principal authority: {ownerAuthority?.principalAuthority ?? "CHECKING"}</p>
           {ownerAuthority?.prerequisite ? <p className="mt-1 text-amber-300">Unavailable: {ownerAuthority.prerequisite}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">
-            {!ownerGrantReady && !sameJobRecoveryRequired && !terminalQaBlocked ? (
+            {!ownerGrantReady && !sameJobRecoveryRequired ? (
               <>
                 <button type="button" disabled={!ownerAuthority?.available || ownerAuthorityBusy} onClick={() => void runOwnerPreflight()} className="border border-zinc-700 px-3 py-2 font-semibold text-white disabled:opacity-40">
-                  {retryOperation ? "Run Retry Preflight" : "Run Preflight"}
+                  {terminalQaBlocked ? "Run Remediated Retry Preflight" : retryOperation ? "Run Retry Preflight" : "Run Preflight"}
                 </button>
                 <button type="button" disabled={!ownerAuthority?.available || !ownerPreflightReceiptId || ownerAuthorityBusy} onClick={() => void authorizeOwnerAction()} className="border border-red-600 px-3 py-2 font-semibold text-red-200 disabled:opacity-40">
                   {retryOperation ? "Authorize One Retry" : "Authorize Reference Generation"}

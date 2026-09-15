@@ -79,10 +79,10 @@ describe("Indiana reference retry execution fail-closed invariant", () => {
     expect(executeHandler).toContain('ownerOperationType:retryOperation?"REFERENCE_GENERATION_RETRY":"REFERENCE_GENERATION_INITIAL"');
   });
 
-  test("terminal QA failure exposes execution identity and suppresses new owner actions", () => {
+  test("terminal QA failure exposes execution identity and requires a fresh remediated preflight", () => {
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8").replace(/\s/g, "");
     expect(ui).toContain('Authorization:{terminalQaBlocked?"BLOCKED_BY_QA"');
     expect(ui).toContain("n8nexecution:{job.externalExecutionId}");
-    expect(ui).toContain("!sameJobRecoveryRequired&&!terminalQaBlocked");
+    expect(ui).toContain('terminalQaBlocked?"RunRemediatedRetryPreflight"');
   });
 });
