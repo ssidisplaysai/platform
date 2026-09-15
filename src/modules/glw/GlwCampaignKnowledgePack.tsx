@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";

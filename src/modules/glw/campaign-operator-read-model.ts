@@ -35,7 +35,7 @@ export type GlwCampaignOperatorTarget = {
 };
 
 export type GlwCampaignOperatorReadModel = {
-  campaign: Pick<GlwCampaign, "campaignId" | "organizationId" | "siteId" | "name" | "status" | "publicationPolicy" | "pagesPerDay" | "pageType">;
+  campaign: GlwCampaign;
   counts: { referenceComplete: number; queued: number; running: number; contentReady: number; draftReady: number; published: number; failed: number };
   lifecycle: readonly { key: string; label: string; state: OperatorStageState; detail: string }[];
   currentStage: string;
@@ -176,7 +176,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     });
 
   return {
-    campaign: { campaignId: input.campaign.campaignId, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId, name: input.campaign.name, status: input.campaign.status, publicationPolicy: input.campaign.publicationPolicy, pagesPerDay: input.campaign.pagesPerDay, pageType: input.campaign.pageType },
+    campaign: input.campaign,
     counts: { referenceComplete, queued, running, contentReady, draftReady, published, failed },
     lifecycle,
     currentStage,
