@@ -324,7 +324,6 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   async function generateReferencePage() {
     setGeneratingReference(true);
     setMessage(null);
-    setReferenceResult(null);
     setContinuationAttemptedJobId(null);
 
     try {
@@ -339,17 +338,24 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           referenceAuthorityBinding: referenceResult?.generationAuthority,
           ownerGrantId,
           preflightReceiptId: ownerPreflightReceiptId,
-          ownerOperationType: referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
-          failedJobId: referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? referenceWorkflow.operationId : null,
-          failedArtifactSha256: referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? referenceWorkflow.artifactSha256 : null,
+          ownerOperationType: retryOperation ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
+          failedJobId: retryOperation ? referenceWorkflow?.operationId : null,
+          failedArtifactSha256: retryOperation ? referenceWorkflow?.artifactSha256 : null,
         }),
       });
 
       const payload = await response.json() as ReferenceResult;
-
-      setReferenceResult(payload);
+      setReferenceResult((current) => ({
+        ...current,
+        ...payload,
+        job: payload.job ?? current?.job ?? null,
+        workflow: payload.workflow ?? current?.workflow,
+        retryContract: payload.retryContract ?? current?.retryContract,
+      }));
 
       if (!response.ok) {
+        setOwnerGrantId(null);
+        setOwnerPreflightReceiptId(null);
         setMessage(payload.error ?? "Reference page generation did not complete.");
       } else {
         setMessage("Reference generation started. Genesis will recover the same job automatically until the draft is ready.");
@@ -363,18 +369,17 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
     setOwnerAuthorityBusy(true);
     setMessage(null);
     try {
-      const retry = referenceWorkflow?.state === "REFERENCE_RETRY_READY";
       const response = await fetch(ownerAuthorityEndpoint, {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "RUN_PREFLIGHT",
-          operationType: retry ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
+          operationType: retryOperation ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
           organizationId,
           siteId: campaign.siteId,
           referenceState,
-          failedJobId: retry ? referenceWorkflow.operationId : null,
-          failedArtifactSha256: retry ? referenceWorkflow.artifactSha256 : null,
+          failedJobId: retryOperation ? referenceWorkflow?.operationId : null,
+          failedArtifactSha256: retryOperation ? referenceWorkflow?.artifactSha256 : null,
         }),
       });
       const payload = await response.json() as { receipt?: { receiptId: string }; error?: string };
@@ -395,18 +400,17 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
     setOwnerAuthorityBusy(true);
     setMessage(null);
     try {
-      const retry = referenceWorkflow?.state === "REFERENCE_RETRY_READY";
       const response = await fetch(ownerAuthorityEndpoint, {
         method: "POST",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "AUTHORIZE",
-          operationType: retry ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
+          operationType: retryOperation ? "REFERENCE_GENERATION_RETRY" : "REFERENCE_GENERATION_INITIAL",
           organizationId,
           siteId: campaign.siteId,
           referenceState,
-          failedJobId: retry ? referenceWorkflow.operationId : null,
-          failedArtifactSha256: retry ? referenceWorkflow.artifactSha256 : null,
+          failedJobId: retryOperation ? referenceWorkflow?.operationId : null,
+          failedArtifactSha256: retryOperation ? referenceWorkflow?.artifactSha256 : null,
           preflightReceiptId: ownerPreflightReceiptId,
         }),
       });
@@ -635,11 +639,12 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
         ? "REPAIR REQUIRED"
         : wordpressAuthorityState;
   const referenceWorkflow = referenceResult?.workflow ?? null;
+        const retryOperation = referenceWorkflow?.state === "REFERENCE_RETRY_READY" || Boolean(referenceResult?.retryContract);
   const ownerGrantReady = Boolean(ownerGrantId && ownerAuthority?.grant?.valid);
   const existingOperationBlocksGeneration = Boolean(
     referenceWorkflow &&
       referenceWorkflow.state !== "READY_TO_GENERATE_REFERENCE"
-      && !(referenceWorkflow.state === "REFERENCE_RETRY_READY" && ownerGrantReady),
+      && !(retryOperation && ownerGrantReady),
   );
   const referenceActionLabel = generatingReference
     ? "Starting Reference Generation..."
@@ -657,7 +662,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
                 ? "Reference Generation Failed"
                 : referenceWorkflow?.state === "REFERENCE_BLOCKED"
                   ? "Reference Blocked"
-                  : referenceWorkflow?.state === "REFERENCE_RETRY_READY"
+                  : retryOperation
                     ? ownerGrantReady
                       ? "Generate / Execute One Indiana Retry"
                       : "Indiana Retry Requires New Authorization"
@@ -819,8 +824,8 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           <p className="font-semibold text-white">Owner Action Authority</p>
           <p className="mt-1 text-zinc-300">Campaign: {campaign.name}</p>
           <p className="text-zinc-300">State: {selectedStateLabel} ({referenceState})</p>
-          <p className="text-zinc-300">Operation: {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "Reference Generation Retry" : "Initial Reference Generation"}</p>
-          {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? <p className="text-zinc-300">Failed job: {referenceWorkflow.operationId}</p> : null}
+          <p className="text-zinc-300">Operation: {retryOperation ? "Reference Generation Retry" : "Initial Reference Generation"}</p>
+          {retryOperation && referenceWorkflow?.operationId ? <p className="text-zinc-300">Failed job: {referenceWorkflow.operationId}</p> : null}
           <p className="text-zinc-300">Authorization: {ownerGrantReady ? "AUTHORIZED" : "REQUIRES_OWNER_AUTHORIZATION"}</p>
           <p className="mt-1 text-zinc-500">Principal authority: {ownerAuthority?.principalAuthority ?? "CHECKING"}</p>
           {ownerAuthority?.prerequisite ? <p className="mt-1 text-amber-300">Unavailable: {ownerAuthority.prerequisite}</p> : null}
@@ -828,10 +833,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
             {!ownerGrantReady ? (
               <>
                 <button type="button" disabled={!ownerAuthority?.available || ownerAuthorityBusy} onClick={() => void runOwnerPreflight()} className="border border-zinc-700 px-3 py-2 font-semibold text-white disabled:opacity-40">
-                  {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "Run Retry Preflight" : "Run Preflight"}
+                  {retryOperation ? "Run Retry Preflight" : "Run Preflight"}
                 </button>
                 <button type="button" disabled={!ownerAuthority?.available || !ownerPreflightReceiptId || ownerAuthorityBusy} onClick={() => void authorizeOwnerAction()} className="border border-red-600 px-3 py-2 font-semibold text-red-200 disabled:opacity-40">
-                  {referenceWorkflow?.state === "REFERENCE_RETRY_READY" ? "Authorize One Retry" : "Authorize Reference Generation"}
+                  {retryOperation ? "Authorize One Retry" : "Authorize Reference Generation"}
                 </button>
               </>
             ) : null}

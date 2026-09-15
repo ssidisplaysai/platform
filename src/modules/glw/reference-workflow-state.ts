@@ -42,6 +42,12 @@ export type GlwReferenceWorkflowProjection = {
   retryExecutable?: boolean;
 };
 
+export type GlwDurableReferenceOperation = {
+  operationType: "REFERENCE_GENERATION_INITIAL" | "REFERENCE_GENERATION_RETRY";
+  failedJobId: string | null;
+  failedArtifactSha256: string | null;
+};
+
 export function projectGlwReferenceRetryReadiness(
   workflow: GlwReferenceWorkflowProjection,
   selectedStateCode: string | null,
@@ -199,4 +205,39 @@ export function findEvidenceBoundLegacyReferenceJob(input: {
         && new Date(record.createdAt).getTime() >= createdAt;
     })
     .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
+}
+
+export function projectGlwDurableReferenceOperation(input: {
+  campaign: GlwCampaign;
+  campaigns: readonly GlwCampaign[];
+  records: readonly GlwPageExecutionRecord[];
+  selectedStateCode: string;
+}): GlwDurableReferenceOperation {
+  const failed = findEvidenceBoundLegacyReferenceJob(input);
+  if (!failed || failed.status !== "FAILED") {
+    return { operationType: "REFERENCE_GENERATION_INITIAL", failedJobId: null, failedArtifactSha256: null };
+  }
+
+  const failedArtifactSha256 = artifactSha256(failed);
+  if (!failedArtifactSha256) {
+    return { operationType: "REFERENCE_GENERATION_INITIAL", failedJobId: null, failedArtifactSha256: null };
+  }
+
+  const selectedStateName = GLW_CAMPAIGN_US_STATES.find((state) => state.code === input.selectedStateCode)?.name ?? null;
+  const failedAt = new Date(failed.updatedAt).getTime();
+  const successfulReplacement = input.records.some((record) =>
+    record.campaignId === input.campaign.campaignId
+    && record.organizationId === input.campaign.organizationId
+    && record.siteId === input.campaign.siteId
+    && record.productId === input.campaign.productId
+    && record.state === selectedStateName
+    && record.status === "COMPLETE"
+    && record.qaStatus === "COMPLETE"
+    && Boolean(record.generatedDraft?.contentHtml)
+    && new Date(record.updatedAt).getTime() > failedAt,
+  );
+
+  return successfulReplacement
+    ? { operationType: "REFERENCE_GENERATION_INITIAL", failedJobId: null, failedArtifactSha256: null }
+    : { operationType: "REFERENCE_GENERATION_RETRY", failedJobId: failed.jobId, failedArtifactSha256 };
 }

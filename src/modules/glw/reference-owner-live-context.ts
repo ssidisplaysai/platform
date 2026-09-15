@@ -9,6 +9,7 @@ import { glwPageExecutionRepository } from "./page-execution-repository";
 import { fingerprintGlwAuthority } from "./reference-claim-authority";
 import { resolveGlwReferenceGenerationAuthority } from "./reference-generation-authority";
 import type { GlwReferenceOwnerContext, GlwReferenceOwnerOperationType } from "./reference-owner-authority";
+import { projectGlwDurableReferenceOperation } from "./reference-workflow-state";
 
 export async function resolveGlwReferenceOwnerLiveContext(input: {
   organizationId: string;
@@ -40,6 +41,18 @@ export async function resolveGlwReferenceOwnerLiveContext(input: {
     wordpress.authorityHealthState,
   ].join(":");
   const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
+  const records = await glwPageExecutionRepository.list();
+  const durableOperation = projectGlwDurableReferenceOperation({
+    campaign,
+    campaigns: listGlwCampaigns(),
+    records,
+    selectedStateCode: input.referenceState,
+  });
+  if (input.operationType !== durableOperation.operationType) throw new Error("REFERENCE_OPERATION_MISMATCH");
+  if (input.operationType === "REFERENCE_GENERATION_RETRY"
+    && (input.failedJobId !== durableOperation.failedJobId || input.failedArtifactSha256 !== durableOperation.failedArtifactSha256)) {
+    throw new Error("REFERENCE_RECOVERY_BINDING_MISMATCH");
+  }
 
   if (input.operationType === "REFERENCE_GENERATION_RETRY") {
     const failed = input.failedJobId

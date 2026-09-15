@@ -72,6 +72,15 @@ describe("GLW reference-generation owner authority", () => {
     expect(() => consumeGlwReferenceOwnerGrant({ principal, grantId: active.grant.grantId, preflightReceiptId: active.receipt.receiptId, liveContext: active.live, now: new Date("2030-01-01T00:05:01.000Z") })).toThrow("expired");
   });
 
+  test("issued grant remains consumable after its preflight expires", () => {
+    const active = issue();
+    const consumedAt = new Date("2030-01-01T00:02:01.000Z");
+    expect(consumeGlwReferenceOwnerGrant({ principal, grantId: active.grant.grantId, preflightReceiptId: active.receipt.receiptId, liveContext: active.live, now: consumedAt })).toMatchObject({
+      grantId: active.grant.grantId,
+      consumedAt: consumedAt.toISOString(),
+    });
+  });
+
   test("projects exact grant validity without consuming authority", () => {
     const active = issue();
     expect(projectGlwReferenceOwnerGrant({ principal, liveContext: active.live, now })).toMatchObject({ grantId: active.grant.grantId, status: "ACTIVE", valid: true });

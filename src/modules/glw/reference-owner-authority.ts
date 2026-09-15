@@ -263,7 +263,6 @@ export function consumeGlwReferenceOwnerGrant(input: {
   if (new Date(grant.expiresAt) <= now) throw new GlwReferenceOwnerAuthorityError("GRANT_EXPIRED", "Reference owner grant expired.");
   const receipt = current.state.receipts.find((candidate) => candidate.receiptId === input.preflightReceiptId);
   if (!receipt) throw new GlwReferenceOwnerAuthorityError("PREFLIGHT_NOT_FOUND", "Reference preflight receipt was not found.");
-  if (new Date(receipt.expiresAt) <= now) throw new GlwReferenceOwnerAuthorityError("PREFLIGHT_EXPIRED", "Reference preflight receipt expired.");
   assertContextMatch(receipt, live);
   assertContextMatch(grant, live);
   const claim: GlwReferenceOwnerClaim = {
