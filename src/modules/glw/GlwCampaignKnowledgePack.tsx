@@ -687,14 +687,14 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
             ? "Reference Draft Ready"
             : referenceWorkflow?.state === "REFERENCE_RECOVERY_REQUIRED"
               ? "Reference Recovery Required"
+              : retryOperation
+                ? ownerGrantReady
+                  ? "Generate / Execute One Indiana Remediated Retry"
+                  : "Indiana Retry Requires New Authorization"
               : referenceWorkflow?.state === "REFERENCE_GENERATION_FAILED"
                 ? "Reference Generation Failed"
                 : referenceWorkflow?.state === "REFERENCE_BLOCKED"
                   ? "Reference Blocked"
-                  : retryOperation
-                    ? ownerGrantReady
-                      ? "Generate / Execute One Indiana Retry"
-                      : "Indiana Retry Requires New Authorization"
                 : `Generate ${selectedStateLabel} Reference Page`;
 
   return (
@@ -855,7 +855,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           <p className="text-zinc-300">State: {selectedStateLabel} ({referenceState})</p>
           <p className="text-zinc-300">Operation: {retryOperation ? "Reference Generation Retry" : "Initial Reference Generation"}</p>
           {retryOperation && referenceWorkflow?.operationId ? <p className="text-zinc-300">Failed job: {referenceWorkflow.operationId}</p> : null}
-          <p className="text-zinc-300">Authorization: {terminalQaBlocked ? "BLOCKED_BY_QA" : sameJobRecoveryRequired ? "CONSUMED_FOR_EXISTING_JOB" : ownerGrantReady ? "AUTHORIZED" : "REQUIRES_OWNER_AUTHORIZATION"}</p>
+          <p className="text-zinc-300">Authorization: {ownerGrantReady ? "AUTHORIZED" : terminalQaBlocked ? "BLOCKED_BY_QA" : sameJobRecoveryRequired ? "CONSUMED_FOR_EXISTING_JOB" : "REQUIRES_OWNER_AUTHORIZATION"}</p>
           {sameJobRecoveryRequired ? <p className="text-zinc-300">Existing recovery job: {jobId}</p> : null}
           {job?.externalExecutionId ? <p className="text-zinc-300">n8n execution: {job.externalExecutionId}</p> : null}
           <p className="text-zinc-300">MCP: {referenceResult?.mcpConfiguration?.configured ? "CONFIGURED" : "NOT_CONFIGURED"}</p>
