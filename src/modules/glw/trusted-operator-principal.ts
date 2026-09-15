@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { NextRequest } from "next/server";
+import { resolveAuthenticatedOperatorPrincipal } from "@/modules/foundation/operator-session";
 
 export type GlwTrustedOperatorPrincipal = {
   principalId: string;
@@ -29,8 +30,11 @@ export function resolveGlwTrustedOperatorPrincipal(
     };
   }
   return {
-    ok: false,
-    code: "TRUSTED_OPERATOR_SESSION_UNAVAILABLE",
-    message: "A server-verified Genesis operator session provider is required. Caller-supplied role and scope headers are not principal authority.",
+    ok: true,
+    principal: {
+      principalId: resolution.principal.principalId,
+      sessionId: resolution.principal.sessionId,
+      authority: resolution.principal.authenticationAuthority,
+    },
   };
 }

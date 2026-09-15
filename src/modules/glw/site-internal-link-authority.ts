@@ -29,6 +29,10 @@ const GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_ID =
   "prod-indoor-digital-sphere";
 const GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH =
   "/indoor-digital-sphere/";
+const GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID =
+  "prod-outdoor-digital-sphere";
+const GLW_OUTDOOR_DIGITAL_SPHERE_PRODUCT_PATH =
+  "/outdoor-digital-sphere/";
 
 const INDOOR_DIGITAL_SPHERE_PRODUCT_LINK:
   GlwAllowedInternalLink = {
@@ -71,24 +75,25 @@ function productAuthority(input: GlwInternalLinkAuthorityRequest): { link: GlwAl
 
 function isStateServiceChildPath(
   canonicalPath: string,
+  productPath: string,
 ): boolean {
   if (
     canonicalPath
-      === GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH
+      === productPath
   ) {
     return false;
   }
 
   if (
     !canonicalPath.startsWith(
-      GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH,
+      productPath,
     )
   ) {
     return false;
   }
 
   const remainder = canonicalPath.slice(
-    GLW_INDOOR_DIGITAL_SPHERE_PRODUCT_PATH.length,
+    productPath.length,
   );
 
   return /^[a-z0-9-]+\/$/.test(remainder);
