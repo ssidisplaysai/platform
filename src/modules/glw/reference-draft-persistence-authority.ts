@@ -26,10 +26,15 @@ export type GlwReferenceDraftPersistenceContext = {
   canonicalizationPolicyVersion: string;
   canonicalizationPolicyFingerprint: string;
   generatorContractFingerprint: string;
+  qaPolicyFingerprint: string;
   qaFingerprint: string;
+  localizationPolicyFingerprint: string;
   wordpressReadAuthorityFingerprint: string;
+  wordpressInventoryFingerprint: string;
   canonicalPath: string;
   parentId: string;
+  parentSlug: string;
+  parentStatus: "draft";
   exactRuntime: string;
 };
 
@@ -67,8 +72,9 @@ const FIELDS: ReadonlyArray<keyof GlwReferenceDraftPersistenceContext> = [
   "operationType", "principalId", "principalSessionId", "organizationId", "siteId", "campaignId",
   "referenceState", "generationJobId", "n8nExecutionId", "rawArtifactSha256", "canonicalizedArtifactSha256",
   "canonicalizationReceiptId", "canonicalizationPolicyVersion", "canonicalizationPolicyFingerprint",
-  "generatorContractFingerprint", "qaFingerprint", "wordpressReadAuthorityFingerprint", "canonicalPath",
-  "parentId", "exactRuntime",
+  "generatorContractFingerprint", "qaPolicyFingerprint", "qaFingerprint", "localizationPolicyFingerprint",
+  "wordpressReadAuthorityFingerprint", "wordpressInventoryFingerprint", "canonicalPath",
+  "parentId", "parentSlug", "parentStatus", "exactRuntime",
 ];
 
 export class GlwReferenceDraftPersistenceAuthorityError extends Error {
@@ -96,11 +102,12 @@ function assertContext(context: GlwReferenceDraftPersistenceContext): void {
   }
   if (context.operationType !== GLW_REFERENCE_DRAFT_PERSISTENCE_OPERATION) throw new GlwReferenceDraftPersistenceAuthorityError("OPERATION_INVALID", "Draft persistence authority requires the exact operation.");
   if (!/^[A-Z]{2}$/.test(context.referenceState)) throw new GlwReferenceDraftPersistenceAuthorityError("STATE_INVALID", "An exact state code is required.");
-  for (const field of ["rawArtifactSha256", "canonicalizedArtifactSha256", "canonicalizationPolicyFingerprint", "generatorContractFingerprint", "qaFingerprint", "wordpressReadAuthorityFingerprint"] as const) {
+  for (const field of ["rawArtifactSha256", "canonicalizedArtifactSha256", "canonicalizationPolicyFingerprint", "generatorContractFingerprint", "qaPolicyFingerprint", "qaFingerprint", "localizationPolicyFingerprint", "wordpressReadAuthorityFingerprint", "wordpressInventoryFingerprint"] as const) {
     if (!/^[0-9a-f]{64}$/.test(context[field])) throw new GlwReferenceDraftPersistenceAuthorityError(`${field.toUpperCase()}_INVALID`, `${field} must be an exact SHA-256 fingerprint.`);
   }
   if (!/^[0-9a-f]{40}$/.test(context.exactRuntime)) throw new GlwReferenceDraftPersistenceAuthorityError("RUNTIME_INVALID", "Runtime must be an exact Git SHA.");
   if (!/^[1-9]\d*$/.test(context.parentId)) throw new GlwReferenceDraftPersistenceAuthorityError("PARENT_ID_INVALID", "An exact WordPress parent ID is required.");
+  if (!context.parentSlug || context.parentStatus !== "draft") throw new GlwReferenceDraftPersistenceAuthorityError("PARENT_IDENTITY_INVALID", "Exact parent slug and draft status are required.");
 }
 
 function assertMatch(expected: GlwReferenceDraftPersistenceContext, actual: GlwReferenceDraftPersistenceContext): void {

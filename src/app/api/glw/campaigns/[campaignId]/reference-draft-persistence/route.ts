@@ -22,7 +22,7 @@ import {
 import { evaluateGlwReferenceClaimAuthority, fingerprintGlwAuthority } from "@/modules/glw/reference-claim-authority";
 import { createGlwReferenceContentReconciliationReceipt } from "@/modules/glw/reference-content-reconciliation";
 import { resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
-import { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "@/modules/glw/reference-generation-claim-contract";
+import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION, GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT } from "@/modules/glw/reference-generation-claim-contract";
 import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 import {
   canonicalizeGlwZeroAuthorityClaims,
@@ -102,9 +102,11 @@ async function resolveCandidate(input: {
   const productMatches = pageObjects(productRead.body).filter((page) => text(page.slug) === productSlug && Number(page.parent) === 0 && numeric(page.id));
   if (productMatches.length !== 1) throw new Error("WORDPRESS_PRODUCT_PARENT_NOT_UNIQUE");
   const parentId = numeric(productMatches[0].id)!;
+  if (parentId !== 20114 || text(productMatches[0].status) !== "draft") throw new Error("WORDPRESS_PRODUCT_PARENT_IDENTITY_CHANGED");
   const targetRead = await reader.getJson({ path: "/pages", query: new URLSearchParams({ slug: targetSlug, parent: String(parentId), context: "edit", status: "publish,draft,pending,private,future", per_page: "100", _fields: "id,slug,parent,status,title" }) });
   if (!targetRead.ok) throw new Error("WORDPRESS_TARGET_READ_FAILED");
-  if (pageObjects(targetRead.body).length !== 0) throw new Error("WORDPRESS_TARGET_COLLISION");
+  const targetObjects = pageObjects(targetRead.body);
+  if (targetObjects.length !== 0) throw new Error("WORDPRESS_TARGET_COLLISION");
 
   const generationAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: state.code });
   const wordpressAuthorityText = [site.siteId, credentialReference, credential.username, "READY"].join(":");
@@ -123,10 +125,15 @@ async function resolveCandidate(input: {
     canonicalizationPolicyVersion: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
     canonicalizationPolicyFingerprint: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
     generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+    qaPolicyFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
     qaFingerprint: fingerprintGlwAuthority(qaEvidence),
+    localizationPolicyFingerprint: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
     wordpressReadAuthorityFingerprint: fingerprintGlwAuthority(wordpressAuthorityText),
+    wordpressInventoryFingerprint: fingerprintGlwAuthority({ parent: productMatches, target: targetObjects }),
     canonicalPath: job.slug,
     parentId: String(parentId),
+    parentSlug: productSlug,
+    parentStatus: "draft",
     exactRuntime: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
   };
   return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact: canonicalization.canonicalizedArtifact, canonicalizationReceipt: canonicalization.receipt, claims, qa, qaEvidence, generationAuthority, liveContext };
@@ -141,7 +148,7 @@ export async function GET(request: NextRequest, context: Context) {
     const { campaignId } = await context.params;
     const jobId = request.nextUrl.searchParams.get("jobId")?.trim() ?? "";
     const resolved = await resolveCandidate({ campaignId, organizationId: scope.organizationId, siteId: scope.siteId, jobId, stateCode: request.nextUrl.searchParams.get("stateCode") ?? "", rawArtifactSha256: request.nextUrl.searchParams.get("rawArtifactSha256") ?? "", canonicalizedArtifactSha256: request.nextUrl.searchParams.get("canonicalizedArtifactSha256") ?? "", canonicalizationReceiptId: request.nextUrl.searchParams.get("canonicalizationReceiptId") ?? "" });
-    return NextResponse.json({ operation: GLW_REFERENCE_DRAFT_PERSISTENCE_OPERATION, candidate: { jobId, rawArtifactSha256: resolved.liveContext.rawArtifactSha256, canonicalizedArtifactSha256: resolved.liveContext.canonicalizedArtifactSha256, canonicalizationReceiptId: resolved.liveContext.canonicalizationReceiptId, canonicalizationPolicyVersion: resolved.liveContext.canonicalizationPolicyVersion, canonicalizationPolicyFingerprint: resolved.liveContext.canonicalizationPolicyFingerprint, generatorContractVersion: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION, generatorContractFingerprint: resolved.liveContext.generatorContractFingerprint, qaFingerprint: resolved.liveContext.qaFingerprint, parentId: resolved.parentId, canonicalPath: resolved.liveContext.canonicalPath, wordCount: resolved.qa.wordCount, qaPassed: true }, grant: projectGlwReferenceDraftPersistenceGrant({ principal: principal.principal, liveContext: resolved.liveContext }), callerSuppliedRoleHeadersAuthorize: false });
+    return NextResponse.json({ operation: GLW_REFERENCE_DRAFT_PERSISTENCE_OPERATION, candidate: { jobId, rawArtifactSha256: resolved.liveContext.rawArtifactSha256, canonicalizedArtifactSha256: resolved.liveContext.canonicalizedArtifactSha256, canonicalizationReceiptId: resolved.liveContext.canonicalizationReceiptId, canonicalizationPolicyVersion: resolved.liveContext.canonicalizationPolicyVersion, canonicalizationPolicyFingerprint: resolved.liveContext.canonicalizationPolicyFingerprint, generatorContractVersion: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION, generatorContractFingerprint: resolved.liveContext.generatorContractFingerprint, qaPolicyFingerprint: resolved.liveContext.qaPolicyFingerprint, qaFingerprint: resolved.liveContext.qaFingerprint, localizationPolicyFingerprint: resolved.liveContext.localizationPolicyFingerprint, wordpressInventoryFingerprint: resolved.liveContext.wordpressInventoryFingerprint, parentId: resolved.parentId, parentSlug: resolved.liveContext.parentSlug, parentStatus: resolved.liveContext.parentStatus, canonicalPath: resolved.liveContext.canonicalPath, wordCount: resolved.qa.wordCount, qaPassed: true }, grant: projectGlwReferenceDraftPersistenceGrant({ principal: principal.principal, liveContext: resolved.liveContext }), callerSuppliedRoleHeadersAuthorize: false });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "DRAFT_PERSISTENCE_PREFLIGHT_FAILED", callerSuppliedRoleHeadersAuthorize: false }, { status: 409 });
   }
