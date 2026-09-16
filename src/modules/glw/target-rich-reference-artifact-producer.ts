@@ -69,7 +69,7 @@ export function produceTargetRichReferenceArtifact(input: {
 
   const application = assignments.get("APPLICATION_EXPERIENCE");
   if (!application || application.asset.type !== "APPROVED_EXISTING") throw new Error("TARGET_RICH_REFERENCE_APPLICATION_EXPERIENCE_MEDIA_REQUIRED");
-  const presented = applyLedDisplayWarehousePresentationAuthority({ contentHtml: $.html(), applicationMedia: { url: application.asset.url, mediaId: application.approval.candidateId } });
+  const presented = applyLedDisplayWarehousePresentationAuthority($.html());
   const contentHtml = presented.contentHtml;
   const artifact: GlwGeneratedDraftArtifact = {
     title: `${input.product.productName} in ${input.target.stateName}`,

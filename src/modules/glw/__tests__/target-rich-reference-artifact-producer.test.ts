@@ -30,7 +30,7 @@ describe("target rich-reference artifact producer", () => {
     expect(result.artifact.contentHtml).toContain('data-composition-role="hero"');
     expect(result.artifact.contentHtml).toContain('data-composition-role="visual-application"');
     expect(result.artifact.contentHtml).toContain('data-site-presentation-authority="LED_DISPLAY_WAREHOUSE_PRESENTATION_V1"');
-    expect(result.artifact.contentHtml).toContain('data-media-role="APPLICATION_EXPERIENCE"');
+    expect(result.artifact.contentHtml.match(/data:image\/jpeg;base64/g)).toHaveLength(2);
     expect(result.presentation).toMatchObject({ ok: true, checks: { darkHighContrastFoundation: true, blueElectricAccent: true, imageLedComposition: true, commercialDensity: true, excessiveEditorialWhitespace: false, thinBorderEditorialGridDominant: false, worksheetRuleGrammar: false, flatRedEditorialCtaDominant: false, commercialStainlessPresentationLeakage: false } });
     expect(result.qa).toMatchObject({ unsupportedFactualClaims: 0, geographicEvidenceEscapes: 0, comparisonAuthorityEscapes: 0, buyerQuestionPremiseEscapes: 0, unexpectedStateContamination: 0, internalGovernanceLanguage: 0, customerFacingCopyQuality: "PASS" });
   });

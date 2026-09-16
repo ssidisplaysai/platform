@@ -14,13 +14,13 @@ describe("LED Display Warehouse presentation authority", () => {
     const before = load(rejected, null, false);
     before(".saw-grid article>span").remove();
     const beforeText = before(".saw-page").text().replace(/\s+/g, " ").trim();
-    const result = applyLedDisplayWarehousePresentationAuthority({ contentHtml: rejected, applicationMedia: { url: "application", mediaId: "approved-application" } });
+    const result = applyLedDisplayWarehousePresentationAuthority(rejected);
     const after = load(result.contentHtml, null, false);
     const afterText = after(".saw-page").text().replace(/\s+/g, " ").trim();
     expect(afterText).toBe(beforeText);
     expect(after('img[data-media-role="PRODUCT_AUTHORITY"]').attr("src")).toBe("hero");
     expect(after('img[data-media-role="CONTEXTUAL_IN_USE"]').attr("src")).toBe("support");
-    expect(after('img[data-media-role="APPLICATION_EXPERIENCE"]').attr("src")).toBe("application");
+    expect(after("img")).toHaveLength(2);
     expect(result.evaluation).toMatchObject({ ok: true, checks: { darkHighContrastFoundation: true, blueElectricAccent: true, imageLedComposition: true, commercialDensity: true, excessiveEditorialWhitespace: false, thinBorderEditorialGridDominant: false, worksheetRuleGrammar: false, flatRedEditorialCtaDominant: false, commercialStainlessPresentationLeakage: false } });
   });
 });

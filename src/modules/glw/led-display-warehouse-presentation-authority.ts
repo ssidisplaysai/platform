@@ -30,7 +30,7 @@ export function evaluateLedDisplayWarehousePresentation(contentHtml: string): Le
     contractBound: root.attr("data-site-presentation-authority") === LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT,
     darkHighContrastFoundation: root.attr("data-presentation-foundation") === "DARK_HIGH_CONTRAST" && /color-scheme:dark/.test(css),
     blueElectricAccent: root.attr("data-accent-authority") === "LEDW_BLUE_ELECTRIC" && /--ledw-electric:#19d3ff/.test(css),
-    imageLedComposition: $("[data-presentation-role=APPLICATION_MEDIA] img[data-media-role=APPLICATION_EXPERIENCE]").length === 1,
+    imageLedComposition: root.find('img[data-media-role="PRODUCT_AUTHORITY"]').length === 1 && root.find('img[data-media-role="CONTEXTUAL_IN_USE"]').length === 1 && root.find('[data-reference-section="APPLICATIONS"][data-presentation-tone="DARK_IMAGE_RICH"]').length === 1,
     commercialDensity: root.attr("data-spacing-density") === "COMMERCIAL_COMPACT" && /\.saw-(?:product|applications|planning)\{padding:(?:5[0-9]|6[0-9]|7[0-4])px/.test(css),
     excessiveEditorialWhitespace: /\.saw-(?:product|applications|planning)\{padding:(?:8[0-9]|9[0-9]|1[0-9]{2})px/.test(css),
     thinBorderEditorialGridDominant: /\.saw-grid article\{[^}]*border:1px solid/.test(css) || $(".saw-grid article>span").length > 0,
@@ -53,8 +53,8 @@ export function evaluateLedDisplayWarehousePresentation(contentHtml: string): Le
   return { contract: LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT, ok: blockers.length === 0, checks, blockers };
 }
 
-export function applyLedDisplayWarehousePresentationAuthority(input: { contentHtml: string; applicationMedia: { url: string; mediaId: string } }): { contentHtml: string; evaluation: LedDisplayWarehousePresentationEvaluation } {
-  const $ = load(input.contentHtml, null, false);
+export function applyLedDisplayWarehousePresentationAuthority(contentHtml: string): { contentHtml: string; evaluation: LedDisplayWarehousePresentationEvaluation } {
+  const $ = load(contentHtml, null, false);
   const root = $(".saw-page").first();
   if (root.length !== 1) throw new Error("LEDW_PRESENTATION_ROOT_REQUIRED");
   root.attr("data-site-presentation-authority", LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT)
@@ -63,15 +63,6 @@ export function applyLedDisplayWarehousePresentationAuthority(input: { contentHt
     .attr("data-accent-authority", "LEDW_BLUE_ELECTRIC")
     .attr("data-spacing-density", "COMMERCIAL_COMPACT");
   root.find(".saw-grid article>span").remove();
-  const applicationSection = root.find('[data-reference-section="APPLICATIONS"]').first();
-  const applications = applicationSection.find(".saw-wrap").first().length ? applicationSection.find(".saw-wrap").first() : applicationSection;
-  if (applications.length === 1) {
-    const applicationImage = $("<img>").attr("src", input.applicationMedia.url).attr("alt", "Outdoor Digital Sphere in an event setting").attr("data-media-role", "APPLICATION_EXPERIENCE").attr("data-media-id", input.applicationMedia.mediaId);
-    applications.find(".saw-application-stage").remove();
-    const stage = $("<div></div>").addClass("saw-application-stage").attr("data-presentation-role", "APPLICATION_MEDIA").append(applicationImage);
-    const grid = applications.find(".saw-grid").first();
-    if (grid.length) grid.before(stage); else applications.append(stage);
-  }
   root.find('[data-reference-section="APPLICATIONS"]').attr("data-presentation-tone", "DARK_IMAGE_RICH");
   root.find('[data-reference-section="PLANNING_GUIDANCE"]').attr("data-presentation-tone", "DARK_TECHNICAL_PANEL");
   root.find('[data-reference-section="CTA"]').attr("data-presentation-tone", "DARK_PROJECT_CTA");
