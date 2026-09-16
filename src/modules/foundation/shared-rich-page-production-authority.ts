@@ -41,6 +41,22 @@ export type SharedAuthorityBinding = {
   state: "SHARED" | "SITE_SPECIFIC_REQUIRED" | "MISSING";
 };
 
+export type SiteSpecificImplementationClassification =
+  | "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT"
+  | "LEGITIMATELY_SITE_SPECIFIC_IMPLEMENTATION"
+  | "MISSING_SHARED_MECHANISM";
+
+export const NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK = {
+  HERO_AUTHORITY: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+  FEATURED_MEDIA_SUPPRESSION: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+  SEMANTIC_LINKS: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+  EXACT_PUBLICATION: "MISSING_SHARED_MECHANISM",
+  ROLLBACK: "MISSING_SHARED_MECHANISM",
+} as const satisfies Readonly<Record<
+  "HERO_AUTHORITY" | "FEATURED_MEDIA_SUPPRESSION" | "SEMANTIC_LINKS" | "EXACT_PUBLICATION" | "ROLLBACK",
+  SiteSpecificImplementationClassification
+>>;
+
 export type SharedRichPageProductionProfile = {
   authorityVersion: typeof SHARED_RICH_PAGE_PRODUCTION_AUTHORITY_VERSION;
   profileId: string;
@@ -69,7 +85,7 @@ export const SHARED_RICH_PAGE_AUTHORITY_MANIFEST: Readonly<Record<SharedRichPage
   STORED_AUTHORITY_READBACK: { authorityName: "Authenticated WordPress Read Authority", implementationPath: "src/modules/foundation/authenticated-wordpress-read-authority.ts", owningModuleOrService: "createAuthenticatedWordPressReadAuthority", contractOrPolicy: "post-write exact-object readback", consumers: ["Commercial Stainless", "LED Display Warehouse / Indiana"], reusableBy: ["future Genesis sites"], state: "SHARED" },
   HOST_INTEGRATION: { authorityName: "Genesis Rich Page Host Policy", implementationPath: "src/modules/foundation/shared-rich-page-production-authority.ts", owningModuleOrService: "richPageHostIntegrationCss", contractOrPolicy: "GENESIS_RICH_PAGE_HOST_CONTAINMENT_V1", consumers: ["LED Display Warehouse / Indiana"], reusableBy: ["future WordPress rich pages"], state: "SHARED" },
   HEADER_FOOTER_INTEGRATION: { authorityName: "Rendered Host Integration Evidence", implementationPath: "src/modules/foundation/governed-render-capture-browser.ts", owningModuleOrService: "geometry", contractOrPolicy: "RVC_HOST_HEADER_OVERLAP/RVC_HOST_FOOTER_OVERLAP", consumers: ["LED Display Warehouse / Indiana"], reusableBy: ["future Genesis sites"], state: "SHARED" },
-  NATIVE_TITLE_SUPPRESSION: { authorityName: "Native Title Policy", implementationPath: "src/modules/foundation/shared-rich-page-production-authority.ts", owningModuleOrService: "SharedRichPageProductionProfile.host", contractOrPolicy: "profile-driven suppression", consumers: ["profile registry"], reusableBy: ["future Genesis sites"], state: "MISSING" },
+  NATIVE_TITLE_SUPPRESSION: { authorityName: "Native Title Policy", implementationPath: "src/modules/foundation/shared-rich-page-production-authority.ts", owningModuleOrService: "richPageHostIntegrationCss", contractOrPolicy: "eligible rich-page profile suppression only", consumers: ["profile registry"], reusableBy: ["future WordPress rich pages"], state: "SHARED" },
   FEATURED_MEDIA_SUPPRESSION: { authorityName: "Featured Media Policy", implementationPath: "src/modules/foundation/shared-rich-page-production-authority.ts", owningModuleOrService: "SharedRichPageProductionProfile.host", contractOrPolicy: "profile-driven suppression", consumers: ["Commercial Stainless profile"], reusableBy: ["future Genesis sites"], state: "SITE_SPECIFIC_REQUIRED" },
   VISUAL_CERTIFICATION: { authorityName: "Governed Render Capture", implementationPath: "src/modules/foundation/governed-render-capture-orchestrator.ts", owningModuleOrService: "runGovernedRenderCapture", contractOrPolicy: "rendered-visual-certification-v1", consumers: ["Commercial Stainless", "LED Display Warehouse / Indiana"], reusableBy: ["SSI", "ProjectorEnclosure", "future Genesis sites"], state: "SHARED" },
   DESKTOP_GEOMETRY: { authorityName: "Governed Render Capture", implementationPath: "src/modules/foundation/governed-render-capture-browser.ts", owningModuleOrService: "captureGovernedRenderedPage", contractOrPolicy: "DESKTOP 1440x1000", consumers: ["Commercial Stainless", "LED Display Warehouse / Indiana"], reusableBy: ["future Genesis sites"], state: "SHARED" },
@@ -102,4 +118,26 @@ export function richPageHostIntegrationCss(profile: SharedRichPageProductionProf
 export function evaluateSharedRichPageInheritance(profile: SharedRichPageProductionProfile | null) {
   const missingSharedCapabilities = Object.entries(SHARED_RICH_PAGE_AUTHORITY_MANIFEST).filter(([, binding]) => binding.state !== "SHARED").map(([capability]) => capability as SharedRichPageCapability);
   return { profileResolved: Boolean(profile), sharedProductionPipelineComplete: Boolean(profile) && missingSharedCapabilities.length === 0, nextTargetRequiresNewArchitecture: !profile, nextTargetRequiresNewCode: !profile || missingSharedCapabilities.length > 0, missingSharedCapabilities };
+}
+
+export function evaluateNextGlwStateProductionUnblock(profile: SharedRichPageProductionProfile | null) {
+  const reusableInputMechanisms = Object.entries(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK)
+    .filter(([, classification]) => classification === "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT")
+    .map(([capability]) => capability as keyof typeof NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK);
+  const remainingNewCodeRequirements = [
+    ...Object.entries(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK)
+      .filter(([, classification]) => classification === "MISSING_SHARED_MECHANISM")
+      .map(([capability]) => capability),
+    "TARGET_PARAMETERIZED_RICH_REFERENCE_ORCHESTRATION",
+  ];
+  return {
+    profileResolved: Boolean(profile),
+    nativeTitleSuppressionRequired: profile?.host.suppressNativeTitle ?? true,
+    nativeTitleSuppressionSharedMechanismReady: true,
+    reusableInputMechanisms,
+    remainingNewCodeRequirements,
+    nextTargetRequiresNewArchitecture: !profile,
+    nextTargetRequiresNewCode: !profile || remainingNewCodeRequirements.length > 0,
+    productionReady: Boolean(profile) && remainingNewCodeRequirements.length === 0,
+  };
 }

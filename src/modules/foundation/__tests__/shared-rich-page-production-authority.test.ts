@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
+  evaluateNextGlwStateProductionUnblock,
   evaluateSharedRichPageInheritance,
+  NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK,
   resolveSharedRichPageProductionProfile,
   richPageHostIntegrationCss,
   SHARED_RICH_PAGE_AUTHORITY_MANIFEST,
@@ -26,7 +28,34 @@ describe("shared rich-page production authority", () => {
     expect(inheritance.nextTargetRequiresNewArchitecture).toBe(false);
     expect(inheritance.nextTargetRequiresNewCode).toBe(true);
     expect(inheritance.sharedProductionPipelineComplete).toBe(false);
-    expect(inheritance.missingSharedCapabilities).toEqual(expect.arrayContaining(["HERO_AUTHORITY", "NATIVE_TITLE_SUPPRESSION", "EXACT_PUBLICATION", "ROLLBACK"]));
+    expect(inheritance.missingSharedCapabilities).toEqual(expect.arrayContaining(["HERO_AUTHORITY", "EXACT_PUBLICATION", "ROLLBACK"]));
+    expect(inheritance.missingSharedCapabilities).not.toContain("NATIVE_TITLE_SUPPRESSION");
+  });
+
+  test("distinguishes reusable target inputs from missing next-state mechanisms", () => {
+    const profile = resolveSharedRichPageProductionProfile({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", productId: "prod-outdoor-digital-sphere", pageType: "LOCATION_SERVICE" });
+    const result = evaluateNextGlwStateProductionUnblock(profile);
+
+    expect(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK).toEqual({
+      HERO_AUTHORITY: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+      FEATURED_MEDIA_SUPPRESSION: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+      SEMANTIC_LINKS: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+      EXACT_PUBLICATION: "MISSING_SHARED_MECHANISM",
+      ROLLBACK: "MISSING_SHARED_MECHANISM",
+    });
+    expect(result).toMatchObject({
+      profileResolved: true,
+      nativeTitleSuppressionRequired: false,
+      nativeTitleSuppressionSharedMechanismReady: true,
+      nextTargetRequiresNewArchitecture: false,
+      nextTargetRequiresNewCode: true,
+      productionReady: false,
+    });
+    expect(result.remainingNewCodeRequirements).toEqual([
+      "EXACT_PUBLICATION",
+      "ROLLBACK",
+      "TARGET_PARAMETERIZED_RICH_REFERENCE_ORCHESTRATION",
+    ]);
   });
 
   test("does not claim unregistered future sites inherit a complete production pipeline", () => {
