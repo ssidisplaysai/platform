@@ -24,6 +24,10 @@ type MediaRecord = {
   localAtmosphereStateCodes: readonly string[];
   depictsActualProduct: boolean;
   heroEligible: boolean;
+  heroSelectable: boolean;
+  heroSelected: boolean;
+  heroSelectedBy: string | null;
+  heroSelectedAt: string | null;
   altTextAuthority: string;
   captionAuthority: string;
   hash: string;
@@ -60,6 +64,7 @@ async function fetchMediaAuthority(endpoint: string, headers: Record<string, str
 function MediaReviewCard(props: {
   record: MediaRecord;
   busy: boolean;
+  onSelectHero: (record: MediaRecord) => Promise<void>;
   onReview: (record: MediaRecord, decision: "APPROVE" | "REJECT", review: {
     authorityClass: ProductMediaAuthorityClass;
     usageScopes: ProductMediaAuthorityClass[];
@@ -95,8 +100,9 @@ function MediaReviewCard(props: {
       <Image src={props.record.contentUrl} alt={props.record.altTextAuthority} width={props.record.dimensions.width} height={props.record.dimensions.height} unoptimized className="aspect-video w-full object-contain" />
       <div className="mt-3 flex items-start justify-between gap-3"><p className="text-sm font-semibold text-white">{props.record.originalFilename}</p><span className={props.record.ownerApproval === "APPROVED" ? "text-xs font-semibold text-emerald-300" : props.record.ownerApproval === "REJECTED" ? "text-xs font-semibold text-red-300" : "text-xs font-semibold text-amber-300"}>{controls.label}</span></div>
       <p className="mt-1 break-all text-xs text-zinc-500">{props.record.hash}</p>
-      <dl className="mt-2 grid grid-cols-[8rem_1fr] gap-1 text-xs"><dt className="text-zinc-500">Class</dt><dd className="text-zinc-200">{props.record.authorityClass}</dd><dt className="text-zinc-500">Source</dt><dd className="text-zinc-200">{props.record.sourceType}</dd><dt className="text-zinc-500">Provenance</dt><dd className="text-zinc-200">{props.record.provenance}</dd><dt className="text-zinc-500">Actual product</dt><dd className="text-zinc-200">{props.record.depictsActualProduct ? "YES" : "NO"}</dd><dt className="text-zinc-500">Hero eligible</dt><dd className="text-zinc-200">{props.record.heroEligible ? "YES" : "NO"}</dd><dt className="text-zinc-500">{props.record.ownerApproval === "APPROVED" ? "Approved scopes" : "Proposed scopes"}</dt><dd className="text-zinc-200">{(props.record.ownerApproval === "APPROVED" ? props.record.approvedUsageScopes : props.record.proposedUsageScopes).join(", ") || "NONE"}</dd></dl>
+      <dl className="mt-2 grid grid-cols-[8rem_1fr] gap-1 text-xs"><dt className="text-zinc-500">Class</dt><dd className="text-zinc-200">{props.record.authorityClass}</dd><dt className="text-zinc-500">Source</dt><dd className="text-zinc-200">{props.record.sourceType}</dd><dt className="text-zinc-500">Provenance</dt><dd className="text-zinc-200">{props.record.provenance}</dd><dt className="text-zinc-500">Actual product</dt><dd className="text-zinc-200">{props.record.depictsActualProduct ? "YES" : "NO"}</dd><dt className="text-zinc-500">Primary hero</dt><dd className="text-zinc-200">{props.record.heroSelected ? "YES" : "NO"}</dd><dt className="text-zinc-500">{props.record.ownerApproval === "APPROVED" ? "Approved scopes" : "Proposed scopes"}</dt><dd className="text-zinc-200">{(props.record.ownerApproval === "APPROVED" ? props.record.approvedUsageScopes : props.record.proposedUsageScopes).join(", ") || "NONE"}</dd></dl>
       {props.record.ownerApproval === "APPROVED" ? <p className="mt-3 text-xs text-emerald-300">Approved by {props.record.ownerPrincipalId ?? "recorded owner"} at {props.record.ownerApprovalTimestamp ? new Date(props.record.ownerApprovalTimestamp).toLocaleString() : "recorded time"}. Reclassification requires a separate governed action.</p> : null}
+      {props.record.heroSelected ? <p className="mt-3 text-xs font-semibold text-emerald-300">Selected primary hero by {props.record.heroSelectedBy ?? "recorded owner"}.</p> : props.record.heroSelectable ? <button type="button" disabled={props.busy} onClick={() => void props.onSelectHero(props.record)} className="mt-3 border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-300 disabled:opacity-40">Set as Hero</button> : null}
       {controls.reviewFieldsEditable ? <div className="mt-4 border-t border-zinc-800 pt-3">
         <p className="text-xs font-semibold text-zinc-300">{props.record.ownerApproval === "REJECTED" ? "Reconsider rejected media" : "Owner review"}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -105,7 +111,7 @@ function MediaReviewCard(props: {
           <label className="text-xs text-zinc-400 sm:col-span-2">Authoritative caption<input value={captionAuthority} onChange={(event) => setCaptionAuthority(event.target.value)} className="mt-1 h-9 w-full border border-zinc-700 bg-zinc-950 px-2 text-white" /></label>
         </div>
         <fieldset className="mt-3"><legend className="text-xs text-zinc-400">Approved usage scopes</legend><div className="mt-2 flex flex-wrap gap-3">{roles.map((role) => <label key={role} className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={usageScopes.includes(role)} onChange={() => { toggleScope(role); setAuthorityAndScopesConfirmed(false); }} />{role.replaceAll("_", " ")}</label>)}</div></fieldset>
-        <div className="mt-3 flex flex-wrap gap-4"><label className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={depictsActualProduct} onChange={(event) => setDepictsActualProduct(event.target.checked)} />Depicts actual product</label><label className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={heroEligible} onChange={(event) => setHeroEligible(event.target.checked)} />Hero eligible</label></div>
+        <div className="mt-3 flex flex-wrap gap-4"><label className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={depictsActualProduct} onChange={(event) => setDepictsActualProduct(event.target.checked)} />Depicts actual product</label></div>
         <label className="mt-3 flex items-start gap-2 text-xs text-zinc-300"><input type="checkbox" checked={authorityAndScopesConfirmed} onChange={(event) => setAuthorityAndScopesConfirmed(event.target.checked)} />I confirm this authority class and each checked usage scope for this exact asset.</label>
         {hasLocalScope ? <label className="mt-2 flex items-start gap-2 text-xs text-amber-300"><input type="checkbox" checked={localAtmosphereConfirmed} onChange={(event) => setLocalAtmosphereConfirmed(event.target.checked)} />I confirm this asset is local to {props.targetStateCode}. Chicago or Texas provenance is not Indiana-local authority.</label> : null}
         <div className="mt-3 flex gap-2">{controls.approvalActionVisible ? <button type="button" disabled={props.busy || !authorityAndScopesConfirmed || (hasLocalScope && !localAtmosphereConfirmed) || !usageScopes.includes(authorityClass) || !altTextAuthority.trim()} onClick={() => void props.onReview(props.record, "APPROVE", review)} className="border border-emerald-700 px-3 py-2 text-xs font-semibold text-emerald-300 disabled:border-zinc-800 disabled:text-zinc-600">{props.record.ownerApproval === "REJECTED" ? "Approve After Re-review" : "Approve"}</button> : null}{controls.rejectionActionVisible ? <button type="button" disabled={props.busy} onClick={() => void props.onReview(props.record, "REJECT", review)} className="border border-red-800 px-3 py-2 text-xs font-semibold text-red-300 disabled:opacity-40">Reject</button> : null}</div>
@@ -188,6 +194,35 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
     }
   }
 
+  async function selectHero(record: MediaRecord) {
+    const currentHero = payload?.records.find((candidate) => candidate.heroSelected) ?? null;
+    const replacementConfirmed = Boolean(currentHero && currentHero.mediaAuthorityId !== record.mediaAuthorityId);
+    if (replacementConfirmed && !window.confirm(`Replace ${currentHero?.originalFilename} with ${record.originalFilename} as the primary hero?`)) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      const request = async (body: Record<string, unknown>) => {
+        const response = await fetch(endpoint, { method: "POST", headers: operatorMutationHeaders({ ...scopeHeaders, "Content-Type": "application/json" }), body: JSON.stringify(body) });
+        const result = await response.json() as { error?: string; receipt?: { receiptId: string }; grant?: { grantId: string }; records?: MediaRecord[] };
+        if (!response.ok) throw new Error(result.error ?? "Hero selection failed.");
+        return result;
+      };
+      const target = { mediaAuthorityId: record.mediaAuthorityId, hash: record.hash, replacementConfirmed };
+      const preflight = await request({ action: "RUN_HERO_PREFLIGHT", ...target });
+      if (!preflight.receipt) throw new Error("Hero preflight receipt was not issued.");
+      const authorization = await request({ action: "AUTHORIZE_HERO_SELECTION", ...target, preflightReceiptId: preflight.receipt.receiptId });
+      if (!authorization.grant) throw new Error("Hero selection grant was not issued.");
+      const selection = await request({ action: "SELECT_PRODUCT_MEDIA_HERO", ...target, preflightReceiptId: preflight.receipt.receiptId, grantId: authorization.grant.grantId });
+      setPayload(await fetchMediaAuthority(endpoint, scopeHeaders) ?? selection as Payload);
+      setMessage(`${record.originalFilename} is now the explicitly selected primary hero.`);
+      await props.onAuthorityChanged?.();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Hero selection failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="mt-4 border-t border-zinc-800 pt-4" aria-labelledby="outdoor-sphere-media-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -220,7 +255,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       <button type="button" onClick={() => void upload()} disabled={busy || !file || !sourceDescription.trim() || !provenance.trim() || !altText.trim()} className="mt-4 bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:bg-zinc-800 disabled:text-zinc-500">Store Pending Media</button>
       {message ? <p className="mt-3 text-sm text-amber-300" role="status">{message}</p> : null}
 
-      {payload?.records.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{payload.records.map((record) => <MediaReviewCard key={`${record.mediaAuthorityId}:${record.updatedAt}`} record={record} busy={busy} onReview={review} targetStateCode={props.targetStateCode} />)}</div> : null}
+      {payload?.records.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{payload.records.map((record) => <MediaReviewCard key={`${record.mediaAuthorityId}:${record.updatedAt}`} record={record} busy={busy} onReview={review} onSelectHero={selectHero} targetStateCode={props.targetStateCode} />)}</div> : null}
 
       {payload ? <div className="mt-4 border-t border-zinc-800 pt-3 text-xs text-zinc-300"><p>Product authority: {payload.readiness.approvedProductAuthorityMediaCount} · Contextual: {payload.readiness.approvedContextualMediaCount} · Application: {payload.readiness.approvedApplicationMediaCount} · Local atmosphere: {payload.readiness.approvedLocalAtmosphereMediaCount}</p><p className="mt-1">Hero: {payload.readiness.heroAuthorityReady ? "READY" : "REQUIRED"} · Supporting: {payload.readiness.supportingProductMediaReady ? "READY" : "REQUIRED"} · Application: {payload.readiness.applicationMediaReady ? "READY" : "REQUIRED"} · Provenance: {payload.readiness.mediaProvenanceReady ? "READY" : "REQUIRED"}</p><p className="mt-1 text-zinc-500">Product fact authority remains {payload.readiness.productFactAuthorityScope.replaceAll("_", " ")}.</p></div> : null}
     </section>

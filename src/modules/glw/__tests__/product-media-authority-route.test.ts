@@ -14,9 +14,10 @@ describe("Outdoor Digital Sphere media authority route", () => {
   const originalRoot = process.env.GCP_FOUNDATION_PERSISTENCE_DIR;
   const originalNodeEnv = process.env.NODE_ENV;
   const originalDirectory = process.env.GENESIS_OPERATOR_DIRECTORY_JSON;
+  const originalGitCommit = process.env.GIT_COMMIT;
   let root: string;
-  beforeEach(() => { root = mkdtempSync(join(tmpdir(), "outdoor-sphere-media-route-")); process.env.GCP_FOUNDATION_PERSISTENCE_DIR = root; process.env.NODE_ENV = "production"; });
-  afterEach(() => { if (originalRoot === undefined) delete process.env.GCP_FOUNDATION_PERSISTENCE_DIR; else process.env.GCP_FOUNDATION_PERSISTENCE_DIR = originalRoot; if (originalDirectory === undefined) delete process.env.GENESIS_OPERATOR_DIRECTORY_JSON; else process.env.GENESIS_OPERATOR_DIRECTORY_JSON = originalDirectory; process.env.NODE_ENV = originalNodeEnv; rmSync(root, { recursive: true, force: true }); });
+  beforeEach(() => { root = mkdtempSync(join(tmpdir(), "outdoor-sphere-media-route-")); process.env.GCP_FOUNDATION_PERSISTENCE_DIR = root; process.env.NODE_ENV = "production"; process.env.GIT_COMMIT = "a".repeat(40); });
+  afterEach(() => { if (originalRoot === undefined) delete process.env.GCP_FOUNDATION_PERSISTENCE_DIR; else process.env.GCP_FOUNDATION_PERSISTENCE_DIR = originalRoot; if (originalDirectory === undefined) delete process.env.GENESIS_OPERATOR_DIRECTORY_JSON; else process.env.GENESIS_OPERATOR_DIRECTORY_JSON = originalDirectory; if (originalGitCommit === undefined) delete process.env.GIT_COMMIT; else process.env.GIT_COMMIT = originalGitCommit; process.env.NODE_ENV = originalNodeEnv; rmSync(root, { recursive: true, force: true }); });
 
   test("caller role and scope headers cannot read or approve without a server session", async () => {
     const headers = { "x-gcp-roles": "platform_admin", "x-gcp-organization-id": "led-display-warehouse", "x-gcp-site-id": "site-led-display-warehouse-production" };
@@ -51,12 +52,26 @@ describe("Outdoor Digital Sphere media authority route", () => {
     const review = await POST(new NextRequest("http://localhost/api/glw/products/prod-outdoor-digital-sphere/media-authority", { method: "POST", headers: { ...commonHeaders, "content-type": "application/json" }, body: JSON.stringify({ action: "REVIEW_PRODUCT_MEDIA", mediaAuthorityId: pending.record.mediaAuthorityId, decision: "APPROVE", authorityClass: "PRODUCT_AUTHORITY", usageScopes: ["PRODUCT_AUTHORITY", "LOCAL_CONTEXTUAL_ATMOSPHERE"], depictsActualProduct: true, heroEligible: true, altTextAuthority: "Outdoor Digital Sphere", captionAuthority: "Owner supplied.", authorityAndScopesConfirmed: true, localAtmosphereConfirmed: true, localAtmosphereStateCodes: ["TX"] }) }), context);
     expect(review.status).toBe(200);
     const approved = await review.json();
-    expect(approved).toMatchObject({ record: { ownerApproval: "APPROVED", ownerApprovalTimestamp: expect.any(String), ownerPrincipalId: "robert", approvedUsageScopes: ["PRODUCT_AUTHORITY", "LOCAL_CONTEXTUAL_ATMOSPHERE"], localAtmosphereStateCodes: ["TX"], productRepresentationAllowed: true }, ownerApprovalPersisted: true, readiness: { heroAuthorityReady: true, supportingProductMediaReady: false, state: "PRODUCT_MEDIA_AUTHORITY_REQUIRED" }, n8nExecutionCreated: false, generationAttempted: false, wordpressMutation: false });
+    expect(approved).toMatchObject({ record: { ownerApproval: "APPROVED", ownerApprovalTimestamp: expect.any(String), ownerPrincipalId: "robert", approvedUsageScopes: ["PRODUCT_AUTHORITY", "LOCAL_CONTEXTUAL_ATMOSPHERE"], localAtmosphereStateCodes: ["TX"], productRepresentationAllowed: true, heroSelected: false }, ownerApprovalPersisted: true, readiness: { heroAuthorityReady: false, supportingProductMediaReady: true, state: "PRODUCT_MEDIA_AUTHORITY_REQUIRED" }, n8nExecutionCreated: false, generationAttempted: false, wordpressMutation: false });
     const correction = await POST(new NextRequest("http://localhost/api/glw/products/prod-outdoor-digital-sphere/media-authority", { method: "POST", headers: { ...commonHeaders, "content-type": "application/json" }, body: JSON.stringify({ action: "CORRECT_APPROVED_PRODUCT_MEDIA_USAGE_SCOPE", targets: [{ mediaAuthorityId: pending.record.mediaAuthorityId, hash: pending.record.hash }], removedScope: "LOCAL_CONTEXTUAL_ATMOSPHERE", reason: "Texas provenance does not establish Indiana-local authority." }) }), context);
     expect(correction.status).toBe(200);
     expect(await correction.json()).toMatchObject({ correctedRecords: [{ ownerApproval: "APPROVED", ownerApprovalTimestamp: approved.record.ownerApprovalTimestamp, ownerPrincipalId: "robert", approvedUsageScopes: ["PRODUCT_AUTHORITY"], localAtmosphereStateCodes: [], productRepresentationAllowed: true, localAtmosphereUseAllowed: false }], scopeCorrectionMutated: true, generationAttempted: false, wordpressMutation: false });
+    const heroContext = { mediaAuthorityId: pending.record.mediaAuthorityId, hash: pending.record.hash, replacementConfirmed: false };
+    const preflight = await POST(new NextRequest("http://localhost/api/glw/products/prod-outdoor-digital-sphere/media-authority", { method: "POST", headers: { ...commonHeaders, "content-type": "application/json" }, body: JSON.stringify({ action: "RUN_HERO_PREFLIGHT", ...heroContext }) }), context);
+    expect(preflight.status).toBe(200);
+    const receipt = await preflight.json();
+    const authorization = await POST(new NextRequest("http://localhost/api/glw/products/prod-outdoor-digital-sphere/media-authority", { method: "POST", headers: { ...commonHeaders, "content-type": "application/json" }, body: JSON.stringify({ action: "AUTHORIZE_HERO_SELECTION", ...heroContext, preflightReceiptId: receipt.receipt.receiptId }) }), context);
+    expect(authorization.status).toBe(200);
+    const granted = await authorization.json();
+    const selectionBody = { action: "SELECT_PRODUCT_MEDIA_HERO", ...heroContext, preflightReceiptId: receipt.receipt.receiptId, grantId: granted.grant.grantId };
+    const selection = await POST(new NextRequest("http://localhost/api/glw/products/prod-outdoor-digital-sphere/media-authority", { method: "POST", headers: { ...commonHeaders, "content-type": "application/json" }, body: JSON.stringify(selectionBody) }), context);
+    expect(selection.status).toBe(200);
+    expect(await selection.json()).toMatchObject({ record: { heroEligible: true, heroSelected: true, heroSelectedBy: "robert", heroSelectedAt: expect.any(String) }, readiness: { heroAuthorityReady: true }, heroSelectionPersisted: true, downstreamSideEffectsPerformed: false });
+    const replay = await POST(new NextRequest("http://localhost/api/glw/products/prod-outdoor-digital-sphere/media-authority", { method: "POST", headers: { ...commonHeaders, "content-type": "application/json" }, body: JSON.stringify(selectionBody) }), context);
+    expect(replay.status).toBe(409);
+    expect(await replay.json()).toMatchObject({ error: "PRODUCT_MEDIA_HERO_GRANT_CONSUMED", downstreamSideEffectsPerformed: false });
     const reload = await GET(new NextRequest("http://localhost/api/glw/products/prod-outdoor-digital-sphere/media-authority?stateCode=IN", { headers: { cookie, "x-gcp-organization-id": "led-display-warehouse", "x-gcp-site-id": "site-led-display-warehouse-production" } }), context);
     expect(reload.status).toBe(200);
-    expect(await reload.json()).toMatchObject({ records: [{ mediaAuthorityId: pending.record.mediaAuthorityId, ownerApproval: "APPROVED", ownerApprovalTimestamp: approved.record.ownerApprovalTimestamp, ownerPrincipalId: "robert", approvedUsageScopes: ["PRODUCT_AUTHORITY"], productRepresentationAllowed: true, localAtmosphereUseAllowed: false }], readiness: { approvedProductAuthorityMediaCount: 1, approvedLocalAtmosphereMediaCount: 0 } });
+    expect(await reload.json()).toMatchObject({ records: [{ mediaAuthorityId: pending.record.mediaAuthorityId, ownerApproval: "APPROVED", ownerApprovalTimestamp: approved.record.ownerApprovalTimestamp, ownerPrincipalId: "robert", approvedUsageScopes: ["PRODUCT_AUTHORITY"], productRepresentationAllowed: true, localAtmosphereUseAllowed: false, heroSelected: true, heroSelectedBy: "robert" }], readiness: { approvedProductAuthorityMediaCount: 1, approvedLocalAtmosphereMediaCount: 0, heroAuthorityReady: true } });
   });
 });

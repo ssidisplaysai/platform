@@ -26,7 +26,7 @@ describe("Outdoor Digital Sphere product media authority", () => {
     const pending = await intake();
     expect(pending).toMatchObject({ ownerApproval: "PENDING_OWNER_APPROVAL", dimensions: { width: 40, height: 30 }, proposedUsageScopes: ["PRODUCT_AUTHORITY"], approvedUsageScopes: [], depictsActualProduct: false, productRepresentationAllowed: false, heroEligible: false, hash: expect.stringMatching(/^[a-f0-9]{64}$/) });
     const approved = repository.reviewProductMedia({ ...scope, mediaAuthorityId: pending.mediaAuthorityId, decision: "APPROVE", authorityClass: "PRODUCT_AUTHORITY", usageScopes: ["PRODUCT_AUTHORITY"], depictsActualProduct: true, heroEligible: true, altTextAuthority: "Outdoor Digital Sphere product", captionAuthority: "Owner approved.", authorityAndScopesConfirmed: true, localAtmosphereConfirmed: false, principalId: "owner-1", sessionId: "session-1", now: new Date("2030-01-02") });
-    expect(approved).toMatchObject({ ownerApproval: "APPROVED", ownerApprovalTimestamp: "2030-01-02T00:00:00.000Z", ownerPrincipalId: "owner-1", ownerSessionId: "session-1", approvedUsageScopes: ["PRODUCT_AUTHORITY"], productRepresentationAllowed: true, heroEligible: true });
+    expect(approved).toMatchObject({ ownerApproval: "APPROVED", ownerApprovalTimestamp: "2030-01-02T00:00:00.000Z", ownerPrincipalId: "owner-1", ownerSessionId: "session-1", approvedUsageScopes: ["PRODUCT_AUTHORITY"], productRepresentationAllowed: true, heroEligible: false, heroSelected: false });
     expect(repository.listProductMediaAuthority(scope)).toHaveLength(1);
   });
 
@@ -46,10 +46,15 @@ describe("Outdoor Digital Sphere product media authority", () => {
     };
     expect(repository.evaluateProductMediaReadiness([]).state).toBe("PRODUCT_MEDIA_AUTHORITY_REQUIRED");
     const hero = await approve("hero", "PRODUCT_AUTHORITY", ["PRODUCT_AUTHORITY"], true);
-    expect(repository.evaluateProductMediaReadiness([hero]).supportingProductMediaReady).toBe(false);
+    expect(repository.evaluateProductMediaReadiness([hero])).toMatchObject({ heroAuthorityReady: false, supportingProductMediaReady: true });
+    const heroContext = { ...scope, mediaAuthorityId: hero.mediaAuthorityId, hash: hero.hash, exactRuntime: "a".repeat(40), principalId: "owner", principalSessionId: "session", replacementConfirmed: false };
+    const receipt = repository.issueProductMediaHeroPreflight({ ...heroContext, now: new Date("2030-01-03") });
+    const grant = repository.issueProductMediaHeroGrant({ ...heroContext, preflightReceiptId: receipt.receiptId, now: new Date("2030-01-03") });
+    const selectedHero = repository.selectProductMediaHero({ ...heroContext, preflightReceiptId: receipt.receiptId, grantId: grant.grantId, now: new Date("2030-01-03") }).record;
+    expect(repository.evaluateProductMediaReadiness([selectedHero])).toMatchObject({ heroAuthorityReady: true, supportingProductMediaReady: false });
     const support = await approve("support", "CONTEXTUAL_IN_USE", ["CONTEXTUAL_IN_USE"]);
     const application = await approve("application", "APPLICATION_EXPERIENCE", ["APPLICATION_EXPERIENCE"]);
-    expect(repository.evaluateProductMediaReadiness([hero, support, application])).toMatchObject({ state: "REFERENCE_COMPOSITION_MEDIA_READY", ready: true, approvedLocalAtmosphereMediaCount: 0, productFactsExpanded: false });
+    expect(repository.evaluateProductMediaReadiness([selectedHero, support, application])).toMatchObject({ state: "REFERENCE_COMPOSITION_MEDIA_READY", ready: true, approvedLocalAtmosphereMediaCount: 0, productFactsExpanded: false });
   });
 
   test("rejects scope substitution and malformed uploads", async () => {
@@ -106,7 +111,7 @@ describe("Outdoor Digital Sphere product media authority", () => {
       expect.objectContaining({ mediaAuthorityId: texas.mediaAuthorityId, hash: texas.hash, provenance: "Texas", ownerApproval: "PENDING_OWNER_APPROVAL", ownerPrincipalId: null, ownerApprovalTimestamp: null, approvedUsageScopes: [], depictsActualProduct: false, heroEligible: false, localAtmosphereUseAllowed: false }),
     ]));
     expect(first.audits).toEqual(expect.arrayContaining([
-      expect.objectContaining({ mediaAuthorityId: chicago.mediaAuthorityId, hash: chicago.hash, previousStatus: "APPROVED", previousApproval: true, previousPrincipalId: "legacy-owner", previousApprovalTimestamp: "2029-12-31T00:00:00.000Z", previousAuthorityClass: "PRODUCT_AUTHORITY", previousUsageScopes: expect.arrayContaining(["LOCAL_CONTEXTUAL_ATMOSPHERE"]), provenance: "Chicago", depictsActualProduct: true, heroEligible: true }),
+      expect.objectContaining({ mediaAuthorityId: chicago.mediaAuthorityId, hash: chicago.hash, previousStatus: "APPROVED", previousApproval: true, previousPrincipalId: "legacy-owner", previousApprovalTimestamp: "2029-12-31T00:00:00.000Z", previousAuthorityClass: "PRODUCT_AUTHORITY", previousUsageScopes: expect.arrayContaining(["LOCAL_CONTEXTUAL_ATMOSPHERE"]), provenance: "Chicago", depictsActualProduct: true, heroEligible: false }),
       expect.objectContaining({ mediaAuthorityId: texas.mediaAuthorityId, hash: texas.hash, provenance: "Texas" }),
     ]));
     const second = repository.reconcileLegacyProductMediaApprovals({ ...scope, targets, principalId: "recovery-operator", now: new Date("2030-01-04") });

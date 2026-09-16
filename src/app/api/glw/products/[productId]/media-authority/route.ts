@@ -3,6 +3,9 @@ import { authorizeRequest, resolveRequestPrincipal, resolveRequestScope } from "
 import {
   correctApprovedProductMediaUsageScope,
   evaluateProductMediaReadiness,
+  isProductMediaHeroSelectable,
+  issueProductMediaHeroGrant,
+  issueProductMediaHeroPreflight,
   intakeProductMedia,
   listProductMediaAuthority,
   OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID,
@@ -11,6 +14,7 @@ import {
   PRODUCT_MEDIA_MAX_BYTES,
   reconcileLegacyProductMediaApprovals,
   reviewProductMedia,
+  selectProductMediaHero,
   type ProductMediaAuthorityClass,
   type ProductMediaSourceType,
 } from "@/modules/glw/product-media-authority";
@@ -30,6 +34,7 @@ function scopeAllowed(request: NextRequest, productId: string): boolean {
 function publicRecord(record: ReturnType<typeof listProductMediaAuthority>[number]) {
   return {
     ...record,
+    heroSelectable: isProductMediaHeroSelectable(record),
     contentBase64: undefined,
     contentUrl: `/api/glw/products/${encodeURIComponent(record.productId)}/media-authority/${encodeURIComponent(record.mediaAuthorityId)}/content?organizationId=${encodeURIComponent(record.organizationId)}&siteId=${encodeURIComponent(record.siteId)}`,
   };
@@ -125,7 +130,38 @@ export async function POST(request: NextRequest, context: Context) {
       targets?: { mediaAuthorityId?: string; hash?: string }[];
       removedScope?: ProductMediaAuthorityClass;
       reason?: string;
+      hash?: string;
+      replacementConfirmed?: boolean;
+      preflightReceiptId?: string;
+      grantId?: string;
     } | null;
+    if (["RUN_HERO_PREFLIGHT", "AUTHORIZE_HERO_SELECTION", "SELECT_PRODUCT_MEDIA_HERO"].includes(body?.action ?? "")) {
+      if (!body?.mediaAuthorityId || !body.hash || !/^[0-9a-f]{64}$/.test(body.hash)) throw new Error("PRODUCT_MEDIA_HERO_TARGET_INVALID");
+      const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
+      const heroContext = {
+        organizationId: OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID,
+        siteId: OUTDOOR_DIGITAL_SPHERE_SITE_ID,
+        productId,
+        mediaAuthorityId: body.mediaAuthorityId,
+        hash: body.hash,
+        exactRuntime,
+        principalId: principal.principalId,
+        principalSessionId: principal.sessionId,
+        replacementConfirmed: body.replacementConfirmed === true,
+      };
+      if (body.action === "RUN_HERO_PREFLIGHT") {
+        const receipt = issueProductMediaHeroPreflight(heroContext);
+        return NextResponse.json({ receipt, downstreamSideEffectsPerformed: false });
+      }
+      if (!body.preflightReceiptId) throw new Error("PRODUCT_MEDIA_HERO_PREFLIGHT_REQUIRED");
+      if (body.action === "AUTHORIZE_HERO_SELECTION") {
+        const grant = issueProductMediaHeroGrant({ ...heroContext, preflightReceiptId: body.preflightReceiptId });
+        return NextResponse.json({ grant, downstreamSideEffectsPerformed: false });
+      }
+      if (!body.grantId) throw new Error("PRODUCT_MEDIA_HERO_GRANT_REQUIRED");
+      const selection = selectProductMediaHero({ ...heroContext, preflightReceiptId: body.preflightReceiptId, grantId: body.grantId });
+      return NextResponse.json({ ...result(request.nextUrl.searchParams.get("stateCode")), record: publicRecord(selection.record), previousHeroId: selection.previousHeroId, heroSelectionPersisted: true, downstreamSideEffectsPerformed: false });
+    }
     if (body?.action === "RECONCILE_LEGACY_PRODUCT_MEDIA_APPROVALS") {
       if (!Array.isArray(body.targets) || body.targets.length === 0 || body.targets.length > 2
         || body.targets.some((target) => !target.mediaAuthorityId || !target.hash || !/^[0-9a-f]{64}$/.test(target.hash))) {

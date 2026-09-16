@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import sharp from "sharp";
 import {
   deepClone,
@@ -15,6 +15,9 @@ export const OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID = "led-display-warehouse" as
 export const OUTDOOR_DIGITAL_SPHERE_SITE_ID = "site-led-display-warehouse-production" as const;
 export const PRODUCT_MEDIA_MAX_BYTES = 12 * 1024 * 1024;
 export const EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION = "EXPLICIT_OWNER_CONFIRMATION_V1" as const;
+export const PRODUCT_MEDIA_HERO_AUTHORITY_VERSION = "PRODUCT_MEDIA_HERO_OWNER_AUTHORITY_V1" as const;
+export const PRODUCT_MEDIA_HERO_PREFLIGHT_LIFETIME_SECONDS = 120;
+export const PRODUCT_MEDIA_HERO_GRANT_LIFETIME_SECONDS = 300;
 
 export type ProductMediaSourceType =
   | "FACTORY_SUPPLIED"
@@ -59,6 +62,9 @@ export type ProductMediaAuthorityRecord = {
   localAtmosphereUseAllowed: boolean;
   localAtmosphereStateCodes: readonly string[];
   heroEligible: boolean;
+  heroSelected: boolean;
+  heroSelectedBy: string | null;
+  heroSelectedAt: string | null;
   altTextAuthority: string;
   captionAuthority: string;
   approvalLifecycleVersion: typeof EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION | null;
@@ -101,6 +107,35 @@ export type ProductMediaScopeCorrectionAudit = {
   reason: string;
 };
 
+type ProductMediaHeroContext = {
+  principalId: string;
+  principalSessionId: string;
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  mediaAuthorityId: string;
+  hash: string;
+  exactRuntime: string;
+  expectedCurrentHeroId: string | null;
+  replacementConfirmed: boolean;
+};
+
+export type ProductMediaHeroPreflightReceipt = ProductMediaHeroContext & {
+  receiptId: string;
+  issuedAt: string;
+  expiresAt: string;
+  authorizedGrantId: string | null;
+};
+
+export type ProductMediaHeroGrant = ProductMediaHeroContext & {
+  grantId: string;
+  preflightReceiptId: string;
+  issuedAt: string;
+  expiresAt: string;
+  consumedAt: string | null;
+  status: "ACTIVE" | "CONSUMED";
+};
+
 export type ProductMediaReadiness = {
   contractVersion: typeof GLW_PRODUCT_MEDIA_AUTHORITY_VERSION;
   state: "REFERENCE_COMPOSITION_MEDIA_READY" | "PRODUCT_MEDIA_AUTHORITY_REQUIRED";
@@ -118,9 +153,9 @@ export type ProductMediaReadiness = {
   blockers: readonly string[];
 };
 
-type State = { records: ProductMediaAuthorityRecord[]; legacyReconciliationAudits?: ProductMediaLegacyReconciliationAudit[]; scopeCorrectionAudits?: ProductMediaScopeCorrectionAudit[] };
+type State = { records: ProductMediaAuthorityRecord[]; legacyReconciliationAudits?: ProductMediaLegacyReconciliationAudit[]; scopeCorrectionAudits?: ProductMediaScopeCorrectionAudit[]; heroPreflightReceipts?: ProductMediaHeroPreflightReceipt[]; heroGrants?: ProductMediaHeroGrant[] };
 const NAMESPACE = "glw-product-media-authority-v1";
-const seed = (): State => ({ records: [], legacyReconciliationAudits: [], scopeCorrectionAudits: [] });
+const seed = (): State => ({ records: [], legacyReconciliationAudits: [], scopeCorrectionAudits: [], heroPreflightReceipts: [], heroGrants: [] });
 
 function required(value: string, code: string): string {
   const normalized = value.trim();
@@ -140,6 +175,9 @@ function normalizedRecord(record: ProductMediaAuthorityRecord): ProductMediaAuth
     proposedUsageScopes: [...(record.proposedUsageScopes ?? record.usageScopes)],
     approvedUsageScopes: [...(record.approvedUsageScopes ?? (ownerApproval === "APPROVED" ? record.usageScopes : []))],
     localAtmosphereStateCodes: [...(record.localAtmosphereStateCodes ?? [])],
+    heroSelected: record.heroSelected ?? record.heroEligible ?? false,
+    heroSelectedBy: record.heroSelectedBy ?? (record.heroEligible ? record.ownerPrincipalId : null),
+    heroSelectedAt: record.heroSelectedAt ?? (record.heroEligible ? record.ownerApprovalTimestamp : null),
     approvalLifecycleVersion: record.approvalLifecycleVersion ?? null,
   };
 }
@@ -216,6 +254,9 @@ export async function intakeProductMedia(input: {
     localAtmosphereUseAllowed: false,
     localAtmosphereStateCodes: [],
     heroEligible: false,
+    heroSelected: false,
+    heroSelectedBy: null,
+    heroSelectedAt: null,
     altTextAuthority: input.altTextAuthority.trim(),
     captionAuthority: input.captionAuthority.trim(),
     approvalLifecycleVersion: null,
@@ -287,13 +328,111 @@ export function reviewProductMedia(input: {
   record.applicationUseAllowed = approved && scopes.includes("APPLICATION_EXPERIENCE");
   record.localAtmosphereUseAllowed = approved && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && localAtmosphereStateCodes.length > 0;
   record.localAtmosphereStateCodes = record.localAtmosphereUseAllowed ? localAtmosphereStateCodes : [];
-  record.heroEligible = approved && input.heroEligible && record.productRepresentationAllowed;
+  record.heroEligible = false;
+  record.heroSelected = false;
+  record.heroSelectedBy = null;
+  record.heroSelectedAt = null;
   record.altTextAuthority = input.altTextAuthority.trim();
   record.captionAuthority = input.captionAuthority.trim();
   record.approvalLifecycleVersion = approved ? EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION : null;
   record.updatedAt = record.ownerApprovalTimestamp;
   savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
   return deepClone(record);
+}
+
+export function isProductMediaHeroSelectable(record: ProductMediaAuthorityRecord): boolean {
+  const scopes = record.approvedUsageScopes ?? record.usageScopes;
+  return record.ownerApproval === "APPROVED"
+    && record.authorityClass === "PRODUCT_AUTHORITY"
+    && scopes.includes("PRODUCT_AUTHORITY")
+    && record.depictsActualProduct
+    && record.productRepresentationAllowed;
+}
+
+function heroContext(input: {
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  mediaAuthorityId: string;
+  hash: string;
+  exactRuntime: string;
+  principalId: string;
+  principalSessionId: string;
+  replacementConfirmed: boolean;
+}, state: State): ProductMediaHeroContext {
+  assertOutdoorScope(input);
+  required(input.principalId, "PRODUCT_MEDIA_HERO_PRINCIPAL_REQUIRED");
+  required(input.principalSessionId, "PRODUCT_MEDIA_HERO_SESSION_REQUIRED");
+  if (!/^[0-9a-f]{40}$/.test(input.exactRuntime)) throw new Error("PRODUCT_MEDIA_HERO_RUNTIME_INVALID");
+  if (!/^[0-9a-f]{64}$/.test(input.hash)) throw new Error("PRODUCT_MEDIA_HERO_HASH_INVALID");
+  const record = state.records.find((candidate) => candidate.mediaAuthorityId === input.mediaAuthorityId && candidate.hash === input.hash
+    && candidate.organizationId === input.organizationId && candidate.siteId === input.siteId && candidate.productId === input.productId);
+  if (!record) throw new Error("PRODUCT_MEDIA_HERO_TARGET_NOT_FOUND");
+  if (!isProductMediaHeroSelectable(normalizedRecord(record))) throw new Error("PRODUCT_MEDIA_HERO_TARGET_NOT_SELECTABLE");
+  const currentHero = state.records.find((candidate) => candidate.organizationId === input.organizationId && candidate.siteId === input.siteId
+    && candidate.productId === input.productId && (candidate.heroSelected ?? candidate.heroEligible)) ?? null;
+  if (currentHero && currentHero.mediaAuthorityId !== record.mediaAuthorityId && !input.replacementConfirmed) throw new Error("PRODUCT_MEDIA_HERO_REPLACEMENT_CONFIRMATION_REQUIRED");
+  return { ...input, expectedCurrentHeroId: currentHero?.mediaAuthorityId ?? null };
+}
+
+function heroContextMatches(left: ProductMediaHeroContext, right: ProductMediaHeroContext): boolean {
+  return left.principalId === right.principalId && left.principalSessionId === right.principalSessionId
+    && left.organizationId === right.organizationId && left.siteId === right.siteId && left.productId === right.productId
+    && left.mediaAuthorityId === right.mediaAuthorityId && left.hash === right.hash && left.exactRuntime === right.exactRuntime
+    && left.expectedCurrentHeroId === right.expectedCurrentHeroId && left.replacementConfirmed === right.replacementConfirmed;
+}
+
+export function issueProductMediaHeroPreflight(input: Parameters<typeof heroContext>[0] & { now?: Date }): ProductMediaHeroPreflightReceipt {
+  const loaded = load();
+  const now = input.now ?? new Date();
+  const context = heroContext(input, loaded.state);
+  const receipt: ProductMediaHeroPreflightReceipt = { ...context, receiptId: `product-media-hero-preflight-${randomUUID()}`, issuedAt: now.toISOString(), expiresAt: new Date(now.getTime() + PRODUCT_MEDIA_HERO_PREFLIGHT_LIFETIME_SECONDS * 1000).toISOString(), authorizedGrantId: null };
+  (loaded.state.heroPreflightReceipts ??= []).push(receipt);
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  return deepClone(receipt);
+}
+
+export function issueProductMediaHeroGrant(input: Parameters<typeof heroContext>[0] & { preflightReceiptId: string; now?: Date }): ProductMediaHeroGrant {
+  const loaded = load();
+  const now = input.now ?? new Date();
+  const context = heroContext(input, loaded.state);
+  const receipt = (loaded.state.heroPreflightReceipts ?? []).find((candidate) => candidate.receiptId === input.preflightReceiptId);
+  if (!receipt) throw new Error("PRODUCT_MEDIA_HERO_PREFLIGHT_NOT_FOUND");
+  if (receipt.authorizedGrantId) throw new Error("PRODUCT_MEDIA_HERO_PREFLIGHT_ALREADY_AUTHORIZED");
+  if (new Date(receipt.expiresAt) <= now) throw new Error("PRODUCT_MEDIA_HERO_PREFLIGHT_EXPIRED");
+  if (!heroContextMatches(receipt, context)) throw new Error("PRODUCT_MEDIA_HERO_PREFLIGHT_CONTEXT_MISMATCH");
+  const grant: ProductMediaHeroGrant = { ...context, grantId: `product-media-hero-grant-${randomUUID()}`, preflightReceiptId: receipt.receiptId, issuedAt: now.toISOString(), expiresAt: new Date(now.getTime() + PRODUCT_MEDIA_HERO_GRANT_LIFETIME_SECONDS * 1000).toISOString(), consumedAt: null, status: "ACTIVE" };
+  receipt.authorizedGrantId = grant.grantId;
+  (loaded.state.heroGrants ??= []).push(grant);
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  return deepClone(grant);
+}
+
+export function selectProductMediaHero(input: Parameters<typeof heroContext>[0] & { preflightReceiptId: string; grantId: string; now?: Date }): { record: ProductMediaAuthorityRecord; previousHeroId: string | null; readiness: ProductMediaReadiness } {
+  const loaded = load();
+  const now = input.now ?? new Date();
+  const context = heroContext(input, loaded.state);
+  const grant = (loaded.state.heroGrants ?? []).find((candidate) => candidate.grantId === input.grantId);
+  if (!grant) throw new Error("PRODUCT_MEDIA_HERO_GRANT_NOT_FOUND");
+  if (grant.preflightReceiptId !== input.preflightReceiptId) throw new Error("PRODUCT_MEDIA_HERO_PREFLIGHT_GRANT_MISMATCH");
+  if (grant.status === "CONSUMED") throw new Error("PRODUCT_MEDIA_HERO_GRANT_CONSUMED");
+  if (new Date(grant.expiresAt) <= now) throw new Error("PRODUCT_MEDIA_HERO_GRANT_EXPIRED");
+  if (!heroContextMatches(grant, context)) throw new Error("PRODUCT_MEDIA_HERO_GRANT_CONTEXT_MISMATCH");
+  const selected = loaded.state.records.find((record) => record.mediaAuthorityId === input.mediaAuthorityId && record.hash === input.hash)!;
+  const previousHero = loaded.state.records.find((record) => record.organizationId === input.organizationId && record.siteId === input.siteId && record.productId === input.productId && (record.heroSelected ?? record.heroEligible)) ?? null;
+  for (const record of loaded.state.records.filter((candidate) => candidate.organizationId === input.organizationId && candidate.siteId === input.siteId && candidate.productId === input.productId)) {
+    const isSelected = record.mediaAuthorityId === selected.mediaAuthorityId;
+    record.heroEligible = isSelected;
+    record.heroSelected = isSelected;
+    record.heroSelectedBy = isSelected ? input.principalId : null;
+    record.heroSelectedAt = isSelected ? now.toISOString() : null;
+    if (isSelected || record.mediaAuthorityId === previousHero?.mediaAuthorityId) record.updatedAt = now.toISOString();
+  }
+  grant.status = "CONSUMED";
+  grant.consumedAt = now.toISOString();
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  const records = loaded.state.records.filter((record) => record.organizationId === input.organizationId && record.siteId === input.siteId && record.productId === input.productId).map(normalizedRecord);
+  return { record: deepClone(normalizedRecord(selected)), previousHeroId: previousHero?.mediaAuthorityId ?? null, readiness: evaluateProductMediaReadiness(records) };
 }
 
 export function correctApprovedProductMediaUsageScope(input: {
@@ -451,7 +590,7 @@ export function evaluateProductMediaReadiness(records: readonly ProductMediaAuth
   const targetStateCode = target?.stateCode?.trim().toUpperCase() || null;
   const local = approved.filter((record) => approvedScopes(record).includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && record.localAtmosphereUseAllowed
     && (targetStateCode ? (record.localAtmosphereStateCodes ?? []).includes(targetStateCode) : (record.localAtmosphereStateCodes ?? []).length > 0));
-  const hero = product.find((record) => record.heroEligible) ?? null;
+  const hero = product.find((record) => record.heroSelected && record.heroEligible) ?? null;
   const supporting = approved.find((record) => record.mediaAuthorityId !== hero?.mediaAuthorityId
     && (record.productRepresentationAllowed || record.contextualUseAllowed)) ?? null;
   const mediaProvenanceReady = approved.length > 0 && approved.every((record) => Boolean(record.provenance.trim()) && /^[0-9a-f]{64}$/.test(record.hash));
