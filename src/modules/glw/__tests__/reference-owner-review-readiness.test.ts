@@ -41,6 +41,13 @@ describe("GLW reference owner-review readiness", () => {
     expect(result.composition).toMatchObject({ PRODUCT_IDENTITY: true, LOCALIZED_INTRODUCTION: true });
   });
 
+    test("accepts a kicker before the localized introduction and a plan heading", () => {
+      const html = '<h1>Outdoor Digital Sphere in Alabama</h1><p>Creative outdoor display concepts</p><p>For projects throughout Alabama, start with the setting and intended experience.</p><h2>Plan your project</h2><p>Document the location and audience.</p><a href="/outdoor-digital-sphere/">Outdoor Digital Sphere</a>';
+      const result = evaluateGlwReferenceOwnerReviewReadiness({ artifact: { ...artifact(html), title: "Outdoor Digital Sphere in Alabama" }, target: { ...target, stateName: "Alabama" }, media: noMedia, actualHostVisualCertified: false });
+
+      expect(result.composition).toMatchObject({ LOCALIZED_INTRODUCTION: true, PLANNING_BUYER_GUIDANCE: true });
+    });
+
   test("blocks reference approval and surfaces owner remediation without hiding the draft", () => {
     const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8");
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8");

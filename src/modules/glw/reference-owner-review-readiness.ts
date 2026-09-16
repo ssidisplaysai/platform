@@ -100,14 +100,15 @@ export function evaluateGlwReferenceOwnerReviewReadiness(input: {
   const failures = qualityFailures($);
   const richMediaCount = $("img,figure,video,picture").length;
   const headings = $("h2,h3").map((_, element) => normalize($(element).text())).get().join(" | ");
-  const hasRole = (role: string) => $(`[data-composition-role="${role}"]`).length > 0;
+    const introductoryText = $("h1").first().nextUntil("h2,h3").filter("p").map((_, element) => normalize($(element).text())).get().join(" ");
+    const hasRole = (role: string) => $(`[data-composition-role="${role}"]`).length > 0;
   const composition = {
     VISUAL_HERO: hasRole("hero") && $("[data-composition-role=hero] img,[data-composition-role=hero] picture,[data-composition-role=hero] video").length > 0,
     PRODUCT_IDENTITY: new RegExp(escapedPattern(input.target.productName), "i").test($("h1").first().text()) && input.artifact.contentHtml.includes(input.target.productCanonicalPath),
     PRODUCT_AUTHORITY_MEDIA: input.media.productAuthorityMediaCount > 0 && input.media.featuredMediaId !== null,
-    LOCALIZED_INTRODUCTION: new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test($("h1").first().text()) && new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test($("p").first().text()),
+      LOCALIZED_INTRODUCTION: new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test($("h1").first().text()) && new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test(introductoryText),
     APPLICATIONS: /applications|potential concepts|uses/i.test(headings),
-    PLANNING_BUYER_GUIDANCE: /planning|what to ask|buyer/i.test(headings),
+      PLANNING_BUYER_GUIDANCE: /\bplan(?:ning)?\b|what to ask|buyer/i.test(headings),
     VISUAL_APPLICATION_SECTION: (input.media.contextualMediaCount + input.media.applicationMediaCount + input.media.localContextualMediaCount) > 0 && hasRole("visual-application"),
     AUTHORIZED_COMPARISON_OR_EVALUATION: $("table").length === 0 || unsupported.every((finding) => !tableCellTexts.has(normalize(finding.claimText))),
     CTA: /contact|request|discuss|consult/i.test(allText),
