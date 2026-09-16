@@ -7,6 +7,7 @@ import { inspectSiteWordPressReadAuthority } from "@/modules/foundation/wordpres
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { buildGlwExactRetryContract, generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority, type GlwReferenceGenerationAuthorityBinding } from "@/modules/glw/reference-generation-authority";
 import { evaluateGlwReferenceOwnerReviewReadiness } from "@/modules/glw/reference-owner-review-readiness";
+import { resolveGlwRichReferenceReadiness } from "@/modules/glw/rich-reference-composition-resolver";
 import { getGlwReferenceStateSelection, saveGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
 import { consumeGlwReferenceOwnerGrant, GlwReferenceOwnerAuthorityError, type GlwReferenceOwnerOperationType } from "@/modules/glw/reference-owner-authority";
@@ -273,6 +274,7 @@ export async function GET(request: NextRequest, context: Context) {
       workflow,
       relatedReference,
       ownerReviewReadiness: ownerReviewReadiness(legacyJob, Boolean(productRecord.media.primaryImageReference)),
+      richCompositionReadiness: legacyJob ? resolveGlwRichReferenceReadiness({ campaign, job: legacyJob, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) }) : null,
       durableOperation,
       mcpConfiguration,
       failedDispatchRecovery: job?.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
@@ -313,6 +315,7 @@ export async function GET(request: NextRequest, context: Context) {
         workflow: projectGlwReferenceWorkflow(job),
         relatedReference: null,
         ownerReviewReadiness: ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference)),
+        richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) }),
         durableOperation,
         mcpConfiguration,
         failedDispatchRecovery: false,
@@ -339,6 +342,7 @@ export async function GET(request: NextRequest, context: Context) {
     workflow: projectGlwReferenceWorkflow(job),
     relatedReference: null,
     ownerReviewReadiness: ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference)),
+    richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) }),
     durableOperation,
     mcpConfiguration,
     failedDispatchRecovery: job.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
@@ -439,9 +443,10 @@ export async function PATCH(request: NextRequest, context: Context) {
     );
   }
   const reviewReadiness = ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference));
-  if (!reviewReadiness?.ready) {
+  const richCompositionReadiness = resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) });
+  if (!reviewReadiness?.ready || !richCompositionReadiness?.ready) {
     return NextResponse.json(
-      { error: "Owner-reviewed reference composition requires remediation before approval.", code: "REFERENCE_OWNER_REVIEW_REMEDIATION_REQUIRED", ownerReviewReadiness: reviewReadiness },
+      { error: "Owner-reviewed reference composition requires remediation before approval.", code: "REFERENCE_OWNER_REVIEW_REMEDIATION_REQUIRED", ownerReviewReadiness: reviewReadiness, richCompositionReadiness },
       { status: 409 },
     );
   }

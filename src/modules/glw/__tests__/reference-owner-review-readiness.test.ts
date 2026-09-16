@@ -39,8 +39,10 @@ describe("GLW reference owner-review readiness", () => {
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8");
     expect(route).toContain("REFERENCE_OWNER_REVIEW_REMEDIATION_REQUIRED");
     expect(route).toContain("ownerReviewReadiness(job");
+    expect(route).toContain("resolveGlwRichReferenceReadiness({ campaign, job");
+    expect(route).toContain("!richCompositionReadiness?.ready");
     expect(ui).toContain("Owner Review Remediation Required");
-    expect(ui).toContain("ownerReviewReadiness?.ready && jobId");
+    expect(ui).toContain("ownerReviewReadiness?.ready && richCompositionReadiness?.ready && jobId");
     expect(ui).toContain("Edit WordPress Draft");
   });
 });

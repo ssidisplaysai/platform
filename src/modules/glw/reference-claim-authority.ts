@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
 import { isGlwPlanningOrConfirmationGuidance } from "./reference-claim-disposition";
 
-export const GLW_REFERENCE_QA_POLICY_VERSION = "GLW_REFERENCE_CLAIM_AUTHORITY_V1_1";
+export const GLW_REFERENCE_QA_POLICY_VERSION = "GLW_REFERENCE_CLAIM_AUTHORITY_V1_2";
 
 export const GLW_REFERENCE_CLAIM_CLASSES = [
   "LOCATION_FACT", "MARKET_ADOPTION", "CLIMATE", "PRODUCT_CAPABILITY",
