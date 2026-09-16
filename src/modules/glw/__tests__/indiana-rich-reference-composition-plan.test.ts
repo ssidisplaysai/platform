@@ -61,6 +61,8 @@ describe("Indiana rich reference composition plan", () => {
     expect(rendered).toContain("data-genesis-primary-content");
     expect(rendered.match(/<h1\b/g)).toHaveLength(1);
     const wordpressContent = renderIndianaRichReferenceWordPressContent(candidate);
+    expect(wordpressContent.match(/data:image\/jpeg;base64,/g)).toHaveLength(2);
+    expect(wordpressContent.match(/data:image\/gif;base64,/g)).toHaveLength(3);
     const storedQa = evaluateIndianaStoredDraft({ candidateId: candidate.candidateId, candidateSha: candidate.candidateSha, html: wordpressContent });
     expect(storedQa).toMatchObject({ storedCandidateIdentityVerified: true, h1Count: 1, productAuthorityLinkPresent: true, brokenMediaReferences: 0, devLinks: 0, localhostLinks: 0, previewLinks: 0, unsupportedFactualClaims: 0, unsupportedProductCapabilityClaims: 0, unsupportedClimateOrLocationFacts: 0, unexpectedStateContamination: 0, buyerQuestionPremiseRule: "PASS", comparisonAuthorityRule: "PASS", canonicalizationCopyQualityRule: "PASS", longFormArticleAppearance: false, richCommercialComposition: true });
     expect(Object.values(storedQa.sections).every(Boolean)).toBe(true);

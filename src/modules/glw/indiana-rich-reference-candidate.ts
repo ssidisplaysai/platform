@@ -110,7 +110,14 @@ export function renderIndianaRichReferenceCandidate(candidate: IndianaRichRefere
 }
 
 export function renderIndianaRichReferenceWordPressContent(candidate: IndianaRichReferenceCandidate): string {
-  const $ = load(renderIndianaRichReferenceCandidate(candidate, candidateMediaDataUrls(candidate)));
+  const media = candidateMediaDataUrls(candidate);
+  const $ = load(renderIndianaRichReferenceCandidate(candidate, media));
+  const uniqueMedia = [...new Map(media.map((item) => [item.mediaId, item])).values()];
+  const variables = uniqueMedia.map((item, index) => `--genesis-media-${index}:url("${item.dataUrl}")`).join(";");
+  for (const [index, item] of uniqueMedia.entries()) {
+    $(`img[data-media-id="${item.mediaId}"]`).attr("src", "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==").attr("style", `background-image:var(--genesis-media-${index});background-size:cover;background-position:center`);
+  }
+  $("style").first().prepend(`:root{${variables}}`);
   const style = $("style").first().toString();
   $("header,footer").remove();
   $("main").attr("data-candidate-id", candidate.candidateId).attr("data-candidate-sha", candidate.candidateSha);
