@@ -10,6 +10,7 @@ import {
   assertActualPublicHostCertification,
   assertExactPublicationPreflight,
   executeAuthorizedExactWordPressOperation,
+  extractExactPublicRichPageClaimContent,
   issueVerifiedExactOperationGrant,
   issueVerifiedExactOperationPreflight,
   storedPostContentSha,
@@ -80,6 +81,13 @@ describe("shared exact publication and rollback service", () => {
   test("requires a new exact public-host certification with complete geometry and safety evidence", () => {
     expect(() => assertActualPublicHostCertification({ context, evidence: publicEvidence() })).not.toThrow();
     expect(() => assertActualPublicHostCertification({ context, evidence: { ...publicEvidence(), certification: certification({ id: context.visualCertificationId, status: "publish", targetId: context.targetId }) } })).toThrow("EXACT_PUBLIC_HOST_CERTIFICATION_FAILED");
+  });
+
+  test("scopes factual regression checks to the approved rich-page root", () => {
+    const html = '<nav>Interactive LED Floors</nav><main><div class="saw-page"><h1>Outdoor Digital Sphere in Indiana</h1><p>Plan content around your audience.</p></div></main>';
+    expect(extractExactPublicRichPageClaimContent(html)).toContain("Plan content around your audience.");
+    expect(extractExactPublicRichPageClaimContent(html)).not.toContain("Interactive LED Floors");
+    expect(() => extractExactPublicRichPageClaimContent("<main>No rich page</main>")).toThrow("EXACT_PUBLIC_HOST_RICH_PAGE_ROOT_MISMATCH");
   });
 
   test("performs an exact separately authorized publish-to-draft rollback with readback", async () => {

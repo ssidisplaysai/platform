@@ -64,6 +64,13 @@ export function storedPostContentSha(rawPostContent: string): string {
   return createHash("sha256").update(rawPostContent.trim()).digest("hex");
 }
 
+export function extractExactPublicRichPageClaimContent(html: string): string {
+  const $ = load(html);
+  const roots = $(".saw-page");
+  if (roots.length !== 1) throw new Error("EXACT_PUBLIC_HOST_RICH_PAGE_ROOT_MISMATCH");
+  return roots.first().html() ?? "";
+}
+
 export async function verifyExactPublicCanonical(input: { context: ExactPublicationRollbackContext; site: SiteConfiguration; fetcher?: typeof fetch }) {
   const expectedUrl = new URL(input.context.canonicalPath, input.site.canonicalUrl).toString();
   const response = await (input.fetcher ?? fetch)(expectedUrl, { redirect: "follow", cache: "no-store", headers: { "Cache-Control": "no-cache, no-store, max-age=0", Pragma: "no-cache" }, signal: AbortSignal.timeout(30_000) });
@@ -82,9 +89,10 @@ export async function certifyExactPublicRichReference(input: { context: ExactPub
   const h1 = $("h1").map((_, element) => $(element).text().replace(/\s+/g, " ").trim()).get();
   const links = $("a[href]").map((_, element) => $(element).attr("href") ?? "").get();
   const publicText = $("main").text().replace(/\s+/g, " ").trim();
+  const richPageContent = extractExactPublicRichPageClaimContent(html);
   const copy = evaluateCustomerFacingCopyQuality(publicText);
   const contamination = evaluateGlwStateLocalizationContamination({ contentHtml: html, expectedStateCode: input.context.stateCode });
-  const artifact = { title: input.context.expectedH1, contentHtml: html, slug: input.context.canonicalPath, excerpt: null, seoTitle: $("title").text().trim() || null, metaDescription: $("meta[name=description]").attr("content")?.trim() ?? null, focusKeyphrase: null };
+  const artifact = { title: input.context.expectedH1, contentHtml: richPageContent, slug: input.context.canonicalPath, excerpt: null, seoTitle: $("title").text().trim() || null, metaDescription: $("meta[name=description]").attr("content")?.trim() ?? null, focusKeyphrase: null };
   const claims = evaluateGlwReferenceClaimAuthority({ artifact, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
   const mediaAssignments = $("img[src][data-media-role]").map((index, element) => {
     const role = $(element).attr("data-media-role") as "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE";
