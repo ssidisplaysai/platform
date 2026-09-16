@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { authorizeRequest, forwardOperatorMutationContext, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import {
@@ -7,6 +7,7 @@ import {
   markGlwCampaignTargetDraftReady,
   markGlwCampaignTargetFailed,
   markGlwFailedCampaignTargetDraftReady,
+  reconcileGlwCampaignTargetContentReady,
   releaseExpiredGlwCampaignTargetLeases,
   requeueGlwCampaignTargetAfterPreExecutionFailure,
 } from "@/modules/glw/campaign-target-repository";
@@ -17,16 +18,16 @@ import {
   buildGlwCampaignProductionGenerationForm,
 } from "@/modules/glw/campaign-production-generation";
 
-function platformHeaders(
+function internalHeaders(
+  request: NextRequest,
   organizationId: string,
   siteId: string,
-): HeadersInit {
-  return {
+): Headers {
+  return forwardOperatorMutationContext(request, {
     "content-type": "application/json",
-    "x-gcp-roles": "platform_admin",
     "x-gcp-organization-id": organizationId,
     "x-gcp-site-id": siteId,
-  };
+  });
 }
 
 function targetIdentity(target: {
@@ -129,7 +130,8 @@ export async function POST(
         refreshUrl,
         {
           method: "GET",
-          headers: platformHeaders(
+          headers: internalHeaders(
+            request,
             target.organizationId,
             target.siteId,
           ),
@@ -160,6 +162,27 @@ export async function POST(
           job,
         );
 
+      if (decision.action === "continue" && job.status === "CONTENT_READY" && job.externalExecutionId) {
+        const updated = reconcileGlwCampaignTargetContentReady({
+          campaignId,
+          targetId: target.targetId,
+          stateCode: target.stateCode,
+          citySlug: target.citySlug,
+          jobId,
+          leaseId: target.leaseId ?? "",
+          externalExecutionId: job.externalExecutionId,
+        });
+        results.push({
+          ...targetIdentity(target),
+          jobId,
+          action: "content_ready",
+          targetStatus: updated.target.status,
+          attemptCount: updated.target.attemptCount,
+          leaseHistory: updated.leaseHistory,
+        });
+        continue;
+      }
+
       if (decision.action === "continue") {
         const { form } =
           buildGlwCampaignProductionGenerationForm({
@@ -181,7 +204,8 @@ export async function POST(
           ),
           {
             method: "POST",
-            headers: platformHeaders(
+            headers: internalHeaders(
+              request,
               target.organizationId,
               target.siteId,
             ),
