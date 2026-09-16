@@ -69,7 +69,8 @@ async function exactContext(principal: GlwTrustedOperatorPrincipal, runtimeSha: 
   const context: AuthorityContext = { principalId: principal.principalId, principalSessionId: principal.sessionId, candidateId: candidate.candidateId, candidateSha: candidate.candidateSha, certificationId: CERTIFICATION_ID, wordpressObjectId: WORDPRESS_OBJECT_ID, productId: candidate.productId, stateCode: "IN", canonicalPath: "/outdoor-digital-sphere/indiana/", runtimeSha, beforeContentSha: before.contentSha, beforeModified: before.modified, wordpressIdentityFingerprint: hash(JSON.stringify({ objectId: before.objectId, status: before.status, slug: before.slug, parent: before.parent, title: before.title, modified: before.modified, contentSha: before.contentSha })) };
   return { candidate, before, context };
 }
-function match(left: AuthorityContext, right: AuthorityContext) { return JSON.stringify(left) === JSON.stringify(right); }
+const AUTHORITY_FIELDS: ReadonlyArray<keyof AuthorityContext> = ["principalId", "principalSessionId", "candidateId", "candidateSha", "certificationId", "wordpressObjectId", "productId", "stateCode", "canonicalPath", "runtimeSha", "beforeContentSha", "beforeModified", "wordpressIdentityFingerprint"];
+function match(left: AuthorityContext, right: AuthorityContext) { return AUTHORITY_FIELDS.every((fieldName) => left[fieldName] === right[fieldName]); }
 
 export async function createIndianaPersistencePreflight(input: { principal: GlwTrustedOperatorPrincipal; runtimeSha: string; now?: Date }) {
   const resolved = await exactContext(input.principal, input.runtimeSha); const now = input.now ?? new Date(); const loaded = load();
