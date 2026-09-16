@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { load } from "cheerio";
 import { deepClone, loadPersistedState, savePersistedState } from "@/modules/foundation/foundation-persistence";
 import type { RenderedVisualCertification } from "@/modules/foundation/rendered-visual-certification";
+import { resolveSharedRichPageProductionProfile } from "@/modules/foundation/shared-rich-page-production-authority";
 import { getProductMediaAuthorityContent, type ProductMediaAuthorityRecord } from "./product-media-authority";
 import { createIndianaRichReferenceCompositionPlan, type IndianaRichReferenceCompositionPlan } from "./indiana-rich-reference-composition-plan";
 
@@ -33,6 +34,9 @@ export type IndianaRichReferenceCandidate = {
 
 type State = { candidates: IndianaRichReferenceCandidate[] };
 const seed = (): State => ({ candidates: [] });
+const INDIANA_RICH_PAGE_PROFILE = resolveSharedRichPageProductionProfile({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", productId: "prod-outdoor-digital-sphere", pageType: "LOCATION_SERVICE" });
+if (!INDIANA_RICH_PAGE_PROFILE) throw new Error("INDIANA_SHARED_RICH_PAGE_PROFILE_REQUIRED");
+if (INDIANA_RICH_PAGE_PROFILE.layout.primaryWidth !== 1280 || INDIANA_RICH_PAGE_PROFILE.layout.mobileBreakpoint !== 782) throw new Error("INDIANA_SHARED_RICH_PAGE_PROFILE_MISMATCH");
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -99,6 +103,7 @@ export function candidateMediaDataUrls(candidate: IndianaRichReferenceCandidate)
   });
 }
 
+/* Legacy pre-remediation renderer retained only for source-history comparison.
 function renderLegacyIndianaRichReferenceCandidate(candidate: IndianaRichReferenceCandidate, media: ReturnType<typeof candidateMediaDataUrls>): string {
   const $ = load(candidate.artifact.contentHtml, null, false);
   for (const item of media) {
@@ -106,8 +111,10 @@ function renderLegacyIndianaRichReferenceCandidate(candidate: IndianaRichReferen
     $(`img[src="${assignment.asset.type === "APPROVED_EXISTING" ? assignment.asset.url : ""}"]`).attr("src", item.dataUrl).attr("data-media-role", item.semanticRole).attr("data-media-id", item.mediaId);
   }
   const css = `:root{color-scheme:dark;--ink:#f7f4ed;--muted:#b8b5ad;--line:#333630;--panel:#171916;--accent:#e84b36;--lime:#b8d66b}*{box-sizing:border-box}html,body{margin:0;background:#0d0f0d;color:var(--ink);font-family:"Trebuchet MS",sans-serif}body{overflow-x:hidden}header{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,5vw,76px);border-bottom:1px solid var(--line);background:#11130f}header strong{font-family:Georgia,serif;font-size:22px}header a{color:var(--ink);text-decoration:none;font-size:14px}.saw-page{width:100%;overflow:hidden}.saw-page section{padding:clamp(56px,7vw,104px) clamp(20px,7vw,100px);border-bottom:1px solid var(--line)}.saw-page h1,.saw-page h2{font-family:Georgia,serif;letter-spacing:0;margin:0}.saw-page h1{font-size:clamp(40px,6vw,84px);line-height:1.02;max-width:850px}.saw-page h2{font-size:clamp(28px,4vw,48px);line-height:1.08}.saw-page p,.saw-page li{font-size:17px;line-height:1.7;color:var(--muted);max-width:760px}.saw-hero{position:relative;min-height:min(78vh,780px);display:flex;align-items:flex-end;isolation:isolate}.saw-hero>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}.saw-hero:after{content:"";position:absolute;inset:0;background:rgba(5,8,6,.72);z-index:-1}.saw-hero-copy{max-width:920px}.saw-kicker{text-transform:uppercase;font-weight:800;color:var(--lime)!important;font-size:13px!important}.saw-copy{font-size:clamp(17px,2vw,22px)!important}.saw-actions{display:flex;gap:12px;flex-wrap:wrap}.saw-button{display:inline-flex;min-height:46px;align-items:center;padding:0 20px;background:var(--accent);color:white!important;text-decoration:none;font-weight:800}.saw-button.alt{background:transparent;border:1px solid #d9ddd5}.saw-note{font-size:13px!important}.saw-product,.saw-split{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(320px,1.1fr);gap:clamp(32px,6vw,88px);align-items:center}.saw-product>h2{grid-column:1/-1}.saw-product>img,.saw-split>img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid var(--line)}.saw-product-copy,.saw-split-copy{min-width:0}.saw-page ul{max-width:850px;padding-left:22px}.saw-page li+li{margin-top:12px}.saw-page section:nth-child(odd):not(.saw-hero){background:#131512}.saw-cta{background:var(--accent)!important}.saw-cta p,.saw-cta .saw-kicker{color:white!important}.saw-cta a{color:white;font-weight:800}footer{padding:32px clamp(20px,7vw,100px);color:#898d84;font-size:13px}@media(max-width:720px){header{height:60px;padding:0 18px}.saw-page section{padding:48px 20px}.saw-hero{min-height:680px}.saw-page h1{font-size:42px}.saw-product,.saw-split{grid-template-columns:1fr;gap:24px}.saw-product>h2{grid-column:auto}.saw-page p,.saw-page li{font-size:16px}.saw-actions{display:grid}.saw-button{justify-content:center;width:100%}}`;
+    const css = `:root{color-scheme:light;--saw-ink:#17201d;--saw-muted:#59625d;--saw-line:#dce1dc;--saw-paper:#f7f8f5;--saw-dark:#111816;--saw-accent:#d8402f}*{box-sizing:border-box}.saw-page{width:100%;max-width:none!important;margin:0!important;overflow:clip;background:#fff;color:var(--saw-ink);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}.saw-page section{position:relative;margin:0!important}.saw-wrap{width:min(${INDIANA_RICH_PAGE_PROFILE.layout.primaryWidth}px,calc(100% - 48px));margin:0 auto}
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${candidate.artifact.seoTitle}</title><style>${css}</style></head><body><header><strong>LED Display Warehouse</strong><a href="/outdoor-digital-sphere/">Outdoor Digital Sphere</a></header>${$.html()}<footer>Candidate ${candidate.candidateId} · Local review only · Not published</footer></body></html>`;
 }
+*/
 
 export function renderIndianaRichReferenceCandidate(candidate: IndianaRichReferenceCandidate, media: ReturnType<typeof candidateMediaDataUrls>): string {
   const hero = media.find((item) => item.mediaId === candidate.heroMediaId);

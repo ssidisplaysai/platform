@@ -1,8 +1,11 @@
 import { createHash } from "node:crypto";
 import type { SiteGeneratedPageRevision, SiteNavigationItem } from "./site-page-generation";
+import { resolveSharedRichPageProductionProfile } from "./shared-rich-page-production-authority";
 
 export const COMMERCIAL_STAINLESS_COMPOSITION_VERSION = "commercial-stainless-composition-v2" as const;
-export const COMMERCIAL_STAINLESS_PRIMARY_WIDTH = 1240;
+const COMMERCIAL_STAINLESS_PROFILE = resolveSharedRichPageProductionProfile({ organizationId: "rj-metal", siteId: "site-rj-metal-commercial-stainless-counters", productId: null, pageType: "HOME" });
+if (!COMMERCIAL_STAINLESS_PROFILE) throw new Error("COMMERCIAL_STAINLESS_SHARED_PROFILE_REQUIRED");
+export const COMMERCIAL_STAINLESS_PRIMARY_WIDTH = COMMERCIAL_STAINLESS_PROFILE.layout.primaryWidth;
 
 const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 const paragraph = (value: string) => `<p>${escapeHtml(value)}</p>`;
