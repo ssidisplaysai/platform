@@ -68,6 +68,31 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.canonicalizedArtifact?.contentHtml).toContain("What viewing directions and distances");
   });
 
+  test("replaces structurally identified comparisons without preserving relative claims", () => {
+    const comparison = "Feature Curved Display Flat Display Form Factor Curved surface Flat surface Viewing Directions Multiple directions Front-facing Audience Engagement 360-degree audience engagement Standard engagement .";
+    const engagement = "360-degree audience engagement";
+    const result = canonicalize(`<h2>Product Comparison</h2><table><tr><th>Feature</th><th>Curved Display</th><th>Flat Display</th></tr><tr><td>Form Factor</td><td>Curved surface</td><td>Flat surface</td></tr><tr><td>Viewing Directions</td><td>Multiple directions</td><td>Front-facing</td></tr><tr><td>Audience Engagement</td><td>${engagement}</td><td>Standard engagement</td></tr></table>`, [finding("PRODUCT_SPECIFICATION", comparison), finding("PRODUCT_SPECIFICATION", engagement)]);
+
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ruleId: "UNSUPPORTED_STRUCTURED_COMPARISON_TO_BUYER_EVALUATION_FRAMEWORK" }),
+      expect.objectContaining({ ruleId: "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM" }),
+    ]));
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("Greater engagement");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Buyer evaluation framework");
+  });
+
+  test("converts unsupported durability meaning to an environmental verification question", () => {
+    const text = "A weatherproofing strategy provides long-term durability.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("DURABILITY", text)]);
+
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId: "DURABILITY_ASSERTION_TO_ENVIRONMENTAL_REQUIREMENT_QUESTION" }));
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Which environmental protection and durability requirements");
+    const qa = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+    expect(qa.ok).toBe(true);
+  });
+
   test("removes nonessential unsupported market and cost content", () => {
     const pricing = "Engage Early: Begin supplier conversations as early as possible to clarify feasibility, timelines, and costs.";
     const heading = "Future Evaluation: Trends and Concepts in Digital Sphere Use";

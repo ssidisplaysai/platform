@@ -9,7 +9,7 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_1" as const;
 
 export type GlwZeroAuthorityDisposition =
   | "REMOVE"
@@ -50,6 +50,7 @@ const POLICY = {
     "Remove nonessential climate, cost-planning, market, and product-assumption statements when deletion preserves surrounding commercial meaning.",
     "Replace unsupported product comparison tables with an authority-neutral buyer evaluation framework.",
     "Convert unsupported environmental, specification, training, and installation-responsibility assertions to authority-neutral buyer questions.",
+    "Preserve spherical geometry while removing unsupported engagement or performance meaning.",
     "Reduce repeated supplier-question constructions with an authority-neutral project documentation question.",
     "Block every protected claim that does not match an allowlisted meaning-reducing transformation.",
   ],
@@ -167,6 +168,20 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     };
   }
 
+  if (claimClasses.includes("PRODUCT_SPECIFICATION")
+    && text.length > 120
+    && /\b(?:Feature|Consideration)\b/i.test(text)
+    && /\b(?:Form Factor|Viewing Directions?|Viewing Angles?)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: null,
+      disposition: "REPLACE_WITH_EVALUATION_FRAMEWORK",
+      safeToTransform: true,
+      ruleId: "UNSUPPORTED_STRUCTURED_COMPARISON_TO_BUYER_EVALUATION_FRAMEWORK",
+    };
+  }
+
   if (claimClasses.includes("PRODUCT_SPECIFICATION") && (
     /^Which content production approaches work best for\b/i.test(text)
     || /^Underestimating the importance of content planning\b/i.test(text)
@@ -194,6 +209,30 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "PRODUCT_SPECIFICATION_ASSERTION_TO_SUPPLIER_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("PRODUCT_SPECIFICATION")
+    && /\b360(?:°|-degree)\b/i.test(text)
+    && /\b(?:engagement|viewing|visible|audience)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Spherical display geometry; confirm project-specific viewing directions and content requirements.",
+      disposition: "CONVERT_TO_CONCEPTUAL_APPLICATION",
+      safeToTransform: true,
+      ruleId: "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM",
+    };
+  }
+
+  if (claimClasses.includes("DURABILITY") && /\b(?:weatherproof(?:ing)?|weather-resistant|environmental resistance|durability)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Which environmental protection and durability requirements can the selected supplier confirm for the intended site exposure?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "DURABILITY_ASSERTION_TO_ENVIRONMENTAL_REQUIREMENT_QUESTION",
     };
   }
 
@@ -245,9 +284,11 @@ function applyTransformation(html: string, transformation: GlwZeroAuthorityTrans
   if (transformation.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK") {
     const table = $("table").filter((_, element) => {
       const cells = $(element).find("th,td").map((__, cell) => normalizeText($(cell).text())).get();
-      return cells.includes("Outdoor Digital Sphere")
-        && cells.some((cell) => /^Conventional LED (?:Panel|Display)$/i.test(cell))
-        && cells.includes("Visual Form Factor");
+      const tableText = cells.join(" ");
+      return transformation.originalText.startsWith(tableText)
+        || (cells.includes("Outdoor Digital Sphere")
+          && cells.some((cell) => /^Conventional LED (?:Panel|Display)$/i.test(cell))
+          && cells.includes("Visual Form Factor"));
     }).first();
     if (!table.length) return null;
     const heading = table.prevAll("h2,h3").first();
