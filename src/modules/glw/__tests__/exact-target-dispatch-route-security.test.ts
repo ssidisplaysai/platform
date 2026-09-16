@@ -4,6 +4,7 @@ import { join } from "node:path";
 const scheduler = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/scheduler/route.ts"), "utf8");
 const grantRoute = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/dispatch-authorization/route.ts"), "utf8");
 const controls = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignOperatorControls.tsx"), "utf8");
+const uiFlow = readFileSync(join(process.cwd(), "src/modules/glw/exact-target-dispatch-ui-flow.ts"), "utf8");
 const authority = readFileSync(join(process.cwd(), "src/modules/glw/exact-target-dispatch-authority.ts"), "utf8");
 
 describe("exact target scheduler boundary", () => {
@@ -46,14 +47,15 @@ describe("exact target scheduler boundary", () => {
   });
 
   test("uses exact owner-facing language and two-step request flow", () => {
-    expect(controls).toContain("Authorize & Dispatch");
-    expect(controls).toContain("OWNER_EXACT_TARGET_DISPATCH");
-    expect(controls).toContain("AUTHORIZE_AND_DISPATCH_EXACT_TARGET");
-    expect(controls).toContain("/dispatch-authorization");
-    expect(controls).toContain("preflight.preflightReceiptId");
-    expect(controls).toContain("grantPayload.grant.grantId");
-    expect(controls).toContain("target.targetId");
-    expect(controls).not.toContain('confirm: "RUN_DRAFT_BATCH"');
+    const uiBoundary = `${controls}\n${uiFlow}`;
+    expect(uiBoundary).toContain("Authorize & Dispatch");
+    expect(uiBoundary).toContain("OWNER_EXACT_TARGET_DISPATCH");
+    expect(uiBoundary).toContain("AUTHORIZE_AND_DISPATCH_EXACT_TARGET");
+    expect(uiBoundary).toContain("/dispatch-authorization");
+    expect(uiBoundary).toContain("preflight.preflightReceiptId");
+    expect(uiBoundary).toContain("grantPayload.grant.grantId");
+    expect(uiBoundary).toContain("target.targetId");
+    expect(uiBoundary).not.toContain('confirm: "RUN_DRAFT_BATCH"');
   });
 
   test("persists redacted request provenance and no secret-bearing fields", () => {

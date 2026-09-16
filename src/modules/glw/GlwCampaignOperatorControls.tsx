@@ -1,8 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
+import {
+  runExactTargetDispatchFlow,
+  type ExactDispatchStage,
+} from "@/modules/glw/exact-target-dispatch-ui-flow";
 
 type QueueSummary = {
   total: number;
@@ -54,16 +57,6 @@ type SchedulerPayload = {
   } | null;
   ownerAuthorizationRequired: true;
   dryRun: boolean;
-};
-
-type DispatchPayload = {
-  dispatchDate?: string;
-  leasedCount?: number;
-  dispatchedCount?: number;
-  errorCount?: number;
-  queue?: QueueSummary;
-  publicationPerformed?: boolean;
-  error?: string;
 };
 
 type ReconcilePayload = {
@@ -175,7 +168,6 @@ export function GlwCampaignOperatorControls({
   siteId,
   campaignStatus,
 }: Props) {
-  const router = useRouter();
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
   const [publishPreview, setPublishPreview] = useState<PublishPreviewPayload | null>(null);
   const [publishRun, setPublishRun] = useState<PublishRunRecord | null>(null);
@@ -183,6 +175,8 @@ export function GlwCampaignOperatorControls({
   const [seoRun, setSeoRun] = useState<SeoRefreshRunRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(false);
+  const [dispatchStage, setDispatchStage] = useState<ExactDispatchStage>("IDLE");
+  const dispatchInFlight = useRef(false);
   const [reconciling, setReconciling] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [refreshingSeo, setRefreshingSeo] = useState(false);
@@ -244,56 +238,36 @@ export function GlwCampaignOperatorControls({
   }, [campaignStatus, loadScheduler]);
 
   async function authorizeAndDispatchExactTarget() {
-    const target = scheduler?.schedule.nextTargets[0];
-    const preflight = scheduler?.dispatchPreflight;
-    if (!scheduler || !target || !preflight || scheduler.schedule.remainingAllowance < 1) return;
-    const targetLabel = target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode;
-    const confirmed = window.confirm(
-      `Authorize & Dispatch ${targetLabel} Draft?\n\nOrganization: ${organizationId}\nSite: ${siteId}\nCampaign: ${campaignId}\nTarget: ${target.targetId}\nOperation: OWNER_EXACT_TARGET_DISPATCH\nPolicy: ${preflight.publicationPolicy}\nAllowance: ${scheduler.schedule.remainingAllowance} → ${scheduler.schedule.remainingAllowance - 1}\nRelease: ${scheduler.releaseAuthority.capability.ready ? "READY" : "BLOCKED"}\nWordPress: ${scheduler.wordpressReadiness.ready ? "READY" : "BLOCKED"}\nMCP / n8n: ${scheduler.executionPreflight.ready ? "READY" : "BLOCKED"}\n\nThis authorization is exact-target, short-lived, and single-use. Publication remains blocked.`,
-    );
-    if (!confirmed) return;
-
+    if (!scheduler || dispatchInFlight.current) return;
+    dispatchInFlight.current = true;
     setDispatching(true);
     setMessage(null);
     setError(null);
-
-    const grantResponse = await fetch(`/api/glw/campaigns/${campaignId}/dispatch-authorization`, {
-      method: "POST",
-      headers: requestHeaders(true),
-      body: JSON.stringify({
-        operation: "OWNER_EXACT_TARGET_DISPATCH",
-        confirmationMode: "AUTHORIZE_AND_DISPATCH_EXACT_TARGET",
-        preflightReceiptId: preflight.preflightReceiptId,
-        targetId: target.targetId,
-      }),
-    });
-    const grantPayload = await grantResponse.json().catch(() => null) as { grant?: { grantId?: string }; error?: string } | null;
-    if (!grantResponse.ok || !grantPayload?.grant?.grantId) {
-      setError(grantPayload?.error ?? `Owner dispatch authorization failed (HTTP ${grantResponse.status}).`);
+    try {
+      const result = await runExactTargetDispatchFlow({
+        campaignId,
+        organizationId,
+        siteId,
+        scheduler,
+        requestHeaders,
+        confirm: (confirmation) => window.confirm(confirmation),
+        onStage: setDispatchStage,
+        onSchedulerRefreshed: (refreshed) => setScheduler(refreshed as SchedulerPayload),
+      });
+      if (!result.accepted) {
+        setDispatchStage("READY TO AUTHORIZE");
+        return;
+      }
+      const payload = result.payload;
+      setMessage(`Exact target dispatch submitted: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
+      await refreshWorkspace();
+    } catch (flowError) {
+      setError(flowError instanceof Error ? flowError.message : "Exact-target dispatch failed.");
+      setDispatchStage("IDLE");
+    } finally {
       setDispatching(false);
-      return;
+      dispatchInFlight.current = false;
     }
-    const response = await fetch(`/api/glw/campaigns/${campaignId}/scheduler`, {
-      method: "POST",
-      headers: requestHeaders(true),
-      body: JSON.stringify({
-        confirm: "AUTHORIZE_AND_DISPATCH_EXACT_TARGET",
-        preflightReceiptId: preflight.preflightReceiptId,
-        ownerDispatchGrantId: grantPayload.grant.grantId,
-        targetId: target.targetId,
-      }),
-    });
-    const payload = await response.json().catch(() => null) as DispatchPayload | null;
-
-    if (!response.ok || !payload) {
-      setError(payload?.error ?? `Draft batch dispatch failed (HTTP ${response.status}).`);
-      setDispatching(false);
-      return;
-    }
-
-    setMessage(`Exact target dispatch submitted: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
-    setDispatching(false);
-    await refreshWorkspace();
   }
 
   async function reconcileCampaign() {
@@ -553,7 +527,8 @@ export function GlwCampaignOperatorControls({
             <div className="rounded-xl border border-zinc-800 bg-zinc-950/70 p-4"><p className="text-xs uppercase tracking-wider text-zinc-500">Remaining Allowance</p><p className="mt-2 text-2xl font-bold text-white">{scheduler.schedule.remainingAllowance}</p></div>
           </div>
           <div className="mt-5 border border-zinc-800 bg-zinc-950/70 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs uppercase tracking-wider text-zinc-500">Exact Authorized Target</p><p className="mt-1 text-sm text-zinc-300">{scheduler.schedule.nextTargets[0] ? (scheduler.schedule.nextTargets[0].cityName ? `${scheduler.schedule.nextTargets[0].cityName}, ${scheduler.schedule.nextTargets[0].stateCode}` : scheduler.schedule.nextTargets[0].stateCode) : "No queued target is eligible for owner authorization."}</p>{scheduler.dispatchPreflight ? <p className="mt-2 text-xs text-zinc-500">Preflight {scheduler.dispatchPreflight.preflightReceiptId} · expires {new Date(scheduler.dispatchPreflight.expiresAt).toLocaleTimeString()}</p> : null}</div><span className="border border-zinc-700 px-3 py-1 text-xs uppercase text-zinc-300">exact-target preflight</span></div></div>
-          <button type="button" onClick={() => void authorizeAndDispatchExactTarget()} disabled={busy || !scheduler.executionReadiness.configured || !scheduler.executionPreflight.ready || !scheduler.releaseAuthority.capability.ready || !scheduler.wordpressReadiness.ready || !scheduler.dispatchPreflight || scheduler.schedule.availableConcurrency < 1 || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length !== 1} className="mt-5 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40">{dispatching ? "Authorizing exact target..." : scheduler.schedule.nextTargets[0] ? `Authorize & Dispatch ${scheduler.schedule.nextTargets[0].cityName ?? scheduler.schedule.nextTargets[0].stateCode} Draft` : "No Exact Target Available"}</button>
+          <p className="mt-3 text-xs font-semibold uppercase text-zinc-400">{dispatchStage}</p>
+          <button type="button" onClick={() => void authorizeAndDispatchExactTarget()} disabled={busy || !scheduler.executionReadiness.configured || !scheduler.executionPreflight.ready || !scheduler.releaseAuthority.capability.ready || !scheduler.wordpressReadiness.ready || scheduler.schedule.availableConcurrency < 1 || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length !== 1} className="mt-2 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40">{dispatching ? dispatchStage : scheduler.schedule.nextTargets[0] ? `Authorize & Dispatch ${scheduler.schedule.nextTargets[0].cityName ?? scheduler.schedule.nextTargets[0].stateCode} Draft` : "No Exact Target Available"}</button>
         </>
       ) : loading ? <p className="mt-5 text-sm text-zinc-400">Loading scheduler preview...</p> : null}
     </section>
