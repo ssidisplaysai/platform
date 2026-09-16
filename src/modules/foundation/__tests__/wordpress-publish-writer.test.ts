@@ -157,11 +157,11 @@ describe("Genesis WordPress publish writer", () => {
     ["publish", "draft"],
   ] as const)("performs an exact status-only %s to %s transition", async (expectedStatus, intendedStatus) => {
     const content = "<main>Approved artifact</main>";
-    const identity = { wordpressObjectId: "19829", parentObjectId: "19812", slug: "alaska", storedPostContentSha: createHash("sha256").update(content).digest("hex") };
+    const identity = { wordpressObjectId: "19829", parentObjectId: "19812", slug: "alaska", expectedTitle: "Alaska", featuredMediaId: 42, storedPostContentSha: createHash("sha256").update(content).digest("hex") };
     const fetchMock = jest.fn()
-      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: expectedStatus, content: { raw: content } }))
+      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: expectedStatus, title: { raw: "Alaska" }, featured_media: 42, content: { raw: content } }))
       .mockResolvedValueOnce(response(200, { id: 19829, status: intendedStatus }))
-      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: intendedStatus, link: "https://example.com/path/", content: { raw: content } }));
+      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: intendedStatus, link: "https://example.com/path/", title: { raw: "Alaska" }, featured_media: 42, content: { raw: content } }));
     global.fetch = fetchMock as typeof fetch;
 
     await expect(transitionGenesisWordPressPageStatus({ site, identity, expectedStatus, intendedStatus })).resolves.toMatchObject({ ok: true, beforeStatus: expectedStatus, afterStatus: intendedStatus, contentMutationPerformed: false });
@@ -170,11 +170,25 @@ describe("Genesis WordPress publish writer", () => {
 
   test("fails verification when a status transition changes stored content", async () => {
     const content = "<main>Approved artifact</main>";
-    const identity = { wordpressObjectId: "19829", parentObjectId: "19812", slug: "alaska", storedPostContentSha: createHash("sha256").update(content).digest("hex") };
+    const identity = { wordpressObjectId: "19829", parentObjectId: "19812", slug: "alaska", expectedTitle: "Alaska", featuredMediaId: 42, storedPostContentSha: createHash("sha256").update(content).digest("hex") };
     global.fetch = jest.fn()
-      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: "draft", content: { raw: content } }))
+      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: "draft", title: { raw: "Alaska" }, featured_media: 42, content: { raw: content } }))
       .mockResolvedValueOnce(response(200, { id: 19829, status: "publish" }))
-      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: "publish", content: { raw: "changed" } })) as typeof fetch;
+      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: "publish", title: { raw: "Alaska" }, featured_media: 42, content: { raw: "changed" } })) as typeof fetch;
+
+    await expect(transitionGenesisWordPressPageStatus({ site, identity, expectedStatus: "draft", intendedStatus: "publish" })).resolves.toMatchObject({ ok: false, state: "verification_failed" });
+  });
+
+  test.each([
+    ["title", { title: { raw: "Changed" }, featured_media: 42 }],
+    ["featured media", { title: { raw: "Alaska" }, featured_media: 99 }],
+  ])("fails verification when a status transition changes %s", async (_name, changed) => {
+    const content = "<main>Approved artifact</main>";
+    const identity = { wordpressObjectId: "19829", parentObjectId: "19812", slug: "alaska", expectedTitle: "Alaska", featuredMediaId: 42, storedPostContentSha: createHash("sha256").update(content).digest("hex") };
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: "draft", title: { raw: "Alaska" }, featured_media: 42, content: { raw: content } }))
+      .mockResolvedValueOnce(response(200, { id: 19829, status: "publish" }))
+      .mockResolvedValueOnce(response(200, { id: 19829, slug: "alaska", parent: 19812, status: "publish", content: { raw: content }, ...changed })) as typeof fetch;
 
     await expect(transitionGenesisWordPressPageStatus({ site, identity, expectedStatus: "draft", intendedStatus: "publish" })).resolves.toMatchObject({ ok: false, state: "verification_failed" });
   });

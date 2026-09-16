@@ -36,6 +36,8 @@ export type ExactWordPressAuthoritySnapshot = {
   canonicalPath: string;
   status: "draft" | "publish";
   rawPostContent: string;
+  title: string;
+  featuredMediaId: number;
 };
 
 export type ActualPublicHostSafetyEvidence = {
@@ -113,6 +115,8 @@ function exactSnapshotMatches(context: ExactPublicationRollbackContext, snapshot
     && snapshot.slug === context.slug
     && normalizedPath(snapshot.canonicalPath) === context.canonicalPath
     && snapshot.status === context.expectedCurrentStatus
+    && snapshot.title === context.expectedTitle
+    && snapshot.featuredMediaId === context.featuredMediaId
     && storedPostContentSha(snapshot.rawPostContent) === context.storedPostContentSha;
 }
 
@@ -236,7 +240,7 @@ export async function executeAuthorizedExactWordPressOperation(input: {
   const before = await input.adapters.readExactWordPressAuthority();
   if (!exactSnapshotMatches(input.context, before)) throw new Error("EXACT_OPERATION_BEFORE_READBACK_MISMATCH");
   const transition = input.adapters.transitionStatus ?? transitionGenesisWordPressPageStatus;
-  const mutation: GenesisWordPressExactStatusTransitionResult = await transition({ site: input.site, identity: { wordpressObjectId: input.context.wordpressObjectId, parentObjectId: input.context.parentObjectId, slug: input.context.slug, storedPostContentSha: input.context.storedPostContentSha }, expectedStatus: input.context.expectedCurrentStatus, intendedStatus: input.context.intendedStatus });
+  const mutation: GenesisWordPressExactStatusTransitionResult = await transition({ site: input.site, identity: { wordpressObjectId: input.context.wordpressObjectId, parentObjectId: input.context.parentObjectId, slug: input.context.slug, expectedTitle: input.context.expectedTitle, featuredMediaId: input.context.featuredMediaId, storedPostContentSha: input.context.storedPostContentSha }, expectedStatus: input.context.expectedCurrentStatus, intendedStatus: input.context.intendedStatus });
   if (!mutation.ok) throw new Error(`EXACT_OPERATION_WORDPRESS_${mutation.state.toUpperCase()}`);
   const after = await input.adapters.readExactWordPressAuthority();
   const afterContext = { ...input.context, expectedCurrentStatus: input.context.intendedStatus };

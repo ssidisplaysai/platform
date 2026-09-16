@@ -27,6 +27,8 @@ const indiana: ExactPublicationRollbackContext = {
   slug: "indiana",
   canonicalPath: "/outdoor-digital-sphere/indiana/",
   expectedH1: "Outdoor Digital Sphere in Indiana",
+  expectedTitle: "Outdoor Digital Sphere in Indiana",
+  featuredMediaId: 0,
   storedPostContentSha: "b".repeat(64),
   visualCertificationId: "visual-certification-indiana",
   runtimeSha: "a".repeat(40),

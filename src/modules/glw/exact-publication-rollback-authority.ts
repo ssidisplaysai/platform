@@ -29,6 +29,8 @@ export type ExactPublicationRollbackContext = {
   slug: string;
   canonicalPath: string;
   expectedH1: string;
+  expectedTitle: string;
+  featuredMediaId: number;
   storedPostContentSha: string;
   visualCertificationId: string;
   runtimeSha: string;
@@ -53,7 +55,7 @@ type State = {
 
 const NAMESPACE = "glw-exact-publication-rollback-authority-v1";
 const seed = (): State => ({ preflights: [], grants: [], consumptions: [], claims: [], receipts: [] });
-const REQUIRED_FIELDS: ReadonlyArray<keyof ExactPublicationRollbackContext> = ["operation", "organizationId", "siteId", "campaignId", "productId", "targetId", "stateCode", "wordpressObjectId", "parentObjectId", "slug", "canonicalPath", "expectedH1", "storedPostContentSha", "visualCertificationId", "runtimeSha", "expectedCurrentStatus", "intendedStatus"];
+const REQUIRED_FIELDS: ReadonlyArray<keyof ExactPublicationRollbackContext> = ["operation", "organizationId", "siteId", "campaignId", "productId", "targetId", "stateCode", "wordpressObjectId", "parentObjectId", "slug", "canonicalPath", "expectedH1", "expectedTitle", "storedPostContentSha", "visualCertificationId", "runtimeSha", "expectedCurrentStatus", "intendedStatus"];
 
 function timestamp(value: Date): string {
   if (!Number.isFinite(value.getTime())) throw new Error("EXACT_OPERATION_TIME_INVALID");
@@ -70,6 +72,7 @@ function normalizedContext(context: ExactPublicationRollbackContext): ExactPubli
   if (!/^[1-9]\d*$/.test(normalized.wordpressObjectId) || !/^[1-9]\d*$/.test(normalized.parentObjectId)) throw new Error("EXACT_OPERATION_WORDPRESS_IDENTITY_INVALID");
   if (!/^[0-9a-f]{64}$/.test(normalized.storedPostContentSha)) throw new Error("EXACT_OPERATION_CONTENT_SHA_INVALID");
   if (!/^[0-9a-f]{40}$/.test(normalized.runtimeSha)) throw new Error("EXACT_OPERATION_RUNTIME_INVALID");
+  if (!Number.isSafeInteger(normalized.featuredMediaId) || normalized.featuredMediaId < 0) throw new Error("EXACT_OPERATION_FEATURED_MEDIA_INVALID");
   if (!normalized.canonicalPath.startsWith("/") || !normalized.canonicalPath.endsWith("/") || normalized.canonicalPath !== `/${normalized.canonicalPath.split("/").filter(Boolean).join("/")}/`) throw new Error("EXACT_OPERATION_CANONICAL_PATH_INVALID");
   if (normalized.operation === EXACT_WORDPRESS_PUBLICATION) {
     if (normalized.expectedCurrentStatus !== "draft" || normalized.intendedStatus !== "publish" || normalized.sourcePublicationReceiptId) throw new Error("EXACT_PUBLICATION_TRANSITION_INVALID");

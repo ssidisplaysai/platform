@@ -26,11 +26,12 @@ export async function resolveExactPublicationRollbackLiveAuthority(input: {
   if (!credential) throw new Error("EXACT_OPERATION_WORDPRESS_CREDENTIAL_REQUIRED");
   const reader = createAuthenticatedWordPressReadAuthority({ configuration: { apiBaseUrl: site.integrations.wordpressApiBaseUrl, username: credential.username, applicationPassword: credential.applicationPassword, timeoutMs: 30_000 } });
   const read = async (): Promise<ExactWordPressAuthoritySnapshot> => {
-    const response = await reader.getJson({ path: `/pages/${target.identity.wordpressObjectId}`, query: new URLSearchParams({ context: "edit", _fields: "id,status,slug,parent,content" }) });
+    const response = await reader.getJson({ path: `/pages/${target.identity.wordpressObjectId}`, query: new URLSearchParams({ context: "edit", _fields: "id,status,slug,parent,title,featured_media,content" }) });
     if (!response.ok || !response.body || typeof response.body !== "object" || Array.isArray(response.body)) throw new Error("EXACT_OPERATION_WORDPRESS_READ_FAILED");
     const page = response.body as Record<string, unknown>;
     const content = page.content && typeof page.content === "object" && !Array.isArray(page.content) ? page.content as Record<string, unknown> : {};
-    return { organizationId: target.identity.organizationId, siteId: target.identity.siteId, campaignId: target.target.campaignId, productId: target.identity.productId, targetId: target.target.targetId, stateCode: target.target.stateCode, wordpressObjectId: String(page.id ?? ""), parentObjectId: String(page.parent ?? ""), slug: field(page.slug), canonicalPath: target.identity.canonicalPath, status: field(page.status) as "draft" | "publish", rawPostContent: field(content.raw) };
+    const title = page.title && typeof page.title === "object" && !Array.isArray(page.title) ? page.title as Record<string, unknown> : {};
+    return { organizationId: target.identity.organizationId, siteId: target.identity.siteId, campaignId: target.target.campaignId, productId: target.identity.productId, targetId: target.target.targetId, stateCode: target.target.stateCode, wordpressObjectId: String(page.id ?? ""), parentObjectId: String(page.parent ?? ""), slug: field(page.slug), canonicalPath: target.identity.canonicalPath, status: field(page.status) as "draft" | "publish", rawPostContent: field(content.raw), title: field(title.raw), featuredMediaId: Number(page.featured_media ?? 0) };
   };
   const snapshot = await read();
   const $ = load(snapshot.rawPostContent, null, false);
@@ -58,6 +59,8 @@ export async function resolveExactPublicationRollbackLiveAuthority(input: {
     slug: snapshot.slug,
     canonicalPath: target.identity.canonicalPath,
     expectedH1,
+    expectedTitle: snapshot.title,
+    featuredMediaId: snapshot.featuredMediaId,
     storedPostContentSha: storedPostContentSha(snapshot.rawPostContent),
     visualCertificationId,
     runtimeSha: input.runtimeSha,
