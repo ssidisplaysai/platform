@@ -38,9 +38,9 @@ type ClaimRule = {
 
 const RULES: readonly ClaimRule[] = [
   { claimClass: "MARKET_ADOPTION", pattern: /(?:\btrends?\b|\badoption\b|\bgrowth\b|increasing use|\bpopularity\b|market movement|industry direction|regional demand|(?:venues?|businesses?|organizations?).{0,80}(?:continue to adopt|increasingly adopt|growing demand|adoption))/gi },
-  { claimClass: "CLIMATE", pattern: /(?:climate|temperature swings?|local lighting conditions|weather conditions?)/gi },
-  { claimClass: "PRODUCT_CAPABILITY", pattern: /(?:outdoor readability|readable outdoors?|support interactivity|interactive content|broad visibility|requires? sensors?|input devices?|networking support|control systems?)/gi },
-  { claimClass: "PRODUCT_SPECIFICATION", pattern: /(?:technical specifications?|performance ratings?|product specifications?|anti-glare|dimming|color[- ]temperature)/gi },
+  { claimClass: "CLIMATE", pattern: /(?:climate|temperature swings?|extreme temperatures?|hot summers?|snowy winters?|local lighting conditions|weather conditions?|snow removal|humidity|precipitation|\bwind\b|\bsnow\b|\bheat\b)/gi },
+  { claimClass: "PRODUCT_CAPABILITY", pattern: /(?:outdoor readability|readable outdoors?|support interactivity|interactive content|broad visibility|requires? sensors?|input devices?|networking support|control systems?|moving images?|dynamic media|flexible programming|content programming|all-direction audience viewing)/gi },
+  { claimClass: "PRODUCT_SPECIFICATION", pattern: /(?:technical specifications?|performance ratings?|product specifications?|anti-glare|dimming|color[- ]temperature|360(?:°|-degree)|panoramic|multidirectional|curved mounting|custom site adaptation|seamless rounded)/gi },
   { claimClass: "DURABILITY", pattern: /(?:weatherproof construction|weatherproof|withstand moisture|uv exposure|durability ratings?)/gi },
   { claimClass: "INGRESS_PROTECTION", pattern: /(?:ingress protection|\bingress\b|\bIP\d{2}\b)/gi },
   { claimClass: "BRIGHTNESS", pattern: /(?:brightness ratings?|\bnits?\b|high-brightness)/gi },
@@ -70,6 +70,26 @@ function headingsFromHtml(html: string): string[] {
   return [...html.matchAll(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi)]
     .map((match) => match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
     .filter(Boolean);
+}
+
+function tableCellsFromHtml(html: string): string[] {
+  return [...html.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)]
+    .map((match) => match[1].replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function containsEmbeddedUnsupportedPremise(claimText: string, claimClass: GlwReferenceClaimClass): boolean {
+  const normalized = claimText.replace(/\s+/g, " ").trim();
+  if (claimClass === "CLIMATE") {
+    return /\bIndiana(?:'s|’s)?\s+(?:varied environments?|winters?|summers?)\b/i.test(normalized)
+      || /\byear-round environmental changes common in Indiana\b/i.test(normalized)
+      || /\([^)]*\b(?:humidity|wind|snow|heat|precipitation|salt)\b[^)]*\)/i.test(normalized)
+      || /:\s*[^.?!]*\b(?:extreme temperatures?|wind|snow|humidity|precipitation|salt)\b/i.test(normalized);
+  }
+  if (["PRODUCT_CAPABILITY", "PRODUCT_SPECIFICATION", "INTERACTIVITY", "INSTALLATION_CAPABILITY", "PERFORMANCE"].includes(claimClass)) {
+    return /\b(?:360(?:°|-degree)|panoramic|multidirectional|moving images?|dynamic media|flexible programming|content programming|custom site adaptation|curved mounting|all-direction audience viewing)\b/i.test(normalized);
+  }
+  return false;
 }
 
 function normalizedAssertion(value: string): string {
@@ -110,7 +130,9 @@ export function evaluateGlwReferenceClaimAuthority(input: {
     const mapping = mappings.find((candidate) =>
       candidate.claimClass === rule.claimClass
       && normalizedAssertion(candidate.supportedAssertion) === normalizedAssertion(claimText));
-    const conceptual = !mapping && isGlwPlanningOrConfirmationGuidance(claimText);
+    const conceptual = !mapping
+      && !containsEmbeddedUnsupportedPremise(claimText, rule.claimClass)
+      && isGlwPlanningOrConfirmationGuidance(claimText);
     findings.push({
       claimClass: rule.claimClass,
       claimText,
@@ -131,6 +153,11 @@ export function evaluateGlwReferenceClaimAuthority(input: {
   const marketRule = RULES.find((rule) => rule.claimClass === "MARKET_ADOPTION")!;
   for (const heading of headingsFromHtml(input.artifact.contentHtml ?? "")) {
     if (new RegExp(marketRule.pattern.source, marketRule.pattern.flags).test(heading)) evaluate(marketRule, heading);
+  }
+  for (const cell of tableCellsFromHtml(input.artifact.contentHtml ?? "")) {
+    for (const rule of RULES) {
+      if (new RegExp(rule.pattern.source, rule.pattern.flags).test(cell)) evaluate(rule, cell);
+    }
   }
 
   const unsupported = findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");

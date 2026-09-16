@@ -196,6 +196,25 @@ describe("GLW reference generation claim contract", () => {
     expect(result.findings[0]).toMatchObject({ claimText: "What interactive concept could the project team explore?", authorityStatus: "APPROVED_CONCEPTUAL" });
   });
 
+  test("does not let buyer-question form smuggle unsupported factual premises", () => {
+    const neutral = evaluate("<p>What environmental conditions should the project team ask qualified professionals to evaluate?</p>");
+    expect(neutral.ok).toBe(true);
+    const embedded = evaluate("<p>What climate conditions could affect the project (humidity, wind, snow, heat)?</p>");
+    expect(embedded.ok).toBe(false);
+    expect(embedded.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ claimClass: "CLIMATE", authorityStatus: "UNSUPPORTED" }),
+    ]));
+  });
+
+  test("audits factual comparison-table cells independently", () => {
+    const result = evaluate("<table><tr><th>Attribute</th><th>Outdoor Digital Sphere</th></tr><tr><td>Form Factor</td><td>360° sphere, panoramic surface</td></tr><tr><td>Installation</td><td>Custom site adaptation, curved mounting</td></tr></table>");
+    expect(result.ok).toBe(false);
+    expect(result.findings.filter((finding) => finding.claimClass === "PRODUCT_SPECIFICATION")).toEqual(expect.arrayContaining([
+      expect.objectContaining({ claimText: "360° sphere, panoramic surface", authorityStatus: "UNSUPPORTED" }),
+      expect.objectContaining({ claimText: "Custom site adaptation, curved mounting", authorityStatus: "UNSUPPORTED" }),
+    ]));
+  });
+
   test("campaign UI exposes persisted claim evidence and recovery guidance", () => {
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8").replace(/\s/g, "");
     for (const marker of ["UnsupportedClaimEvidence", "Failedpredicate:", "Currentpredicate:", "Reason:", "Requiredauthority:", "Disposition:"])

@@ -69,6 +69,13 @@ type ReferenceResult = Record<string, unknown> & {
   durableOperation?: { operationType: "REFERENCE_GENERATION_INITIAL" | "REFERENCE_GENERATION_RETRY"; failedJobId: string | null; failedArtifactSha256: string | null };
   mcpConfiguration?: { configured: boolean; transport: string; workflowId: string; engineWorkflowId: string };
   failedDispatchRecovery?: boolean;
+  ownerReviewReadiness?: {
+    ready: boolean;
+    pageClassification: "LONG_FORM_ARTICLE" | "RICH_REFERENCE_COMPOSITION";
+    blockers: readonly string[];
+    semantic: { unsupportedFactualClaims: number; buyerQuestionPremiseEscapes: number; comparisonFactEscapes: number };
+    copyQuality: { failures: readonly { code: string; text: string }[] };
+  } | null;
 };
 
 type ReferenceAuthorityBinding = {
@@ -627,6 +634,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
 
   const generatedDraft = job?.generatedDraft ?? null;
   const unsupportedClaimFindings = job?.qaChecks?.claimAuthority?.findings?.filter((finding) => finding.authorityStatus === "UNSUPPORTED") ?? [];
+  const ownerReviewReadiness = referenceResult?.ownerReviewReadiness ?? null;
 
   let wordpressEditUrl: string | null = null;
 
@@ -987,18 +995,20 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
             ) : null}
 
             {job.status === "COMPLETE" ? (
-              <div className="mt-4 rounded-lg border border-emerald-900/60 bg-emerald-950/20 p-3">
-                <p className="font-semibold text-emerald-300">
-                  {referenceResult.approved ? "Reference Approved" : "Reference Ready"}
+              <div className={`mt-4 rounded-lg border p-3 ${ownerReviewReadiness?.ready ? "border-emerald-900/60 bg-emerald-950/20" : "border-amber-900/60 bg-amber-950/20"}`}>
+                <p className={`font-semibold ${ownerReviewReadiness?.ready ? "text-emerald-300" : "text-amber-300"}`}>
+                  {referenceResult.approved ? "Reference Approved" : ownerReviewReadiness?.ready ? "Reference Ready" : "Owner Review Remediation Required"}
                 </p>
 
                 <p className="mt-1 text-zinc-400">
                   {referenceResult.approved
                     ? "This exact completed job and WordPress draft are locked as the approved campaign reference."
-                    : "Genesis completed the persisted job. Review it, then approve this exact draft before campaign activation."}
+                    : ownerReviewReadiness?.ready
+                      ? "Genesis completed the persisted job. Review it, then approve this exact draft before campaign activation."
+                      : `${ownerReviewReadiness?.pageClassification.replaceAll("_", " ") ?? "Reference composition"} is not approval-ready. Blockers: ${ownerReviewReadiness?.blockers.join(", ") ?? "owner review required"}.`}
                 </p>
 
-                {!referenceResult.approved && jobId ? (
+                {!referenceResult.approved && ownerReviewReadiness?.ready && jobId ? (
                   <button
                     type="button"
                     disabled={approvingReference}

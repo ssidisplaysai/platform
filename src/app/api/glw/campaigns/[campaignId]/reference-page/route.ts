@@ -6,6 +6,7 @@ import { getSiteById } from "@/modules/foundation/site-repository";
 import { inspectSiteWordPressReadAuthority } from "@/modules/foundation/wordpress-read-authority-status";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { buildGlwExactRetryContract, generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority, type GlwReferenceGenerationAuthorityBinding } from "@/modules/glw/reference-generation-authority";
+import { evaluateGlwReferenceOwnerReviewReadiness } from "@/modules/glw/reference-owner-review-readiness";
 import { getGlwReferenceStateSelection, saveGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
 import { consumeGlwReferenceOwnerGrant, GlwReferenceOwnerAuthorityError, type GlwReferenceOwnerOperationType } from "@/modules/glw/reference-owner-authority";
@@ -26,6 +27,23 @@ import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
 
 type Context = { params: Promise<{ campaignId: string }> };
+
+function ownerReviewReadiness(job: Awaited<ReturnType<typeof glwPageExecutionRepository.getById>>, productMediaAvailable: boolean) {
+  if (!job?.generatedDraft) return null;
+  return evaluateGlwReferenceOwnerReviewReadiness({
+    artifact: job.generatedDraft,
+    media: {
+      productAuthorityMediaAvailable: productMediaAvailable,
+      productAuthorityMediaCount: 0,
+      contextualMediaCount: 0,
+      applicationMediaCount: 0,
+      localContextualMediaCount: 0,
+      featuredMediaId: null,
+    },
+    actualHostVisualCertified: false,
+    authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] },
+  });
+}
 
 function isRecoverableReferenceStatus(status: string): boolean {
   return status === "QUEUED"
@@ -254,6 +272,7 @@ export async function GET(request: NextRequest, context: Context) {
       retryContract,
       workflow,
       relatedReference,
+      ownerReviewReadiness: ownerReviewReadiness(legacyJob, Boolean(productRecord.media.primaryImageReference)),
       durableOperation,
       mcpConfiguration,
       failedDispatchRecovery: job?.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
@@ -293,6 +312,7 @@ export async function GET(request: NextRequest, context: Context) {
         retryContract,
         workflow: projectGlwReferenceWorkflow(job),
         relatedReference: null,
+        ownerReviewReadiness: ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference)),
         durableOperation,
         mcpConfiguration,
         failedDispatchRecovery: false,
@@ -318,6 +338,7 @@ export async function GET(request: NextRequest, context: Context) {
     retryContract,
     workflow: projectGlwReferenceWorkflow(job),
     relatedReference: null,
+    ownerReviewReadiness: ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference)),
     durableOperation,
     mcpConfiguration,
     failedDispatchRecovery: job.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
@@ -414,6 +435,13 @@ export async function PATCH(request: NextRequest, context: Context) {
   ) {
     return NextResponse.json(
       { error: "Reference job does not match this campaign target." },
+      { status: 409 },
+    );
+  }
+  const reviewReadiness = ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference));
+  if (!reviewReadiness?.ready) {
+    return NextResponse.json(
+      { error: "Owner-reviewed reference composition requires remediation before approval.", code: "REFERENCE_OWNER_REVIEW_REMEDIATION_REQUIRED", ownerReviewReadiness: reviewReadiness },
       { status: 409 },
     );
   }

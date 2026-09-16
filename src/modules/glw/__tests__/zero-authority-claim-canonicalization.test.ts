@@ -6,7 +6,6 @@ import {
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
 } from "../zero-authority-claim-canonicalization";
 import { evaluateGlwStateLocalizationContamination } from "../state-localization-contamination";
-import { evaluateGlwGeneratedContentQa } from "../generated-content-qa";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -132,26 +131,19 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
 });
 
 const forensicRoot = process.env.GLW_FORENSIC_PERSISTENCE_DIR;
-(forensicRoot ? test : test.skip)("canonicalizes preserved execution 644114 to a complete hardened QA pass without changing raw evidence", () => {
+(forensicRoot ? test : test.skip)("preserves execution 644114 evidence and blocks the former candidate under repaired semantic QA", () => {
   const repositoryPath = join(forensicRoot!, "glw-page-execution-repository.json");
-  const envelope = JSON.parse(readFileSync(repositoryPath, "utf8")) as { data: { records: Array<{ jobId: string; generatedDraft: ReturnType<typeof artifact>; qaChecks: { claimAuthority: { findings: GlwClaimAuthorityFinding[] } } }> } };
+  const envelope = JSON.parse(readFileSync(repositoryPath, "utf8")) as { data: { records: Array<{ jobId: string; generatedDraft: ReturnType<typeof artifact>; rawGeneratedDraft?: ReturnType<typeof artifact>; qaChecks: { claimAuthority: { findings: GlwClaimAuthorityFinding[] } } }> } };
   const job = envelope.data.records.find((record) => record.jobId === "dbb8574d-c8d5-43c0-aba1-4d445589b4f2");
   expect(job).toBeDefined();
-  const rawSha = createHash("sha256").update(job!.generatedDraft.contentHtml).digest("hex");
-  const result = canonicalizeGlwZeroAuthorityClaims({ rawArtifact: job!.generatedDraft, authoritativeFactReferenceIds: [], findings: job!.qaChecks.claimAuthority.findings });
+  const rawArtifact = job!.rawGeneratedDraft ?? job!.generatedDraft;
+  const rawSha = createHash("sha256").update(rawArtifact.contentHtml).digest("hex");
+  const rawClaims = evaluateGlwReferenceClaimAuthority({ artifact: rawArtifact, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+  const result = canonicalizeGlwZeroAuthorityClaims({ rawArtifact, authoritativeFactReferenceIds: [], findings: rawClaims.findings });
   expect(rawSha).toBe("6093ef4bae6f3a0ff1d7c601571f718cc361e6a479d879fe0049ad4b09ac7955");
-  expect(createHash("sha256").update(job!.generatedDraft.contentHtml).digest("hex")).toBe(rawSha);
-  expect(result).toMatchObject({ ok: true, receipt: { canonicalizedArtifactSha256: "3bdb717488a0caa8773337c8b0e6d5fde25a0e2301dcef9e3c19b169b35cd06d", blockedClaims: [] } });
-  const claims = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
-  const qa = evaluateGlwGeneratedContentQa({
-    artifact: result.canonicalizedArtifact!,
-    request: { pageType: "state_service", stateCode: "IN", stateName: "Indiana", cityName: null, productTopic: "Outdoor Digital Sphere", canonicalPath: "outdoor-digital-sphere/indiana" } as never,
-    siteDomain: "LEDDisplayWarehouse.com",
-    minimumWordCount: 1500,
-    requiredCanonicalProductLink: { url: "/outdoor-digital-sphere/", anchorText: "Outdoor Digital Sphere" },
-    authorizedComparisonStateCodes: [],
-  });
-  expect(claims.ok).toBe(true);
-  expect(claims.findings.filter((entry) => entry.authorityStatus === "UNSUPPORTED")).toHaveLength(0);
-  expect(qa).toMatchObject({ ok: true, wordCount: 2089, checks: { stateLocalizationContamination: { ok: true }, stateProductAuthorityLink: { ok: true }, canonicalProductReference: { ok: true } } });
+  expect(createHash("sha256").update(rawArtifact.contentHtml).digest("hex")).toBe(rawSha);
+  expect(createHash("sha256").update(job!.generatedDraft.contentHtml).digest("hex")).toBe("3bdb717488a0caa8773337c8b0e6d5fde25a0e2301dcef9e3c19b169b35cd06d");
+  expect(result.ok).toBe(false);
+  expect(result.canonicalizedArtifact).toBeNull();
+  expect(result.receipt.blockedClaims.length).toBeGreaterThan(0);
 });
