@@ -30,6 +30,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ cam
   const header = $("header").first(); const footer = $("footer").last(); if (!header.length || !footer.length) return new NextResponse("Theme shell malformed", { status: 502 });
   let cursor = header.next(); while (cursor.length && !cursor.is(footer)) { const next = cursor.next(); cursor.remove(); cursor = next; }
   footer.before(`<article id="post-20115" class="post-20115 page type-page status-draft"><div data-native-wordpress-equivalent="20115">${draft.rendered}</div></article>`);
-  $("title").text("Outdoor Digital Sphere in Indiana — WordPress draft review"); $("link[rel=canonical]").remove(); $("head").append('<meta name="robots" content="noindex,nofollow">'); $("script,iframe").remove();
+  $("title").text("Outdoor Digital Sphere in Indiana — WordPress draft review"); $("link[rel=canonical]").remove(); $("head").append('<meta name="robots" content="noindex,nofollow">'); $("iframe").remove();
   return new NextResponse($.html(), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store", "x-robots-tag": "noindex,nofollow", "content-security-policy": "default-src 'none'; img-src https://leddisplaywarehouse.com data:; style-src 'unsafe-inline' https://leddisplaywarehouse.com https://fonts.googleapis.com; font-src https://leddisplaywarehouse.com https://fonts.gstatic.com data:; connect-src https://leddisplaywarehouse.com; script-src 'unsafe-inline' https://leddisplaywarehouse.com; frame-src 'none'" } });
 }
