@@ -1,10 +1,15 @@
 import { createHash } from "node:crypto";
 import * as cheerio from "cheerio";
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
-import type { GlwClaimAuthorityFinding, GlwReferenceClaimClass } from "./reference-claim-authority";
+import {
+  evaluateGlwReferenceClaimAuthority,
+  type GlwClaimAuthorityFinding,
+  type GlwProtectedClaimAuthorityMapping,
+  type GlwReferenceClaimClass,
+} from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V1" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2" as const;
 
 export type GlwZeroAuthorityDisposition =
   | "REMOVE"
@@ -44,6 +49,7 @@ const POLICY = {
     "Convert labeled application examples containing interactive meaning to explicitly conceptual applications without asserting product capability.",
     "Remove nonessential climate, cost-planning, market, and product-assumption statements when deletion preserves surrounding commercial meaning.",
     "Replace unsupported product comparison tables with an authority-neutral buyer evaluation framework.",
+    "Convert unsupported environmental, specification, training, and installation-responsibility assertions to authority-neutral buyer questions.",
     "Reduce repeated supplier-question constructions with an authority-neutral project documentation question.",
     "Block every protected claim that does not match an allowlisted meaning-reducing transformation.",
   ],
@@ -106,7 +112,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_CLIMATE_ASSERTION" };
   }
 
-  if (claimClasses.includes("CLIMATE") && /\b(?:climate|weather|temperature|seasonal)\b/i.test(text)) {
+  if (claimClasses.includes("CLIMATE")) {
     return {
       claimClasses,
       originalText: text,
@@ -169,6 +175,50 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_PRODUCT_ASSUMPTION" };
   }
 
+  if (claimClasses.includes("PRODUCT_SPECIFICATION") && /^Explore our .+ solutions for additional product specifications, turnkey package details, and display options\.?$/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Review the product page and ask the selected supplier which display options and project-planning information apply to the proposed configuration.",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "GENERIC_SPECIFICATION_CTA_TO_SUPPLIER_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("PRODUCT_SPECIFICATION") && /\b(?:brightness|anti-glare|product specifications?)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Which display specifications can the selected supplier confirm in writing for the proposed configuration?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "PRODUCT_SPECIFICATION_ASSERTION_TO_SUPPLIER_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("TRAINING")) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "What operational documentation, handoff, and training can the selected supplier confirm for the proposed project?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "TRAINING_ASSERTION_TO_SUPPLIER_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("INSTALLATION_CAPABILITY")) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Which installation responsibilities should the project team assign and document for the proposed project?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "INSTALLATION_ASSERTION_TO_RESPONSIBILITY_QUESTION",
+    };
+  }
+
   const labeledApplication = text.match(/^([^:]{2,80}):\s*(.+)$/);
   if (labeledApplication && claimClasses.includes("INTERACTIVITY") && /\binteractive\b/i.test(labeledApplication[2])) {
     const label = labeledApplication[1].trim();
@@ -207,6 +257,15 @@ function applyTransformation(html: string, transformation: GlwZeroAuthorityTrans
   }
   const exact = $("h1, h2, h3, p, li, td, th, dt, dd").filter((_, element) => normalizeText($(element).text()) === transformation.originalText).first();
   if (!exact.length) {
+    const containing = $("h1, h2, h3, p, li, td, th, dt, dd").filter((_, element) =>
+      normalizeText($(element).text()).includes(transformation.originalText)).toArray()
+      .sort((left, right) => normalizeText($(left).text()).length - normalizeText($(right).text()).length)[0];
+    if (containing) {
+      const element = $(containing);
+      const normalized = normalizeText(element.text());
+      element.text(normalized.replace(transformation.originalText, transformation.canonicalText ?? "").trim());
+      return $.html();
+    }
     return html.includes(transformation.originalText)
       ? html.replace(transformation.originalText, transformation.canonicalText ?? "")
       : null;
@@ -311,5 +370,35 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
       consumesN8nExecution: false,
       modelInvoked: false,
     },
+  };
+}
+
+export function rehabilitateGlwExistingArtifact(input: {
+  artifact: GlwGeneratedDraftArtifact;
+  authority?: {
+    references: readonly { referenceId: string; role: string }[];
+    authoritativeFactReferenceIds: readonly string[];
+    supportedClaimMappings: readonly GlwProtectedClaimAuthorityMapping[];
+  } | null;
+}) {
+  const authority = input.authority ?? {
+    references: [],
+    authoritativeFactReferenceIds: [],
+    supportedClaimMappings: [],
+  };
+  const before = evaluateGlwReferenceClaimAuthority({ artifact: input.artifact, authority });
+  const canonicalization = canonicalizeGlwZeroAuthorityClaims({
+    rawArtifact: input.artifact,
+    authoritativeFactReferenceIds: authority.authoritativeFactReferenceIds,
+    findings: before.findings,
+  });
+  const after = canonicalization.canonicalizedArtifact
+    ? evaluateGlwReferenceClaimAuthority({ artifact: canonicalization.canonicalizedArtifact, authority })
+    : null;
+  return {
+    ok: canonicalization.ok && Boolean(after?.ok),
+    before,
+    canonicalization,
+    after,
   };
 }

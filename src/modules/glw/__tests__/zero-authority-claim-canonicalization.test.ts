@@ -4,6 +4,7 @@ import {
   canonicalizeGlwZeroAuthorityClaims,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
+  rehabilitateGlwExistingArtifact,
 } from "../zero-authority-claim-canonicalization";
 import { evaluateGlwStateLocalizationContamination } from "../state-localization-contamination";
 import { readFileSync } from "node:fs";
@@ -76,6 +77,45 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.canonicalizedArtifact?.contentHtml).not.toContain(heading);
     expect(result.canonicalizedArtifact?.contentHtml).not.toContain("Market discussion that is not needed.");
     expect(result.canonicalizedArtifact?.contentHtml).toContain("Request Guidance");
+  });
+
+  test("converts repeated existing-content defects without product or target-specific rules", () => {
+    const cases = [
+      ["PRODUCT_SPECIFICATION", "Explore our Accent Rear Projection Film solutions for additional product specifications, turnkey package details, and display options.", "GENERIC_SPECIFICATION_CTA_TO_SUPPLIER_QUESTION"],
+      ["PRODUCT_SPECIFICATION", "Plan for adjustable sphere brightness and anti-glare surface treatment.", "PRODUCT_SPECIFICATION_ASSERTION_TO_SUPPLIER_QUESTION"],
+      ["CLIMATE", "Record nearby heat sources, water sources, airborne contaminants, direct sun, cleaning activity, and other conditions that the project team considers relevant.", "CLIMATE_ASSERTION_TO_BUYER_QUESTION"],
+      ["TRAINING", "Training and handoff scope should be agreed by the project team.", "TRAINING_ASSERTION_TO_SUPPLIER_QUESTION"],
+      ["INSTALLATION_CAPABILITY", "Clarify who verifies dimensions, selects the projector, approves the location, designs support, supplies power and signal, coordinates access, installs the enclosure, commissions the system, and maintains it after turnover.", "INSTALLATION_ASSERTION_TO_RESPONSIBILITY_QUESTION"],
+    ] as const;
+
+    for (const [claimClass, text, ruleId] of cases) {
+      const result = canonicalize(`<p>${text}</p>`, [finding(claimClass, text)]);
+      expect(result.ok).toBe(true);
+      expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId, safeToTransform: true }));
+      expect(result.canonicalizedArtifact?.contentHtml).not.toContain(text);
+      const qa = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+      expect(qa.ok).toBe(true);
+    }
+  });
+
+  test("canonicalizes a classified sentence spanning nested inline markup", () => {
+    const text = "Climate Control: Spheres require stable temperature and humidity for reliable operation.";
+    const result = canonicalize(`<ul><li><strong>Climate Control:</strong> Spheres require stable temperature and humidity for reliable operation. Preserve the remaining project guidance.</li></ul>`, [finding("CLIMATE", text)]);
+
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("Spheres require stable temperature");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Preserve the remaining project guidance.");
+  });
+
+  test("rehabilitates an existing artifact through classification, canonicalization, and unchanged post-check", () => {
+    const input = artifact("<p>Explore our display solutions for additional product specifications, turnkey package details, and display options.</p>");
+    const result = rehabilitateGlwExistingArtifact({ artifact: input });
+
+    expect(result.ok).toBe(true);
+    expect(result.before.ok).toBe(false);
+    expect(result.after?.ok).toBe(true);
+    expect(result.canonicalization.canonicalizedArtifact).not.toBe(input);
+    expect(input.contentHtml).toContain("additional product specifications");
   });
 
   test("prefers removal for observed nonessential climate and cost claims", () => {
