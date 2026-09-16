@@ -50,8 +50,8 @@ export const NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK = {
   HERO_AUTHORITY: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
   FEATURED_MEDIA_SUPPRESSION: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
   SEMANTIC_LINKS: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
-  EXACT_PUBLICATION: "MISSING_SHARED_MECHANISM",
-  ROLLBACK: "MISSING_SHARED_MECHANISM",
+  EXACT_PUBLICATION: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+  ROLLBACK: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
 } as const satisfies Readonly<Record<
   "HERO_AUTHORITY" | "FEATURED_MEDIA_SUPPRESSION" | "SEMANTIC_LINKS" | "EXACT_PUBLICATION" | "ROLLBACK",
   SiteSpecificImplementationClassification
@@ -93,9 +93,9 @@ export const SHARED_RICH_PAGE_AUTHORITY_MANIFEST: Readonly<Record<SharedRichPage
   SEMANTIC_LINKS: { authorityName: "Site Internal Link Authority", implementationPath: "src/modules/glw/site-internal-link-authority.ts", owningModuleOrService: "resolveGlwSiteInternalLinkAuthority", contractOrPolicy: "exact allowed internal links", consumers: ["GLW reference pipeline"], reusableBy: ["registered GLW sites"], state: "SITE_SPECIFIC_REQUIRED" },
   SEO_CANONICAL: { authorityName: "Public WordPress Certification", implementationPath: "src/modules/foundation/public-wordpress-certification.ts", owningModuleOrService: "certifyPublicWordPressSite", contractOrPolicy: "canonical/title/meta/indexability verification", consumers: ["Commercial Stainless", "site publication"], reusableBy: ["future Genesis sites"], state: "SHARED" },
   OWNER_REVIEW: { authorityName: "GLW Reference Owner Authority", implementationPath: "src/modules/glw/reference-owner-authority.ts", owningModuleOrService: "issueGlwReferenceOwnerGrant", contractOrPolicy: "session-bound owner review", consumers: ["GLW reference pipeline"], reusableBy: ["GLW campaigns"], state: "SHARED" },
-  EXACT_PUBLICATION: { authorityName: "Genesis WordPress Publish Writer", implementationPath: "src/modules/foundation/wordpress-publish-writer.ts", owningModuleOrService: "publishGenesisWordPressDraft", contractOrPolicy: "exact object draft-to-publish transport; shared single-use authorization pending", consumers: ["site publication", "Houston", "San Antonio"], reusableBy: ["future Genesis sites after authorization convergence"], state: "SITE_SPECIFIC_REQUIRED" },
+  EXACT_PUBLICATION: { authorityName: "Genesis Exact Publication Authority", implementationPath: "src/modules/glw/exact-publication-rollback-authority.ts", owningModuleOrService: "issueExactPublicationRollbackPreflight/issueExactPublicationRollbackGrant/consumeExactPublicationRollbackGrant", contractOrPolicy: "exact target, object, artifact, certification, runtime, principal, and session", consumers: ["GLW rich-reference production"], reusableBy: ["Outdoor Digital Sphere state targets"], state: "SHARED" },
   PUBLIC_HOST_CERTIFICATION: { authorityName: "Public WordPress Certification", implementationPath: "src/modules/foundation/public-wordpress-certification.ts", owningModuleOrService: "certifyPublicWordPressSite", contractOrPolicy: "public canonical verification", consumers: ["Commercial Stainless", "site publication"], reusableBy: ["future Genesis sites"], state: "SHARED" },
-  ROLLBACK: { authorityName: "Single Page Publication Rollback", implementationPath: "src/modules/glw/san-antonio-final-publication-service.ts", owningModuleOrService: "San Antonio publication service", contractOrPolicy: "site-specific compensating write", consumers: ["ProjectorEnclosure / San Antonio"], reusableBy: [], state: "SITE_SPECIFIC_REQUIRED" },
+  ROLLBACK: { authorityName: "Genesis Exact Rollback Authority", implementationPath: "src/modules/glw/exact-publication-rollback-authority.ts", owningModuleOrService: "issueExactPublicationRollbackPreflight/issueExactPublicationRollbackGrant/consumeExactPublicationRollbackGrant", contractOrPolicy: "separate owner-authorized exact publish-to-draft rollback", consumers: ["GLW rich-reference production"], reusableBy: ["Outdoor Digital Sphere state targets"], state: "SHARED" },
   LIFECYCLE: { authorityName: "Site Publication Executor", implementationPath: "src/modules/foundation/site-publication-executor.ts", owningModuleOrService: "executeSitePublication", contractOrPolicy: "site publication lifecycle", consumers: ["Genesis site builds"], reusableBy: ["future Genesis sites"], state: "SHARED" },
 };
 
@@ -139,7 +139,7 @@ export function evaluateNextGlwStateProductionUnblock(profile: SharedRichPagePro
     nextTargetRequiresNewArchitecture: !profile,
     nextTargetRequiresNewCode: !profile || remainingNewCodeRequirements.length > 0,
     draftProductionReady: Boolean(profile) && remainingNewCodeRequirements.length === 0,
-    publicationProductionReady: false,
-    productionReady: false,
+    publicationProductionReady: Boolean(profile) && publicationBoundaryRequirements.length === 0,
+    productionReady: Boolean(profile) && remainingNewCodeRequirements.length === 0 && publicationBoundaryRequirements.length === 0,
   };
 }

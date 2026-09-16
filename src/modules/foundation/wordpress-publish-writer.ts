@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { normalizeWordPressApiBaseUrl } from "./authenticated-wordpress-read-authority";
 import { resolveWordPressCredentialReference } from "./wordpress-credential-resolver";
 import type { SiteConfiguration } from "./types";
@@ -10,7 +11,14 @@ type WordPressPage = {
   parent?: number;
   status?: string;
   link?: string;
+  content?: { raw?: string };
 };
+
+export type GenesisWordPressExactStatus = "draft" | "publish";
+export type GenesisWordPressExactIdentity = { wordpressObjectId: string; parentObjectId: string; slug: string; storedPostContentSha: string };
+export type GenesisWordPressExactStatusTransitionResult =
+  | { ok: true; wordpressObjectId: string; wordpressUrl: string | null; beforeStatus: GenesisWordPressExactStatus; afterStatus: GenesisWordPressExactStatus; mutationPerformed: true; contentMutationPerformed: false }
+  | { ok: false; state: "not_configured" | "credential_unavailable" | "invalid_target" | "read_failed" | "identity_mismatch" | "write_failed" | "verification_failed"; message: string };
 
 export type GenesisWordPressPublishResult =
   | {
@@ -65,7 +73,7 @@ async function readPage(input: {
   try {
     const query = new URLSearchParams({
       context: "edit",
-      _fields: "id,slug,parent,status,link",
+      _fields: "id,slug,parent,status,link,content",
       _genesis_read_nonce: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     });
     const response = await fetch(
@@ -89,6 +97,41 @@ async function readPage(input: {
   } catch {
     return { ok: false };
   }
+}
+
+function contentSha(page: WordPressPage): string {
+  return createHash("sha256").update(typeof page.content?.raw === "string" ? page.content.raw.trim() : "").digest("hex");
+}
+
+export async function transitionGenesisWordPressPageStatus(input: {
+  site: SiteConfiguration;
+  identity: GenesisWordPressExactIdentity;
+  expectedStatus: GenesisWordPressExactStatus;
+  intendedStatus: GenesisWordPressExactStatus;
+}): Promise<GenesisWordPressExactStatusTransitionResult> {
+  const configuredApiBaseUrl = input.site.integrations.wordpressApiBaseUrl;
+  const credentialReference = input.site.integrations.wordpressCredentialReference;
+  if (!configuredApiBaseUrl || !credentialReference) return { ok: false, state: "not_configured", message: "WordPress API or credential reference is not configured." };
+  let apiBaseUrl: string;
+  try { apiBaseUrl = normalizeWordPressApiBaseUrl(configuredApiBaseUrl); } catch { return { ok: false, state: "invalid_target", message: "The configured WordPress API target is invalid or does not satisfy Genesis transport requirements." }; }
+  const credential = resolveWordPressCredentialReference(credentialReference);
+  if (!credential) return { ok: false, state: "credential_unavailable", message: "The configured WordPress credential reference could not be resolved." };
+  const wordpressObjectId = normalizeObjectId(input.identity.wordpressObjectId);
+  const parentObjectId = normalizeObjectId(input.identity.parentObjectId);
+  if (!wordpressObjectId || !parentObjectId || !input.identity.slug.trim() || !/^[0-9a-f]{64}$/.test(input.identity.storedPostContentSha)) return { ok: false, state: "invalid_target", message: "Genesis requires exact WordPress identity and content authority." };
+  const authorization = createAuthorizationHeader(credential.username, credential.applicationPassword);
+  const before = await readPage({ apiBaseUrl, authorization, wordpressObjectId });
+  if (!before.ok) return { ok: false, state: "read_failed", message: `Genesis could not authoritatively read the exact WordPress object before transition${before.status ? ` (HTTP ${before.status})` : ""}.` };
+  if (before.page.id !== wordpressObjectId || before.page.status !== input.expectedStatus || before.page.slug !== input.identity.slug || before.page.parent !== parentObjectId || contentSha(before.page) !== input.identity.storedPostContentSha) return { ok: false, state: "identity_mismatch", message: `WordPress before-read does not match exact transition authority (${describePage(before.page)}).` };
+  let writeResponse: Response;
+  try {
+    writeResponse = await fetch(`${apiBaseUrl}/pages/${wordpressObjectId}`, { method: "POST", headers: { Accept: "application/json", Authorization: authorization, "Content-Type": "application/json" }, body: JSON.stringify({ status: input.intendedStatus }), cache: "no-store", signal: AbortSignal.timeout(10_000) });
+  } catch { return { ok: false, state: "write_failed", message: "Genesis could not complete the WordPress status transition." }; }
+  if (!writeResponse.ok) return { ok: false, state: "write_failed", message: `WordPress status transition failed with HTTP ${writeResponse.status}.` };
+  const after = await readPage({ apiBaseUrl, authorization, wordpressObjectId });
+  if (!after.ok) return { ok: false, state: "verification_failed", message: `Genesis could not verify the WordPress object after transition${after.status ? ` (HTTP ${after.status})` : ""}.` };
+  if (after.page.id !== wordpressObjectId || after.page.status !== input.intendedStatus || after.page.slug !== input.identity.slug || after.page.parent !== parentObjectId || contentSha(after.page) !== input.identity.storedPostContentSha) return { ok: false, state: "verification_failed", message: `WordPress post-transition verification mismatch (${describePage(after.page)}).` };
+  return { ok: true, wordpressObjectId: String(wordpressObjectId), wordpressUrl: typeof after.page.link === "string" && after.page.link.trim() ? after.page.link : null, beforeStatus: input.expectedStatus, afterStatus: input.intendedStatus, mutationPerformed: true, contentMutationPerformed: false };
 }
 
 export async function publishGenesisWordPressDraft(input: {

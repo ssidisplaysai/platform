@@ -79,9 +79,9 @@ export type TargetParameterizedRichReferenceReadiness = {
   targetRequiresNewArchitecture: false;
   targetRequiresNewCode: false;
   draftProductionReady: true;
-  sharedExactPublicationAuthorityReady: false;
-  sharedRollbackAuthorityReady: false;
-  publicationProductionReady: false;
+  sharedExactPublicationAuthorityReady: true;
+  sharedRollbackAuthorityReady: true;
+  publicationProductionReady: true;
   generationAttempted: false;
   wordpressMutation: false;
 };
@@ -220,9 +220,9 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
     targetRequiresNewArchitecture: false,
     targetRequiresNewCode: false,
     draftProductionReady: true,
-    sharedExactPublicationAuthorityReady: false,
-    sharedRollbackAuthorityReady: false,
-    publicationProductionReady: false,
+    sharedExactPublicationAuthorityReady: true,
+    sharedRollbackAuthorityReady: true,
+    publicationProductionReady: true,
     generationAttempted: false,
     wordpressMutation: false,
   };

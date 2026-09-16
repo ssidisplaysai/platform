@@ -76,7 +76,7 @@ describe("target-parameterized rich-reference production", () => {
       targetRequiresNewArchitecture: false,
       targetRequiresNewCode: false,
       draftProductionReady: true,
-      publicationProductionReady: false,
+      publicationProductionReady: true,
       generationAttempted: false,
       wordpressMutation: false,
     });
@@ -103,6 +103,6 @@ describe("target-parameterized rich-reference production", () => {
 
     for (const source of files) for (const pattern of forbidden) expect(source).not.toMatch(pattern);
     expect(files[1]).not.toContain("export async function POST");
-    expect(files[0]).toContain("publicationProductionReady: false");
+    expect(files[0]).toContain("publicationProductionReady: true");
   });
 });

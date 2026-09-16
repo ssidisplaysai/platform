@@ -28,7 +28,8 @@ describe("shared rich-page production authority", () => {
     expect(inheritance.nextTargetRequiresNewArchitecture).toBe(false);
     expect(inheritance.nextTargetRequiresNewCode).toBe(true);
     expect(inheritance.sharedProductionPipelineComplete).toBe(false);
-    expect(inheritance.missingSharedCapabilities).toEqual(expect.arrayContaining(["HERO_AUTHORITY", "EXACT_PUBLICATION", "ROLLBACK"]));
+    expect(inheritance.missingSharedCapabilities).toEqual(expect.arrayContaining(["HERO_AUTHORITY", "FEATURED_MEDIA_SUPPRESSION", "SEMANTIC_LINKS"]));
+    expect(inheritance.missingSharedCapabilities).not.toEqual(expect.arrayContaining(["EXACT_PUBLICATION", "ROLLBACK"]));
     expect(inheritance.missingSharedCapabilities).not.toContain("NATIVE_TITLE_SUPPRESSION");
   });
 
@@ -40,8 +41,8 @@ describe("shared rich-page production authority", () => {
       HERO_AUTHORITY: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
       FEATURED_MEDIA_SUPPRESSION: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
       SEMANTIC_LINKS: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
-      EXACT_PUBLICATION: "MISSING_SHARED_MECHANISM",
-      ROLLBACK: "MISSING_SHARED_MECHANISM",
+      EXACT_PUBLICATION: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
+      ROLLBACK: "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT",
     });
     expect(result).toMatchObject({
       profileResolved: true,
@@ -51,11 +52,11 @@ describe("shared rich-page production authority", () => {
       nextTargetRequiresNewArchitecture: false,
       nextTargetRequiresNewCode: false,
       draftProductionReady: true,
-      publicationProductionReady: false,
-      productionReady: false,
+      publicationProductionReady: true,
+      productionReady: true,
     });
     expect(result.remainingNewCodeRequirements).toEqual([]);
-    expect(result.publicationBoundaryRequirements).toEqual(["EXACT_PUBLICATION", "ROLLBACK"]);
+    expect(result.publicationBoundaryRequirements).toEqual([]);
   });
 
   test("does not claim unregistered future sites inherit a complete production pipeline", () => {
