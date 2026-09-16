@@ -251,7 +251,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
         <label className="text-xs text-zinc-300 md:col-span-2">Authoritative caption<input value={caption} onChange={(event) => setCaption(event.target.value)} className="mt-2 h-10 w-full border border-zinc-700 bg-zinc-950 px-3 text-white" /></label>
       </div>
       <p className="mt-3 text-xs text-zinc-500">Upload records only the intended authority class. Usage scopes become authoritative only during explicit owner review.</p>
-      <p className="mt-2 text-xs text-zinc-500">Actual-product representation and hero eligibility are decided only in the owner review step.</p>
+      <p className="mt-2 text-xs text-zinc-500">Actual-product representation is decided during owner review. Primary hero selection is a separate governed owner action after approval.</p>
       <button type="button" onClick={() => void upload()} disabled={busy || !file || !sourceDescription.trim() || !provenance.trim() || !altText.trim()} className="mt-4 bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:bg-zinc-800 disabled:text-zinc-500">Store Pending Media</button>
       {message ? <p className="mt-3 text-sm text-amber-300" role="status">{message}</p> : null}
 
