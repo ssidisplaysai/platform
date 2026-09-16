@@ -5,6 +5,7 @@ import { runGovernedRenderCapture, signGovernedSnapshotPath, type CaptureAuthori
 import { listRenderedVisualCertifications } from "@/modules/foundation/rendered-visual-certification-repository";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { candidateMediaDataUrls, candidateVisualSummary, buildIndianaRichReferenceCandidate, getIndianaRichReferenceCandidate, INDIANA_RICH_REFERENCE_CANDIDATE_ARTIFACT_PATH } from "@/modules/glw/indiana-rich-reference-candidate";
+import { assertIndianaRichReferenceAuthorizedInputs } from "@/modules/glw/indiana-rich-reference-composition-plan";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID } from "@/modules/glw/product-media-authority";
 import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT } from "@/modules/glw/reference-generation-claim-contract";
@@ -47,6 +48,7 @@ export async function POST(request: NextRequest, route: Context) {
       const job = await glwPageExecutionRepository.getById(body.semanticJobId);
       if (!job?.generatedDraft || job.productId !== resolved.campaign.productId || job.state !== "Indiana" || createHash("sha256").update(job.generatedDraft.contentHtml).digest("hex") !== body.semanticInputFingerprint) throw new Error("INDIANA_RICH_CANDIDATE_SEMANTIC_SOURCE_MISMATCH");
       const records = listProductMediaAuthority({ organizationId: resolved.campaign.organizationId, siteId: resolved.campaign.siteId, productId: resolved.campaign.productId });
+      assertIndianaRichReferenceAuthorizedInputs(records, body.semanticInputFingerprint);
       const candidate = buildIndianaRichReferenceCandidate({ records, semanticSource: { jobId: job.jobId, artifactSha256: body.semanticInputFingerprint }, expectedPlanFingerprint: body.expectedPlanFingerprint, claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT });
       return NextResponse.json({ candidate, candidateArtifactPath: INDIANA_RICH_REFERENCE_CANDIDATE_ARTIFACT_PATH, wordpressMutation: false, generationAttempted: false, n8nExecutionCreated: false }, { status: 201 });
     }

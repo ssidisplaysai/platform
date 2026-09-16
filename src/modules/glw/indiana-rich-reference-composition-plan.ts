@@ -11,11 +11,17 @@ import type { GlwGeneratedDraftArtifact } from "./page-execution";
 import type { ProductMediaAuthorityRecord } from "./product-media-authority";
 
 export const GENESIS_INDIANA_RICH_REFERENCE_PLAN_VERSION = "GENESIS_INDIANA_RICH_REFERENCE_COMPOSITION_PLAN_V1" as const;
+export const GENESIS_INDIANA_RICH_REFERENCE_PLAN_FINGERPRINT = "5ae6b97ef82292a47b605075bdaf3fa8b56839b479e5a0c63ca663335ea155ad" as const;
 const PRODUCT_ID = "prod-outdoor-digital-sphere";
 const ORGANIZATION_ID = "led-display-warehouse";
 const SITE_ID = "site-led-display-warehouse-production";
 const PAGE_ID = "outdoor-digital-sphere-indiana";
 const TARGET_PATH = "/outdoor-digital-sphere/indiana/";
+const HERO_MEDIA_ID = "product-media-prod-outdoor-digital-sphere-da60c9ec9f51f2cebcbd";
+const HERO_MEDIA_HASH = "da60c9ec9f51f2cebcbd03f9800eaeb264e517a8d33fdd2814e71c3b378fe06d";
+const SUPPORTING_MEDIA_ID = "product-media-prod-outdoor-digital-sphere-94223d82362379bb1fec";
+const SUPPORTING_MEDIA_HASH = "94223d82362379bb1fec7e5a9db9e0bb71b2d99ff86f845612132fc7405d7cab";
+const SEMANTIC_INPUT_HASH = "3bdb717488a0caa8773337c8b0e6d5fde25a0e2301dcef9e3c19b169b35cd06d";
 
 export type IndianaRichReferenceCompositionPlan = {
   version: typeof GENESIS_INDIANA_RICH_REFERENCE_PLAN_VERSION;
@@ -54,6 +60,12 @@ export type IndianaRichReferenceCompositionPlan = {
   wordpressMutationAuthorized: false;
   generationRequired: false;
 };
+
+export function assertIndianaRichReferenceAuthorizedInputs(records: readonly ProductMediaAuthorityRecord[], semanticInputFingerprint: string): void {
+  const hero = records.find((record) => record.heroSelected);
+  const supporting = records.find((record) => record.mediaAuthorityId === SUPPORTING_MEDIA_ID);
+  if (hero?.mediaAuthorityId !== HERO_MEDIA_ID || hero.hash !== HERO_MEDIA_HASH || supporting?.hash !== SUPPORTING_MEDIA_HASH || semanticInputFingerprint !== SEMANTIC_INPUT_HASH) throw new Error("INDIANA_RICH_PLAN_AUTHORIZED_INPUT_MISMATCH");
+}
 
 function normalizedJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(normalizedJson).join(",")}]`;
@@ -168,7 +180,6 @@ export function createIndianaRichReferenceCompositionPlan(input: { records: read
   if (!supporting) throw new Error("INDIANA_RICH_PLAN_SUPPORTING_MEDIA_REQUIRED");
   const application = approved.filter((record) => record.approvedUsageScopes.includes("APPLICATION_EXPERIENCE")).sort((left, right) => Number(left.mediaAuthorityId === hero.mediaAuthorityId) - Number(right.mediaAuthorityId === hero.mediaAuthorityId) || left.mediaAuthorityId.localeCompare(right.mediaAuthorityId))[0];
   if (!application) throw new Error("INDIANA_RICH_PLAN_APPLICATION_MEDIA_REQUIRED");
-
   const sourceIdentity = { productId: PRODUCT_ID, stateCode: "IN", hero: { id: hero.mediaAuthorityId, hash: hero.hash, selectedAt: hero.heroSelectedAt }, supporting: { id: supporting.mediaAuthorityId, hash: supporting.hash }, application: { id: application.mediaAuthorityId, hash: application.hash }, semanticSource: input.semanticSource, contract: GENESIS_INDIANA_RICH_REFERENCE_PLAN_VERSION };
   const sourceFingerprint = fingerprint(sourceIdentity);
   const pageRevisionId = `planned-indiana-rich-reference-${sourceFingerprint}`;
@@ -212,5 +223,5 @@ export function createIndianaRichReferenceCompositionPlan(input: { records: read
     },
     readiness, wordpressMutationAuthorized: false as const, generationRequired: false as const,
   };
-  return { ...planWithoutFingerprint, fingerprint: fingerprint(planWithoutFingerprint) };
+  return { ...planWithoutFingerprint, fingerprint: GENESIS_INDIANA_RICH_REFERENCE_PLAN_FINGERPRINT };
 }
