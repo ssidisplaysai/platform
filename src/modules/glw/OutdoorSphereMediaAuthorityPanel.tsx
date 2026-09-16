@@ -21,6 +21,7 @@ type MediaRecord = {
   usageScopes: readonly ProductMediaAuthorityClass[];
   proposedUsageScopes: readonly ProductMediaAuthorityClass[];
   approvedUsageScopes: readonly ProductMediaAuthorityClass[];
+  localAtmosphereStateCodes: readonly string[];
   depictsActualProduct: boolean;
   heroEligible: boolean;
   altTextAuthority: string;
@@ -68,7 +69,9 @@ function MediaReviewCard(props: {
     captionAuthority: string;
     authorityAndScopesConfirmed: boolean;
     localAtmosphereConfirmed: boolean;
+    localAtmosphereStateCodes: string[];
   }) => Promise<void>;
+  targetStateCode: string;
 }) {
   const controls = projectProductMediaReviewControlState(props.record.ownerApproval);
   const [durableDraft] = useState(() => createProductMediaReviewDraft({ ...props.record, usageScopes: [...props.record.proposedUsageScopes] }));
@@ -81,7 +84,7 @@ function MediaReviewCard(props: {
   const [authorityAndScopesConfirmed, setAuthorityAndScopesConfirmed] = useState(false);
   const [localAtmosphereConfirmed, setLocalAtmosphereConfirmed] = useState(false);
   const hasLocalScope = usageScopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE");
-  const review = { authorityClass, usageScopes, depictsActualProduct, heroEligible, altTextAuthority, captionAuthority, authorityAndScopesConfirmed, localAtmosphereConfirmed };
+  const review = { authorityClass, usageScopes, depictsActualProduct, heroEligible, altTextAuthority, captionAuthority, authorityAndScopesConfirmed, localAtmosphereConfirmed, localAtmosphereStateCodes: hasLocalScope && localAtmosphereConfirmed ? [props.targetStateCode] : [] };
 
   function toggleScope(role: ProductMediaAuthorityClass) {
     setUsageScopes((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]);
@@ -104,14 +107,14 @@ function MediaReviewCard(props: {
         <fieldset className="mt-3"><legend className="text-xs text-zinc-400">Approved usage scopes</legend><div className="mt-2 flex flex-wrap gap-3">{roles.map((role) => <label key={role} className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={usageScopes.includes(role)} onChange={() => { toggleScope(role); setAuthorityAndScopesConfirmed(false); }} />{role.replaceAll("_", " ")}</label>)}</div></fieldset>
         <div className="mt-3 flex flex-wrap gap-4"><label className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={depictsActualProduct} onChange={(event) => setDepictsActualProduct(event.target.checked)} />Depicts actual product</label><label className="flex items-center gap-2 text-xs text-zinc-300"><input type="checkbox" checked={heroEligible} onChange={(event) => setHeroEligible(event.target.checked)} />Hero eligible</label></div>
         <label className="mt-3 flex items-start gap-2 text-xs text-zinc-300"><input type="checkbox" checked={authorityAndScopesConfirmed} onChange={(event) => setAuthorityAndScopesConfirmed(event.target.checked)} />I confirm this authority class and each checked usage scope for this exact asset.</label>
-        {hasLocalScope ? <label className="mt-2 flex items-start gap-2 text-xs text-amber-300"><input type="checkbox" checked={localAtmosphereConfirmed} onChange={(event) => setLocalAtmosphereConfirmed(event.target.checked)} />I confirm this asset is local to the intended target geography. Chicago or Texas provenance is not Indiana-local authority.</label> : null}
+        {hasLocalScope ? <label className="mt-2 flex items-start gap-2 text-xs text-amber-300"><input type="checkbox" checked={localAtmosphereConfirmed} onChange={(event) => setLocalAtmosphereConfirmed(event.target.checked)} />I confirm this asset is local to {props.targetStateCode}. Chicago or Texas provenance is not Indiana-local authority.</label> : null}
         <div className="mt-3 flex gap-2">{controls.approvalActionVisible ? <button type="button" disabled={props.busy || !authorityAndScopesConfirmed || (hasLocalScope && !localAtmosphereConfirmed) || !usageScopes.includes(authorityClass) || !altTextAuthority.trim()} onClick={() => void props.onReview(props.record, "APPROVE", review)} className="border border-emerald-700 px-3 py-2 text-xs font-semibold text-emerald-300 disabled:border-zinc-800 disabled:text-zinc-600">{props.record.ownerApproval === "REJECTED" ? "Approve After Re-review" : "Approve"}</button> : null}{controls.rejectionActionVisible ? <button type="button" disabled={props.busy} onClick={() => void props.onReview(props.record, "REJECT", review)} className="border border-red-800 px-3 py-2 text-xs font-semibold text-red-300 disabled:opacity-40">Reject</button> : null}</div>
       </div> : null}
     </article>
   );
 }
 
-export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string; siteId: string; productId: string }) {
+export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string; siteId: string; productId: string; targetStateCode: string; onAuthorityChanged?: () => Promise<void> }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [sourceType, setSourceType] = useState<ProductMediaSourceType>("OWNER_SUPPLIED");
@@ -122,7 +125,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const endpoint = `/api/glw/products/${encodeURIComponent(props.productId)}/media-authority`;
+  const endpoint = `/api/glw/products/${encodeURIComponent(props.productId)}/media-authority?stateCode=${encodeURIComponent(props.targetStateCode)}`;
   const scopeHeaders = { "x-gcp-organization-id": props.organizationId, "x-gcp-site-id": props.siteId };
 
   useEffect(() => {
@@ -156,6 +159,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       setPayload(await fetchMediaAuthority(endpoint, scopeHeaders) ?? next);
       setFile(null);
       setMessage("Media stored as pending. Review and explicitly approve or reject it below.");
+      await props.onAuthorityChanged?.();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Media intake failed.");
     } finally {
@@ -163,7 +167,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
     }
   }
 
-  async function review(record: MediaRecord, decision: "APPROVE" | "REJECT", reviewInput: { authorityClass: ProductMediaAuthorityClass; usageScopes: ProductMediaAuthorityClass[]; depictsActualProduct: boolean; heroEligible: boolean; altTextAuthority: string; captionAuthority: string; authorityAndScopesConfirmed: boolean; localAtmosphereConfirmed: boolean }) {
+  async function review(record: MediaRecord, decision: "APPROVE" | "REJECT", reviewInput: { authorityClass: ProductMediaAuthorityClass; usageScopes: ProductMediaAuthorityClass[]; depictsActualProduct: boolean; heroEligible: boolean; altTextAuthority: string; captionAuthority: string; authorityAndScopesConfirmed: boolean; localAtmosphereConfirmed: boolean; localAtmosphereStateCodes: string[] }) {
     setBusy(true);
     setMessage(null);
     try {
@@ -176,6 +180,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       if (!response.ok) throw new Error(next.error ?? "Media review failed.");
       setPayload(await fetchMediaAuthority(endpoint, scopeHeaders) ?? next);
       setMessage(decision === "APPROVE" ? "Owner approval persisted." : "Owner rejection persisted.");
+      await props.onAuthorityChanged?.();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Media review failed.");
     } finally {
@@ -215,7 +220,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       <button type="button" onClick={() => void upload()} disabled={busy || !file || !sourceDescription.trim() || !provenance.trim() || !altText.trim()} className="mt-4 bg-red-600 px-4 py-2 text-xs font-semibold text-white disabled:bg-zinc-800 disabled:text-zinc-500">Store Pending Media</button>
       {message ? <p className="mt-3 text-sm text-amber-300" role="status">{message}</p> : null}
 
-      {payload?.records.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{payload.records.map((record) => <MediaReviewCard key={`${record.mediaAuthorityId}:${record.updatedAt}`} record={record} busy={busy} onReview={review} />)}</div> : null}
+      {payload?.records.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{payload.records.map((record) => <MediaReviewCard key={`${record.mediaAuthorityId}:${record.updatedAt}`} record={record} busy={busy} onReview={review} targetStateCode={props.targetStateCode} />)}</div> : null}
 
       {payload ? <div className="mt-4 border-t border-zinc-800 pt-3 text-xs text-zinc-300"><p>Product authority: {payload.readiness.approvedProductAuthorityMediaCount} · Contextual: {payload.readiness.approvedContextualMediaCount} · Application: {payload.readiness.approvedApplicationMediaCount} · Local atmosphere: {payload.readiness.approvedLocalAtmosphereMediaCount}</p><p className="mt-1">Hero: {payload.readiness.heroAuthorityReady ? "READY" : "REQUIRED"} · Supporting: {payload.readiness.supportingProductMediaReady ? "READY" : "REQUIRED"} · Application: {payload.readiness.applicationMediaReady ? "READY" : "REQUIRED"} · Provenance: {payload.readiness.mediaProvenanceReady ? "READY" : "REQUIRED"}</p><p className="mt-1 text-zinc-500">Product fact authority remains {payload.readiness.productFactAuthorityScope.replaceAll("_", " ")}.</p></div> : null}
     </section>

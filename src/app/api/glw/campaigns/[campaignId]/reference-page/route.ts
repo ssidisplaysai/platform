@@ -23,25 +23,43 @@ import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchRefere
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
-import { evaluateProductMediaReadiness, listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID } from "@/modules/glw/product-media-authority";
+import { evaluateProductMediaReadiness, listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID, type ProductMediaReadiness } from "@/modules/glw/product-media-authority";
 import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
-function ownerReviewReadiness(job: Awaited<ReturnType<typeof glwPageExecutionRepository.getById>>, productMediaAvailable: boolean) {
+function referenceMediaReadiness(productMediaReadiness: ProductMediaReadiness | null, primaryImageReference: string | null) {
+  const legacyMediaId = /^wordpress-media:(\d+)$/.exec(primaryImageReference ?? "")?.[1] ?? null;
+  return productMediaReadiness ? {
+    productAuthorityMediaAvailable: productMediaReadiness.approvedProductAuthorityMediaCount > 0,
+    productAuthorityMediaCount: productMediaReadiness.approvedProductAuthorityMediaCount,
+    contextualMediaCount: productMediaReadiness.approvedContextualMediaCount,
+    applicationMediaCount: productMediaReadiness.approvedApplicationMediaCount,
+    localContextualMediaCount: productMediaReadiness.approvedLocalAtmosphereMediaCount,
+    featuredMediaId: null,
+  } : {
+    productAuthorityMediaAvailable: Boolean(primaryImageReference),
+    productAuthorityMediaCount: primaryImageReference ? 1 : 0,
+    contextualMediaCount: 0,
+    applicationMediaCount: 0,
+    localContextualMediaCount: 0,
+    featuredMediaId: legacyMediaId ? Number(legacyMediaId) : null,
+  };
+}
+
+function campaignProductMediaReadiness(campaign: GlwCampaign, stateCode: string): ProductMediaReadiness | null {
+  if (campaign.productId !== OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID) return null;
+  const records = listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId });
+  return evaluateProductMediaReadiness(records, { stateCode });
+}
+
+function ownerReviewReadiness(job: Awaited<ReturnType<typeof glwPageExecutionRepository.getById>>, media: ReturnType<typeof referenceMediaReadiness>) {
   if (!job?.generatedDraft) return null;
   return evaluateGlwReferenceOwnerReviewReadiness({
     artifact: job.generatedDraft,
-    media: {
-      productAuthorityMediaAvailable: productMediaAvailable,
-      productAuthorityMediaCount: 0,
-      contextualMediaCount: 0,
-      applicationMediaCount: 0,
-      localContextualMediaCount: 0,
-      featuredMediaId: null,
-    },
+    media,
     actualHostVisualCertified: false,
     authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] },
   });
@@ -184,14 +202,9 @@ export async function GET(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
-  const productMediaRecords = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
-    ? listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId })
-    : [];
-  const productMediaReadiness = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
-    ? evaluateProductMediaReadiness(productMediaRecords)
-    : null;
-  const approvedProductMediaAvailable = Boolean(productRecord.media.primaryImageReference)
-    || Boolean(productMediaReadiness?.approvedProductAuthorityMediaCount);
+  const productMediaReadiness = campaignProductMediaReadiness(campaign, target.state.code);
+  const mediaReadiness = referenceMediaReadiness(productMediaReadiness, productRecord.media.primaryImageReference);
+  const approvedProductMediaAvailable = mediaReadiness.productAuthorityMediaAvailable;
   const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);
   const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
   const generationAuthority = pack
@@ -282,7 +295,7 @@ export async function GET(request: NextRequest, context: Context) {
       retryContract,
       workflow,
       relatedReference,
-      ownerReviewReadiness: ownerReviewReadiness(legacyJob, approvedProductMediaAvailable),
+      ownerReviewReadiness: ownerReviewReadiness(legacyJob, mediaReadiness),
       richCompositionReadiness: legacyJob ? resolveGlwRichReferenceReadiness({ campaign, job: legacyJob, approvedProductMediaAvailable }) : null,
       productMediaReadiness,
       durableOperation,
@@ -324,7 +337,7 @@ export async function GET(request: NextRequest, context: Context) {
         retryContract,
         workflow: projectGlwReferenceWorkflow(job),
         relatedReference: null,
-        ownerReviewReadiness: ownerReviewReadiness(job, approvedProductMediaAvailable),
+        ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
         richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
         productMediaReadiness,
         durableOperation,
@@ -352,7 +365,7 @@ export async function GET(request: NextRequest, context: Context) {
     retryContract,
     workflow: projectGlwReferenceWorkflow(job),
     relatedReference: null,
-    ownerReviewReadiness: ownerReviewReadiness(job, approvedProductMediaAvailable),
+    ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
     richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
     productMediaReadiness,
     durableOperation,
@@ -454,8 +467,12 @@ export async function PATCH(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
-  const reviewReadiness = ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference));
-  const richCompositionReadiness = resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) });
+  const productRecord = getProductById(campaign.productId);
+  if (!productRecord) return NextResponse.json({ error: "Campaign product must still exist." }, { status: 409 });
+  const productMediaReadiness = campaignProductMediaReadiness(campaign, target.state.code);
+  const mediaReadiness = referenceMediaReadiness(productMediaReadiness, productRecord.media.primaryImageReference);
+  const reviewReadiness = ownerReviewReadiness(job, mediaReadiness);
+  const richCompositionReadiness = resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: mediaReadiness.productAuthorityMediaAvailable });
   if (!reviewReadiness?.ready || !richCompositionReadiness?.ready) {
     return NextResponse.json(
       { error: "Owner-reviewed reference composition requires remediation before approval.", code: "REFERENCE_OWNER_REVIEW_REMEDIATION_REQUIRED", ownerReviewReadiness: reviewReadiness, richCompositionReadiness },

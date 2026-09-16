@@ -57,6 +57,7 @@ export type ProductMediaAuthorityRecord = {
   contextualUseAllowed: boolean;
   applicationUseAllowed: boolean;
   localAtmosphereUseAllowed: boolean;
+  localAtmosphereStateCodes: readonly string[];
   heroEligible: boolean;
   altTextAuthority: string;
   captionAuthority: string;
@@ -84,6 +85,22 @@ export type ProductMediaLegacyReconciliationAudit = {
   heroEligible: boolean;
 };
 
+export type ProductMediaScopeCorrectionAudit = {
+  correctionKey: string;
+  correctedAt: string;
+  correctedByPrincipalId: string;
+  mediaAuthorityId: string;
+  hash: string;
+  ownerApproval: ProductMediaApprovalState;
+  ownerPrincipalId: string | null;
+  ownerApprovalTimestamp: string | null;
+  removedScope: ProductMediaAuthorityClass;
+  previousApprovedUsageScopes: readonly ProductMediaAuthorityClass[];
+  correctedApprovedUsageScopes: readonly ProductMediaAuthorityClass[];
+  provenance: string;
+  reason: string;
+};
+
 export type ProductMediaReadiness = {
   contractVersion: typeof GLW_PRODUCT_MEDIA_AUTHORITY_VERSION;
   state: "REFERENCE_COMPOSITION_MEDIA_READY" | "PRODUCT_MEDIA_AUTHORITY_REQUIRED";
@@ -101,9 +118,9 @@ export type ProductMediaReadiness = {
   blockers: readonly string[];
 };
 
-type State = { records: ProductMediaAuthorityRecord[]; legacyReconciliationAudits?: ProductMediaLegacyReconciliationAudit[] };
+type State = { records: ProductMediaAuthorityRecord[]; legacyReconciliationAudits?: ProductMediaLegacyReconciliationAudit[]; scopeCorrectionAudits?: ProductMediaScopeCorrectionAudit[] };
 const NAMESPACE = "glw-product-media-authority-v1";
-const seed = (): State => ({ records: [], legacyReconciliationAudits: [] });
+const seed = (): State => ({ records: [], legacyReconciliationAudits: [], scopeCorrectionAudits: [] });
 
 function required(value: string, code: string): string {
   const normalized = value.trim();
@@ -122,6 +139,7 @@ function normalizedRecord(record: ProductMediaAuthorityRecord): ProductMediaAuth
     ownerApproval,
     proposedUsageScopes: [...(record.proposedUsageScopes ?? record.usageScopes)],
     approvedUsageScopes: [...(record.approvedUsageScopes ?? (ownerApproval === "APPROVED" ? record.usageScopes : []))],
+    localAtmosphereStateCodes: [...(record.localAtmosphereStateCodes ?? [])],
     approvalLifecycleVersion: record.approvalLifecycleVersion ?? null,
   };
 }
@@ -196,6 +214,7 @@ export async function intakeProductMedia(input: {
     contextualUseAllowed: false,
     applicationUseAllowed: false,
     localAtmosphereUseAllowed: false,
+    localAtmosphereStateCodes: [],
     heroEligible: false,
     altTextAuthority: input.altTextAuthority.trim(),
     captionAuthority: input.captionAuthority.trim(),
@@ -224,6 +243,7 @@ export function reviewProductMedia(input: {
   captionAuthority: string;
   authorityAndScopesConfirmed: boolean;
   localAtmosphereConfirmed: boolean;
+  localAtmosphereStateCodes?: readonly string[];
   principalId: string;
   sessionId: string;
   now?: Date;
@@ -243,6 +263,8 @@ export function reviewProductMedia(input: {
   if (!scopes.includes(input.authorityClass)) throw new Error("PRODUCT_MEDIA_AUTHORITY_SCOPE_REQUIRED");
   if (input.decision === "APPROVE" && !input.authorityAndScopesConfirmed) throw new Error("PRODUCT_MEDIA_REVIEW_CONFIRMATION_REQUIRED");
   if (input.decision === "APPROVE" && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && !input.localAtmosphereConfirmed) throw new Error("LOCAL_ATMOSPHERE_CONFIRMATION_REQUIRED");
+  const localAtmosphereStateCodes = [...new Set((input.localAtmosphereStateCodes ?? []).map((stateCode) => stateCode.trim().toUpperCase()).filter((stateCode) => /^[A-Z]{2}$/.test(stateCode)))];
+  if (input.decision === "APPROVE" && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && localAtmosphereStateCodes.length === 0) throw new Error("LOCAL_ATMOSPHERE_GEOGRAPHY_REQUIRED");
   const groundedProductSource = (["FACTORY_SUPPLIED", "OWNER_SUPPLIED", "OWNER_APPROVED_EXISTING"] as ProductMediaSourceType[]).includes(record.sourceType);
   if (input.decision === "APPROVE" && input.authorityClass === "PRODUCT_AUTHORITY" && (!groundedProductSource || !input.depictsActualProduct)) {
     throw new Error("PRODUCT_AUTHORITY_REQUIRES_OWNER_APPROVED_GROUNDED_PRODUCT_MEDIA");
@@ -263,7 +285,8 @@ export function reviewProductMedia(input: {
   record.productRepresentationAllowed = approved && input.authorityClass === "PRODUCT_AUTHORITY" && input.depictsActualProduct;
   record.contextualUseAllowed = approved && scopes.includes("CONTEXTUAL_IN_USE");
   record.applicationUseAllowed = approved && scopes.includes("APPLICATION_EXPERIENCE");
-  record.localAtmosphereUseAllowed = approved && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE");
+  record.localAtmosphereUseAllowed = approved && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && localAtmosphereStateCodes.length > 0;
+  record.localAtmosphereStateCodes = record.localAtmosphereUseAllowed ? localAtmosphereStateCodes : [];
   record.heroEligible = approved && input.heroEligible && record.productRepresentationAllowed;
   record.altTextAuthority = input.altTextAuthority.trim();
   record.captionAuthority = input.captionAuthority.trim();
@@ -271,6 +294,68 @@ export function reviewProductMedia(input: {
   record.updatedAt = record.ownerApprovalTimestamp;
   savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
   return deepClone(record);
+}
+
+export function correctApprovedProductMediaUsageScope(input: {
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  targets: readonly { mediaAuthorityId: string; hash: string }[];
+  removedScope: "LOCAL_CONTEXTUAL_ATMOSPHERE";
+  reason: string;
+  principalId: string;
+  now?: Date;
+}): { records: readonly ProductMediaAuthorityRecord[]; audits: readonly ProductMediaScopeCorrectionAudit[]; mutated: boolean } {
+  assertOutdoorScope(input);
+  required(input.principalId, "PRODUCT_MEDIA_SCOPE_CORRECTION_PRINCIPAL_REQUIRED");
+  const reason = required(input.reason, "PRODUCT_MEDIA_SCOPE_CORRECTION_REASON_REQUIRED");
+  const loaded = load();
+  const audits = loaded.state.scopeCorrectionAudits ?? [];
+  const correctedRecords: ProductMediaAuthorityRecord[] = [];
+  const createdAudits: ProductMediaScopeCorrectionAudit[] = [];
+  const timestamp = (input.now ?? new Date()).toISOString();
+  for (const target of input.targets) {
+    const record = loaded.state.records.find((candidate) => candidate.mediaAuthorityId === target.mediaAuthorityId && candidate.hash === target.hash
+      && candidate.organizationId === input.organizationId && candidate.siteId === input.siteId && candidate.productId === input.productId);
+    if (!record) throw new Error("PRODUCT_MEDIA_SCOPE_CORRECTION_TARGET_NOT_FOUND");
+    const correctionKey = `${record.mediaAuthorityId}:${record.hash}:${input.removedScope}`;
+    const existingAudit = audits.find((audit) => audit.correctionKey === correctionKey);
+    if (existingAudit) {
+      correctedRecords.push(normalizedRecord(record));
+      continue;
+    }
+    const previousApprovedUsageScopes = [...(record.approvedUsageScopes ?? (record.ownerApproval === "APPROVED" ? record.usageScopes : []))];
+    if (record.ownerApproval !== "APPROVED" || !previousApprovedUsageScopes.includes(input.removedScope)) throw new Error("PRODUCT_MEDIA_SCOPE_CORRECTION_CONDITION_NOT_MET");
+    const correctedApprovedUsageScopes = previousApprovedUsageScopes.filter((scope) => scope !== input.removedScope);
+    const audit: ProductMediaScopeCorrectionAudit = {
+      correctionKey,
+      correctedAt: timestamp,
+      correctedByPrincipalId: input.principalId,
+      mediaAuthorityId: record.mediaAuthorityId,
+      hash: record.hash,
+      ownerApproval: record.ownerApproval,
+      ownerPrincipalId: record.ownerPrincipalId,
+      ownerApprovalTimestamp: record.ownerApprovalTimestamp,
+      removedScope: input.removedScope,
+      previousApprovedUsageScopes,
+      correctedApprovedUsageScopes,
+      provenance: record.provenance,
+      reason,
+    };
+    record.usageScopes = correctedApprovedUsageScopes;
+    record.approvedUsageScopes = correctedApprovedUsageScopes;
+    record.localAtmosphereUseAllowed = false;
+    record.localAtmosphereStateCodes = [];
+    record.updatedAt = timestamp;
+    audits.push(audit);
+    createdAudits.push(audit);
+    correctedRecords.push(normalizedRecord(record));
+  }
+  if (createdAudits.length > 0) {
+    loaded.state.scopeCorrectionAudits = audits;
+    savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  }
+  return { records: deepClone(correctedRecords), audits: deepClone(createdAudits.length > 0 ? createdAudits : audits.filter((audit) => input.targets.some((target) => audit.mediaAuthorityId === target.mediaAuthorityId && audit.hash === target.hash))), mutated: createdAudits.length > 0 };
 }
 
 export function reconcileLegacyProductMediaApprovals(input: {
@@ -357,12 +442,15 @@ export function getProductMediaAuthorityContent(input: { mediaAuthorityId: strin
   return record ? { bytes: Buffer.from(record.contentBase64, "base64"), mimeType: record.mimeType, hash: record.hash } : null;
 }
 
-export function evaluateProductMediaReadiness(records: readonly ProductMediaAuthorityRecord[]): ProductMediaReadiness {
+export function evaluateProductMediaReadiness(records: readonly ProductMediaAuthorityRecord[], target?: { stateCode?: string | null }): ProductMediaReadiness {
   const approved = records.filter((record) => record.ownerApproval === "APPROVED");
-  const product = approved.filter((record) => record.authorityClass === "PRODUCT_AUTHORITY" && record.productRepresentationAllowed);
-  const contextual = approved.filter((record) => record.contextualUseAllowed);
-  const application = approved.filter((record) => record.applicationUseAllowed || (record.sourceType === "GENESIS_GENERATED_CONTEXTUAL" && record.authorityClass === "APPLICATION_EXPERIENCE"));
-  const local = approved.filter((record) => record.localAtmosphereUseAllowed);
+  const approvedScopes = (record: ProductMediaAuthorityRecord) => record.approvedUsageScopes ?? record.usageScopes;
+  const product = approved.filter((record) => record.authorityClass === "PRODUCT_AUTHORITY" && approvedScopes(record).includes("PRODUCT_AUTHORITY") && record.productRepresentationAllowed);
+  const contextual = approved.filter((record) => approvedScopes(record).includes("CONTEXTUAL_IN_USE") && record.contextualUseAllowed);
+  const application = approved.filter((record) => approvedScopes(record).includes("APPLICATION_EXPERIENCE") && record.applicationUseAllowed);
+  const targetStateCode = target?.stateCode?.trim().toUpperCase() || null;
+  const local = approved.filter((record) => approvedScopes(record).includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && record.localAtmosphereUseAllowed
+    && (targetStateCode ? (record.localAtmosphereStateCodes ?? []).includes(targetStateCode) : (record.localAtmosphereStateCodes ?? []).length > 0));
   const hero = product.find((record) => record.heroEligible) ?? null;
   const supporting = approved.find((record) => record.mediaAuthorityId !== hero?.mediaAuthorityId
     && (record.productRepresentationAllowed || record.contextualUseAllowed)) ?? null;

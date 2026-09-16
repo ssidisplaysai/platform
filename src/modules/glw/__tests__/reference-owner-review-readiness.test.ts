@@ -45,6 +45,20 @@ describe("GLW reference owner-review readiness", () => {
     expect(ui).toContain("ownerReviewReadiness?.ready && richCompositionReadiness?.ready && jobId");
     expect(ui).toContain("Edit WordPress Draft");
   });
+
+  test("campaign and media panel share canonical state-aware media readiness", () => {
+    const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8").replace(/\s/g, "");
+    const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8").replace(/\s/g, "");
+    const panel = readFileSync(join(process.cwd(), "src/modules/glw/OutdoorSphereMediaAuthorityPanel.tsx"), "utf8").replace(/\s/g, "");
+    expect(route).toContain("evaluateProductMediaReadiness(records,{stateCode})");
+    expect(route).toContain("campaignProductMediaReadiness(campaign,target.state.code)");
+    expect(route).toContain("ownerReviewReadiness(job,mediaReadiness)");
+    expect(route).not.toContain("productAuthorityMediaCount:0");
+    expect(ui).toContain("productMediaReadiness?.state");
+    expect(ui).toContain("onAuthorityChanged={()=>recoverReferencePage(false)}");
+    expect(panel).toContain("stateCode=${encodeURIComponent(props.targetStateCode)}");
+    expect(panel).toContain("awaitprops.onAuthorityChanged?.()");
+  });
 });
 
 const forensicRoot = process.env.GLW_FORENSIC_PERSISTENCE_DIR;

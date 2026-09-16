@@ -83,7 +83,7 @@ describe("Outdoor Digital Sphere product media authority", () => {
     const repository = await import("../product-media-authority");
     const approve = async (suffix: string, provenance: string) => {
       const pending = await intake({ originalFilename: `shared image (${suffix}).jpg`, bytes: Buffer.concat([image, Buffer.from(suffix)]), provenance });
-      return repository.reviewProductMedia({ ...scope, mediaAuthorityId: pending.mediaAuthorityId, decision: "APPROVE", authorityClass: "PRODUCT_AUTHORITY", usageScopes: ["PRODUCT_AUTHORITY", "CONTEXTUAL_IN_USE", "APPLICATION_EXPERIENCE", "LOCAL_CONTEXTUAL_ATMOSPHERE"], depictsActualProduct: true, heroEligible: true, altTextAuthority: suffix, captionAuthority: provenance, authorityAndScopesConfirmed: true, localAtmosphereConfirmed: true, principalId: "legacy-owner", sessionId: "legacy-session", now: new Date("2029-12-31") });
+      return repository.reviewProductMedia({ ...scope, mediaAuthorityId: pending.mediaAuthorityId, decision: "APPROVE", authorityClass: "PRODUCT_AUTHORITY", usageScopes: ["PRODUCT_AUTHORITY", "CONTEXTUAL_IN_USE", "APPLICATION_EXPERIENCE", "LOCAL_CONTEXTUAL_ATMOSPHERE"], depictsActualProduct: true, heroEligible: true, altTextAuthority: suffix, captionAuthority: provenance, authorityAndScopesConfirmed: true, localAtmosphereConfirmed: true, localAtmosphereStateCodes: [provenance === "Indiana" ? "IN" : provenance === "Chicago" ? "IL" : "TX"], principalId: "legacy-owner", sessionId: "legacy-session", now: new Date("2029-12-31") });
     };
     const chicago = await approve("73", "Chicago");
     const texas = await approve("72", "Texas");
@@ -114,5 +114,26 @@ describe("Outdoor Digital Sphere product media authority", () => {
     expect(second.audits).toHaveLength(2);
     expect(repository.listProductMediaAuthority(scope).find((record) => record.mediaAuthorityId === unrelated.mediaAuthorityId)).toMatchObject({ ownerApproval: "APPROVED", hash: unrelated.hash, approvalLifecycleVersion: repository.EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION });
     expect(repository.evaluateProductMediaReadiness(first.records)).toMatchObject({ approvedProductAuthorityMediaCount: 0, approvedLocalAtmosphereMediaCount: 0, ready: false });
+  });
+
+  test("removes only geographically invalid local scope while preserving approved product authority", async () => {
+    const repository = await import("../product-media-authority");
+    const approve = async (suffix: string, provenance: string, stateCode: string) => {
+      const pending = await intake({ originalFilename: `${suffix}.jpg`, bytes: Buffer.concat([image, Buffer.from(suffix)]), provenance });
+      return repository.reviewProductMedia({ ...scope, mediaAuthorityId: pending.mediaAuthorityId, decision: "APPROVE", authorityClass: "PRODUCT_AUTHORITY", usageScopes: ["PRODUCT_AUTHORITY", "CONTEXTUAL_IN_USE", "APPLICATION_EXPERIENCE", "LOCAL_CONTEXTUAL_ATMOSPHERE"], depictsActualProduct: true, heroEligible: false, altTextAuthority: suffix, captionAuthority: provenance, authorityAndScopesConfirmed: true, localAtmosphereConfirmed: true, localAtmosphereStateCodes: [stateCode], principalId: "owner", sessionId: "session", now: new Date("2030-01-02") });
+    };
+    const chicago = await approve("chicago", "chicago", "IL");
+    const texas = await approve("texas", "Texas", "TX");
+    expect(repository.evaluateProductMediaReadiness([chicago, texas], { stateCode: "IN" })).toMatchObject({ approvedProductAuthorityMediaCount: 2, approvedContextualMediaCount: 2, approvedApplicationMediaCount: 2, approvedLocalAtmosphereMediaCount: 0, heroAuthorityReady: false });
+    const correction = repository.correctApprovedProductMediaUsageScope({ ...scope, targets: [{ mediaAuthorityId: chicago.mediaAuthorityId, hash: chicago.hash }, { mediaAuthorityId: texas.mediaAuthorityId, hash: texas.hash }], removedScope: "LOCAL_CONTEXTUAL_ATMOSPHERE", reason: "Source provenance does not establish Indiana-local atmosphere.", principalId: "owner", now: new Date("2030-01-03") });
+    expect(correction.mutated).toBe(true);
+    expect(correction.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ownerApproval: "APPROVED", ownerPrincipalId: "owner", ownerApprovalTimestamp: "2030-01-02T00:00:00.000Z", approvedUsageScopes: ["PRODUCT_AUTHORITY", "CONTEXTUAL_IN_USE", "APPLICATION_EXPERIENCE"], productRepresentationAllowed: true, contextualUseAllowed: true, applicationUseAllowed: true, localAtmosphereUseAllowed: false, localAtmosphereStateCodes: [], heroEligible: false }),
+    ]));
+    expect(correction.audits).toHaveLength(2);
+    const rerun = repository.correctApprovedProductMediaUsageScope({ ...scope, targets: [{ mediaAuthorityId: chicago.mediaAuthorityId, hash: chicago.hash }, { mediaAuthorityId: texas.mediaAuthorityId, hash: texas.hash }], removedScope: "LOCAL_CONTEXTUAL_ATMOSPHERE", reason: "Source provenance does not establish Indiana-local atmosphere.", principalId: "owner", now: new Date("2030-01-04") });
+    expect(rerun).toMatchObject({ mutated: false });
+    expect(rerun.audits).toHaveLength(2);
+    expect(repository.evaluateProductMediaReadiness(rerun.records, { stateCode: "IN" })).toMatchObject({ approvedProductAuthorityMediaCount: 2, approvedContextualMediaCount: 2, approvedApplicationMediaCount: 2, approvedLocalAtmosphereMediaCount: 0, heroAuthorityReady: false, supportingProductMediaReady: true, applicationMediaReady: true, mediaProvenanceReady: true });
   });
 });

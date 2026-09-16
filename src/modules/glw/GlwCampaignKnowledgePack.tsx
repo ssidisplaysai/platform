@@ -83,6 +83,18 @@ type ReferenceResult = Record<string, unknown> & {
     blockers: readonly string[];
     articleHtmlFinalPresentationAuthority: false;
   } | null;
+  productMediaReadiness?: {
+    state: "REFERENCE_COMPOSITION_MEDIA_READY" | "PRODUCT_MEDIA_AUTHORITY_REQUIRED";
+    approvedProductAuthorityMediaCount: number;
+    approvedContextualMediaCount: number;
+    approvedApplicationMediaCount: number;
+    approvedLocalAtmosphereMediaCount: number;
+    heroAuthorityReady: boolean;
+    supportingProductMediaReady: boolean;
+    applicationMediaReady: boolean;
+    mediaProvenanceReady: boolean;
+    blockers: readonly string[];
+  } | null;
 };
 
 type ReferenceAuthorityBinding = {
@@ -726,7 +738,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
       </div>
 
       {campaign.productId === "prod-outdoor-digital-sphere" ? (
-        <OutdoorSphereMediaAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} productId={campaign.productId} />
+        <>
+          <p className="mt-4 text-xs font-semibold text-zinc-300">Campaign media readiness: {referenceResult?.productMediaReadiness?.state.replaceAll("_", " ") ?? "CHECKING"}</p>
+          <OutdoorSphereMediaAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} productId={campaign.productId} targetStateCode={referenceState} onAuthorityChanged={() => recoverReferencePage(false)} />
+        </>
       ) : null}
 
       <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">

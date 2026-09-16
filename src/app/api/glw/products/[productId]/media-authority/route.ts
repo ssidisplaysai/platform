@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, resolveRequestPrincipal, resolveRequestScope } from "@/modules/foundation/api-auth";
 import {
+  correctApprovedProductMediaUsageScope,
   evaluateProductMediaReadiness,
   intakeProductMedia,
   listProductMediaAuthority,
@@ -40,14 +41,14 @@ function parseScopes(value: FormDataEntryValue | null): ProductMediaAuthorityCla
   return parsed as ProductMediaAuthorityClass[];
 }
 
-function result() {
+function result(targetStateCode?: string | null) {
   const records = listProductMediaAuthority({ organizationId: OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID, siteId: OUTDOOR_DIGITAL_SPHERE_SITE_ID, productId: OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID });
   return {
     contract: "GENESIS_OUTDOOR_DIGITAL_SPHERE_PRODUCT_MEDIA_AUTHORITY_ONBOARDING_V1",
     productId: OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID,
     productName: "Outdoor Digital Sphere",
     records: records.map(publicRecord),
-    readiness: evaluateProductMediaReadiness(records),
+    readiness: evaluateProductMediaReadiness(records, { stateCode: targetStateCode }),
     forensic: {
       fingerprint: "17a758d06e06de66aac6832951bcc5d1cc5f4f063f37554a7c62d670a95463af",
       candidateMediaCount: 68,
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest, context: Context) {
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { productId } = await context.params;
   if (!scopeAllowed(request, productId)) return NextResponse.json({ error: "Product media authority not found in scope." }, { status: 404 });
-  return NextResponse.json(result());
+  return NextResponse.json(result(request.nextUrl.searchParams.get("stateCode")));
 }
 
 export async function POST(request: NextRequest, context: Context) {
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest, context: Context) {
         altTextAuthority: String(form.get("altTextAuthority") ?? ""),
         captionAuthority: String(form.get("captionAuthority") ?? ""),
       });
-      return NextResponse.json({ ...result(), record: publicRecord(record), ownerApprovalPersisted: false }, { status: 201 });
+      return NextResponse.json({ ...result(request.nextUrl.searchParams.get("stateCode")), record: publicRecord(record), ownerApprovalPersisted: false }, { status: 201 });
     }
 
     const body = await request.json().catch(() => null) as {
@@ -120,7 +121,10 @@ export async function POST(request: NextRequest, context: Context) {
       captionAuthority?: string;
       authorityAndScopesConfirmed?: boolean;
       localAtmosphereConfirmed?: boolean;
+      localAtmosphereStateCodes?: string[];
       targets?: { mediaAuthorityId?: string; hash?: string }[];
+      removedScope?: ProductMediaAuthorityClass;
+      reason?: string;
     } | null;
     if (body?.action === "RECONCILE_LEGACY_PRODUCT_MEDIA_APPROVALS") {
       if (!Array.isArray(body.targets) || body.targets.length === 0 || body.targets.length > 2
@@ -135,10 +139,32 @@ export async function POST(request: NextRequest, context: Context) {
         principalId: principal.principalId,
       });
       return NextResponse.json({
-        ...result(),
+        ...result(request.nextUrl.searchParams.get("stateCode")),
         reconciledRecords: reconciliation.records.map(publicRecord),
         reconciliationAudits: reconciliation.audits,
         reconciliationMutated: reconciliation.mutated,
+      });
+    }
+    if (body?.action === "CORRECT_APPROVED_PRODUCT_MEDIA_USAGE_SCOPE") {
+      if (body.removedScope !== "LOCAL_CONTEXTUAL_ATMOSPHERE" || !body.reason?.trim()
+        || !Array.isArray(body.targets) || body.targets.length === 0 || body.targets.length > 2
+        || body.targets.some((target) => !target.mediaAuthorityId || !target.hash || !/^[0-9a-f]{64}$/.test(target.hash))) {
+        throw new Error("PRODUCT_MEDIA_SCOPE_CORRECTION_INVALID");
+      }
+      const correction = correctApprovedProductMediaUsageScope({
+        organizationId: OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID,
+        siteId: OUTDOOR_DIGITAL_SPHERE_SITE_ID,
+        productId,
+        targets: body.targets as { mediaAuthorityId: string; hash: string }[],
+        removedScope: body.removedScope,
+        reason: body.reason,
+        principalId: principal.principalId,
+      });
+      return NextResponse.json({
+        ...result(request.nextUrl.searchParams.get("stateCode")),
+        correctedRecords: correction.records.map(publicRecord),
+        scopeCorrectionAudits: correction.audits,
+        scopeCorrectionMutated: correction.mutated,
       });
     }
     if (body?.action !== "REVIEW_PRODUCT_MEDIA" || !body.mediaAuthorityId || !body.decision || !body.authorityClass || !AUTHORITY_CLASSES.has(body.authorityClass) || !Array.isArray(body.usageScopes)) throw new Error("PRODUCT_MEDIA_REVIEW_ACTION_REQUIRED");
@@ -156,10 +182,11 @@ export async function POST(request: NextRequest, context: Context) {
       captionAuthority: body.captionAuthority ?? "",
       authorityAndScopesConfirmed: body.authorityAndScopesConfirmed === true,
       localAtmosphereConfirmed: body.localAtmosphereConfirmed === true,
+      localAtmosphereStateCodes: body.localAtmosphereStateCodes ?? [],
       principalId: principal.principalId,
       sessionId: principal.sessionId,
     });
-    return NextResponse.json({ ...result(), record: publicRecord(record), ownerApprovalPersisted: true });
+    return NextResponse.json({ ...result(request.nextUrl.searchParams.get("stateCode")), record: publicRecord(record), ownerApprovalPersisted: true });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "PRODUCT_MEDIA_AUTHORITY_FAILED", downstreamSideEffectsPerformed: false }, { status: 409 });
   }
