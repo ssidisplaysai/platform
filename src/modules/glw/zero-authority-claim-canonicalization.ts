@@ -9,7 +9,7 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_1" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_2" as const;
 
 export type GlwZeroAuthorityDisposition =
   | "REMOVE"
@@ -214,7 +214,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
 
   if (claimClasses.includes("PRODUCT_SPECIFICATION")
     && /\b360(?:°|-degree)\b/i.test(text)
-    && /\b(?:engagement|viewing|visible|audience)\b/i.test(text)) {
+    && /\b(?:engagement|viewing|visible|audience|presence|immersive)\b/i.test(text)) {
     return {
       claimClasses,
       originalText: text,
@@ -233,6 +233,17 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "DURABILITY_ASSERTION_TO_ENVIRONMENTAL_REQUIREMENT_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("INGRESS_PROTECTION")) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Which ingress-protection requirements and documented ratings should the selected supplier confirm for the intended site exposure?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "INGRESS_ASSERTION_TO_SUPPLIER_QUESTION",
     };
   }
 
@@ -258,6 +269,17 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     };
   }
 
+  if (claimClasses.includes("SERVICE_CAPABILITY") && /\b(?:cleaning|maintenance|dust|pollen|residue|image quality)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "What maintenance and cleaning requirements should the selected supplier confirm for the proposed installation?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "SERVICE_MAINTENANCE_ASSERTION_TO_SUPPLIER_QUESTION",
+    };
+  }
+
   const labeledApplication = text.match(/^([^:]{2,80}):\s*(.+)$/);
   if (labeledApplication && claimClasses.includes("INTERACTIVITY") && /\binteractive\b/i.test(labeledApplication[2])) {
     const label = labeledApplication[1].trim();
@@ -274,10 +296,55 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     };
   }
 
+  if (claimClasses.includes("INTERACTIVITY") && (
+    /^(?:A|An)\b.*\binteractive (?:experience|installation)\b/i.test(text)
+    || /^(?:Conceptualize|Imagine|Explore|Consider)\b.*\binteractive\b/i.test(text)
+  )) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "One possible concept a project team could consider is an interactive experience, subject to confirmation of the selected system and project requirements.",
+      disposition: "CONVERT_TO_CONCEPTUAL_APPLICATION",
+      safeToTransform: true,
+      ruleId: "UNLABELED_INTERACTIVITY_TO_EXPLICIT_CONCEPT",
+    };
+  }
+
   return { claimClasses, originalText: text, canonicalText: null, disposition: "BLOCK", safeToTransform: false, ruleId: "AMBIGUOUS_PROTECTED_ASSERTION" };
 }
 
 const BUYER_EVALUATION_FRAMEWORK = `<div data-authority-neutral-evaluation-framework="true"><h3>Buyer evaluation framework</h3><ul><li><strong>Audience and viewing:</strong> What viewing directions and distances should the project team evaluate?</li><li><strong>Content planning:</strong> What content approach should the project team review for the proposed display?</li><li><strong>Site planning:</strong> What placement, access, and installation constraints should qualified professionals review?</li></ul></div>`;
+
+function applyAcrossAdjacentTextElements(
+  $: ReturnType<typeof cheerio.load>,
+  transformation: GlwZeroAuthorityTransformation,
+): string | null {
+  const elements = $("p,li,td,th,dt,dd").toArray();
+  const matches: Array<{ first: typeof elements[number]; last: typeof elements[number]; before: string; after: string }> = [];
+  for (let index = 0; index < elements.length - 1; index += 1) {
+    const first = elements[index];
+    const last = elements[index + 1];
+    const firstText = normalizeText($(first).text());
+    const lastText = normalizeText($(last).text());
+    const combined = `${firstText} ${lastText}`;
+    const offset = combined.indexOf(transformation.originalText);
+    const matchEnd = offset + transformation.originalText.length;
+    if (offset < 0 || offset > firstText.length || matchEnd <= firstText.length + 1) continue;
+    matches.push({
+      first,
+      last,
+      before: firstText.slice(0, offset).trim(),
+      after: lastText.slice(matchEnd - firstText.length - 1).trim(),
+    });
+  }
+  if (matches.length !== 1) return null;
+  const match = matches[0];
+  const replacement = [match.before, transformation.canonicalText].filter(Boolean).join(" ");
+  $(match.first).text(replacement);
+  if (match.after) $(match.last).text(match.after);
+  else $(match.last).remove();
+  return $.html();
+}
 
 function applyTransformation(html: string, transformation: GlwZeroAuthorityTransformation): string | null {
   const $ = cheerio.load(html, null, false);
@@ -307,6 +374,8 @@ function applyTransformation(html: string, transformation: GlwZeroAuthorityTrans
       element.text(normalized.replace(transformation.originalText, transformation.canonicalText ?? "").trim());
       return $.html();
     }
+    const adjacent = applyAcrossAdjacentTextElements($, transformation);
+    if (adjacent !== null) return adjacent;
     return html.includes(transformation.originalText)
       ? html.replace(transformation.originalText, transformation.canonicalText ?? "")
       : null;

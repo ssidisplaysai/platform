@@ -93,6 +93,54 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(qa.ok).toBe(true);
   });
 
+  test.each([
+    ["The spherical format may suit settings where visual curiosity, crowd movement, and 360-degree presence are important.", "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM"],
+    ["As visual technologies expand, new approaches may emerge for 360-degree, immersive outdoor displays.", "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM"],
+  ] as const)("reduces unsupported spherical presentation wording: %s", (text, ruleId) => {
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_SPECIFICATION", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId }));
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("confirm project-specific viewing directions");
+  });
+
+  test("converts unsupported ingress guidance to a supplier verification question", () => {
+    const text = "Ingress Protection: Plan for appropriate resistance to moisture and particles.";
+    const result = canonicalize(`<li>${text}</li>`, [finding("INGRESS_PROTECTION", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId: "INGRESS_ASSERTION_TO_SUPPLIER_QUESTION" }));
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("appropriate resistance");
+  });
+
+  test.each([
+    "A public art activation or interactive experience at civic spaces or mixed-use developments.",
+    "Conceptualize use cases that include interactive installations and real-time data visualizations.",
+  ])("converts unlabeled interactive concepts without preserving capability examples: %s", (text) => {
+    const result = canonicalize(`<li>${text}</li>`, [finding("INTERACTIVITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId: "UNLABELED_INTERACTIVITY_TO_EXPLICIT_CONCEPT" }));
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("subject to confirmation");
+  });
+
+  test("converts unsupported maintenance-performance guidance to a supplier question", () => {
+    const text = "Cleaning Protocols: Establish cleaning protocols to prevent dust, pollen, or weather residue from diminishing image quality.";
+    const result = canonicalize(`<li>${text}</li>`, [finding("SERVICE_CAPABILITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId: "SERVICE_MAINTENANCE_ASSERTION_TO_SUPPLIER_QUESTION" }));
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("diminishing image quality");
+  });
+
+  test.each([
+    ["Working with varied environments requires review:", "Climate and Seasonal Exposure:", "What climate conditions may affect placement?", "Keep this neighboring guidance."],
+    ["Conceptual planning should address:", "Weather-Resistant Materials:", "Consider materials that can withstand rain and wind.", "Preserve this separate item."],
+  ])("applies a safe transformation across an introductory paragraph and labeled list item", (intro, label, claim, neighbor) => {
+    const text = `${intro} ${label} ${claim}`;
+    const result = canonicalize(`<p>${intro}</p><ul><li><strong>${label}</strong> ${claim}</li><li>${neighbor}</li></ul>`, [finding("CLIMATE", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What environmental conditions should the project team ask");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain(neighbor);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(claim);
+  });
+
   test("removes nonessential unsupported market and cost content", () => {
     const pricing = "Engage Early: Begin supplier conversations as early as possible to clarify feasibility, timelines, and costs.";
     const heading = "Future Evaluation: Trends and Concepts in Digital Sphere Use";
@@ -258,4 +306,25 @@ const forensicRoot = process.env.GLW_FORENSIC_PERSISTENCE_DIR;
   expect(result.ok).toBe(false);
   expect(result.canonicalizedArtifact).toBeNull();
   expect(result.receipt.blockedClaims.length).toBeGreaterThan(0);
+});
+
+(forensicRoot ? test : test.skip)("canonicalizes the exact Arkansas execution 665137 artifact without changing its lineage", () => {
+  const repositoryPath = join(forensicRoot!, "glw-page-execution-repository.json");
+  const envelope = JSON.parse(readFileSync(repositoryPath, "utf8")) as { data: { records: Array<{ jobId: string; externalExecutionId?: string | null; generatedDraft: ReturnType<typeof artifact>; rawGeneratedDraft?: ReturnType<typeof artifact> }> } };
+  const job = envelope.data.records.find((record) => record.jobId === "3e7b6906-4091-40d7-8847-31224ba05715");
+  expect(job?.externalExecutionId).toBe("665137");
+  const rawArtifact = job!.rawGeneratedDraft ?? job!.generatedDraft;
+  const rawSha = createHash("sha256").update(rawArtifact.contentHtml).digest("hex");
+  const before = evaluateGlwReferenceClaimAuthority({ artifact: rawArtifact, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+  const result = canonicalizeGlwZeroAuthorityClaims({ rawArtifact, authoritativeFactReferenceIds: [], findings: before.findings });
+  const after = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+
+  expect(rawSha).toBe("c24b2d264d8b104e67d9ea3c4e80fa42fcb531da0803cd4621cb08817b24b226");
+  expect(result.ok).toBe(true);
+  expect(result.canonicalizedArtifact).not.toBeNull();
+  expect(result.receipt.transformations).toHaveLength(15);
+  expect(result.receipt.blockedClaims).toEqual([]);
+  expect(after.ok).toBe(true);
+  expect(after.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED")).toEqual([]);
+  expect(createHash("sha256").update(rawArtifact.contentHtml).digest("hex")).toBe(rawSha);
 });
