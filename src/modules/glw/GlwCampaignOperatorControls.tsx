@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import {
   runExactTargetDispatchFlow,
   type ExactDispatchStage,
 } from "@/modules/glw/exact-target-dispatch-ui-flow";
+import { summarizeCampaignReconciliation } from "@/modules/glw/campaign-reconciliation-ui-summary";
 
 type QueueSummary = {
   total: number;
@@ -168,6 +170,7 @@ export function GlwCampaignOperatorControls({
   siteId,
   campaignStatus,
 }: Props) {
+  const router = useRouter();
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
   const [publishPreview, setPublishPreview] = useState<PublishPreviewPayload | null>(null);
   const [publishRun, setPublishRun] = useState<PublishRunRecord | null>(null);
@@ -230,6 +233,11 @@ export function GlwCampaignOperatorControls({
     setError(null);
     setLoading(false);
   }, [campaignId, requestHeaders]);
+
+  const refreshWorkspace = useCallback(async () => {
+    await loadScheduler();
+    router.refresh();
+  }, [loadScheduler, router]);
 
   useEffect(() => {
     if (campaignStatus !== "active") return;
@@ -294,18 +302,11 @@ export function GlwCampaignOperatorControls({
       return;
     }
 
-    const draftReady = payload.results.filter((entry) => entry.action === "draft_ready").length;
-    const waiting = payload.results.filter((entry) => entry.action === "wait").length;
-    const failed = payload.results.filter((entry) => entry.action === "failed" || entry.action === "error" || entry.action === "continue_error").length;
-
-    if (failed > 0) {
-      const details = payload.results
-        .filter((entry) => entry.action === "failed" || entry.action === "error" || entry.action === "continue_error")
-        .map((entry) => `${entry.cityName ? `${entry.cityName}, ${entry.stateCode}` : entry.stateCode}: ${entry.error ?? entry.action}`)
-        .join(" | ");
-      setError(`Campaign reconciliation completed with ${draftReady} draft-ready, ${waiting} waiting, and ${failed} requiring review. ${details}`);
+    const summary = summarizeCampaignReconciliation(payload.results);
+    if (summary.requiresAttention) {
+      setError(summary.message);
     } else {
-      setMessage(`Campaign reconciliation complete: ${draftReady} draft-ready, ${waiting} still waiting. Publication: ${payload.publicationPerformed ? "YES" : "NO"}.`);
+      setMessage(`${summary.message} Publication: ${payload.publicationPerformed ? "YES" : "NO"}.`);
     }
 
     setReconciling(false);
