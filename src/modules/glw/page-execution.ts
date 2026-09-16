@@ -183,6 +183,7 @@ export type GlwN8nDraftRequest = {
     additionalInstructions: string;
     referenceGenerationClaimContract: GlwGenerationRequest["referenceGenerationClaimContract"];
     referenceGenerationAuthority: GlwGenerationRequest["referenceGenerationAuthority"];
+    referenceAuthorityBinding: GlwGenerationRequest["referenceAuthorityBinding"];
   };
 };
 
@@ -406,6 +407,7 @@ export function mapGenerationRequestToN8nDraft(
       additionalInstructions,
       referenceGenerationClaimContract: request.referenceGenerationClaimContract,
       referenceGenerationAuthority: request.referenceGenerationAuthority,
+      referenceAuthorityBinding: request.referenceAuthorityBinding,
     },
   };
 }

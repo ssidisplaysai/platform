@@ -7,11 +7,13 @@ import {
   GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
   GLW_REFERENCE_GENERATION_CLAIM_CONTRACT,
   GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+  GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
   serializeGlwReferenceGenerationClaimContract,
 } from "../reference-generation-claim-contract";
 import { evaluateGlwReferenceClaimAuthority, GLW_REFERENCE_QA_POLICY_VERSION } from "../reference-claim-authority";
 import { validateGlwN8nMcpDraftRequest } from "../n8n-mcp-recovery-contract";
 import { buildGlwEffectiveCampaignInstructions } from "../campaign-generation-context";
+import { GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT } from "../n8n-workflow-identity";
 
 function artifact(contentHtml: string) {
   return { title: "Test", contentHtml, slug: "test", excerpt: null, seoTitle: null, metaDescription: null, focusKeyphrase: null };
@@ -25,7 +27,7 @@ function evaluate(contentHtml: string) {
 }
 
 function referenceRequest() {
-  const contract = GLW_REFERENCE_GENERATION_CLAIM_CONTRACT;
+  const contract = structuredClone(GLW_REFERENCE_GENERATION_CLAIM_CONTRACT);
   return {
     type: "page_generation",
     jobId: "job-in",
@@ -56,6 +58,16 @@ function referenceRequest() {
           expectedStateCode: "IN",
           authorizedComparisonStateCodes: [],
         },
+      },
+      referenceAuthorityBinding: {
+        campaignInstructionFingerprint: "a".repeat(64),
+        referenceFingerprint: "b".repeat(64),
+        productAuthorityFingerprint: "c".repeat(64),
+        claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
+        generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+        localizationPolicyFingerprint: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
+        n8nWorkflowFingerprint: GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT,
+        qaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
       },
     },
   };
@@ -117,6 +129,20 @@ describe("GLW reference generation claim contract", () => {
     const incompleteContract = referenceRequest();
     delete (incompleteContract.workflowContext.referenceGenerationClaimContract.rules as Partial<typeof incompleteContract.workflowContext.referenceGenerationClaimContract.rules>).buyerQuestionFallback;
     expect(() => validateGlwN8nMcpDraftRequest(incompleteContract)).toThrow("complete V1.1 claim contract");
+  });
+
+  test("requires structured claim contract and authority binding for production generation", () => {
+    const production = referenceRequest();
+    production.workflowContext.additionalInstructions = "CAMPAIGN PRODUCTION PAGE — APPROVED INSTRUCTIONS:";
+    expect(validateGlwN8nMcpDraftRequest(production)).toBe(production);
+
+    const missingContract = structuredClone(production);
+    delete (missingContract.workflowContext as Partial<typeof missingContract.workflowContext>).referenceGenerationClaimContract;
+    expect(() => validateGlwN8nMcpDraftRequest(missingContract)).toThrow("certified claim contract");
+
+    const missingBinding = structuredClone(production);
+    delete (missingBinding.workflowContext as Partial<typeof missingBinding.workflowContext>).referenceAuthorityBinding;
+    expect(() => validateGlwN8nMcpDraftRequest(missingBinding)).toThrow("complete authority binding");
   });
 
   test.each([
@@ -212,6 +238,31 @@ describe("GLW reference generation claim contract", () => {
     expect(result.findings.filter((finding) => finding.claimClass === "PRODUCT_SPECIFICATION")).toEqual(expect.arrayContaining([
       expect.objectContaining({ claimText: "360° sphere, panoramic surface", authorityStatus: "UNSUPPORTED" }),
       expect.objectContaining({ claimText: "Custom site adaptation, curved mounting", authorityStatus: "UNSUPPORTED" }),
+    ]));
+  });
+
+  test("distinguishes regulatory enumerations from product interactivity", () => {
+    const regulatory = evaluate("<p>Project teams should review zoning codes for illuminated, interactive, or freestanding installations.</p>");
+    expect(regulatory.findings.filter((finding) => finding.claimClass === "INTERACTIVITY")).toEqual([]);
+
+    const capability = evaluate("<p>The selected system supports interactive content and must comply with local codes.</p>");
+    expect(capability.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ claimClass: "INTERACTIVITY", authorityStatus: "UNSUPPORTED" }),
+    ]));
+  });
+
+  test("deduplicates protected cells represented by a structural comparison aggregate", () => {
+    const result = evaluate("<table><tr><th>Feature</th><th>Spherical Display</th><th>Traditional Flat Display</th></tr><tr><td>Visibility</td><td>Omnidirectional, visible from all sides</td><td>Front-facing</td></tr><tr><td>Content Creation</td><td>Custom, panoramic or curved</td><td>Standard video</td></tr></table>");
+    const specifications = result.findings.filter((finding) => finding.claimClass === "PRODUCT_SPECIFICATION");
+    expect(specifications).toHaveLength(1);
+    expect(specifications[0].claimText).toContain("Custom, panoramic or curved");
+  });
+
+  test("preserves independent protected cells in a non-comparison table", () => {
+    const result = evaluate("<table><tr><th>Requirement</th><th>Question</th></tr><tr><td>Brightness</td><td>High-brightness output</td></tr><tr><td>Ingress</td><td>IP65 ingress protection</td></tr><tr><td>Owner</td><td>Project team</td></tr></table>");
+    expect(result.findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ claimClass: "BRIGHTNESS", claimText: "High-brightness output" }),
+      expect.objectContaining({ claimClass: "INGRESS_PROTECTION", claimText: "IP65 ingress protection" }),
     ]));
   });
 

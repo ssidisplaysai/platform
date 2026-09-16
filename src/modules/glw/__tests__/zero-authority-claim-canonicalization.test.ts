@@ -82,6 +82,17 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.canonicalizedArtifact?.contentHtml).toContain("Buyer evaluation framework");
   });
 
+  test("replaces a semantic spherical-versus-flat comparison without narrow product headers", () => {
+    const html = "<table><tr><th>Feature</th><th>Spherical Display</th><th>Traditional Flat Display</th></tr><tr><td>Visibility</td><td>Omnidirectional, visible from all sides</td><td>Front-facing</td></tr><tr><td>Content Creation</td><td>Custom, panoramic or curved</td><td>Standard video</td></tr></table>";
+    const before = evaluateGlwReferenceClaimAuthority({ artifact: artifact(html), authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+    const result = canonicalize(html, before.findings);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toHaveLength(1);
+    expect(result.receipt.transformations[0]).toMatchObject({ ruleId: "UNSUPPORTED_STRUCTURED_COMPARISON_TO_BUYER_EVALUATION_FRAMEWORK" });
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Buyer evaluation framework");
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("Traditional Flat Display");
+  });
+
   test("converts unsupported durability meaning to an environmental verification question", () => {
     const text = "A weatherproofing strategy provides long-term durability.";
     const result = canonicalize(`<p>${text}</p>`, [finding("DURABILITY", text)]);
@@ -96,6 +107,7 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
   test.each([
     ["The spherical format may suit settings where visual curiosity, crowd movement, and 360-degree presence are important.", "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM"],
     ["As visual technologies expand, new approaches may emerge for 360-degree, immersive outdoor displays.", "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM"],
+    ["Spherical displays can deliver 360-degree impact and provide content accessibility for audiences in open spaces.", "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM"],
   ] as const)("reduces unsupported spherical presentation wording: %s", (text, ruleId) => {
     const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_SPECIFICATION", text)]);
     expect(result.ok).toBe(true);
@@ -139,6 +151,28 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.canonicalizedArtifact?.contentHtml).toContain("What environmental conditions should the project team ask");
     expect(result.canonicalizedArtifact?.contentHtml).toContain(neighbor);
     expect(result.canonicalizedArtifact?.contentHtml).not.toContain(claim);
+  });
+
+  test("canonicalizes nested protected spans before their enclosing cross-element span", () => {
+    const introduction = "Review these conditions with qualified professionals:";
+    const category = "Environmental Conditions: Hot weather and airborne dust require evaluation.";
+    const nested = "What material protections are required to withstand wind conditions?";
+    const result = canonicalize(`<p>${introduction}</p><ul><li>${category}<ul><li>${nested}</li><li>Preserve this separate question.</li></ul></li></ul>`, [
+      finding("CLIMATE", `${introduction} ${category}`),
+      finding("CLIMATE", nested),
+    ]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.blockedClaims).toEqual([]);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Preserve this separate question.");
+  });
+
+  test("maps a classified sentence from parent text into its first nested list item", () => {
+    const text = "Ask: What material protections are required to withstand wind conditions?";
+    const result = canonicalize("<ul><li><strong>Environmental Conditions:</strong> Review site exposure. Ask:<ul><li>What material protections are required to withstand wind conditions?</li><li>Preserve this separate question.</li></ul></li></ul>", [finding("CLIMATE", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.blockedClaims).toEqual([]);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What environmental conditions should the project team ask");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Preserve this separate question.");
   });
 
   test("removes nonessential unsupported market and cost content", () => {
@@ -326,5 +360,45 @@ const forensicRoot = process.env.GLW_FORENSIC_PERSISTENCE_DIR;
   expect(result.receipt.blockedClaims).toEqual([]);
   expect(after.ok).toBe(true);
   expect(after.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED")).toEqual([]);
+  expect(createHash("sha256").update(rawArtifact.contentHtml).digest("hex")).toBe(rawSha);
+});
+
+(forensicRoot ? test : test.skip)("canonicalizes the exact Arizona execution 666670 artifact without regeneration or persistence", () => {
+  const repositoryPath = join(forensicRoot!, "glw-page-execution-repository.json");
+  const envelope = JSON.parse(readFileSync(repositoryPath, "utf8")) as { data: { records: Array<{ jobId: string; externalExecutionId?: string | null; generatedDraft: ReturnType<typeof artifact>; rawGeneratedDraft?: ReturnType<typeof artifact> }> } };
+  const job = envelope.data.records.find((record) => record.jobId === "f75fd8fb-07b6-407f-a4cf-fe7a52693502");
+  expect(job?.externalExecutionId).toBe("666670");
+  const rawArtifact = job!.rawGeneratedDraft ?? job!.generatedDraft;
+  const rawSha = createHash("sha256").update(rawArtifact.contentHtml).digest("hex");
+  const result = rehabilitateGlwExistingArtifact({ artifact: rawArtifact });
+
+  expect(rawSha).toBe("9415c57c98bb2b61bff53c7b76f447e7edffd8a4a977a24189e715af11c5fb4c");
+  expect(result.before.findings.some((finding) => finding.claimClass === "INTERACTIVITY" && finding.claimText.includes("HOA rules"))).toBe(false);
+  expect(result.before.findings.some((finding) => finding.claimText === "Custom, panoramic or curved")).toBe(false);
+  expect(result.before.findings.filter((finding) => finding.claimClass === "PRODUCT_SPECIFICATION" && finding.claimText.includes("Traditional Flat Display"))).toHaveLength(1);
+  expect(result.ok).toBe(true);
+  expect(result.canonicalization.canonicalizedArtifact).not.toBeNull();
+  expect(result.canonicalization.receipt.transformations).toHaveLength(12);
+  expect(result.canonicalization.receipt.blockedClaims).toEqual([]);
+  expect(result.after?.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED")).toEqual([]);
+  expect(createHash("sha256").update(rawArtifact.contentHtml).digest("hex")).toBe(rawSha);
+});
+
+(forensicRoot ? test.each([
+  ["Alaska", "660615", "735d2f0aef9f4853b708265cd7d8a94b93c3ffc144dde4fb4d497defcba6d2cf", 8],
+  ["Alabama", "663868", "911c9b955a911497e45523d0c9321ef55e94fcb30533b8600ba9ce17c82696ab", 10],
+] as const) : test.skip)("preserves and canonicalizes the exact %s artifact", (_state, executionId, expectedSha, expectedTransformations) => {
+  const repositoryPath = join(forensicRoot!, "glw-page-execution-repository.json");
+  const envelope = JSON.parse(readFileSync(repositoryPath, "utf8")) as { data: { records: Array<{ externalExecutionId?: string | null; generatedDraft: ReturnType<typeof artifact>; rawGeneratedDraft?: ReturnType<typeof artifact> }> } };
+  const job = envelope.data.records.find((record) => record.externalExecutionId === executionId);
+  const rawArtifact = job!.rawGeneratedDraft ?? job!.generatedDraft;
+  const rawSha = createHash("sha256").update(rawArtifact.contentHtml).digest("hex");
+  const result = rehabilitateGlwExistingArtifact({ artifact: rawArtifact });
+
+  expect(rawSha).toBe(expectedSha);
+  expect(result.ok).toBe(true);
+  expect(result.canonicalization.receipt.transformations).toHaveLength(expectedTransformations);
+  expect(result.canonicalization.receipt.blockedClaims).toEqual([]);
+  expect(result.after?.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED")).toEqual([]);
   expect(createHash("sha256").update(rawArtifact.contentHtml).digest("hex")).toBe(rawSha);
 });

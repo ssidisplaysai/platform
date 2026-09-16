@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { load } from "cheerio";
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
 import { isGlwPlanningOrConfirmationGuidance } from "./reference-claim-disposition";
 
@@ -61,20 +62,34 @@ const RULES: readonly ClaimRule[] = [
 function textFromHtml(html: string): string {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<table\b[^>]*>[\s\S]*?<\/table>/gi, " ")
     .replace(/<h[1-6]\b[^>]*>[\s\S]*?<\/h[1-6]>/gi, ". ")
     .replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&")
     .replace(/\s+/g, " ").trim();
 }
 
+function isRegulatoryEnumerationContext(claimText: string, claimClass: GlwReferenceClaimClass): boolean {
+  if (claimClass !== "INTERACTIVITY") return false;
+  const regulatory = /\b(?:rules?|codes?|ordinances?|permits?|permitting|zoning|regulatory|HOA)\b/i.test(claimText);
+  const enumeration = /(?:^|[,;])\s*interactive\s*(?:,|;|\bor\b|\band\b)/i.test(claimText)
+    || /\b(?:illuminated|electronic|digital|temporary|permanent)\s*,\s*interactive\s*,\s*(?:or|and)\s*[a-z-]+/i.test(claimText);
+  const capabilityPredicate = /\b(?:product|system|sphere|display|service|functionality)\b.{0,60}\b(?:supports?|provides?|includes?|allows?|enables?|offers?|features?)\b/i.test(claimText)
+    || /\binteractive\s+(?:capabilit(?:y|ies)|functionality|features?|content|experiences?|apps?|controls?)\b/i.test(claimText);
+  return regulatory && enumeration && !capabilityPredicate;
+}
+
+function isComparisonTable(cells: readonly string[]): boolean {
+  if (cells.length < 6) return false;
+  const tableText = cells.join(" ");
+  return /\b(?:feature|consideration|criteria|attribute|factor|aspect|category)\b/i.test(tableText)
+    && /\b(?:visibility|viewing|form factor|space requirement|content creation|audience experience|brand impact|installation complexity)\b/i.test(tableText)
+    && /\b(?:sphere|spherical|curved)\b/i.test(tableText)
+    && /\b(?:flat|traditional|conventional)\b/i.test(tableText);
+}
+
 function headingsFromHtml(html: string): string[] {
   return [...html.matchAll(/<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/gi)]
     .map((match) => match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
-    .filter(Boolean);
-}
-
-function tableCellsFromHtml(html: string): string[] {
-  return [...html.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)]
-    .map((match) => match[1].replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim())
     .filter(Boolean);
 }
 
@@ -125,7 +140,7 @@ export function evaluateGlwReferenceClaimAuthority(input: {
 
   const evaluate = (rule: ClaimRule, claimText: string) => {
     const key = `${rule.claimClass}:${claimText}`;
-    if (!claimText || seen.has(key)) return;
+    if (!claimText || seen.has(key) || isRegulatoryEnumerationContext(claimText, rule.claimClass)) return;
     seen.add(key);
     const mapping = mappings.find((candidate) =>
       candidate.claimClass === rule.claimClass
@@ -154,11 +169,22 @@ export function evaluateGlwReferenceClaimAuthority(input: {
   for (const heading of headingsFromHtml(input.artifact.contentHtml ?? "")) {
     if (new RegExp(marketRule.pattern.source, marketRule.pattern.flags).test(heading)) evaluate(marketRule, heading);
   }
-  for (const cell of tableCellsFromHtml(input.artifact.contentHtml ?? "")) {
-    for (const rule of RULES) {
-      if (new RegExp(rule.pattern.source, rule.pattern.flags).test(cell)) evaluate(rule, cell);
+  const $ = load(input.artifact.contentHtml ?? "", null, false);
+  $("table").each((_, table) => {
+    const cells = $(table).find("th,td").map((__, cell) => $(cell).text().replace(/\s+/g, " ").trim()).get().filter(Boolean);
+    if (isComparisonTable(cells)) {
+      const aggregate = `${cells.join(" ")} .`;
+      for (const rule of RULES) {
+        if (new RegExp(rule.pattern.source, rule.pattern.flags).test(aggregate)) evaluate(rule, aggregate);
+      }
+      return;
     }
-  }
+    for (const cell of cells) {
+      for (const rule of RULES) {
+        if (new RegExp(rule.pattern.source, rule.pattern.flags).test(cell)) evaluate(rule, cell);
+      }
+    }
+  });
 
   const unsupported = findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");
   return {

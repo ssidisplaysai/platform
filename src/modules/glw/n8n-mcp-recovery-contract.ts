@@ -1,6 +1,13 @@
 import type { GlwN8nDraftRequest } from "./page-execution";
 import { GLW_REFERENCE_CLAIM_CLASSES } from "./reference-claim-authority";
+import {
+  GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
+  GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+  GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
+} from "./reference-generation-claim-contract";
 import { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "./reference-generation-claim-contract-version";
+import { GLW_REFERENCE_QA_POLICY_VERSION } from "./reference-claim-authority";
+import { GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT } from "./n8n-workflow-identity";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -20,6 +27,7 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   const buyerQuestionContract = asRecord(claimContract.buyerQuestionFallback);
   const localizationContract = asRecord(claimContract.localizationPolicy);
   const referenceAuthority = asRecord(workflowContext.referenceGenerationAuthority);
+  const authorityBinding = asRecord(workflowContext.referenceAuthorityBinding);
   const productAuthority = asRecord(referenceAuthority.productAuthority);
   const additionalInstructions = typeof workflowContext.additionalInstructions === "string"
     ? workflowContext.additionalInstructions
@@ -67,11 +75,13 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
   if (!incomingSiteId) {
     throw new Error("GLW MCP request requires a canonical Genesis site ID.");
   }
-  if (additionalInstructions.startsWith("CAMPAIGN REFERENCE PAGE")
+  const governedCampaignGeneration = additionalInstructions.startsWith("CAMPAIGN REFERENCE PAGE")
+    || additionalInstructions.startsWith("CAMPAIGN PRODUCTION PAGE");
+  if (governedCampaignGeneration
     && claimContract.version !== GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION) {
-    throw new Error("GLW MCP reference generation requires the certified claim contract.");
+    throw new Error("GLW MCP campaign generation requires the certified claim contract.");
   }
-  if (additionalInstructions.startsWith("CAMPAIGN REFERENCE PAGE")) {
+  if (governedCampaignGeneration) {
     const requiredRuleNames = [
       "supportedFact", "conceptualApplication", "unsupportedFact", "unknownFact", "visualReference",
       "sourceToClaimMapping", "navigationAuthority", "buyerQuestionFallback", "trendAuthority",
@@ -83,7 +93,7 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
       || productAuthorityContract.scope !== "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY"
       || !Array.isArray(buyerQuestionContract.requiredPrefixes)
       || typeof localizationContract.version !== "string") {
-      throw new Error("GLW MCP reference generation requires the complete V1.1 claim contract.");
+      throw new Error("GLW MCP campaign generation requires the complete V1.1 claim contract.");
     }
     const references = Array.isArray(referenceAuthority.references) ? referenceAuthority.references.map(asRecord) : null;
     const authoritativeIds = Array.isArray(referenceAuthority.authoritativeFactReferenceIds)
@@ -96,7 +106,7 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
       ? referenceAuthority.supportedClaimMappings.map(asRecord)
       : null;
     if (!references || !authoritativeIds || !contentIds || !mappings) {
-      throw new Error("GLW MCP reference generation requires classified authority inventory.");
+      throw new Error("GLW MCP campaign generation requires classified authority inventory.");
     }
     const authoritativeReferenceIds = new Set(references
       .filter((reference) => reference.role === "authoritative_fact")
@@ -124,7 +134,18 @@ export function validateGlwN8nMcpDraftRequest(value: unknown): GlwN8nDraftReques
     if (typeof authorityLocalization.version !== "string"
       || typeof authorityLocalization.expectedStateCode !== "string"
       || !Array.isArray(authorityLocalization.authorizedComparisonStateCodes)) {
-      throw new Error("GLW MCP reference generation requires state/localization authority.");
+      throw new Error("GLW MCP campaign generation requires state/localization authority.");
+    }
+    const fingerprintFields = [
+      "campaignInstructionFingerprint", "referenceFingerprint", "productAuthorityFingerprint",
+    ];
+    if (fingerprintFields.some((field) => !/^[0-9a-f]{64}$/.test(String(authorityBinding[field] ?? "")))
+      || authorityBinding.generatorContractFingerprint !== GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT
+      || authorityBinding.claimAuthorityFingerprint !== GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT
+      || authorityBinding.localizationPolicyFingerprint !== GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT
+      || authorityBinding.n8nWorkflowFingerprint !== GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT
+      || authorityBinding.qaPolicyVersion !== GLW_REFERENCE_QA_POLICY_VERSION) {
+      throw new Error("GLW MCP campaign generation requires the complete authority binding.");
     }
   }
 

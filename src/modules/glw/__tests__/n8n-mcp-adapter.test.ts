@@ -11,6 +11,14 @@ import {
 import { GLW_N8N_WORKFLOW_ID } from "../n8n-draft-adapter";
 import { validateGlwN8nMcpDraftRequest } from "../n8n-mcp-recovery-contract";
 import {
+  GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
+  GLW_REFERENCE_GENERATION_CLAIM_CONTRACT,
+  GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+  GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
+} from "../reference-generation-claim-contract";
+import { GLW_REFERENCE_QA_POLICY_VERSION } from "../reference-claim-authority";
+import { GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT } from "../n8n-workflow-identity";
+import {
   createGlwDraftExecutionService,
   createInMemoryGlwPageExecutionRepository,
   mapGenerationRequestToN8nDraft,
@@ -213,6 +221,31 @@ describe("GLW n8n MCP recovery adapter", () => {
       callTool,
     });
     await expect(dispatcher.dispatch(mappedRequest)).rejects.toThrow("not configured");
+    expect(callTool).not.toHaveBeenCalled();
+  });
+
+  test.each(["claim contract", "authority binding"] as const)("rejects production missing %s before MCP dispatch", async (missing) => {
+    const governedRequest = structuredClone(mappedRequest);
+    governedRequest.workflowContext.additionalInstructions = "CAMPAIGN PRODUCTION PAGE — APPROVED INSTRUCTIONS:";
+    governedRequest.workflowContext.referenceGenerationClaimContract = GLW_REFERENCE_GENERATION_CLAIM_CONTRACT;
+    governedRequest.workflowContext.referenceGenerationAuthority = {
+      references: [], authoritativeFactReferenceIds: [], visualOrContentReferenceIds: [], supportedClaimMappings: [],
+      productAuthority: { known: true, path: "/outdoor-digital-sphere/", anchorText: "Outdoor Digital Sphere", authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY" },
+      localizationPolicy: { version: "GLW_STATE_LOCALIZATION_CONTAMINATION_V1", expectedStateCode: "AZ", authorizedComparisonStateCodes: [] },
+    };
+    governedRequest.workflowContext.referenceAuthorityBinding = {
+      campaignInstructionFingerprint: "a".repeat(64), referenceFingerprint: "b".repeat(64), productAuthorityFingerprint: "c".repeat(64),
+      claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT,
+      generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
+      localizationPolicyFingerprint: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
+      n8nWorkflowFingerprint: GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT,
+      qaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
+    };
+    if (missing === "claim contract") delete governedRequest.workflowContext.referenceGenerationClaimContract;
+    else delete governedRequest.workflowContext.referenceAuthorityBinding;
+    const callTool = jest.fn();
+    const dispatcher = createGlwN8nMcpDispatcher({ environment: environment(), callTool });
+    await expect(dispatcher.dispatch(governedRequest)).rejects.toThrow();
     expect(callTool).not.toHaveBeenCalled();
   });
 

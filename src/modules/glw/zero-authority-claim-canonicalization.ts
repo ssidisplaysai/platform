@@ -48,9 +48,10 @@ const POLICY = {
     "Convert an unsupported capability assertion beginning with This allows for and containing interactive meaning to a canonical supplier-dependent buyer question.",
     "Convert labeled application examples containing interactive meaning to explicitly conceptual applications without asserting product capability.",
     "Remove nonessential climate, cost-planning, market, and product-assumption statements when deletion preserves surrounding commercial meaning.",
-    "Replace unsupported product comparison tables with an authority-neutral buyer evaluation framework.",
+    "Replace structurally identifiable unsupported product comparison tables with an authority-neutral buyer evaluation framework.",
     "Convert unsupported environmental, specification, training, and installation-responsibility assertions to authority-neutral buyer questions.",
-    "Preserve spherical geometry while removing unsupported engagement or performance meaning.",
+    "Preserve spherical geometry while removing unsupported engagement, impact, accessibility, or performance meaning.",
+    "Apply cross-element transformations only when the corresponding DOM text-node span is unique.",
     "Reduce repeated supplier-question constructions with an authority-neutral project documentation question.",
     "Block every protected claim that does not match an allowlisted meaning-reducing transformation.",
   ],
@@ -170,8 +171,10 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
 
   if (claimClasses.includes("PRODUCT_SPECIFICATION")
     && text.length > 120
-    && /\b(?:Feature|Consideration)\b/i.test(text)
-    && /\b(?:Form Factor|Viewing Directions?|Viewing Angles?)\b/i.test(text)) {
+    && /\b(?:Feature|Consideration|Criteria|Attribute|Factor|Aspect|Category)\b/i.test(text)
+    && /\b(?:Form Factor|Viewing Directions?|Viewing Angles?|Visibility|Space Requirement|Content Creation|Audience Experience|Brand Impact|Installation Complexity)\b/i.test(text)
+    && /\b(?:sphere|spherical|curved)\b/i.test(text)
+    && /\b(?:flat|traditional|conventional)\b/i.test(text)) {
     return {
       claimClasses,
       originalText: text,
@@ -214,7 +217,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
 
   if (claimClasses.includes("PRODUCT_SPECIFICATION")
     && /\b360(?:°|-degree)\b/i.test(text)
-    && /\b(?:engagement|viewing|visible|audience|presence|immersive)\b/i.test(text)) {
+    && /\b(?:engagement|viewing|visible|audiences?|presence|immersive|impacts?|accessibility)\b/i.test(text)) {
     return {
       claimClasses,
       originalText: text,
@@ -346,6 +349,55 @@ function applyAcrossAdjacentTextElements(
   return $.html();
 }
 
+function applyAcrossTextNodes(
+  $: ReturnType<typeof cheerio.load>,
+  transformation: GlwZeroAuthorityTransformation,
+): string | null {
+  type TraversableNode = { type?: string; data?: string; children?: TraversableNode[] };
+  const nodes: TraversableNode[] = [];
+  const collect = (node: TraversableNode): void => {
+    if (node.type === "text") nodes.push(node);
+    for (const child of node.children ?? []) collect(child);
+  };
+  collect($.root()[0] as unknown as TraversableNode);
+  const matches: Array<{ first: typeof nodes[number]; last: typeof nodes[number]; before: string; after: string }> = [];
+  for (let start = 0; start < nodes.length - 1; start += 1) {
+    const firstText = normalizeText((nodes[start] as typeof nodes[number] & { data?: string }).data ?? "");
+    if (!firstText) continue;
+    let combined = firstText;
+    for (let end = start + 1; end < nodes.length; end += 1) {
+      const lastText = normalizeText((nodes[end] as typeof nodes[number] & { data?: string }).data ?? "");
+      if (!lastText) continue;
+      combined = `${combined} ${lastText}`;
+      const offset = combined.indexOf(transformation.originalText);
+      const matchEnd = offset + transformation.originalText.length;
+      if (offset >= 0 && offset <= firstText.length && matchEnd > combined.length - lastText.length - 1) {
+        matches.push({
+          first: nodes[start],
+          last: nodes[end],
+          before: firstText.slice(0, offset).trim(),
+          after: lastText.slice(matchEnd - (combined.length - lastText.length)).trim(),
+        });
+        break;
+      }
+      if (combined.length > transformation.originalText.length + firstText.length + 500) break;
+    }
+  }
+  if (matches.length !== 1) return null;
+  const match = matches[0];
+  const firstNode = match.first as typeof match.first & { data?: string };
+  const lastNode = match.last as typeof match.last & { data?: string };
+  firstNode.data = [match.before, transformation.canonicalText].filter(Boolean).join(" ");
+  let between = false;
+  for (const node of nodes) {
+    if (node === match.first) { between = true; continue; }
+    if (!between) continue;
+    if (node === match.last) { lastNode.data = match.after; break; }
+    (node as typeof node & { data?: string }).data = "";
+  }
+  return $.html();
+}
+
 function applyTransformation(html: string, transformation: GlwZeroAuthorityTransformation): string | null {
   const $ = cheerio.load(html, null, false);
   if (transformation.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK") {
@@ -376,6 +428,8 @@ function applyTransformation(html: string, transformation: GlwZeroAuthorityTrans
     }
     const adjacent = applyAcrossAdjacentTextElements($, transformation);
     if (adjacent !== null) return adjacent;
+    const textNodes = applyAcrossTextNodes($, transformation);
+    if (textNodes !== null) return textNodes;
     return html.includes(transformation.originalText)
       ? html.replace(transformation.originalText, transformation.canonicalText ?? "")
       : null;
@@ -428,7 +482,14 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
   let contentHtml = rawArtifact.contentHtml;
 
   if (blockedClaims.length === 0) {
-    for (const transformation of transformations) {
+    const applicationOrder = [...transformations].sort((left, right) => {
+      const leftComparison = left.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK" ? 0 : 1;
+      const rightComparison = right.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK" ? 0 : 1;
+      const leftRemoval = left.disposition === "REMOVE" ? 1 : 0;
+      const rightRemoval = right.disposition === "REMOVE" ? 1 : 0;
+      return leftComparison - rightComparison || leftRemoval - rightRemoval || left.originalText.length - right.originalText.length;
+    });
+    for (const transformation of applicationOrder) {
       const comparisonReplacement = transformations.find((entry) => entry.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK");
       if (comparisonReplacement && transformation !== comparisonReplacement && comparisonReplacement.originalText.includes(transformation.originalText)) continue;
       const next = applyTransformation(contentHtml, transformation);

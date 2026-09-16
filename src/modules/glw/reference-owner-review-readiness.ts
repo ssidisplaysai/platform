@@ -95,6 +95,9 @@ export function evaluateGlwReferenceOwnerReviewReadiness(input: {
   const claims = evaluateGlwReferenceClaimAuthority({ artifact: input.artifact, authority: input.authority ?? null });
   const unsupported = claims.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");
   const tableCellTexts = new Set($("table td,table th").map((_, cell) => normalize($(cell).text())).get());
+  const tableTexts = $("table").map((_, table) => $(table).find("th,td").map((__, cell) => normalize($(cell).text())).get().filter(Boolean).join(" ")).get();
+  const isTableFinding = (finding: GlwClaimAuthorityFinding) => tableCellTexts.has(normalize(finding.claimText))
+    || tableTexts.some((tableText) => normalize(finding.claimText).startsWith(tableText));
   const allText = normalize($.text());
   const buyerQuestionPremiseEscapes = $("p,li,td").map((_, element) => hasBuyerQuestionPremise($(element).text(), input.target.stateName) ? 1 : 0).get().reduce((sum, value) => sum + value, 0);
   const failures = qualityFailures($);
@@ -110,7 +113,7 @@ export function evaluateGlwReferenceOwnerReviewReadiness(input: {
     APPLICATIONS: /applications|potential concepts|uses/i.test(headings),
       PLANNING_BUYER_GUIDANCE: $("[data-reference-section=PLANNING_GUIDANCE]").length > 0 || /\bplan(?:ning)?\b|what to ask|buyer/i.test(headings),
     VISUAL_APPLICATION_SECTION: (input.media.contextualMediaCount + input.media.applicationMediaCount + input.media.localContextualMediaCount) > 0 && hasRole("visual-application"),
-    AUTHORIZED_COMPARISON_OR_EVALUATION: $("table").length === 0 || unsupported.every((finding) => !tableCellTexts.has(normalize(finding.claimText))),
+    AUTHORIZED_COMPARISON_OR_EVALUATION: $("table").length === 0 || unsupported.every((finding) => !isTableFinding(finding)),
     CTA: /contact|request|discuss|consult/i.test(allText),
     SEO: Boolean(input.artifact.seoTitle?.trim() && input.artifact.metaDescription?.trim() && input.artifact.focusKeyphrase?.trim()),
     RESPONSIVE_COMPOSITION: $("[data-composition-contract]").length > 0,
@@ -132,7 +135,7 @@ export function evaluateGlwReferenceOwnerReviewReadiness(input: {
       unsupportedFactualClaims: unsupported.length,
       locationFactEscapes: unsupported.filter((finding) => finding.claimClass === "LOCATION_FACT" || finding.claimClass === "CLIMATE").length,
       productFactEscapes: unsupported.filter((finding) => ["PRODUCT_CAPABILITY", "PRODUCT_SPECIFICATION", "INTERACTIVITY", "PERFORMANCE", "INSTALLATION_CAPABILITY"].includes(finding.claimClass)).length,
-      comparisonFactEscapes: unsupported.filter((finding) => tableCellTexts.has(normalize(finding.claimText))).length,
+      comparisonFactEscapes: unsupported.filter(isTableFinding).length,
       buyerQuestionPremiseEscapes,
     },
     copyQuality: { version: GLW_CANONICALIZATION_COPY_QUALITY_VERSION, ok: failures.length === 0, failures },

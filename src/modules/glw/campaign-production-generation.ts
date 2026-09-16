@@ -3,13 +3,17 @@ import "server-only";
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
-import { resolveGlwCampaignGenerationContext } from "@/modules/glw/campaign-generation-context";
+import { resolveGlwCampaignGenerationContext, type GlwResolvedCampaignGenerationContext } from "@/modules/glw/campaign-generation-context";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
+import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
+import { resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
+import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
 import {
   adaptProductForGeneration,
   adaptSiteForGeneration,
   createDefaultGlwGenerationInput,
+  type GlwGenerationRequestInput,
 } from "@/modules/glw/page-generation";
 
 function normalizeCitySlug(value: string): string {
@@ -18,6 +22,31 @@ function normalizeCitySlug(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+export function attachGlwCampaignProductionAuthority(input: {
+  form: GlwGenerationRequestInput;
+  generationContext: GlwResolvedCampaignGenerationContext;
+  generationAuthority: ReturnType<typeof resolveGlwReferenceGenerationAuthority>;
+  productTopic: string;
+  stateCode: string;
+}): void {
+  input.form.referenceGenerationClaimContract = input.generationContext.claimContract;
+  input.form.referenceGenerationAuthority = {
+    ...input.generationContext.referenceAuthority,
+    productAuthority: {
+      known: input.generationAuthority.productAuthorityKnown,
+      path: input.generationAuthority.productAuthorityPath,
+      anchorText: input.productTopic,
+      authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY",
+    },
+    localizationPolicy: {
+      version: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION,
+      expectedStateCode: input.stateCode,
+      authorizedComparisonStateCodes: [],
+    },
+  };
+  input.form.referenceAuthorityBinding = input.generationAuthority;
 }
 
 export function buildGlwCampaignProductionGenerationForm(input: {
@@ -126,9 +155,17 @@ export function buildGlwCampaignProductionGenerationForm(input: {
   if (!generationContext) {
     throw new Error("Approved campaign generation guidance could not be resolved.");
   }
+  const pack = getGlwCampaignKnowledgePack(input.campaign.campaignId);
+  if (!pack) throw new Error("Approved campaign generation authority could not be resolved.");
+  const generationAuthority = resolveGlwReferenceGenerationAuthority({
+    campaign: input.campaign,
+    pack,
+    stateCode,
+  });
 
   form.additionalInstructions = generationContext.additionalInstructions;
   form.imageDirection = generationContext.imageDirection;
+  attachGlwCampaignProductionAuthority({ form, generationContext, generationAuthority, productTopic: product.topic, stateCode });
   form.campaignId = input.campaign.campaignId;
 
   return {
