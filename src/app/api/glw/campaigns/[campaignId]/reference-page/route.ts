@@ -27,6 +27,7 @@ import { evaluateProductMediaReadiness, listProductMediaAuthority, OUTDOOR_DIGIT
 import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
+import { createIndianaRichReferenceCompositionPlan } from "@/modules/glw/indiana-rich-reference-composition-plan";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -202,7 +203,12 @@ export async function GET(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
-  const productMediaReadiness = campaignProductMediaReadiness(campaign, target.state.code);
+  const productMediaRecords = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
+    ? listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId })
+    : [];
+  const productMediaReadiness = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
+    ? evaluateProductMediaReadiness(productMediaRecords, { stateCode: target.state.code })
+    : null;
   const mediaReadiness = referenceMediaReadiness(productMediaReadiness, productRecord.media.primaryImageReference);
   const approvedProductMediaAvailable = mediaReadiness.productAuthorityMediaAvailable;
   const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);
@@ -248,6 +254,9 @@ export async function GET(request: NextRequest, context: Context) {
         records,
       });
   const baseWorkflow = projectGlwReferenceWorkflow(job ?? legacyJob);
+  const deterministicCompositionPlan = target.state.code === "IN" && productMediaRecords.length > 0 && (job ?? legacyJob) && baseWorkflow.artifactSha256
+    ? createIndianaRichReferenceCompositionPlan({ records: productMediaRecords, semanticSource: { jobId: (job ?? legacyJob)!.jobId, artifactSha256: baseWorkflow.artifactSha256 } })
+    : null;
   const durableOperation = projectGlwDurableReferenceOperation({ campaign, campaigns: listGlwCampaigns(), records, selectedStateCode: target.state.code });
   const mcpConfiguration = getGlwN8nMcpConfigurationStatus();
   const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
@@ -298,6 +307,7 @@ export async function GET(request: NextRequest, context: Context) {
       ownerReviewReadiness: ownerReviewReadiness(legacyJob, mediaReadiness),
       richCompositionReadiness: legacyJob ? resolveGlwRichReferenceReadiness({ campaign, job: legacyJob, approvedProductMediaAvailable }) : null,
       productMediaReadiness,
+      deterministicCompositionPlan,
       durableOperation,
       mcpConfiguration,
       failedDispatchRecovery: job?.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
@@ -340,6 +350,7 @@ export async function GET(request: NextRequest, context: Context) {
         ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
         richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
         productMediaReadiness,
+        deterministicCompositionPlan,
         durableOperation,
         mcpConfiguration,
         failedDispatchRecovery: false,
@@ -368,6 +379,7 @@ export async function GET(request: NextRequest, context: Context) {
     ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
     richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
     productMediaReadiness,
+    deterministicCompositionPlan,
     durableOperation,
     mcpConfiguration,
     failedDispatchRecovery: job.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,

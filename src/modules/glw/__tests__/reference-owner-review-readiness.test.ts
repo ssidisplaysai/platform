@@ -53,6 +53,8 @@ describe("GLW reference owner-review readiness", () => {
     expect(route).toContain("evaluateProductMediaReadiness(records,{stateCode})");
     expect(route).toContain("campaignProductMediaReadiness(campaign,target.state.code)");
     expect(route).toContain("ownerReviewReadiness(job,mediaReadiness)");
+    expect(route).toContain("createIndianaRichReferenceCompositionPlan");
+    expect(route).toContain("deterministicCompositionPlan");
     expect(route).not.toContain("productAuthorityMediaCount:0");
     expect(ui).toContain("productMediaReadiness?.state");
     expect(ui).toContain("onAuthorityChanged={()=>recoverReferencePage(false)}");

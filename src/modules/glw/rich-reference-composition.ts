@@ -94,7 +94,7 @@ export function evaluateGlwRichReferenceReadiness(input: GlwRichReferenceReadine
   const invalidProductMedia = currentAssignments.some((assignment) => assignment.role === "PRODUCT_AUTHORITY"
     && (assignment.asset.type !== "APPROVED_EXISTING"
       || !assignment.asset.productId
-      || !assignment.asset.authorityReference.startsWith("wordpress-media:")));
+      || !/^(?:wordpress-media:|product-media:)/.test(assignment.asset.authorityReference)));
   const ungroundedContextualMedia = currentAssignments.some((assignment) =>
     (assignment.role === "CONTEXTUAL_IN_USE" || assignment.role === "APPLICATION_EXPERIENCE")
     && assignment.asset.type === "GENERATED"
