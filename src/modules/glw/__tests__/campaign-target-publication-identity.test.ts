@@ -21,6 +21,30 @@ describe("campaign publication target identity", () => {
     expect(targets.filter((target) => target.status === "queued").sort((left, right) => left.stateCode.localeCompare(right.stateCode))[0].stateCode).toBe("AL");
   });
 
+  test("reconciles certified state targets during initialization without dispatching the remainder", () => {
+    const campaignId = `campaign-certified-preview-${process.pid}-${Date.now()}`;
+    const targets = initializeGlwCampaignTargets({
+      campaignId,
+      organizationId: "org",
+      siteId: "site",
+      productId: "product",
+      stateCodes: ["AL", "AK", "IN"],
+      referenceStateCode: "IN",
+      referenceJobId: "reference-job",
+      referenceWordpressObjectId: "20115",
+      certifiedTargets: [
+        { stateCode: "AK", wordpressObjectId: "20120" },
+        { stateCode: "IN", wordpressObjectId: "20115", jobId: "reference-job" },
+      ],
+    });
+
+    expect(targets).toEqual(expect.arrayContaining([
+      expect.objectContaining({ stateCode: "AK", status: "published", wordpressObjectId: "20120", leaseId: null }),
+      expect.objectContaining({ stateCode: "IN", status: "published", wordpressObjectId: "20115", leaseId: null }),
+      expect.objectContaining({ stateCode: "AL", status: "queued", wordpressObjectId: null, jobId: null, leaseId: null, attemptCount: 0 }),
+    ]));
+  });
+
   test("requires the exact city slug for city targets", () => {
     const campaignId = `campaign-city-${process.pid}-${Date.now()}`;
     initializeGlwCityCampaignTargets({ campaignId, organizationId: "org", siteId: "site", productId: "product", cityTargets: [{ stateCode: "CA", citySlug: "los-angeles", cityName: "Los Angeles" }, { stateCode: "CA", citySlug: "fresno", cityName: "Fresno" }], referenceTarget: { stateCode: "CA", citySlug: "los-angeles" }, referenceJobId: "reference-job", referenceWordpressObjectId: "100" });

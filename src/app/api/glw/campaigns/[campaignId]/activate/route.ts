@@ -14,7 +14,9 @@ import {
   initializeGlwCampaignTargets,
   initializeGlwCityCampaignTargets,
   listGlwCampaignTargets,
+  previewGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
+import { listGlwCertifiedStateCampaignTargets, resolveGlwCertifiedStateActivationReference } from "@/modules/glw/campaign-certified-state-targets";
 import {
   applyRecoveredCityCampaignTargetAdoption,
   planRecoveredCityCampaignTargetAdoption,
@@ -25,6 +27,7 @@ import { getGlwReferenceStateSelection } from "@/modules/glw/reference-state-sel
 import { recordGlwCampaignLaunchActivated, requireGlwCampaignLaunchReservationOwnership } from "@/modules/glw/campaign-launch-authority";
 import { claimGlwCampaignActivationGrant, consumeGlwCampaignActivationGrant } from "@/modules/glw/campaign-activation-authorization";
 import { requireGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
+import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 
 type Context = {
   params: Promise<{ campaignId: string }>;
@@ -93,6 +96,8 @@ export async function POST(
       { status: auth.status },
     );
   }
+  const principal = resolveGlwTrustedOperatorPrincipal(request);
+  if (!principal.ok) return NextResponse.json({ error: principal.message, code: principal.code }, { status: 401 });
 
   const scope = resolveRequestScope(request);
 
@@ -232,26 +237,33 @@ export async function POST(
     referenceCitySlug,
   );
 
-  if (!approval) {
+  const governedReferenceApproval = referenceCitySlug
+    ? getGovernedLocalCampaignReferenceApproval(campaign.campaignId, referenceStateCode, referenceCitySlug)
+    : null;
+  const certifiedTargets = isCityCampaign ? [] : listGlwCertifiedStateCampaignTargets(campaign);
+  const certifiedReference = isCityCampaign ? null : resolveGlwCertifiedStateActivationReference(campaign, referenceStateCode);
+  if (!approval && !certifiedReference) {
     return NextResponse.json(
       {
         error: isCityCampaign
           ? "Campaign activation requires an approved city reference."
-          : "Campaign activation requires an approved selected-state reference.",
+          : "Campaign activation requires a public-certified selected-state reference.",
       },
       { status: 409 },
     );
   }
-
-  const governedReferenceApproval = referenceCitySlug
-    ? getGovernedLocalCampaignReferenceApproval(campaign.campaignId, referenceStateCode, referenceCitySlug)
-    : null;
-  const wordpressApproval = approval.approvalKind === "GOVERNED_LOCAL_REFERENCE" ? null : approval;
+  const activationReference = governedReferenceApproval ?? (certifiedReference ? {
+    receiptSha256: certifiedReference.evidenceFingerprint,
+    referenceRevision: 1,
+    imageCandidateId: certifiedReference.certificationId,
+    imageCandidateRevision: 1,
+  } : null);
+  const wordpressApproval = approval?.approvalKind === "GOVERNED_LOCAL_REFERENCE" ? null : approval;
   const referenceJob = wordpressApproval
     ? await glwPageExecutionRepository.getById(wordpressApproval.jobId)
     : null;
 
-  if (!governedReferenceApproval && (
+  if (!governedReferenceApproval && !certifiedReference && (
     !referenceJob
     || referenceJob.organizationId !== campaign.organizationId
     || referenceJob.siteId !== campaign.siteId
@@ -276,6 +288,36 @@ export async function POST(
 
   requireGlwCampaignLaunchReservationOwnership(campaign);
 
+  const activationTargets = listGlwCampaignTargets(campaign.campaignId);
+  const targetPreview = activationTargets.length > 0 ? activationTargets : isCityCampaign ? activationTargets : previewGlwCampaignTargets({
+    campaignId: campaign.campaignId,
+    organizationId: campaign.organizationId,
+    siteId: campaign.siteId,
+    productId: campaign.productId,
+    stateCodes: campaign.stateCodes,
+    referenceStateCode,
+    referenceJobId: referenceJob?.jobId ?? null,
+    referenceWordpressObjectId: certifiedReference?.wordpressObjectId ?? referenceJob?.wordpressObjectId ?? null,
+    certifiedTargets,
+  });
+
+  let activationGrant;
+  try {
+    if (!activationReference) throw new Error("GOVERNED_REFERENCE_APPROVAL_REQUIRED");
+    activationGrant = claimGlwCampaignActivationGrant({
+      campaign,
+      targets: targetPreview,
+      certifiedReleaseSha: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
+      referenceApproval: activationReference,
+      principal: principal.principal,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "Campaign-scoped activation authorization is required.",
+      code: "CAMPAIGN_ACTIVATION_AUTHORIZATION_REQUIRED",
+    }, { status: 403 });
+  }
+
   const initializedTargets = isCityCampaign
     ? initializeGlwCityCampaignTargets({
         campaignId: campaign.campaignId,
@@ -297,8 +339,9 @@ export async function POST(
         productId: campaign.productId,
         stateCodes: campaign.stateCodes,
         referenceStateCode,
-        referenceJobId: referenceJob!.jobId,
-        referenceWordpressObjectId: referenceJob!.wordpressObjectId!,
+        referenceJobId: referenceJob?.jobId ?? "",
+        referenceWordpressObjectId: certifiedReference?.wordpressObjectId ?? referenceJob?.wordpressObjectId ?? "",
+        certifiedTargets,
       });
 
   let recoveredTargetCount = 0;
@@ -353,7 +396,7 @@ export async function POST(
   const referenceIdentityMatches = isCityCampaign
     ? referenceTargets[0]?.stateCode === referenceStateCode
       && referenceTargets[0]?.citySlug === referenceCitySlug
-    : referenceTargets[0]?.stateCode === referenceStateCode;
+    : publishedTargets.some((target) => target.stateCode === referenceStateCode);
 
   const allCityTargetsAccountedFor = isCityCampaign
     ? referenceTargets.length
@@ -365,10 +408,10 @@ export async function POST(
 
   if (
     targets.length !== expectedTargetCount
-    || referenceTargets.length !== 1
+    || (isCityCampaign && referenceTargets.length !== 1)
     || !referenceIdentityMatches
     || !allCityTargetsAccountedFor
-    || (!isCityCampaign && queuedTargets.length !== expectedTargetCount - 1)
+    || (!isCityCampaign && queuedTargets.length !== expectedTargetCount - certifiedTargets.length)
   ) {
     return NextResponse.json(
       {
@@ -377,23 +420,6 @@ export async function POST(
       },
       { status: 500 },
     );
-  }
-
-  let activationGrant;
-  try {
-    if (!governedReferenceApproval) throw new Error("GOVERNED_REFERENCE_APPROVAL_REQUIRED");
-    activationGrant = claimGlwCampaignActivationGrant({
-      campaign,
-      targets,
-      certifiedReleaseSha: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
-      referenceApproval: governedReferenceApproval,
-      claimedBy: auth.roles.includes("platform_admin") ? "platform_admin" : "authorized_scheduler",
-    });
-  } catch (error) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "Campaign-scoped activation authorization is required.",
-      code: "CAMPAIGN_ACTIVATION_AUTHORIZATION_REQUIRED",
-    }, { status: 403 });
   }
 
   const activation = activateGlwCampaign(campaign.campaignId);
@@ -411,7 +437,7 @@ export async function POST(
     consumeGlwCampaignActivationGrant({
       grantId: activationGrant.grant.grantId,
       claimId: activationGrant.claimId,
-      consumedBy: auth.roles.includes("platform_admin") ? "platform_admin" : "authorized_scheduler",
+      principal: principal.principal,
     });
   } catch (error) {
     return NextResponse.json({

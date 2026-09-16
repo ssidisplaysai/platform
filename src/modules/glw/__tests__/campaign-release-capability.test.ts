@@ -56,6 +56,8 @@ describe("GLW campaign activation release capability", () => {
     expect(capabilityCheck).toBeGreaterThan(-1);
     expect(capabilityCheck).toBeLessThan(route.indexOf("initializeGlwCityCampaignTargets({"));
     expect(capabilityCheck).toBeLessThan(route.indexOf("claimGlwCampaignActivationGrant({"));
+    expect(route.indexOf("claimGlwCampaignActivationGrant({")).toBeLessThan(route.indexOf("initializeGlwCityCampaignTargets({"));
+    expect(route.indexOf("claimGlwCampaignActivationGrant({")).toBeLessThan(route.indexOf("initializeGlwCampaignTargets({"));
     expect(route.indexOf("claimGlwCampaignActivationGrant({")).toBeLessThan(route.indexOf("activateGlwCampaign(campaign.campaignId)"));
   });
 

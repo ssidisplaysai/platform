@@ -149,6 +149,7 @@ export function previewGlwCampaignTargets(input: {
   referenceStateCode: string;
   referenceJobId?: string | null;
   referenceWordpressObjectId?: string | null;
+  certifiedTargets?: readonly { stateCode: string; wordpressObjectId: string; jobId?: string | null }[];
   now?: Date;
 }): readonly GlwCampaignTarget[] {
   const timestamp = (input.now ?? new Date()).toISOString();
@@ -157,6 +158,7 @@ export function previewGlwCampaignTargets(input: {
   return input.stateCodes.map((rawStateCode) => {
     const stateCode = rawStateCode.trim().toUpperCase();
     const isReference = stateCode === referenceStateCode;
+    const certified = input.certifiedTargets?.find((target) => target.stateCode.trim().toUpperCase() === stateCode) ?? null;
     return {
       targetId: createGlwCampaignStateTargetId(input.campaignId, stateCode),
       campaignId: input.campaignId,
@@ -167,10 +169,10 @@ export function previewGlwCampaignTargets(input: {
       stateCode,
       citySlug: null,
       cityName: null,
-      status: isReference ? "reference_complete" as const : "queued" as const,
-      jobId: isReference ? input.referenceJobId ?? null : null,
-      wordpressObjectId: isReference ? input.referenceWordpressObjectId ?? null : null,
-      attemptCount: isReference && input.referenceJobId ? 1 : 0,
+      status: certified ? "published" as const : isReference ? "reference_complete" as const : "queued" as const,
+      jobId: certified?.jobId ?? (isReference ? input.referenceJobId ?? null : null),
+      wordpressObjectId: certified?.wordpressObjectId ?? (isReference ? input.referenceWordpressObjectId ?? null : null),
+      attemptCount: certified?.jobId || isReference && input.referenceJobId ? 1 : 0,
       lastError: null,
       leaseId: null,
       leasedAt: null,
@@ -191,6 +193,7 @@ export function initializeGlwCampaignTargets(input: {
   referenceStateCode: string;
   referenceJobId: string;
   referenceWordpressObjectId: string;
+  certifiedTargets?: readonly { stateCode: string; wordpressObjectId: string; jobId?: string | null }[];
 }): readonly GlwCampaignTarget[] {
   loadState();
 

@@ -34,6 +34,7 @@ import {
 
 const release = "a".repeat(40);
 const now = new Date("2030-01-01T00:00:00.000Z");
+const principal = { principalId: "operator-1", sessionId: "session-1", authority: "GENESIS_OPERATOR_SESSION" };
 const campaign: GlwCampaign = {
   campaignId: "campaign-projector-texas", organizationId: "ssi", siteId: "site-projector",
   productId: "product-enclosure", name: "Projector Texas", pageType: "city_service", stateCodes: ["TX"],
@@ -64,7 +65,7 @@ function createGrant(overrides: Partial<Parameters<typeof createGlwCampaignActiv
     certifiedReleaseSha: release,
     referenceApproval,
     expiresAt: "2030-01-01T00:15:00.000Z",
-    createdBy: "platform_admin",
+    principal,
     now,
     createNonce: () => "12345678-1234-4234-8234-123456789abc",
     ...overrides,
@@ -77,7 +78,7 @@ function claim(overrides: Partial<Parameters<typeof claimGlwCampaignActivationGr
     targets: [target],
     certifiedReleaseSha: release,
     referenceApproval,
-    claimedBy: "platform_admin",
+    principal,
     now: new Date("2030-01-01T00:01:00.000Z"),
     ...overrides,
   });
@@ -91,11 +92,12 @@ describe("campaign-scoped activation authorization", () => {
     expect(grant).toMatchObject({
       purpose: "ACTIVATE_ONLY", organizationId: campaign.organizationId, siteId: campaign.siteId,
       campaignId: campaign.campaignId, publicationPolicy: "draft_only", certifiedReleaseSha: release,
+      exactOperation: "GLW_CAMPAIGN_ACTIVATION", principalId: principal.principalId, principalSessionId: principal.sessionId,
       referenceApprovalReceiptSha256: referenceApproval.receiptSha256,
       referenceRevision: 1,
       imageCandidateId: "reference-image-1",
       imageRevision: 1,
-      expiresAt: "2030-01-01T00:15:00.000Z", createdBy: "platform_admin", consumedAt: null,
+      expiresAt: "2030-01-01T00:15:00.000Z", createdBy: principal.principalId, consumedAt: null,
     });
     expect(grant.targetFingerprint).toBe(createGlwCampaignTargetFingerprint(campaign, [target]));
     expect(grant.nonce).toMatch(/^[0-9a-f-]{36}$/i);
@@ -116,6 +118,12 @@ describe("campaign-scoped activation authorization", () => {
     const otherSite = { ...campaign, siteId: "site-other" };
     expect(() => claim({ campaign: otherSite, targets: [{ ...target, siteId: "site-other" }] }))
       .toThrow("ACTIVATION_GRANT_SITE_MISMATCH");
+  });
+
+  test("fails closed for another authenticated principal or session", () => {
+    createGrant();
+    expect(() => claim({ principal: { ...principal, principalId: "operator-2" } })).toThrow("ACTIVATION_GRANT_PRINCIPAL_MISMATCH");
+    expect(() => claim({ principal: { ...principal, sessionId: "session-2" } })).toThrow("ACTIVATION_GRANT_PRINCIPAL_MISMATCH");
   });
 
   test("fails closed when target membership or canonical identity changes", () => {
@@ -154,10 +162,10 @@ describe("campaign-scoped activation authorization", () => {
     const consumed = consumeGlwCampaignActivationGrant({
       grantId: grant.grantId,
       claimId: claimed.claimId,
-      consumedBy: "platform_admin",
+      principal,
       now: new Date("2030-01-01T00:02:00.000Z"),
     });
-    expect(consumed).toMatchObject({ consumedBy: "platform_admin", consumedAt: "2030-01-01T00:02:00.000Z" });
+    expect(consumed).toMatchObject({ consumedBy: principal.principalId, consumedAt: "2030-01-01T00:02:00.000Z" });
     expect(() => claim()).toThrow("ACTIVATION_GRANT_CONSUMED");
   });
 

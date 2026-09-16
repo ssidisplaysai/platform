@@ -9,9 +9,10 @@ import {
 } from "@/modules/foundation/foundation-persistence";
 import type { GlwCampaign } from "./campaign-types";
 import type { GlwCampaignTarget } from "./campaign-target-repository";
+import type { GlwTrustedOperatorPrincipal } from "./trusted-operator-principal";
 
-const NAMESPACE = "glw-campaign-activation-authorization-v1";
-const SCHEMA_VERSION = 1 as const;
+const NAMESPACE = "glw-campaign-activation-authorization-v2";
+const SCHEMA_VERSION = 2 as const;
 const EXACT_RELEASE_PATTERN = /^[0-9a-f]{40}$/;
 const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;
 const NONCE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -19,9 +20,12 @@ const NONCE_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 export type GlwCampaignActivationGrant = {
   grantId: string;
   purpose: "ACTIVATE_ONLY";
+  exactOperation: "GLW_CAMPAIGN_ACTIVATION";
   organizationId: string;
   siteId: string;
   campaignId: string;
+  principalId: string;
+  principalSessionId: string;
   targetFingerprint: string;
   publicationPolicy: GlwCampaign["publicationPolicy"];
   certifiedReleaseSha: string;
@@ -56,7 +60,8 @@ function grantShapeValid(grant: GlwCampaignActivationGrant): boolean {
     ? grant.consumedBy === null
     : Boolean(grant.consumedBy && grant.claimedAt && Number.isFinite(new Date(grant.consumedAt).getTime()));
   return grant.purpose === "ACTIVATE_ONLY"
-    && Boolean(grant.grantId && grant.organizationId && grant.siteId && grant.campaignId && grant.createdBy)
+    && grant.exactOperation === "GLW_CAMPAIGN_ACTIVATION"
+    && Boolean(grant.grantId && grant.organizationId && grant.siteId && grant.campaignId && grant.principalId && grant.principalSessionId && grant.createdBy)
     && FINGERPRINT_PATTERN.test(grant.targetFingerprint)
     && FINGERPRINT_PATTERN.test(grant.referenceApprovalReceiptSha256)
     && grant.referenceRevision > 0
@@ -79,8 +84,6 @@ function canonicalTargetIdentities(campaign: GlwCampaign, targets: readonly GlwC
       || target.siteId !== campaign.siteId
       || target.productId !== campaign.productId
       || target.pageType !== campaign.pageType
-      || !target.applicationPath
-      || !target.canonicalPath
     ) throw new Error("ACTIVATION_GRANT_TARGET_IDENTITY_INVALID");
     return [
       target.organizationId,
@@ -89,8 +92,8 @@ function canonicalTargetIdentities(campaign: GlwCampaign, targets: readonly GlwC
       target.pageType,
       target.stateCode,
       target.citySlug ?? "",
-      target.applicationPath,
-      target.canonicalPath,
+      target.applicationPath ?? "",
+      target.canonicalPath ?? "",
     ].join("::");
   }).sort();
 }
@@ -138,7 +141,7 @@ export function createGlwCampaignActivationGrant(input: {
     imageCandidateRevision: number;
   };
   expiresAt: string;
-  createdBy: string;
+  principal: GlwTrustedOperatorPrincipal;
   now?: Date;
   createNonce?: () => string;
 }): GlwCampaignActivationGrant {
@@ -157,6 +160,9 @@ export function createGlwCampaignActivationGrant(input: {
   ) throw new Error("ACTIVATION_GRANT_REFERENCE_APPROVAL_INVALID");
   const targetFingerprint = createGlwCampaignTargetFingerprint(input.campaign, input.targets);
   const certifiedReleaseSha = normalizeRelease(input.certifiedReleaseSha);
+  const principalId = input.principal.principalId.trim();
+  const principalSessionId = input.principal.sessionId.trim();
+  if (!principalId || !principalSessionId) throw new Error("ACTIVATION_GRANT_AUTHENTICATED_PRINCIPAL_REQUIRED");
   const createdAt = now.toISOString();
   return saveWithRetry((state) => {
     const active = state.grants.find((grant) =>
@@ -168,9 +174,12 @@ export function createGlwCampaignActivationGrant(input: {
     const grant: GlwCampaignActivationGrant = {
       grantId: `activation-grant-${randomUUID()}`,
       purpose: "ACTIVATE_ONLY",
+      exactOperation: "GLW_CAMPAIGN_ACTIVATION",
       organizationId: input.campaign.organizationId,
       siteId: input.campaign.siteId,
       campaignId: input.campaign.campaignId,
+      principalId,
+      principalSessionId,
       targetFingerprint,
       publicationPolicy: input.campaign.publicationPolicy,
       certifiedReleaseSha,
@@ -181,7 +190,7 @@ export function createGlwCampaignActivationGrant(input: {
       expiresAt: expiresAt.toISOString(),
       nonce,
       createdAt,
-      createdBy: input.createdBy,
+      createdBy: principalId,
       claimedAt: null,
       claimedBy: null,
       claimId: null,
@@ -202,7 +211,7 @@ export function claimGlwCampaignActivationGrant(input: {
     imageCandidateId: string;
     imageCandidateRevision: number;
   };
-  claimedBy: string;
+  principal: GlwTrustedOperatorPrincipal;
   now?: Date;
 }): { grant: GlwCampaignActivationGrant; claimId: string } {
   const now = input.now ?? new Date();
@@ -214,6 +223,7 @@ export function claimGlwCampaignActivationGrant(input: {
     if (grant.organizationId !== input.campaign.organizationId) throw new Error("ACTIVATION_GRANT_ORGANIZATION_MISMATCH");
     if (grant.siteId !== input.campaign.siteId) throw new Error("ACTIVATION_GRANT_SITE_MISMATCH");
     if (grant.campaignId !== input.campaign.campaignId) throw new Error("ACTIVATION_GRANT_CAMPAIGN_MISMATCH");
+    if (grant.principalId !== input.principal.principalId || grant.principalSessionId !== input.principal.sessionId) throw new Error("ACTIVATION_GRANT_PRINCIPAL_MISMATCH");
     if (grant.targetFingerprint !== fingerprint) throw new Error("ACTIVATION_GRANT_TARGET_FINGERPRINT_MISMATCH");
     if (grant.publicationPolicy !== input.campaign.publicationPolicy) throw new Error("ACTIVATION_GRANT_PUBLICATION_POLICY_MISMATCH");
     if (grant.certifiedReleaseSha !== release) throw new Error("ACTIVATION_GRANT_RELEASE_MISMATCH");
@@ -227,7 +237,7 @@ export function claimGlwCampaignActivationGrant(input: {
     if (grant.consumedAt) throw new Error("ACTIVATION_GRANT_CONSUMED");
     if (grant.claimedAt) throw new Error("ACTIVATION_GRANT_ALREADY_CLAIMED");
     const claimId = randomUUID();
-    const claimed = { ...grant, claimedAt: now.toISOString(), claimedBy: input.claimedBy, claimId };
+    const claimed = { ...grant, claimedAt: now.toISOString(), claimedBy: input.principal.principalId, claimId };
     return {
       state: { ...state, grants: state.grants.map((candidate) => candidate.grantId === grant.grantId ? claimed : candidate) },
       value: { grant: deepClone(claimed), claimId },
@@ -238,7 +248,7 @@ export function claimGlwCampaignActivationGrant(input: {
 export function consumeGlwCampaignActivationGrant(input: {
   grantId: string;
   claimId: string;
-  consumedBy: string;
+  principal: GlwTrustedOperatorPrincipal;
   now?: Date;
 }): GlwCampaignActivationGrant {
   const now = input.now ?? new Date();
@@ -249,12 +259,14 @@ export function consumeGlwCampaignActivationGrant(input: {
       || !grantShapeValid(grant)
       || !grant.claimedAt
       || grant.claimId !== input.claimId
+      || grant.principalId !== input.principal.principalId
+      || grant.principalSessionId !== input.principal.sessionId
       || grant.consumedAt
       || new Date(grant.expiresAt) <= now
     ) {
       throw new Error("ACTIVATION_GRANT_CONSUMPTION_INVALID");
     }
-    const consumed = { ...grant, consumedAt: now.toISOString(), consumedBy: input.consumedBy };
+    const consumed = { ...grant, consumedAt: now.toISOString(), consumedBy: input.principal.principalId };
     return {
       state: { ...state, grants: state.grants.map((candidate) => candidate.grantId === grant.grantId ? consumed : candidate) },
       value: deepClone(consumed),
