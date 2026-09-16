@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { createIndianaRichReferenceCompositionPlan } from "../indiana-rich-reference-composition-plan";
-import { buildIndianaRichReferenceCandidate, candidateMediaDataUrls, getIndianaRichReferenceCandidate, renderIndianaRichReferenceCandidate } from "../indiana-rich-reference-candidate";
+import { buildIndianaRichReferenceCandidate, candidateMediaDataUrls, getIndianaRichReferenceCandidate, renderIndianaRichReferenceCandidate, renderIndianaRichReferenceWordPressContent } from "../indiana-rich-reference-candidate";
+import { evaluateIndianaStoredDraft } from "../indiana-rich-reference-persistence";
 import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT } from "../reference-generation-claim-contract";
 import { intakeProductMedia, issueProductMediaHeroGrant, issueProductMediaHeroPreflight, listProductMediaAuthority, reviewProductMedia, selectProductMediaHero } from "../product-media-authority";
 
@@ -59,6 +60,10 @@ describe("Indiana rich reference composition plan", () => {
     expect(rendered).toContain("data:image/jpeg;base64,");
     expect(rendered).toContain("data-genesis-primary-content");
     expect(rendered.match(/<h1\b/g)).toHaveLength(1);
+    const wordpressContent = renderIndianaRichReferenceWordPressContent(candidate);
+    const storedQa = evaluateIndianaStoredDraft({ candidateId: candidate.candidateId, candidateSha: candidate.candidateSha, html: wordpressContent });
+    expect(storedQa).toMatchObject({ storedCandidateIdentityVerified: true, h1Count: 1, productAuthorityLinkPresent: true, brokenMediaReferences: 0, devLinks: 0, localhostLinks: 0, previewLinks: 0, unsupportedFactualClaims: 0, unsupportedProductCapabilityClaims: 0, unsupportedClimateOrLocationFacts: 0, unexpectedStateContamination: 0, buyerQuestionPremiseRule: "PASS", comparisonAuthorityRule: "PASS", canonicalizationCopyQualityRule: "PASS", longFormArticleAppearance: false, richCommercialComposition: true });
+    expect(Object.values(storedQa.sections).every(Boolean)).toBe(true);
     const persisted = readFileSync(join(root, "genesis-indiana-rich-reference-candidate-v1.json"), "utf8");
     expect(persisted).toContain(candidate.candidateId);
     expect(persisted).not.toContain("data:image/jpeg;base64,");

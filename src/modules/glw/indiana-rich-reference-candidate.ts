@@ -109,6 +109,14 @@ export function renderIndianaRichReferenceCandidate(candidate: IndianaRichRefere
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${candidate.artifact.seoTitle}</title><style>${css}</style></head><body><header><strong>LED Display Warehouse</strong><a href="/outdoor-digital-sphere/">Outdoor Digital Sphere</a></header>${$.html()}<footer>Candidate ${candidate.candidateId} · Local review only · Not published</footer></body></html>`;
 }
 
+export function renderIndianaRichReferenceWordPressContent(candidate: IndianaRichReferenceCandidate): string {
+  const $ = load(renderIndianaRichReferenceCandidate(candidate, candidateMediaDataUrls(candidate)));
+  const style = $("style").first().toString();
+  $("header,footer").remove();
+  $("main").attr("data-candidate-id", candidate.candidateId).attr("data-candidate-sha", candidate.candidateSha);
+  return `${style}${$("main").toString()}`;
+}
+
 export function candidateVisualSummary(certification: RenderedVisualCertification): { desktopPass: boolean; mobilePass: boolean; horizontalOverflow: number; brokenImages: number; clippedHeadings: number; ctaVisible: boolean; mobileReadable: boolean } {
   const desktop = certification.captures.find((capture) => capture.viewportClass === "DESKTOP");
   const mobile = certification.captures.find((capture) => capture.viewportClass === "MOBILE");
