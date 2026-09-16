@@ -42,7 +42,7 @@ function capture(viewportClass: "DESKTOP" | "MOBILE", overrides: Partial<Rendere
     source: { origin: "https://example.com", pathname: "/page/" },
     renderer: { engine: "Chromium", version: "140", userAgent: null },
     hero: { authority: "NOT_IDENTIFIED", present: null, bounds: null, headingBounds: null, headingLineCount: null, primaryCtaBounds: null, mediaBounds: null, mediaBeforeHero: null, containerAligned: null },
-    hostIntegration: { headerOverlap: false, footerOverlap: false, blankImageContainers: 0, headerRegression: false, contentWidthBalanced: true, sectionRhythmPass: true, productIntroductionCompositionPass: true, applicationGridPass: true, planningGridPass: true, ctaWidthAlignedWithPage: true, ctaTextBalance: true, ctaButtonProminent: true, excessiveCtaWhitespace: false, finalCtaCompositionPass: true },
+    hostIntegration: { headerOverlap: false, footerOverlap: false, blankImageContainers: 0, headerRegression: false, contentWidthBalanced: true, sectionRhythmPass: true, productIntroductionCompositionPass: true, applicationGridPass: true, planningGridPass: true, ctaWidthAlignedWithPage: true, ctaTextBalance: true, ctaButtonProminent: true, excessiveCtaWhitespace: false, ctaHeadingCollision: false, ctaCopyCollision: false, ctaButtonCollision: false, buttonContainerOverflow: false, unexpectedElementCollision: false, stickyHeaderUnexpectedOcclusion: false, planningGridBalanced: true, finalCtaCompositionPass: true },
     media: [],
     sections: [],
     ...overrides,
@@ -111,6 +111,19 @@ describe("rendered visual certification contract", () => {
       expect.objectContaining({ findingCode: "DESKTOP_HERO_GEOMETRY", state: "NOT_EVALUATED" }),
     ]));
     expect(deriveRenderedVisualFindings({ layoutClass: "CONTENT_ARTICLE", captures: [desktop, mobile] })).toEqual(expect.arrayContaining([expect.objectContaining({ findingCode: "DESKTOP_LAYOUT_REMAINS_MOBILE_WIDTH", state: "NOT_EVALUATED" })]));
+  });
+
+  test("blocks measured rich-page collisions, CTA overflow, sticky occlusion, and an unbalanced planning grid", () => {
+    const desktop = capture("DESKTOP", { hostIntegration: { ...capture("DESKTOP").hostIntegration, ctaCopyCollision: true, ctaButtonCollision: true, buttonContainerOverflow: true, unexpectedElementCollision: true, stickyHeaderUnexpectedOcclusion: true, planningGridBalanced: false, planningGridPass: false, finalCtaCompositionPass: false } });
+    const findings = deriveRenderedVisualFindings({ layoutClass: "FULL_WIDTH_MARKETING_PAGE", captures: [desktop, capture("MOBILE")] });
+    expect(findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ findingCode: "DESKTOP_UNEXPECTED_ELEMENT_COLLISION", state: "BLOCKED" }),
+      expect.objectContaining({ findingCode: "DESKTOP_CTA_COLLISION", state: "BLOCKED" }),
+      expect.objectContaining({ findingCode: "DESKTOP_CTA_BUTTON_CONTAINER_OVERFLOW", state: "BLOCKED" }),
+      expect.objectContaining({ findingCode: "DESKTOP_STICKY_HEADER_OCCLUSION", state: "BLOCKED" }),
+      expect.objectContaining({ findingCode: "DESKTOP_PLANNING_GRID_BALANCE", state: "BLOCKED" }),
+    ]));
+    expect(renderedVisualOverallState(findings)).toBe("BLOCKED");
   });
 
   test("captures the Commercial Stainless constrained-desktop learning without claiming a mobile-width clone", () => {
