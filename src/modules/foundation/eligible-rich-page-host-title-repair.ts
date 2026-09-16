@@ -17,6 +17,7 @@ export type EligibleRichPageIdentity = {
   title: string;
   featuredMediaId: number;
   storedPostContentSha: string;
+  expectedStatus?: "draft" | "publish";
 };
 
 type WordPressPage = {
@@ -42,7 +43,7 @@ function authorization(username: string, password: string): string {
 
 function assertIdentity(identity: EligibleRichPageIdentity, page: WordPressPage): void {
   if (String(page.id ?? "") !== identity.wordpressObjectId
-    || page.status !== "publish"
+    || page.status !== (identity.expectedStatus ?? "publish")
     || String(page.parent ?? "") !== identity.parentObjectId
     || page.slug !== identity.slug
     || (page.title?.raw ?? page.title?.rendered ?? "").replace(/<[^>]+>/g, "").trim() !== identity.title
@@ -102,8 +103,8 @@ export async function repairEligibleRichPageNativeTitle(input: {
     profileId: profile.profileId,
     integrationPolicy: profile.host.integrationPolicy,
     wordpressObjectId: input.identity.wordpressObjectId,
-    statusBefore: before.status as "publish",
-    statusAfter: after.status as "publish",
+    statusBefore: before.status as "draft" | "publish",
+    statusAfter: after.status as "draft" | "publish",
     parentObjectId: input.identity.parentObjectId,
     slug: input.identity.slug,
     title: input.identity.title,

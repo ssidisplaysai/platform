@@ -95,6 +95,8 @@ describe("target-parameterized rich-reference production", () => {
   test("keeps target literals out of the reusable orchestration path and publication fail-closed", () => {
     const files = [
       "src/modules/glw/target-parameterized-rich-reference-production.ts",
+      "src/modules/glw/target-rich-reference-artifact-producer.ts",
+      "src/modules/glw/target-rich-reference-production-operation.ts",
       "src/app/api/glw/campaigns/[campaignId]/rich-reference-production/route.ts",
       "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts",
       "src/modules/glw/reference-owner-review-readiness.ts",
@@ -104,7 +106,9 @@ describe("target-parameterized rich-reference production", () => {
     const forbidden = [/Indiana/, /\bIN\b/, /20115/, /20114/, /\/outdoor-digital-sphere\/indiana\//, /visual-certification-67380ab5-6516-4e96-ad87-d367f86ca99b/, /b20cf87b147b2dfbc77dcbabdb29e7b2754eade283dc8e692e358ddc89d38bac/];
 
     for (const source of files) for (const pattern of forbidden) expect(source).not.toMatch(pattern);
-    expect(files[1]).not.toContain("export async function POST");
+    expect(files[3]).toContain("export async function POST");
+    expect(files[3]).toContain("runTargetRichReferenceProductionOperation");
+    expect(files[3]).not.toContain("execute_workflow");
     expect(files[0]).toContain("publicationProductionReady: true");
   });
 });

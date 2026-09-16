@@ -29,8 +29,8 @@ const site = {
   integrations: { wordpressApiBaseUrl: "https://leddisplaywarehouse.com/wp-json/wp/v2", wordpressCredentialReference: "credential" },
 } as SiteConfiguration;
 
-function page(hideTitle?: string) {
-  return { id: 30001, status: "publish", parent: 30000, slug: "test-state", title: { raw: identity.title }, content: { raw: rawPostContent }, featured_media: 0, meta: { _elementor_page_settings: hideTitle ? { hide_title: hideTitle } : {} } };
+function page(hideTitle?: string, status = "publish") {
+  return { id: 30001, status, parent: 30000, slug: "test-state", title: { raw: identity.title }, content: { raw: rawPostContent }, featured_media: 0, meta: { _elementor_page_settings: hideTitle ? { hide_title: hideTitle } : {} } };
 }
 
 describe("eligible rich-page host title repair", () => {
@@ -53,5 +53,14 @@ describe("eligible rich-page host title repair", () => {
   test("contains no target-specific production identity", () => {
     const source = readFileSync(join(process.cwd(), "src/modules/foundation/eligible-rich-page-host-title-repair.ts"), "utf8");
     expect(source).not.toMatch(/Indiana|Alaska|20115|20114/);
+  });
+
+  test("accepts an explicitly authorized draft identity without publishing it", async () => {
+    const bodies = [page(undefined, "draft"), page("yes", "draft")];
+    const fetcher = jest.fn(async (_url: string | URL | Request, init?: RequestInit) => ({ ok: true, status: 200, json: async () => init?.method === "POST" ? page("yes", "draft") : bodies.shift() } as Response));
+
+    const result = await repairEligibleRichPageNativeTitle({ site, identity: { ...identity, expectedStatus: "draft" }, fetcher });
+
+    expect(result).toMatchObject({ statusBefore: "draft", statusAfter: "draft", nativeTitleSuppressedAfter: true, publicationTransactionPerformed: false });
   });
 });
