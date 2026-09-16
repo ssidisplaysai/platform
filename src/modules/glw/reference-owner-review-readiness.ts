@@ -58,12 +58,17 @@ function normalize(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
-function hasBuyerQuestionPremise(value: string): boolean {
+function escapedPattern(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasBuyerQuestionPremise(value: string, stateName: string): boolean {
   const text = normalize(value);
+  const state = escapedPattern(stateName);
   return /\?/.test(text) && (
     /\([^)]*\b(?:humidity|wind|snow|heat|precipitation|salt|temperature)\b[^)]*\)/i.test(text)
-    || /\bIndiana(?:'s|’s)?\s+(?:winters?|summers?|varied environments?)\b/i.test(text)
-    || /\byear-round environmental changes common in Indiana\b/i.test(text)
+    || new RegExp(`\\b${state}(?:'s|’s)?\\s+(?:winters?|summers?|varied environments?)\\b`, "i").test(text)
+    || new RegExp(`\\byear-round environmental changes common in ${state}\\b`, "i").test(text)
   );
 }
 
@@ -83,6 +88,7 @@ export function evaluateGlwReferenceOwnerReviewReadiness(input: {
   artifact: GlwGeneratedDraftArtifact;
   media: GlwReferenceMediaReadiness;
   actualHostVisualCertified: boolean;
+  target: { productName: string; productCanonicalPath: string; stateName: string };
   authority?: Parameters<typeof evaluateGlwReferenceClaimAuthority>[0]["authority"];
 }): GlwReferenceOwnerReviewReadiness {
   const $ = cheerio.load(input.artifact.contentHtml, null, false);
@@ -90,16 +96,16 @@ export function evaluateGlwReferenceOwnerReviewReadiness(input: {
   const unsupported = claims.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");
   const tableCellTexts = new Set($("table td,table th").map((_, cell) => normalize($(cell).text())).get());
   const allText = normalize($.text());
-  const buyerQuestionPremiseEscapes = $("p,li,td").map((_, element) => hasBuyerQuestionPremise($(element).text()) ? 1 : 0).get().reduce((sum, value) => sum + value, 0);
+  const buyerQuestionPremiseEscapes = $("p,li,td").map((_, element) => hasBuyerQuestionPremise($(element).text(), input.target.stateName) ? 1 : 0).get().reduce((sum, value) => sum + value, 0);
   const failures = qualityFailures($);
   const richMediaCount = $("img,figure,video,picture").length;
   const headings = $("h2,h3").map((_, element) => normalize($(element).text())).get().join(" | ");
   const hasRole = (role: string) => $(`[data-composition-role="${role}"]`).length > 0;
   const composition = {
     VISUAL_HERO: hasRole("hero") && $("[data-composition-role=hero] img,[data-composition-role=hero] picture,[data-composition-role=hero] video").length > 0,
-    PRODUCT_IDENTITY: /Outdoor Digital Sphere/i.test($("h1").first().text()) && /\/outdoor-digital-sphere\//.test(input.artifact.contentHtml),
+    PRODUCT_IDENTITY: new RegExp(escapedPattern(input.target.productName), "i").test($("h1").first().text()) && input.artifact.contentHtml.includes(input.target.productCanonicalPath),
     PRODUCT_AUTHORITY_MEDIA: input.media.productAuthorityMediaCount > 0 && input.media.featuredMediaId !== null,
-    LOCALIZED_INTRODUCTION: /\bIndiana\b/i.test($("h1").first().text()) && /\bIndiana\b/i.test($("p").first().text()),
+    LOCALIZED_INTRODUCTION: new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test($("h1").first().text()) && new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test($("p").first().text()),
     APPLICATIONS: /applications|potential concepts|uses/i.test(headings),
     PLANNING_BUYER_GUIDANCE: /planning|what to ask|buyer/i.test(headings),
     VISUAL_APPLICATION_SECTION: (input.media.contextualMediaCount + input.media.applicationMediaCount + input.media.localContextualMediaCount) > 0 && hasRole("visual-application"),

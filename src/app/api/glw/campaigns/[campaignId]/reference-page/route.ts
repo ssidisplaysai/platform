@@ -19,6 +19,7 @@ import {
 import { resolveGlwCampaignGenerationContext } from "@/modules/glw/campaign-generation-context";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
+import { createGlwCampaignStateTargetId } from "@/modules/glw/campaign-target-repository";
 import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchReferenceFailure, recordGlwCampaignLaunchReferenceReviewRequired, recordGlwCampaignLaunchReferenceStarted } from "@/modules/glw/campaign-launch-authority";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -27,7 +28,7 @@ import { evaluateProductMediaReadiness, listProductMediaAuthority, OUTDOOR_DIGIT
 import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
-import { createIndianaRichReferenceCompositionPlan } from "@/modules/glw/indiana-rich-reference-composition-plan";
+import { resolveTargetParameterizedRichReferenceProduction } from "@/modules/glw/target-parameterized-rich-reference-production";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -60,6 +61,7 @@ function ownerReviewReadiness(job: Awaited<ReturnType<typeof glwPageExecutionRep
   if (!job?.generatedDraft) return null;
   return evaluateGlwReferenceOwnerReviewReadiness({
     artifact: job.generatedDraft,
+    target: { productName: job.productTopic, productCanonicalPath: `/${job.slug.split("/").filter(Boolean)[0]}/`, stateName: job.state ?? "" },
     media,
     actualHostVisualCertified: false,
     authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] },
@@ -254,8 +256,8 @@ export async function GET(request: NextRequest, context: Context) {
         records,
       });
   const baseWorkflow = projectGlwReferenceWorkflow(job ?? legacyJob);
-  const deterministicCompositionPlan = target.state.code === "IN" && productMediaRecords.length > 0 && (job ?? legacyJob) && baseWorkflow.artifactSha256
-    ? createIndianaRichReferenceCompositionPlan({ records: productMediaRecords, semanticSource: { jobId: (job ?? legacyJob)!.jobId, artifactSha256: baseWorkflow.artifactSha256 } })
+  const targetParameterizedOrchestration = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
+    ? await resolveTargetParameterizedRichReferenceProduction({ campaignId: campaign.campaignId, targetId: createGlwCampaignStateTargetId(campaign.campaignId, target.state.code) })
     : null;
   const durableOperation = projectGlwDurableReferenceOperation({ campaign, campaigns: listGlwCampaigns(), records, selectedStateCode: target.state.code });
   const mcpConfiguration = getGlwN8nMcpConfigurationStatus();
@@ -307,7 +309,7 @@ export async function GET(request: NextRequest, context: Context) {
       ownerReviewReadiness: ownerReviewReadiness(legacyJob, mediaReadiness),
       richCompositionReadiness: legacyJob ? resolveGlwRichReferenceReadiness({ campaign, job: legacyJob, approvedProductMediaAvailable }) : null,
       productMediaReadiness,
-      deterministicCompositionPlan,
+      targetParameterizedOrchestration,
       durableOperation,
       mcpConfiguration,
       failedDispatchRecovery: job?.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
@@ -350,7 +352,7 @@ export async function GET(request: NextRequest, context: Context) {
         ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
         richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
         productMediaReadiness,
-        deterministicCompositionPlan,
+        targetParameterizedOrchestration,
         durableOperation,
         mcpConfiguration,
         failedDispatchRecovery: false,
@@ -379,7 +381,7 @@ export async function GET(request: NextRequest, context: Context) {
     ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
     richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
     productMediaReadiness,
-    deterministicCompositionPlan,
+    targetParameterizedOrchestration,
     durableOperation,
     mcpConfiguration,
     failedDispatchRecovery: job.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,

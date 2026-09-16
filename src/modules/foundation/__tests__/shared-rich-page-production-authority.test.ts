@@ -47,15 +47,15 @@ describe("shared rich-page production authority", () => {
       profileResolved: true,
       nativeTitleSuppressionRequired: false,
       nativeTitleSuppressionSharedMechanismReady: true,
+      targetParameterizedRichReferenceOrchestrationReady: true,
       nextTargetRequiresNewArchitecture: false,
-      nextTargetRequiresNewCode: true,
+      nextTargetRequiresNewCode: false,
+      draftProductionReady: true,
+      publicationProductionReady: false,
       productionReady: false,
     });
-    expect(result.remainingNewCodeRequirements).toEqual([
-      "EXACT_PUBLICATION",
-      "ROLLBACK",
-      "TARGET_PARAMETERIZED_RICH_REFERENCE_ORCHESTRATION",
-    ]);
+    expect(result.remainingNewCodeRequirements).toEqual([]);
+    expect(result.publicationBoundaryRequirements).toEqual(["EXACT_PUBLICATION", "ROLLBACK"]);
   });
 
   test("does not claim unregistered future sites inherit a complete production pipeline", () => {

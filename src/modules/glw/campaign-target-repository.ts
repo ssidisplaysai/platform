@@ -79,6 +79,10 @@ function keyForTarget(target: Pick<GlwCampaignTarget, "campaignId" | "stateCode"
   return key(target.campaignId, target.stateCode, target.citySlug);
 }
 
+export function createGlwCampaignStateTargetId(campaignId: string, stateCode: string): string {
+  return `target-${campaignId}-${stateCode.trim().toLowerCase()}`;
+}
+
 function applyState(state: RepositoryState): void {
   targetStore.clear();
 
@@ -136,6 +140,48 @@ export function listAllGlwCampaignTargets(): readonly GlwCampaignTarget[] {
   return Array.from(targetStore.values(), (target) => deepClone(target));
 }
 
+export function previewGlwCampaignTargets(input: {
+  campaignId: string;
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  stateCodes: readonly string[];
+  referenceStateCode: string;
+  referenceJobId?: string | null;
+  referenceWordpressObjectId?: string | null;
+  now?: Date;
+}): readonly GlwCampaignTarget[] {
+  const timestamp = (input.now ?? new Date()).toISOString();
+  const referenceStateCode = input.referenceStateCode.trim().toUpperCase();
+
+  return input.stateCodes.map((rawStateCode) => {
+    const stateCode = rawStateCode.trim().toUpperCase();
+    const isReference = stateCode === referenceStateCode;
+    return {
+      targetId: createGlwCampaignStateTargetId(input.campaignId, stateCode),
+      campaignId: input.campaignId,
+      organizationId: input.organizationId,
+      siteId: input.siteId,
+      productId: input.productId,
+      pageType: "state_service" as const,
+      stateCode,
+      citySlug: null,
+      cityName: null,
+      status: isReference ? "reference_complete" as const : "queued" as const,
+      jobId: isReference ? input.referenceJobId ?? null : null,
+      wordpressObjectId: isReference ? input.referenceWordpressObjectId ?? null : null,
+      attemptCount: isReference && input.referenceJobId ? 1 : 0,
+      lastError: null,
+      leaseId: null,
+      leasedAt: null,
+      leaseExpiresAt: null,
+      dispatchDate: null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+  });
+}
+
 export function initializeGlwCampaignTargets(input: {
   campaignId: string;
   organizationId: string;
@@ -160,37 +206,8 @@ export function initializeGlwCampaignTargets(input: {
     return existing;
   }
 
-  const timestamp = new Date().toISOString();
-  const referenceStateCode = input.referenceStateCode.trim().toUpperCase();
-
-  for (const rawStateCode of input.stateCodes) {
-    const stateCode = rawStateCode.trim().toUpperCase();
-    const isReference = stateCode === referenceStateCode;
-
-    const target: GlwCampaignTarget = {
-      targetId: `target-${input.campaignId}-${stateCode.toLowerCase()}`,
-      campaignId: input.campaignId,
-      organizationId: input.organizationId,
-      siteId: input.siteId,
-      productId: input.productId,
-      stateCode,
-      citySlug: null,
-      cityName: null,
-      status: isReference ? "reference_complete" : "queued",
-      jobId: isReference ? input.referenceJobId : null,
-      wordpressObjectId: isReference
-        ? input.referenceWordpressObjectId
-        : null,
-      attemptCount: isReference ? 1 : 0,
-      lastError: null,
-      leaseId: null,
-      leasedAt: null,
-      leaseExpiresAt: null,
-      dispatchDate: null,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-
+  const projected = previewGlwCampaignTargets(input);
+  for (const target of projected) {
     targetStore.set(keyForTarget(target), target);
   }
 

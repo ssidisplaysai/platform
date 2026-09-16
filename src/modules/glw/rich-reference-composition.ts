@@ -48,6 +48,7 @@ export type GlwComparisonAuthority = {
 
 export type GlwRichReferenceReadinessInput = {
   artifact: GlwGeneratedDraftArtifact;
+  target: { productName: string; productCanonicalPath: string; stateName: string };
   compositionPlan: LocalizedCompositionPlanV2 | null;
   mediaAssignments: readonly SitePageMediaAssignment[];
   pageRevisionId: string;
@@ -102,6 +103,7 @@ export function evaluateGlwRichReferenceReadiness(input: GlwRichReferenceReadine
   const comparison = comparisonReadiness($, input.comparisonAuthority);
   const ownerReview = evaluateGlwReferenceOwnerReviewReadiness({
     artifact: input.artifact,
+    target: input.target,
     media: {
       productAuthorityMediaAvailable: input.approvedProductMediaAvailable,
       productAuthorityMediaCount: mediaRoles.PRODUCT_AUTHORITY ? 1 : 0,

@@ -21,6 +21,7 @@ import {
 } from "@/modules/glw/campaign-recovered-target-adoption";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { getGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 import { recordGlwCampaignLaunchActivated, requireGlwCampaignLaunchReservationOwnership } from "@/modules/glw/campaign-launch-authority";
 import { claimGlwCampaignActivationGrant, consumeGlwCampaignActivationGrant } from "@/modules/glw/campaign-activation-authorization";
 import { requireGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
@@ -177,9 +178,10 @@ export async function POST(
   } | null;
 
   const isCityCampaign = campaign.pageType === "city_service";
+  const durableReferenceState = getGlwReferenceStateSelection(campaign.campaignId);
   const referenceStateCode = isCityCampaign
     ? body?.referenceStateCode?.trim().toUpperCase() ?? ""
-    : "CA";
+    : durableReferenceState?.stateCode ?? "";
   const referenceCitySlug = isCityCampaign
     ? normalizeCitySlug(body?.referenceCitySlug)
     : null;
@@ -189,7 +191,7 @@ export async function POST(
       {
         error: isCityCampaign
           ? "City campaign activation requires a reference state included in the campaign."
-          : "California must be included as the approved reference target for this campaign.",
+          : "Campaign activation requires a durably selected reference state included in the campaign.",
       },
       { status: 409 },
     );
@@ -235,7 +237,7 @@ export async function POST(
       {
         error: isCityCampaign
           ? "Campaign activation requires an approved city reference."
-          : "Campaign activation requires an approved California reference.",
+          : "Campaign activation requires an approved selected-state reference.",
       },
       { status: 409 },
     );

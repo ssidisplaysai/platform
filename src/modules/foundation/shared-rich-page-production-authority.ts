@@ -124,20 +124,22 @@ export function evaluateNextGlwStateProductionUnblock(profile: SharedRichPagePro
   const reusableInputMechanisms = Object.entries(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK)
     .filter(([, classification]) => classification === "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT")
     .map(([capability]) => capability as keyof typeof NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK);
-  const remainingNewCodeRequirements = [
-    ...Object.entries(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK)
-      .filter(([, classification]) => classification === "MISSING_SHARED_MECHANISM")
-      .map(([capability]) => capability),
-    "TARGET_PARAMETERIZED_RICH_REFERENCE_ORCHESTRATION",
-  ];
+  const publicationBoundaryRequirements = Object.entries(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK)
+    .filter(([, classification]) => classification === "MISSING_SHARED_MECHANISM")
+    .map(([capability]) => capability);
+  const remainingNewCodeRequirements: string[] = [];
   return {
     profileResolved: Boolean(profile),
     nativeTitleSuppressionRequired: profile?.host.suppressNativeTitle ?? true,
     nativeTitleSuppressionSharedMechanismReady: true,
     reusableInputMechanisms,
     remainingNewCodeRequirements,
+    publicationBoundaryRequirements,
+    targetParameterizedRichReferenceOrchestrationReady: true,
     nextTargetRequiresNewArchitecture: !profile,
     nextTargetRequiresNewCode: !profile || remainingNewCodeRequirements.length > 0,
-    productionReady: Boolean(profile) && remainingNewCodeRequirements.length === 0,
+    draftProductionReady: Boolean(profile) && remainingNewCodeRequirements.length === 0,
+    publicationProductionReady: false,
+    productionReady: false,
   };
 }

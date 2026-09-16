@@ -37,6 +37,7 @@ export function resolveGlwRichReferenceReadiness(input: {
     .at(-1) ?? null;
   return evaluateGlwRichReferenceReadiness({
     artifact: input.job.generatedDraft,
+    target: { productName: input.job.productTopic, productCanonicalPath: `/${input.job.slug.split("/").filter(Boolean)[0]}/`, stateName: input.job.state ?? "" },
     compositionPlan: bundle?.composition ?? null,
     mediaAssignments,
     pageRevisionId,
