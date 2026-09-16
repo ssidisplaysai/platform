@@ -52,7 +52,22 @@ export type RenderedVisualCaptureEvidence = {
     mediaBeforeHero: boolean | null;
     containerAligned: boolean | null;
   };
-  hostIntegration: { headerOverlap: boolean; footerOverlap: boolean; blankImageContainers: number };
+  hostIntegration: {
+    headerOverlap: boolean;
+    footerOverlap: boolean;
+    blankImageContainers: number;
+    headerRegression: boolean;
+    contentWidthBalanced: boolean;
+    sectionRhythmPass: boolean;
+    productIntroductionCompositionPass: boolean;
+    applicationGridPass: boolean;
+    planningGridPass: boolean;
+    ctaWidthAlignedWithPage: boolean;
+    ctaTextBalance: boolean;
+    ctaButtonProminent: boolean;
+    excessiveCtaWhitespace: boolean;
+    finalCtaCompositionPass: boolean;
+  };
   media: readonly {
     assignmentId: string | null;
     semanticRole: "PRODUCT_AUTHORITY" | "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE";
