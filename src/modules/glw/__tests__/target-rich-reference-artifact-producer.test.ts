@@ -29,6 +29,9 @@ describe("target rich-reference artifact producer", () => {
     expect(result.artifact.contentHtml).not.toContain("Indiana");
     expect(result.artifact.contentHtml).toContain('data-composition-role="hero"');
     expect(result.artifact.contentHtml).toContain('data-composition-role="visual-application"');
+    expect(result.artifact.contentHtml).toContain('data-site-presentation-authority="LED_DISPLAY_WAREHOUSE_PRESENTATION_V1"');
+    expect(result.artifact.contentHtml).toContain('data-media-role="APPLICATION_EXPERIENCE"');
+    expect(result.presentation).toMatchObject({ ok: true, checks: { darkHighContrastFoundation: true, blueElectricAccent: true, imageLedComposition: true, commercialDensity: true, excessiveEditorialWhitespace: false, thinBorderEditorialGridDominant: false, worksheetRuleGrammar: false, flatRedEditorialCtaDominant: false, commercialStainlessPresentationLeakage: false } });
     expect(result.qa).toMatchObject({ unsupportedFactualClaims: 0, geographicEvidenceEscapes: 0, comparisonAuthorityEscapes: 0, buyerQuestionPremiseEscapes: 0, unexpectedStateContamination: 0, internalGovernanceLanguage: 0, customerFacingCopyQuality: "PASS" });
   });
 
@@ -37,5 +40,7 @@ describe("target rich-reference artifact producer", () => {
     expect(result.artifact.title).toBe("Outdoor Digital Sphere in Indiana");
     const source = readFileSync(join(process.cwd(), "src/modules/glw/target-rich-reference-artifact-producer.ts"), "utf8");
     expect(source).not.toMatch(/\bAlaska\b|\bIndiana\b|20114|20115/);
+    const presentationSource = readFileSync(join(process.cwd(), "src/modules/glw/led-display-warehouse-presentation-authority.ts"), "utf8");
+    expect(presentationSource).not.toMatch(/\bAlabama\b|\bAlaska\b|\bIndiana\b|20129|20114/);
   });
 });

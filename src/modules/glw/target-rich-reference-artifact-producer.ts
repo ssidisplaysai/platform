@@ -5,6 +5,7 @@ import { evaluateCustomerFacingCopyQuality } from "@/modules/foundation/customer
 import type { SharedRichPageProductionProfile } from "@/modules/foundation/shared-rich-page-production-authority";
 import type { SitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
+import { applyLedDisplayWarehousePresentationAuthority, LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT, type LedDisplayWarehousePresentationEvaluation } from "./led-display-warehouse-presentation-authority";
 import { evaluateGlwReferenceClaimAuthority } from "./reference-claim-authority";
 import { evaluateGlwReferenceOwnerReviewReadiness } from "./reference-owner-review-readiness";
 import { evaluateGlwStateLocalizationContamination } from "./state-localization-contamination";
@@ -35,9 +36,11 @@ export function produceTargetRichReferenceArtifact(input: {
   artifactSha: string;
   semanticArtifactSha: string;
   deterministicCanonicalizationUsed: boolean;
+  presentation: LedDisplayWarehousePresentationEvaluation;
   qa: { unsupportedFactualClaims: number; geographicEvidenceEscapes: number; comparisonAuthorityEscapes: number; buyerQuestionPremiseEscapes: number; unexpectedStateContamination: number; internalGovernanceLanguage: number; customerFacingCopyQuality: "PASS" };
 } {
   if (input.profile.selector.productId !== input.product.productId || input.profile.selector.pageType !== "LOCATION_SERVICE" || !input.profile.host.suppressNativeTitle) throw new Error("TARGET_RICH_REFERENCE_HOST_PROFILE_MISMATCH");
+  if (input.profile.presentation?.authority !== LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT || input.profile.presentation.family !== "LED_AV_EXPERIENTIAL") throw new Error("TARGET_RICH_REFERENCE_PRESENTATION_PROFILE_MISMATCH");
   const rawClaims = evaluateGlwReferenceClaimAuthority({ artifact: input.semanticArtifact, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
   const canonicalization = canonicalizeGlwZeroAuthorityClaims({ rawArtifact: input.semanticArtifact, authoritativeFactReferenceIds: [], findings: rawClaims.findings });
   if (!canonicalization.ok || !canonicalization.canonicalizedArtifact) throw new Error("TARGET_RICH_REFERENCE_CANONICALIZATION_BLOCKED");
@@ -64,7 +67,10 @@ export function produceTargetRichReferenceArtifact(input: {
     root.find(selector).attr("src", assignment.asset.url).attr("data-media-id", assignment.approval.candidateId).attr("data-media-role", role);
   }
 
-  const contentHtml = $.html();
+  const application = assignments.get("APPLICATION_EXPERIENCE");
+  if (!application || application.asset.type !== "APPROVED_EXISTING") throw new Error("TARGET_RICH_REFERENCE_APPLICATION_EXPERIENCE_MEDIA_REQUIRED");
+  const presented = applyLedDisplayWarehousePresentationAuthority({ contentHtml: $.html(), applicationMedia: { url: application.asset.url, mediaId: application.approval.candidateId } });
+  const contentHtml = presented.contentHtml;
   const artifact: GlwGeneratedDraftArtifact = {
     title: `${input.product.productName} in ${input.target.stateName}`,
     contentHtml,
@@ -81,5 +87,5 @@ export function produceTargetRichReferenceArtifact(input: {
   const unsupported = finalClaims.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");
   const blockers = [...(unsupported.length ? ["CLAIM_AUTHORITY"] : []), ...(contamination.contaminations.length ? ["STATE_CONTAMINATION"] : []), ...(!copy.pass ? ["COPY_QUALITY"] : []), ...(!review.semantic.ok ? ["OWNER_SEMANTIC_READINESS"] : [])];
   if (blockers.length) throw new Error(`TARGET_RICH_REFERENCE_COMPOSED_QA_FAILED:${blockers.join(",")}`);
-  return { artifact, artifactSha: sha256(contentHtml), semanticArtifactSha: sha256(input.semanticArtifact.contentHtml), deterministicCanonicalizationUsed: canonicalization.receipt.transformations.length > 0, qa: { unsupportedFactualClaims: 0, geographicEvidenceEscapes: review.semantic.locationFactEscapes, comparisonAuthorityEscapes: review.semantic.comparisonFactEscapes, buyerQuestionPremiseEscapes: review.semantic.buyerQuestionPremiseEscapes, unexpectedStateContamination: 0, internalGovernanceLanguage: copy.internalGovernanceLanguageExposed, customerFacingCopyQuality: "PASS" } };
+  return { artifact, artifactSha: sha256(contentHtml), semanticArtifactSha: sha256(input.semanticArtifact.contentHtml), deterministicCanonicalizationUsed: canonicalization.receipt.transformations.length > 0, presentation: presented.evaluation, qa: { unsupportedFactualClaims: 0, geographicEvidenceEscapes: review.semantic.locationFactEscapes, comparisonAuthorityEscapes: review.semantic.comparisonFactEscapes, buyerQuestionPremiseEscapes: review.semantic.buyerQuestionPremiseEscapes, unexpectedStateContamination: 0, internalGovernanceLanguage: copy.internalGovernanceLanguageExposed, customerFacingCopyQuality: "PASS" } };
 }

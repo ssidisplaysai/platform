@@ -34,5 +34,5 @@ test("runs one rich draft operation in governed order and stops at owner review"
 
   expect(calls).toEqual(["write", "title", "readback", "capture"]);
   expect(result.ownerReview.ready).toBe(true);
-  expect(result).toMatchObject({ targetId: "target-outdoor-ak", ownerDecision: "PENDING", wordpressMutation: true, publicationMutation: false, generationAttempted: false, n8nExecutionCreated: false, imageGenerationAttempted: false });
+    expect(result).toMatchObject({ targetId: "target-outdoor-ak", ownerDecision: "PENDING", wordpressMutation: true, publicationMutation: false, generationAttempted: false, n8nExecutionCreated: false, imageGenerationAttempted: false, certification: { brand: { contract: "LED_DISPLAY_WAREHOUSE_PRESENTATION_V1", LEDDisplayWarehouseBrandDistinctiveness: "PASS", CommercialStainlessPresentationLeakage: false } } });
 });

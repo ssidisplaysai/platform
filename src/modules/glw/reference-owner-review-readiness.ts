@@ -108,7 +108,7 @@ export function evaluateGlwReferenceOwnerReviewReadiness(input: {
     PRODUCT_AUTHORITY_MEDIA: input.media.productAuthorityMediaCount > 0 && input.media.featuredMediaId !== null,
       LOCALIZED_INTRODUCTION: new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test($("h1").first().text()) && new RegExp(`\\b${escapedPattern(input.target.stateName)}\\b`, "i").test(introductoryText),
     APPLICATIONS: /applications|potential concepts|uses/i.test(headings),
-      PLANNING_BUYER_GUIDANCE: /\bplan(?:ning)?\b|what to ask|buyer/i.test(headings),
+      PLANNING_BUYER_GUIDANCE: $("[data-reference-section=PLANNING_GUIDANCE]").length > 0 || /\bplan(?:ning)?\b|what to ask|buyer/i.test(headings),
     VISUAL_APPLICATION_SECTION: (input.media.contextualMediaCount + input.media.applicationMediaCount + input.media.localContextualMediaCount) > 0 && hasRole("visual-application"),
     AUTHORIZED_COMPARISON_OR_EVALUATION: $("table").length === 0 || unsupported.every((finding) => !tableCellTexts.has(normalize(finding.claimText))),
     CTA: /contact|request|discuss|consult/i.test(allText),

@@ -48,6 +48,13 @@ describe("GLW reference owner-review readiness", () => {
       expect(result.composition).toMatchObject({ LOCALIZED_INTRODUCTION: true, PLANNING_BUYER_GUIDANCE: true });
     });
 
+    test("accepts the governed planning section marker when the heading uses outcome language", () => {
+      const html = '<h1>Outdoor Digital Sphere in Alabama</h1><p>For projects throughout Alabama, start with the setting.</p><section data-reference-section="PLANNING_GUIDANCE"><p>Plan your project</p><h2>Turn the initial idea into a useful project brief</h2></section><a href="/outdoor-digital-sphere/">Outdoor Digital Sphere</a>';
+      const result = evaluateGlwReferenceOwnerReviewReadiness({ artifact: { ...artifact(html), title: "Outdoor Digital Sphere in Alabama" }, target: { ...target, stateName: "Alabama" }, media: noMedia, actualHostVisualCertified: false });
+
+      expect(result.composition.PLANNING_BUYER_GUIDANCE).toBe(true);
+    });
+
   test("blocks reference approval and surfaces owner remediation without hiding the draft", () => {
     const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8");
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8");

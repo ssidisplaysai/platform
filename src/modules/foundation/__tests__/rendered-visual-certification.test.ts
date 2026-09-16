@@ -42,6 +42,7 @@ function capture(viewportClass: "DESKTOP" | "MOBILE", overrides: Partial<Rendere
     source: { origin: "https://example.com", pathname: "/page/" },
     renderer: { engine: "Chromium", version: "140", userAgent: null },
     hero: { authority: "NOT_IDENTIFIED", present: null, bounds: null, headingBounds: null, headingLineCount: null, primaryCtaBounds: null, mediaBounds: null, mediaBeforeHero: null, containerAligned: null },
+    hostIntegration: { headerOverlap: false, footerOverlap: false, blankImageContainers: 0, headerRegression: false, contentWidthBalanced: true, sectionRhythmPass: true, productIntroductionCompositionPass: true, applicationGridPass: true, planningGridPass: true, ctaWidthAlignedWithPage: true, ctaTextBalance: true, ctaButtonProminent: true, excessiveCtaWhitespace: false, finalCtaCompositionPass: true },
     media: [],
     sections: [],
     ...overrides,

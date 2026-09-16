@@ -78,5 +78,11 @@ export async function runTargetRichReferenceProductionOperation(input: {
   const ownerReview = evaluateGlwReferenceOwnerReviewReadiness({ artifact: { ...produced.artifact, contentHtml: stored.contentHtml }, target: { productName: input.product.productName, productCanonicalPath: input.product.canonicalPath, stateName: input.target.stateName }, media, actualHostVisualCertified: true, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
   if (!ownerReview.ready) throw new Error(`TARGET_RICH_REFERENCE_OWNER_REVIEW_BLOCKED:${ownerReview.blockers.join(",")}`);
 
-  return { version: TARGET_RICH_REFERENCE_PRODUCTION_OPERATION_VERSION, targetId: input.target.targetId, artifact: produced, wordpress: stored, certification, ownerReview, ownerDecision: "PENDING" as const, wordpressMutation: true, publicationMutation: false as const, generationAttempted: false as const, n8nExecutionCreated: false as const, imageGenerationAttempted: false as const };
+  const brandCertification = {
+    contract: produced.presentation.contract,
+    LEDDisplayWarehouseBrandDistinctiveness: produced.presentation.ok ? "PASS" as const : "FAIL" as const,
+    CommercialStainlessPresentationLeakage: produced.presentation.checks.commercialStainlessPresentationLeakage,
+    structuralChecks: produced.presentation.checks,
+  };
+  return { version: TARGET_RICH_REFERENCE_PRODUCTION_OPERATION_VERSION, targetId: input.target.targetId, artifact: produced, wordpress: stored, certification: { ...certification, brand: brandCertification }, ownerReview, ownerDecision: "PENDING" as const, wordpressMutation: true, publicationMutation: false as const, generationAttempted: false as const, n8nExecutionCreated: false as const, imageGenerationAttempted: false as const };
 }
