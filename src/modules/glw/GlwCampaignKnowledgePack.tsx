@@ -5,6 +5,7 @@ import { operatorMutationHeaders } from "@/modules/foundation/operator-session-c
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
+import { OutdoorSphereMediaAuthorityPanel } from "./OutdoorSphereMediaAuthorityPanel";
 import { projectGlwClaimDisposition } from "./reference-claim-disposition";
 import { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "./reference-generation-claim-contract-version";
 
@@ -723,6 +724,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
         </div>
         <span className="text-xs text-zinc-400">{referenceCount} files</span>
       </div>
+
+      {campaign.productId === "prod-outdoor-digital-sphere" ? (
+        <OutdoorSphereMediaAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} productId={campaign.productId} />
+      ) : null}
 
       <section className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950/60 p-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-red-400">1. References</p>

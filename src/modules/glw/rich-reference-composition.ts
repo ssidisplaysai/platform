@@ -126,7 +126,6 @@ export function evaluateGlwRichReferenceReadiness(input: GlwRichReferenceReadine
     ...(invalidProductMedia ? ["PRODUCT_AUTHORITY_MEDIA_UNVERIFIED"] : []),
     ...(ungroundedContextualMedia ? ["CONTEXTUAL_MEDIA_PRODUCT_TRUTH_REQUIRED"] : []),
     ...(!mediaRoles.APPLICATION_EXPERIENCE ? ["APPLICATION_EXPERIENCE_MEDIA_REQUIRED"] : []),
-    ...(!mediaRoles.LOCAL_CONTEXTUAL_ATMOSPHERE ? ["LOCAL_CONTEXTUAL_ATMOSPHERE_MEDIA_REQUIRED"] : []),
     ...(comparison.state === "BLOCKED" ? ["COMPARISON_AUTHORITY_REQUIRED"] : []),
     ...(!ownerReview.copyQuality.ok ? ["CANONICALIZATION_COPY_QUALITY"] : []),
     ...(!ownerReview.semantic.ok ? ["CLAIM_AUTHORITY"] : []),

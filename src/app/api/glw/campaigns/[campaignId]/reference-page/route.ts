@@ -23,6 +23,7 @@ import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchRefere
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
+import { evaluateProductMediaReadiness, listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID } from "@/modules/glw/product-media-authority";
 import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
@@ -183,6 +184,14 @@ export async function GET(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
+  const productMediaRecords = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
+    ? listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId })
+    : [];
+  const productMediaReadiness = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
+    ? evaluateProductMediaReadiness(productMediaRecords)
+    : null;
+  const approvedProductMediaAvailable = Boolean(productRecord.media.primaryImageReference)
+    || Boolean(productMediaReadiness?.approvedProductAuthorityMediaCount);
   const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);
   const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
   const generationAuthority = pack
@@ -273,8 +282,9 @@ export async function GET(request: NextRequest, context: Context) {
       retryContract,
       workflow,
       relatedReference,
-      ownerReviewReadiness: ownerReviewReadiness(legacyJob, Boolean(productRecord.media.primaryImageReference)),
-      richCompositionReadiness: legacyJob ? resolveGlwRichReferenceReadiness({ campaign, job: legacyJob, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) }) : null,
+      ownerReviewReadiness: ownerReviewReadiness(legacyJob, approvedProductMediaAvailable),
+      richCompositionReadiness: legacyJob ? resolveGlwRichReferenceReadiness({ campaign, job: legacyJob, approvedProductMediaAvailable }) : null,
+      productMediaReadiness,
       durableOperation,
       mcpConfiguration,
       failedDispatchRecovery: job?.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
@@ -314,8 +324,9 @@ export async function GET(request: NextRequest, context: Context) {
         retryContract,
         workflow: projectGlwReferenceWorkflow(job),
         relatedReference: null,
-        ownerReviewReadiness: ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference)),
-        richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) }),
+        ownerReviewReadiness: ownerReviewReadiness(job, approvedProductMediaAvailable),
+        richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
+        productMediaReadiness,
         durableOperation,
         mcpConfiguration,
         failedDispatchRecovery: false,
@@ -341,8 +352,9 @@ export async function GET(request: NextRequest, context: Context) {
     retryContract,
     workflow: projectGlwReferenceWorkflow(job),
     relatedReference: null,
-    ownerReviewReadiness: ownerReviewReadiness(job, Boolean(productRecord.media.primaryImageReference)),
-    richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: Boolean(productRecord.media.primaryImageReference) }),
+    ownerReviewReadiness: ownerReviewReadiness(job, approvedProductMediaAvailable),
+    richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
+    productMediaReadiness,
     durableOperation,
     mcpConfiguration,
     failedDispatchRecovery: job.status === "FAILED" && job.errorCode === "DISPATCH_FAILED" && !job.externalExecutionId,
