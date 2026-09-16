@@ -90,18 +90,22 @@ function assignment(input: { record: ProductMediaAuthorityRecord; role: SitePage
 function buildArtifact(hero: ProductMediaAuthorityRecord, supporting: ProductMediaAuthorityRecord): GlwGeneratedDraftArtifact {
   const heroUrl = contentUrl(hero);
   const supportingUrl = contentUrl(supporting);
-  const contentHtml = `<main data-composition-contract="${GLW_RICH_REFERENCE_COMPOSITION_VERSION}" data-media-provenance="governed-product-media">
-<section data-reference-section="HERO" data-composition-role="hero" data-media-authority="PRODUCT_AUTHORITY">
+  const contentHtml = `<main class="saw-page" data-genesis-primary-content data-composition-contract="${GLW_RICH_REFERENCE_COMPOSITION_VERSION}" data-media-provenance="governed-product-media">
+<section class="saw-hero" data-genesis-hero data-reference-section="HERO" data-composition-role="hero" data-media-authority="PRODUCT_AUTHORITY">
 <img src="${heroUrl}" alt="${hero.altTextAuthority}">
+<div class="saw-hero-copy"><p class="saw-kicker">Outdoor Digital Sphere</p>
 <h1>Outdoor Digital Sphere in Indiana</h1>
-<p>Planning an Outdoor Digital Sphere project begins with a clear brief: where the display may fit, what the audience should experience, and which details still need confirmation. This concise guide organizes those decisions without treating an image, a category name, or general product knowledge as proof of technical capability.</p>
-<p><a href="/contact/">Request project information</a> or <a href="/outdoor-digital-sphere/">review the Outdoor Digital Sphere overview</a>.</p>
+<p class="saw-copy">Planning an Outdoor Digital Sphere project begins with a clear brief: where the display may fit, what the audience should experience, and which details still need confirmation. This concise guide organizes those decisions without treating an image, a category name, or general product knowledge as proof of technical capability.</p>
+<p class="saw-actions"><a class="saw-button" href="/contact/">Request Project Information</a><a class="saw-button alt" href="/outdoor-digital-sphere/">Explore Outdoor Digital Sphere</a></p>
+<p class="saw-note">Owner-approved product image. Provenance: ${hero.provenance}. It is not presented as an Indiana installation.</p></div>
 </section>
-<section data-reference-section="PRODUCT_IDENTITY">
-<h2>A distinct format for project exploration</h2>
+<section id="product-authority" class="saw-product" data-reference-section="PRODUCT_IDENTITY">
 <img src="${supportingUrl}" alt="${supporting.altTextAuthority}">
+<div class="saw-product-copy">
+<h2>A distinct format for project exploration</h2>
 <p>Outdoor Digital Sphere is the approved product identity for this page. The photographs provide owner-approved visual authority for the actual product. They do not establish specifications, operating limits, availability, installation methods, or outcomes. Those details should remain outside the page until a qualified source is mapped to each statement.</p>
 <p>For an Indiana project, the useful starting point is the intended role of the object in the space. A team can define the desired visual focus, audience relationship, content purpose, and project constraints before requesting product-specific information. This keeps the early conversation practical while preserving a clear boundary between visual identity and facts that still require confirmation.</p>
+</div>
 </section>
 <section data-reference-section="LOCALIZED_INTRODUCTION">
 <h2>Plan for the Indiana project, not an assumed Indiana market</h2>
@@ -114,10 +118,13 @@ function buildArtifact(hero: ProductMediaAuthorityRecord, supporting: ProductMed
 <p>For each potential application, define the communication goal first. A temporary event may need a different review process from a long-term venue feature. A brand program may prioritize a controlled content sequence, while a cultural program may prioritize an adaptable creative brief. The selected supplier should confirm whether the proposed product and project approach can support the intended use.</p>
 <p>Keep the application list short enough to guide a real conversation. The strongest concepts connect one audience, one setting, and one communication purpose. Ideas that depend on unverified technical features should remain questions until supporting authority is available.</p>
 </section>
-<section data-reference-section="VISUAL_APPLICATION" data-composition-role="visual-application" data-media-authority="APPLICATION_EXPERIENCE">
+<section id="contextual-in-use" class="saw-split" data-reference-section="VISUAL_APPLICATION" data-composition-role="visual-application" data-media-authority="APPLICATION_EXPERIENCE">
+<img src="${supportingUrl}" alt="${supporting.altTextAuthority}">
+<div class="saw-split-copy">
 <h2>Use approved imagery as visual context</h2>
 <p>The supporting photograph can serve one combined supporting and application role in the planned composition. Reusing it in one purposeful visual section avoids unnecessary repetition while preserving its approved PRODUCT_AUTHORITY, CONTEXTUAL_IN_USE, and APPLICATION_EXPERIENCE scopes.</p>
-<p>The image is not Indiana-local atmosphere and must not be captioned as an Indiana installation. Its role is to help the buyer recognize the approved product and discuss a possible visual direction. A future candidate should display the selected hero once and the supporting image once, with accurate alt text and visible provenance treatment.</p>
+<p>The image is not Indiana-local atmosphere and must not be captioned as an Indiana installation. Its role is to help the buyer recognize the approved product and discuss a possible visual direction. The candidate displays the selected hero once and reuses the supporting image only for the product-identity and visual-application roles, with accurate alt text and visible provenance treatment.</p>
+</div>
 </section>
 <section data-reference-section="PRODUCT_OR_EVALUATION">
 <h2>A buyer evaluation framework</h2>
@@ -142,7 +149,8 @@ function buildArtifact(hero: ProductMediaAuthorityRecord, supporting: ProductMed
 <p>These questions deliberately avoid embedding an answer. They create a compact discovery checklist and keep unknown facts visible until the proper authority confirms them.</p>
 <p>A practical decision record can capture the project objective, the proposed location within the site, the audience viewpoint, the planned content owner, the desired review dates, and every open question. Each answer can then be linked to the person or document that supplied it. Items without an answer stay marked for confirmation rather than becoming assumptions in page copy. The same record can note which visual is approved for the hero, which visual supports the product discussion, and which visual supports a potential application. This creates a clear handoff for design and review while keeping the planned page concise. Before a candidate moves forward, the owner can compare the brief with the section plan, confirm that the copy reflects the intended project conversation, and identify any missing authority that should remain outside the page.</p>
 </section>
-<section data-reference-section="CTA">
+<section class="saw-cta" data-reference-section="CTA">
+<p class="saw-kicker">Project inquiry</p>
 <h2>Discuss an Outdoor Digital Sphere project in Indiana</h2>
 <p>Contact LEDDisplayWarehouse.com to share the intended setting, audience, creative objective, and decision timeline. Request the product information and project details needed for a grounded evaluation. This planning page does not make commercial or technical promises.</p>
 <p><a href="/contact/">Request information</a> and include the Indiana project context in the inquiry.</p>

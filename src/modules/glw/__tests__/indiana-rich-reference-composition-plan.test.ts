@@ -1,10 +1,12 @@
 jest.mock("server-only", () => ({}));
 
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
 import { createIndianaRichReferenceCompositionPlan } from "../indiana-rich-reference-composition-plan";
+import { buildIndianaRichReferenceCandidate, candidateMediaDataUrls, getIndianaRichReferenceCandidate, renderIndianaRichReferenceCandidate } from "../indiana-rich-reference-candidate";
+import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT } from "../reference-generation-claim-contract";
 import { intakeProductMedia, issueProductMediaHeroGrant, issueProductMediaHeroPreflight, listProductMediaAuthority, reviewProductMedia, selectProductMediaHero } from "../product-media-authority";
 
 const scope = { organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", productId: "prod-outdoor-digital-sphere" } as const;
@@ -45,5 +47,28 @@ describe("Indiana rich reference composition plan", () => {
     expect(first.readiness.blockers).toEqual(expect.arrayContaining(["RENDERED_VISUAL_CERTIFICATION_REQUIRED"]));
     expect(first.readiness.blockers).not.toEqual(expect.arrayContaining(["APPROVED_PRODUCT_AUTHORITY_IMAGE_REQUIRED", "CONTEXTUAL_IN_USE_IMAGE_REQUIRED", "APPLICATION_EXPERIENCE_MEDIA_REQUIRED", "PRODUCT_AUTHORITY_MEDIA_UNVERIFIED", "COMPARISON_AUTHORITY_REQUIRED", "CANONICALIZATION_COPY_QUALITY", "CLAIM_AUTHORITY"]));
     expect(first).toMatchObject({ wordpressMutationAuthorized: false, generationRequired: false });
+
+    const candidate = buildIndianaRichReferenceCandidate({ records: listProductMediaAuthority(scope), semanticSource, expectedPlanFingerprint: first.fingerprint, claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, now: new Date("2030-01-04T00:00:00Z") });
+    const repeated = buildIndianaRichReferenceCandidate({ records: listProductMediaAuthority(scope), semanticSource, expectedPlanFingerprint: first.fingerprint, claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, now: new Date("2030-01-05T00:00:00Z") });
+    expect(repeated).toEqual(candidate);
+    expect(getIndianaRichReferenceCandidate(candidate.candidateId)).toEqual(candidate);
+    expect(candidate).toMatchObject({ compositionPlanFingerprint: first.fingerprint, semanticInputFingerprint: semanticSource.artifactSha256, claimAuthorityFingerprint: GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, heroMediaId: texas.mediaAuthorityId, supportingMediaId: chicago.mediaAuthorityId, applicationMediaId: chicago.mediaAuthorityId, status: "READY_FOR_VISUAL_CERTIFICATION", wordpressMutationAuthorized: false, generationPerformed: false });
+    expect(candidate.candidateSha).toMatch(/^[0-9a-f]{64}$/);
+    expect(candidate.artifact.contentHtml).not.toMatch(/https?:\/\/(?:localhost|127\.0\.0\.1)/);
+    const rendered = renderIndianaRichReferenceCandidate(candidate, candidateMediaDataUrls(candidate));
+    expect(rendered).toContain("data:image/jpeg;base64,");
+    expect(rendered).toContain("data-genesis-primary-content");
+    expect(rendered.match(/<h1\b/g)).toHaveLength(1);
+    const persisted = readFileSync(join(root, "genesis-indiana-rich-reference-candidate-v1.json"), "utf8");
+    expect(persisted).toContain(candidate.candidateId);
+    expect(persisted).not.toContain("data:image/jpeg;base64,");
+    expect(existsSync(join(root, "glw-page-execution-repository.json"))).toBe(false);
+    const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/rich-reference-candidate/route.ts"), "utf8");
+    const snapshot = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/rich-reference-candidate/snapshot/route.ts"), "utf8");
+    expect(route).toContain("runGovernedRenderCapture");
+    expect(route).toContain("wordpressMutation: false");
+    expect(route).toContain("generationAttempted: false");
+    expect(route).not.toMatch(/writeGenesisWordPressDraft|executeGlwN8nMcpWorkflow|glwPageExecutionRepository\.create/);
+    expect(snapshot).toContain("verifyGovernedSnapshotPath");
   });
 });
