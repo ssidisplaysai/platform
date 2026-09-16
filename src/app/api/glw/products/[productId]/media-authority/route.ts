@@ -8,6 +8,7 @@ import {
   OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID,
   OUTDOOR_DIGITAL_SPHERE_SITE_ID,
   PRODUCT_MEDIA_MAX_BYTES,
+  reconcileLegacyProductMediaApprovals,
   reviewProductMedia,
   type ProductMediaAuthorityClass,
   type ProductMediaSourceType,
@@ -117,7 +118,29 @@ export async function POST(request: NextRequest, context: Context) {
       heroEligible?: boolean;
       altTextAuthority?: string;
       captionAuthority?: string;
+      authorityAndScopesConfirmed?: boolean;
+      localAtmosphereConfirmed?: boolean;
+      targets?: { mediaAuthorityId?: string; hash?: string }[];
     } | null;
+    if (body?.action === "RECONCILE_LEGACY_PRODUCT_MEDIA_APPROVALS") {
+      if (!Array.isArray(body.targets) || body.targets.length === 0 || body.targets.length > 2
+        || body.targets.some((target) => !target.mediaAuthorityId || !target.hash || !/^[0-9a-f]{64}$/.test(target.hash))) {
+        throw new Error("PRODUCT_MEDIA_LEGACY_RECONCILIATION_TARGETS_INVALID");
+      }
+      const reconciliation = reconcileLegacyProductMediaApprovals({
+        organizationId: OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID,
+        siteId: OUTDOOR_DIGITAL_SPHERE_SITE_ID,
+        productId,
+        targets: body.targets as { mediaAuthorityId: string; hash: string }[],
+        principalId: principal.principalId,
+      });
+      return NextResponse.json({
+        ...result(),
+        reconciledRecords: reconciliation.records.map(publicRecord),
+        reconciliationAudits: reconciliation.audits,
+        reconciliationMutated: reconciliation.mutated,
+      });
+    }
     if (body?.action !== "REVIEW_PRODUCT_MEDIA" || !body.mediaAuthorityId || !body.decision || !body.authorityClass || !AUTHORITY_CLASSES.has(body.authorityClass) || !Array.isArray(body.usageScopes)) throw new Error("PRODUCT_MEDIA_REVIEW_ACTION_REQUIRED");
     const record = reviewProductMedia({
       organizationId: OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID,
@@ -131,6 +154,8 @@ export async function POST(request: NextRequest, context: Context) {
       heroEligible: body.heroEligible === true,
       altTextAuthority: body.altTextAuthority ?? "",
       captionAuthority: body.captionAuthority ?? "",
+      authorityAndScopesConfirmed: body.authorityAndScopesConfirmed === true,
+      localAtmosphereConfirmed: body.localAtmosphereConfirmed === true,
       principalId: principal.principalId,
       sessionId: principal.sessionId,
     });

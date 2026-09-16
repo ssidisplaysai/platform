@@ -14,6 +14,7 @@ export const OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID = "prod-outdoor-digital-sphere" a
 export const OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID = "led-display-warehouse" as const;
 export const OUTDOOR_DIGITAL_SPHERE_SITE_ID = "site-led-display-warehouse-production" as const;
 export const PRODUCT_MEDIA_MAX_BYTES = 12 * 1024 * 1024;
+export const EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION = "EXPLICIT_OWNER_CONFIRMATION_V1" as const;
 
 export type ProductMediaSourceType =
   | "FACTORY_SUPPLIED"
@@ -29,7 +30,7 @@ export type ProductMediaAuthorityClass =
   | "APPLICATION_EXPERIENCE"
   | "LOCAL_CONTEXTUAL_ATMOSPHERE";
 
-export type ProductMediaApprovalState = "PENDING" | "APPROVED" | "REJECTED";
+export type ProductMediaApprovalState = "PENDING_OWNER_APPROVAL" | "APPROVED" | "REJECTED";
 
 export type ProductMediaAuthorityRecord = {
   mediaAuthorityId: string;
@@ -49,6 +50,8 @@ export type ProductMediaAuthorityRecord = {
   provenance: string;
   authorityClass: ProductMediaAuthorityClass;
   usageScopes: readonly ProductMediaAuthorityClass[];
+  proposedUsageScopes: readonly ProductMediaAuthorityClass[];
+  approvedUsageScopes: readonly ProductMediaAuthorityClass[];
   depictsActualProduct: boolean;
   productRepresentationAllowed: boolean;
   contextualUseAllowed: boolean;
@@ -57,10 +60,28 @@ export type ProductMediaAuthorityRecord = {
   heroEligible: boolean;
   altTextAuthority: string;
   captionAuthority: string;
+  approvalLifecycleVersion: typeof EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION | null;
   hash: string;
   contentBase64: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ProductMediaLegacyReconciliationAudit = {
+  reconciliationKey: string;
+  reconciledAt: string;
+  reconciledByPrincipalId: string;
+  mediaAuthorityId: string;
+  hash: string;
+  previousStatus: ProductMediaApprovalState;
+  previousApproval: boolean;
+  previousPrincipalId: string | null;
+  previousApprovalTimestamp: string | null;
+  previousAuthorityClass: ProductMediaAuthorityClass;
+  previousUsageScopes: readonly ProductMediaAuthorityClass[];
+  provenance: string;
+  depictsActualProduct: boolean;
+  heroEligible: boolean;
 };
 
 export type ProductMediaReadiness = {
@@ -80,9 +101,9 @@ export type ProductMediaReadiness = {
   blockers: readonly string[];
 };
 
-type State = { records: ProductMediaAuthorityRecord[] };
+type State = { records: ProductMediaAuthorityRecord[]; legacyReconciliationAudits?: ProductMediaLegacyReconciliationAudit[] };
 const NAMESPACE = "glw-product-media-authority-v1";
-const seed = (): State => ({ records: [] });
+const seed = (): State => ({ records: [], legacyReconciliationAudits: [] });
 
 function required(value: string, code: string): string {
   const normalized = value.trim();
@@ -92,6 +113,17 @@ function required(value: string, code: string): string {
 
 function load() {
   return loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed });
+}
+
+function normalizedRecord(record: ProductMediaAuthorityRecord): ProductMediaAuthorityRecord {
+  const ownerApproval = (record.ownerApproval as string) === "PENDING" ? "PENDING_OWNER_APPROVAL" : record.ownerApproval;
+  return {
+    ...record,
+    ownerApproval,
+    proposedUsageScopes: [...(record.proposedUsageScopes ?? record.usageScopes)],
+    approvedUsageScopes: [...(record.approvedUsageScopes ?? (ownerApproval === "APPROVED" ? record.usageScopes : []))],
+    approvalLifecycleVersion: record.approvalLifecycleVersion ?? null,
+  };
 }
 
 function assertOutdoorScope(input: { organizationId: string; siteId: string; productId: string }): void {
@@ -137,7 +169,7 @@ export async function intakeProductMedia(input: {
   const mediaAuthorityId = `product-media-${input.productId}-${hash.slice(0, 20)}`;
   const loaded = load();
   const existing = loaded.state.records.find((record) => record.mediaAuthorityId === mediaAuthorityId);
-  if (existing) return deepClone(existing);
+  if (existing) return deepClone(normalizedRecord(existing));
   const timestamp = (input.now ?? new Date()).toISOString();
   const record: ProductMediaAuthorityRecord = {
     mediaAuthorityId,
@@ -150,21 +182,24 @@ export async function intakeProductMedia(input: {
     dimensions: { width: metadata.width, height: metadata.height },
     sourceType: input.sourceType,
     sourceDescription: input.sourceDescription.trim(),
-    ownerApproval: "PENDING",
+    ownerApproval: "PENDING_OWNER_APPROVAL",
     ownerApprovalTimestamp: null,
     ownerPrincipalId: null,
     ownerSessionId: null,
     provenance: input.provenance.trim(),
     authorityClass: input.authorityClass,
     usageScopes: [...new Set(input.usageScopes)],
-    depictsActualProduct: input.depictsActualProduct,
+    proposedUsageScopes: [...new Set(input.usageScopes)],
+    approvedUsageScopes: [],
+    depictsActualProduct: false,
     productRepresentationAllowed: false,
     contextualUseAllowed: false,
     applicationUseAllowed: false,
     localAtmosphereUseAllowed: false,
-    heroEligible: input.heroEligible,
+    heroEligible: false,
     altTextAuthority: input.altTextAuthority.trim(),
     captionAuthority: input.captionAuthority.trim(),
+    approvalLifecycleVersion: null,
     hash,
     contentBase64: input.bytes.toString("base64"),
     createdAt: timestamp,
@@ -187,6 +222,8 @@ export function reviewProductMedia(input: {
   heroEligible: boolean;
   altTextAuthority: string;
   captionAuthority: string;
+  authorityAndScopesConfirmed: boolean;
+  localAtmosphereConfirmed: boolean;
   principalId: string;
   sessionId: string;
   now?: Date;
@@ -201,8 +238,11 @@ export function reviewProductMedia(input: {
     && candidate.siteId === input.siteId
     && candidate.productId === input.productId);
   if (!record) throw new Error("PRODUCT_MEDIA_AUTHORITY_NOT_FOUND");
+  if (record.ownerApproval === "APPROVED") throw new Error("PRODUCT_MEDIA_APPROVAL_ALREADY_FINAL");
   const scopes = [...new Set(input.usageScopes)];
   if (!scopes.includes(input.authorityClass)) throw new Error("PRODUCT_MEDIA_AUTHORITY_SCOPE_REQUIRED");
+  if (input.decision === "APPROVE" && !input.authorityAndScopesConfirmed) throw new Error("PRODUCT_MEDIA_REVIEW_CONFIRMATION_REQUIRED");
+  if (input.decision === "APPROVE" && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && !input.localAtmosphereConfirmed) throw new Error("LOCAL_ATMOSPHERE_CONFIRMATION_REQUIRED");
   const groundedProductSource = (["FACTORY_SUPPLIED", "OWNER_SUPPLIED", "OWNER_APPROVED_EXISTING"] as ProductMediaSourceType[]).includes(record.sourceType);
   if (input.decision === "APPROVE" && input.authorityClass === "PRODUCT_AUTHORITY" && (!groundedProductSource || !input.depictsActualProduct)) {
     throw new Error("PRODUCT_AUTHORITY_REQUIRES_OWNER_APPROVED_GROUNDED_PRODUCT_MEDIA");
@@ -217,6 +257,8 @@ export function reviewProductMedia(input: {
   record.ownerSessionId = input.sessionId;
   record.authorityClass = input.authorityClass;
   record.usageScopes = scopes;
+  record.proposedUsageScopes = scopes;
+  record.approvedUsageScopes = approved ? scopes : [];
   record.depictsActualProduct = input.depictsActualProduct;
   record.productRepresentationAllowed = approved && input.authorityClass === "PRODUCT_AUTHORITY" && input.depictsActualProduct;
   record.contextualUseAllowed = approved && scopes.includes("CONTEXTUAL_IN_USE");
@@ -225,16 +267,89 @@ export function reviewProductMedia(input: {
   record.heroEligible = approved && input.heroEligible && record.productRepresentationAllowed;
   record.altTextAuthority = input.altTextAuthority.trim();
   record.captionAuthority = input.captionAuthority.trim();
+  record.approvalLifecycleVersion = approved ? EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION : null;
   record.updatedAt = record.ownerApprovalTimestamp;
   savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
   return deepClone(record);
+}
+
+export function reconcileLegacyProductMediaApprovals(input: {
+  organizationId: string;
+  siteId: string;
+  productId: string;
+  targets: readonly { mediaAuthorityId: string; hash: string }[];
+  principalId: string;
+  now?: Date;
+}): { records: readonly ProductMediaAuthorityRecord[]; audits: readonly ProductMediaLegacyReconciliationAudit[]; mutated: boolean } {
+  assertOutdoorScope(input);
+  required(input.principalId, "PRODUCT_MEDIA_RECONCILIATION_PRINCIPAL_REQUIRED");
+  const loaded = load();
+  const audits = loaded.state.legacyReconciliationAudits ?? [];
+  const reconciledRecords: ProductMediaAuthorityRecord[] = [];
+  const createdAudits: ProductMediaLegacyReconciliationAudit[] = [];
+  const timestamp = (input.now ?? new Date()).toISOString();
+
+  for (const target of input.targets) {
+    const record = loaded.state.records.find((candidate) => candidate.mediaAuthorityId === target.mediaAuthorityId && candidate.hash === target.hash
+      && candidate.organizationId === input.organizationId && candidate.siteId === input.siteId && candidate.productId === input.productId);
+    if (!record) throw new Error("PRODUCT_MEDIA_LEGACY_RECONCILIATION_TARGET_NOT_FOUND");
+    const reconciliationKey = `${record.mediaAuthorityId}:${record.hash}:${EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION}`;
+    const existingAudit = audits.find((audit) => audit.reconciliationKey === reconciliationKey);
+    if (existingAudit) {
+      reconciledRecords.push(record);
+      continue;
+    }
+    if (record.ownerApproval !== "APPROVED" || record.approvalLifecycleVersion === EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION) {
+      throw new Error("PRODUCT_MEDIA_LEGACY_RECONCILIATION_CONDITION_NOT_MET");
+    }
+    const previousScopes = [...(record.approvedUsageScopes ?? record.usageScopes)];
+    const audit: ProductMediaLegacyReconciliationAudit = {
+      reconciliationKey,
+      reconciledAt: timestamp,
+      reconciledByPrincipalId: input.principalId,
+      mediaAuthorityId: record.mediaAuthorityId,
+      hash: record.hash,
+      previousStatus: record.ownerApproval,
+      previousApproval: true,
+      previousPrincipalId: record.ownerPrincipalId,
+      previousApprovalTimestamp: record.ownerApprovalTimestamp,
+      previousAuthorityClass: record.authorityClass,
+      previousUsageScopes: previousScopes,
+      provenance: record.provenance,
+      depictsActualProduct: record.depictsActualProduct,
+      heroEligible: record.heroEligible,
+    };
+    record.ownerApproval = "PENDING_OWNER_APPROVAL";
+    record.ownerApprovalTimestamp = null;
+    record.ownerPrincipalId = null;
+    record.ownerSessionId = null;
+    record.proposedUsageScopes = [...new Set(record.proposedUsageScopes ?? record.usageScopes)];
+    record.approvedUsageScopes = [];
+    record.productRepresentationAllowed = false;
+    record.contextualUseAllowed = false;
+    record.applicationUseAllowed = false;
+    record.localAtmosphereUseAllowed = false;
+    record.depictsActualProduct = false;
+    record.heroEligible = false;
+    record.approvalLifecycleVersion = null;
+    record.updatedAt = timestamp;
+    audits.push(audit);
+    createdAudits.push(audit);
+    reconciledRecords.push(record);
+  }
+
+  if (createdAudits.length > 0) {
+    loaded.state.legacyReconciliationAudits = audits;
+    savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  }
+  return { records: deepClone(reconciledRecords), audits: deepClone(createdAudits.length > 0 ? createdAudits : audits.filter((audit) => input.targets.some((target) => audit.mediaAuthorityId === target.mediaAuthorityId && audit.hash === target.hash))), mutated: createdAudits.length > 0 };
 }
 
 export function listProductMediaAuthority(input: { organizationId: string; siteId: string; productId: string }): readonly ProductMediaAuthorityRecord[] {
   assertOutdoorScope(input);
   return deepClone(load().state.records.filter((record) => record.organizationId === input.organizationId
     && record.siteId === input.siteId
-    && record.productId === input.productId));
+    && record.productId === input.productId).map(normalizedRecord));
 }
 
 export function getProductMediaAuthorityContent(input: { mediaAuthorityId: string; organizationId: string; siteId: string; productId: string }): { bytes: Buffer; mimeType: string; hash: string } | null {
