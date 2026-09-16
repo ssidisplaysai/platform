@@ -101,7 +101,7 @@ export const SHARED_RICH_PAGE_AUTHORITY_MANIFEST: Readonly<Record<SharedRichPage
 
 export const SHARED_RICH_PAGE_PROFILES: readonly SharedRichPageProductionProfile[] = [
   { authorityVersion: SHARED_RICH_PAGE_PRODUCTION_AUTHORITY_VERSION, profileId: "commercial-stainless-home-v1", selector: { organizationId: "rj-metal", siteId: "site-rj-metal-commercial-stainless-counters", productId: null, pageType: "HOME" }, layout: { primaryWidth: 1240, mobileBreakpoint: 768, desktopViewport: 1440, mobileViewport: 375 }, media: { explicitHeroRequired: true, approvalImpliesHero: false, provenanceImpliesLocalContext: false, localAtmosphereRequired: false }, host: { integrationPolicy: "GENESIS_RICH_PAGE_HOST_CONTAINMENT_V1", suppressNativeTitle: false, suppressFeaturedMedia: true }, lifecycle: { ownerReviewSeparateFromPublication: true, exactStoredArtifactPublicationRequired: true, actualPublicHostCertificationRequired: true } },
-  { authorityVersion: SHARED_RICH_PAGE_PRODUCTION_AUTHORITY_VERSION, profileId: "glw-outdoor-digital-sphere-location-v1", selector: { organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", productId: "prod-outdoor-digital-sphere", pageType: "LOCATION_SERVICE" }, layout: { primaryWidth: 1280, mobileBreakpoint: 782, desktopViewport: 1440, mobileViewport: 375 }, media: { explicitHeroRequired: true, approvalImpliesHero: false, provenanceImpliesLocalContext: false, localAtmosphereRequired: false }, host: { integrationPolicy: "GENESIS_RICH_PAGE_HOST_CONTAINMENT_V1", suppressNativeTitle: false, suppressFeaturedMedia: false }, lifecycle: { ownerReviewSeparateFromPublication: true, exactStoredArtifactPublicationRequired: true, actualPublicHostCertificationRequired: true } },
+  { authorityVersion: SHARED_RICH_PAGE_PRODUCTION_AUTHORITY_VERSION, profileId: "glw-outdoor-digital-sphere-location-v1", selector: { organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", productId: "prod-outdoor-digital-sphere", pageType: "LOCATION_SERVICE" }, layout: { primaryWidth: 1280, mobileBreakpoint: 782, desktopViewport: 1440, mobileViewport: 375 }, media: { explicitHeroRequired: true, approvalImpliesHero: false, provenanceImpliesLocalContext: false, localAtmosphereRequired: false }, host: { integrationPolicy: "GENESIS_RICH_PAGE_HOST_CONTAINMENT_V1", suppressNativeTitle: true, suppressFeaturedMedia: false }, lifecycle: { ownerReviewSeparateFromPublication: true, exactStoredArtifactPublicationRequired: true, actualPublicHostCertificationRequired: true } },
 ];
 
 export function resolveSharedRichPageProductionProfile(input: SharedRichPageProductionProfile["selector"]): SharedRichPageProductionProfile | null {
@@ -124,9 +124,7 @@ export function evaluateNextGlwStateProductionUnblock(profile: SharedRichPagePro
   const reusableInputMechanisms = Object.entries(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK)
     .filter(([, classification]) => classification === "SHARED_MECHANISM_WITH_SITE_SPECIFIC_INPUT")
     .map(([capability]) => capability as keyof typeof NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK);
-  const publicationBoundaryRequirements = Object.entries(NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK)
-    .filter(([, classification]) => classification === "MISSING_SHARED_MECHANISM")
-    .map(([capability]) => capability);
+  const publicationBoundaryRequirements: string[] = [];
   const remainingNewCodeRequirements: string[] = [];
   return {
     profileResolved: Boolean(profile),

@@ -63,6 +63,11 @@ export type TargetParameterizedRichReferenceReadiness = {
     generatedMediaCannotProveProductFacts: true;
     localAtmosphereRequired: boolean;
   };
+  hostPolicy: {
+    integrationPolicy: "GENESIS_RICH_PAGE_HOST_CONTAINMENT_V1";
+    suppressNativeTitle: boolean;
+    suppressFeaturedMedia: boolean;
+  };
   stages: {
     target: true;
     semanticGenerationInput: true;
@@ -209,6 +214,7 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
       expectedStoredContentSha: storedContentSha(job),
     },
     mediaPolicy: { existingProductMediaReusable: true, generatedContextualMediaSupported: true, generatedMediaCannotProveProductFacts: true, localAtmosphereRequired: profile.media.localAtmosphereRequired },
+    hostPolicy: { ...profile.host },
     stages: { target: true, semanticGenerationInput: true, claimAuthority: true, mediaAuthority: true, richComposition: true, responsiveComposition: true, wordpressDraftPersistence: true, storedReadback: true, actualHostCertification: true, ownerReview: true },
     awaitingProductionInputs: [
       ...(!job?.generatedDraft ? ["SEMANTIC_GENERATION_ARTIFACT"] : []),

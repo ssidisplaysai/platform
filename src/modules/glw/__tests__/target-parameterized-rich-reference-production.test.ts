@@ -73,6 +73,7 @@ describe("target-parameterized rich-reference production", () => {
       identity: { siteId: "site-led-display-warehouse-production", productId: "prod-outdoor-digital-sphere", canonicalSlug: "alaska", canonicalPath: "/outdoor-digital-sphere/alaska/", wordpressParentId: "20114", wordpressObjectId: null },
       authority: { campaignResolved: true, siteResolved: true, productResolved: true, parentResolved: true, mediaResolved: true, claimResolved: true, hostIntegrationProfileResolved: true, heroMediaAuthorityId: "hero", supportingMediaAuthorityId: "supporting", candidateArtifactIdentity: null, candidateArtifactSha: null, certificationIdentity: null, expectedStoredContentSha: null },
       mediaPolicy: { existingProductMediaReusable: true, generatedContextualMediaSupported: true, generatedMediaCannotProveProductFacts: true, localAtmosphereRequired: false },
+      hostPolicy: { integrationPolicy: "GENESIS_RICH_PAGE_HOST_CONTAINMENT_V1", suppressNativeTitle: true, suppressFeaturedMedia: false },
       targetRequiresNewArchitecture: false,
       targetRequiresNewCode: false,
       draftProductionReady: true,
@@ -87,6 +88,7 @@ describe("target-parameterized rich-reference production", () => {
   test("resolves Indiana through the same target-parameterized coordinator", async () => {
     const result = await resolveTargetParameterizedRichReferenceProduction({ campaignId: "campaign-outdoor", targetId: "target-campaign-outdoor-in", wordpressReadAuthority: wordpressAuthority() });
     expect(result.target).toMatchObject({ stateCode: "IN", stateName: "Indiana", status: "reference_complete" });
+    expect(result.hostPolicy.suppressNativeTitle).toBe(true);
     expect(result.targetRequiresNewCode).toBe(false);
   });
 

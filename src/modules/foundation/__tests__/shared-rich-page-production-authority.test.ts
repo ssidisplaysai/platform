@@ -46,7 +46,7 @@ describe("shared rich-page production authority", () => {
     });
     expect(result).toMatchObject({
       profileResolved: true,
-      nativeTitleSuppressionRequired: false,
+      nativeTitleSuppressionRequired: true,
       nativeTitleSuppressionSharedMechanismReady: true,
       targetParameterizedRichReferenceOrchestrationReady: true,
       nextTargetRequiresNewArchitecture: false,
