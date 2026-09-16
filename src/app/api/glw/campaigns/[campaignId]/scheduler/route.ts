@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import {
   authorizeRequest,
+  forwardOperatorMutationContext,
   hasOrganizationScope,
   resolveRequestPrincipal,
   resolveRequestScope,
@@ -405,13 +406,12 @@ export async function POST(
         `${request.nextUrl.origin}/api/glw/page-generation`,
         {
           method: "POST",
-          headers: {
+          headers: forwardOperatorMutationContext(request, {
             "Content-Type": "application/json",
-            "x-gcp-roles": "platform_admin",
             "x-gcp-organization-id":
               campaign.organizationId,
             "x-gcp-site-id": campaign.siteId,
-          },
+          }),
           body: JSON.stringify({ form }),
           cache: "no-store",
         },

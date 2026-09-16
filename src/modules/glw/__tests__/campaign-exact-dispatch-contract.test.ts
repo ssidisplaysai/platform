@@ -39,6 +39,9 @@ describe("campaign exact dispatch contract", () => {
     expect(route).toContain("ownerAuthorizationRequired: true");
     expect(route).toContain("executionPreflight");
     expect(route).toContain("authorizeExactTargetDispatchRequest");
+    expect(route).toContain("forwardOperatorMutationContext(request");
+    expect(route).not.toContain('"x-gcp-roles": "platform_admin"');
+    expect(route).not.toContain("x-gcp-email");
     expect(route).toContain("ownerDispatchGrantId");
     expect(route).toContain("preflightReceiptId");
     expect(route.indexOf("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED")).toBeLessThan(route.indexOf("leaseGlwCampaignTargets({"));
@@ -52,7 +55,7 @@ describe("campaign exact dispatch contract", () => {
     expect(controls).toContain("Authorize & Dispatch");
     expect(controls).not.toContain('confirm: "RUN_DRAFT_BATCH"');
     expect(controls).toContain('`${target.cityName}, ${target.stateCode}`');
-    expect(controls).toContain("router.refresh()");
+    expect(controls).toContain("refreshWorkspace()");
     expect(controls).toContain("Not required for draft persistence");
     expect(operatorOverview).toContain("target.identity");
     expect(repository).toContain("Math.min(allowance, input.maxTargets ?? allowance)");
