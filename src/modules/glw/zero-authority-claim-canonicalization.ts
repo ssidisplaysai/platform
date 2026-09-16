@@ -10,6 +10,7 @@ export type GlwZeroAuthorityDisposition =
   | "REMOVE"
   | "CONVERT_TO_BUYER_QUESTION"
   | "CONVERT_TO_CONCEPTUAL_APPLICATION"
+  | "REPLACE_WITH_EVALUATION_FRAMEWORK"
   | "BLOCK";
 
 export type GlwZeroAuthorityTransformation = {
@@ -41,6 +42,9 @@ const POLICY = {
     "Remove nonessential unsupported local-market assertions beginning with a named geography followed by is home to.",
     "Convert an unsupported capability assertion beginning with This allows for and containing interactive meaning to a canonical supplier-dependent buyer question.",
     "Convert labeled application examples containing interactive meaning to explicitly conceptual applications without asserting product capability.",
+    "Remove nonessential climate, cost-planning, market, and product-assumption statements when deletion preserves surrounding commercial meaning.",
+    "Replace unsupported product comparison tables with an authority-neutral buyer evaluation framework.",
+    "Reduce repeated supplier-question constructions with an authority-neutral project documentation question.",
     "Block every protected claim that does not match an allowlisted meaning-reducing transformation.",
   ],
 } as const;
@@ -95,6 +99,13 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     };
   }
 
+  if (claimClasses.includes("CLIMATE") && (
+    /\badd unique planning challenges and opportunities\b/i.test(text)
+    || /^Audience Comfort:\s*In winter months\b/i.test(text)
+  )) {
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_CLIMATE_ASSERTION" };
+  }
+
   if (claimClasses.includes("CLIMATE") && /\b(?:climate|weather|temperature|seasonal)\b/i.test(text)) {
     return {
       claimClasses,
@@ -117,7 +128,11 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     };
   }
 
-  if (claimClasses.includes("PRICING") && /\b(?:pricing|price|cost)\b/i.test(text)) {
+  if (claimClasses.includes("PRICING") && /^Engage Early:\s*Begin supplier conversations\b/i.test(text)) {
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_COST_PLANNING_ASSERTION" };
+  }
+
+  if (claimClasses.includes("PRICING") && /\b(?:pricing|price|costs?)\b/i.test(text)) {
     return {
       claimClasses,
       originalText: text,
@@ -128,8 +143,30 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     };
   }
 
-  if (claimClasses.includes("MARKET_ADOPTION") && /\b(?:trend|adoption|growth|increasing use|popularity|market movement|industry direction|regional demand)\b/i.test(text)) {
+  if (claimClasses.includes("MARKET_ADOPTION") && /\b(?:trends?|adoption|growth|increasing use|popularity|market movement|industry direction|regional demand)\b/i.test(text)) {
     return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_UNSUPPORTED_MARKET_ASSERTION" };
+  }
+
+  if (claimClasses.includes("PRODUCT_SPECIFICATION")
+    && /\bOutdoor Digital Sphere\b/i.test(text)
+    && /\bConventional LED (?:Panel|Display)\b/i.test(text)
+    && /\b(?:Visual Form Factor|Viewing Angles|Installation Complexity)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: null,
+      disposition: "REPLACE_WITH_EVALUATION_FRAMEWORK",
+      safeToTransform: true,
+      ruleId: "UNSUPPORTED_COMPARISON_TO_BUYER_EVALUATION_FRAMEWORK",
+    };
+  }
+
+  if (claimClasses.includes("PRODUCT_SPECIFICATION") && (
+    /^Which content production approaches work best for\b/i.test(text)
+    || /^Underestimating the importance of content planning\b/i.test(text)
+    || /^Spherical, multidirectional$/i.test(text)
+  )) {
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_PRODUCT_ASSUMPTION" };
   }
 
   const labeledApplication = text.match(/^([^:]{2,80}):\s*(.+)$/);
@@ -151,13 +188,36 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
   return { claimClasses, originalText: text, canonicalText: null, disposition: "BLOCK", safeToTransform: false, ruleId: "AMBIGUOUS_PROTECTED_ASSERTION" };
 }
 
-function replaceElementText(html: string, originalText: string, canonicalText: string | null): string | null {
-  if (html.includes(originalText)) return html.replace(originalText, canonicalText ?? "");
+const BUYER_EVALUATION_FRAMEWORK = `<div data-authority-neutral-evaluation-framework="true"><h3>Buyer evaluation framework</h3><ul><li><strong>Audience and viewing:</strong> What viewing directions and distances should the project team evaluate?</li><li><strong>Content planning:</strong> What content approach should the project team review for the proposed display?</li><li><strong>Site planning:</strong> What placement, access, and installation constraints should qualified professionals review?</li></ul></div>`;
+
+function applyTransformation(html: string, transformation: GlwZeroAuthorityTransformation): string | null {
   const $ = cheerio.load(html, null, false);
-  const exact = $("p, li").filter((_, element) => normalizeText($(element).text()) === originalText).first();
-  if (!exact.length) return null;
-  if (canonicalText === null) exact.remove();
-  else exact.text(canonicalText);
+  if (transformation.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK") {
+    const table = $("table").filter((_, element) => {
+      const cells = $(element).find("th,td").map((__, cell) => normalizeText($(cell).text())).get();
+      return cells.includes("Outdoor Digital Sphere")
+        && cells.some((cell) => /^Conventional LED (?:Panel|Display)$/i.test(cell))
+        && cells.includes("Visual Form Factor");
+    }).first();
+    if (!table.length) return null;
+    const heading = table.prevAll("h2,h3").first();
+    if (heading.length) heading.text("Buyer Evaluation Framework");
+    table.replaceWith(BUYER_EVALUATION_FRAMEWORK);
+    return $.html();
+  }
+  const exact = $("h1, h2, h3, p, li, td, th, dt, dd").filter((_, element) => normalizeText($(element).text()) === transformation.originalText).first();
+  if (!exact.length) {
+    return html.includes(transformation.originalText)
+      ? html.replace(transformation.originalText, transformation.canonicalText ?? "")
+      : null;
+  }
+  if (transformation.canonicalText === null) {
+    if (exact.is("h1,h2,h3") && transformation.claimClasses.includes("MARKET_ADOPTION")) {
+      let sibling = exact.next();
+      while (sibling.length && !sibling.is("h1,h2,h3")) { const next = sibling.next(); sibling.remove(); sibling = next; }
+    }
+    exact.remove();
+  } else exact.text(transformation.canonicalText);
   return $.html();
 }
 
@@ -193,19 +253,40 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
     };
   }
 
-  const transformations = [...uniqueBlockingSpans(input.findings)].map(([text, claimClasses]) =>
+  const transformations: GlwZeroAuthorityTransformation[] = [...uniqueBlockingSpans(input.findings)].map(([text, claimClasses]) =>
     transformationFor(text, claimClasses));
   const blockedClaims = transformations.filter((entry) => !entry.safeToTransform).map((entry) => entry.originalText);
   let contentHtml = rawArtifact.contentHtml;
 
   if (blockedClaims.length === 0) {
     for (const transformation of transformations) {
-      const next = replaceElementText(contentHtml, transformation.originalText, transformation.canonicalText);
+      const comparisonReplacement = transformations.find((entry) => entry.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK");
+      if (comparisonReplacement && transformation !== comparisonReplacement && comparisonReplacement.originalText.includes(transformation.originalText)) continue;
+      const next = applyTransformation(contentHtml, transformation);
       if (next === null) {
         blockedClaims.push(transformation.originalText);
         break;
       }
       contentHtml = next;
+    }
+    const $ = cheerio.load(contentHtml, null, false);
+    const supplierQuestions = $("p,li").filter((_, element) => /selected supplier|supplier confirm/i.test($(element).text())).length;
+    const repetitiveQuestion = "Does the supplier confirm that content can be customized and managed to suit these environmental factors?";
+    if (supplierQuestions > 5 && contentHtml.includes(repetitiveQuestion)) {
+      const copyQualityTransformation: GlwZeroAuthorityTransformation = {
+        claimClasses: [],
+        originalText: repetitiveQuestion,
+        canonicalText: "What content-management requirements should the project team document for the proposed display?",
+        disposition: "CONVERT_TO_BUYER_QUESTION",
+        safeToTransform: true,
+        ruleId: "REDUCE_SUPPLIER_QUESTION_REPETITION",
+      };
+      const next = applyTransformation(contentHtml, copyQualityTransformation);
+      if (next === null) blockedClaims.push(repetitiveQuestion);
+      else {
+        transformations.push(copyQualityTransformation);
+        contentHtml = next;
+      }
     }
   }
 

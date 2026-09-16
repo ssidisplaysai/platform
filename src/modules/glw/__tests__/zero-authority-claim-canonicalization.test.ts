@@ -53,6 +53,53 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.canonicalizedArtifact?.contentHtml).toContain("What project goals");
   });
 
+  test("removes nonessential product assumptions and replaces an unsupported comparison table", () => {
+    const contentQuestion = "Which content production approaches work best for a wraparound, curved display with multidirectional viewing?";
+    const mistake = "Underestimating the importance of content planning for a curved, multidirectional display surface.";
+    const comparison = "Consideration Outdoor Digital Sphere Conventional LED Panel Visual Form Factor Spherical, multidirectional Flat, directional .";
+    const cell = "Spherical, multidirectional";
+    const result = canonicalize(`<h2>Selection Guidance</h2><ul><li>${contentQuestion}</li></ul><h2>Comparison Table</h2><table><tr><th>Consideration</th><th>Outdoor Digital Sphere</th><th>Conventional LED Panel</th></tr><tr><td>Visual Form Factor</td><td>${cell}</td><td>Flat, directional</td></tr></table><h2>Common Mistakes</h2><ul><li>${mistake}</li></ul><h2>Next Step</h2><p>What project goals should the team document?</p>`, [finding("PRODUCT_SPECIFICATION", contentQuestion), finding("PRODUCT_SPECIFICATION", comparison), finding("PRODUCT_SPECIFICATION", mistake), finding("PRODUCT_SPECIFICATION", cell)]);
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(contentQuestion);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(mistake);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("Conventional LED Panel");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Buyer evaluation framework");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What viewing directions and distances");
+  });
+
+  test("removes nonessential unsupported market and cost content", () => {
+    const pricing = "Engage Early: Begin supplier conversations as early as possible to clarify feasibility, timelines, and costs.";
+    const heading = "Future Evaluation: Trends and Concepts in Digital Sphere Use";
+    const result = canonicalize(`<h2>Best Practices</h2><ol><li>${pricing}</li></ol><h2>${heading}</h2><p>Market discussion that is not needed.</p><h2>Request Guidance</h2><p>Contact us to discuss the project.</p>`, [finding("PRICING", pricing), finding("MARKET_ADOPTION", heading)]);
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(pricing);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(heading);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("Market discussion that is not needed.");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Request Guidance");
+  });
+
+  test("prefers removal for observed nonessential climate and cost claims", () => {
+    const climate = "Alaska’s climate, vast geography, and distinctive event calendar add unique planning challenges and opportunities.";
+    const comfort = "Audience Comfort: In winter months, consider potential wind, temperature, and crowd movement when designing event flow and display interaction zones.";
+    const pricing = "Engage Early: Begin supplier conversations as early as possible to clarify feasibility, timelines, and costs.";
+    const result = canonicalize(`<p>${climate} Key considerations follow.</p><ul><li>${comfort}</li><li>${pricing}</li></ul><p>Contact us to discuss the project.</p>`, [finding("CLIMATE", climate), finding("CLIMATE", comfort), finding("PRICING", pricing)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ originalText: climate, disposition: "REMOVE", safeToTransform: true }),
+      expect.objectContaining({ originalText: comfort, disposition: "REMOVE", safeToTransform: true }),
+      expect.objectContaining({ originalText: pricing, disposition: "REMOVE", safeToTransform: true }),
+    ]));
+  });
+
+  test("reduces excessive supplier-question repetition without adding factual meaning", () => {
+    const repeated = Array.from({ length: 5 }, (_, index) => `<li>Does the selected supplier confirm project requirement ${index + 1}?</li>`).join("");
+    const target = "Does the supplier confirm that content can be customized and managed to suit these environmental factors?";
+    const result = canonicalize(`<ul>${repeated}<li>${target}</li></ul>`, []);
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What content-management requirements should the project team document");
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId: "REDUCE_SUPPLIER_QUESTION_REPETITION" }));
+  });
+
   test("leaves already safe conceptual text, mapped facts, and navigation identity unchanged", () => {
     const html = '<h2>Potential Applications</h2><p>One possible concept could be considered for an event.</p><p>Mapped fact.</p><a href="/outdoor-digital-sphere/">Outdoor Digital Sphere</a>';
     const result = canonicalize(html, []);
