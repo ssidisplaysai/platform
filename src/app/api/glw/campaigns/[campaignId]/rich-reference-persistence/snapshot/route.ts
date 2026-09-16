@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ cam
   if (campaignId !== CAMPAIGN_ID || request.nextUrl.searchParams.get("organizationId") !== "led-display-warehouse" || request.nextUrl.searchParams.get("siteId") !== "site-led-display-warehouse-production") return new NextResponse("Not found", { status: 404 });
   const draft = await inspectIndianaWordPressDraft();
   if (draft.objectId !== "20115" || draft.status !== "draft" || draft.slug !== "indiana" || draft.parent !== 20114 || draft.contentSha !== request.nextUrl.searchParams.get("contentSha")) return new NextResponse("Draft identity stale", { status: 409 });
-  const shellResponse = await fetch("https://leddisplaywarehouse.com/outdoor-digital-sphere/", { cache: "no-store", signal: AbortSignal.timeout(30_000) });
+  const shellResponse = await fetch("https://leddisplaywarehouse.com/", { cache: "no-store", signal: AbortSignal.timeout(30_000) });
   if (!shellResponse.ok) return new NextResponse("Theme shell unavailable", { status: 502 });
   const $ = load(await shellResponse.text()); $("base").remove(); $("head").prepend('<base href="https://leddisplaywarehouse.com/">');
   const header = $("header").first(); const footer = $("footer").last(); if (!header.length || !footer.length) return new NextResponse("Theme shell malformed", { status: 502 });
