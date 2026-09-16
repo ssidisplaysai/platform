@@ -109,7 +109,7 @@ async function geometry(page: Page, assignments: readonly CaptureMediaAssignment
     const rowCount = (items: readonly { y: number }[]) => new Set(items.map((item) => Math.round(item.y))).size;
     const ctaSection = document.querySelector(".saw-cta"); const ctaInner = document.querySelector(".saw-cta-inner"); const ctaHeading = ctaSection?.querySelector("h2") ?? null; const ctaCopy = ctaSection?.querySelector("p:not(.saw-kicker)") ?? null; const ctaButton = ctaSection?.querySelector(".saw-button") ?? null;
     const ctaBounds = box(ctaSection); const ctaInnerBounds = box(ctaInner); const ctaHeadingBounds = box(ctaHeading); const ctaCopyBounds = box(ctaCopy); const ctaButtonBounds = box(ctaButton);
-    const contentWidthBalanced = Boolean(contentWrapBounds && (desktop ? contentWrapBounds.width >= 1180 && contentWrapBounds.width <= 1300 : contentWrapBounds.width <= innerWidth - 32));
+    const contentWidthBalanced = Boolean(contentWrapBounds && (desktop ? contentWrapBounds.width >= 1180 && contentWrapBounds.width <= innerWidth - 24 : contentWrapBounds.width <= innerWidth - 32));
     const productIntroductionCompositionPass = Boolean(productSplit && productImageBounds && productCopyBounds && (desktop ? productImageBounds.x + productImageBounds.width < productCopyBounds.x && productImageBounds.width >= 500 && productCopyBounds.width >= 380 : productImageBounds.y + productImageBounds.height <= productCopyBounds.y));
     const applicationGridPass = applicationCards.length === 6 && rowCount(applicationCards) === (desktop ? 2 : 6);
     const planningRows = [...new Set(planningCards.map((item) => Math.round(item.y)))].map((y) => planningCards.filter((item) => Math.round(item.y) === y));
@@ -121,7 +121,7 @@ async function geometry(page: Page, assignments: readonly CaptureMediaAssignment
     const planningGridPass = planningCards.length === 7 && planningGridBalanced;
     const ctaWidthAlignedWithPage = Boolean(ctaInnerBounds && contentWrapBounds && Math.abs(ctaInnerBounds.width - contentWrapBounds.width) <= 2);
     const ctaTextBalance = Boolean(ctaHeadingBounds && ctaCopyBounds && (desktop ? ctaCopyBounds.x + ctaCopyBounds.width < ctaHeadingBounds.x && !intersects(ctaHeading, ctaCopy) : ctaHeadingBounds.y < ctaCopyBounds.y));
-    const ctaButtonProminent = Boolean(ctaButtonBounds && ctaButtonBounds.width >= (desktop ? 220 : innerWidth - 48) && ctaButtonBounds.height >= 46);
+    const ctaButtonProminent = Boolean(ctaButtonBounds && ctaButtonBounds.width >= 220 && ctaButtonBounds.height >= 46);
     const excessiveCtaWhitespace = Boolean(ctaBounds && ctaBounds.height > (desktop ? 480 : 720));
     const ctaHeadingCollision = intersects(ctaHeading, ctaCopy) || intersects(ctaHeading, ctaButton);
     const ctaCopyCollision = intersects(ctaCopy, ctaHeading) || intersects(ctaCopy, ctaButton);
