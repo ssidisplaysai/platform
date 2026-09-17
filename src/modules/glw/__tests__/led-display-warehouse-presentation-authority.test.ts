@@ -22,6 +22,8 @@ describe("LED Display Warehouse presentation authority", () => {
     expect(after('img[data-media-role="CONTEXTUAL_IN_USE"]').attr("src")).toBe("support");
     expect(after("img")).toHaveLength(2);
     expect(after("style").text()).toContain("width:min(1360px,calc(100% - 32px))");
+    expect(after("style").text()).toContain(".saw-applications h2,.saw-planning h2{color:var(--ledw-ink)!important}");
+    expect(after("style").text()).toContain(".saw-applications .saw-intro,.saw-applications .saw-grid p,.saw-planning .saw-section-heading>p,.saw-planning .saw-plan-grid p{color:var(--ledw-muted)!important}");
     expect(after("style").text()).toContain(".saw-plan-grid>div:nth-child(5){grid-column:2/span 2}");
     expect(after(".saw-cta-support")).toHaveLength(1);
     expect(result.evaluation).toMatchObject({ ok: true, checks: { darkHighContrastFoundation: true, blueElectricAccent: true, imageLedComposition: true, commercialDensity: true, excessiveEditorialWhitespace: false, thinBorderEditorialGridDominant: false, worksheetRuleGrammar: false, flatRedEditorialCtaDominant: false, commercialStainlessPresentationLeakage: false } });
