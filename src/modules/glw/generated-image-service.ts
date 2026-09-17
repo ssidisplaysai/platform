@@ -4,6 +4,11 @@ export type GenesisGeneratedImage = {
   bytes: Buffer;
   mimeType: "image/jpeg";
   fileExtension: "jpg";
+  provider: "OPENAI_IMAGE";
+  model: string;
+  width: 1536;
+  height: 1024;
+  reportedCost: "UNKNOWN";
 };
 
 export type GenesisGeneratedImageResult =
@@ -35,6 +40,10 @@ function resolveModel(): string {
     process.env.GENESIS_OPENAI_IMAGE_MODEL
     ?? "gpt-image-2"
   ).trim();
+}
+
+export function resolveGenesisImageProviderConfiguration(): { provider: "OPENAI_IMAGE"; model: string; configured: boolean; monetaryCostTelemetryAvailable: false } {
+  return { provider: "OPENAI_IMAGE", model: resolveModel(), configured: Boolean(resolveApiKey()), monetaryCostTelemetryAvailable: false };
 }
 
 function buildProductionPrompt(input: {
@@ -143,6 +152,11 @@ export async function generateGenesisFeaturedImage(input: {
         bytes,
         mimeType: "image/jpeg",
         fileExtension: "jpg",
+        provider: "OPENAI_IMAGE",
+        model: resolveModel(),
+        width: 1536,
+        height: 1024,
+        reportedCost: "UNKNOWN",
       },
     };
   } catch {

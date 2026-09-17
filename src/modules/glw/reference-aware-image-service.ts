@@ -118,6 +118,11 @@ export async function generateGenesisFeaturedImageWithCampaignReferences(input: 
         bytes,
         mimeType: "image/jpeg",
         fileExtension: "jpg",
+        provider: "OPENAI_IMAGE",
+        model: resolveModel(),
+        width: 1536,
+        height: 1024,
+        reportedCost: "UNKNOWN",
       },
     };
   } catch {

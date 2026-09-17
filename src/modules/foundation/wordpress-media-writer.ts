@@ -42,6 +42,10 @@ export type GenesisWordPressMediaWriteResult =
       message: string;
     };
 
+export type GenesisWordPressGeneratedMediaUploadResult =
+  | { ok: true; mediaId: number; mediaUrl: string; provenance: "GENERATED_MEDIA" }
+  | { ok: false; state: "not_configured" | "credential_unavailable" | "invalid_target" | "upload_failed" | "metadata_failed"; message: string };
+
 function createAuthorizationHeader(username: string, applicationPassword: string): string {
   return `Basic ${Buffer.from(`${username}:${applicationPassword}`, "utf8").toString("base64")}`;
 }
@@ -98,6 +102,39 @@ async function cleanupMedia(apiBaseUrl: string, authorization: string, mediaId: 
   } catch {
     // Best-effort cleanup only. The primary failure is returned to the caller.
   }
+}
+
+export async function uploadGenesisWordPressGeneratedMedia(input: {
+  site: SiteConfiguration;
+  canonicalSlug: string;
+  image: { bytes: Buffer; mimeType: string; fileExtension: string };
+  title: string;
+  altText: string;
+  description: string;
+}): Promise<GenesisWordPressGeneratedMediaUploadResult> {
+  const configuredApiBaseUrl = input.site.integrations.wordpressApiBaseUrl;
+  const credentialReference = input.site.integrations.wordpressCredentialReference;
+  if (!configuredApiBaseUrl || !credentialReference) return { ok: false, state: "not_configured", message: "WordPress API or credential reference is not configured." };
+  let apiBaseUrl: string;
+  try { apiBaseUrl = normalizeWordPressApiBaseUrl(configuredApiBaseUrl); } catch { return { ok: false, state: "invalid_target", message: "The configured WordPress API target is invalid." }; }
+  const credential = resolveWordPressCredentialReference(credentialReference);
+  if (!credential) return { ok: false, state: "credential_unavailable", message: "The configured WordPress credential reference could not be resolved." };
+  if (!input.image.bytes.length || !input.title.trim() || !input.altText.trim() || !input.description.trim()) return { ok: false, state: "invalid_target", message: "Generated media bytes and metadata are required." };
+  const authorization = createAuthorizationHeader(credential.username, credential.applicationPassword);
+  const filename = normalizeFilename(input.canonicalSlug, input.image.fileExtension);
+  let uploadResponse: Response;
+  try {
+    uploadResponse = await fetch(`${apiBaseUrl}/media`, { method: "POST", headers: { Accept: "application/json", Authorization: authorization, "Content-Disposition": `attachment; filename="${filename}"`, "Content-Type": input.image.mimeType }, body: Uint8Array.from(input.image.bytes).buffer, cache: "no-store", signal: AbortSignal.timeout(30_000) });
+  } catch { return { ok: false, state: "upload_failed", message: "Genesis could not upload generated media to WordPress." }; }
+  if (!uploadResponse.ok) return { ok: false, state: "upload_failed", message: `WordPress media upload failed with HTTP ${uploadResponse.status}.` };
+  const media = await uploadResponse.json().catch(() => null) as WordPressMedia | null;
+  const mediaId = Number(media?.id || 0); const mediaUrl = String(media?.source_url || media?.guid?.rendered || "").trim();
+  if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !mediaUrl) return { ok: false, state: "upload_failed", message: "WordPress did not return an exact uploaded media identity." };
+  let metadataResponse: Response;
+  try { metadataResponse = await fetch(`${apiBaseUrl}/media/${mediaId}`, { method: "POST", headers: { Accept: "application/json", Authorization: authorization, "Content-Type": "application/json" }, body: JSON.stringify({ title: input.title.trim(), alt_text: input.altText.trim(), description: input.description.trim(), caption: "Conceptual generated visualization; not documentary installation, customer, geographic, or product-specification evidence." }), cache: "no-store", signal: AbortSignal.timeout(10_000) }); }
+  catch { await cleanupMedia(apiBaseUrl, authorization, mediaId); return { ok: false, state: "metadata_failed", message: "Genesis could not apply generated-media metadata." }; }
+  if (!metadataResponse.ok) { await cleanupMedia(apiBaseUrl, authorization, mediaId); return { ok: false, state: "metadata_failed", message: `WordPress media metadata update failed with HTTP ${metadataResponse.status}.` }; }
+  return { ok: true, mediaId, mediaUrl, provenance: "GENERATED_MEDIA" };
 }
 
 export async function attachGenesisWordPressExistingFeaturedImage(input: {
