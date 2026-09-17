@@ -63,7 +63,7 @@ export type ContextualMediaAdapterDependencies = {
   generate(input: { identity: ContextualMediaIdentity; item: ContextualVisualPlanItem }): Promise<{ bytes: Buffer; mimeType: ContextualGenerationReceipt["mimeType"]; provider: string; model: string; width: number; height: number; reportedCost?: number | null }>;
   persistGeneration(input: { receipt: ContextualGenerationReceipt; bytes: Buffer }): GeneratedContextualAsset;
   persistAssignment(input: { identity: ContextualMediaIdentity; item: ContextualVisualPlanItem; asset: GeneratedContextualAsset; productAuthority: SitePageMediaAssignment; actor: string }): SitePageMediaAssignment;
-  uploadMedia(input: { identity: ContextualMediaIdentity; item: ContextualVisualPlanItem; asset: GeneratedContextualAsset }): Promise<{ mediaId: number; url: string }>;
+  uploadMedia(input: { identity: ContextualMediaIdentity; item: ContextualVisualPlanItem; asset: GeneratedContextualAsset }): Promise<{ mediaId: number; url: string; reused?: boolean }>;
   patchPresentation(input: { identity: ContextualMediaIdentity; replacements: readonly { slot: ContextualVisualSlot; role: string; mediaRole: ContextualMediaRole; mediaId: number; url: string; assetSha256: string }[] }): Promise<{ storedSha256: string }>;
   certify(input: { identity: ContextualMediaIdentity; storedSha256: string }): Promise<{ certificationId: string; state: "PASS" }>;
 };
@@ -143,12 +143,14 @@ export async function runContextualMediaProductionAdapter(input: {
     assets.push(asset);
   }
   const replacements = [];
+  let uploads = 0;
   for (let index = 0; index < plan.length; index += 1) {
     const uploaded = await input.dependencies.uploadMedia({ identity: input.identity, item: plan[index], asset: assets[index] });
+    if (!uploaded.reused) uploads += 1;
     replacements.push({ slot: plan[index].slot, role: plan[index].role, mediaRole: plan[index].mediaRole, mediaId: uploaded.mediaId, url: uploaded.url, assetSha256: assets[index].receipt.assetSha256 });
   }
   const patched = await input.dependencies.patchPresentation({ identity: input.identity, replacements });
   const certification = await input.dependencies.certify({ identity: input.identity, storedSha256: patched.storedSha256 });
   if (certification.state !== "PASS") throw new Error("CONTEXTUAL_MEDIA_CERTIFICATION_FAILED");
-  return { ...base, state: "OWNER_REVIEW_READY" as const, assets, storedSha256: patched.storedSha256, certification, accounting: { imageGenerationRequests: requests, imageGenerationOutputs: requests, wordpressUploads: replacements.length, wordpressMutations: 1, certificationRuns: 1, publications: 0, n8nExecutions: 0, contentGenerationJobs: 0, contentGenerationAttempts: 0, contentModelCalls: 0, nextStateDispatches: 0 } };
+  return { ...base, state: "OWNER_REVIEW_READY" as const, assets, storedSha256: patched.storedSha256, certification, accounting: { imageGenerationRequests: requests, imageGenerationOutputs: requests, wordpressUploads: uploads, wordpressMutations: 1, certificationRuns: 1, publications: 0, n8nExecutions: 0, contentGenerationJobs: 0, contentGenerationAttempts: 0, contentModelCalls: 0, nextStateDispatches: 0 } };
 }

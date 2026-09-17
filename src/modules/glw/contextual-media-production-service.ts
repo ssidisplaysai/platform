@@ -23,7 +23,7 @@ function pageFields(body: unknown) {
 
 export async function executeContextualMediaProduction(input: { campaignId: string; targetId: string; visualPlan: readonly ContextualVisualPlanItem[]; expectedStoredSha256: string; actor: string }) {
   if (!/^[a-f0-9]{64}$/.test(input.expectedStoredSha256)) throw new Error("CONTEXTUAL_MEDIA_EXPECTED_STORED_SHA_REQUIRED");
-  const { readiness, site, product, productAuthority, provider } = await resolveContextualMediaProductionAuthority(input);
+  const { readiness, site, product, productAuthority, provider, presentationSlots } = await resolveContextualMediaProductionAuthority(input);
   const identity = { organizationId: readiness.identity.organizationId, siteId: readiness.identity.siteId, campaignId: readiness.target.campaignId, targetId: readiness.target.targetId, productId: readiness.identity.productId, wordpressObjectId: readiness.identity.wordpressObjectId, pageRevisionId: readiness.authority.candidateArtifactIdentity };
   const jobId = readiness.authority.candidateArtifactIdentity?.split(":")[1] ?? "";
   const job = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
@@ -55,5 +55,5 @@ export async function executeContextualMediaProduction(input: { campaignId: stri
     },
   });
   const result = await runContextualMediaProductionAdapter({ mode: "EXECUTE", identity, visualPlan: input.visualPlan, productAuthority, providerReady: provider.configured, actor: input.actor, dependencies });
-  return { result, storedShaBefore: input.expectedStoredSha256, storedShaAfter: result.storedSha256, ownerDecision: "PENDING" as const, publicationPerformed: false as const };
+  return { result, presentationSlots, storedShaBefore: input.expectedStoredSha256, storedShaAfter: result.storedSha256, ownerDecision: "PENDING" as const, publicationPerformed: false as const };
 }

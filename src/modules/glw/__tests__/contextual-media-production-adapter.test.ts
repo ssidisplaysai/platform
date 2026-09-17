@@ -46,11 +46,12 @@ describe("generalized contextual media production adapter", () => {
   });
 
   test("reuses a matching successful asset without another provider call", async () => {
-    const existing = { receipt: { assetSha256: "a".repeat(64) }, bytes: Buffer.from("existing"), wordpressMediaId: null, wordpressUrl: null } as never;
-    const deps = dependencies({ findSuccessfulGeneration: jest.fn(() => existing) });
+    const existing = { receipt: { assetSha256: "a".repeat(64) }, bytes: Buffer.from("existing"), wordpressMediaId: 20142, wordpressUrl: "https://example.test/existing.jpg" } as never;
+    const deps = dependencies({ findSuccessfulGeneration: jest.fn(() => existing), uploadMedia: jest.fn(async () => ({ mediaId: 20142, url: "https://example.test/existing.jpg", reused: true })) });
     const result = await runContextualMediaProductionAdapter({ mode: "EXECUTE", identity, visualPlan: [plan[0]], productAuthority, providerReady: true, actor: "owner", dependencies: deps });
     expect(deps.generate).not.toHaveBeenCalled();
     expect(deps.persistGeneration).not.toHaveBeenCalled();
     expect(result.accounting.imageGenerationRequests).toBe(0);
+    expect(result.accounting.wordpressUploads).toBe(0);
   });
 });

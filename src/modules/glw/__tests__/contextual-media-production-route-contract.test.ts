@@ -12,9 +12,14 @@ describe("contextual media production route contract", () => {
     expect(service.indexOf("patchPresentation: async")).toBeLessThan(service.indexOf("certify: async"));
     expect(service).toContain("runGovernedRenderCapture");
     expect(service).toContain("writeGenesisWordPressDraft");
+    expect(service).toContain("presentationSlots");
     expect(dependencies).toContain("generateGenesisFeaturedImageWithCampaignReferences");
     expect(dependencies).toContain("uploadGenesisWordPressGeneratedMedia");
     expect(dependencies).toContain("saveSitePageMediaAssignment");
-    for (const source of [route, service, dependencies]) expect(source).not.toMatch(/California|20139|20114|668610|outdoor-digital-sphere|led-display-warehouse/);
+    const preflight = readFileSync(join(process.cwd(), "src/modules/glw/contextual-media-production-preflight.ts"), "utf8");
+    const presentation = readFileSync(join(process.cwd(), "src/modules/glw/contextual-media-presentation-patch.ts"), "utf8");
+    expect(preflight).toContain("resolveContextualPresentationSlots(contentHtml, input.visualPlan)");
+    expect(presentation).toContain("resolveContextualPresentationSlots(contentHtml, replacements)");
+    for (const source of [route, service, dependencies, preflight, presentation]) expect(source).not.toMatch(/California|20139|20114|668610|outdoor-digital-sphere|led-display-warehouse/);
   });
 });
