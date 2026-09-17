@@ -482,7 +482,7 @@ export function GlwCampaignOperatorControls({
               <p className="mt-1 text-xs text-zinc-500">Exact persisted WordPress object only · read-before-write · publish read-back verification</p>
             </div>
             <button type="button" onClick={() => void publishDraftReady()} disabled={busy || publishPreview.eligibleCount < 1} className="rounded-lg border border-amber-600 bg-amber-950/40 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:border-amber-400 disabled:cursor-not-allowed disabled:opacity-40">
-              {publishing ? "Publishing..." : `Publish ${publishPreview.eligibleCount} Draft-Ready Pages`}
+              {publishing ? "Publishing..." : `Publish ${publishPreview.eligibleCount} Draft-Ready ${publishPreview.eligibleCount === 1 ? "Page" : "Pages"}`}
             </button>
           </div>
         </div>
