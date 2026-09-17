@@ -1,14 +1,14 @@
 import { load } from "cheerio";
 import type { ContextualMediaRole, ContextualVisualSlot } from "./contextual-media-production-adapter";
 
-export type ContextualPresentationReplacement = { slot: ContextualVisualSlot; role: string; mediaRole: ContextualMediaRole; mediaId: number; url: string; assetSha256: string };
+export type ContextualPresentationReplacement = { slot: ContextualVisualSlot; role: string; mediaRole: ContextualMediaRole; mediaId: number; url: string; assetSha256: string; altText: string };
 
 export type ResolvedContextualPresentationSlot = {
   role: string;
   requestedSlot: ContextualVisualSlot;
   actualSection: string;
   selector: string;
-  placement: "IMAGE" | "BACKGROUND";
+  placement: "IMAGE" | "BACKGROUND" | "MOUNT_IMAGE";
 };
 
 const candidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualPresentationSlot, "role" | "requestedSlot">[]> = {
@@ -24,6 +24,7 @@ const candidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualP
     { actualSection: "APPLICATIONS", selector: "[data-reference-section=APPLICATIONS] .saw-application-stage img", placement: "IMAGE" },
     { actualSection: "APPLICATIONS", selector: "[data-reference-section=APPLICATIONS] img", placement: "IMAGE" },
     { actualSection: "VISUAL_APPLICATION", selector: "[data-reference-section=VISUAL_APPLICATION] img", placement: "IMAGE" },
+    { actualSection: "APPLICATIONS", selector: "[data-reference-section=APPLICATIONS]", placement: "MOUNT_IMAGE" },
   ],
   CTA_ATMOSPHERE: [
     { actualSection: "CTA", selector: "[data-reference-section=CTA]", placement: "BACKGROUND" },
@@ -33,12 +34,13 @@ const candidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualP
 export function resolveContextualPresentationSlots(contentHtml: string, requests: readonly Pick<ContextualPresentationReplacement, "role" | "slot">[]): readonly ResolvedContextualPresentationSlot[] {
   const $ = load(contentHtml, null, false); const root = $(".saw-page");
   if (root.length !== 1) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
-  const used = new Set<unknown>();
+  const usedSections = new Set<unknown>();
   return requests.map((request) => {
     for (const candidate of candidates[request.slot]) {
       const targets = root.find(candidate.selector);
-      if (targets.length !== 1 || used.has(targets[0])) continue;
-      used.add(targets[0]);
+      const section = targets.first().closest("[data-reference-section]");
+      if (targets.length !== 1 || section.length !== 1 || usedSections.has(section[0])) continue;
+      usedSections.add(section[0]);
       return { role: request.role, requestedSlot: request.slot, ...candidate };
     }
     throw new Error(`CONTEXTUAL_MEDIA_PRESENTATION_SLOT_MISSING:${request.slot}`);
@@ -56,6 +58,11 @@ export function patchContextualPresentationMedia(contentHtml: string, replacemen
     if (placement.placement === "BACKGROUND") {
         const currentStyle = target.attr("style")?.trim().replace(/;?$/, ";") ?? "";
         target.attr("style", `${currentStyle}background-image:linear-gradient(90deg,rgba(7,17,25,.94),rgba(7,17,25,.66)),url('${replacement.url}');background-size:cover;background-position:center;`).attr("data-generated-background-url", replacement.url).attr("data-media-id", String(replacement.mediaId)).attr("data-media-role", replacement.mediaRole).attr("data-contextual-role", replacement.role).attr("data-generated-asset-sha", replacement.assetSha256);
+      continue;
+    }
+    if (placement.placement === "MOUNT_IMAGE") {
+      target.prepend($("<figure>").addClass("saw-generated-application-media").attr("data-contextual-role", replacement.role).append($("<img>").attr("src", replacement.url).attr("alt", replacement.altText).attr("style", "display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;").attr("data-media-id", String(replacement.mediaId)).attr("data-media-role", replacement.mediaRole).attr("data-contextual-role", replacement.role).attr("data-generated-asset-sha", replacement.assetSha256)));
+      target.attr("data-generated-contextual-media", "true");
       continue;
     }
     target.attr("src", replacement.url).attr("data-media-id", String(replacement.mediaId)).attr("data-media-role", replacement.mediaRole).attr("data-contextual-role", replacement.role).attr("data-generated-asset-sha", replacement.assetSha256);

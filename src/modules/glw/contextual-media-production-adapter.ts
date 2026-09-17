@@ -147,7 +147,7 @@ export async function runContextualMediaProductionAdapter(input: {
   for (let index = 0; index < plan.length; index += 1) {
     const uploaded = await input.dependencies.uploadMedia({ identity: input.identity, item: plan[index], asset: assets[index] });
     if (!uploaded.reused) uploads += 1;
-    replacements.push({ slot: plan[index].slot, role: plan[index].role, mediaRole: plan[index].mediaRole, mediaId: uploaded.mediaId, url: uploaded.url, assetSha256: assets[index].receipt.assetSha256 });
+    replacements.push({ slot: plan[index].slot, role: plan[index].role, mediaRole: plan[index].mediaRole, mediaId: uploaded.mediaId, url: uploaded.url, assetSha256: assets[index].receipt.assetSha256, altText: plan[index].altText });
   }
   const patched = await input.dependencies.patchPresentation({ identity: input.identity, replacements });
   const certification = await input.dependencies.certify({ identity: input.identity, storedSha256: patched.storedSha256 });

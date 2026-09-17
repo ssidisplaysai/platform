@@ -2,7 +2,7 @@ import { load } from "cheerio";
 import { patchContextualPresentationMedia, resolveContextualPresentationSlots } from "../contextual-media-presentation-patch";
 
 const html = `<main class="saw-page"><section data-reference-section="HERO"><img src="product"><h1>Product in State</h1></section><section data-reference-section="PRODUCT_IDENTITY"><img src="context"><p>Copy stays byte-identical.</p></section><section data-reference-section="APPLICATIONS"><div class="saw-application-stage"><img src="application"></div></section><section data-reference-section="CTA"><p>CTA copy stays.</p></section></main>`;
-const replacement = (slot: "HERO_EXPERIENCE" | "POST_HERO_CONTEXTUAL" | "APPLICATION_STAGE" | "CTA_ATMOSPHERE", role: string, mediaRole: "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE", id: number) => ({ slot, role, mediaRole, mediaId: id, url: `https://example.test/${id}.jpg`, assetSha256: String(id).repeat(64).slice(0, 64) });
+const replacement = (slot: "HERO_EXPERIENCE" | "POST_HERO_CONTEXTUAL" | "APPLICATION_STAGE" | "CTA_ATMOSPHERE", role: string, mediaRole: "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE", id: number) => ({ slot, role, mediaRole, mediaId: id, url: `https://example.test/${id}.jpg`, assetSha256: String(id).repeat(64).slice(0, 64), altText: `${role} conceptual media` });
 
 describe("contextual presentation media patch", () => {
   test("patches only semantic media paths and keeps hero and secondary in distinct sections", () => {
@@ -31,7 +31,17 @@ describe("contextual presentation media patch", () => {
   });
 
   test("fails deterministically when no compatible application media target exists", () => {
-    const noApplicationMedia = html.replace('<div class="saw-application-stage"><img src="application"></div>', "<p>Applications copy only.</p>");
-    expect(() => resolveContextualPresentationSlots(noApplicationMedia, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 3)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_SLOT_MISSING:APPLICATION_STAGE");
+    const noApplicationSection = html.replace('<section data-reference-section="APPLICATIONS"><div class="saw-application-stage"><img src="application"></div></section>', "");
+    expect(() => resolveContextualPresentationSlots(noApplicationSection, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 3)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_SLOT_MISSING:APPLICATION_STAGE");
+  });
+
+  test("mounts an accessible image without changing copy when a compatible application section has no image", () => {
+    const liveShape = html.replace('<div class="saw-application-stage"><img src="application"></div>', "<div><p>Applications copy stays.</p></div>");
+    const resolved = resolveContextualPresentationSlots(liveShape, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 3)]);
+    expect(resolved[0]).toMatchObject({ actualSection: "APPLICATIONS", placement: "MOUNT_IMAGE" });
+    const $ = load(patchContextualPresentationMedia(liveShape, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 3)]), null, false);
+    expect($("[data-reference-section=APPLICATIONS] > .saw-generated-application-media img").attr("src")).toBe("https://example.test/3.jpg");
+    expect($("[data-reference-section=APPLICATIONS] > .saw-generated-application-media img").attr("alt")).toBe("EVENT conceptual media");
+    expect($("[data-reference-section=APPLICATIONS] p").text()).toBe("Applications copy stays.");
   });
 });
