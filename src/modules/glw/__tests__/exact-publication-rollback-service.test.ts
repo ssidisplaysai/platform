@@ -83,6 +83,14 @@ describe("shared exact publication and rollback service", () => {
     expect(() => assertActualPublicHostCertification({ context, evidence: { ...publicEvidence(), certification: certification({ id: context.visualCertificationId, status: "publish", targetId: context.targetId }) } })).toThrow("EXACT_PUBLIC_HOST_CERTIFICATION_FAILED");
   });
 
+  test("accepts an approved contextual-only composition without inventing product authority", () => {
+    const evidence = publicEvidence();
+    evidence.certification.captures.forEach((item) => {
+      (item.media as Array<{ semanticRole: string; rendered: boolean }>).splice(0, 1);
+    });
+    expect(() => assertActualPublicHostCertification({ context, evidence })).not.toThrow();
+  });
+
   test("scopes factual regression checks to the approved rich-page root", () => {
     const html = '<nav>Interactive LED Floors</nav><main><div class="saw-page"><h1>Outdoor Digital Sphere in Indiana</h1><p>Plan content around your audience.</p></div></main>';
     expect(extractExactPublicRichPageClaimContent(html)).toContain("Plan content around your audience.");

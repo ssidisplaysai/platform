@@ -208,7 +208,6 @@ export function assertActualPublicHostCertification(input: {
     && !capture.hostIntegration.footerOverlap
     && capture.hostIntegration.blankImageContainers === 0
     && capture.media.every((media) => media.rendered)
-    && capture.media.some((media) => media.semanticRole === "PRODUCT_AUTHORITY" && media.rendered)
     && capture.media.some((media) => (media.semanticRole === "CONTEXTUAL_IN_USE" || media.semanticRole === "APPLICATION_EXPERIENCE") && media.rendered));
   if (certification.certificationId === input.context.visualCertificationId
     || certification.overallState !== "PASS"
