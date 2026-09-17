@@ -20,7 +20,9 @@ export function verifyGovernedSnapshotPath(path: string, signature: string | nul
 
 function internalOrigin(): string {
   const value = process.env.GENESIS_RENDER_CAPTURE_INTERNAL_ORIGIN?.trim() ?? "";
-  const parsed = new URL(value);
+  if (!value) throw new Error("CAPTURE_INTERNAL_ORIGIN_NOT_CONFIGURED");
+  let parsed: URL;
+  try { parsed = new URL(value); } catch { throw new Error("CAPTURE_INTERNAL_ORIGIN_NOT_CONFIGURED"); }
   if (parsed.protocol !== "http:" || !["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) || parsed.pathname !== "/" || parsed.search || parsed.hash) throw new Error("CAPTURE_INTERNAL_ORIGIN_NOT_CONFIGURED");
   return parsed.origin;
 }

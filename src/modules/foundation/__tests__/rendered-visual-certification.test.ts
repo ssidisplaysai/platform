@@ -43,7 +43,7 @@ function capture(viewportClass: "DESKTOP" | "MOBILE", overrides: Partial<Rendere
     source: { origin: "https://example.com", pathname: "/page/" },
     renderer: { engine: "Chromium", version: "140", userAgent: null },
     hero: { authority: "NOT_IDENTIFIED", present: null, bounds: null, headingBounds: null, headingLineCount: null, primaryCtaBounds: null, mediaBounds: null, mediaBeforeHero: null, containerAligned: null },
-    hostIntegration: { headerOverlap: false, footerOverlap: false, blankImageContainers: 0, headerRegression: false, contentWidthBalanced: true, sectionRhythmPass: true, productIntroductionCompositionPass: true, applicationGridPass: true, planningGridPass: true, ctaWidthAlignedWithPage: true, ctaTextBalance: true, ctaButtonProminent: true, excessiveCtaWhitespace: false, ctaHeadingCollision: false, ctaCopyCollision: false, ctaButtonCollision: false, buttonContainerOverflow: false, unexpectedElementCollision: false, stickyHeaderUnexpectedOcclusion: false, planningGridBalanced: true, finalCtaCompositionPass: true },
+    hostIntegration: { headerOverlap: false, footerOverlap: false, blankImageContainers: 0, headerRegression: false, contentWidthBalanced: true, sectionRhythmPass: true, productIntroductionCompositionPass: true, applicationGridPass: true, planningGridPass: true, ctaWidthAlignedWithPage: true, ctaTextBalance: true, ctaButtonProminent: true, excessiveCtaWhitespace: false, ctaHeadingCollision: false, ctaCopyCollision: false, ctaButtonCollision: false, buttonContainerOverflow: false, unexpectedElementCollision: false, stickyHeaderUnexpectedOcclusion: false, planningGridPresent: true, planningGridBalanced: true, finalCtaCompositionPass: true },
     media: [],
     sections: [],
     ...overrides,
@@ -125,6 +125,25 @@ describe("rendered visual certification contract", () => {
       expect.objectContaining({ findingCode: "DESKTOP_PLANNING_GRID_BALANCE", state: "BLOCKED" }),
     ]));
     expect(renderedVisualOverallState(findings)).toBe("BLOCKED");
+  });
+
+  test("marks planning-grid balance as NOT_EVALUATED when governed planning-grid semantics are absent", () => {
+    const articleDesktop = capture("DESKTOP", { hostIntegration: { ...capture("DESKTOP").hostIntegration, planningGridPresent: false, planningGridBalanced: false, planningGridPass: false } });
+    const findings = deriveRenderedVisualFindings({ layoutClass: "CONTENT_ARTICLE", captures: [articleDesktop, capture("MOBILE", { hostIntegration: { ...capture("MOBILE").hostIntegration, planningGridPresent: false, planningGridBalanced: false, planningGridPass: false } })] });
+    expect(findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ findingCode: "DESKTOP_PLANNING_GRID_BALANCE", state: "NOT_EVALUATED" }),
+      expect.objectContaining({ findingCode: "MOBILE_PLANNING_GRID_BALANCE", state: "NOT_EVALUATED" }),
+    ]));
+  });
+
+  test("passes planning-grid balance when a governed SAW planning grid is present and balanced", () => {
+    const balancedDesktop = capture("DESKTOP", { hostIntegration: { ...capture("DESKTOP").hostIntegration, planningGridPresent: true, planningGridBalanced: true, planningGridPass: true } });
+    const balancedMobile = capture("MOBILE", { hostIntegration: { ...capture("MOBILE").hostIntegration, planningGridPresent: true, planningGridBalanced: true, planningGridPass: true } });
+    const findings = deriveRenderedVisualFindings({ layoutClass: "FULL_WIDTH_MARKETING_PAGE", captures: [balancedDesktop, balancedMobile] });
+    expect(findings).toEqual(expect.arrayContaining([
+      expect.objectContaining({ findingCode: "DESKTOP_PLANNING_GRID_BALANCE", state: "PASS" }),
+      expect.objectContaining({ findingCode: "MOBILE_PLANNING_GRID_BALANCE", state: "PASS" }),
+    ]));
   });
 
   test("captures the Commercial Stainless constrained-desktop learning without claiming a mobile-width clone", () => {
