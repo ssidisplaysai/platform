@@ -121,6 +121,39 @@ export async function reconcileGlwPageExecutionDraftAfterPublicationFailure(inpu
   return glwPageExecutionRepository.update(input.jobId, { wordpressStatus: "draft", wordpressUrl: input.wordpressUrl, qaChecks: { ...(record.qaChecks ?? {}), publicationVerification: { state: "REVOKED", reason: input.reason, rolledBackAt: new Date().toISOString() } }, updatedAt: new Date().toISOString() });
 }
 
+export async function reconcileGlwPageExecutionDraftAfterUnauthorizedPublicationIncident(input: {
+  jobId: string;
+  externalExecutionId: string;
+  wordpressObjectId: string;
+  wordpressUrl: string | null;
+  reason: string;
+  rollbackAuditId: string;
+}): Promise<GlwPageExecutionRecord> {
+  const record = await glwPageExecutionRepository.getById(input.jobId);
+  if (!record
+    || record.status !== "COMPLETE"
+    || record.wordpressObjectId !== input.wordpressObjectId
+    || record.externalExecutionId !== input.externalExecutionId
+    || (record.wordpressStatus !== "publish" && record.wordpressStatus !== "draft")) {
+    throw new Error("Execution incident rollback requires the exact completed record and execution identity.");
+  }
+
+  return glwPageExecutionRepository.update(input.jobId, {
+    wordpressStatus: "draft",
+    wordpressUrl: input.wordpressUrl,
+    qaChecks: {
+      ...(record.qaChecks ?? {}),
+      publicationVerification: {
+        state: "REVOKED_UNAUTHORIZED_PUBLICATION_INCIDENT",
+        reason: input.reason,
+        rollbackAuditId: input.rollbackAuditId,
+        rolledBackAt: new Date().toISOString(),
+      },
+    },
+    updatedAt: new Date().toISOString(),
+  });
+}
+
 export async function reconcileGlwOrphanedPageExecution(input: {
   jobId: string;
   externalExecutionId: string;
