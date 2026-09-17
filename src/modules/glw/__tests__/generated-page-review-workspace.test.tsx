@@ -144,7 +144,7 @@ describe("Genesis generated page review workspace", () => {
 
   test("shows owner decision controls only for an eligible current PASS certification", () => {
     const base = model();
-    const eligible = { ...base, reviewState: "READY_FOR_OWNER_REVIEW" as const, visualQa: { ...base.visualQa, certificationState: "CURRENT" as const, overallState: "PASS" as const }, actions: { ...base.actions, ownerDecision: { endpoint: "/api/glw/visual-certifications/cert-current/decision", organizationId: "ssi", siteId: "site-projector" } } };
+    const eligible = { ...base, reviewState: "NEEDS_ATTENTION" as const, visualQa: { ...base.visualQa, certificationState: "CURRENT" as const, overallState: "PASS" as const }, actions: { ...base.actions, ownerDecision: { endpoint: "/api/glw/visual-certifications/cert-current/decision", organizationId: "ssi", siteId: "site-projector" } } };
     const ineligible = { ...eligible, actions: { ...eligible.actions, ownerDecision: null } };
     const eligibleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={eligible} />);
     const ineligibleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={ineligible} />);
