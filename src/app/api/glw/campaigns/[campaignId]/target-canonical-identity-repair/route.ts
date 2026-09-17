@@ -63,11 +63,10 @@ async function authorize(request: NextRequest) {
   if (
     !principal.ok
     || !auth.ok
-    || !auth.roles.includes("platform_admin")
     || !hasOrganizationScope(scope)
     || !scope.siteId
   ) {
-    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_AUTHORIZED_PLATFORM_ADMIN_REQUIRED");
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_AUTHORIZED_OPERATOR_REQUIRED");
   }
 
   return {
