@@ -24,16 +24,20 @@ describe("campaign publication policy contract", () => {
     expect(route).not.toMatch(/citySlug:\s*(?:request|body|title)/);
   });
 
-  test("publishes before transitioning and never transitions after a failed WordPress result", () => {
+  test("establishes protected claim before transition and records receipt before lifecycle publish", () => {
     const route = readFileSync(
       join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/publish/route.ts"),
       "utf8",
     );
-    const publishCall = route.indexOf("await publishGenesisWordPressDraft");
-    const failedWriteGuard = route.indexOf("if (!published.ok)", publishCall);
-    const transition = route.indexOf("markGlwCampaignTargetPublished", failedWriteGuard);
-    expect(publishCall).toBeGreaterThan(-1);
-    expect(failedWriteGuard).toBeGreaterThan(publishCall);
-    expect(transition).toBeGreaterThan(failedWriteGuard);
+    const claim = route.indexOf("consumeExactPublicationRollbackGrant");
+    const transition = route.indexOf("await transitionGenesisWordPressPageStatus", claim);
+    const failedWriteGuard = route.indexOf("if (!published.ok)", transition);
+    const receipt = route.indexOf("recordExactPublicationRollbackReceipt", failedWriteGuard);
+    const lifecycle = route.indexOf("markGlwCampaignTargetPublished", receipt);
+    expect(claim).toBeGreaterThan(-1);
+    expect(transition).toBeGreaterThan(claim);
+    expect(failedWriteGuard).toBeGreaterThan(transition);
+    expect(receipt).toBeGreaterThan(failedWriteGuard);
+    expect(lifecycle).toBeGreaterThan(receipt);
   });
 });
