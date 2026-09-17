@@ -9,7 +9,7 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_2" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_3" as const;
 
 export type GlwZeroAuthorityDisposition =
   | "REMOVE"
@@ -324,6 +324,32 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_CONCEPTUAL_APPLICATION",
       safeToTransform: true,
       ruleId: "UNLABELED_INTERACTIVITY_TO_EXPLICIT_CONCEPT",
+    };
+  }
+
+  const interactionActor = /\b(?:visitors?|users?|audiences?|participants?|attendees?|customers?|people)\b/i;
+  const interactionAction = /\b(?:influence|control|drive|trigger|activate|interact(?:ing)?|provide input)\b/i;
+  const assertedInteractiveCapability = (
+    /^(?:Hosting|Offering|Providing|Enabling|Supporting|Creating)\b/i.test(text)
+      && interactionActor.test(text)
+      && interactionAction.test(text)
+  ) || (
+    interactionActor.test(text)
+      && /\b(?:can|could|may|will|would)\b/i.test(text)
+      && interactionAction.test(text)
+  ) || (
+    /^(?:Interactive\b|[A-Z][A-Za-z -]{1,80}\b)/i.test(text)
+      && /\b(?:can|could|may|will|would|allow|enable|support|provide|drive|trigger|control|influence)\b/i.test(text)
+      && interactionAction.test(text)
+  );
+  if (claimClasses.includes("INTERACTIVITY") && assertedInteractiveCapability) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "If an interactive experience is being considered, confirm with the selected supplier whether the selected system supports the proposed interaction and what hardware, software, connectivity, and integration requirements apply.",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "INTERACTIVITY_ASSERTION_TO_CONDITIONAL_VERIFICATION",
     };
   }
 

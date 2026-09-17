@@ -18,6 +18,10 @@ function finding(claimClass: GlwReferenceClaimClass, claimText: string): GlwClai
   return { claimClass, claimText, authoritySource: null, authorityStatus: "UNSUPPORTED", authorityKind: "UNSUPPORTED", predicateId: `unsupportedClaim.${claimClass}` };
 }
 
+function supportedFinding(claimClass: GlwReferenceClaimClass, claimText: string): GlwClaimAuthorityFinding {
+  return { claimClass, claimText, authoritySource: "approved-authority", authorityStatus: "SUPPORTED", authorityKind: "REFERENCE_SUPPORTED", predicateId: `supportedClaim.${claimClass}` };
+}
+
 function canonicalize(contentHtml: string, findings: readonly GlwClaimAuthorityFinding[]) {
   return canonicalizeGlwZeroAuthorityClaims({ rawArtifact: artifact(contentHtml), authoritativeFactReferenceIds: [], findings });
 }
@@ -131,6 +135,48 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.ok).toBe(true);
     expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId: "UNLABELED_INTERACTIVITY_TO_EXPLICIT_CONCEPT" }));
     expect(result.canonicalizedArtifact?.contentHtml).toContain("subject to confirmation");
+  });
+
+  test.each([
+    "Visitors can influence the displayed content through connected input systems.",
+    "Users could control visual changes through an external interface.",
+    "Interactive experiences can allow participants to influence displayed content.",
+    "Creating an experience where attendees trigger changes through connected inputs.",
+  ])("converts unsupported interactivity assertions to conditional supplier verification: %s", (text) => {
+    const result = canonicalize(`<li>${text}</li>`, [finding("INTERACTIVITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      ruleId: "INTERACTIVITY_ASSERTION_TO_CONDITIONAL_VERIFICATION",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+    }));
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("If an interactive experience is being considered");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("confirm with the selected supplier whether the selected system supports the proposed interaction");
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(text);
+    const qa = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+    expect(qa.findings.filter((entry) => entry.authorityStatus === "UNSUPPORTED")).toEqual([]);
+  });
+
+  test("does not weaken an interactivity assertion backed by authority", () => {
+    const text = "Visitors can control the experience through an approved interface.";
+    const result = canonicalize(`<p>${text}</p>`, [supportedFinding("INTERACTIVITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).toBe(`<p>${text}</p>`);
+    expect(result.receipt.transformations).toEqual([]);
+  });
+
+  test("keeps ambiguous interactivity language fail-closed", () => {
+    const text = "Interactive possibilities may be relevant to the concept.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("INTERACTIVITY", text)]);
+    expect(result.ok).toBe(false);
+    expect(result.canonicalizedArtifact).toBeNull();
+    expect(result.receipt.transformations[0]).toMatchObject({ ruleId: "AMBIGUOUS_PROTECTED_ASSERTION", disposition: "BLOCK", safeToTransform: false });
+  });
+
+  test("contains no target, product, page, or blocked-sentence hardcoding", () => {
+    const source = readFileSync(join(process.cwd(), "src/modules/glw/zero-authority-claim-canonicalization.ts"), "utf8");
+    const rule = source.slice(source.indexOf("const interactionActor"), source.indexOf("return { claimClasses, originalText: text, canonicalText: null", source.indexOf("const interactionActor")));
+    expect(rule).not.toMatch(/Colorado|Outdoor Digital Sphere|5944dc3a|683323|Hosting interactive experiences where visitors influence/);
   });
 
   test("converts unsupported maintenance-performance guidance to a supplier question", () => {
