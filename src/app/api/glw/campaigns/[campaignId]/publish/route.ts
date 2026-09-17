@@ -155,6 +155,7 @@ async function evaluateTargetGate(input: {
   const canonicalPath = normalizePath(target.canonicalPath);
   if (canonicalPath === "/") blockers.push("TARGET_CANONICAL_PATH_REQUIRED");
   const currentContentSha = contentSha(live.rawPostContent);
+  const expectedPageRevisionIdentity = `job:${execution.jobId}:${execution.updatedAt}`;
   const visualCandidates = listRenderedVisualCertifications({
     organizationId: input.organizationId,
     siteId: input.siteId,
@@ -167,7 +168,10 @@ async function evaluateTargetGate(input: {
     && certification.identity.wordpressObjectId === wordpressObjectId
     && certification.identity.wordpressStatus === "draft"
     && normalizePath(certification.identity.canonicalPath) === canonicalPath
-    && certification.identity.contentHash === currentContentSha
+    && certification.identity.pageRevisionIdentity === expectedPageRevisionIdentity
+    && typeof certification.identity.renderedContentHash === "string"
+    && certification.identity.renderedContentHash.trim().length > 0
+    && certification.identity.renderedContentHash === currentContentSha
     && certification.identity.pageRevisionIdentity.trim().length > 0);
 
   if (visualCandidates.length < 1) blockers.push("VISUAL_CERTIFICATION_PASS_ABSENT");

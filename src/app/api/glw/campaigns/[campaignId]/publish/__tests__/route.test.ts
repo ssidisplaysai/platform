@@ -155,6 +155,7 @@ const baselineExecution = {
   wordpressStatus: "draft",
   wordpressObjectId: "301",
   externalExecutionId: "exec-1",
+  updatedAt: "2030-01-01T00:00:00.000Z",
 };
 
 const baselineCertification = {
@@ -166,14 +167,14 @@ const baselineCertification = {
     campaignId: "campaign",
     targetId: "target-1",
     pageId: "target-1",
-    pageRevisionIdentity: "rev-1",
+    pageRevisionIdentity: "job:job-1:2030-01-01T00:00:00.000Z",
     jobId: "job-1",
     externalExecutionId: "exec-1",
     wordpressObjectId: "301",
     wordpressStatus: "draft",
     canonicalPath: "/state/co/",
     contentHash: baselineContentHash,
-    renderedContentHash: null,
+    renderedContentHash: baselineContentHash,
   },
 };
 
@@ -205,7 +206,7 @@ describe("campaign publish route gate integrity", () => {
     mockListTargets.mockReturnValue([baselineTarget]);
     mockGetExecutionById.mockResolvedValue(baselineExecution);
     mockListCertifications.mockReturnValue([baselineCertification]);
-    mockListOwnerDecisions.mockReturnValue([{ decision: "APPROVED", pageRevisionIdentity: "rev-1", contentHash: baselineContentHash }]);
+    mockListOwnerDecisions.mockReturnValue([{ decision: "APPROVED", pageRevisionIdentity: "job:job-1:2030-01-01T00:00:00.000Z", contentHash: baselineContentHash }]);
     mockEvaluateProductMediaReadiness.mockReturnValue({ ready: true, blockers: [] });
     mockGetJson.mockResolvedValue({
       ok: true,
@@ -271,6 +272,89 @@ describe("campaign publish route gate integrity", () => {
         identity: {
           ...baselineCertification.identity,
           externalExecutionId: "exec-stale",
+        },
+      },
+    ]);
+
+    const response = await POST(request({ confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS" }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(body.failed).toBe(1);
+    expect(body.results[0].blockers).toContain("VISUAL_CERTIFICATION_PASS_ABSENT");
+  });
+
+  test("accepts a visual PASS when renderedContentHash matches current WordPress hash", async () => {
+    const response = await POST(request({ confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS" }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(body.succeeded).toBe(1);
+    expect(body.failed).toBe(0);
+    expect(mockTransitionStatus).toHaveBeenCalledTimes(1);
+  });
+
+  test("accepts when source-domain contentHash differs but renderedContentHash matches WordPress", async () => {
+    mockListOwnerDecisions.mockReturnValue([{ decision: "APPROVED", pageRevisionIdentity: "job:job-1:2030-01-01T00:00:00.000Z", contentHash: "b".repeat(64) }]);
+    mockListCertifications.mockReturnValue([
+      {
+        ...baselineCertification,
+        identity: {
+          ...baselineCertification.identity,
+          contentHash: "b".repeat(64),
+          renderedContentHash: baselineContentHash,
+        },
+      },
+    ]);
+
+    const response = await POST(request({ confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS" }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(body.succeeded).toBe(1);
+    expect(body.failed).toBe(0);
+  });
+
+  test("blocks when renderedContentHash differs from current WordPress hash", async () => {
+    mockListCertifications.mockReturnValue([
+      {
+        ...baselineCertification,
+        identity: {
+          ...baselineCertification.identity,
+          renderedContentHash: "c".repeat(64),
+        },
+      },
+    ]);
+
+    const response = await POST(request({ confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS" }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(body.failed).toBe(1);
+    expect(body.results[0].blockers).toContain("VISUAL_CERTIFICATION_PASS_ABSENT");
+  });
+
+  test("blocks when renderedContentHash is missing", async () => {
+    mockListCertifications.mockReturnValue([
+      {
+        ...baselineCertification,
+        identity: {
+          ...baselineCertification.identity,
+          renderedContentHash: null,
+        },
+      },
+    ]);
+
+    const response = await POST(request({ confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS" }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(body.failed).toBe(1);
+    expect(body.results[0].blockers).toContain("VISUAL_CERTIFICATION_PASS_ABSENT");
+  });
+
+  test("blocks stale pageRevisionIdentity evidence", async () => {
+    mockListCertifications.mockReturnValue([
+      {
+        ...baselineCertification,
+        identity: {
+          ...baselineCertification.identity,
+          pageRevisionIdentity: "job:job-1:1999-01-01T00:00:00.000Z",
         },
       },
     ]);
