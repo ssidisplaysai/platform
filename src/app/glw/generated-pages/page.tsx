@@ -4,7 +4,7 @@ import { listSites } from "@/modules/foundation/site-repository";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { listAllGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
-import { listRenderedVisualCertifications } from "@/modules/foundation/rendered-visual-certification-repository";
+import { listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
 import { projectAuthoritativeGeneratedPage } from "@/modules/glw/authoritative-generated-page-projection";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,9 @@ export default async function GeneratedPagesPage({ searchParams }: { searchParam
   const jobs = new Map((await glwPageExecutionRepository.list()).map((job) => [job.jobId, job]));
   const scoped = listAllGlwCampaignTargets().filter((target) => (!organizationId || target.organizationId === organizationId) && (!siteId || target.siteId === siteId)).map((target) => {
     const job = target.jobId ? jobs.get(target.jobId) : null;
-    return job ? projectAuthoritativeGeneratedPage({ target, job, certifications: listRenderedVisualCertifications({ organizationId: target.organizationId, siteId: target.siteId }) }).target : target;
+    const certifications = listRenderedVisualCertifications({ organizationId: target.organizationId, siteId: target.siteId });
+    const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
+    return job ? projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions }).target : target;
   });
   const targets = scoped.filter((target) => view === "all" ? ["reference_complete", "content_ready", "draft_ready", "published", "failed"].includes(target.status) : ["content_ready", "draft_ready", "failed"].includes(target.status));
   const reviewCount = scoped.filter((target) => target.status === "draft_ready").length;

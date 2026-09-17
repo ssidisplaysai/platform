@@ -10,7 +10,11 @@ import {
   reconcileGlwCampaignTargetContentReady,
   releaseExpiredGlwCampaignTargetLeases,
   requeueGlwCampaignTargetAfterPreExecutionFailure,
+  reconcileGlwContentReadyTargetDraft,
 } from "@/modules/glw/campaign-target-repository";
+import { listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
+import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { projectAuthoritativeGeneratedPage } from "@/modules/glw/authoritative-generated-page-projection";
 import {
   resolveGlwCampaignJobReconciliationDecision,
 } from "@/modules/glw/campaign-target-reconciliation";
@@ -98,6 +102,7 @@ export async function POST(
       (target) =>
         (
           target.status === "running"
+          || target.status === "content_ready"
           || target.status === "failed"
         )
         && Boolean(target.jobId),
@@ -111,6 +116,21 @@ export async function POST(
     const jobId = target.jobId!;
 
     try {
+      if (target.status === "content_ready") {
+        const job = await glwPageExecutionRepository.getById(jobId);
+        if (!job) throw new Error("CONTENT_READY_JOB_NOT_FOUND");
+        const certifications = listRenderedVisualCertifications({ organizationId: target.organizationId, siteId: target.siteId });
+        const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
+        const projection = projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions });
+        if (projection.target.status !== "draft_ready" || !projection.target.wordpressObjectId) {
+          results.push({ ...targetIdentity(target), jobId, action: "wait", generationStatus: job.status, error: "CURRENT_APPROVED_DRAFT_CERTIFICATION_REQUIRED" });
+          continue;
+        }
+        const updated = reconcileGlwContentReadyTargetDraft({ campaignId, stateCode: target.stateCode, citySlug: target.citySlug, targetId: target.targetId, jobId, wordpressObjectId: projection.target.wordpressObjectId });
+        results.push({ ...targetIdentity(target), jobId, action: "draft_ready", wordpressObjectId: updated.wordpressObjectId });
+        continue;
+      }
+
       const refreshUrl = new URL(
         "/api/glw/page-generation",
         origin,

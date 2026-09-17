@@ -1,4 +1,4 @@
-import type { RenderedVisualCertification } from "@/modules/foundation/rendered-visual-certification";
+import { renderedVisualPublicationEligible, type RenderedVisualCertification, type RenderedVisualOwnerDecision } from "@/modules/foundation/rendered-visual-certification";
 import type { GlwCampaignTarget } from "./campaign-target-repository";
 import type { GlwPageExecutionRecord } from "./page-execution";
 
@@ -19,6 +19,7 @@ export function projectAuthoritativeGeneratedPage(input: {
   target: GlwCampaignTarget;
   job: GlwPageExecutionRecord;
   certifications: readonly RenderedVisualCertification[];
+  ownerDecisions: readonly RenderedVisualOwnerDecision[];
 }): AuthoritativeGeneratedPageProjection {
   const certification = input.certifications.filter((candidate) =>
     candidate.identity.organizationId === input.target.organizationId
@@ -28,7 +29,9 @@ export function projectAuthoritativeGeneratedPage(input: {
     && candidate.identity.wordpressObjectId
     && candidate.overallState === "PASS"
   ).sort((left, right) => left.capturedAt.localeCompare(right.capturedAt)).at(-1) ?? null;
-  const target = certification && input.target.status !== "published"
+  const ownerDecision = certification ? input.ownerDecisions.filter((candidate) => candidate.certificationId === certification.certificationId).at(-1) ?? null : null;
+  const draftReady = certification?.identity.wordpressStatus === "draft" && renderedVisualPublicationEligible({ certification, decision: ownerDecision, currentIdentity: certification.identity });
+  const target = certification && input.target.status !== "published" && (certification.identity.wordpressStatus === "publish" || draftReady)
     ? { ...input.target, status: certification.identity.wordpressStatus === "publish" ? "published" as const : "draft_ready" as const, wordpressObjectId: certification.identity.wordpressObjectId }
     : input.target;
   const contextualMedia = certification?.captures[0]?.media.filter((media) => media.mediaId && media.semanticRole !== "PRODUCT_AUTHORITY").map((media) => ({ role: media.contextId ?? media.semanticRole, semanticRole: media.semanticRole, mediaId: media.mediaId!, rendered: certification.captures.every((capture) => capture.media.some((candidate) => candidate.mediaId === media.mediaId && candidate.rendered)) })) ?? [];

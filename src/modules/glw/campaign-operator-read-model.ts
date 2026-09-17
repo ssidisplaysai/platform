@@ -14,6 +14,8 @@ import { resolveGlwCampaignActivationReleaseCapability } from "./campaign-releas
 import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
 import { getGlwLocalReferenceDraft } from "./campaign-local-reference-repository";
 import { getLatestGlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
+import { listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
+import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-page-projection";
 
 export type OperatorStageState = "COMPLETE" | "CURRENT" | "PARTIAL" | "BLOCKED" | "UPCOMING" | "NOT_REQUIRED";
 export type OperatorImageState = "APPROVED" | "READY" | "GENERATING" | "MISSING" | "DEGRADED" | "NOT_WIRED";
@@ -199,6 +201,13 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
   const allJobs = await glwPageExecutionRepository.list();
   const targetJobIds = new Set(targets.map((target) => target.jobId).filter((jobId): jobId is string => Boolean(jobId)));
   const jobs = allJobs.filter((job) => targetJobIds.has(job.jobId));
+  const jobMap = new Map(jobs.map((job) => [job.jobId, job]));
+  const certifications = listRenderedVisualCertifications({ organizationId: campaign.organizationId, siteId: campaign.siteId });
+  const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
+  const projectedTargets = targets.map((target) => {
+    const job = target.jobId ? jobMap.get(target.jobId) : null;
+    return job ? projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions }).target : target;
+  });
   const latestGrant = listGlwCampaignActivationGrants(campaignId).at(-1) ?? null;
   const runningReleaseSha = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
   const releaseCapability = resolveGlwCampaignActivationReleaseCapability({ organizationId: campaign.organizationId, siteId: campaign.siteId, runningReleaseSha });
@@ -206,5 +215,5 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
   const referenceTarget = targets.find((target) => target.status === "reference_complete" && target.citySlug && target.cityName) ?? null;
   const referenceDraft = referenceTarget?.citySlug ? getGlwLocalReferenceDraft(campaignId, referenceTarget.stateCode, referenceTarget.citySlug) : null;
   const referenceImage = referenceDraft ? getLatestGlwReferenceImageCandidate({ organizationId: campaign.organizationId, siteId: campaign.siteId, campaignId, referenceDraftId: referenceDraft.referenceDraftId }) : null;
-  return deriveGlwCampaignOperatorReadModel({ campaign, targets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage });
+  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage });
 }

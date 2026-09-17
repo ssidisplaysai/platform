@@ -758,7 +758,7 @@ export function markGlwCampaignTargetDraftReady(input: {
 export function reconcileGlwContentReadyTargetDraft(input: {
   campaignId: string;
   stateCode: string;
-  citySlug: string;
+  citySlug?: string | null;
   targetId: string;
   jobId: string;
   wordpressObjectId: string;
