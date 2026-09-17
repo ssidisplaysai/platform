@@ -50,6 +50,7 @@ const POLICY = {
     "Remove nonessential climate, cost-planning, market, and product-assumption statements when deletion preserves surrounding commercial meaning.",
     "Replace structurally identifiable unsupported product comparison tables with an authority-neutral buyer evaluation framework.",
     "Convert unsupported environmental, specification, training, and installation-responsibility assertions to authority-neutral buyer questions.",
+    "Convert labeled project-schedule planning directives to authority-neutral supplier-verification questions.",
     "Preserve spherical geometry while removing unsupported engagement, impact, accessibility, or performance meaning.",
     "Apply cross-element transformations only when the corresponding DOM text-node span is unique.",
     "Reduce repeated supplier-question constructions with an authority-neutral project documentation question.",
@@ -104,6 +105,19 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "GENERIC_CAPABILITY_TO_SUPPLIER_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("PRODUCT_CAPABILITY")
+    && /^(?:Timeline|Schedule) (?:Mapping|Planning):\s*(?:Create|Develop|Build|Prepare) (?:a|the) project schedule\b/i.test(text)
+    && /\b(?:deadlines?|milestones?)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "What project schedule and milestones should the project team confirm with the selected supplier for approvals, delivery, setup, content preparation, and any required rehearsals?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "PROJECT_SCHEDULE_GUIDANCE_TO_SUPPLIER_QUESTION",
     };
   }
 

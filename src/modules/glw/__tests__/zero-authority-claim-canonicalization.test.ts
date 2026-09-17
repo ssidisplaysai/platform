@@ -142,6 +142,61 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
   });
 
   test.each([
+    "Timeline Mapping: Create a project schedule outlining deadlines for approvals, delivery, setup, content programming, and possible rehearsals.",
+    "Schedule Planning: Develop a project schedule with milestones for approvals, delivery, setup, content programming, and rehearsals.",
+  ])("reduces labeled project-schedule guidance to supplier verification: %s", (text) => {
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_CAPABILITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      ruleId: "PROJECT_SCHEDULE_GUIDANCE_TO_SUPPLIER_QUESTION",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+    }));
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What project schedule and milestones should the project team confirm with the selected supplier for approvals, delivery, setup, content preparation, and any required rehearsals?");
+    const qa = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+    expect(qa.ok).toBe(true);
+  });
+
+  test("matches project-schedule guidance independently of state context", () => {
+    const text = "Timeline Mapping: Prepare a project schedule outlining milestones for approvals, delivery, setup, content programming, and rehearsals.";
+    const html = `<h1>Outdoor Digital Sphere in Wyoming</h1><p>${text}</p>`;
+    const result = canonicalize(html, [finding("PRODUCT_CAPABILITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Outdoor Digital Sphere in Wyoming");
+    expect(result.receipt.transformations[0]?.ruleId).toBe("PROJECT_SCHEDULE_GUIDANCE_TO_SUPPLIER_QUESTION");
+  });
+
+  test.each([
+    "Outdoor Digital Sphere content programming keeps event schedules synchronized.",
+    "System content programming keeps event schedules synchronized.",
+    "Create content programming for the event schedule.",
+  ])("keeps non-planning capability assertions fail-closed: %s", (text) => {
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_CAPABILITY", text)]);
+    expect(result.ok).toBe(false);
+    expect(result.canonicalizedArtifact).toBeNull();
+    expect(result.receipt.transformations[0]).toMatchObject({ ruleId: "AMBIGUOUS_PROTECTED_ASSERTION", disposition: "BLOCK", safeToTransform: false });
+  });
+
+  test("preserves existing climate and generic supplier-verification transformations", () => {
+    const climate = "California climate conditions affect operation.";
+    const capability = "The system supports interactive content.";
+    const result = canonicalize(`<p>${climate}</p><p>${capability}</p>`, [finding("CLIMATE", climate), finding("PRODUCT_CAPABILITY", capability)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toEqual(expect.arrayContaining([
+      expect.objectContaining({ originalText: climate, ruleId: "CLIMATE_ASSERTION_TO_BUYER_QUESTION" }),
+      expect.objectContaining({ originalText: capability, ruleId: "GENERIC_CAPABILITY_TO_SUPPLIER_QUESTION" }),
+    ]));
+  });
+
+  test.each(["Alaska", "Alabama", "Arkansas"])("leaves previously passing %s planning text unchanged", (state) => {
+    const html = `<h1>Outdoor Digital Sphere in ${state}</h1><p>Plan the proposed project around the intended audience, location, content, and schedule.</p>`;
+    const result = canonicalize(html, []);
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).toBe(html);
+    expect(result.receipt.transformations).toEqual([]);
+  });
+
+  test.each([
     ["Working with varied environments requires review:", "Climate and Seasonal Exposure:", "What climate conditions may affect placement?", "Keep this neighboring guidance."],
     ["Conceptual planning should address:", "Weather-Resistant Materials:", "Consider materials that can withstand rain and wind.", "Preserve this separate item."],
   ])("applies a safe transformation across an introductory paragraph and labeled list item", (intro, label, claim, neighbor) => {
