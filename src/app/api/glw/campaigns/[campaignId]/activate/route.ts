@@ -5,6 +5,7 @@ import {
   hasOrganizationScope,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
+import { getProductById } from "@/modules/foundation/product-repository";
 import {
   activateGlwCampaign,
   listGlwCampaigns,
@@ -324,6 +325,7 @@ export async function POST(
         organizationId: campaign.organizationId,
         siteId: campaign.siteId,
         productId: campaign.productId,
+        canonicalProductSlug: getProductById(campaign.productId)?.slug ?? null,
         cityTargets: campaign.cityTargets ?? [],
         referenceTarget: {
           stateCode: referenceStateCode,

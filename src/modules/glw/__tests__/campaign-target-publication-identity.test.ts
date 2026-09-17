@@ -3,6 +3,7 @@ import {
   initializeGlwCampaignTargets,
   initializeGlwCityCampaignTargets,
   leaseGlwCampaignTargets,
+  listGlwCampaignTargets,
   markGlwCampaignTargetDraftReady,
   markGlwCampaignTargetPublished,
   previewGlwCampaignTargets,
@@ -57,6 +58,33 @@ describe("campaign publication target identity", () => {
     expect(() => markGlwCampaignTargetPublished({ campaignId, stateCode: "CA", citySlug: "fresno", wordpressObjectId: "101" })).toThrow("exact draft-ready");
     expect(() => reconcileGlwCampaignTargetDraftAfterPublicationFailure({ campaignId, stateCode: "CA", citySlug: "los-angeles", jobId: "reference-job", wordpressObjectId: "100" })).toThrow("exact published target");
     expect(reconcileGlwCampaignTargetDraftAfterPublicationFailure({ campaignId, stateCode: "CA", citySlug: "fresno", jobId: "job-fresno", wordpressObjectId: "101" }).status).toBe("draft_ready");
+  });
+
+  test("persists canonical identity metadata for city targets when product slug is known", () => {
+    const campaignId = `campaign-city-canonical-${process.pid}-${Date.now()}`;
+    initializeGlwCityCampaignTargets({
+      campaignId,
+      organizationId: "org",
+      siteId: "site",
+      productId: "product",
+      canonicalProductSlug: "outdoor-digital-sphere",
+      cityTargets: [
+        { stateCode: "CT", citySlug: "Hartford", cityName: "Hartford" },
+        { stateCode: "CA", citySlug: "Los Angeles", cityName: "Los Angeles" },
+      ],
+      referenceTarget: { stateCode: "CT", citySlug: "hartford" },
+      referenceJobId: "reference-job",
+      referenceWordpressObjectId: "20158",
+    });
+
+    const targets = listGlwCampaignTargets(campaignId);
+    const hartford = targets.find((target) => target.stateCode === "CT" && target.citySlug === "hartford");
+    const losAngeles = targets.find((target) => target.stateCode === "CA" && target.citySlug === "los-angeles");
+
+    expect(hartford?.canonicalPath).toBe("outdoor-digital-sphere/connecticut/hartford");
+    expect(hartford?.applicationPath).toBe("outdoor-digital-sphere/connecticut/hartford");
+    expect(hartford?.canonicalParentId).toBeNull();
+    expect(losAngeles?.canonicalPath).toBe("outdoor-digital-sphere/california/los-angeles");
   });
 
   test("keeps state targets valid without city identity and enforces WordPress ownership", () => {

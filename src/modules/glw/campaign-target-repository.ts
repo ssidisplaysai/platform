@@ -5,6 +5,11 @@ import {
   loadPersistedState,
   savePersistedState,
 } from "@/modules/foundation/foundation-persistence";
+import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
+import {
+  recordGlwCampaignTargetCanonicalIdentityRepair,
+  type GlwCampaignTargetCanonicalIdentityRepairReceipt,
+} from "@/modules/glw/campaign-target-canonical-identity-repair-audit";
 import type { GlwCampaignCityTarget } from "@/modules/glw/campaign-types";
 import type { GlwCampaignPublicationPolicy } from "@/modules/glw/campaign-types";
 
@@ -77,6 +82,30 @@ function key(
 
 function keyForTarget(target: Pick<GlwCampaignTarget, "campaignId" | "stateCode" | "citySlug">): string {
   return key(target.campaignId, target.stateCode, target.citySlug);
+}
+
+function normalizeCanonicalPath(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^\/+|\/+$/g, "");
+}
+
+function resolveCityTargetCanonicalPath(input: {
+  canonicalProductSlug?: string | null;
+  stateCode: string;
+  citySlug: string;
+}): string | null {
+  const productSlug = normalizeCanonicalPath(input.canonicalProductSlug ?? "");
+  const state = GLW_CAMPAIGN_US_STATES.find(
+    (candidate) => candidate.code === input.stateCode,
+  );
+
+  if (!productSlug || !state?.slug) {
+    return null;
+  }
+
+  return normalizeCanonicalPath(`${productSlug}/${state.slug}/${input.citySlug}`);
 }
 
 export function createGlwCampaignStateTargetId(campaignId: string, stateCode: string): string {
@@ -231,6 +260,7 @@ export function initializeGlwCityCampaignTargets(input: {
   };
   referenceJobId: string | null;
   referenceWordpressObjectId: string | null;
+  canonicalProductSlug?: string | null;
 }): readonly GlwCampaignTarget[] {
   loadState();
 
@@ -285,6 +315,11 @@ export function initializeGlwCityCampaignTargets(input: {
     const isReference =
       stateCode === referenceStateCode
       && citySlug === referenceCitySlug;
+    const canonicalPath = resolveCityTargetCanonicalPath({
+      canonicalProductSlug: input.canonicalProductSlug,
+      stateCode,
+      citySlug,
+    });
 
     const target: GlwCampaignTarget = {
       targetId: `target-${input.campaignId}-${stateCode.toLowerCase()}-${citySlug}`,
@@ -295,6 +330,9 @@ export function initializeGlwCityCampaignTargets(input: {
       stateCode,
       citySlug,
       cityName,
+      canonicalPath,
+      applicationPath: canonicalPath,
+      canonicalParentId: null,
       status: isReference ? "reference_complete" : "queued",
       jobId: isReference ? input.referenceJobId : null,
       wordpressObjectId: isReference
@@ -988,4 +1026,102 @@ export function markGlwCampaignTargetFailed(input: {
   persistState();
 
   return deepClone(updated);
+}
+
+export function repairGlwCampaignTargetCanonicalIdentity(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug?: string | null;
+  targetId: string;
+  jobId: string;
+  externalExecutionId: string;
+  wordpressObjectId: string;
+  canonicalPath: string;
+  applicationPath: string;
+  canonicalParentId: string;
+  wordpressParentSlug: string;
+  wordpressChildSlug: string;
+  repairedBy: string;
+}): { target: GlwCampaignTarget; receipt: GlwCampaignTargetCanonicalIdentityRepairReceipt } {
+  loadState();
+
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+  if (!current || current.targetId !== input.targetId) {
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_TARGET_MISMATCH");
+  }
+  if (current.jobId !== input.jobId) {
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_JOB_MISMATCH");
+  }
+  if (current.wordpressObjectId !== input.wordpressObjectId) {
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_WORDPRESS_OBJECT_MISMATCH");
+  }
+
+  const proposedCanonicalPath = normalizeCanonicalPath(input.canonicalPath);
+  const proposedApplicationPath = normalizeCanonicalPath(input.applicationPath);
+  const proposedCanonicalParentId = input.canonicalParentId.trim();
+
+  if (!proposedCanonicalPath || !proposedApplicationPath || !proposedCanonicalParentId) {
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_PROPOSED_IDENTITY_REQUIRED");
+  }
+
+  const existingCanonicalPath = normalizeCanonicalPath(current.canonicalPath ?? "");
+  if (existingCanonicalPath && existingCanonicalPath !== proposedCanonicalPath) {
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_CANONICAL_PATH_CONFLICT");
+  }
+
+  const existingApplicationPath = normalizeCanonicalPath(current.applicationPath ?? "");
+  if (existingApplicationPath && existingApplicationPath !== proposedApplicationPath) {
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_APPLICATION_PATH_CONFLICT");
+  }
+
+  const existingCanonicalParentId = (current.canonicalParentId ?? "").trim();
+  if (existingCanonicalParentId && existingCanonicalParentId !== proposedCanonicalParentId) {
+    throw new Error("TARGET_CANONICAL_IDENTITY_REPAIR_CANONICAL_PARENT_CONFLICT");
+  }
+
+  const mutated: GlwCampaignTarget = {
+    ...current,
+    canonicalPath: current.canonicalPath ?? proposedCanonicalPath,
+    applicationPath: current.applicationPath ?? proposedApplicationPath,
+    canonicalParentId: current.canonicalParentId ?? proposedCanonicalParentId,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const mutationApplied =
+    (current.canonicalPath ?? null) !== (mutated.canonicalPath ?? null)
+    || (current.applicationPath ?? null) !== (mutated.applicationPath ?? null)
+    || (current.canonicalParentId ?? null) !== (mutated.canonicalParentId ?? null);
+
+  targetStore.set(targetKey, mutated);
+  persistState();
+
+  const receipt = recordGlwCampaignTargetCanonicalIdentityRepair({
+    campaignId: current.campaignId,
+    targetId: current.targetId,
+    stateCode: current.stateCode,
+    citySlug: current.citySlug ?? null,
+    jobId: input.jobId,
+    externalExecutionId: input.externalExecutionId,
+    wordpressObjectId: input.wordpressObjectId,
+    canonicalPathBefore: current.canonicalPath ?? null,
+    canonicalPathAfter: mutated.canonicalPath ?? null,
+    applicationPathBefore: current.applicationPath ?? null,
+    applicationPathAfter: mutated.applicationPath ?? null,
+    canonicalParentIdBefore: current.canonicalParentId ?? null,
+    canonicalParentIdAfter: mutated.canonicalParentId ?? null,
+    proof: {
+      jobSlug: proposedApplicationPath,
+      wordpressParentId: proposedCanonicalParentId,
+      wordpressParentSlug: input.wordpressParentSlug,
+      wordpressChildSlug: input.wordpressChildSlug,
+    },
+    mutationApplied,
+    repairedBy: input.repairedBy.trim(),
+  });
+
+  return {
+    target: deepClone(mutated),
+    receipt: deepClone(receipt),
+  };
 }
