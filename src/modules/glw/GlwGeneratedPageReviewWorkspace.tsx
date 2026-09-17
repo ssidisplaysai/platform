@@ -7,6 +7,7 @@ import type {
 import { GlwRenderedDraftPreview } from "./GlwRenderedDraftPreview";
 import { GlwRichCompositionPreview } from "./GlwRichCompositionPreview";
 import { GlwVisualReviewAction } from "./GlwVisualReviewAction";
+import { GlwOwnerReviewDecisionAction } from "./GlwOwnerReviewDecisionAction";
 
 const stateTone: Record<
   ReviewSignal | GeneratedPageReviewModel["reviewState"],
@@ -938,6 +939,14 @@ export function GlwGeneratedPageReviewWorkspace({
             state={model.visualQa.certificationState}
           />
         </div>
+        {model.actions.ownerDecision ? (
+          <div className="mt-4 border-t border-zinc-800 pt-4">
+            <GlwOwnerReviewDecisionAction
+              {...model.actions.ownerDecision}
+              currentDecision={model.visualQa.decision?.decision ?? null}
+            />
+          </div>
+        ) : null}
         {model.visualQa.stale ? (
           <div className="mt-4 border border-amber-700 bg-amber-950/25 p-4">
             <p className="font-semibold text-amber-200">VISUAL REVIEW STALE</p>

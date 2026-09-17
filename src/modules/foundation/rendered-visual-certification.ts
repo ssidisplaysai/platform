@@ -236,3 +236,7 @@ export function renderedVisualDecisionCurrency(input: { certification: RenderedV
   const bound = input.decision.certificationId === input.certification.certificationId && input.decision.captureSetId === input.certification.captureSetId && input.decision.pageRevisionIdentity === input.currentIdentity.pageRevisionIdentity && input.decision.contentHash === input.currentIdentity.contentHash && input.decision.renderedContentHash === input.currentIdentity.renderedContentHash && sameRenderedVisualPageIdentity(input.certification.identity, input.currentIdentity);
   return bound ? "CURRENT" : "STALE";
 }
+
+export function renderedVisualPublicationEligible(input: { certification: RenderedVisualCertification; decision: RenderedVisualOwnerDecision | null; currentIdentity: RenderedVisualPageIdentity }): boolean {
+  return input.decision?.decision === "APPROVED" && renderedVisualDecisionCurrency(input) === "CURRENT";
+}

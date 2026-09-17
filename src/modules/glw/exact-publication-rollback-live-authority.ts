@@ -2,7 +2,8 @@ import "server-only";
 
 import { load } from "cheerio";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
-import { getRenderedVisualCertificationById } from "@/modules/foundation/rendered-visual-certification-repository";
+import { renderedVisualPublicationEligible } from "@/modules/foundation/rendered-visual-certification";
+import { getRenderedVisualCertificationById, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { listExactPublicationRollbackReceipts, EXACT_WORDPRESS_PUBLICATION, EXACT_WORDPRESS_ROLLBACK, type ExactWordPressOperation } from "./exact-publication-rollback-authority";
@@ -45,6 +46,10 @@ export async function resolveExactPublicationRollbackLiveAuthority(input: {
   const visualCertificationId = input.operation === EXACT_WORDPRESS_PUBLICATION ? input.visualCertificationId?.trim() ?? "" : sourceReceipt!.visualCertificationId;
   const draftCertification = getRenderedVisualCertificationById({ organizationId: target.identity.organizationId, siteId: target.identity.siteId, certificationId: visualCertificationId });
   if (!draftCertification) throw new Error("EXACT_OPERATION_VISUAL_CERTIFICATION_NOT_FOUND");
+  if (input.operation === EXACT_WORDPRESS_PUBLICATION) {
+    const ownerDecision = listRenderedVisualOwnerDecisions(visualCertificationId).at(-1) ?? null;
+    if (!renderedVisualPublicationEligible({ certification: draftCertification, decision: ownerDecision, currentIdentity: draftCertification.identity })) throw new Error("EXACT_PUBLICATION_CURRENT_OWNER_APPROVAL_REQUIRED");
+  }
 
   const context = {
     operation: input.operation,

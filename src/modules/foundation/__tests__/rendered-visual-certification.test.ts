@@ -9,6 +9,7 @@ import {
   deriveRenderedVisualFindings,
   hashRenderedVisualContent,
   renderedVisualOverallState,
+  renderedVisualPublicationEligible,
   renderedVisualUtilization,
   validateRenderedVisualCertification,
   type RenderedVisualCaptureEvidence,
@@ -163,6 +164,15 @@ describe("rendered visual certification contract", () => {
     expect(saved).not.toHaveProperty("launchCertification");
     expect(saved).not.toHaveProperty("publicationPolicy");
     expect(saved).not.toHaveProperty("campaignAuthorization");
+  });
+
+  test("makes only a current exact approval eligible for the protected publication flow", () => {
+    const saved = saveRenderedVisualCertification(certification());
+    const approved = decideRenderedVisualCertification({ certificationId: saved.certificationId, decision: "APPROVED", actor: "owner", currentIdentity: saved.identity });
+    expect(renderedVisualPublicationEligible({ certification: saved, decision: approved, currentIdentity: saved.identity })).toBe(true);
+    const needsFix = decideRenderedVisualCertification({ certificationId: saved.certificationId, decision: "NEEDS_FIX", actor: "owner", currentIdentity: saved.identity });
+    expect(renderedVisualPublicationEligible({ certification: saved, decision: needsFix, currentIdentity: saved.identity })).toBe(false);
+    expect(renderedVisualPublicationEligible({ certification: saved, decision: approved, currentIdentity: { ...saved.identity, pageRevisionIdentity: "page-r2" } })).toBe(false);
   });
 
   test("rejects credential-bearing owner notes and credential-bearing source URLs", () => {

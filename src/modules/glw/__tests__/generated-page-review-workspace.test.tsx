@@ -141,4 +141,17 @@ describe("Genesis generated page review workspace", () => {
     expect(staleHtml).toContain("Recapture and re-run visual review");
     expect(stale.overallState).toBe("NOT_EVALUATED");
   });
+
+  test("shows owner decision controls only for an eligible current PASS certification", () => {
+    const base = model();
+    const eligible = { ...base, reviewState: "READY_FOR_OWNER_REVIEW" as const, visualQa: { ...base.visualQa, certificationState: "CURRENT" as const, overallState: "PASS" as const }, actions: { ...base.actions, ownerDecision: { endpoint: "/api/glw/visual-certifications/cert-current/decision", organizationId: "ssi", siteId: "site-projector" } } };
+    const ineligible = { ...eligible, actions: { ...eligible.actions, ownerDecision: null } };
+    const eligibleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={eligible} />);
+    const ineligibleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={ineligible} />);
+    expect(eligibleHtml).toContain("Approve Page");
+    expect(eligibleHtml).toContain("Needs Fix");
+    expect(eligible.actions.ownerDecision?.endpoint).toBe("/api/glw/visual-certifications/cert-current/decision");
+    expect(ineligibleHtml).not.toContain("Approve Page");
+    expect(ineligibleHtml).not.toContain("Needs Fix");
+  });
 });
