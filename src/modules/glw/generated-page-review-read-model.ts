@@ -265,7 +265,7 @@ export async function buildGeneratedPageReviewModel(input: { jobId: string; orga
   if (!job || (input.organizationId && job.organizationId !== input.organizationId) || (input.siteId && job.siteId !== input.siteId)) return null;
   const storedTarget = listAllGlwCampaignTargets().find((entry) => entry.jobId === job.jobId && entry.organizationId === job.organizationId && entry.siteId === job.siteId) ?? null;
   if (!storedTarget) return null;
-  const projection = projectAuthoritativeGeneratedPage({ target: storedTarget, job, certifications: listRenderedVisualCertifications({ organizationId: job.organizationId, siteId: job.siteId, pageId: storedTarget.targetId }) });
+  const projection = projectAuthoritativeGeneratedPage({ target: storedTarget, job, certifications: listRenderedVisualCertifications({ organizationId: job.organizationId, siteId: job.siteId }) });
   const target = projection.target;
   const campaign = listGlwCampaigns().find((entry) => entry.campaignId === target.campaignId) ?? null;
   const site = getSiteById(job.siteId);

@@ -24,8 +24,7 @@ export function projectAuthoritativeGeneratedPage(input: {
     candidate.identity.organizationId === input.target.organizationId
     && candidate.identity.siteId === input.target.siteId
     && candidate.identity.targetId === input.target.targetId
-    && candidate.identity.jobId === input.job.jobId
-    && candidate.identity.externalExecutionId === input.job.externalExecutionId
+    && (candidate.identity.wordpressStatus === "publish" || (candidate.identity.jobId === input.job.jobId && candidate.identity.externalExecutionId === input.job.externalExecutionId))
     && candidate.identity.wordpressObjectId
     && candidate.overallState === "PASS"
   ).sort((left, right) => left.capturedAt.localeCompare(right.capturedAt)).at(-1) ?? null;

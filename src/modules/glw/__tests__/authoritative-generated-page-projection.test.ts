@@ -25,6 +25,13 @@ describe("authoritative generated-page projection", () => {
     expect(result.target.status).toBe("published");
   });
 
+  test("projects a newer public certification for the same target without legacy job identity", () => {
+    const publicCertification = { ...certification, capturedAt: "2026-01-03T00:00:00.000Z", identity: { ...certification.identity, pageId: "target-public", jobId: null, externalExecutionId: null, wordpressStatus: "publish" } } as RenderedVisualCertification;
+    const result = projectAuthoritativeGeneratedPage({ target, job, certifications: [certification, publicCertification] });
+    expect(result.target).toMatchObject({ status: "published", wordpressObjectId: "42" });
+    expect(result.certification?.identity.pageId).toBe("target-public");
+  });
+
   test("contains no target-specific identity literals", () => {
     const source = readFileSync(join(process.cwd(), "src/modules/glw/authoritative-generated-page-projection.ts"), "utf8");
     expect(source).not.toMatch(/California|20139|668610|outdoor-digital-sphere|led-display-warehouse/);
