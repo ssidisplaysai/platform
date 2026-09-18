@@ -60,6 +60,7 @@ import { listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository
 import { resolveExactContinuationCampaignTarget } from "@/modules/glw/campaign-continuation-target-lookup";
 import { applyScopedThemeTitleSuppression } from "@/modules/glw/scoped-theme-title-suppression";
 import { renderOutdoorSphereRichWordPress } from "@/modules/glw/outdoor-sphere-rich-wordpress-render";
+import { resolveOutdoorSphereGovernedCtaUrl } from "@/modules/glw/outdoor-sphere-governed-cta-url";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -872,6 +873,13 @@ async function finalizeContentReadyExecution(input: {
       });
     }
 
+    const governedCtaUrl = resolveOutdoorSphereGovernedCtaUrl({
+      strictGeneratedContextualRequired,
+      siteId: input.request.siteId,
+      siteDomain: input.siteRecord.domain,
+      approvedCampaignInternalLinks,
+    });
+
     const richRender = renderOutdoorSphereRichWordPress({
       title: enrichment.artifact.title,
       stateName: input.request.stateName,
@@ -882,7 +890,7 @@ async function finalizeContentReadyExecution(input: {
       productAuthorityMediaUrl: strictApprovedProductAuthorityMediaUrl,
       productAuthorityAltText: strictApprovedProductAuthority.metadata.altText,
       canonicalProductUrl: productAuthority.canonicalProduct?.url ?? null,
-      governedCtaUrl: approvedCampaignInternalLinks[0]?.href ?? null,
+      governedCtaUrl,
     });
 
     if (!richRender.ok) {

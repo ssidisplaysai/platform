@@ -9,6 +9,7 @@ import {
   isOutdoorSphereCampaignScope,
   requiresGeneratedContextualMediaForOutdoorSphere,
 } from "../outdoor-sphere-contextual-media-policy";
+import { resolveOutdoorSphereGovernedCtaUrl } from "../outdoor-sphere-governed-cta-url";
 import { renderOutdoorSphereRichWordPress } from "../outdoor-sphere-rich-wordpress-render";
 
 describe("Outdoor Sphere generated contextual media authority", () => {
@@ -110,6 +111,8 @@ describe("Outdoor Sphere generated contextual media authority", () => {
   });
 
   test("renderer keeps PRODUCT_AUTHORITY grounding required while hiding legacy product authority image in public HTML", () => {
+    const governedCtaUrl = "https://leddisplaywarehouse.com/contact-us/";
+    const canonicalProductUrl = "https://leddisplaywarehouse.com/outdoor-digital-sphere/";
     const rendered = renderOutdoorSphereRichWordPress({
       title: "Outdoor Digital Sphere in Georgia",
       stateName: "Georgia",
@@ -119,8 +122,8 @@ describe("Outdoor Sphere generated contextual media authority", () => {
       contextualMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/contextual-ga.jpg",
       productAuthorityMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/product-authority.jpg",
       productAuthorityAltText: "Approved outdoor digital sphere product authority",
-      canonicalProductUrl: "https://leddisplaywarehouse.com/outdoor-digital-sphere/",
-      governedCtaUrl: "/outdoor-digital-sphere/",
+      canonicalProductUrl,
+      governedCtaUrl,
     });
 
     expect(rendered.ok).toBe(true);
@@ -142,11 +145,42 @@ describe("Outdoor Sphere generated contextual media authority", () => {
     expect(rendered.html).toContain("glw-sphere-cta");
     expect(rendered.html).toContain("Start planning conversation");
     expect(rendered.html).toContain("Discuss project planning");
+    expect(rendered.html).toContain(`<a class="glw-sphere-button glw-sphere-button-primary" href="${governedCtaUrl}">Discuss project planning</a>`);
+    expect(rendered.html).toContain(`<a class="glw-sphere-button glw-sphere-button-primary" href="${governedCtaUrl}">Start planning conversation</a>`);
+    expect(rendered.html).toContain(`<a class="glw-sphere-button glw-sphere-button-secondary" href="${canonicalProductUrl}">View Outdoor Digital Sphere product</a>`);
     expect(rendered.html).toContain("Retained guide paragraph.");
     expect(rendered.html).not.toContain("Bad Duplicate Heading");
     expect(rendered.html).not.toContain("<img src=\"https://x.test/i.jpg\"");
     expect(rendered.html).not.toContain("<script>");
     expect(rendered.html).not.toContain("javascript:alert(1)");
+  });
+
+  test("strict outdoor sphere CTA uses contact-us and cannot be overridden by first internal link", () => {
+    const governedCtaUrl = resolveOutdoorSphereGovernedCtaUrl({
+      strictGeneratedContextualRequired: true,
+      siteId: "site-led-display-warehouse-production",
+      siteDomain: "leddisplaywarehouse.com",
+      approvedCampaignInternalLinks: [
+        { href: "https://leddisplaywarehouse.com/outdoor-digital-sphere/" },
+        { href: "https://leddisplaywarehouse.com/about/" },
+      ],
+    });
+
+    expect(governedCtaUrl).toBe("https://leddisplaywarehouse.com/contact-us/");
+  });
+
+  test("non-outdoor-sphere CTA behavior remains first approved internal link", () => {
+    const governedCtaUrl = resolveOutdoorSphereGovernedCtaUrl({
+      strictGeneratedContextualRequired: false,
+      siteId: "site-led-display-warehouse-production",
+      siteDomain: "leddisplaywarehouse.com",
+      approvedCampaignInternalLinks: [
+        { href: "https://leddisplaywarehouse.com/outdoor-digital-sphere/" },
+        { href: "https://leddisplaywarehouse.com/contact-us/" },
+      ],
+    });
+
+    expect(governedCtaUrl).toBe("https://leddisplaywarehouse.com/outdoor-digital-sphere/");
   });
 
   test("renderer uses container-responsive planning grid and narrow-width safety CSS", () => {
