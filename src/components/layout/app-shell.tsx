@@ -13,6 +13,7 @@ const ORGANIZATION_STORAGE_KEY = "gcp.selectedOrganizationId";
 const SITE_STORAGE_KEY = "gcp.selectedSiteId";
 
 const OPERATOR_GROUPS = ["CAMPAIGNS", "SITES", "RESEARCH & CONTENT", "OPERATIONS", "SYSTEM"] as const;
+const TRUSTED_LOCAL_OPERATOR_SESSION_ID = "trusted-local-operator";
 type NavigationCounts = { campaigns: number; targets: number; generatedPagesRequiringReview: number };
 
 export function AppShell({ children, resourceSite = null }: { children: React.ReactNode; resourceSite?: SiteContext | null }) {
@@ -20,6 +21,7 @@ export function AppShell({ children, resourceSite = null }: { children: React.Re
   const foundationContext = useMemo(() => createFoundationContext(), []);
   const [operatorRoles, setOperatorRoles] = useState<readonly AppRole[]>([]);
   const [sessionAvailability, setSessionAvailability] = useState<"CHECKING" | "AUTHENTICATED" | "AUTHENTICATION_REQUIRED">("CHECKING");
+  const [trustedLocal, setTrustedLocal] = useState(false);
   const permissions = useMemo(
     () => resolvePermissions(operatorRoles),
     [operatorRoles],
@@ -62,13 +64,15 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
     const sync = async () => {
       try {
         const response = await fetch("/api/operator-session", { cache: "no-store" });
-        const body = await response.json() as { principal?: { roles?: AppRole[] } | null };
+        const body = await response.json() as { principal?: { roles?: AppRole[]; sessionId?: string } | null };
         if (!active) return;
         setOperatorRoles(response.ok && body.principal?.roles ? body.principal.roles : []);
+        setTrustedLocal(Boolean(response.ok && body.principal?.sessionId === TRUSTED_LOCAL_OPERATOR_SESSION_ID));
         setSessionAvailability(response.ok ? "AUTHENTICATED" : "AUTHENTICATION_REQUIRED");
       } catch {
         if (active) {
           setOperatorRoles([]);
+          setTrustedLocal(false);
           setSessionAvailability("AUTHENTICATION_REQUIRED");
         }
       }
@@ -602,7 +606,7 @@ useEffect(() => {
               </div>
             ) : null}
 
-            {sessionAvailability === "AUTHENTICATION_REQUIRED" ? (
+            {sessionAvailability === "AUTHENTICATION_REQUIRED" && !trustedLocal ? (
               <p className="mt-3 text-xs font-semibold text-amber-300">AUTHENTICATION_REQUIRED: workspace and campaign data are unavailable until sign-in is restored.</p>
             ) : siteSelectionMessage ? (
               <p className="mt-3 text-xs text-amber-300">{siteSelectionMessage}</p>
@@ -702,7 +706,7 @@ useEffect(() => {
             </div>
           ) : null}
 
-          {sessionAvailability === "AUTHENTICATED" ? children : (
+          {sessionAvailability === "AUTHENTICATED" || trustedLocal ? children : (
             <section className="border border-amber-700/60 bg-amber-950/20 p-6" aria-live="polite">
               <h2 className="text-lg font-semibold text-amber-200">Operator session expired / sign in required</h2>
               <p className="mt-2 text-sm text-zinc-300">Campaign data unavailable until authentication is restored. No zero or empty values shown here represent durable campaign state.</p>

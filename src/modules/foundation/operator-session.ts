@@ -14,6 +14,10 @@ export const OPERATOR_CSRF_COOKIE = "genesis_operator_csrf";
 export const OPERATOR_CSRF_HEADER = "x-genesis-csrf-token";
 export const OPERATOR_SESSION_AUTHORITY = "GENESIS_SERVER_SESSION_V1" as const;
 export const OPERATOR_SESSION_LIFETIME_SECONDS = 3600;
+const TRUSTED_LOCAL_OPERATOR_SESSION_ID = "trusted-local-operator";
+const TRUSTED_LOCAL_OPERATOR_PRINCIPAL_ID = "genesis-operator-robert";
+const TRUSTED_LOCAL_OPERATOR_EMAIL = "rk@ssidisplays.com";
+const TRUSTED_LOCAL_OPERATOR_ROLE: AppRole = "platform_admin";
 const NAMESPACE = "genesis-server-verified-operator-session-v1";
 const TOKEN_SECRET_NAMESPACE = `${NAMESPACE}-token-secret-v1`;
 const scrypt = promisify(scryptCallback);
@@ -87,9 +91,29 @@ export async function authenticateOperator(input: { identity: string; password: 
 
 function buildPrincipal(session: SessionRecord, entry?: DirectoryEntry): AuthenticatedOperatorPrincipal { const roles = entry?.roles ?? session.principalRoles; const email = entry?.email ?? session.principalEmail; return { principalId: session.principalId, email, roles, capabilities: [...resolvePermissions(roles)], sessionId: session.sessionId, authenticatedAt: session.authenticatedAt, expiresAt: session.expiresAt, authenticationAuthority: OPERATOR_SESSION_AUTHORITY }; }
 function testPrincipal(request: NextRequest, environment: NodeJS.ProcessEnv): AuthenticatedOperatorPrincipal | null { if (environment.NODE_ENV !== "test") return null; const roles = (request.headers.get("x-gcp-roles") ?? "").split(",").map((item) => item.trim()).filter((role): role is AppRole => ALLOWED_ROLES.includes(role as AppRole)); if (!roles.length) return null; const principalId = request.headers.get("x-gcp-principal-id")?.trim() || "test-principal"; const sessionId = request.headers.get("x-gcp-session-id")?.trim() || "test-session"; return { principalId, email: "test-principal@invalid.test", roles, capabilities: [...resolvePermissions(roles)], sessionId, authenticatedAt: new Date(0).toISOString(), expiresAt: new Date(8_640_000_000_000_000).toISOString(), authenticationAuthority: OPERATOR_SESSION_AUTHORITY }; }
+function trustedLocalOperatorEnabled(environment: NodeJS.ProcessEnv = process.env): boolean { return environment.GENESIS_TRUSTED_LOCAL_OPERATOR === "true"; }
+function resolveTrustedLocalOperatorPrincipal(now = new Date(), environment: NodeJS.ProcessEnv = process.env): AuthenticatedOperatorPrincipal {
+  try {
+    directory(environment);
+  } catch {
+    // Trusted local mode intentionally does not depend on directory/session persistence for identity resolution.
+  }
+  const roles: AppRole[] = [TRUSTED_LOCAL_OPERATOR_ROLE];
+  return {
+    principalId: TRUSTED_LOCAL_OPERATOR_PRINCIPAL_ID,
+    email: TRUSTED_LOCAL_OPERATOR_EMAIL,
+    roles,
+    capabilities: [...resolvePermissions(roles)],
+    sessionId: TRUSTED_LOCAL_OPERATOR_SESSION_ID,
+    authenticatedAt: now.toISOString(),
+    expiresAt: new Date(8_640_000_000_000_000).toISOString(),
+    authenticationAuthority: OPERATOR_SESSION_AUTHORITY,
+  };
+}
 
 export function resolveAuthenticatedOperatorPrincipal(request: NextRequest, now = new Date(), environment: NodeJS.ProcessEnv = process.env): OperatorSessionResolution {
   const injected = testPrincipal(request, environment); if (injected) return { ok: true, principal: injected, csrfToken: null };
+  if (trustedLocalOperatorEnabled(environment)) return { ok: true, principal: resolveTrustedLocalOperatorPrincipal(now, environment), csrfToken: null };
   const token = parseCookie(request, OPERATOR_SESSION_COOKIE); if (!token) return { ok: false, state: "NOT_AUTHENTICATED", principal: null, csrfToken: null };
   const state = readState(environment); const session = state.sessions.find((candidate) => candidate.tokenHash === digest(token, environment)); if (!session) return { ok: false, state: "SESSION_TAMPERED", principal: null, csrfToken: null }; if (session.revokedAt) return { ok: false, state: "SESSION_REVOKED", principal: null, csrfToken: null }; if (new Date(session.expiresAt) <= now) return { ok: false, state: "SESSION_EXPIRED", principal: null, csrfToken: null };
   let entries: DirectoryEntry[] | null = null; try { entries = directory(environment); } catch { entries = null; }
