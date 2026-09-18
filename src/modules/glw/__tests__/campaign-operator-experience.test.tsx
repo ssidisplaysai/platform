@@ -197,11 +197,49 @@ describe("campaign operator experience", () => {
 
     expect(result.counts.contentReady).toBe(1);
     expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("content_ready");
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.continuationEligible).toBe(true);
     expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.wordpressObjectId).toBe("20169");
     expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.executionId).toBe("703853");
 
     expect(result.targets.find((entry) => entry.identity === "Houston, TX")?.lifecycleState).toBe("failed");
+    expect(result.targets.find((entry) => entry.identity === "Houston, TX")?.continuationEligible).toBe(false);
     expect(result.targets.find((entry) => entry.identity === "San Antonio, TX")?.lifecycleState).toBe("published");
+    expect(result.targets.find((entry) => entry.identity === "San Antonio, TX")?.continuationEligible).toBe(false);
+  });
+
+  test("keeps ordinary content_ready targets eligible and arbitrary WordPress-object content_ready targets blocked", () => {
+    const contentReadyNoWp = target("Dallas", "dallas", "running", dallasJob.jobId);
+    const noWpJob = {
+      ...dallasJob,
+      status: "CONTENT_READY",
+      externalExecutionId: "703860",
+      wordpressObjectId: null,
+      wordpressStatus: null,
+      errorCode: null,
+    } as GlwPageExecutionRecord;
+
+    const arbitraryWpTarget = target("Houston", "houston", "content_ready", "job-houston-content-ready", "20172");
+    const arbitraryWpJob = {
+      ...dallasJob,
+      jobId: "job-houston-content-ready",
+      status: "CONTENT_READY",
+      externalExecutionId: "703861",
+      wordpressObjectId: "20172",
+      wordpressStatus: "draft",
+      errorCode: "SOME_OTHER_STATE",
+      generatedDraft: { title: "h", contentHtml: "<p>h</p>", slug: "outdoor-digital-sphere/houston", excerpt: "h" },
+    } as GlwPageExecutionRecord;
+
+    const result = model({
+      targets: [target("Austin", "austin", "reference_complete"), contentReadyNoWp, arbitraryWpTarget],
+      jobs: [noWpJob, arbitraryWpJob],
+    });
+
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("content_ready");
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.continuationEligible).toBe(true);
+
+    expect(result.targets.find((entry) => entry.identity === "Houston, TX")?.lifecycleState).toBe("content_ready");
+    expect(result.targets.find((entry) => entry.identity === "Houston, TX")?.continuationEligible).toBe(false);
   });
 
   test("renders lifecycle, exact WordPress and execution identity, image roles, and draft-only policy", () => {
@@ -226,6 +264,7 @@ describe("campaign operator experience", () => {
     expect(source).toContain("Publication Blocked by Policy");
     expect(source).toContain("Continue to WordPress Draft");
     expect(source).toContain("content-ready-target");
+    expect((source.match(/target\.continuationEligible === true/g) ?? []).length).toBe(2);
     expect(source).toContain("targetId: target.targetId");
     expect(source).toContain("executionId: target.executionId");
   });

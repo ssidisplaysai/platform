@@ -24,6 +24,7 @@ export type GlwCampaignOperatorTarget = {
   targetId: string;
   identity: string;
   lifecycleState: string;
+  continuationEligible: boolean;
   jobId: string | null;
   executionId: string | null;
   executionState: string | null;
@@ -191,6 +192,10 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         || isRecoverableOutdoorSphereRichCompositionTarget(target, job)
         ? "content_ready"
         : target.status;
+      const continuationEligible = effectiveLifecycleState === "content_ready"
+        && Boolean(target.jobId)
+        && Boolean(job?.externalExecutionId)
+        && (!target.wordpressObjectId || isRecoverableOutdoorSphereRichCompositionTarget(target, job));
       const projectionTruth = input.projectionTruthByTargetId?.[target.targetId];
       const isReference = target.status === "reference_complete";
       const contextual = isReference
@@ -206,6 +211,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         targetId: target.targetId,
         identity: targetIdentity(target),
         lifecycleState: effectiveLifecycleState,
+        continuationEligible,
         jobId: target.jobId,
         executionId: job?.externalExecutionId ?? null,
         executionState: job?.status ?? null,

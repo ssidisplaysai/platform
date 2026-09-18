@@ -25,6 +25,7 @@ type ContinuableTargetSummary = {
   targetId: string;
   identity: string;
   lifecycleState: string;
+  continuationEligible: boolean;
   jobId: string | null;
   executionId: string | null;
   wordpressObjectId: string | null;
@@ -261,19 +262,13 @@ export function GlwCampaignOperatorControls({
 
   useEffect(() => {
     const firstContinuable = targets.find((target) =>
-      target.lifecycleState === "content_ready"
-      && Boolean(target.jobId)
-      && Boolean(target.executionId)
-      && !target.wordpressObjectId,
+      target.continuationEligible === true,
     );
     setSelectedContinuationTargetId((current) => current || firstContinuable?.targetId || "");
   }, [targets]);
 
   const continuableTargets = targets.filter((target) =>
-    target.lifecycleState === "content_ready"
-    && Boolean(target.jobId)
-    && Boolean(target.executionId)
-    && !target.wordpressObjectId,
+    target.continuationEligible === true,
   );
 
   async function authorizeAndDispatchExactTarget() {
