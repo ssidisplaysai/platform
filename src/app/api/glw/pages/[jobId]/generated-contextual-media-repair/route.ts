@@ -75,7 +75,7 @@ export async function POST(request: NextRequest, context: Context) {
     siteId: scope.siteId,
     productId: job.productId,
   });
-  if (!strictScope || model.identity.lifecycleState !== "draft_ready" || model.wordpress.status !== "draft" || !model.wordpress.objectId || !model.wordpress.verified) {
+  if (!strictScope || model.identity.lifecycleState !== "draft_ready" || model.wordpress.status !== "draft" || !model.wordpress.objectId) {
     return NextResponse.json({ error: "Exact draft-ready contextual repair scope required." }, { status: 409 });
   }
   if (!model.actions.generatedContextualRepair) {

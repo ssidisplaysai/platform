@@ -256,7 +256,6 @@ export function deriveGeneratedPageReviewModel(input: {
   const ownerReviewEligible = !issues.some((issue) => issue.severity === "BLOCKED") && visualQa.certificationState === "CURRENT" && visualQa.overallState === "PASS" && input.visualCertification?.certification?.identity.wordpressStatus === "draft";
   const generatedContextualRepairEligible = strictGeneratedContextualRequired
     && input.target.status === "draft_ready"
-    && wordpressVerified
     && wordpressStatus === "draft"
     && Boolean(wordpressObjectId)
     && Boolean(input.job.externalExecutionId)
