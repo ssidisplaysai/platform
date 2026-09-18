@@ -77,6 +77,17 @@ function isRecoverableZeroAuthorityFailedTarget(target: GlwCampaignTarget, job: 
     && !job!.wordpressObjectId;
 }
 
+function isRecoverableOutdoorSphereRichCompositionTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
+  return target.status === "failed"
+    && target.status !== "published"
+    && Boolean(job)
+    && job!.status === "CONTENT_READY"
+    && job!.errorCode === "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED"
+    && Boolean(job!.generatedDraft)
+    && Boolean(job!.wordpressObjectId)
+    && job!.wordpressStatus === "draft";
+}
+
 export function deriveGlwCampaignOperatorReadModel(input: {
   campaign: GlwCampaign;
   targets: readonly GlwCampaignTarget[];
@@ -98,7 +109,8 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     const job = target.jobId ? jobs.get(target.jobId) : null;
     return target.status === "content_ready"
       || (target.status === "running" && job?.status === "CONTENT_READY")
-      || isRecoverableZeroAuthorityFailedTarget(target, job);
+      || isRecoverableZeroAuthorityFailedTarget(target, job)
+      || isRecoverableOutdoorSphereRichCompositionTarget(target, job);
   }).length;
   const authorized = Boolean(input.latestGrant?.consumedAt || input.latestGrant?.claimedAt || (input.latestGrant && !input.latestGrant.consumedAt && new Date(input.latestGrant.expiresAt) > new Date()));
   const active = input.campaign.status === "active" || input.campaign.status === "complete";
@@ -176,6 +188,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
       const job = target.jobId ? jobs.get(target.jobId) ?? null : null;
       const effectiveLifecycleState = (target.status === "running" && job?.status === "CONTENT_READY")
         || isRecoverableZeroAuthorityFailedTarget(target, job)
+        || isRecoverableOutdoorSphereRichCompositionTarget(target, job)
         ? "content_ready"
         : target.status;
       const projectionTruth = input.projectionTruthByTargetId?.[target.targetId];

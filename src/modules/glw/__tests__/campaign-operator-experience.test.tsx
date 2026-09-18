@@ -163,6 +163,47 @@ describe("campaign operator experience", () => {
     expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("content_ready");
   });
 
+  test("treats failed OUTDOOR_SPHERE rich-composition partial draft as content_ready lifecycle only for draft WordPress state", () => {
+    const failedDallas = target("Dallas", "dallas", "failed", dallasJob.jobId);
+    const recoverablePartialDraftJob = {
+      ...dallasJob,
+      externalExecutionId: "703853",
+      status: "CONTENT_READY",
+      errorCode: "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED",
+      generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/georgia", excerpt: "x" },
+      wordpressObjectId: "20169",
+      wordpressStatus: "draft",
+      wordpressUrl: "https://leddisplaywarehouse.com/?page_id=20169",
+    } as GlwPageExecutionRecord;
+
+    const unrelatedFailed = target("Houston", "houston", "failed", "job-houston-failed");
+    const unrelatedFailedJob = {
+      ...dallasJob,
+      jobId: "job-houston-failed",
+      externalExecutionId: "703854",
+      status: "CONTENT_READY",
+      errorCode: "UNRELATED_FAILURE",
+      generatedDraft: { title: "y", contentHtml: "<p>y</p>", slug: "outdoor-digital-sphere/houston", excerpt: "y" },
+      wordpressObjectId: "20170",
+      wordpressStatus: "draft",
+      wordpressUrl: "https://leddisplaywarehouse.com/?page_id=20170",
+    } as GlwPageExecutionRecord;
+
+    const publishedTarget = target("San Antonio", "san-antonio", "published", dallasJob.jobId, "20171");
+    const result = model({
+      targets: [target("Austin", "austin", "reference_complete"), failedDallas, unrelatedFailed, publishedTarget],
+      jobs: [recoverablePartialDraftJob, unrelatedFailedJob],
+    });
+
+    expect(result.counts.contentReady).toBe(1);
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("content_ready");
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.wordpressObjectId).toBe("20169");
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.executionId).toBe("703853");
+
+    expect(result.targets.find((entry) => entry.identity === "Houston, TX")?.lifecycleState).toBe("failed");
+    expect(result.targets.find((entry) => entry.identity === "San Antonio, TX")?.lifecycleState).toBe("published");
+  });
+
   test("renders lifecycle, exact WordPress and execution identity, image roles, and draft-only policy", () => {
     const html = renderToStaticMarkup(<GlwCampaignOperationsOverview model={model()} />);
     expect(html).toContain("Current Stage");
