@@ -223,6 +223,22 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.receipt.transformations[0]).toMatchObject({ ruleId: "AMBIGUOUS_PROTECTED_ASSERTION", disposition: "BLOCK", safeToTransform: false });
   });
 
+  test("canonicalizes labeled content-programming buyer question to neutral evaluation question", () => {
+    const text = "Content Programming: Which type of content—abstract, branded, informational, or artistic—suits the intended audience and environment?";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_CAPABILITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.blockedClaims).toEqual([]);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      ruleId: "CONTENT_PLANNING_BUYER_QUESTION_TO_NEUTRAL_EVALUATION",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      canonicalText: "Content planning: What content approach should the project team review for the proposed display?",
+    }));
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Content planning: What content approach should the project team review for the proposed display?");
+    const qa = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+    expect(qa.ok).toBe(true);
+  });
+
   test("preserves existing climate and generic supplier-verification transformations", () => {
     const climate = "California climate conditions affect operation.";
     const capability = "The system supports interactive content.";

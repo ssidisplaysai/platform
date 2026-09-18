@@ -235,4 +235,38 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain("generatedDraft: finalizedArtifact");
   });
 
+  test("treats FAILED zero-authority canonicalization with generated draft as exact recoverable content failure", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("function isExactRecoverableContentFailure(job: GlwPageExecutionRecord): boolean {");
+    expect(source).toContain('|| job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"');
+    expect(source).toContain("&& Boolean(job.generatedDraft);");
+  });
+
+  test("treats FAILED zero-authority canonicalization with generated draft as recoverable for finalization", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("const recoverableQaFailure =");
+    expect(source).toContain('|| input.job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"');
+    expect(source).toContain("&& Boolean(input.job.generatedDraft);");
+    expect(source).toContain("const rawGeneratedDraft = input.job.rawGeneratedDraft ?? input.job.generatedDraft;");
+  });
+
+  test("keeps unrelated FAILED errors non-recoverable and continue path finalizes without generation dispatch", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const recoverableFailure = source.indexOf('job.errorCode === "GENERATED_CONTENT_QA_FAILED"');
+    const zeroAuthorityFailure = source.indexOf('job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"', recoverableFailure);
+    const contentRepairFailure = source.indexOf('job.errorCode?.startsWith("CONTENT_REPAIR_") === true', zeroAuthorityFailure);
+    const continueBranch = source.indexOf('if (action === "continue")');
+    const generateBranch = source.indexOf('if (action !== "generate")');
+    const finalizeCall = source.indexOf("finalizeContentReadyExecution({", continueBranch);
+    const dispatchCall = source.indexOf("service.execute(preview.request)", continueBranch);
+    const unrelatedFailure = source.indexOf("WORDPRESS_HIERARCHY_READ_FAILED", recoverableFailure);
+
+    expect(recoverableFailure).toBeGreaterThan(0);
+    expect(zeroAuthorityFailure).toBeGreaterThan(recoverableFailure);
+    expect(contentRepairFailure).toBeGreaterThan(zeroAuthorityFailure);
+    expect(unrelatedFailure).toBeGreaterThan(contentRepairFailure);
+    expect(finalizeCall).toBeGreaterThan(continueBranch);
+    expect(dispatchCall).toBeGreaterThan(generateBranch);
+  });
+
 });

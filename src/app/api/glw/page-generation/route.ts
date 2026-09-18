@@ -166,6 +166,7 @@ async function finalizeContentReadyExecution(input: {
   const recoverableQaFailure =
     input.job.status === "FAILED"
     && (input.job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      || input.job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"
       || input.job.errorCode?.startsWith("CONTENT_REPAIR_") === true)
     && Boolean(input.job.generatedDraft);
 
@@ -1139,6 +1140,7 @@ function matchesExactContinuationTarget(input: {
 function isExactRecoverableContentFailure(job: GlwPageExecutionRecord): boolean {
   return job.status === "FAILED"
     && (job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      || job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"
       || job.errorCode?.startsWith("CONTENT_REPAIR_") === true)
     && Boolean(job.generatedDraft);
 }

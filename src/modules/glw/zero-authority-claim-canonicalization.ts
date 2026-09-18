@@ -9,7 +9,7 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_3" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_4" as const;
 
 export type GlwZeroAuthorityDisposition =
   | "REMOVE"
@@ -51,6 +51,7 @@ const POLICY = {
     "Replace structurally identifiable unsupported product comparison tables with an authority-neutral buyer evaluation framework.",
     "Convert unsupported environmental, specification, training, and installation-responsibility assertions to authority-neutral buyer questions.",
     "Convert labeled project-schedule planning directives to authority-neutral supplier-verification questions.",
+    "Convert labeled content-planning buyer questions misclassified as unsupported capability assertions to a canonical authority-neutral buyer evaluation question.",
     "Preserve spherical geometry while removing unsupported engagement, impact, accessibility, or performance meaning.",
     "Apply cross-element transformations only when the corresponding DOM text-node span is unique.",
     "Reduce repeated supplier-question constructions with an authority-neutral project documentation question.",
@@ -294,6 +295,18 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "SERVICE_MAINTENANCE_ASSERTION_TO_SUPPLIER_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("PRODUCT_CAPABILITY")
+    && /^Content (?:Programming|Planning|Strategy):\s*(?:Which|What|How)\b[\s\S]*\?$/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Content planning: What content approach should the project team review for the proposed display?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "CONTENT_PLANNING_BUYER_QUESTION_TO_NEUTRAL_EVALUATION",
     };
   }
 
