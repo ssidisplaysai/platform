@@ -267,6 +267,8 @@ export async function POST(
               form,
               action: "continue",
               jobId,
+              targetId: target.targetId,
+              executionId: expectedTargetId ? expectedExecutionId : (job.externalExecutionId ?? null),
             }),
             cache: "no-store",
           },
@@ -275,7 +277,7 @@ export async function POST(
         const continuePayload =
           await continueResponse.json();
 
-        if (!continueResponse.ok) {
+        if (!continueResponse.ok || continuePayload?.ok !== true) {
           results.push({
             ...targetIdentity(target),
             jobId,
@@ -284,7 +286,7 @@ export async function POST(
             error:
               continuePayload.error
               ?? continuePayload.issues
-              ?? "Exact job continuation failed.",
+              ?? "Exact job continuation did not reach durable WordPress draft persistence.",
           });
 
           continue;
@@ -296,6 +298,17 @@ export async function POST(
           resolveGlwCampaignJobReconciliationDecision(
             job,
           );
+
+        if (expectedTargetId && decision.action !== "draft_ready") {
+          results.push({
+            ...targetIdentity(target),
+            jobId,
+            action: "continue_error",
+            httpStatus: 409,
+            error: "Exact content-ready continuation did not produce a durable draft-ready result.",
+          });
+          continue;
+        }
       }
 
       if (decision.action === "draft_ready") {
@@ -384,6 +397,21 @@ export async function POST(
             ? error.message
             : "Unknown reconciliation error.",
       });
+    }
+  }
+
+  if (expectedTargetId) {
+    const selectedResult = results[0] ?? null;
+    if (!selectedResult || selectedResult.action !== "draft_ready") {
+      return NextResponse.json({
+        campaignId,
+        reconciledTargetCount: reconcilableTargets.length,
+        releasedExpiredLeaseCount,
+        results,
+        publicationIntent: "draft",
+        publicationPerformed: false,
+        error: selectedResult?.error ?? "Exact content-ready continuation failed before durable WordPress draft persistence.",
+      }, { status: 409 });
     }
   }
 

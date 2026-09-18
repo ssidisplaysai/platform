@@ -1003,8 +1003,23 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
+    const durableDraftPersisted =
+      finalized.status === "COMPLETE"
+      && finalized.wordpressStatus === "draft"
+      && Boolean(finalized.wordpressObjectId);
+
+    if (!durableDraftPersisted) {
+      return NextResponse.json({
+        ok: false,
+        error: "Continuation did not durably persist a WordPress draft.",
+        code: "CONTINUATION_DURABLE_DRAFT_REQUIRED",
+        job: finalized,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
+
     return NextResponse.json({
-      ok: finalized.status === "COMPLETE",
+      ok: true,
       job: finalized,
       publicationPerformed: false,
     });
