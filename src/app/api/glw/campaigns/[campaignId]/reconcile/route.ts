@@ -156,9 +156,13 @@ export async function POST(
     if ((selectedJob.externalExecutionId ?? "") !== expectedExecutionId) {
       return NextResponse.json({ error: "Selected target execution identity does not match the exact existing execution." }, { status: 409 });
     }
-    const exactRecoverableFailedSelection = selected.status === "failed" && isExactRecoverableZeroAuthorityFailure(selectedJob);
-    if (selected.status === "failed" && !exactRecoverableFailedSelection) {
+    const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready")
+      && isExactRecoverableZeroAuthorityFailure(selectedJob);
+    if (selected.status === "failed" && !selectedIsRecoverableFailedTarget) {
       return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
+    }
+    if (selected.status === "content_ready" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget) {
+      return NextResponse.json({ error: "Selected content-ready target has a failed job that is not recoverable for exact continuation." }, { status: 409 });
     }
     if (selected.status !== "failed" && selected.status !== "content_ready" && selected.status !== "running") {
       return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
@@ -257,7 +261,7 @@ export async function POST(
 
       const exactRecoverableFailedContinuation = Boolean(
         expectedTargetId
-        && target.status === "failed"
+        && (target.status === "failed" || target.status === "content_ready")
         && target.jobId === expectedJobId
         && (job.externalExecutionId ?? "") === expectedExecutionId
         && !target.wordpressObjectId
