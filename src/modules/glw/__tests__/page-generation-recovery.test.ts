@@ -169,15 +169,17 @@ describe("GLW selective page generation recovery", () => {
   });
 
   test("continues CONTENT_READY with exact target/job/execution fail-closed guards and without dispatch", () => {
-    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
-    expect(source).toContain('if (action === "continue")');
-    expect(source).toContain('const expectedTargetId = body.targetId?.trim() ?? "";');
-    expect(source).toContain('const expectedExecutionId = body.executionId?.trim() ?? "";');
-    expect(source).toContain('Published targets cannot continue through draft continuation.');
-    expect(source).toContain('Campaign target does not match the exact existing job.');
-    expect(source).toContain('Conflicting WordPress identity exists for this campaign target.');
-    expect(source).toContain('Continuation request executionId does not match the exact existing execution.');
-    expect(source).toContain('publicationPerformed: false');
+    const routeSource = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const lookupSource = readFileSync(resolve(process.cwd(), "src/modules/glw/campaign-continuation-target-lookup.ts"), "utf8");
+    expect(routeSource).toContain('if (action === "continue")');
+    expect(routeSource).toContain('const expectedTargetId = body.targetId?.trim() ?? "";');
+    expect(routeSource).toContain('const expectedExecutionId = body.executionId?.trim() ?? "";');
+    expect(routeSource).toContain('resolveExactContinuationCampaignTarget({');
+    expect(routeSource).toContain('Published targets cannot continue through draft continuation.');
+    expect(routeSource).toContain('publicationPerformed: false');
+    expect(lookupSource).toContain('Campaign target does not match the exact existing job.');
+    expect(lookupSource).toContain('Conflicting WordPress identity exists for this campaign target.');
+    expect(lookupSource).toContain('Continuation request executionId does not match the exact existing execution.');
   });
 
   test("campaign reconcile reuses existing continue path for content-ready target continuation", () => {

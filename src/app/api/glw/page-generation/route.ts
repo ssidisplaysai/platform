@@ -52,6 +52,7 @@ import {
 } from "@/modules/glw/page-generation";
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
 import { listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
+import { resolveExactContinuationCampaignTarget } from "@/modules/glw/campaign-continuation-target-lookup";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -936,31 +937,27 @@ export async function POST(request: NextRequest) {
 
     if (preview.request.campaignId) {
       const targets = listGlwCampaignTargets(preview.request.campaignId);
-      const target = targets.find((candidate) =>
-        candidate.stateCode === preview.request.stateCode
-        && (candidate.citySlug ?? null) === (preview.request.citySlug ?? null),
-      ) ?? null;
+      const targetLookup = resolveExactContinuationCampaignTarget({
+        targets,
+        campaignId: preview.request.campaignId,
+        organizationId: preview.request.organizationId,
+        siteId: preview.request.siteId,
+        productId: preview.request.productId,
+        expectedStateCode: preview.request.stateCode,
+        expectedCitySlug: preview.request.citySlug,
+        expectedTargetId,
+        expectedJobId: currentJob.jobId,
+        expectedExecutionId,
+        actualExecutionId: currentJob.externalExecutionId,
+      });
 
-      if (!target || target.campaignId !== preview.request.campaignId) {
-        return NextResponse.json({ error: "Exact campaign target was not found for continuation." }, { status: 409 });
+      if (!targetLookup.ok) {
+        return NextResponse.json({ error: targetLookup.error }, { status: targetLookup.status });
       }
-      if (expectedTargetId && target.targetId !== expectedTargetId) {
-        return NextResponse.json({ error: "Continuation request targetId does not match the exact campaign target." }, { status: 409 });
-      }
+
+      const target = targetLookup.target;
       if (target.status === "published") {
         return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
-      }
-      if (!new Set(["content_ready", "running", "failed"]).has(target.status)) {
-        return NextResponse.json({ error: "Campaign target is not in a continuable state." }, { status: 409 });
-      }
-      if (target.jobId !== currentJob.jobId) {
-        return NextResponse.json({ error: "Campaign target does not match the exact existing job." }, { status: 409 });
-      }
-      if (target.wordpressObjectId && target.wordpressObjectId !== currentJob.wordpressObjectId) {
-        return NextResponse.json({ error: "Conflicting WordPress identity exists for this campaign target." }, { status: 409 });
-      }
-      if (expectedExecutionId && (currentJob.externalExecutionId ?? "") !== expectedExecutionId) {
-        return NextResponse.json({ error: "Continuation request executionId does not match the exact existing execution." }, { status: 409 });
       }
     }
 
