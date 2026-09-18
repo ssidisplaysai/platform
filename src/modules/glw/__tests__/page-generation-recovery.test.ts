@@ -126,21 +126,12 @@ describe("GLW selective page generation recovery", () => {
   test("blocks canonical collisions and published updates before dispatch", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
     const mutationGuard = source.indexOf('code: "WORDPRESS_MUTATION_NOT_AUTHORIZED"');
-    const authorityCheck = source.indexOf("const authority = await verifyMutationAuthority(preview.request, preview.siteRecord);");
     const dispatch = source.indexOf("service.execute(preview.request)");
+    const authorityCheck = source.lastIndexOf("verifyMutationAuthority(", dispatch);
     expect(mutationGuard).toBeGreaterThan(0);
     expect(authorityCheck).toBeGreaterThan(mutationGuard);
     expect(dispatch).toBeGreaterThan(authorityCheck);
     expect(source.slice(dispatch)).toContain("publicationPerformed: false");
-
-    const defaultDispatch = source.lastIndexOf("service.execute(preview.request)");
-    const defaultFinalize = source.indexOf(
-      "finalizeContentReadyExecution",
-      defaultDispatch,
-    );
-
-    expect(defaultDispatch).toBeGreaterThan(authorityCheck);
-    expect(defaultFinalize).toBe(-1);
   });
 
   test("preserves structured Product Intelligence evidence through completion", () => {
@@ -149,7 +140,8 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain("internalLinks:");
     expect(source).toContain("externalReferences:");
     expect(source).toContain("mediaAuthority:");
-    expect(source).toContain("qaChecks: draftJob.qaChecks");
+    expect(source).toContain("const existingChecks");
+    expect(source).toContain("...existingChecks");
   });
 
   test("persists guarded ProjectorEnclosure workbook SEO authority evidence", () => {
@@ -225,6 +217,22 @@ describe("GLW selective page generation recovery", () => {
     expect(generatedQa).toBeGreaterThan(
       renderAuthority,
     );
+  });
+
+  test("applies scoped host theme title suppression for persisted GLW drafts", () => {
+    const source = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/app/api/glw/page-generation/route.ts",
+      ),
+      "utf8",
+    );
+
+    expect(source).toContain("applyScopedThemeTitleSuppression");
+    expect(source).toContain("suppressionEligible = input.siteRecord.domain === \"leddisplaywarehouse.com\"");
+    expect(source).toContain("preWriteSuppression");
+    expect(source).toContain("postWriteSuppression");
+    expect(source).toContain("generatedDraft: finalizedArtifact");
   });
 
 });

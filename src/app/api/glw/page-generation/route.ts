@@ -58,6 +58,7 @@ import {
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
 import { listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { resolveExactContinuationCampaignTarget } from "@/modules/glw/campaign-continuation-target-lookup";
+import { applyScopedThemeTitleSuppression } from "@/modules/glw/scoped-theme-title-suppression";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -549,9 +550,17 @@ async function finalizeContentReadyExecution(input: {
 
   const parentId = targetHierarchy.parentId;
 
+  const suppressionEligible = input.siteRecord.domain === "leddisplaywarehouse.com";
+  const preWriteSuppression = suppressionEligible && operation === "UPDATE" && updateObjectId
+    ? applyScopedThemeTitleSuppression({
+        contentHtml: enrichment.artifact.contentHtml,
+        wordpressObjectId: updateObjectId,
+      })
+    : null;
+
   const artifact = {
     title: enrichment.artifact.title,
-    contentHtml: enrichment.artifact.contentHtml,
+    contentHtml: preWriteSuppression?.contentHtml ?? enrichment.artifact.contentHtml,
     slug: enrichment.artifact.slug,
     excerpt: enrichment.artifact.excerpt,
     parentId,
@@ -579,9 +588,50 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
+  let finalizedArtifact = {
+    ...enrichment.artifact,
+    contentHtml: artifact.contentHtml,
+  };
+
+  if (suppressionEligible) {
+    const postWriteSuppression = applyScopedThemeTitleSuppression({
+      contentHtml: finalizedArtifact.contentHtml,
+      wordpressObjectId: result.wordpressObjectId,
+    });
+    if (postWriteSuppression.mutated) {
+      const suppressionWrite = await writeGenesisWordPressDraft({
+        operation: "UPDATE",
+        site: input.siteRecord,
+        wordpressObjectId: result.wordpressObjectId,
+        artifact: {
+          ...artifact,
+          contentHtml: postWriteSuppression.contentHtml,
+        },
+      });
+      if (!suppressionWrite.ok) {
+        return glwPageExecutionRepository.update(input.job.jobId, {
+          status: "FAILED",
+          generatedDraft: enrichment.artifact,
+          errorCode: `WORDPRESS_${suppressionWrite.state.toUpperCase()}`,
+          errorMessage: suppressionWrite.message,
+          qaStatus: "PASSED",
+          qaChecks: qa.checks,
+          qaFailureReasons: {},
+          wordCount: qa.wordCount,
+          updatedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+        });
+      }
+      finalizedArtifact = {
+        ...finalizedArtifact,
+        contentHtml: postWriteSuppression.contentHtml,
+      };
+    }
+  }
+
   const draftJob = await glwPageExecutionRepository.update(input.job.jobId, {
     status: "CONTENT_READY",
-    generatedDraft: enrichment.artifact,
+    generatedDraft: finalizedArtifact,
     wordpressObjectId: result.wordpressObjectId,
     wordpressUrl: result.wordpressUrl,
     wordpressStatus: result.wordpressStatus,
@@ -660,7 +710,7 @@ async function finalizeContentReadyExecution(input: {
     mediaResult = await attachGenesisWordPressExistingFeaturedImage({
       site: input.siteRecord,
       wordpressObjectId: result.wordpressObjectId,
-      contentHtml: enrichment.artifact.contentHtml,
+      contentHtml: finalizedArtifact.contentHtml,
       wordpressMediaId: productAuthority.selectedMedia.wordpressMediaId,
       expectedMediaUrl: productAuthority.selectedMedia.url,
       altText: productAuthority.selectedMedia.altText,
@@ -693,7 +743,7 @@ async function finalizeContentReadyExecution(input: {
       site: input.siteRecord,
       wordpressObjectId: result.wordpressObjectId,
       canonicalSlug: input.request.canonicalPath,
-      contentHtml: enrichment.artifact.contentHtml,
+      contentHtml: finalizedArtifact.contentHtml,
       image: imageResult.image,
       title: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
       altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
