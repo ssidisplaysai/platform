@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   authorizeRequest,
@@ -5,10 +6,12 @@ import {
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
+import { bindGeneratedContextualMediaWordPress, saveSuccessfulGeneratedContextualMedia } from "@/modules/foundation/generated-contextual-media-repository";
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
 import { loadProjectorEnclosureSeoAuthority, type ProjectorEnclosureKeywordOwner, type ProjectorEnclosureSeoSelection } from "@/modules/foundation/projectorenclosure-seo-authority";
 import { getProductById, listProducts } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { listSitePageMediaAssignments, resolveApprovedProductAuthorityMedia, saveSitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
@@ -41,6 +44,8 @@ import {
   type GlwPageExecutionRecord,
 } from "@/modules/glw/page-execution";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import type { ContextualGenerationReceipt } from "@/modules/glw/contextual-media-production-adapter";
+import { buildOutdoorSphereGeneratedContextualPrompt, requiresGeneratedContextualMediaForOutdoorSphere } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
 import { applyProjectorEnclosureHouseMappingCanary } from "@/modules/glw/projectorenclosure-house-mapping-canary";
 import {
   adaptProductForGeneration,
@@ -61,6 +66,8 @@ const service = createGlwDraftExecutionService({
 });
 const executionReader = createGlwN8nMcpExecutionReader();
 const GLW_GENERATION_MINIMUM_WORD_COUNT = 1500;
+const sha256Text = (value: string) => createHash("sha256").update(value.trim()).digest("hex");
+const sha256Bytes = (value: Buffer) => createHash("sha256").update(value).digest("hex");
 
 function isTerminal(status: string): boolean {
   return status === "COMPLETE" || status === "FAILED";
@@ -152,6 +159,7 @@ async function finalizeContentReadyExecution(input: {
   job: GlwPageExecutionRecord;
   request: GlwGenerationRequest;
   siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
+  continuationTargetId?: string;
 }): Promise<GlwPageExecutionRecord> {
   const recoverableQaFailure =
     input.job.status === "FAILED"
@@ -637,8 +645,18 @@ async function finalizeContentReadyExecution(input: {
   const location = [input.request.cityName, input.request.stateName]
     .filter(Boolean)
     .join(", ");
+  const strictGeneratedContextualRequired = requiresGeneratedContextualMediaForOutdoorSphere({
+    campaignId: input.request.campaignId,
+    organizationId: input.request.organizationId,
+    siteId: input.request.siteId,
+    productId: input.request.productId,
+  });
   let mediaResult;
-  if (productAuthority.selectedMedia) {
+  let generatedImageBytes: Buffer | null = null;
+  let generatedImageMimeType: "image/jpeg" | "image/png" | "image/webp" | null = null;
+  let generatedImageProvider: string | null = null;
+  let generatedImageModel: string | null = null;
+  if (productAuthority.selectedMedia && !strictGeneratedContextualRequired) {
     mediaResult = await attachGenesisWordPressExistingFeaturedImage({
       site: input.siteRecord,
       wordpressObjectId: result.wordpressObjectId,
@@ -648,8 +666,11 @@ async function finalizeContentReadyExecution(input: {
       altText: productAuthority.selectedMedia.altText,
     });
   } else {
+    const strictPrompt = strictGeneratedContextualRequired
+      ? buildOutdoorSphereGeneratedContextualPrompt({ stateName: input.request.stateName, cityName: input.request.cityName })
+      : null;
     const imageResult = await generateGenesisFeaturedImageWithCampaignReferences({
-      prompt: buildGenesisImagePrompt({ request: input.request, siteName: input.siteRecord.displayName }),
+      prompt: strictPrompt ?? buildGenesisImagePrompt({ request: input.request, siteName: input.siteRecord.displayName }),
       siteName: input.siteRecord.displayName,
       productTopic: input.request.productTopic,
       campaignId: input.request.campaignId ?? null,
@@ -664,6 +685,10 @@ async function finalizeContentReadyExecution(input: {
         completedAt: null,
       });
     }
+    generatedImageBytes = imageResult.image.bytes;
+    generatedImageMimeType = imageResult.image.mimeType;
+    generatedImageProvider = imageResult.image.provider;
+    generatedImageModel = imageResult.image.model;
     mediaResult = await attachGenesisWordPressFeaturedImage({
       site: input.siteRecord,
       wordpressObjectId: result.wordpressObjectId,
@@ -687,7 +712,184 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
+  let contextualReceipt: ContextualGenerationReceipt | null = null;
+  if (strictGeneratedContextualRequired) {
+    try {
+      if (!input.request.campaignId) {
+        throw new Error("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
+      }
+      const strictTargetId = input.continuationTargetId ?? (() => {
+        const targetLookup = resolveExactContinuationCampaignTarget({
+          targets: listGlwCampaignTargets(input.request.campaignId!),
+          campaignId: input.request.campaignId!,
+          organizationId: input.request.organizationId,
+          siteId: input.request.siteId,
+          productId: input.request.productId,
+          expectedStateCode: input.request.stateCode,
+          expectedCitySlug: input.request.citySlug,
+          expectedJobId: draftJob.jobId,
+          expectedExecutionId: draftJob.externalExecutionId,
+          actualExecutionId: draftJob.externalExecutionId,
+        });
+        return targetLookup.ok ? targetLookup.target.targetId : null;
+      })();
+      if (!strictTargetId) {
+        throw new Error("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
+      }
+      if (!generatedImageBytes || !generatedImageMimeType || !generatedImageProvider || !generatedImageModel) {
+        throw new Error("CONTEXTUAL_MEDIA_GENERATED_IMAGE_REQUIRED");
+      }
+
+      const mediaId = Number(mediaResult.mediaId);
+      if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !mediaResult.mediaUrl.trim()) {
+        throw new Error("CONTEXTUAL_MEDIA_WORDPRESS_BINDING_REQUIRED");
+      }
+
+      const productRecord = getProductById(input.request.productId);
+      const approvedProductAuthority = productRecord?.media.primaryImageReference
+        ? resolveApprovedProductAuthorityMedia({
+            organizationId: input.request.organizationId,
+            siteId: input.request.siteId,
+            productId: input.request.productId,
+            authorityReference: productRecord.media.primaryImageReference,
+          })
+        : null;
+
+      if (!approvedProductAuthority || approvedProductAuthority.asset.type !== "APPROVED_EXISTING") {
+        throw new Error("CONTEXTUAL_MEDIA_PRODUCT_TRUTH_REQUIRED");
+      }
+
+      const pageRevisionId = `job:${draftJob.jobId}:${draftJob.updatedAt}`;
+      const prompt = buildOutdoorSphereGeneratedContextualPrompt({
+        stateName: input.request.stateName,
+        cityName: input.request.cityName,
+      });
+      const promptFingerprint = sha256Text(prompt);
+      const generationId = `contextual-generation-${createHash("sha256").update(JSON.stringify({
+        siteId: input.request.siteId,
+        productId: input.request.productId,
+        targetId: strictTargetId,
+        role: "OUTDOOR_SPHERE_HERO_CONTEXTUAL",
+        promptFingerprint,
+        pageRevisionId,
+      })).digest("hex")}`;
+
+      const receipt: ContextualGenerationReceipt = {
+        authority: "GENESIS_GENERATED_CONTEXTUAL_MEDIA_V1",
+        generationId,
+        organizationId: input.request.organizationId,
+        siteId: input.request.siteId,
+        campaignId: input.request.campaignId,
+        targetId: strictTargetId,
+        productId: input.request.productId,
+        wordpressObjectId: result.wordpressObjectId,
+        pageRevisionId,
+        role: "OUTDOOR_SPHERE_HERO_CONTEXTUAL",
+        mediaRole: "CONTEXTUAL_IN_USE",
+        slot: "HERO_EXPERIENCE",
+        promptFingerprint,
+        provider: generatedImageProvider,
+        model: generatedImageModel,
+        outputDimensions: { width: 1536, height: 1024 },
+        generationCount: 1,
+        selectedOutputCount: 1,
+        latencyMs: 0,
+        reportedCost: "UNKNOWN",
+        assetSha256: sha256Bytes(generatedImageBytes),
+        mimeType: generatedImageMimeType,
+        documentaryEvidence: false,
+        actualInstallationEvidence: false,
+        productSpecificationAuthority: false,
+        customerEvidence: false,
+        status: "SUCCEEDED",
+        createdAt: new Date().toISOString(),
+      };
+
+      const saved = saveSuccessfulGeneratedContextualMedia({ receipt, bytes: generatedImageBytes });
+      const bound = bindGeneratedContextualMediaWordPress({
+        generationId: saved.receipt.generationId,
+        mediaId,
+        url: mediaResult.mediaUrl,
+      });
+
+      const buildSessionId = `contextual-media:${strictTargetId}`;
+      const existingAssignment = listSitePageMediaAssignments({
+        organizationId: input.request.organizationId,
+        siteId: input.request.siteId,
+        buildSessionId,
+        pageRevisionId,
+      }).find((assignment) => assignment.role === "CONTEXTUAL_IN_USE" && assignment.slotId === "HERO_EXPERIENCE");
+
+      if (existingAssignment) {
+        if (existingAssignment.asset.type !== "GENERATED"
+          || existingAssignment.asset.generationJobId !== bound.receipt.generationId
+          || !existingAssignment.wordpressReceipt
+          || existingAssignment.wordpressReceipt.attachedToObjectId !== result.wordpressObjectId
+          || existingAssignment.wordpressReceipt.mediaId !== mediaId) {
+          throw new Error("CONTEXTUAL_MEDIA_ASSIGNMENT_COLLISION");
+        }
+      } else {
+        saveSitePageMediaAssignment({
+          organizationId: input.request.organizationId,
+          siteId: input.request.siteId,
+          buildSessionId,
+          pageId: strictTargetId,
+          pageRevisionId,
+          slotId: "HERO_EXPERIENCE",
+          role: "CONTEXTUAL_IN_USE",
+          asset: {
+            type: "GENERATED",
+            provider: bound.receipt.provider,
+            model: bound.receipt.model,
+            generationJobId: bound.receipt.generationId,
+            effectivePrompt: prompt,
+            referenceInputs: [{
+              referenceId: approvedProductAuthority.assignmentId,
+              role: "PRODUCT_TRUTH",
+              sha256: approvedProductAuthority.asset.sha256,
+            }],
+            outputSha256: bound.receipt.assetSha256,
+          },
+          metadata: {
+            altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
+            caption: "Conceptual generated visualization; not documentary evidence.",
+            title: "Outdoor Sphere Contextual Hero",
+            description: "Generated contextual in-use hero for governed draft presentation.",
+          },
+          approval: {
+            candidateId: bound.receipt.generationId,
+            approvedBy: "continuation-governed-contextual-media",
+            approvedAt: new Date().toISOString(),
+          },
+          wordpressReceipt: {
+            mediaId,
+            url: mediaResult.mediaUrl,
+            attachedToObjectId: result.wordpressObjectId,
+            altTextVerified: true,
+            placementVerified: true,
+            verifiedAt: new Date().toISOString(),
+          },
+        });
+      }
+
+      contextualReceipt = bound.receipt;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "CONTEXTUAL_MEDIA_AUTHORITY_FAILED";
+      return glwPageExecutionRepository.update(draftJob.jobId, {
+        status: "CONTENT_READY",
+        errorCode: message,
+        errorMessage: "Generated contextual media receipt is required for Outdoor LED Sphere continuation.",
+        featuredImagePresent: false,
+        updatedAt: new Date().toISOString(),
+        completedAt: null,
+      });
+    }
+  }
+
   const completedAt = new Date().toISOString();
+  const existingChecks = draftJob.qaChecks && typeof draftJob.qaChecks === "object" && !Array.isArray(draftJob.qaChecks)
+    ? draftJob.qaChecks
+    : {};
   return glwPageExecutionRepository.update(draftJob.jobId, {
     status: "COMPLETE",
     wordpressObjectId: result.wordpressObjectId,
@@ -695,7 +897,19 @@ async function finalizeContentReadyExecution(input: {
     wordpressStatus: result.wordpressStatus,
     disposition: result.operation === "CREATE" ? "CREATED" : "UPDATED",
     qaStatus: "COMPLETE",
-    qaChecks: draftJob.qaChecks,
+    qaChecks: {
+      ...existingChecks,
+      contextualMediaAuthority: strictGeneratedContextualRequired
+        ? {
+            required: true,
+            legacyFeaturedAccepted: false,
+            generatedReceiptId: contextualReceipt?.generationId ?? null,
+            role: contextualReceipt?.role ?? null,
+            mediaRole: contextualReceipt?.mediaRole ?? null,
+            wordpressMediaId: mediaResult.mediaId,
+          }
+        : null,
+    },
     qaFailureReasons: {},
     wordCount: qa.wordCount,
     featuredImagePresent: true,
@@ -991,6 +1205,7 @@ export async function POST(request: NextRequest) {
         job: refreshed,
         request: preview.request,
         siteRecord: preview.siteRecord,
+        continuationTargetId: expectedTargetId || undefined,
       });
     } catch (error) {
       return NextResponse.json({

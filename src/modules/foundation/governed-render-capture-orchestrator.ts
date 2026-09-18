@@ -9,6 +9,7 @@ import { governedCaptureFailureCode, GOVERNED_RENDER_CAPTURE_LIMITS, type Govern
 import { appendRenderedVisualCaptureAudit, getRenderedVisualCertificationState, listRenderedVisualCertifications, saveRenderedVisualCertification, storeRenderedVisualCaptureArtifact } from "./rendered-visual-certification-repository";
 import { deriveRenderedVisualFindings, hashRenderedVisualContent, renderedVisualOverallState, type RenderedVisualCertification, type RenderedVisualLayoutClass, type RenderedVisualPageIdentity } from "./rendered-visual-certification";
 import { buildGeneratedPageReviewModel } from "../glw/generated-page-review-read-model";
+import { isOutdoorSphereCampaignScope } from "../glw/outdoor-sphere-contextual-media-policy";
 
 type BrowserAdapter = (input: GovernedBrowserCaptureInput) => Promise<GovernedBrowserCaptureResult>;
 export type CaptureAuthority = { identity: RenderedVisualPageIdentity; targetUrl: string; allowedOrigins: string[]; internalGenesisOrigin: string | null; internalAuthorization: { header: string; value: string } | null; layoutClass: RenderedVisualLayoutClass; mediaAssignments: CaptureMediaAssignment[] };
@@ -47,7 +48,31 @@ export async function resolveGeneratedPageCaptureAuthority(input: { organization
   const pathname = `/api/glw/pages/${encodeURIComponent(input.jobId)}/visual-snapshot`;
   const query = `organizationId=${encodeURIComponent(input.organizationId)}&siteId=${encodeURIComponent(input.siteId)}`;
   const signedPath = `${pathname}?${query}`;
-  return { identity, targetUrl: `${origin}${signedPath}`, allowedOrigins: [origin, `https://${site.domain.replace(/^www\./, "")}`], internalGenesisOrigin: origin, internalAuthorization: { header: "x-genesis-render-capture", value: signGovernedSnapshotPath(signedPath) }, layoutClass: "CONTENT_ARTICLE", mediaAssignments: model.images.contextualInUse.imageUrl ? [{ assignmentId: null, semanticRole: "CONTEXTUAL_IN_USE", mediaId: model.images.contextualInUse.wordpressMediaId, sourceUrl: model.images.contextualInUse.imageUrl, contextId: model.images.contextualInUse.state }] : [] };
+  const strictGeneratedContextualRequired = isOutdoorSphereCampaignScope({
+    campaignId: model.identity.campaignId,
+    organizationId: input.organizationId,
+    siteId: input.siteId,
+  });
+  if (strictGeneratedContextualRequired && model.images.contextualInUse.state !== "GENERATED_CONTEXTUAL") {
+    throw new Error("CONTEXTUAL_MEDIA_RECEIPT_REQUIRED");
+  }
+  return {
+    identity,
+    targetUrl: `${origin}${signedPath}`,
+    allowedOrigins: [origin, `https://${site.domain.replace(/^www\./, "")}`],
+    internalGenesisOrigin: origin,
+    internalAuthorization: { header: "x-genesis-render-capture", value: signGovernedSnapshotPath(signedPath) },
+    layoutClass: "CONTENT_ARTICLE",
+    mediaAssignments: model.images.contextualInUse.imageUrl
+      ? [{
+          assignmentId: model.images.contextualInUse.assignmentId,
+          semanticRole: "CONTEXTUAL_IN_USE",
+          mediaId: model.images.contextualInUse.wordpressMediaId,
+          sourceUrl: model.images.contextualInUse.imageUrl,
+          contextId: model.images.contextualInUse.state,
+        }]
+      : [],
+  };
 }
 
 export function resolveSiteHomeCaptureAuthority(input: { organizationId: string; siteId: string }): CaptureAuthority {

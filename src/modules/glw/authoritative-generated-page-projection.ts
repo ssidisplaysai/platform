@@ -9,6 +9,7 @@ export type AuthoritativeGeneratedPageProjection = {
   contextualBuildSessionId: string;
   productAuthorityRendered: boolean;
   contextualMedia: readonly {
+    assignmentId: string | null;
     role: string;
     semanticRole: string;
     mediaId: string;
@@ -40,7 +41,15 @@ export function projectAuthoritativeGeneratedPage(input: {
     .map((media) => media.mediaId!) ?? [];
   const productAuthorityRendered = productAuthorityMediaIds.some((mediaId) =>
     certification?.captures.every((capture) => capture.media.some((candidate) => candidate.mediaId === mediaId && candidate.rendered)) === true);
-  const contextualMedia = certification?.captures[0]?.media.filter((media) => media.mediaId && media.semanticRole !== "PRODUCT_AUTHORITY").map((media) => ({ role: media.contextId ?? media.semanticRole, semanticRole: media.semanticRole, mediaId: media.mediaId!, rendered: certification.captures.every((capture) => capture.media.some((candidate) => candidate.mediaId === media.mediaId && candidate.rendered)) })) ?? [];
+  const contextualMedia = certification?.captures[0]?.media
+    .filter((media) => media.mediaId && media.semanticRole !== "PRODUCT_AUTHORITY")
+    .map((media) => ({
+      assignmentId: media.assignmentId,
+      role: media.contextId ?? media.semanticRole,
+      semanticRole: media.semanticRole,
+      mediaId: media.mediaId!,
+      rendered: certification.captures.every((capture) => capture.media.some((candidate) => candidate.mediaId === media.mediaId && candidate.rendered)),
+    })) ?? [];
   return {
     target,
     certification,
