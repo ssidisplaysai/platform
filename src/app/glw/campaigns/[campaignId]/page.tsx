@@ -58,12 +58,6 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
           </div>
         </header>
 
-        <GlwCampaignOperationsOverview model={model} />
-
-        {model.campaign.status === "draft" ? (
-          <GlwCampaignKnowledgePack campaign={model.campaign} organizationId={model.campaign.organizationId} initialReferenceState={referenceStateSelection?.stateCode} />
-        ) : null}
-
         <GlwCampaignOperatorControls
           campaignId={model.campaign.campaignId}
           organizationId={model.campaign.organizationId}
@@ -79,6 +73,12 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
             wordpressObjectId: target.wordpressObjectId,
           }))}
         />
+
+        <GlwCampaignOperationsOverview model={model} />
+
+        {model.campaign.status === "draft" ? (
+          <GlwCampaignKnowledgePack campaign={model.campaign} organizationId={model.campaign.organizationId} initialReferenceState={referenceStateSelection?.stateCode} />
+        ) : null}
 
         {referenceMediaAuthority ? <GlwReferenceGoLiveReadiness record={referenceMediaAuthority} /> : null}
       </div>
