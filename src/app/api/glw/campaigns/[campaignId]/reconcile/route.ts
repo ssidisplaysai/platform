@@ -138,9 +138,6 @@ export async function POST(
     if (selected.wordpressObjectId) {
       return NextResponse.json({ error: "Selected target already has a conflicting WordPress identity." }, { status: 409 });
     }
-    if (selected.leaseId) {
-      return NextResponse.json({ error: "Selected target has an active lease and cannot use content-ready continuation." }, { status: 409 });
-    }
     const selectedJob = await glwPageExecutionRepository.getById(selected.jobId);
     if (!selectedJob) {
       return NextResponse.json({ error: "Selected target job was not found." }, { status: 409 });
@@ -157,7 +154,28 @@ export async function POST(
     if (selectedJob.wordpressObjectId) {
       return NextResponse.json({ error: "Conflicting existing WordPress identity detected on the selected job." }, { status: 409 });
     }
-    reconcilableTargets = [selected];
+
+    let selectedReconcilableTarget = selected;
+    if (selected.status === "running" && selectedJob.status === "CONTENT_READY" && selected.leaseId) {
+      try {
+        const updated = reconcileGlwCampaignTargetContentReady({
+          campaignId,
+          targetId: selected.targetId,
+          stateCode: selected.stateCode,
+          citySlug: selected.citySlug,
+          jobId: selected.jobId,
+          leaseId: selected.leaseId,
+          externalExecutionId: selectedJob.externalExecutionId ?? "",
+        });
+        selectedReconcilableTarget = updated.target;
+      } catch {
+        return NextResponse.json({
+          error: "Selected target lease is still active and cannot continue until it expires.",
+        }, { status: 409 });
+      }
+    }
+
+    reconcilableTargets = [selectedReconcilableTarget];
   }
 
   const origin = request.nextUrl.origin;
