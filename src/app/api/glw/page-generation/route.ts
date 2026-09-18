@@ -59,6 +59,7 @@ import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/
 import { listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { resolveExactContinuationCampaignTarget } from "@/modules/glw/campaign-continuation-target-lookup";
 import { applyScopedThemeTitleSuppression } from "@/modules/glw/scoped-theme-title-suppression";
+import { renderOutdoorSphereRichWordPress } from "@/modules/glw/outdoor-sphere-rich-wordpress-render";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -762,6 +763,98 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
+  const completedAt = new Date().toISOString();
+  let finalizedWordPressObjectId = result.wordpressObjectId;
+  let finalizedWordPressUrl = result.wordpressUrl;
+  let finalizedWordPressStatus = result.wordpressStatus;
+  let finalizedPresentationArtifact = finalizedArtifact;
+  let strictApprovedProductAuthority = null;
+
+  if (strictGeneratedContextualRequired) {
+    const strictProductRecord = getProductById(input.request.productId);
+    strictApprovedProductAuthority = strictProductRecord?.media.primaryImageReference
+      ? resolveApprovedProductAuthorityMedia({
+          organizationId: input.request.organizationId,
+          siteId: input.request.siteId,
+          productId: input.request.productId,
+          authorityReference: strictProductRecord.media.primaryImageReference,
+        })
+      : null;
+
+    if (!strictApprovedProductAuthority
+      || strictApprovedProductAuthority.asset.type !== "APPROVED_EXISTING"
+      || !strictApprovedProductAuthority.wordpressReceipt?.url.trim()) {
+      return glwPageExecutionRepository.update(draftJob.jobId, {
+        status: "CONTENT_READY",
+        errorCode: "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED",
+        errorMessage: "Outdoor Sphere rich composition requires approved product authority media with a WordPress URL.",
+        featuredImagePresent: true,
+        updatedAt: new Date().toISOString(),
+        completedAt: null,
+      });
+    }
+
+    const richRender = renderOutdoorSphereRichWordPress({
+      title: enrichment.artifact.title,
+      stateName: input.request.stateName,
+      productTopic: input.request.productTopic,
+      semanticSourceHtml: enrichment.artifact.contentHtml,
+      excerpt: enrichment.artifact.excerpt,
+      contextualMediaUrl: mediaResult.mediaUrl,
+      productAuthorityMediaUrl: strictApprovedProductAuthority.wordpressReceipt.url,
+      productAuthorityAltText: strictApprovedProductAuthority.metadata.altText,
+      canonicalProductUrl: productAuthority.canonicalProduct?.url ?? null,
+      governedCtaUrl: approvedCampaignInternalLinks[0]?.href ?? null,
+    });
+
+    if (!richRender.ok) {
+      return glwPageExecutionRepository.update(draftJob.jobId, {
+        status: "CONTENT_READY",
+        errorCode: richRender.code,
+        errorMessage: richRender.message,
+        featuredImagePresent: true,
+        updatedAt: new Date().toISOString(),
+        completedAt: null,
+      });
+    }
+
+    const richSuppression = suppressionEligible
+      ? applyScopedThemeTitleSuppression({
+          contentHtml: richRender.html,
+          wordpressObjectId: result.wordpressObjectId,
+        })
+      : null;
+    const richHtml = richSuppression?.contentHtml ?? richRender.html;
+    const richWrite = await writeGenesisWordPressDraft({
+      operation: "UPDATE",
+      site: input.siteRecord,
+      wordpressObjectId: result.wordpressObjectId,
+      artifact: {
+        ...artifact,
+        contentHtml: richHtml,
+      },
+    });
+
+    if (!richWrite.ok) {
+      return glwPageExecutionRepository.update(draftJob.jobId, {
+        status: "CONTENT_READY",
+        errorCode: "OUTDOOR_SPHERE_RICH_WORDPRESS_WRITE_FAILED",
+        errorMessage: richWrite.message,
+        featuredImagePresent: true,
+        updatedAt: new Date().toISOString(),
+        completedAt: null,
+      });
+    }
+
+    finalizedWordPressObjectId = richWrite.wordpressObjectId;
+    finalizedWordPressUrl = richWrite.wordpressUrl;
+    finalizedWordPressStatus = richWrite.wordpressStatus;
+    finalizedPresentationArtifact = {
+      ...finalizedArtifact,
+      contentHtml: richHtml,
+    };
+  }
+
   let contextualReceipt: ContextualGenerationReceipt | null = null;
   if (strictGeneratedContextualRequired) {
     try {
@@ -789,27 +882,16 @@ async function finalizeContentReadyExecution(input: {
       if (!generatedImageBytes || !generatedImageMimeType || !generatedImageProvider || !generatedImageModel) {
         throw new Error("CONTEXTUAL_MEDIA_GENERATED_IMAGE_REQUIRED");
       }
+      if (!strictApprovedProductAuthority || strictApprovedProductAuthority.asset.type !== "APPROVED_EXISTING") {
+        throw new Error("CONTEXTUAL_MEDIA_PRODUCT_TRUTH_REQUIRED");
+      }
 
       const mediaId = Number(mediaResult.mediaId);
       if (!Number.isSafeInteger(mediaId) || mediaId < 1 || !mediaResult.mediaUrl.trim()) {
         throw new Error("CONTEXTUAL_MEDIA_WORDPRESS_BINDING_REQUIRED");
       }
 
-      const productRecord = getProductById(input.request.productId);
-      const approvedProductAuthority = productRecord?.media.primaryImageReference
-        ? resolveApprovedProductAuthorityMedia({
-            organizationId: input.request.organizationId,
-            siteId: input.request.siteId,
-            productId: input.request.productId,
-            authorityReference: productRecord.media.primaryImageReference,
-          })
-        : null;
-
-      if (!approvedProductAuthority || approvedProductAuthority.asset.type !== "APPROVED_EXISTING") {
-        throw new Error("CONTEXTUAL_MEDIA_PRODUCT_TRUTH_REQUIRED");
-      }
-
-      const pageRevisionId = `job:${draftJob.jobId}:${draftJob.updatedAt}`;
+      const pageRevisionId = `job:${draftJob.jobId}:${completedAt}`;
       const prompt = buildOutdoorSphereGeneratedContextualPrompt({
         stateName: input.request.stateName,
         cityName: input.request.cityName,
@@ -832,7 +914,7 @@ async function finalizeContentReadyExecution(input: {
         campaignId: input.request.campaignId,
         targetId: strictTargetId,
         productId: input.request.productId,
-        wordpressObjectId: result.wordpressObjectId,
+        wordpressObjectId: finalizedWordPressObjectId,
         pageRevisionId,
         role: "OUTDOOR_SPHERE_HERO_CONTEXTUAL",
         mediaRole: "CONTEXTUAL_IN_USE",
@@ -874,7 +956,7 @@ async function finalizeContentReadyExecution(input: {
         if (existingAssignment.asset.type !== "GENERATED"
           || existingAssignment.asset.generationJobId !== bound.receipt.generationId
           || !existingAssignment.wordpressReceipt
-          || existingAssignment.wordpressReceipt.attachedToObjectId !== result.wordpressObjectId
+          || existingAssignment.wordpressReceipt.attachedToObjectId !== finalizedWordPressObjectId
           || existingAssignment.wordpressReceipt.mediaId !== mediaId) {
           throw new Error("CONTEXTUAL_MEDIA_ASSIGNMENT_COLLISION");
         }
@@ -894,9 +976,9 @@ async function finalizeContentReadyExecution(input: {
             generationJobId: bound.receipt.generationId,
             effectivePrompt: prompt,
             referenceInputs: [{
-              referenceId: approvedProductAuthority.assignmentId,
+              referenceId: strictApprovedProductAuthority.assignmentId,
               role: "PRODUCT_TRUTH",
-              sha256: approvedProductAuthority.asset.sha256,
+              sha256: strictApprovedProductAuthority.asset.sha256,
             }],
             outputSha256: bound.receipt.assetSha256,
           },
@@ -914,7 +996,7 @@ async function finalizeContentReadyExecution(input: {
           wordpressReceipt: {
             mediaId,
             url: mediaResult.mediaUrl,
-            attachedToObjectId: result.wordpressObjectId,
+            attachedToObjectId: finalizedWordPressObjectId,
             altTextVerified: true,
             placementVerified: true,
             verifiedAt: new Date().toISOString(),
@@ -935,16 +1017,15 @@ async function finalizeContentReadyExecution(input: {
       });
     }
   }
-
-  const completedAt = new Date().toISOString();
   const existingChecks = draftJob.qaChecks && typeof draftJob.qaChecks === "object" && !Array.isArray(draftJob.qaChecks)
     ? draftJob.qaChecks
     : {};
   return glwPageExecutionRepository.update(draftJob.jobId, {
     status: "COMPLETE",
-    wordpressObjectId: result.wordpressObjectId,
-    wordpressUrl: result.wordpressUrl,
-    wordpressStatus: result.wordpressStatus,
+    generatedDraft: finalizedPresentationArtifact,
+    wordpressObjectId: finalizedWordPressObjectId,
+    wordpressUrl: finalizedWordPressUrl,
+    wordpressStatus: finalizedWordPressStatus,
     disposition: result.operation === "CREATE" ? "CREATED" : "UPDATED",
     qaStatus: "COMPLETE",
     qaChecks: {
