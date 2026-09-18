@@ -9,6 +9,20 @@ type OwnerDecision = Extract<RenderedVisualOwnerDecisionState, "APPROVED" | "NEE
 export function GlwOwnerReviewDecisionAction(props: { endpoint: string; organizationId: string; siteId: string; currentDecision: RenderedVisualOwnerDecisionState | null }) {
   const [running, setRunning] = useState<OwnerDecision | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const approveDisabled = running !== null || props.currentDecision === "APPROVED";
+  const needsFixDisabled = running !== null || props.currentDecision === "NEEDS_FIX";
+  const approveLabel = running === "APPROVED"
+    ? "Approving..."
+    : props.currentDecision === "APPROVED"
+      ? "Approved ✓"
+      : "Approve Page";
+  const needsFixLabel = running === "NEEDS_FIX"
+    ? "Saving..."
+    : props.currentDecision === "APPROVED"
+      ? "Change to Needs Fix"
+      : props.currentDecision === "NEEDS_FIX"
+        ? "Needs Fix ✓"
+        : "Needs Fix";
   const decide = async (decision: OwnerDecision) => {
     setRunning(decision); setError(null);
     try {
@@ -20,8 +34,8 @@ export function GlwOwnerReviewDecisionAction(props: { endpoint: string; organiza
     finally { setRunning(null); }
   };
   return <div className="flex flex-wrap items-center gap-3" aria-label="Owner page decision">
-    <button type="button" disabled={running !== null} onClick={() => decide("APPROVED")} className="bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-50">{running === "APPROVED" ? "Approving..." : "Approve Page"}</button>
-    <button type="button" disabled={running !== null} onClick={() => decide("NEEDS_FIX")} className="border border-amber-600 px-4 py-2 text-sm font-bold text-amber-200 hover:border-amber-400 disabled:opacity-50">{running === "NEEDS_FIX" ? "Saving..." : "Needs Fix"}</button>
+    <button type="button" disabled={approveDisabled} onClick={() => decide("APPROVED")} className="bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-600 disabled:opacity-50">{approveLabel}</button>
+    <button type="button" disabled={needsFixDisabled} onClick={() => decide("NEEDS_FIX")} className="border border-amber-600 px-4 py-2 text-sm font-bold text-amber-200 hover:border-amber-400 disabled:opacity-50">{needsFixLabel}</button>
     {props.currentDecision ? <span className="text-xs text-zinc-400">Current decision: {props.currentDecision.replaceAll("_", " ")}</span> : null}
     {error ? <p role="alert" className="w-full text-xs text-red-300">{error}</p> : null}
   </div>;
