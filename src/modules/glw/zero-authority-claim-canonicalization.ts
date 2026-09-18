@@ -9,7 +9,7 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_4" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_5" as const;
 
 export type GlwZeroAuthorityDisposition =
   | "REMOVE"
@@ -52,6 +52,8 @@ const POLICY = {
     "Convert unsupported environmental, specification, training, and installation-responsibility assertions to authority-neutral buyer questions.",
     "Convert labeled project-schedule planning directives to authority-neutral supplier-verification questions.",
     "Convert labeled content-planning buyer questions misclassified as unsupported capability assertions to a canonical authority-neutral buyer evaluation question.",
+    "Convert narrow spherical content-planning assertions that combine 360-degree or custom-content requirements into an authority-neutral buyer planning question.",
+    "Convert narrow documentation-directive planning assertions into an authority-neutral buyer documentation request question.",
     "Preserve spherical geometry while removing unsupported engagement, impact, accessibility, or performance meaning.",
     "Apply cross-element transformations only when the corresponding DOM text-node span is unique.",
     "Reduce repeated supplier-question constructions with an authority-neutral project documentation question.",
@@ -307,6 +309,41 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "CONTENT_PLANNING_BUYER_QUESTION_TO_NEUTRAL_EVALUATION",
+    };
+  }
+
+  if (claimClasses.includes("PRODUCT_SPECIFICATION")
+    && /\b(?:digital sphere|spherical display|spherical|sphere)\b/i.test(text)
+    && /\b(?:content|visuals?|content planning|content strategy|programming)\b/i.test(text)
+    && (
+      /\b360(?:°|-degree)\b/i.test(text)
+      || /\b(?:custom\s+animated\s+loops?|coordinated\s+color\s+sequences?)\b/i.test(text)
+    )
+    && /\b(?:designed|leverage|requiring|requires?)\b/i.test(text)) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "Content planning: What content approach should the project team review for the spherical display, including project-specific viewing directions and any custom content requirements?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "SPHERICAL_CONTENT_PLANNING_ASSERTION_TO_BUYER_QUESTION",
+    };
+  }
+
+  if (claimClasses.includes("PRODUCT_SPECIFICATION")
+    && /\b(?:clarify|confirm|request|determine|what)\b/i.test(text)
+    && /\bdocumentation\b/i.test(text)
+    && /\btechnical\s+specifications?\b/i.test(text)
+    && /\binstallation\s+plans?\b/i.test(text)
+    && /\bcode\s*compliance\b/i.test(text)
+  ) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "What technical specifications, installation documentation, and code-compliance information should the project team request from the selected supplier and qualified professionals for the proposed installation?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "PROJECT_DOCUMENTATION_DIRECTIVE_TO_BUYER_QUESTION",
     };
   }
 

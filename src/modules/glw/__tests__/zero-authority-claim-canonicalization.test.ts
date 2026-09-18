@@ -239,6 +239,102 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(qa.ok).toBe(true);
   });
 
+  test("canonicalizes exact HI spherical content-planning assertion to the bounded buyer question", () => {
+    const text = "The unique shape of a digital sphere means visuals should be designed to leverage the 360-degree display area, possibly requiring custom animated loops or coordinated color sequences.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_SPECIFICATION", text)]);
+
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      originalText: text,
+      ruleId: "SPHERICAL_CONTENT_PLANNING_ASSERTION_TO_BUYER_QUESTION",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      canonicalText: "Content planning: What content approach should the project team review for the spherical display, including project-specific viewing directions and any custom content requirements?",
+    }));
+    expect(result.receipt.blockedClaims).toEqual([]);
+  });
+
+  test("canonicalizes exact HI documentation directive to the bounded buyer question", () => {
+    const text = "Clarify what documentation\u2014technical specifications, installation plans, code compliance\u2014will be supplied.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_SPECIFICATION", text)]);
+
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      originalText: text,
+      ruleId: "PROJECT_DOCUMENTATION_DIRECTIVE_TO_BUYER_QUESTION",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      canonicalText: "What technical specifications, installation documentation, and code-compliance information should the project team request from the selected supplier and qualified professionals for the proposed installation?",
+    }));
+    expect(result.receipt.blockedClaims).toEqual([]);
+  });
+
+  test("clears blocked claims for fixture containing both HI blocked claims plus already-supported transformations", () => {
+    const claim1 = "The unique shape of a digital sphere means visuals should be designed to leverage the 360-degree display area, possibly requiring custom animated loops or coordinated color sequences.";
+    const claim2 = "Clarify what documentation\u2014technical specifications, installation plans, code compliance\u2014will be supplied.";
+    const climate = "Project planners should consider these region-specific factors as part of their assessment and planning: Environmental Exposure: Can the selected supplier confirm how the system is designed to address exposure to salt air, variable humidity, and sudden weather changes common in Hawaii coastal areas?";
+    const warranty = "Discuss warranty and support resources with the supplier as part of purchase planning.";
+
+    const html = `<p>${claim1}</p><p>${claim2}</p><p>${climate}</p><p>${warranty}</p>`;
+    const result = canonicalize(html, [
+      finding("PRODUCT_SPECIFICATION", claim1),
+      finding("PRODUCT_SPECIFICATION", claim2),
+      finding("CLIMATE", climate),
+      finding("WARRANTY", warranty),
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.receipt.blockedClaims).toEqual([]);
+    expect(result.receipt.modelInvoked).toBe(false);
+    expect(result.receipt.consumesN8nExecution).toBe(false);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Content planning: What content approach should the project team review for the spherical display, including project-specific viewing directions and any custom content requirements?");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What technical specifications, installation documentation, and code-compliance information should the project team request from the selected supplier and qualified professionals for the proposed installation?");
+  });
+
+  test("keeps unrelated ambiguous PRODUCT_SPECIFICATION assertion fail-closed", () => {
+    const text = "The display guarantees superior outcomes in all environments.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_SPECIFICATION", text)]);
+    expect(result.ok).toBe(false);
+    expect(result.canonicalizedArtifact).toBeNull();
+    expect(result.receipt.transformations[0]).toMatchObject({ ruleId: "AMBIGUOUS_PROTECTED_ASSERTION", safeToTransform: false });
+  });
+
+  test("preserves GA content-planning buyer-question canonicalization rule output", () => {
+    const text = "Content Programming: Which type of content\u2014abstract, branded, informational, or artistic\u2014suits the intended audience and environment?";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_CAPABILITY", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      ruleId: "CONTENT_PLANNING_BUYER_QUESTION_TO_NEUTRAL_EVALUATION",
+      canonicalText: "Content planning: What content approach should the project team review for the proposed display?",
+    }));
+  });
+
+  test("preserves existing spherical-geometry normalization rule", () => {
+    const text = "Spherical displays can deliver 360-degree impact and provide content accessibility for audiences in open spaces.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_SPECIFICATION", text)]);
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      ruleId: "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM",
+      canonicalText: "Spherical display geometry; confirm project-specific viewing directions and content requirements.",
+    }));
+  });
+
+  test("preserves climate/warranty/pricing/installation/service canonicalization rules", () => {
+    const cases = [
+      ["CLIMATE", "Indiana climate conditions affect operation.", "CLIMATE_ASSERTION_TO_BUYER_QUESTION"],
+      ["WARRANTY", "The product includes a five-year warranty.", "WARRANTY_ASSERTION_TO_BUYER_QUESTION"],
+      ["PRICING", "The product has a lower operating cost.", "PRICING_ASSERTION_TO_BUYER_QUESTION"],
+      ["INSTALLATION_CAPABILITY", "Clarify who verifies dimensions, selects the projector, approves the location, designs support, supplies power and signal, coordinates access, installs the enclosure, commissions the system, and maintains it after turnover.", "INSTALLATION_ASSERTION_TO_RESPONSIBILITY_QUESTION"],
+      ["SERVICE_CAPABILITY", "Cleaning Protocols: Establish cleaning protocols to prevent dust, pollen, or weather residue from diminishing image quality.", "SERVICE_MAINTENANCE_ASSERTION_TO_SUPPLIER_QUESTION"],
+    ] as const;
+
+    for (const [claimClass, text, ruleId] of cases) {
+      const result = canonicalize(`<p>${text}</p>`, [finding(claimClass, text)]);
+      expect(result.ok).toBe(true);
+      expect(result.receipt.transformations).toContainEqual(expect.objectContaining({ ruleId, safeToTransform: true }));
+    }
+  });
+
   test("preserves existing climate and generic supplier-verification transformations", () => {
     const climate = "California climate conditions affect operation.";
     const capability = "The system supports interactive content.";
