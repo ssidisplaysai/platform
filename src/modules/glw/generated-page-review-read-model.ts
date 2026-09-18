@@ -69,7 +69,32 @@ export type GeneratedPageReviewModel = {
   localizationQa: { contract: "LOCALIZATION_CONTAMINATION_GATE"; state: "PASS" | "FAIL"; occurrences: readonly LocalizationLocationOccurrence[]; forbiddenOccurrences: readonly LocalizationLocationOccurrence[] };
   productMediaQa: { contract: "PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE"; state: "PASS" | "FAIL"; code: "REQUIRED_MEDIA_UNRESOLVED" | null; generatedMediaUsedAsDocumentarySubstitute: false };
   reviewState: "READY_FOR_OWNER_REVIEW" | "NEEDS_ATTENTION" | "REVIEW_BLOCKED" | "BLOCKED";
-  actions: { canonical: { label: string; href: string } | null; campaignHref: string; listHref: string; visualCapture: { endpoint: string; organizationId: string; siteId: string }; ownerDecision: { endpoint: string; organizationId: string; siteId: string } | null };
+  actions: {
+    canonical: { label: string; href: string } | null;
+    campaignHref: string;
+    listHref: string;
+    visualCapture: { endpoint: string; organizationId: string; siteId: string };
+    ownerDecision: { endpoint: string; organizationId: string; siteId: string } | null;
+    generatedContextualRepair:
+      | {
+          endpoint: string;
+          organizationId: string;
+          siteId: string;
+          operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA";
+          label: "Generate Contextual Image" | "Replace Legacy Contextual Image";
+          identity: {
+            campaignId: string;
+            targetId: string;
+            jobId: string;
+            externalExecutionId: string;
+            wordpressObjectId: string;
+            productId: string;
+            pageRevisionId: string;
+            expectedStoredSha256: string;
+          };
+        }
+      | null;
+  };
   visualQa: GeneratedPageVisualQaReview;
   richComposition: { plan: RichPageCompositionPlan; identityState: "CURRENT"; currentRender: { profile: "CONTENT_ARTICLE"; certificationState: GeneratedPageVisualQaReview["certificationState"]; overallState: ReviewSignal }; proposedFindings: readonly RichPageCompositionFinding[]; safeNextAction: string; preview: { state: "PREVIEW_ONLY"; locationLabel: string; title: string; excerpt: string | null; bodyHtml: string; productId: string; productName: string; productImageUrl: string | null; productAltText: string | null; contextualImageUrl: string | null; contextualAltText: string | null; ctaLabel: string | null; href: string } };
   localizedV2: null | { state: "READY_FOR_OWNER_REVIEW" | "BLOCKED"; href: string; localizationLevel: number; contextFacts: number; applications: readonly { id: string; state: string }[]; linkCounts: Record<string, number>; media: readonly { role: string; claimClass: string; reviewState: string; source: string; productTruthReference: string | null; sha256: string; altText: string }[]; blockers: readonly string[]; claimSafety: { brandAuthorityPrecedence: true; falseProximityClaimsProhibited: true; antiClicheSafeguards: readonly string[] }; visualCertification: null | Pick<LocalThemeVisualCertification, "certificationId" | "state" | "ownerReviewRequired" | "findings"> & { viewports: readonly { label: string; overflow: number; artifactUrl: string; width: number; height: number; sha256: string }[] }; ownerQuestions: readonly string[] };
@@ -157,11 +182,18 @@ export function deriveGeneratedPageReviewModel(input: {
     siteId: input.campaign.siteId,
     productId: input.campaign.productId,
   });
+  const generatedContextualAssignment = (input.mediaAssignments ?? []).find((assignment) =>
+    assignment.pageRevisionId === pageRevisionIdentity
+    && assignment.buildSessionId === `contextual-media:${input.target.targetId}`
+    && assignment.role === "CONTEXTUAL_IN_USE"
+    && assignment.asset.type === "GENERATED"
+    && Boolean(assignment.wordpressReceipt?.mediaId)
+  ) ?? null;
   const generatedContextualEvidence = currentContextualMedia.find((media) =>
     media.semanticRole === "CONTEXTUAL_IN_USE"
-    && media.rendered
     && Boolean(media.assignmentId),
   ) ?? null;
+  const strictContextualMediaId = String(generatedContextualAssignment?.wordpressReceipt?.mediaId ?? generatedContextualEvidence?.mediaId ?? "");
   const generatedContextualReceipt = (input.generatedContextualReceipts ?? []).find((receipt) =>
     receipt.campaignId === input.campaign.campaignId
     && receipt.targetId === input.target.targetId
@@ -169,10 +201,10 @@ export function deriveGeneratedPageReviewModel(input: {
     && receipt.wordpressObjectId === wordpressObjectId
     && receipt.pageRevisionId === pageRevisionIdentity
     && receipt.mediaRole === "CONTEXTUAL_IN_USE"
-    && (mediaId ? String(receipt.wordpressMediaId ?? "") === mediaId : true),
+    && (strictContextualMediaId ? String(receipt.wordpressMediaId ?? "") === strictContextualMediaId : true),
   ) ?? null;
   const contextualReady = strictGeneratedContextualRequired
-    ? Boolean(generatedContextualEvidence && generatedContextualReceipt)
+    ? Boolean(generatedContextualAssignment && generatedContextualReceipt)
     : currentContextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered) || Boolean(input.job.featuredImagePresent && mediaId);
   const exactProductAssignment = (input.mediaAssignments ?? []).find((item): item is ApprovedProductMediaAssignment => item.pageRevisionId === pageRevisionIdentity && item.slotId === "product-authority" && approvedProductMedia(item)) ?? null;
   const resolvedProductAssignment = approvedProductMedia(input.approvedProductMedia) ? input.approvedProductMedia : null;
@@ -218,6 +250,14 @@ export function deriveGeneratedPageReviewModel(input: {
   const listQuery = `organizationId=${encodeURIComponent(input.campaign.organizationId)}&siteId=${encodeURIComponent(input.campaign.siteId)}`;
   const visualQa = deriveGeneratedPageVisualQaReview(input.visualCertification ?? { certification: null, decision: null, certificationState: "NOT_CERTIFIED", decisionState: "PENDING" });
   const ownerReviewEligible = !issues.some((issue) => issue.severity === "BLOCKED") && visualQa.certificationState === "CURRENT" && visualQa.overallState === "PASS" && input.visualCertification?.certification?.identity.wordpressStatus === "draft";
+  const generatedContextualRepairEligible = strictGeneratedContextualRequired
+    && input.target.status === "draft_ready"
+    && wordpressVerified
+    && wordpressStatus === "draft"
+    && Boolean(wordpressObjectId)
+    && Boolean(input.job.externalExecutionId)
+    && Boolean(liveHtml)
+    && !contextualReady;
   const media = [
     productMediaResolved ? { slotId: "product-authority", role: "PRODUCT_AUTHORITY" as const, requirement: "REQUIRED" as const, assignmentId: productAssignment.assignmentId, readiness: "READY" as const, provenance: `${productAssignment.asset.authorityReference}:APPROVED_PRODUCT_REUSE` } : mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
     localBundle?.media.find((item) => item.role === "CONTEXTUAL_IN_USE") ? { slotId: "contextual-in-use", role: "CONTEXTUAL_IN_USE" as const, requirement: "DESIRED" as const, assignmentId: localBundle.media.find((item) => item.role === "CONTEXTUAL_IN_USE")!.mediaId, readiness: "READY" as const, provenance: "LOCALIZED_COMPOSITION_EVIDENCE" } : mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
@@ -244,7 +284,7 @@ export function deriveGeneratedPageReviewModel(input: {
         imageUrl: text(input.wordpressMedia?.source_url) || null,
         authority: strictGeneratedContextualRequired
           ? (contextualReady
-            ? "Current governed rendered visual certification and exact generated contextual receipt"
+            ? "Exact generated contextual assignment and receipt bound to this draft revision"
             : "Generated contextual receipt required for this campaign target")
           : (currentContextualMedia.length
             ? "Current governed rendered visual certification"
@@ -261,8 +301,8 @@ export function deriveGeneratedPageReviewModel(input: {
               ? `WordPress media #${mediaId}; selected by the legacy execution.`
               : "No WordPress media receipt persisted."),
         altText: text(input.wordpressMedia?.alt_text) || null,
-        wordpressMediaId: (generatedContextualEvidence?.mediaId ?? currentContextualMedia.find((item) => item.semanticRole === "CONTEXTUAL_IN_USE")?.mediaId ?? mediaId) || null,
-        assignmentId: generatedContextualEvidence?.assignmentId ?? null,
+        wordpressMediaId: (strictContextualMediaId || generatedContextualEvidence?.mediaId || currentContextualMedia.find((item) => item.semanticRole === "CONTEXTUAL_IN_USE")?.mediaId || mediaId) || null,
+        assignmentId: generatedContextualAssignment?.assignmentId ?? generatedContextualEvidence?.assignmentId ?? null,
         grounding: strictGeneratedContextualRequired
           ? (contextualReady
             ? "Generated contextual media is product-truth grounded and bound to the exact target, job, and page revision."
@@ -288,7 +328,30 @@ export function deriveGeneratedPageReviewModel(input: {
     localizationQa,
     productMediaQa,
     reviewState,
-    actions: { canonical: input.wordpressEditUrl ? { label: "Open WordPress Draft", href: input.wordpressEditUrl } : null, campaignHref: `/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}?${listQuery}`, listHref: `/glw/campaigns?${listQuery}`, visualCapture: { endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/visual-certification`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId }, ownerDecision: ownerReviewEligible && input.visualCertification?.certification ? { endpoint: `/api/glw/visual-certifications/${encodeURIComponent(input.visualCertification.certification.certificationId)}/decision`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId } : null },
+    actions: {
+      canonical: input.wordpressEditUrl ? { label: "Open WordPress Draft", href: input.wordpressEditUrl } : null,
+      campaignHref: `/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}?${listQuery}`,
+      listHref: `/glw/campaigns?${listQuery}`,
+      visualCapture: { endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/visual-certification`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId },
+      ownerDecision: ownerReviewEligible && input.visualCertification?.certification ? { endpoint: `/api/glw/visual-certifications/${encodeURIComponent(input.visualCertification.certification.certificationId)}/decision`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId } : null,
+      generatedContextualRepair: generatedContextualRepairEligible && wordpressObjectId ? {
+        endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/generated-contextual-media-repair`,
+        organizationId: input.campaign.organizationId,
+        siteId: input.campaign.siteId,
+        operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA",
+        label: mediaId ? "Replace Legacy Contextual Image" : "Generate Contextual Image",
+        identity: {
+          campaignId: input.campaign.campaignId,
+          targetId: input.target.targetId,
+          jobId: input.job.jobId,
+          externalExecutionId: input.job.externalExecutionId ?? "",
+          wordpressObjectId,
+          productId: input.job.productId,
+          pageRevisionId: pageRevisionIdentity,
+          expectedStoredSha256: hashRenderedVisualContent(liveHtml),
+        },
+      } : null,
+    },
     visualQa,
     richComposition: { plan: compositionPlan, identityState: "CURRENT", currentRender: { profile: "CONTENT_ARTICLE", certificationState: visualQa.certificationState, overallState: visualQa.overallState }, proposedFindings, safeNextAction: !productMediaResolved ? "Resolve approved PRODUCT_AUTHORITY media through site-page-media-assignment-v1 before owner review; generated media is not a documentary substitute." : !localBundle ? "Build the governed localized composition bundle from the existing CONTENT_READY artifact before owner review." : "Review the non-mutating composition preview. WordPress draft and campaign authority remain unchanged.", preview: { state: "PREVIEW_ONLY", locationLabel, title: artifact?.title ?? input.job.title, excerpt: artifact?.excerpt ?? null, bodyHtml: sanitizePreviewHtml(sourceHtml).replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i, "").replace(/<img\b[^>]*>/gi, ""), productId: input.job.productId, productName: input.productName, productImageUrl: productAssignment?.asset.type === "APPROVED_EXISTING" ? productAssignment.asset.url : null, productAltText: productAssignment?.metadata.altText ?? null, contextualImageUrl: text(input.wordpressMedia?.source_url) || null, contextualAltText: text(input.wordpressMedia?.alt_text) || null, ctaLabel: cta, href: `/glw/pages/${encodeURIComponent(input.job.jobId)}/composition-preview?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}` } },
     localizedV2: localBundle ? { state: input.target.status === "content_ready" ? input.localThemeVisualCertification?.state === "READY_FOR_OWNER_REVIEW" ? "READY_FOR_OWNER_REVIEW" : "BLOCKED" : localBundle.composition.validationState, href: `/glw/pages/${encodeURIComponent(input.job.jobId)}/composition-preview-v2?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, localizationLevel: localBundle.theme.localizationLevel, contextFacts: localBundle.context.facts.length, applications: localBundle.applications.applications.map((application) => ({ id: application.applicationId, state: application.compatibility })), linkCounts, media: localBundle.media.map((item) => ({ role: item.role, claimClass: item.claimClass, reviewState: item.ownerReviewState, source: item.source, productTruthReference: item.productTruthReference, sha256: item.sha256, altText: item.altText })), blockers: [...localBundle.composition.blockers, ...(input.target.status === "content_ready" && input.localThemeVisualCertification?.state !== "READY_FOR_OWNER_REVIEW" ? ["RESPONSIVE_VISUAL_CERTIFICATION_REQUIRED"] : [])], claimSafety: { brandAuthorityPrecedence: true, falseProximityClaimsProhibited: true, antiClicheSafeguards: localBundle.theme.safeguards.antiClicheTerms }, visualCertification: input.localThemeVisualCertification ? { certificationId: input.localThemeVisualCertification.certificationId, state: input.localThemeVisualCertification.state, ownerReviewRequired: input.localThemeVisualCertification.ownerReviewRequired, findings: input.localThemeVisualCertification.findings, viewports: input.localThemeVisualCertification.captures.map((capture) => ({ label: capture.viewport, overflow: capture.horizontalOverflow, artifactUrl: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/localized-preview-v2/certification/${encodeURIComponent(capture.captureId)}?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, width: capture.screenshotArtifact.width, height: capture.screenshotArtifact.height, sha256: capture.screenshotArtifact.sha256 })) } : null, ownerQuestions: ["Does this feel like ProjectorEnclosure?", `Does this feel relevant to ${input.target.cityName ?? input.target.stateCode}?`, `Does it avoid ${expectedState} cliché?`, "Does the product look real and correct?", "Does the in-use scene look credible?", "Does the selected application have authority?", "Do the links make the page more useful?", `Does anything imply a local office, customer, or actual ${input.target.cityName ?? input.target.stateCode} installation?`] } : null,
@@ -366,7 +429,10 @@ export async function buildGeneratedPageReviewModel(input: { jobId: string; orga
   const renderedHtml = text(wordpressDraft?.content?.raw ?? wordpressDraft?.content?.rendered);
   const currentIdentity: RenderedVisualPageIdentity = projection.certification?.identity ?? { organizationId: job.organizationId, siteId: job.siteId, pageId: target.targetId, pageRevisionIdentity: projection.pageRevisionIdentity, canonicalPath: target.canonicalPath ?? job.slug, contentHash: hashRenderedVisualContent(sourceHtml), renderedContentHash: renderedHtml ? hashRenderedVisualContent(renderedHtml) : null, campaignId: campaign.campaignId, targetId: target.targetId, jobId: job.jobId, externalExecutionId: job.externalExecutionId, wordpressObjectId: objectId, wordpressStatus: job.wordpressStatus };
   const visualCertification = getRenderedVisualCertificationState({ currentIdentity });
-  const mediaAssignments = listSitePageMediaAssignments({ organizationId: job.organizationId, siteId: job.siteId, buildSessionId: projection.contextualBuildSessionId, pageRevisionId: projection.pageRevisionIdentity });
+  const mediaAssignments = [
+    ...listSitePageMediaAssignments({ organizationId: job.organizationId, siteId: job.siteId, buildSessionId: projection.contextualBuildSessionId, pageRevisionId: projection.pageRevisionIdentity }),
+    ...listSitePageMediaAssignments({ organizationId: job.organizationId, siteId: job.siteId, buildSessionId: `contextual-media:${target.targetId}`, pageRevisionId: projection.pageRevisionIdentity }),
+  ].filter((assignment, index, all) => all.findIndex((candidate) => candidate.assignmentId === assignment.assignmentId) === index);
   const localThemingBundle = getLocalPageThemingBundle({ organizationId: job.organizationId, siteId: job.siteId, jobId: job.jobId });
   const localThemeVisualCertification = localThemingBundle ? getLocalThemeVisualCertification(localThemingBundle.bundleId) : null;
   const approvedProductMedia = product.media.primaryImageReference ? resolveApprovedProductAuthorityMedia({ organizationId: job.organizationId, siteId: job.siteId, productId: job.productId, authorityReference: product.media.primaryImageReference }) : null;

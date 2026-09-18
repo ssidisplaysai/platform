@@ -154,4 +154,48 @@ describe("Genesis generated page review workspace", () => {
     expect(ineligibleHtml).not.toContain("Approve Page");
     expect(ineligibleHtml).not.toContain("Needs Fix");
   });
+
+  test("renders generated contextual media repair action only when eligible", () => {
+    const base = model();
+    const eligible = {
+      ...base,
+      actions: {
+        ...base.actions,
+        generatedContextualRepair: {
+          endpoint: "/api/glw/pages/job-dallas/generated-contextual-media-repair",
+          organizationId: "ssi",
+          siteId: "site-projector",
+          operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA" as const,
+          label: "Replace Legacy Contextual Image" as const,
+          identity: {
+            campaignId: "campaign-texas",
+            targetId: "target-dallas",
+            jobId: "job-dallas",
+            externalExecutionId: "579510",
+            wordpressObjectId: "13084",
+            productId: "product-enclosure",
+            pageRevisionId: "job:job-dallas:2026-09-12T02:00:00.000Z",
+            expectedStoredSha256: "d".repeat(64),
+          },
+        },
+      },
+    };
+    const ineligible = {
+      ...eligible,
+      actions: {
+        ...eligible.actions,
+        generatedContextualRepair: null,
+      },
+    };
+    const eligibleHtml = renderToStaticMarkup(
+      <GlwGeneratedPageReviewWorkspace model={eligible} />,
+    );
+    const ineligibleHtml = renderToStaticMarkup(
+      <GlwGeneratedPageReviewWorkspace model={ineligible} />,
+    );
+
+    expect(eligibleHtml).toContain("Replace Legacy Contextual Image");
+    expect(eligibleHtml).toContain("Draft-only contextual image repair");
+    expect(ineligibleHtml).not.toContain("Replace Legacy Contextual Image");
+  });
 });

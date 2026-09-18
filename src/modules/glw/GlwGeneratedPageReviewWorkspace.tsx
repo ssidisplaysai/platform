@@ -8,6 +8,7 @@ import { GlwRenderedDraftPreview } from "./GlwRenderedDraftPreview";
 import { GlwRichCompositionPreview } from "./GlwRichCompositionPreview";
 import { GlwVisualReviewAction } from "./GlwVisualReviewAction";
 import { GlwOwnerReviewDecisionAction } from "./GlwOwnerReviewDecisionAction";
+import { GlwGeneratedContextualMediaRepairAction } from "./GlwGeneratedContextualMediaRepairAction";
 
 const stateTone: Record<
   ReviewSignal | GeneratedPageReviewModel["reviewState"],
@@ -1208,6 +1209,16 @@ export function GlwGeneratedPageReviewWorkspace({
               <p className="mt-2 text-xs text-zinc-500">
                 Alt: {model.images.contextualInUse.altText}
               </p>
+            ) : null}
+            {model.actions.generatedContextualRepair ? (
+              <GlwGeneratedContextualMediaRepairAction
+                endpoint={model.actions.generatedContextualRepair.endpoint}
+                organizationId={model.actions.generatedContextualRepair.organizationId}
+                siteId={model.actions.generatedContextualRepair.siteId}
+                operation={model.actions.generatedContextualRepair.operation}
+                label={model.actions.generatedContextualRepair.label}
+                identity={model.actions.generatedContextualRepair.identity}
+              />
             ) : null}
           </article>
         </div>
