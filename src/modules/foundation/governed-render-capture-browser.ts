@@ -34,21 +34,122 @@ function cleanBounds(value: { x: number; y: number; width: number; height: numbe
   return { x: Math.max(0, value.x), y: Math.max(0, value.y), width: Math.max(0, value.width), height: Math.max(0, value.height) };
 }
 
-async function settle(page: Page): Promise<{ stable: boolean; samples: number; stylesheetCount: number; signature: string; elapsedMs: number }> {
+async function settle(page: Page, mediaAssignments: readonly CaptureMediaAssignment[]): Promise<{ stable: boolean; samples: number; stylesheetCount: number; signature: string; elapsedMs: number }> {
   await page.waitForLoadState("domcontentloaded", { timeout: GOVERNED_RENDER_CAPTURE_LIMITS.navigationTimeoutMs });
-  return page.evaluate(async (timeoutMs) => {
+  return page.evaluate(async ({ timeoutMs, knownAssignments }) => {
     const startedAt = performance.now();
-    const bounded = (promise: Promise<unknown>) => Promise.race([promise, new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
+    const remaining = () => Math.max(0, timeoutMs - (performance.now() - startedAt));
+    const bounded = (promise: Promise<unknown>) => Promise.race([promise, new Promise((resolve) => setTimeout(resolve, remaining()))]);
+    const normalizeHref = (value: string) => {
+      try {
+        const url = new URL(value, document.baseURI);
+        return `${url.origin}${url.pathname.replace(/\/$/, "")}`;
+      } catch {
+        return "";
+      }
+    };
+    const normalizePath = (value: string) => {
+      try {
+        return new URL(value, document.baseURI).pathname.replace(/\/$/, "");
+      } catch {
+        return "";
+      }
+    };
+    const visible = (element: Element | null) => {
+      if (!element) return false;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+    };
+    const cssBackgroundUrls = (element: Element): string[] => {
+      const backgroundImage = getComputedStyle(element).backgroundImage;
+      if (!backgroundImage || backgroundImage === "none") return [];
+      const matches = [...backgroundImage.matchAll(/url\((['"]?)(.*?)\1\)/g)];
+      return matches.map((match) => normalizeHref(match[2] ?? "")).filter(Boolean);
+    };
+    const hasBackgroundForAssignment = (element: Element, assignmentUrl: string) => {
+      const assignmentHref = normalizeHref(assignmentUrl);
+      const assignmentPath = normalizePath(assignmentUrl);
+      if (!assignmentHref && !assignmentPath) return false;
+      const backgroundImage = getComputedStyle(element).backgroundImage;
+      return cssBackgroundUrls(element).some((candidate) => candidate === assignmentHref || (assignmentPath && candidate.includes(assignmentPath))) || (assignmentPath && backgroundImage.includes(assignmentPath));
+    };
+    const preloadAndDecodeBackground = async (url: string) => {
+      const budget = remaining();
+      if (budget <= 0) return false;
+      return Promise.race<boolean>([
+        new Promise<boolean>((resolve) => {
+          const image = new Image();
+          image.decoding = "async";
+          image.onload = async () => {
+            if (typeof image.decode === "function") {
+              try { await image.decode(); }
+              catch { /* Ignore decode errors after load to keep readiness bounded. */ }
+            }
+            resolve(true);
+          };
+          image.onerror = () => resolve(false);
+          image.src = url;
+        }),
+        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), budget)),
+      ]);
+    };
+
     await bounded(document.fonts?.ready ?? Promise.resolve());
     const images = Array.from(document.images).map((image) => image.complete ? Promise.resolve() : new Promise((resolve) => { image.addEventListener("load", resolve, { once: true }); image.addEventListener("error", resolve, { once: true }); }));
     await bounded(Promise.all(images));
     const styles = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map((link) => link.sheet ? Promise.resolve() : new Promise((resolve) => { link.addEventListener("load", resolve, { once: true }); link.addEventListener("error", resolve, { once: true }); }));
     await bounded(Promise.all(styles));
-    const signature = () => { const selectors = [".saw-hero h1", "#contextual-in-use h2", '[data-media-role="APPLICATION_EXPERIENCE"] h2', ".saw-cta h2", ".saw-cta .saw-kicker"]; const values = selectors.map((selector) => { const element = document.querySelector(selector); if (!element) return `${selector}:missing`; const style = getComputedStyle(element); const box = element.getBoundingClientRect(); return `${selector}:${style.color}:${style.backgroundColor}:${style.fontFamily}:${style.fontSize}:${style.fontWeight}:${style.display}:${Math.round(box.x)}:${Math.round(box.y)}:${Math.round(box.width)}:${Math.round(box.height)}`; }); return `${document.styleSheets.length}|${document.querySelectorAll("style,link[rel=stylesheet]").length}|${document.querySelectorAll("*").length}|${values.join("|")}`; };
+
+    const backgroundAssignments = knownAssignments.filter((assignment) => Boolean(assignment.sourceUrl));
+    const backgroundUrls = new Set<string>();
+    for (const assignment of backgroundAssignments) {
+      if (!assignment.sourceUrl) continue;
+      const elements = Array.from(document.querySelectorAll(".glw-sphere-hero[data-genesis-hero=\"true\"][data-media-role=\"CONTEXTUAL_IN_USE\"], [class], [style], section, article, div")).filter((element) => visible(element) && hasBackgroundForAssignment(element, assignment.sourceUrl!));
+      for (const element of elements) {
+        for (const url of cssBackgroundUrls(element)) {
+          backgroundUrls.add(url);
+        }
+      }
+    }
+    for (const url of backgroundUrls) {
+      const loaded = await preloadAndDecodeBackground(url);
+      if (!loaded) throw new Error("CAPTURE_ASSIGNED_BACKGROUND_NOT_READY");
+    }
+
+    const heroSelector = ".glw-sphere-hero[data-genesis-hero=\"true\"][data-media-role=\"CONTEXTUAL_IN_USE\"]";
+    const heroElement = document.querySelector(heroSelector);
+    const expectedContextualBackground = knownAssignments.some((assignment) => assignment.semanticRole === "CONTEXTUAL_IN_USE" && Boolean(assignment.sourceUrl));
+    if (expectedContextualBackground && heroElement && visible(heroElement)) {
+      const hasAssignedBackground = knownAssignments.some((assignment) => assignment.semanticRole === "CONTEXTUAL_IN_USE" && assignment.sourceUrl && hasBackgroundForAssignment(heroElement, assignment.sourceUrl));
+      if (!hasAssignedBackground) throw new Error("CAPTURE_ASSIGNED_BACKGROUND_NOT_READY");
+    }
+
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const signature = () => {
+      const selectors = [".saw-hero h1", "#contextual-in-use h2", '[data-media-role="APPLICATION_EXPERIENCE"] h2', ".saw-cta h2", ".saw-cta .saw-kicker"];
+      const values = selectors.map((selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return `${selector}:missing`;
+        const style = getComputedStyle(element);
+        const box = element.getBoundingClientRect();
+        return `${selector}:${style.color}:${style.backgroundColor}:${style.fontFamily}:${style.fontSize}:${style.fontWeight}:${style.display}:${Math.round(box.x)}:${Math.round(box.y)}:${Math.round(box.width)}:${Math.round(box.height)}`;
+      });
+      const hero = document.querySelector(heroSelector);
+      const heroSignature = (() => {
+        if (!hero) return `${heroSelector}:missing`;
+        const style = getComputedStyle(hero);
+        const box = hero.getBoundingClientRect();
+        return `${heroSelector}:${style.backgroundImage}:${style.backgroundSize}:${style.backgroundPosition}:${Math.round(box.x)}:${Math.round(box.y)}:${Math.round(box.width)}:${Math.round(box.height)}`;
+      })();
+      return `${document.styleSheets.length}|${document.querySelectorAll("style,link[rel=stylesheet]").length}|${document.querySelectorAll("*").length}|${values.join("|")}|${heroSignature}`;
+    };
+
     let prior = ""; let stableSamples = 0; let samples = 0; let finalSignature = "";
     while (performance.now() - startedAt < timeoutMs && stableSamples < 3) { await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))); await new Promise((resolve) => setTimeout(resolve, 100)); finalSignature = signature(); samples += 1; if (finalSignature === prior) stableSamples += 1; else stableSamples = 0; prior = finalSignature; }
     return { stable: stableSamples >= 3, samples, stylesheetCount: document.styleSheets.length, signature: finalSignature, elapsedMs: Math.round(performance.now() - startedAt) };
-  }, GOVERNED_RENDER_CAPTURE_LIMITS.settleTimeoutMs);
+  }, { timeoutMs: GOVERNED_RENDER_CAPTURE_LIMITS.settleTimeoutMs, knownAssignments: mediaAssignments });
 }
 
 async function geometry(page: Page, assignments: readonly CaptureMediaAssignment[]) {
@@ -190,7 +291,7 @@ export async function captureGovernedRenderedPage(input: GovernedBrowserCaptureI
     if (!response || !response.ok()) throw new Error(`CAPTURE_NAVIGATION_FAILED:${response?.status() ?? 0}`);
     const chain: string[] = []; let cursor: Request | null = response.request(); while (cursor) { chain.unshift(cursor.url()); cursor = cursor.redirectedFrom(); }
     validateCaptureRedirectChain({ requestedUrl: input.targetUrl, responseUrls: chain, allowedOrigins: input.allowedOrigins });
-    const styleSettlement = await settle(page);
+    const styleSettlement = await settle(page, input.mediaAssignments);
     let measured: Awaited<ReturnType<typeof geometry>>;
     try { measured = await geometry(page, input.mediaAssignments); }
     catch { throw new Error("GEOMETRY_EXTRACTION_FAILED"); }
