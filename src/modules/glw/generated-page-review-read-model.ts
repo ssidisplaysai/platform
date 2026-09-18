@@ -259,7 +259,6 @@ export function deriveGeneratedPageReviewModel(input: {
     && wordpressStatus === "draft"
     && Boolean(wordpressObjectId)
     && Boolean(input.job.externalExecutionId)
-    && Boolean(liveHtml)
     && (!contextualReady || (Boolean(generatedContextualAssignment?.wordpressReceipt?.mediaId) && String(input.wordpressDraft?.featured_media ?? "") !== String(generatedContextualAssignment?.wordpressReceipt?.mediaId ?? "")));
   const media = [
     productMediaResolved ? { slotId: "product-authority", role: "PRODUCT_AUTHORITY" as const, requirement: "REQUIRED" as const, assignmentId: productAssignment.assignmentId, readiness: "READY" as const, provenance: `${productAssignment.asset.authorityReference}:APPROVED_PRODUCT_REUSE` } : mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
@@ -359,7 +358,7 @@ export function deriveGeneratedPageReviewModel(input: {
           wordpressObjectId,
           productId: input.job.productId,
           pageRevisionId: pageRevisionIdentity,
-          expectedStoredSha256: hashRenderedVisualContent(liveHtml),
+          expectedStoredSha256: hashRenderedVisualContent(liveHtml || sourceHtml),
         },
       } : null,
     },
