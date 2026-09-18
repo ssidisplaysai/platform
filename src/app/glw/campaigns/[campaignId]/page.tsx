@@ -68,6 +68,7 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
             targetId: target.targetId,
             identity: target.identity,
             lifecycleState: target.lifecycleState,
+            continuationEligible: target.continuationEligible,
             jobId: target.jobId,
             executionId: target.executionId,
             wordpressObjectId: target.wordpressObjectId,

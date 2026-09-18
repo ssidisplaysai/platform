@@ -268,4 +268,9 @@ describe("campaign operator experience", () => {
     expect(source).toContain("targetId: target.targetId");
     expect(source).toContain("executionId: target.executionId");
   });
+
+  test("campaign detail page passes continuationEligible into controls target summaries", () => {
+    const pageSource = readFileSync(join(process.cwd(), "src/app/glw/campaigns/[campaignId]/page.tsx"), "utf8");
+    expect(pageSource).toContain("continuationEligible: target.continuationEligible");
+  });
 });
