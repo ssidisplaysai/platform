@@ -2,6 +2,7 @@ import { load } from "cheerio";
 import { patchContextualPresentationMedia, resolveContextualPresentationSlots } from "../contextual-media-presentation-patch";
 
 const html = `<main class="saw-page"><section data-reference-section="HERO"><img src="product"><h1>Product in State</h1></section><section data-reference-section="PRODUCT_IDENTITY"><img src="context"><p>Copy stays byte-identical.</p></section><section data-reference-section="APPLICATIONS"><div class="saw-application-stage"><img src="application"></div></section><section data-reference-section="CTA"><p>CTA copy stays.</p></section></main>`;
+const articleHtml = `<h1>Outdoor Digital Sphere in Florida</h1><figure class="wp-block-image"><img src="legacy"></figure><p>Planning content.</p>`;
 const replacement = (slot: "HERO_EXPERIENCE" | "POST_HERO_CONTEXTUAL" | "APPLICATION_STAGE" | "CTA_ATMOSPHERE", role: string, mediaRole: "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE", id: number) => ({ slot, role, mediaRole, mediaId: id, url: `https://example.test/${id}.jpg`, assetSha256: String(id).repeat(64).slice(0, 64), altText: `${role} conceptual media` });
 
 describe("contextual presentation media patch", () => {
@@ -43,5 +44,35 @@ describe("contextual presentation media patch", () => {
     expect($("[data-reference-section=APPLICATIONS] > .saw-generated-application-media img").attr("src")).toBe("https://example.test/3.jpg");
     expect($("[data-reference-section=APPLICATIONS] > .saw-generated-application-media img").attr("alt")).toBe("EVENT conceptual media");
     expect($("[data-reference-section=APPLICATIONS] p").text()).toBe("Applications copy stays.");
+  });
+
+  test("resolves and patches contextual media for valid long-form article markup", () => {
+    const resolved = resolveContextualPresentationSlots(articleHtml, [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 9)]);
+    expect(resolved).toEqual([{ role: "CONTEXTUAL", requestedSlot: "POST_HERO_CONTEXTUAL", actualSection: "ARTICLE_BODY", selector: "h1 + figure img:first-of-type", placement: "IMAGE" }]);
+
+    const patched = load(patchContextualPresentationMedia(articleHtml, [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 9)]), null, false);
+    expect(patched("figure img").first().attr("src")).toBe("https://example.test/9.jpg");
+    expect(patched("figure img").first().attr("data-media-role")).toBe("CONTEXTUAL_IN_USE");
+    expect(patched("figure img").first().attr("data-generated-asset-sha")).toBe("9999999999999999999999999999999999999999999999999999999999999999");
+    expect(patched("h1").first().text()).toBe("Outdoor Digital Sphere in Florida");
+  });
+
+  test("fails closed when presentation root is missing", () => {
+    expect(() => resolveContextualPresentationSlots("<div>No authoritative article presentation.</div>", [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 10)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
+  });
+
+  test("fails closed when SAW presentation root is malformed", () => {
+    const malformed = `${html}${html}`;
+    expect(() => resolveContextualPresentationSlots(malformed, [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 11)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
+  });
+
+  test("does not allow SAW-only slots on long-form article markup", () => {
+    expect(() => resolveContextualPresentationSlots(articleHtml, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 12)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_SLOT_MISSING:APPLICATION_STAGE");
+  });
+
+  test("uses format semantics rather than FL-specific logic", () => {
+    const nonFlArticle = articleHtml.replace("Florida", "Alabama");
+    const resolved = resolveContextualPresentationSlots(nonFlArticle, [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 13)]);
+    expect(resolved[0]).toMatchObject({ requestedSlot: "POST_HERO_CONTEXTUAL", actualSection: "ARTICLE_BODY" });
   });
 });
