@@ -86,7 +86,7 @@ function fingerprint(prompt: string): string {
 }
 
 function containsFalseEvidenceClaim(value: string): boolean {
-  const assertions = value.replace(/\b(?:not|never)\s+(?:an?\s+)?(?:actual|completed|customer|client)\s+(?:installation|project)\b/gi, "");
+  const assertions = value.replace(/\b(?:do\s+not|don't|not|never|no)\b[^.!?]{0,80}?\b(?:actual|completed|customer|client)\s+(?:installation|project)\b/gi, "");
   return /\b(?:actual|completed|customer|client)\s+(?:installation|project)\b/i.test(assertions);
 }
 

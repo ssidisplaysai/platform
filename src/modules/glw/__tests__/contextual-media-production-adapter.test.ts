@@ -30,6 +30,28 @@ describe("generalized contextual media production adapter", () => {
     expect(() => validateContextualVisualPlan([{ ...plan[0], mediaRole: "PRODUCT_AUTHORITY" as never }])).toThrow("GENERATED_PRODUCT_AUTHORITY_MEDIA_FORBIDDEN");
   });
 
+  test("allows explicit negated non-documentary wording but blocks positive installation claims", () => {
+    expect(() => validateContextualVisualPlan([
+      {
+        role: "CONTEXTUAL_IN_USE",
+        mediaRole: "CONTEXTUAL_IN_USE",
+        slot: "POST_HERO_CONTEXTUAL",
+        prompt: "Do not imply this is a real completed customer installation; treat as conceptual contextual visualization only.",
+        altText: "Conceptual contextual visualization in Florida; not a real customer installation.",
+      },
+    ])).not.toThrow();
+
+    expect(() => validateContextualVisualPlan([
+      {
+        role: "CONTEXTUAL_IN_USE",
+        mediaRole: "CONTEXTUAL_IN_USE",
+        slot: "POST_HERO_CONTEXTUAL",
+        prompt: "Photorealistic completed customer installation at a real client project site.",
+        altText: "Completed customer installation in production.",
+      },
+    ])).toThrow("GENERATED_CONTEXTUAL_MEDIA_FALSE_EVIDENCE_CLAIM");
+  });
+
   test("dry-run resolves all gates without invoking side effects", async () => {
     const deps = dependencies();
     const result = await runContextualMediaProductionAdapter({ mode: "DRY_RUN", identity, visualPlan: plan, productAuthority, providerReady: true, actor: "owner", dependencies: deps });
@@ -53,5 +75,28 @@ describe("generalized contextual media production adapter", () => {
     expect(deps.persistGeneration).not.toHaveBeenCalled();
     expect(result.accounting.imageGenerationRequests).toBe(0);
     expect(result.accounting.wordpressUploads).toBe(0);
+  });
+
+  test("provider generation failure cannot become media success", async () => {
+    const deps = dependencies({ generate: jest.fn(async () => { throw new Error("CONTEXTUAL_MEDIA_GENERATION_FAILED:generation_failed"); }) });
+    await expect(runContextualMediaProductionAdapter({ mode: "EXECUTE", identity, visualPlan: [plan[0]], productAuthority, providerReady: true, actor: "owner", dependencies: deps })).rejects.toThrow("CONTEXTUAL_MEDIA_GENERATION_FAILED:generation_failed");
+    expect(deps.persistGeneration).not.toHaveBeenCalled();
+    expect(deps.persistAssignment).not.toHaveBeenCalled();
+    expect(deps.uploadMedia).not.toHaveBeenCalled();
+  });
+
+  test("invalid visual evidence claims fail before any provider invocation", async () => {
+    const deps = dependencies();
+    const invalid = [{
+      role: "CONTEXTUAL_IN_USE",
+      mediaRole: "CONTEXTUAL_IN_USE" as const,
+      slot: "POST_HERO_CONTEXTUAL" as const,
+      prompt: "Completed customer installation used as authority.",
+      altText: "Completed customer installation.",
+    }];
+    await expect(runContextualMediaProductionAdapter({ mode: "EXECUTE", identity, visualPlan: invalid, productAuthority, providerReady: true, actor: "owner", dependencies: deps })).rejects.toThrow("GENERATED_CONTEXTUAL_MEDIA_FALSE_EVIDENCE_CLAIM");
+    expect(deps.generate).not.toHaveBeenCalled();
+    expect(deps.persistGeneration).not.toHaveBeenCalled();
+    expect(deps.uploadMedia).not.toHaveBeenCalled();
   });
 });
