@@ -7,6 +7,7 @@ export type AuthoritativeGeneratedPageProjection = {
   certification: RenderedVisualCertification | null;
   pageRevisionIdentity: string;
   contextualBuildSessionId: string;
+  productAuthorityRendered: boolean;
   contextualMedia: readonly {
     role: string;
     semanticRole: string;
@@ -34,12 +35,18 @@ export function projectAuthoritativeGeneratedPage(input: {
   const target = certification && input.target.status !== "published" && (certification.identity.wordpressStatus === "publish" || draftReady)
     ? { ...input.target, status: certification.identity.wordpressStatus === "publish" ? "published" as const : "draft_ready" as const, wordpressObjectId: certification.identity.wordpressObjectId }
     : input.target;
+  const productAuthorityMediaIds = certification?.captures[0]?.media
+    .filter((media) => media.semanticRole === "PRODUCT_AUTHORITY" && media.mediaId)
+    .map((media) => media.mediaId!) ?? [];
+  const productAuthorityRendered = productAuthorityMediaIds.some((mediaId) =>
+    certification?.captures.every((capture) => capture.media.some((candidate) => candidate.mediaId === mediaId && candidate.rendered)) === true);
   const contextualMedia = certification?.captures[0]?.media.filter((media) => media.mediaId && media.semanticRole !== "PRODUCT_AUTHORITY").map((media) => ({ role: media.contextId ?? media.semanticRole, semanticRole: media.semanticRole, mediaId: media.mediaId!, rendered: certification.captures.every((capture) => capture.media.some((candidate) => candidate.mediaId === media.mediaId && candidate.rendered)) })) ?? [];
   return {
     target,
     certification,
     pageRevisionIdentity: certification?.identity.pageRevisionIdentity ?? `job:${input.job.jobId}:${input.job.updatedAt}`,
     contextualBuildSessionId: certification ? `contextual-media:${input.target.targetId}` : `glw-job:${input.job.jobId}`,
+    productAuthorityRendered,
     contextualMedia,
   };
 }

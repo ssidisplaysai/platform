@@ -75,6 +75,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
   releaseCapability: GlwCampaignActivationReleaseCapabilityState;
   mcpConfigured: boolean;
   referenceImage: GlwReferenceImageCandidate | null;
+  projectionTruthByTargetId?: Readonly<Record<string, { productAuthorityRendered: boolean; contextualRendered: boolean }>>;
 }): GlwCampaignOperatorReadModel {
   const jobs = new Map(input.jobs.map((job) => [job.jobId, job]));
   const referenceComplete = input.targets.filter((target) => target.status === "reference_complete").length;
@@ -97,6 +98,10 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     const job = target.jobId ? jobs.get(target.jobId) : null;
     return Boolean(job && (target.status === "content_ready" || target.status === "running" || target.status === "failed") && ["CONTENT_READY", "COMPLETE", "FAILED"].includes(job.status));
   });
+  const staleRecoverable = input.targets.some((target) => {
+    const job = target.jobId ? jobs.get(target.jobId) : null;
+    return Boolean(target.status === "running" && job && ["POLL_TIMEOUT", "EXECUTION_DISCOVERY_TIMEOUT"].includes(job.errorCode ?? ""));
+  });
 
   let currentStage = "Reference";
   let nextStage = "Reference approval";
@@ -114,9 +119,9 @@ export function deriveGlwCampaignOperatorReadModel(input: {
       nextStage = "Activate campaign";
       canonicalAction = { kind: "ACTIVATE", label: "Activate Campaign", href: "/glw/campaigns", enabled: input.releaseCapability.ready, reason: input.releaseCapability.reason };
     }
-  } else if (reconcilable) {
+  } else if (reconcilable || staleRecoverable) {
     currentStage = "Reconciliation";
-    nextStage = "Reconcile the exact execution";
+    nextStage = staleRecoverable ? "Recover stale execution and release blocked slot" : "Reconcile the exact execution";
     canonicalAction = { kind: "RECONCILE", label: "Reconcile Campaign", href: "#campaign-actions", enabled: true, reason: null };
   } else if (running > 0) {
     currentStage = "Execution";
@@ -152,9 +157,12 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     .sort((left, right) => targetIdentity(left).localeCompare(targetIdentity(right)))
     .map((target): GlwCampaignOperatorTarget => {
       const job = target.jobId ? jobs.get(target.jobId) ?? null : null;
+      const projectionTruth = input.projectionTruthByTargetId?.[target.targetId];
       const isReference = target.status === "reference_complete";
       const contextual = isReference
         ? referenceImageState(input.referenceImage)
+        : projectionTruth?.contextualRendered
+          ? { state: "APPROVED" as const, detail: "Current governed rendered visual certification verifies contextual media rendering." }
         : job?.featuredImagePresent === true
           ? { state: "READY" as const, detail: "Execution verified a featured image; certified contextual role assignment is not yet wired." }
           : job?.status === "RUNNING" || job?.status === "DISPATCHED"
@@ -170,7 +178,9 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         wordpressObjectId: target.wordpressObjectId ?? job?.wordpressObjectId ?? null,
         wordpressStatus: job?.wordpressStatus ?? (target.status === "published" ? "publish" : target.status === "draft_ready" ? "draft" : null),
         wordpressUrl: job?.wordpressUrl ?? null,
-        productAuthorityImage: { state: "NOT_WIRED", detail: "Target-level PRODUCT_AUTHORITY assignment is not exposed by the campaign backend." },
+        productAuthorityImage: projectionTruth?.productAuthorityRendered
+          ? { state: "READY", detail: "Current governed rendered visual certification verifies PRODUCT_AUTHORITY media rendering." }
+          : { state: "NOT_WIRED", detail: "Target-level PRODUCT_AUTHORITY assignment is not exposed by the campaign backend." },
         contextualInUseImage: contextual,
         lastActivity: latestTimestamp(target, job),
         issue: target.lastError ?? job?.errorMessage ?? null,
@@ -208,6 +218,17 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
     const job = target.jobId ? jobMap.get(target.jobId) : null;
     return job ? projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions }).target : target;
   });
+  const projectionTruthByTargetId = Object.fromEntries(
+    targets.map((target) => {
+      const job = target.jobId ? jobMap.get(target.jobId) : null;
+      if (!job) return [target.targetId, { productAuthorityRendered: false, contextualRendered: false }];
+      const projection = projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions });
+      return [target.targetId, {
+        productAuthorityRendered: projection.productAuthorityRendered,
+        contextualRendered: projection.contextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered),
+      }];
+    }),
+  ) as Readonly<Record<string, { productAuthorityRendered: boolean; contextualRendered: boolean }>>;
   const latestGrant = listGlwCampaignActivationGrants(campaignId).at(-1) ?? null;
   const runningReleaseSha = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
   const releaseCapability = resolveGlwCampaignActivationReleaseCapability({ organizationId: campaign.organizationId, siteId: campaign.siteId, runningReleaseSha });
@@ -215,5 +236,5 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
   const referenceTarget = targets.find((target) => target.status === "reference_complete" && target.citySlug && target.cityName) ?? null;
   const referenceDraft = referenceTarget?.citySlug ? getGlwLocalReferenceDraft(campaignId, referenceTarget.stateCode, referenceTarget.citySlug) : null;
   const referenceImage = referenceDraft ? getLatestGlwReferenceImageCandidate({ organizationId: campaign.organizationId, siteId: campaign.siteId, campaignId, referenceDraftId: referenceDraft.referenceDraftId }) : null;
-  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage });
+  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage, projectionTruthByTargetId });
 }

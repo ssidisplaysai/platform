@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { authorizeRequest, hasOrganizationScope, resolveRequestPrincipal, resolveRequestScope } from "@/modules/foundation/api-auth";
 import {
   enableGlwCampaignActivationReleaseCapability,
   resolveGlwCampaignActivationReleaseCapability,
@@ -35,11 +35,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = authorizeRequest(request, "schedules:create");
+  const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
-  if (!auth.roles.includes("platform_admin")) return NextResponse.json({ error: "Release capability enablement requires platform_admin." }, { status: 403 });
   const scope = scoped(request);
   if ("error" in scope) return scope.error;
+  const principal = resolveRequestPrincipal(request);
+  if (!principal) return NextResponse.json({ error: "Exact authenticated principal and session are required." }, { status: 403 });
   const body = await request.json().catch(() => null) as { operation?: string; capabilityOperation?: string; releaseSha?: string } | null;
   if (body?.operation !== "ENABLE_RELEASE_CAPABILITY" || body.capabilityOperation !== "GLW_CAMPAIGN_ACTIVATION") {
     return NextResponse.json({ error: "Explicit GLW_CAMPAIGN_ACTIVATION capability enablement is required." }, { status: 400 });
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
   const capability = enableGlwCampaignActivationReleaseCapability({
     ...scope,
     releaseSha,
-    enabledBy: "platform_admin",
+    enabledBy: principal.principalId,
   });
   return NextResponse.json({ capability, ownerAuthorizationCreated: false, publicationAuthorized: false, activationPerformed: false }, { status: 201 });
 }

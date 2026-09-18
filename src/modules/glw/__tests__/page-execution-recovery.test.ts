@@ -499,7 +499,8 @@ describe("GLW async n8n result recovery", () => {
     const result = await service.pollToTerminal("glw-job-001", { readExecution }, { maxAttempts: 3, intervalMs: 0 });
     expect(dispatch).toHaveBeenCalledTimes(1);
     expect(readExecution).toHaveBeenCalledTimes(3);
-    expect(result).toMatchObject({ status: "RUNNING", errorCode: "POLL_TIMEOUT", completedAt: null });
+    expect(result).toMatchObject({ status: "FAILED", errorCode: "POLL_TIMEOUT" });
+    expect(result.completedAt).not.toBeNull();
   });
 
   test("rejects a mismatched execution identity returned by the reader", async () => {

@@ -193,6 +193,20 @@ describe("GLW campaign target reconciliation", () => {
     });
   });
 
+  test("stale poll timeout requeues through reconciliation", () => {
+    expect(resolveGlwCampaignJobReconciliationDecision({
+      status: "FAILED",
+      errorCode: "POLL_TIMEOUT",
+      errorMessage: "n8n execution did not reach a terminal state within the bounded polling window.",
+      externalExecutionId: "execution-1",
+      generatedDraft: null,
+      wordpressObjectId: null,
+    })).toEqual({
+      action: "requeue",
+      error: "n8n execution did not reach a terminal state within the bounded polling window.",
+    });
+  });
+
   test("failed dispatch with an external execution cannot be requeued as pre-execution", () => {
     expect(resolveGlwCampaignJobReconciliationDecision({
       status: "FAILED",

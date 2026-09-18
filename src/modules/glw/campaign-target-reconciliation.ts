@@ -98,6 +98,17 @@ export function resolveGlwCampaignJobReconciliationDecision(
 ): GlwCampaignJobReconciliationDecision {
   if (
     job.status === "FAILED"
+    && (job.errorCode === "POLL_TIMEOUT" || job.errorCode === "EXECUTION_DISCOVERY_TIMEOUT")
+    && !job.generatedDraft
+    && !job.wordpressObjectId
+  ) {
+    return {
+      action: "requeue",
+      error: job.errorMessage?.trim() || "Execution became stale before draft evidence was recovered.",
+    };
+  }
+  if (
+    job.status === "FAILED"
     && job.errorCode === "DISPATCH_FAILED"
     && !job.externalExecutionId
     && !job.generatedDraft

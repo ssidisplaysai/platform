@@ -65,6 +65,9 @@ function isTerminal(status: string): boolean {
 }
 
 async function recoverExecution(job: GlwPageExecutionRecord): Promise<GlwPageExecutionRecord> {
+  if (!job.externalExecutionId && (job.status === "DISPATCHED" || job.status === "DISCOVERING_EXECUTION")) {
+    return service.discoverExecution(job.jobId, executionReader);
+  }
   if (!job.externalExecutionId) return job;
   return service.pollToTerminal(job.jobId, executionReader);
 }

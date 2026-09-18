@@ -901,10 +901,13 @@ export function createGlwDraftExecutionService(input: {
         if (attempt < maxAttempts - 1) await delay(intervalMs);
       }
 
+      const timeoutAt = now();
       return input.repository.update(current.jobId, {
+        status: "FAILED",
         errorCode: "POLL_TIMEOUT",
         errorMessage: "n8n execution did not reach a terminal state within the bounded polling window.",
-        updatedAt: now(),
+        updatedAt: timeoutAt,
+        completedAt: timeoutAt,
       });
     },
     async execute(request: GlwGenerationRequest): Promise<GlwPageExecutionRecord> {

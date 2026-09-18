@@ -183,12 +183,12 @@ export function GlwCampaignOperatorControls({
   const [reconciling, setReconciling] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [refreshingSeo, setRefreshingSeo] = useState(false);
+  const [enablingReleaseCapability, setEnablingReleaseCapability] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestHeaders = useCallback((includeJson = false): HeadersInit => {
     const headers = {
       ...(includeJson ? { "Content-Type": "application/json" } : {}),
-      "x-gcp-roles": "platform_admin",
       "x-gcp-organization-id": organizationId,
       "x-gcp-site-id": siteId,
     };
@@ -402,9 +402,38 @@ export function GlwCampaignOperatorControls({
     await refreshWorkspace();
   }
 
+  async function enableRunningReleaseCapability() {
+    if (!scheduler?.releaseAuthority.runningReleaseSha) return;
+    setEnablingReleaseCapability(true);
+    setMessage(null);
+    setError(null);
+
+    const response = await fetch("/api/glw/release-capabilities/campaign-activation", {
+      method: "POST",
+      headers: requestHeaders(true),
+      body: JSON.stringify({
+        operation: "ENABLE_RELEASE_CAPABILITY",
+        capabilityOperation: "GLW_CAMPAIGN_ACTIVATION",
+        releaseSha: scheduler.releaseAuthority.runningReleaseSha,
+      }),
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => null) as { error?: string; capability?: { releaseSha?: string } } | null;
+
+    if (!response.ok) {
+      setError(payload?.error ?? `Release capability enablement failed (HTTP ${response.status}).`);
+      setEnablingReleaseCapability(false);
+      return;
+    }
+
+    setMessage(`Release capability enabled for running SHA ${payload?.capability?.releaseSha ?? scheduler.releaseAuthority.runningReleaseSha}.`);
+    setEnablingReleaseCapability(false);
+    await refreshWorkspace();
+  }
+
   if (campaignStatus !== "active") return null;
 
-  const busy = loading || dispatching || reconciling || publishing || refreshingSeo;
+  const busy = loading || dispatching || reconciling || publishing || refreshingSeo || enablingReleaseCapability;
 
   return (
     <section id="campaign-actions" className="border border-zinc-800 bg-zinc-900/50 p-6">
@@ -519,6 +548,19 @@ export function GlwCampaignOperatorControls({
             <div className="mt-5 border border-amber-800 bg-amber-950/20 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Execution Configuration Required</p>
               <p className="mt-2 text-sm text-zinc-300">A platform operator must restart this supervised runtime with its approved GLW n8n MCP endpoint and token bindings. No target will be leased while execution authority is unavailable.</p>
+            </div>
+          ) : null}
+          {!scheduler.releaseAuthority.capability.ready ? (
+            <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/70 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-zinc-500">Release Capability Required</p>
+                  <p className="mt-1 text-sm text-zinc-300">{scheduler.releaseAuthority.runningReleaseSha ? `Activation requires an enabled capability for running SHA ${scheduler.releaseAuthority.runningReleaseSha}.` : "Activation requires an exact running release SHA."}</p>
+                </div>
+                <button type="button" onClick={() => void enableRunningReleaseCapability()} disabled={busy || !scheduler.releaseAuthority.runningReleaseSha} className="rounded-lg border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
+                  {enablingReleaseCapability ? "Enabling..." : "Enable Running Release Capability"}
+                </button>
+              </div>
             </div>
           ) : null}
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
