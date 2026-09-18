@@ -427,7 +427,7 @@ export async function buildGeneratedPageReviewModel(input: { jobId: string; orga
 
   const sourceHtml = job.generatedDraft?.contentHtml ?? "";
   const renderedHtml = text(wordpressDraft?.content?.raw ?? wordpressDraft?.content?.rendered);
-  const currentIdentity: RenderedVisualPageIdentity = { organizationId: job.organizationId, siteId: job.siteId, pageId: target.targetId, pageRevisionIdentity: projection.pageRevisionIdentity, canonicalPath: target.canonicalPath ?? job.slug, contentHash: hashRenderedVisualContent(sourceHtml), renderedContentHash: renderedHtml ? hashRenderedVisualContent(renderedHtml) : null, campaignId: campaign.campaignId, targetId: target.targetId, jobId: job.jobId, externalExecutionId: job.externalExecutionId, wordpressObjectId: objectId, wordpressStatus: wordpressStatus || job.wordpressStatus };
+  const currentIdentity: RenderedVisualPageIdentity = { organizationId: job.organizationId, siteId: job.siteId, pageId: target.targetId, pageRevisionIdentity: projection.pageRevisionIdentity, canonicalPath: target.canonicalPath ?? job.slug, contentHash: hashRenderedVisualContent(sourceHtml), renderedContentHash: renderedHtml ? hashRenderedVisualContent(renderedHtml) : null, campaignId: campaign.campaignId, targetId: target.targetId, jobId: job.jobId, externalExecutionId: job.externalExecutionId, wordpressObjectId: objectId, wordpressStatus: wordpressDraft?.status ?? job.wordpressStatus };
   const visualCertification = getRenderedVisualCertificationState({ currentIdentity });
   const mediaAssignments = [
     ...listSitePageMediaAssignments({ organizationId: job.organizationId, siteId: job.siteId, buildSessionId: projection.contextualBuildSessionId, pageRevisionId: projection.pageRevisionIdentity }),

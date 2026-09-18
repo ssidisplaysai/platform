@@ -160,7 +160,7 @@ describe("Genesis generated page review workspace", () => {
   test("build model computes current visual identity from authoritative current state, not prior certification identity fallback", () => {
     const source = readFileSync(join(process.cwd(), "src/modules/glw/generated-page-review-read-model.ts"), "utf8");
     expect(source).toContain("const currentIdentity: RenderedVisualPageIdentity = { organizationId: job.organizationId");
-    expect(source).toContain("wordpressStatus: wordpressStatus || job.wordpressStatus");
+    expect(source).toContain("wordpressStatus: wordpressDraft?.status ?? job.wordpressStatus");
     expect(source).not.toContain("projection.certification?.identity ??");
   });
 
