@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, resolveRequestScope } from "@/modules/foundation/api-auth";
-import { executeGaRichCompositionApplyRepair, GA_RICH_COMPOSITION_REPAIR_IDENTITY } from "@/modules/glw/ga-rich-composition-apply-repair-service";
+import { executeGaRichCompositionApplyRepair, GA_RICH_COMPOSITION_REPAIR_IDENTITY, inspectGaRichCompositionApplyRepairPreflight } from "@/modules/glw/ga-rich-composition-apply-repair-service";
 import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +32,51 @@ const allowedRequestKeys = [
 
 function validSha256(value: string): boolean {
   return /^[0-9a-f]{64}$/i.test(value.trim());
+}
+
+export async function GET(request: NextRequest, context: Context) {
+  const auth = authorizeRequest(request, "sites:read");
+  const scope = resolveRequestScope(request);
+  const { jobId } = await context.params;
+  if (
+    !auth.ok
+    || !auth.roles.includes("platform_admin")
+    || scope.organizationId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.organizationId
+    || scope.siteId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.siteId
+    || jobId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.jobId
+  ) {
+    return NextResponse.json({ error: auth.ok ? "Exact GA repair scope required." : auth.error }, { status: auth.ok ? 403 : auth.status });
+  }
+
+  try {
+    const preflight = await inspectGaRichCompositionApplyRepairPreflight();
+    return NextResponse.json({
+      ...preflight,
+      wordpressMutationPerformed: false,
+      publicationPerformed: false,
+      dispatchPerformed: false,
+      workflowExecuted: false,
+      regenerationPerformed: false,
+      mediaRegenerationPerformed: false,
+      imageGenerationRequested: false,
+      n8nDispatchRequested: false,
+      wordpressCreateRequested: false,
+    });
+  } catch (error) {
+    const source = error instanceof Error ? error.message : "GA_RICH_REPAIR_PREFLIGHT_FAILED";
+    return NextResponse.json({
+      error: source.split(":")[0],
+      wordpressMutationPerformed: false,
+      publicationPerformed: false,
+      dispatchPerformed: false,
+      workflowExecuted: false,
+      regenerationPerformed: false,
+      mediaRegenerationPerformed: false,
+      imageGenerationRequested: false,
+      n8nDispatchRequested: false,
+      wordpressCreateRequested: false,
+    }, { status: 409 });
+  }
 }
 
 export async function POST(request: NextRequest, context: Context) {

@@ -11,6 +11,7 @@ jest.mock("@/modules/glw/trusted-operator-principal", () => ({
 
 jest.mock("@/modules/glw/ga-rich-composition-apply-repair-service", () => ({
   executeGaRichCompositionApplyRepair: jest.fn(),
+  inspectGaRichCompositionApplyRepairPreflight: jest.fn(),
   GA_RICH_COMPOSITION_REPAIR_IDENTITY: {
     organizationId: "led-display-warehouse",
     siteId: "site-led-display-warehouse-production",
@@ -24,14 +25,15 @@ jest.mock("@/modules/glw/ga-rich-composition-apply-repair-service", () => ({
 }));
 
 import { authorizeRequest, resolveRequestScope } from "@/modules/foundation/api-auth";
-import { executeGaRichCompositionApplyRepair } from "@/modules/glw/ga-rich-composition-apply-repair-service";
+import { executeGaRichCompositionApplyRepair, inspectGaRichCompositionApplyRepairPreflight } from "@/modules/glw/ga-rich-composition-apply-repair-service";
 import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
-import { POST } from "../route";
+import { GET, POST } from "../route";
 
 const auth = jest.mocked(authorizeRequest);
 const scope = jest.mocked(resolveRequestScope);
 const principal = jest.mocked(resolveGlwTrustedOperatorPrincipal);
 const execute = jest.mocked(executeGaRichCompositionApplyRepair);
+const inspect = jest.mocked(inspectGaRichCompositionApplyRepairPreflight);
 
 const context = { params: Promise.resolve({ jobId: "cb4684bf-477c-45f2-98c3-a37717368b83" }) };
 
@@ -42,6 +44,20 @@ function request(body: unknown) {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
+    },
+  );
+}
+
+function getRequest() {
+  return new NextRequest(
+    "http://localhost/api/glw/pages/cb4684bf-477c-45f2-98c3-a37717368b83/rich-composition-apply-repair",
+    {
+      method: "GET",
+      headers: {
+        "x-gcp-roles": "platform_admin",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
     },
   );
 }
@@ -108,6 +124,35 @@ describe("GA rich composition apply repair route", () => {
       imageGenerationRequested: false,
       n8nDispatchRequested: false,
       wordpressCreateRequested: false,
+    });
+  });
+
+  it("returns strict read-only preflight hash without mutation", async () => {
+    inspect.mockResolvedValueOnce({
+      operation: "APPLY_CURRENT_RICH_COMPOSITION_TO_EXISTING_DRAFT",
+      identity: {
+        campaignId: "campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview",
+        targetId: "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-ga",
+        jobId: "cb4684bf-477c-45f2-98c3-a37717368b83",
+        externalExecutionId: "703853",
+        wordpressObjectId: "20169",
+        wordpressStatus: "draft",
+      },
+      currentStoredSha256: "a".repeat(64),
+      title: "Outdoor Digital Sphere in Georgia",
+      canonicalPath: "outdoor-digital-sphere/georgia",
+      wordpressParentId: 124,
+      visualCertificationState: "CURRENT",
+    });
+
+    const response = await GET(getRequest(), context);
+    const body = await response.json();
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      currentStoredSha256: "a".repeat(64),
+      wordpressMutationPerformed: false,
+      imageGenerationRequested: false,
+      n8nDispatchRequested: false,
     });
   });
 

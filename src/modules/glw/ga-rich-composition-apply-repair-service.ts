@@ -54,6 +54,23 @@ type ExecuteInput = {
   expectedStoredSha256: string;
 };
 
+export type GaRichCompositionApplyRepairPreflight = {
+  operation: "APPLY_CURRENT_RICH_COMPOSITION_TO_EXISTING_DRAFT";
+  identity: {
+    campaignId: string;
+    targetId: string;
+    jobId: string;
+    externalExecutionId: string;
+    wordpressObjectId: string;
+    wordpressStatus: "draft";
+  };
+  currentStoredSha256: string;
+  title: string;
+  canonicalPath: string;
+  wordpressParentId: number | null;
+  visualCertificationState: GeneratedPageReviewModel["visualQa"]["certificationState"];
+};
+
 export type GaRichCompositionApplyRepairResult = {
   operation: "APPLY_CURRENT_RICH_COMPOSITION_TO_EXISTING_DRAFT";
   jobId: string;
@@ -204,6 +221,78 @@ const defaults: RepairDependencies = {
   applyTitleSuppression: applyScopedThemeTitleSuppression,
   now: () => new Date().toISOString(),
 };
+
+export async function inspectGaRichCompositionApplyRepairPreflight(
+  dependencies: RepairDependencies = defaults,
+): Promise<GaRichCompositionApplyRepairPreflight> {
+  const model = await dependencies.buildReviewModel({
+    jobId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.jobId,
+    organizationId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.organizationId,
+    siteId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.siteId,
+  });
+  if (!model) throw new Error("GA_RICH_REPAIR_SCOPE_NOT_FOUND");
+
+  const job = await dependencies.getJobById(GA_RICH_COMPOSITION_REPAIR_IDENTITY.jobId);
+  if (!job) throw new Error("GA_RICH_REPAIR_JOB_NOT_FOUND");
+
+  const target = dependencies.listAllTargets().find((entry) =>
+    entry.targetId === GA_RICH_COMPOSITION_REPAIR_IDENTITY.targetId
+    && entry.campaignId === GA_RICH_COMPOSITION_REPAIR_IDENTITY.campaignId
+    && entry.organizationId === GA_RICH_COMPOSITION_REPAIR_IDENTITY.organizationId
+    && entry.siteId === GA_RICH_COMPOSITION_REPAIR_IDENTITY.siteId,
+  );
+  if (!target) throw new Error("GA_RICH_REPAIR_TARGET_NOT_FOUND");
+
+  if (
+    model.identity.campaignId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.campaignId
+    || model.identity.targetId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.targetId
+    || model.trace.jobId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.jobId
+    || model.trace.externalExecutionId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.externalExecutionId
+    || model.wordpress.objectId !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.wordpressObjectId
+    || model.wordpress.status !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.wordpressStatus
+  ) {
+    throw new Error("GA_RICH_REPAIR_IDENTITY_MISMATCH");
+  }
+
+  const before = await dependencies.readWordPressDraft({
+    siteId: job.siteId,
+    wordpressObjectId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.wordpressObjectId,
+  });
+  const beforeHtml = text(before.content?.raw ?? before.content?.rendered);
+  const beforeHash = hash(beforeHtml);
+
+  const canonicalPath = target.canonicalPath ?? job.slug;
+  const canonicalSlug = canonicalSlugFromPath(canonicalPath);
+  const expectedParentId = parsePositiveInt(target.canonicalParentId ?? null);
+  const title = text(job.generatedDraft?.title ?? model.identity.title ?? job.title);
+
+  if (
+    String(before.id ?? "") !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.wordpressObjectId
+    || text(before.status) !== GA_RICH_COMPOSITION_REPAIR_IDENTITY.wordpressStatus
+    || text(before.slug).toLowerCase() !== canonicalSlug
+    || (expectedParentId !== null && Number(before.parent ?? 0) !== expectedParentId)
+    || text(before.title?.raw ?? before.title?.rendered) !== title
+  ) {
+    throw new Error("GA_RICH_REPAIR_PREFLIGHT_FAILED");
+  }
+
+  return {
+    operation: "APPLY_CURRENT_RICH_COMPOSITION_TO_EXISTING_DRAFT",
+    identity: {
+      campaignId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.campaignId,
+      targetId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.targetId,
+      jobId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.jobId,
+      externalExecutionId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.externalExecutionId,
+      wordpressObjectId: GA_RICH_COMPOSITION_REPAIR_IDENTITY.wordpressObjectId,
+      wordpressStatus: "draft",
+    },
+    currentStoredSha256: beforeHash,
+    title,
+    canonicalPath,
+    wordpressParentId: expectedParentId,
+    visualCertificationState: model.visualQa.certificationState,
+  };
+}
 
 export async function executeGaRichCompositionApplyRepair(
   input: ExecuteInput,
