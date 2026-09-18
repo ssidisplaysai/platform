@@ -48,6 +48,20 @@ function asTrimmed(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
 }
 
+function isExactRecoverableZeroAuthorityFailure(job: {
+  status: string;
+  errorCode?: string | null;
+  generatedDraft?: unknown;
+  wordpressObjectId?: string | number | null;
+  wordpressStatus?: string | null;
+}): boolean {
+  return job.status === "FAILED"
+    && job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"
+    && Boolean(job.generatedDraft)
+    && !job.wordpressObjectId
+    && job.wordpressStatus !== "publish";
+}
+
 export async function POST(
   request: NextRequest,
   context: {
@@ -129,9 +143,6 @@ export async function POST(
     if (!selected || selected.campaignId !== campaignId) {
       return NextResponse.json({ error: "Selected target does not belong to the exact campaign." }, { status: 409 });
     }
-    if (selected.status !== "content_ready" && selected.status !== "running") {
-      return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
-    }
     if (!selected.jobId || selected.jobId !== expectedJobId) {
       return NextResponse.json({ error: "Selected target does not match the exact existing job." }, { status: 409 });
     }
@@ -144,6 +155,13 @@ export async function POST(
     }
     if ((selectedJob.externalExecutionId ?? "") !== expectedExecutionId) {
       return NextResponse.json({ error: "Selected target execution identity does not match the exact existing execution." }, { status: 409 });
+    }
+    const exactRecoverableFailedSelection = selected.status === "failed" && isExactRecoverableZeroAuthorityFailure(selectedJob);
+    if (selected.status === "failed" && !exactRecoverableFailedSelection) {
+      return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
+    }
+    if (selected.status !== "failed" && selected.status !== "content_ready" && selected.status !== "running") {
+      return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
     }
     if (selected.status === "running" && selectedJob.status !== "CONTENT_READY") {
       return NextResponse.json({ error: "Selected running target is not in an exact content-ready execution state." }, { status: 409 });
@@ -237,6 +255,15 @@ export async function POST(
           job,
         );
 
+      const exactRecoverableFailedContinuation = Boolean(
+        expectedTargetId
+        && target.status === "failed"
+        && target.jobId === expectedJobId
+        && (job.externalExecutionId ?? "") === expectedExecutionId
+        && !target.wordpressObjectId
+        && isExactRecoverableZeroAuthorityFailure(job),
+      );
+
       if (!expectedTargetId && decision.action === "continue" && target.status === "running" && job.status === "CONTENT_READY" && job.externalExecutionId) {
         const updated = reconcileGlwCampaignTargetContentReady({
           campaignId,
@@ -258,7 +285,7 @@ export async function POST(
         continue;
       }
 
-      if (decision.action === "continue") {
+      if (decision.action === "continue" || exactRecoverableFailedContinuation) {
         const { form } =
           buildGlwCampaignProductionGenerationForm({
             campaign,

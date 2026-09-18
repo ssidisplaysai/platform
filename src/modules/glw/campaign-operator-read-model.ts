@@ -67,6 +67,16 @@ function referenceImageState(candidate: GlwReferenceImageCandidate | null): GlwC
   return { state: "DEGRADED", detail: `Latest campaign application visual is ${candidate.status.toLowerCase().replaceAll("_", " ")}.` };
 }
 
+function isRecoverableZeroAuthorityFailedTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
+  return target.status === "failed"
+    && Boolean(job)
+    && job!.status === "FAILED"
+    && job!.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"
+    && Boolean(job!.generatedDraft)
+    && !target.wordpressObjectId
+    && !job!.wordpressObjectId;
+}
+
 export function deriveGlwCampaignOperatorReadModel(input: {
   campaign: GlwCampaign;
   targets: readonly GlwCampaignTarget[];
@@ -86,7 +96,9 @@ export function deriveGlwCampaignOperatorReadModel(input: {
   const failed = input.targets.filter((target) => target.status === "failed").length;
   const contentReady = input.targets.filter((target) => {
     const job = target.jobId ? jobs.get(target.jobId) : null;
-    return target.status === "content_ready" || (target.status === "running" && job?.status === "CONTENT_READY");
+    return target.status === "content_ready"
+      || (target.status === "running" && job?.status === "CONTENT_READY")
+      || isRecoverableZeroAuthorityFailedTarget(target, job);
   }).length;
   const authorized = Boolean(input.latestGrant?.consumedAt || input.latestGrant?.claimedAt || (input.latestGrant && !input.latestGrant.consumedAt && new Date(input.latestGrant.expiresAt) > new Date()));
   const active = input.campaign.status === "active" || input.campaign.status === "complete";
@@ -162,7 +174,8 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     .sort((left, right) => targetIdentity(left).localeCompare(targetIdentity(right)))
     .map((target): GlwCampaignOperatorTarget => {
       const job = target.jobId ? jobs.get(target.jobId) ?? null : null;
-      const effectiveLifecycleState = target.status === "running" && job?.status === "CONTENT_READY"
+      const effectiveLifecycleState = (target.status === "running" && job?.status === "CONTENT_READY")
+        || isRecoverableZeroAuthorityFailedTarget(target, job)
         ? "content_ready"
         : target.status;
       const projectionTruth = input.projectionTruthByTargetId?.[target.targetId];
