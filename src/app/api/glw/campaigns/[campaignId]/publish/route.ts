@@ -298,7 +298,7 @@ export async function POST(
     return NextResponse.json({ error: "Organization scope is required." }, { status: 403 });
   }
 
-  const body = await request.json().catch(() => null) as { confirm?: string; stateCodes?: string[] } | null;
+  const body = await request.json().catch(() => null) as { confirm?: string; stateCodes?: string[]; targetId?: string } | null;
   if (body?.confirm !== "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS") {
     return NextResponse.json({ error: "Explicit publish confirmation is required." }, { status: 400 });
   }
@@ -341,10 +341,36 @@ export async function POST(
       .map((stateCode) => stateCode.trim().toUpperCase())
       .filter(Boolean),
   );
+  const requestedTargetId = typeof body.targetId === "string" ? body.targetId.trim() : "";
 
-  const eligible = listGlwCampaignTargets(campaignId)
-    .filter((target) => target.status === "draft_ready" && Boolean(target.wordpressObjectId) && Boolean(target.jobId))
-    .filter((target) => requestedStates.size === 0 || requestedStates.has(target.stateCode))
+  const draftReadyTargets = listGlwCampaignTargets(campaignId)
+    .filter((target) => target.status === "draft_ready" && Boolean(target.wordpressObjectId) && Boolean(target.jobId));
+
+  const stateFilteredTargets = draftReadyTargets
+    .filter((target) => requestedStates.size === 0 || requestedStates.has(target.stateCode));
+
+  if (requestedTargetId) {
+    const requestedTarget = stateFilteredTargets.find((target) => target.targetId === requestedTargetId) ?? null;
+    if (!requestedTarget) {
+      return NextResponse.json(
+        {
+          error: "Exact target is not draft_ready or is outside the requested state scope.",
+          campaignId,
+          targetId: requestedTargetId,
+          attempted: 0,
+          succeeded: 0,
+          failed: 0,
+          results: [],
+          queue: summarizeGlwCampaignTargets(campaignId),
+          publicationPerformed: false,
+        },
+        { status: 409 },
+      );
+    }
+  }
+
+  const eligible = stateFilteredTargets
+    .filter((target) => !requestedTargetId || target.targetId === requestedTargetId)
     .sort((a, b) => a.stateCode.localeCompare(b.stateCode));
 
   const results: Array<Record<string, unknown>> = [];

@@ -494,4 +494,93 @@ describe("campaign publish route gate integrity", () => {
     const markOrder = mockMarkPublished.mock.invocationCallOrder[0];
     expect(receiptOrder).toBeLessThan(markOrder);
   });
+
+  test("returns 409 when exact targetId is not draft_ready within requested scope", async () => {
+    const response = await POST(request({
+      confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS",
+      targetId: "target-missing",
+    }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.publicationPerformed).toBe(false);
+    expect(body.attempted).toBe(0);
+    expect(mockTransitionStatus).not.toHaveBeenCalled();
+  });
+
+  test("publishes only the exact requested targetId", async () => {
+    mockListTargets.mockReturnValue([
+      baselineTarget,
+      {
+        ...baselineTarget,
+        targetId: "target-2",
+        stateCode: "TX",
+        jobId: "job-2",
+        wordpressObjectId: "302",
+        canonicalPath: "/state/tx/",
+      },
+    ]);
+    mockGetExecutionById.mockImplementation(async (jobId: string) => (jobId === "job-1"
+      ? baselineExecution
+      : { ...baselineExecution, jobId: "job-2", wordpressObjectId: "302", externalExecutionId: "exec-2", state: "Texas" }));
+    const texasHtml = "<main><h1>Texas Service</h1><p>Body</p></main>";
+    const texasHash = createHash("sha256").update(texasHtml.trim()).digest("hex");
+    mockGetJson.mockResolvedValue({
+      ok: true,
+      body: {
+        id: 302,
+        status: "draft",
+        slug: "tx",
+        parent: 300,
+        title: { raw: "Texas Service" },
+        featured_media: 0,
+        content: { raw: texasHtml },
+      },
+    });
+    mockListCertifications.mockReturnValue([
+      {
+        ...baselineCertification,
+        certificationId: "cert-2",
+        identity: {
+          ...baselineCertification.identity,
+          targetId: "target-2",
+          pageId: "target-2",
+          pageRevisionIdentity: "job:job-2:2030-01-01T00:00:00.000Z",
+          jobId: "job-2",
+          externalExecutionId: "exec-2",
+          wordpressObjectId: "302",
+          canonicalPath: "/state/tx/",
+          contentHash: texasHash,
+          renderedContentHash: texasHash,
+        },
+      },
+    ]);
+    mockListOwnerDecisions.mockReturnValue([{ decision: "APPROVED", pageRevisionIdentity: "job:job-2:2030-01-01T00:00:00.000Z", contentHash: texasHash }]);
+
+    const response = await POST(request({
+      confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS",
+      targetId: "target-2",
+    }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.attempted).toBe(1);
+    expect(body.succeeded).toBe(1);
+    expect(body.results[0].stateCode).toBe("TX");
+    expect(mockTransitionStatus).toHaveBeenCalledTimes(1);
+  });
+
+  test("preserves stateCodes filtering when targetId is provided", async () => {
+    const response = await POST(request({
+      confirm: "PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS",
+      targetId: "target-1",
+      stateCodes: ["TX"],
+    }), { params: Promise.resolve({ campaignId: "campaign" }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.publicationPerformed).toBe(false);
+    expect(body.attempted).toBe(0);
+    expect(mockTransitionStatus).not.toHaveBeenCalled();
+  });
 });

@@ -9,6 +9,7 @@ import { GlwRichCompositionPreview } from "./GlwRichCompositionPreview";
 import { GlwVisualReviewAction } from "./GlwVisualReviewAction";
 import { GlwOwnerReviewDecisionAction } from "./GlwOwnerReviewDecisionAction";
 import { GlwGeneratedContextualMediaRepairAction } from "./GlwGeneratedContextualMediaRepairAction";
+import { GlwPublishPageAction } from "./GlwPublishPageAction";
 
 const stateTone: Record<
   ReviewSignal | GeneratedPageReviewModel["reviewState"],
@@ -945,6 +946,16 @@ export function GlwGeneratedPageReviewWorkspace({
             <GlwOwnerReviewDecisionAction
               {...model.actions.ownerDecision}
               currentDecision={model.visualQa.decision?.decision ?? null}
+            />
+          </div>
+        ) : null}
+        {model.actions.publish ? (
+          <div className="mt-4 border-t border-zinc-800 pt-4">
+            <GlwPublishPageAction
+              endpoint={model.actions.publish.endpoint}
+              organizationId={model.actions.publish.organizationId}
+              siteId={model.actions.publish.siteId}
+              targetId={model.actions.publish.targetId}
             />
           </div>
         ) : null}

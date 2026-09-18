@@ -75,6 +75,7 @@ export type GeneratedPageReviewModel = {
     listHref: string;
     visualCapture: { endpoint: string; organizationId: string; siteId: string };
     ownerDecision: { endpoint: string; organizationId: string; siteId: string } | null;
+    publish: { endpoint: string; organizationId: string; siteId: string; campaignId: string; targetId: string } | null;
     generatedContextualRepair:
       | {
           endpoint: string;
@@ -254,6 +255,14 @@ export function deriveGeneratedPageReviewModel(input: {
   const listQuery = `organizationId=${encodeURIComponent(input.campaign.organizationId)}&siteId=${encodeURIComponent(input.campaign.siteId)}`;
   const visualQa = deriveGeneratedPageVisualQaReview(input.visualCertification ?? { certification: null, decision: null, certificationState: "NOT_CERTIFIED", decisionState: "PENDING" });
   const ownerReviewEligible = !issues.some((issue) => issue.severity === "BLOCKED") && visualQa.certificationState === "CURRENT" && visualQa.overallState === "PASS" && input.visualCertification?.certification?.identity.wordpressStatus === "draft";
+  const publishEligible = input.target.status === "draft_ready"
+    && wordpressVerified
+    && wordpressStatus === "draft"
+    && visualQa.certificationState === "CURRENT"
+    && visualQa.overallState === "PASS"
+    && visualQa.decisionState === "CURRENT"
+    && visualQa.decision?.decision === "APPROVED"
+    && input.campaign.publicationPolicy !== "draft_only";
   const generatedContextualRepairEligible = strictGeneratedContextualRequired
     && input.target.status === "draft_ready"
     && wordpressStatus === "draft"
@@ -344,6 +353,13 @@ export function deriveGeneratedPageReviewModel(input: {
       listHref: `/glw/campaigns?${listQuery}`,
       visualCapture: { endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/visual-certification`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId },
       ownerDecision: ownerReviewEligible && input.visualCertification?.certification ? { endpoint: `/api/glw/visual-certifications/${encodeURIComponent(input.visualCertification.certification.certificationId)}/decision`, organizationId: input.campaign.organizationId, siteId: input.campaign.siteId } : null,
+      publish: publishEligible ? {
+        endpoint: `/api/glw/campaigns/${encodeURIComponent(input.campaign.campaignId)}/publish`,
+        organizationId: input.campaign.organizationId,
+        siteId: input.campaign.siteId,
+        campaignId: input.campaign.campaignId,
+        targetId: input.target.targetId,
+      } : null,
       generatedContextualRepair: generatedContextualRepairEligible && wordpressObjectId ? {
         endpoint: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/generated-contextual-media-repair`,
         organizationId: input.campaign.organizationId,

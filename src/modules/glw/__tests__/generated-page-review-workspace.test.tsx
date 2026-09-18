@@ -157,6 +157,198 @@ describe("Genesis generated page review workspace", () => {
     expect(ineligibleHtml).not.toContain("Needs Fix");
   });
 
+  test("exposes publish action only when exact publish gates are satisfied", () => {
+    const cert = {
+      certificationId: "cert-ready",
+      contract: "rendered-visual-certification-v1",
+      schemaVersion: 1,
+      identity: {
+        organizationId: "ssi",
+        siteId: "site-projector",
+        campaignId: campaign.campaignId,
+        targetId: target.targetId,
+        pageId: target.targetId,
+        pageRevisionIdentity: "job:job-dallas:2026-09-12T02:00:00.000Z",
+        canonicalPath: target.canonicalPath,
+        contentHash: "b".repeat(64),
+        renderedContentHash: "c".repeat(64),
+        jobId: job.jobId,
+        externalExecutionId: "579510",
+        wordpressObjectId: "13084",
+        wordpressStatus: "draft",
+      },
+      layoutClass: "CONTENT_ARTICLE",
+      captureSetId: "capture-ready",
+      captures: [],
+      findings: [],
+      overallState: "PASS",
+      capturedAt: "2026-09-12T12:00:00.000Z",
+      createdAt: "2026-09-12T12:01:00.000Z",
+      createdBy: "owner",
+      mutationPerformed: false,
+    } as RenderedVisualCertification;
+    const decision = {
+      decisionId: "decision-ready",
+      certificationId: "cert-ready",
+      captureSetId: "capture-ready",
+      pageRevisionIdentity: "job:job-dallas:2026-09-12T02:00:00.000Z",
+      contentHash: "b".repeat(64),
+      renderedContentHash: "c".repeat(64),
+      decision: "APPROVED",
+      note: "Ready to publish",
+      decidedAt: "2026-09-12T12:02:00.000Z",
+      decidedBy: "owner",
+      publicationAuthorized: false,
+    } as const;
+
+    const readyCampaign = { ...campaign, publicationPolicy: "publish_after_gates" } as GlwCampaign;
+    const readyModel = deriveGeneratedPageReviewModel({
+      campaign: readyCampaign,
+      target,
+      job,
+      siteName: "ProjectorEnclosure.com",
+      domain: "projectorenclosure.com",
+      productName: "Fan Cooled Projector Enclosures",
+      productAuthorityReference: "wordpress-media:10757",
+      productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+      knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: "site-projector", instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: "product-enclosure", scope: "stable_fact" }], updatedAt: "2026-09-12" },
+      wordpressDraft: { id: 13084, slug: "dallas", status: "draft", link: "https://projectorenclosure.com/?page_id=13084", modified_gmt: "2026-09-12T02:00:00", featured_media: 10757, title: { raw: job.title }, content: { raw: contentHtml } } as never,
+      wordpressMedia: { id: 10757, source_url: "https://projectorenclosure.com/wp-content/uploads/enclosure.jpg", alt_text: "Fan cooled projector enclosure in use" } as never,
+      wordpressReadState: "AUTHENTICATED_EXACT_DRAFT_READ",
+      wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit",
+      visualCertification: {
+        certification: cert,
+        decision,
+        certificationState: "CURRENT",
+        decisionState: "CURRENT",
+      },
+      mediaAssignments: [{
+        assignmentId: "media-assignment-ready",
+        organizationId: "ssi",
+        siteId: "site-projector",
+        buildSessionId: "glw-job:job-dallas",
+        pageId: "target-dallas",
+        pageRevisionId: "job:job-dallas:2026-09-12T02:00:00.000Z",
+        slotId: "product-authority",
+        role: "PRODUCT_AUTHORITY",
+        asset: {
+          type: "APPROVED_EXISTING",
+          authorityReference: "wordpress-media:10757",
+          productId: "product-enclosure",
+          wordpressMediaId: 10757,
+          url: "https://projectorenclosure.com/wp-content/uploads/enclosure.webp",
+          sha256: "a".repeat(64),
+        },
+        metadata: { altText: "Fan cooled projector enclosure", caption: null, title: "Fan cooled enclosure", description: "Approved product image" },
+        approval: { candidateId: "candidate", approvedBy: "owner", approvedAt: "2026-09-05T00:00:00.000Z" },
+        wordpressReceipt: null,
+        createdAt: "2026-09-13T00:00:00.000Z",
+      } as SitePageMediaAssignment],
+    });
+
+    expect(readyModel.actions.publish).toMatchObject({
+      endpoint: "/api/glw/campaigns/campaign-texas/publish",
+      campaignId: "campaign-texas",
+      targetId: "target-dallas",
+    });
+
+    const nonDraftLifecycle = deriveGeneratedPageReviewModel({
+      campaign: readyCampaign,
+      target: { ...target, status: "published" } as GlwCampaignTarget,
+      job,
+      siteName: "ProjectorEnclosure.com",
+      domain: "projectorenclosure.com",
+      productName: "Fan Cooled Projector Enclosures",
+      productAuthorityReference: "wordpress-media:10757",
+      productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+      knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: "site-projector", instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: "product-enclosure", scope: "stable_fact" }], updatedAt: "2026-09-12" },
+      wordpressDraft: { id: 13084, slug: "dallas", status: "draft", link: "https://projectorenclosure.com/?page_id=13084", modified_gmt: "2026-09-12T02:00:00", featured_media: 10757, title: { raw: job.title }, content: { raw: contentHtml } } as never,
+      wordpressMedia: { id: 10757, source_url: "https://projectorenclosure.com/wp-content/uploads/enclosure.jpg", alt_text: "Fan cooled projector enclosure in use" } as never,
+      wordpressReadState: "AUTHENTICATED_EXACT_DRAFT_READ",
+      wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit",
+      visualCertification: { certification: cert, decision, certificationState: "CURRENT", decisionState: "CURRENT" },
+    });
+    expect(nonDraftLifecycle.actions.publish).toBeNull();
+
+    const draftOnlyModel = deriveGeneratedPageReviewModel({
+      campaign,
+      target,
+      job,
+      siteName: "ProjectorEnclosure.com",
+      domain: "projectorenclosure.com",
+      productName: "Fan Cooled Projector Enclosures",
+      productAuthorityReference: "wordpress-media:10757",
+      productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+      knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: "site-projector", instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: "product-enclosure", scope: "stable_fact" }], updatedAt: "2026-09-12" },
+      wordpressDraft: { id: 13084, slug: "dallas", status: "draft", link: "https://projectorenclosure.com/?page_id=13084", modified_gmt: "2026-09-12T02:00:00", featured_media: 10757, title: { raw: job.title }, content: { raw: contentHtml } } as never,
+      wordpressMedia: { id: 10757, source_url: "https://projectorenclosure.com/wp-content/uploads/enclosure.jpg", alt_text: "Fan cooled projector enclosure in use" } as never,
+      wordpressReadState: "AUTHENTICATED_EXACT_DRAFT_READ",
+      wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit",
+      visualCertification: { certification: cert, decision, certificationState: "CURRENT", decisionState: "CURRENT" },
+    });
+    expect(draftOnlyModel.actions.publish).toBeNull();
+
+    const pendingDecisionModel = deriveGeneratedPageReviewModel({
+      campaign: readyCampaign,
+      target,
+      job,
+      siteName: "ProjectorEnclosure.com",
+      domain: "projectorenclosure.com",
+      productName: "Fan Cooled Projector Enclosures",
+      productAuthorityReference: "wordpress-media:10757",
+      productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+      knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: "site-projector", instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: "product-enclosure", scope: "stable_fact" }], updatedAt: "2026-09-12" },
+      wordpressDraft: { id: 13084, slug: "dallas", status: "draft", link: "https://projectorenclosure.com/?page_id=13084", modified_gmt: "2026-09-12T02:00:00", featured_media: 10757, title: { raw: job.title }, content: { raw: contentHtml } } as never,
+      wordpressMedia: { id: 10757, source_url: "https://projectorenclosure.com/wp-content/uploads/enclosure.jpg", alt_text: "Fan cooled projector enclosure in use" } as never,
+      wordpressReadState: "AUTHENTICATED_EXACT_DRAFT_READ",
+      wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit",
+      visualCertification: {
+        certification: cert,
+        decision: null,
+        certificationState: "CURRENT",
+        decisionState: "PENDING",
+      },
+    });
+    expect(pendingDecisionModel.actions.publish).toBeNull();
+  });
+
+  test("wires publish action component to exact target payload contract", () => {
+    const source = readFileSync(join(process.cwd(), "src/modules/glw/GlwPublishPageAction.tsx"), "utf8");
+    expect(source).toContain("confirm: \"PUBLISH_DRAFT_READY_CAMPAIGN_TARGETS\"");
+    expect(source).toContain("targetId: props.targetId");
+    expect(source).toContain("window.confirm(\"Publish this exact draft-ready page now?\")");
+    expect(source).toContain("running ? \"Publishing...\" : \"Publish Page\"");
+  });
+
+  test("renders Publish Page button only when publish action is present", () => {
+    const base = model();
+    const publishVisible = {
+      ...base,
+      actions: {
+        ...base.actions,
+        publish: {
+          endpoint: "/api/glw/campaigns/campaign-texas/publish",
+          organizationId: "ssi",
+          siteId: "site-projector",
+          campaignId: "campaign-texas",
+          targetId: "target-dallas",
+        },
+      },
+    };
+    const hidden = {
+      ...publishVisible,
+      actions: {
+        ...publishVisible.actions,
+        publish: null,
+      },
+    };
+    const visibleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={publishVisible} />);
+    const hiddenHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={hidden} />);
+
+    expect(visibleHtml).toContain("Publish Page");
+    expect(hiddenHtml).not.toContain("Publish Page");
+  });
+
   test("build model computes current visual identity from authoritative current state, not prior certification identity fallback", () => {
     const source = readFileSync(join(process.cwd(), "src/modules/glw/generated-page-review-read-model.ts"), "utf8");
     expect(source).toContain("const currentIdentity: RenderedVisualPageIdentity = { organizationId: job.organizationId");
