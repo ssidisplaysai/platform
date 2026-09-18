@@ -62,6 +62,19 @@ describe("Outdoor Sphere generated contextual media authority", () => {
     expect(source).toContain("CONTEXTUAL_MEDIA_GENERATED_IMAGE_REQUIRED");
     expect(source).toContain("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
     expect(source).toContain("Generated contextual media receipt is required for Outdoor LED Sphere continuation.");
+    expect(source).toContain("const suppressionEligible = strictGeneratedContextualRequired");
+    expect(source).toContain('&& input.siteRecord.domain === "leddisplaywarehouse.com"');
+  });
+
+  test("scoped title suppression targets native LDW entry title selectors", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/modules/glw/scoped-theme-title-suppression.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain(".page-title.the-title");
+    expect(source).toContain(".page-header .entry-title");
+    expect(source).toContain(".entry-header .entry-title");
   });
 
   test("continuation route binds generated contextual receipt to exact campaign target and page revision", () => {

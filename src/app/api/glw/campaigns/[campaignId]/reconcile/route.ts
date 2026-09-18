@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, forwardOperatorMutationContext, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
+import { getSiteById } from "@/modules/foundation/site-repository";
+import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import {
@@ -19,6 +22,7 @@ import {
 import {
   buildGlwCampaignProductionGenerationForm,
 } from "@/modules/glw/campaign-production-generation";
+import { isOutdoorSphereCampaignScope } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
 
 function internalHeaders(
   request: NextRequest,
@@ -46,6 +50,71 @@ function targetIdentity(target: {
 
 function asTrimmed(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function normalizeCanonicalPath(value: string): string {
+  return value.trim().toLowerCase().replace(/^\/+|\/+$/g, "");
+}
+
+async function readWordPressDraftIdentity(input: {
+  siteId: string;
+  wordpressObjectId: string;
+}) {
+  const site = getSiteById(input.siteId);
+  const apiBaseUrl = site?.integrations.wordpressApiBaseUrl?.trim() ?? "";
+  const credential = resolveWordPressCredentialReference(site?.integrations.wordpressCredentialReference ?? null);
+  if (!site || !apiBaseUrl || !credential) {
+    throw new Error("DRAFT_READY_WORDPRESS_READ_AUTHORITY_REQUIRED");
+  }
+
+  const reader = createAuthenticatedWordPressReadAuthority({
+    configuration: {
+      apiBaseUrl,
+      username: credential.username,
+      applicationPassword: credential.applicationPassword,
+      timeoutMs: 30_000,
+    },
+  });
+
+  const read = await reader.getJson({
+    path: `/pages/${input.wordpressObjectId}`,
+    query: new URLSearchParams({ context: "edit", _fields: "id,status,slug,parent" }),
+  });
+
+  if (!read.ok || !read.body || typeof read.body !== "object" || Array.isArray(read.body)) {
+    throw new Error("DRAFT_READY_WORDPRESS_READBACK_FAILED");
+  }
+
+  const page = read.body as Record<string, unknown>;
+  const wordpressObjectId = String(page.id ?? "").trim();
+  const wordpressStatus = typeof page.status === "string" ? page.status.trim() : "";
+  const slug = typeof page.slug === "string" ? page.slug.trim() : "";
+  const parentId = String(page.parent ?? "").trim();
+
+  if (wordpressObjectId !== input.wordpressObjectId || wordpressStatus !== "draft") {
+    throw new Error("DRAFT_READY_WORDPRESS_IDENTITY_MISMATCH");
+  }
+  if (!slug || !/^[1-9]\d*$/.test(parentId)) {
+    throw new Error("DRAFT_READY_WORDPRESS_PARENT_REQUIRED");
+  }
+
+  return {
+    slug,
+    parentId,
+  };
+}
+
+function isOutdoorSphereTargetScope(input: {
+  campaignId: string;
+  organizationId: string;
+  siteId: string;
+  productId: string;
+}): boolean {
+  return isOutdoorSphereCampaignScope({
+    campaignId: input.campaignId,
+    organizationId: input.organizationId,
+    siteId: input.siteId,
+  }) && input.productId === "prod-outdoor-digital-sphere";
 }
 
 function isExactRecoverableZeroAuthorityFailure(job: {
@@ -388,6 +457,78 @@ export async function POST(
       }
 
       if (decision.action === "draft_ready") {
+        const canonicalIdentityRequired = isOutdoorSphereTargetScope({
+          campaignId,
+          organizationId: campaign.organizationId,
+          siteId: campaign.siteId,
+          productId: campaign.productId,
+        });
+
+        let canonicalIdentity: {
+          canonicalPath: string;
+          applicationPath: string;
+          canonicalParentId: string;
+        } | undefined;
+
+        if (canonicalIdentityRequired) {
+          const { form } =
+            buildGlwCampaignProductionGenerationForm({
+              campaign,
+              stateCode: target.stateCode,
+              citySlug: target.citySlug,
+            });
+
+          const canonicalPathFromForm = normalizeCanonicalPath(form.canonicalPath ?? "");
+          const canonicalPathFromJob = normalizeCanonicalPath(job.slug ?? "");
+          const canonicalPath = canonicalPathFromForm || canonicalPathFromJob;
+          if (!canonicalPath || !canonicalPathFromForm || !canonicalPathFromJob || canonicalPathFromForm !== canonicalPathFromJob) {
+            const updatedFailed =
+              markGlwCampaignTargetFailed({
+                campaignId,
+                stateCode: target.stateCode,
+                citySlug: target.citySlug,
+                jobId,
+                error: "DRAFT_READY_CANONICAL_PATH_REQUIRED",
+              });
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "failed",
+              error: updatedFailed.lastError,
+            });
+            continue;
+          }
+
+          const readback = await readWordPressDraftIdentity({
+            siteId: campaign.siteId,
+            wordpressObjectId: decision.wordpressObjectId,
+          });
+          const expectedSlug = canonicalPath.split("/").filter(Boolean).at(-1) ?? "";
+          if (!expectedSlug || readback.slug !== expectedSlug) {
+            const updatedFailed =
+              markGlwCampaignTargetFailed({
+                campaignId,
+                stateCode: target.stateCode,
+                citySlug: target.citySlug,
+                jobId,
+                error: "DRAFT_READY_WORDPRESS_SLUG_MISMATCH",
+              });
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "failed",
+              error: updatedFailed.lastError,
+            });
+            continue;
+          }
+
+          canonicalIdentity = {
+            canonicalPath,
+            applicationPath: canonicalPathFromForm,
+            canonicalParentId: readback.parentId,
+          };
+        }
+
         const updateInput = {
           campaignId,
           stateCode: target.stateCode,
@@ -395,6 +536,7 @@ export async function POST(
           jobId,
           wordpressObjectId:
             decision.wordpressObjectId,
+          canonicalIdentity,
         };
 
         const updated =
@@ -413,6 +555,9 @@ export async function POST(
           action: "draft_ready",
           wordpressObjectId:
             updated.wordpressObjectId,
+          canonicalPath: updated.canonicalPath ?? null,
+          applicationPath: updated.applicationPath ?? null,
+          canonicalParentId: updated.canonicalParentId ?? null,
           executionIdAfter: job.externalExecutionId ?? null,
         });
 

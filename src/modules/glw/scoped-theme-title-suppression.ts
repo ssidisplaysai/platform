@@ -1,6 +1,10 @@
 import "server-only";
 
-const PAGE_TITLE_SELECTOR = ".page-title.the-title";
+const PAGE_TITLE_SELECTORS = [
+  ".page-title.the-title",
+  ".page-header .entry-title",
+  ".entry-header .entry-title",
+] as const;
 
 function normalizeWordPressObjectId(value: string): string {
   const normalized = value.trim();
@@ -15,7 +19,9 @@ function h1Count(html: string): number {
 }
 
 function scopedRule(wordpressObjectId: string): string {
-  return `body.page-id-${wordpressObjectId} ${PAGE_TITLE_SELECTOR}{display:none!important}`;
+  return `${PAGE_TITLE_SELECTORS
+    .map((selector) => `body.page-id-${wordpressObjectId} ${selector}`)
+    .join(",")}{display:none!important}`;
 }
 
 function injectRuleIntoFirstStyle(html: string, rule: string): string {

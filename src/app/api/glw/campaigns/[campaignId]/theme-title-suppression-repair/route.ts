@@ -43,6 +43,10 @@ function authorization(username: string, password: string): string {
   return `Basic ${Buffer.from(`${username}:${password}`, "utf8").toString("base64")}`;
 }
 
+function scopedTitleSelector(wordpressObjectId: string): string {
+  return `body.page-id-${wordpressObjectId} .page-title.the-title,body.page-id-${wordpressObjectId} .page-header .entry-title,body.page-id-${wordpressObjectId} .entry-header .entry-title{display:none!important}`;
+}
+
 async function authorize(request: NextRequest) {
   const principal = resolveGlwTrustedOperatorPrincipal(request);
   const auth = authorizeRequest(request, "sites:update");
@@ -184,7 +188,7 @@ export async function GET(request: NextRequest, context: Context) {
       canonicalPath: REQUIRED_CANONICAL_PATH,
       currentStoredSha256: currentSha256,
       generatedH1Count: headingCount,
-      scopedSelector: `body.page-id-${REQUIRED_WORDPRESS_OBJECT_ID} .page-title.the-title{display:none!important}`,
+      scopedSelector: scopedTitleSelector(REQUIRED_WORDPRESS_OBJECT_ID),
       publicationPerformed: false,
       wordpressMutationPerformed: false,
     });
@@ -326,7 +330,7 @@ export async function POST(request: NextRequest, context: Context) {
     const afterH1 = afterH1Matches.length === 1
       ? text(afterH1Matches[0][1]).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim()
       : "";
-    const titleSelector = `body.page-id-${REQUIRED_WORDPRESS_OBJECT_ID} .page-title.the-title{display:none!important}`;
+    const titleSelector = scopedTitleSelector(REQUIRED_WORDPRESS_OBJECT_ID);
 
     if (
       String(after.id ?? "") !== REQUIRED_WORDPRESS_OBJECT_ID

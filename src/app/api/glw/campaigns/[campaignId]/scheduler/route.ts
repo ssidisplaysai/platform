@@ -22,7 +22,10 @@ import {
   summarizeGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
 import { recordGlwCampaignLaunchDispatch } from "@/modules/glw/campaign-launch-authority";
-import { resolveGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
+import {
+  enableGlwCampaignActivationReleaseCapability,
+  resolveGlwCampaignActivationReleaseCapability,
+} from "@/modules/glw/campaign-release-capability";
 import { getGlwN8nMcpConfigurationStatus, preflightGlwN8nMcpExecution } from "@/modules/glw/n8n-mcp-adapter";
 import {
   appendDispatchRequestOutcome,
@@ -125,6 +128,15 @@ function resolveWordPressReadiness(campaign: { organizationId: string; siteId: s
   };
 }
 
+function trustedLocalAutoEnableAllowed(input: {
+  principal: NonNullable<ReturnType<typeof resolveRequestPrincipal>>;
+  authRoles: readonly string[];
+}): boolean {
+  return process.env.GENESIS_TRUSTED_LOCAL_OPERATOR === "true"
+    && input.principal.principalId === "genesis-operator-robert"
+    && input.authRoles.includes("platform_admin");
+}
+
 export async function GET(
   request: NextRequest,
   context: Context,
@@ -205,7 +217,20 @@ export async function GET(
     dispatchDate,
     maxTargets: availableConcurrency,
   });
-  const releaseAuthority = resolveReleaseCapability(campaign);
+  let releaseAuthority = resolveReleaseCapability(campaign);
+  if (
+    releaseAuthority.runningReleaseSha
+    && !releaseAuthority.capability.ready
+    && trustedLocalAutoEnableAllowed({ principal, authRoles: auth.roles })
+  ) {
+    enableGlwCampaignActivationReleaseCapability({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      releaseSha: releaseAuthority.runningReleaseSha,
+      enabledBy: principal.principalId,
+    });
+    releaseAuthority = resolveReleaseCapability(campaign);
+  }
   const wordpressReadiness = resolveWordPressReadiness(campaign);
   const executionPreflight = await preflightGlwN8nMcpExecution();
   const selectedTarget = preview.selected.length === 1 ? preview.selected[0] : null;

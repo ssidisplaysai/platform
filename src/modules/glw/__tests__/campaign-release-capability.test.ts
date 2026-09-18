@@ -68,4 +68,12 @@ describe("GLW campaign activation release capability", () => {
     expect(route).toContain("activationPerformed: false");
     expect(route).not.toContain("createGlwCampaignActivationGrant");
   });
+
+  test("trusted-local scheduler auto-enable remains bounded to exact principal and platform_admin", () => {
+    const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/scheduler/route.ts"), "utf8");
+    expect(route).toContain('process.env.GENESIS_TRUSTED_LOCAL_OPERATOR === "true"');
+    expect(route).toContain('input.principal.principalId === "genesis-operator-robert"');
+    expect(route).toContain('input.authRoles.includes("platform_admin")');
+    expect(route).toContain("enableGlwCampaignActivationReleaseCapability({");
+  });
 });

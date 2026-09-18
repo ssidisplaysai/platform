@@ -17,7 +17,8 @@ describe("FL theme title suppression repair route", () => {
     expect(source).toContain("target.stateCode !== \"FL\"");
     expect(source).toContain("target.pageType !== \"state_service\"");
     expect(source).toContain('visualCertificationExpectedState: "STALE"');
-    expect(source).toContain(".page-title.the-title{display:none!important}");
+    expect(source).toContain(".page-title.the-title,body.page-id-");
+    expect(source).toContain(".page-header .entry-title");
     expect(source).toContain("publicationPerformed: false");
   });
 });

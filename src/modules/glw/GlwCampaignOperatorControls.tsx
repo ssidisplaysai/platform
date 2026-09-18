@@ -29,6 +29,10 @@ type ContinuableTargetSummary = {
   jobId: string | null;
   executionId: string | null;
   wordpressObjectId: string | null;
+  canonicalPath: string | null;
+  applicationPath: string | null;
+  canonicalParentId: string | null;
+  visualCertificationCurrentPass: boolean;
 };
 
 type SchedulePreview = {
@@ -183,6 +187,10 @@ export function GlwCampaignOperatorControls({
   campaignStatus,
   targets,
 }: Props) {
+  const isOutdoorSphereOperatorFreeScope = campaignId === "campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview"
+    && organizationId === "led-display-warehouse"
+    && siteId === "site-led-display-warehouse-production";
+  const autoProgressInFlight = useRef(false);
   const router = useRouter();
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
   const [publishPreview, setPublishPreview] = useState<PublishPreviewPayload | null>(null);
@@ -192,6 +200,7 @@ export function GlwCampaignOperatorControls({
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState(false);
   const [dispatchStage, setDispatchStage] = useState<ExactDispatchStage>("IDLE");
+  const [autoPipelineStage, setAutoPipelineStage] = useState<string>("IDLE");
   const dispatchInFlight = useRef(false);
   const [reconciling, setReconciling] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -271,6 +280,13 @@ export function GlwCampaignOperatorControls({
     target.continuationEligible === true,
   );
 
+  const autoTarget = targets.find((target) =>
+    target.lifecycleState === "running"
+    || target.lifecycleState === "content_ready"
+    || (target.lifecycleState === "failed" && target.continuationEligible)
+    || (target.lifecycleState === "draft_ready" && !target.visualCertificationCurrentPass),
+  ) ?? null;
+
   async function authorizeAndDispatchExactTarget() {
     if (!scheduler || dispatchInFlight.current) return;
     dispatchInFlight.current = true;
@@ -295,6 +311,9 @@ export function GlwCampaignOperatorControls({
       const payload = result.payload;
       setMessage(`Exact target dispatch submitted: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
       await refreshWorkspace();
+      if (isOutdoorSphereOperatorFreeScope) {
+        void runOperatorFreeProgression();
+      }
     } catch (flowError) {
       setError(flowError instanceof Error ? flowError.message : "Exact-target dispatch failed.");
       setDispatchStage("IDLE");
@@ -303,6 +322,106 @@ export function GlwCampaignOperatorControls({
       dispatchInFlight.current = false;
     }
   }
+
+  async function runOperatorFreeProgression() {
+    if (!isOutdoorSphereOperatorFreeScope || autoProgressInFlight.current) return;
+    if (!autoTarget || !autoTarget.jobId) return;
+
+    autoProgressInFlight.current = true;
+    setAutoPipelineStage("DISPATCH ✓");
+    setError(null);
+
+    const startedAt = Date.now();
+    const timeoutMs = 180_000;
+    const delays = [0, 1500, 2500, 4000, 6000, 8000, 10_000, 12_000];
+
+    try {
+      for (const delayMs of delays) {
+        if (Date.now() - startedAt > timeoutMs) {
+          setError("Operator-free progression timed out before ready-for-review state; target remains recoverable with exact failure evidence.");
+          setAutoPipelineStage("TIMEOUT");
+          return;
+        }
+        if (delayMs > 0) {
+          await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+        }
+
+        setAutoPipelineStage("GENERATION / RECONCILIATION");
+        const reconcileBody: Record<string, string> = {
+          confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        };
+        if (autoTarget.continuationEligible && autoTarget.executionId) {
+          reconcileBody.targetId = autoTarget.targetId;
+          reconcileBody.jobId = autoTarget.jobId;
+          reconcileBody.executionId = autoTarget.executionId;
+        }
+
+        const reconcileResponse = await fetch(`/api/glw/campaigns/${campaignId}/reconcile`, {
+          method: "POST",
+          headers: requestHeaders(true),
+          body: JSON.stringify(reconcileBody),
+          cache: "no-store",
+        });
+
+        const reconcilePayload = await reconcileResponse.json().catch(() => null) as ReconcilePayload | { error?: string; results?: ReconcilePayload["results"] } | null;
+        if (!reconcileResponse.ok || !reconcilePayload) {
+          setError(reconcilePayload && "error" in reconcilePayload ? (reconcilePayload.error ?? `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`) : `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`);
+          setAutoPipelineStage("FAILED");
+          return;
+        }
+
+        const result = Array.isArray(reconcilePayload.results)
+          ? reconcilePayload.results.find((entry) => entry.jobId === autoTarget.jobId) ?? reconcilePayload.results[0] ?? null
+          : null;
+
+        if (!result) {
+          continue;
+        }
+        if (["failed", "error", "continue_error"].includes(result.action)) {
+          setError(result.error ?? "Automatic progression halted with a recoverable failure.");
+          setAutoPipelineStage("FAILED");
+          await refreshWorkspace();
+          return;
+        }
+
+        if (result.action === "draft_ready") {
+          setAutoPipelineStage("VISUAL CERTIFICATION");
+          const captureResponse = await fetch(`/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification`, {
+            method: "POST",
+            headers: requestHeaders(true),
+            body: JSON.stringify({ mode: "CURRENT" }),
+            cache: "no-store",
+          });
+          const capturePayload = await captureResponse.json().catch(() => null) as { error?: string } | null;
+          if (!captureResponse.ok && capturePayload?.error !== "VISUAL_CERTIFICATION_IDENTITY_ALREADY_EXISTS") {
+            setError(capturePayload?.error ?? `Automatic visual certification failed (HTTP ${captureResponse.status}).`);
+            setAutoPipelineStage("FAILED");
+            await refreshWorkspace();
+            return;
+          }
+          setAutoPipelineStage("READY FOR OWNER REVIEW");
+          setMessage("Operator-free progression reached READY FOR OWNER REVIEW. Owner touchpoints remain Approve/Needs Fix and Publish.");
+          await refreshWorkspace();
+          return;
+        }
+      }
+
+      setAutoPipelineStage("WAITING");
+      await refreshWorkspace();
+    } finally {
+      autoProgressInFlight.current = false;
+    }
+  }
+
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || loading || !scheduler) return;
+    if (!autoTarget?.jobId) return;
+    if (autoTarget.lifecycleState === "draft_ready" && autoTarget.visualCertificationCurrentPass) {
+      setAutoPipelineStage("READY FOR OWNER REVIEW");
+      return;
+    }
+    void runOperatorFreeProgression();
+  }, [isOutdoorSphereOperatorFreeScope, loading, scheduler, autoTarget?.jobId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass]);
 
   async function reconcileCampaign() {
     const confirmed = window.confirm(
@@ -513,6 +632,8 @@ export function GlwCampaignOperatorControls({
   const busy = loading || dispatching || reconciling || publishing || refreshingSeo || enablingReleaseCapability || continuingTarget;
   const hasContentReady = (scheduler?.queue.contentReady ?? 0) > 0;
   const hasRunningOrFailed = (scheduler?.queue.running ?? 0) + (scheduler?.queue.failed ?? 0) > 0;
+  const canonicalIdentityReady = Boolean(autoTarget?.canonicalPath && autoTarget?.applicationPath && autoTarget?.canonicalParentId);
+  const visualReady = Boolean(autoTarget?.visualCertificationCurrentPass);
 
   return (
     <section id="campaign-actions" className="border border-zinc-800 bg-zinc-900/50 p-6">
@@ -523,19 +644,49 @@ export function GlwCampaignOperatorControls({
           <p className="mt-1 max-w-3xl text-sm text-zinc-400">The primary action follows the current lifecycle stage. Maintenance and publication remain separate.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void reconcileCampaign()} disabled={busy || !scheduler || !hasRunningOrFailed} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
-            {reconciling ? "Reconciling..." : "Reconcile Campaign"}
-          </button>
-          <button type="button" onClick={() => void continueContentReadyTarget()} disabled={busy || !scheduler || !hasContentReady || !selectedContinuationTargetId} className="rounded-lg border border-red-700 bg-red-950/40 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-red-200 transition hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-40">
-            {continuingTarget ? "Continuing..." : "Continue to WordPress Draft"}
-          </button>
+          {!isOutdoorSphereOperatorFreeScope ? (
+            <>
+              <button type="button" onClick={() => void reconcileCampaign()} disabled={busy || !scheduler || !hasRunningOrFailed} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
+                {reconciling ? "Reconciling..." : "Reconcile Campaign"}
+              </button>
+              <button type="button" onClick={() => void continueContentReadyTarget()} disabled={busy || !scheduler || !hasContentReady || !selectedContinuationTargetId} className="rounded-lg border border-red-700 bg-red-950/40 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-red-200 transition hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-40">
+                {continuingTarget ? "Continuing..." : "Continue to WordPress Draft"}
+              </button>
+            </>
+          ) : null}
           <button type="button" onClick={() => void refreshWorkspace()} disabled={busy} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
             {loading ? "Refreshing..." : "Refresh Preview"}
           </button>
         </div>
       </div>
 
-      {hasContentReady ? (
+      {isOutdoorSphereOperatorFreeScope ? (
+        <div className="mt-4 rounded-xl border border-emerald-900/60 bg-emerald-950/20 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Operator-Free Pipeline V1</p>
+          <p className="mt-1 text-sm text-zinc-300">No manual Reconcile or Continue actions are required between authorization and owner review for this campaign.</p>
+          <ol className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ["Authorized", true],
+              ["Dispatch", Boolean(autoTarget?.jobId)],
+              ["Generation", Boolean(autoTarget?.executionId || autoTarget?.jobId)],
+              ["Content Ready", Boolean(autoTarget?.lifecycleState === "content_ready" || autoTarget?.lifecycleState === "draft_ready")],
+              ["Rich Composition", Boolean(autoTarget?.wordpressObjectId)],
+              ["Contextual Media", Boolean(autoTarget?.lifecycleState === "draft_ready")],
+              ["WordPress Draft", Boolean(autoTarget?.wordpressObjectId)],
+              ["Canonical Identity", canonicalIdentityReady],
+              ["Visual Certification", visualReady],
+              ["Ready for Owner Review", Boolean(autoTarget?.lifecycleState === "draft_ready" && visualReady)],
+            ].map(([label, complete]) => (
+              <li key={label as string} className={`rounded-md border px-2 py-2 ${complete ? "border-emerald-700 text-emerald-200" : "border-zinc-700 text-zinc-400"}`}>
+                {(label as string).toUpperCase()} {complete ? "✓" : ""}
+              </li>
+            ))}
+          </ol>
+          <p className="mt-3 text-xs text-zinc-400">Current automatic stage: {autoPipelineStage}</p>
+        </div>
+      ) : null}
+
+      {hasContentReady && !isOutdoorSphereOperatorFreeScope ? (
         <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
           <label className="text-xs uppercase tracking-wider text-zinc-500" htmlFor="content-ready-target">Content-ready target</label>
           <div />

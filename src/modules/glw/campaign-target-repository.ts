@@ -91,6 +91,54 @@ function normalizeCanonicalPath(value: string): string {
     .replace(/^\/+|\/+$/g, "");
 }
 
+type DraftCanonicalIdentity = {
+  canonicalPath: string;
+  applicationPath: string;
+  canonicalParentId: string;
+};
+
+function resolveDraftCanonicalIdentity(input: {
+  current: GlwCampaignTarget;
+  canonicalIdentity?: DraftCanonicalIdentity;
+}): Pick<GlwCampaignTarget, "canonicalPath" | "applicationPath" | "canonicalParentId"> {
+  if (!input.canonicalIdentity) {
+    return {
+      canonicalPath: input.current.canonicalPath ?? null,
+      applicationPath: input.current.applicationPath ?? null,
+      canonicalParentId: input.current.canonicalParentId ?? null,
+    };
+  }
+
+  const canonicalPath = normalizeCanonicalPath(input.canonicalIdentity.canonicalPath);
+  const applicationPath = normalizeCanonicalPath(input.canonicalIdentity.applicationPath);
+  const canonicalParentId = input.canonicalIdentity.canonicalParentId.trim();
+
+  if (!canonicalPath || !applicationPath || !/^[1-9]\d*$/.test(canonicalParentId)) {
+    throw new Error("DRAFT_READY_CANONICAL_IDENTITY_REQUIRED");
+  }
+
+  const existingCanonicalPath = normalizeCanonicalPath(input.current.canonicalPath ?? "");
+  if (existingCanonicalPath && existingCanonicalPath !== canonicalPath) {
+    throw new Error("DRAFT_READY_CANONICAL_PATH_CONFLICT");
+  }
+
+  const existingApplicationPath = normalizeCanonicalPath(input.current.applicationPath ?? "");
+  if (existingApplicationPath && existingApplicationPath !== applicationPath) {
+    throw new Error("DRAFT_READY_APPLICATION_PATH_CONFLICT");
+  }
+
+  const existingCanonicalParentId = (input.current.canonicalParentId ?? "").trim();
+  if (existingCanonicalParentId && existingCanonicalParentId !== canonicalParentId) {
+    throw new Error("DRAFT_READY_CANONICAL_PARENT_CONFLICT");
+  }
+
+  return {
+    canonicalPath: input.current.canonicalPath ?? canonicalPath,
+    applicationPath: input.current.applicationPath ?? applicationPath,
+    canonicalParentId: input.current.canonicalParentId ?? canonicalParentId,
+  };
+}
+
 function resolveCityTargetCanonicalPath(input: {
   canonicalProductSlug?: string | null;
   stateCode: string;
@@ -753,6 +801,7 @@ export function markGlwCampaignTargetDraftReady(input: {
   citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
+  canonicalIdentity?: DraftCanonicalIdentity;
 }): GlwCampaignTarget {
   loadState();
 
@@ -775,11 +824,15 @@ export function markGlwCampaignTargetDraftReady(input: {
   }
 
   const timestamp = new Date().toISOString();
+  const canonicalIdentity = resolveDraftCanonicalIdentity({ current, canonicalIdentity: input.canonicalIdentity });
 
   const updated: GlwCampaignTarget = {
     ...current,
     status: "draft_ready",
     wordpressObjectId: input.wordpressObjectId,
+    canonicalPath: canonicalIdentity.canonicalPath,
+    applicationPath: canonicalIdentity.applicationPath,
+    canonicalParentId: canonicalIdentity.canonicalParentId,
     leaseId: null,
     leasedAt: null,
     leaseExpiresAt: null,
@@ -800,6 +853,7 @@ export function reconcileGlwContentReadyTargetDraft(input: {
   targetId: string;
   jobId: string;
   wordpressObjectId: string;
+  canonicalIdentity?: DraftCanonicalIdentity;
 }): GlwCampaignTarget {
   loadState();
   const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
@@ -807,7 +861,17 @@ export function reconcileGlwContentReadyTargetDraft(input: {
   if (!current || current.targetId !== input.targetId || current.status !== "content_ready" || current.jobId !== input.jobId || current.wordpressObjectId || current.leaseId) {
     throw new Error("Content-ready staging reconciliation requires the exact unbound target and existing job.");
   }
-  const updated: GlwCampaignTarget = { ...current, status: "draft_ready", wordpressObjectId: input.wordpressObjectId, lastError: null, updatedAt: new Date().toISOString() };
+  const canonicalIdentity = resolveDraftCanonicalIdentity({ current, canonicalIdentity: input.canonicalIdentity });
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "draft_ready",
+    wordpressObjectId: input.wordpressObjectId,
+    canonicalPath: canonicalIdentity.canonicalPath,
+    applicationPath: canonicalIdentity.applicationPath,
+    canonicalParentId: canonicalIdentity.canonicalParentId,
+    lastError: null,
+    updatedAt: new Date().toISOString(),
+  };
   targetStore.set(targetKey, updated);
   persistState();
   return deepClone(updated);
@@ -828,6 +892,7 @@ export function markGlwFailedCampaignTargetDraftReady(input: {
   citySlug?: string | null;
   jobId: string;
   wordpressObjectId: string;
+  canonicalIdentity?: DraftCanonicalIdentity;
 }): GlwCampaignTarget {
   loadState();
 
@@ -850,11 +915,15 @@ export function markGlwFailedCampaignTargetDraftReady(input: {
   }
 
   const timestamp = new Date().toISOString();
+  const canonicalIdentity = resolveDraftCanonicalIdentity({ current, canonicalIdentity: input.canonicalIdentity });
 
   const updated: GlwCampaignTarget = {
     ...current,
     status: "draft_ready",
     wordpressObjectId: input.wordpressObjectId,
+    canonicalPath: canonicalIdentity.canonicalPath,
+    applicationPath: canonicalIdentity.applicationPath,
+    canonicalParentId: canonicalIdentity.canonicalParentId,
     leaseId: null,
     leasedAt: null,
     leaseExpiresAt: null,

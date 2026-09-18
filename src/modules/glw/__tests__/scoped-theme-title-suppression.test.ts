@@ -18,7 +18,7 @@ describe("scoped theme title suppression", () => {
     });
 
     expect(result.mutated).toBe(true);
-    expect(result.contentHtml).toContain("body.page-id-20163 .page-title.the-title{display:none!important}");
+    expect(result.contentHtml).toContain("body.page-id-20163 .page-title.the-title,body.page-id-20163 .page-header .entry-title,body.page-id-20163 .entry-header .entry-title{display:none!important}");
     expect(result.contentHtml).not.toContain(".post-media.single-image{display:none!important}");
     expect((result.contentHtml.match(/<h1\b/gi) ?? []).length).toBe(1);
   });

@@ -96,4 +96,38 @@ describe("campaign publication target identity", () => {
     expect(() => markGlwCampaignTargetPublished({ campaignId, stateCode: "TX", wordpressObjectId: "wrong" })).toThrow("exact draft-ready");
     expect(markGlwCampaignTargetPublished({ campaignId, stateCode: "TX", wordpressObjectId: "201" }).status).toBe("published");
   });
+
+  test("persists canonical identity atomically when transitioning to draft_ready", () => {
+    const campaignId = `campaign-state-identity-${process.pid}-${Date.now()}`;
+    initializeGlwCampaignTargets({
+      campaignId,
+      organizationId: "org",
+      siteId: "site",
+      productId: "product",
+      stateCodes: ["CA", "GA"],
+      referenceStateCode: "CA",
+      referenceJobId: "reference-job",
+      referenceWordpressObjectId: "200",
+    });
+    leaseGlwCampaignTargets({ campaignId, pagesPerDay: 1, dispatchDate: "2026-09-18", leaseId: "lease-state" });
+    attachGlwCampaignTargetJob({ campaignId, stateCode: "GA", leaseId: "lease-state", jobId: "job-ga" });
+
+    const updated = markGlwCampaignTargetDraftReady({
+      campaignId,
+      stateCode: "GA",
+      jobId: "job-ga",
+      wordpressObjectId: "20169",
+      canonicalIdentity: {
+        canonicalPath: "outdoor-digital-sphere/georgia",
+        applicationPath: "outdoor-digital-sphere/georgia",
+        canonicalParentId: "20114",
+      },
+    });
+
+    expect(updated.status).toBe("draft_ready");
+    expect(updated.wordpressObjectId).toBe("20169");
+    expect(updated.canonicalPath).toBe("outdoor-digital-sphere/georgia");
+    expect(updated.applicationPath).toBe("outdoor-digital-sphere/georgia");
+    expect(updated.canonicalParentId).toBe("20114");
+  });
 });

@@ -613,8 +613,14 @@ async function finalizeContentReadyExecution(input: {
   }
 
   const parentId = targetHierarchy.parentId;
-
-  const suppressionEligible = input.siteRecord.domain === "leddisplaywarehouse.com";
+  const strictGeneratedContextualRequired = requiresGeneratedContextualMediaForOutdoorSphere({
+    campaignId: input.request.campaignId,
+    organizationId: input.request.organizationId,
+    siteId: input.request.siteId,
+    productId: input.request.productId,
+  });
+  const suppressionEligible = strictGeneratedContextualRequired
+    && input.siteRecord.domain === "leddisplaywarehouse.com";
   const preWriteSuppression = suppressionEligible && operation === "UPDATE" && updateObjectId
     ? applyScopedThemeTitleSuppression({
         contentHtml: enrichment.artifact.contentHtml,
@@ -759,12 +765,6 @@ async function finalizeContentReadyExecution(input: {
   const location = [input.request.cityName, input.request.stateName]
     .filter(Boolean)
     .join(", ");
-  const strictGeneratedContextualRequired = requiresGeneratedContextualMediaForOutdoorSphere({
-    campaignId: input.request.campaignId,
-    organizationId: input.request.organizationId,
-    siteId: input.request.siteId,
-    productId: input.request.productId,
-  });
   const strictApprovedProductAuthority = strictGeneratedContextualRequired
     ? (() => {
         const strictProductRecord = getProductById(input.request.productId);

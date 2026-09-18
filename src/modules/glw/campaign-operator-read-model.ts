@@ -14,7 +14,7 @@ import { resolveGlwCampaignActivationReleaseCapability } from "./campaign-releas
 import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
 import { getGlwLocalReferenceDraft } from "./campaign-local-reference-repository";
 import { getLatestGlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
-import { listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
+import { getRenderedVisualCertificationState, listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
 import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-page-projection";
 
 export type OperatorStageState = "COMPLETE" | "CURRENT" | "PARTIAL" | "BLOCKED" | "UPCOMING" | "NOT_REQUIRED";
@@ -31,6 +31,10 @@ export type GlwCampaignOperatorTarget = {
   wordpressObjectId: string | null;
   wordpressStatus: string | null;
   wordpressUrl: string | null;
+  canonicalPath: string | null;
+  applicationPath: string | null;
+  canonicalParentId: string | null;
+  visualCertificationCurrentPass: boolean;
   productAuthorityImage: { state: OperatorImageState; detail: string };
   contextualInUseImage: { state: OperatorImageState; detail: string };
   lastActivity: string;
@@ -98,6 +102,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
   mcpConfigured: boolean;
   referenceImage: GlwReferenceImageCandidate | null;
   projectionTruthByTargetId?: Readonly<Record<string, { productAuthorityRendered: boolean; contextualRendered: boolean }>>;
+  visualCertificationPassByTargetId?: Readonly<Record<string, boolean>>;
 }): GlwCampaignOperatorReadModel {
   const jobs = new Map(input.jobs.map((job) => [job.jobId, job]));
   const referenceComplete = input.targets.filter((target) => target.status === "reference_complete").length;
@@ -218,6 +223,10 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         wordpressObjectId: target.wordpressObjectId ?? job?.wordpressObjectId ?? null,
         wordpressStatus: job?.wordpressStatus ?? (target.status === "published" ? "publish" : target.status === "draft_ready" ? "draft" : null),
         wordpressUrl: job?.wordpressUrl ?? null,
+        canonicalPath: target.canonicalPath ?? null,
+        applicationPath: target.applicationPath ?? null,
+        canonicalParentId: target.canonicalParentId ?? null,
+        visualCertificationCurrentPass: input.visualCertificationPassByTargetId?.[target.targetId] ?? false,
         productAuthorityImage: projectionTruth?.productAuthorityRendered
           ? { state: "READY", detail: "Current governed rendered visual certification verifies PRODUCT_AUTHORITY media rendering." }
           : { state: "NOT_WIRED", detail: "Target-level PRODUCT_AUTHORITY assignment is not exposed by the campaign backend." },
@@ -269,6 +278,17 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
       }];
     }),
   ) as Readonly<Record<string, { productAuthorityRendered: boolean; contextualRendered: boolean }>>;
+  const visualCertificationPassByTargetId = Object.fromEntries(
+    targets.map((target) => {
+      const currentPass = certifications.some((certification) => {
+        if (certification.identity.targetId !== target.targetId) return false;
+        if (certification.identity.organizationId !== target.organizationId || certification.identity.siteId !== target.siteId) return false;
+        if (certification.overallState !== "PASS") return false;
+        return getRenderedVisualCertificationState({ currentIdentity: certification.identity }).certificationState === "CURRENT";
+      });
+      return [target.targetId, currentPass];
+    }),
+  ) as Readonly<Record<string, boolean>>;
   const latestGrant = listGlwCampaignActivationGrants(campaignId).at(-1) ?? null;
   const runningReleaseSha = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
   const releaseCapability = resolveGlwCampaignActivationReleaseCapability({ organizationId: campaign.organizationId, siteId: campaign.siteId, runningReleaseSha });
@@ -276,5 +296,5 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
   const referenceTarget = targets.find((target) => target.status === "reference_complete" && target.citySlug && target.cityName) ?? null;
   const referenceDraft = referenceTarget?.citySlug ? getGlwLocalReferenceDraft(campaignId, referenceTarget.stateCode, referenceTarget.citySlug) : null;
   const referenceImage = referenceDraft ? getLatestGlwReferenceImageCandidate({ organizationId: campaign.organizationId, siteId: campaign.siteId, campaignId, referenceDraftId: referenceDraft.referenceDraftId }) : null;
-  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage, projectionTruthByTargetId });
+  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage, projectionTruthByTargetId, visualCertificationPassByTargetId });
 }

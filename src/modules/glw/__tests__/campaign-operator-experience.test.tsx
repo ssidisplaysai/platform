@@ -121,6 +121,9 @@ describe("campaign operator experience", () => {
       executionState: "COMPLETE",
       wordpressObjectId: "13084",
       wordpressStatus: "draft",
+      canonicalPath: "fan-cooled-projector-enclosures/texas/dallas",
+      applicationPath: "fan-cooled-projector-enclosures/texas/dallas",
+      visualCertificationCurrentPass: false,
       productAuthorityImage: { state: "NOT_WIRED" },
       contextualInUseImage: { state: "READY" },
     });
@@ -267,10 +270,16 @@ describe("campaign operator experience", () => {
     expect((source.match(/target\.continuationEligible === true/g) ?? []).length).toBe(2);
     expect(source).toContain("targetId: target.targetId");
     expect(source).toContain("executionId: target.executionId");
+    expect(source).toContain("runOperatorFreeProgression");
+    expect(source).toContain("/api/glw/campaigns/${campaignId}/reconcile");
+    expect(source).toContain("/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification");
+    expect(source).toContain("Operator-free progression reached READY FOR OWNER REVIEW");
   });
 
   test("campaign detail page passes continuationEligible into controls target summaries", () => {
     const pageSource = readFileSync(join(process.cwd(), "src/app/glw/campaigns/[campaignId]/page.tsx"), "utf8");
     expect(pageSource).toContain("continuationEligible: target.continuationEligible");
+    expect(pageSource).toContain("canonicalPath: target.canonicalPath");
+    expect(pageSource).toContain("visualCertificationCurrentPass: target.visualCertificationCurrentPass");
   });
 });
