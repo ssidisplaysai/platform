@@ -254,7 +254,7 @@ export function deriveGeneratedPageReviewModel(input: {
   const reviewState = issues.some((issue) => issue.severity === "BLOCKED") ? "REVIEW_BLOCKED" : issues.length > 0 ? "NEEDS_ATTENTION" : "READY_FOR_OWNER_REVIEW";
   const listQuery = `organizationId=${encodeURIComponent(input.campaign.organizationId)}&siteId=${encodeURIComponent(input.campaign.siteId)}`;
   const visualQa = deriveGeneratedPageVisualQaReview(input.visualCertification ?? { certification: null, decision: null, certificationState: "NOT_CERTIFIED", decisionState: "PENDING" });
-  const ownerReviewEligible = !issues.some((issue) => issue.severity === "BLOCKED") && visualQa.certificationState === "CURRENT" && visualQa.overallState === "PASS" && input.visualCertification?.certification?.identity.wordpressStatus === "draft";
+  const ownerReviewEligible = !issues.some((issue) => issue.severity === "BLOCKED") && visualQa.certificationState === "CURRENT" && visualQa.overallState === "PASS" && ["draft", "publish"].includes(input.visualCertification?.certification?.identity.wordpressStatus ?? "");
   const publishEligible = input.target.status === "draft_ready"
     && wordpressVerified
     && wordpressStatus === "draft"

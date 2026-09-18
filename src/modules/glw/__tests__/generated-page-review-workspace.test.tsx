@@ -157,6 +157,102 @@ describe("Genesis generated page review workspace", () => {
     expect(ineligibleHtml).not.toContain("Needs Fix");
   });
 
+  test("keeps owner decision action for CURRENT PASS certification when wordpressStatus is publish", () => {
+    const cert = {
+      certificationId: "cert-publish",
+      contract: "rendered-visual-certification-v1",
+      schemaVersion: 1,
+      identity: {
+        organizationId: "ssi",
+        siteId: "site-projector",
+        pageId: target.targetId,
+        pageRevisionIdentity: "job:job-dallas:2026-09-12T02:00:00.000Z",
+        canonicalPath: target.canonicalPath,
+        contentHash: "b".repeat(64),
+        renderedContentHash: "c".repeat(64),
+        campaignId: campaign.campaignId,
+        targetId: target.targetId,
+        jobId: job.jobId,
+        externalExecutionId: "579510",
+        wordpressObjectId: "13084",
+        wordpressStatus: "publish",
+      },
+      layoutClass: "CONTENT_ARTICLE",
+      captureSetId: "capture-publish",
+      captures: [],
+      findings: [],
+      overallState: "PASS",
+      capturedAt: "2026-09-12T12:00:00.000Z",
+      createdAt: "2026-09-12T12:01:00.000Z",
+      createdBy: "owner",
+      mutationPerformed: false,
+    } as RenderedVisualCertification;
+
+    const decision = {
+      decisionId: "decision-publish",
+      certificationId: "cert-publish",
+      captureSetId: "capture-publish",
+      pageRevisionIdentity: "job:job-dallas:2026-09-12T02:00:00.000Z",
+      contentHash: "b".repeat(64),
+      renderedContentHash: "c".repeat(64),
+      decision: "PENDING",
+      note: null,
+      decidedAt: "2026-09-12T12:02:00.000Z",
+      decidedBy: "owner",
+      publicationAuthorized: false,
+    } as const;
+
+    const result = deriveGeneratedPageReviewModel({
+      campaign,
+      target,
+      job,
+      siteName: "ProjectorEnclosure.com",
+      domain: "projectorenclosure.com",
+      productName: "Fan Cooled Projector Enclosures",
+      productAuthorityReference: "wordpress-media:10757",
+      productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+      knowledgePack: { campaignId: campaign.campaignId, organizationId: "ssi", siteId: "site-projector", instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: "product-enclosure", scope: "stable_fact" }], updatedAt: "2026-09-12" },
+      wordpressDraft: { id: 13084, slug: "dallas", status: "publish", link: "https://projectorenclosure.com/?page_id=13084", modified_gmt: "2026-09-12T02:00:00", featured_media: 10757, title: { raw: job.title }, content: { raw: contentHtml } } as never,
+      wordpressMedia: { id: 10757, source_url: "https://projectorenclosure.com/wp-content/uploads/enclosure.jpg", alt_text: "Fan cooled projector enclosure in use" } as never,
+      wordpressReadState: "AUTHENTICATED_EXACT_DRAFT_READ",
+      wordpressEditUrl: "https://projectorenclosure.com/wp-admin/post.php?post=13084&action=edit",
+      visualCertification: {
+        certification: cert,
+        decision,
+        certificationState: "CURRENT",
+        decisionState: "PENDING",
+      },
+      mediaAssignments: [{
+        assignmentId: "media-assignment-publish",
+        organizationId: "ssi",
+        siteId: "site-projector",
+        buildSessionId: "glw-job:job-dallas",
+        pageId: "target-dallas",
+        pageRevisionId: "job:job-dallas:2026-09-12T02:00:00.000Z",
+        slotId: "product-authority",
+        role: "PRODUCT_AUTHORITY",
+        asset: {
+          type: "APPROVED_EXISTING",
+          authorityReference: "wordpress-media:10757",
+          productId: "product-enclosure",
+          wordpressMediaId: 10757,
+          url: "https://projectorenclosure.com/wp-content/uploads/enclosure.webp",
+          sha256: "a".repeat(64),
+        },
+        metadata: { altText: "Fan cooled projector enclosure", caption: null, title: "Fan cooled enclosure", description: "Approved product image" },
+        approval: { candidateId: "candidate", approvedBy: "owner", approvedAt: "2026-09-05T00:00:00.000Z" },
+        wordpressReceipt: null,
+        createdAt: "2026-09-13T00:00:00.000Z",
+      } as SitePageMediaAssignment],
+    });
+
+    expect(result.actions.ownerDecision).toMatchObject({
+      endpoint: "/api/glw/visual-certifications/cert-publish/decision",
+      organizationId: "ssi",
+      siteId: "site-projector",
+    });
+  });
+
   test("exposes publish action only when exact publish gates are satisfied", () => {
     const cert = {
       certificationId: "cert-ready",
