@@ -65,7 +65,7 @@ function draftReadyContextualRepairPlan(input: { stateName: string; cityName?: s
   return [{
     role: "CONTEXTUAL_IN_USE",
     mediaRole: "CONTEXTUAL_IN_USE",
-    slot: "POST_HERO_CONTEXTUAL",
+    slot: "HERO_EXPERIENCE",
     prompt: buildOutdoorSphereGeneratedContextualPrompt({ stateName: input.stateName, cityName: input.cityName }),
     altText: location
       ? `Conceptual contextual visualization of an outdoor LED sphere in a ${location} commercial environment; not a real customer installation.`
@@ -112,7 +112,7 @@ export async function executeDraftReadyGeneratedContextualMediaRepair(input: {
     certify: async () => ({ certificationId: "SKIPPED_DRAFT_READY_REPAIR", state: "PASS" as const }),
   });
   const result = await runContextualMediaProductionAdapter({ mode: "EXECUTE", identity, visualPlan, productAuthority, providerReady: provider.configured, actor: input.actor, dependencies });
-  const generatedAssignment = listSitePageMediaAssignments({ organizationId: identity.organizationId, siteId: identity.siteId, buildSessionId: `contextual-media:${identity.targetId}`, pageRevisionId: identity.pageRevisionId }).find((assignment) => assignment.role === "CONTEXTUAL_IN_USE" && assignment.slotId === "POST_HERO_CONTEXTUAL" && assignment.asset.type === "GENERATED" && Boolean(assignment.wordpressReceipt?.mediaId) && Boolean(assignment.wordpressReceipt?.url)) ?? null;
+  const generatedAssignment = listSitePageMediaAssignments({ organizationId: identity.organizationId, siteId: identity.siteId, buildSessionId: `contextual-media:${identity.targetId}`, pageRevisionId: identity.pageRevisionId }).find((assignment) => assignment.role === "CONTEXTUAL_IN_USE" && assignment.slotId === "HERO_EXPERIENCE" && assignment.asset.type === "GENERATED" && Boolean(assignment.wordpressReceipt?.mediaId) && Boolean(assignment.wordpressReceipt?.url)) ?? null;
   if (!generatedAssignment || !generatedAssignment.wordpressReceipt) throw new Error("CONTEXTUAL_MEDIA_GENERATED_ASSIGNMENT_REQUIRED");
   const generatedReceipt = listGeneratedContextualMedia({ organizationId: identity.organizationId, siteId: identity.siteId, targetId: identity.targetId }).find((record) => record.campaignId === identity.campaignId && record.targetId === identity.targetId && record.productId === identity.productId && record.wordpressObjectId === identity.wordpressObjectId && record.pageRevisionId === identity.pageRevisionId && record.mediaRole === "CONTEXTUAL_IN_USE" && record.status === "SUCCEEDED" && Boolean(record.wordpressMediaId) && String(record.wordpressMediaId) === String(generatedAssignment.wordpressReceipt?.mediaId)) ?? null;
   if (!generatedReceipt || !generatedReceipt.wordpressMediaId || !generatedReceipt.wordpressUrl || generatedReceipt.wordpressUrl !== generatedAssignment.wordpressReceipt.url) throw new Error("CONTEXTUAL_MEDIA_GENERATED_RECEIPT_REQUIRED");

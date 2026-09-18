@@ -11,7 +11,7 @@ export type ResolvedContextualPresentationSlot = {
   placement: "IMAGE" | "BACKGROUND" | "MOUNT_IMAGE";
 };
 
-type PresentationProfile = "SAW_REFERENCE" | "LONG_FORM_ARTICLE";
+const sphereHeroSelector = ".glw-sphere-hero[data-genesis-hero=\"true\"][data-media-role=\"CONTEXTUAL_IN_USE\"]";
 
 const sawCandidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualPresentationSlot, "role" | "requestedSlot">[]> = {
   HERO_EXPERIENCE: [
@@ -44,8 +44,45 @@ const articleCandidates: Record<ContextualVisualSlot, readonly Omit<ResolvedCont
   CTA_ATMOSPHERE: [],
 };
 
+const richOutdoorSphereCandidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualPresentationSlot, "role" | "requestedSlot">[]> = {
+  HERO_EXPERIENCE: [
+    { actualSection: "HERO_EXPERIENCE", selector: sphereHeroSelector, placement: "BACKGROUND" },
+  ],
+  POST_HERO_CONTEXTUAL: [],
+  APPLICATION_STAGE: [],
+  CTA_ATMOSPHERE: [],
+};
+
+type PresentationProfile = "SAW_REFERENCE" | "LONG_FORM_ARTICLE" | "RICH_OUTDOOR_SPHERE";
+
+function replaceBackgroundImageUrl(style: string, replacementUrl: string): string {
+  if (!style.trim()) {
+    return `background-image:url('${replacementUrl}');`;
+  }
+
+  const backgroundImagePattern = /background-image\s*:\s*([^;]*?)url\((['"]?)(?:.*?)\2\)([^;]*);?/i;
+  if (backgroundImagePattern.test(style)) {
+    return style.replace(backgroundImagePattern, (_value, prefix: string, _quote: string, suffix: string) => {
+      return `background-image:${prefix}url('${replacementUrl}')${suffix};`;
+    });
+  }
+
+  const normalized = style.trim().replace(/;?$/, ";");
+  return `${normalized}background-image:url('${replacementUrl}');`;
+}
+
 function resolvePresentationRoot(contentHtml: string) {
   const $ = load(contentHtml, null, false);
+  const sphereRoots = $("article.glw-sphere-page");
+  if (sphereRoots.length > 1) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
+  if (sphereRoots.length === 1) {
+    const sphereRoot = sphereRoots.first();
+    const sphereH1 = sphereRoot.find("h1");
+    const sphereHero = sphereRoot.find(sphereHeroSelector);
+    if (sphereH1.length !== 1 || sphereHero.length !== 1) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
+    return { $, root: sphereRoot, profile: "RICH_OUTDOOR_SPHERE" as const };
+  }
+
   const sawRoots = $(".saw-page");
   if (sawRoots.length > 1) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
   if (sawRoots.length === 1) return { $, root: sawRoots.first(), profile: "SAW_REFERENCE" as const };
@@ -67,7 +104,9 @@ function resolvePresentationRoot(contentHtml: string) {
 }
 
 function candidatesFor(profile: PresentationProfile, slot: ContextualVisualSlot) {
-  return profile === "SAW_REFERENCE" ? sawCandidates[slot] : articleCandidates[slot];
+  if (profile === "SAW_REFERENCE") return sawCandidates[slot];
+  if (profile === "RICH_OUTDOOR_SPHERE") return richOutdoorSphereCandidates[slot];
+  return articleCandidates[slot];
 }
 
 export function resolveContextualPresentationSlots(contentHtml: string, requests: readonly Pick<ContextualPresentationReplacement, "role" | "slot">[]): readonly ResolvedContextualPresentationSlot[] {
@@ -97,8 +136,15 @@ export function patchContextualPresentationMedia(contentHtml: string, replacemen
     if (!/^https:\/\//i.test(replacement.url) || !Number.isSafeInteger(replacement.mediaId) || replacement.mediaId < 1 || !/^[a-f0-9]{64}$/.test(replacement.assetSha256)) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_REPLACEMENT_INVALID");
     const target = root.find(placement.selector);
     if (placement.placement === "BACKGROUND") {
-        const currentStyle = target.attr("style")?.trim().replace(/;?$/, ";") ?? "";
-        target.attr("style", `${currentStyle}background-image:linear-gradient(90deg,rgba(7,17,25,.94),rgba(7,17,25,.66)),url('${replacement.url}');background-size:cover;background-position:center;`).attr("data-generated-background-url", replacement.url).attr("data-media-id", String(replacement.mediaId)).attr("data-media-role", replacement.mediaRole).attr("data-contextual-role", replacement.role).attr("data-generated-asset-sha", replacement.assetSha256);
+      const currentStyle = target.attr("style") ?? "";
+      target
+        .attr("style", replaceBackgroundImageUrl(currentStyle, replacement.url))
+        .attr("data-generated-background-url", replacement.url)
+        .attr("data-media-id", String(replacement.mediaId))
+        .attr("data-media-role", replacement.mediaRole)
+        .attr("data-contextual-role", replacement.role)
+        .attr("data-generated-asset-sha", replacement.assetSha256)
+        .attr("data-generated-contextual-media", "true");
       continue;
     }
     if (placement.placement === "MOUNT_IMAGE") {

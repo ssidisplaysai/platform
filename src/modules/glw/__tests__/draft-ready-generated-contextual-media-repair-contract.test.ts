@@ -21,7 +21,7 @@ describe("draft-ready generated contextual media repair contract", () => {
     );
 
     expect(service).toContain("draftReadyContextualRepairPlan");
-    expect(service).toContain("slot: \"POST_HERO_CONTEXTUAL\"");
+    expect(service).toContain("slot: \"HERO_EXPERIENCE\"");
     expect(service).toContain("buildOutdoorSphereGeneratedContextualPrompt");
     expect(service).toContain("SKIPPED_DRAFT_READY_REPAIR");
     expect(service).toContain("visualCertificationPerformed: false");
