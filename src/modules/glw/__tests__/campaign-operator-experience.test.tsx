@@ -140,6 +140,7 @@ describe("campaign operator experience", () => {
     expect(result.currentStage).toBe("Reconciliation");
     expect(result.canonicalAction).toMatchObject({ kind: "CONTINUE_DRAFT", label: "Continue to WordPress Draft", enabled: true });
     expect(result.counts.contentReady).toBe(1);
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("content_ready");
   });
 
   test("renders lifecycle, exact WordPress and execution identity, image roles, and draft-only policy", () => {

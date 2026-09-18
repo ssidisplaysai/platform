@@ -129,7 +129,7 @@ export async function POST(
     if (!selected || selected.campaignId !== campaignId) {
       return NextResponse.json({ error: "Selected target does not belong to the exact campaign." }, { status: 409 });
     }
-    if (selected.status !== "content_ready") {
+    if (selected.status !== "content_ready" && selected.status !== "running") {
       return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
     }
     if (!selected.jobId || selected.jobId !== expectedJobId) {
@@ -147,6 +147,9 @@ export async function POST(
     }
     if ((selectedJob.externalExecutionId ?? "") !== expectedExecutionId) {
       return NextResponse.json({ error: "Selected target execution identity does not match the exact existing execution." }, { status: 409 });
+    }
+    if (selected.status === "running" && selectedJob.status !== "CONTENT_READY") {
+      return NextResponse.json({ error: "Selected running target is not in an exact content-ready execution state." }, { status: 409 });
     }
     if (selectedJob.wordpressStatus === "publish") {
       return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
@@ -216,7 +219,7 @@ export async function POST(
           job,
         );
 
-      if (decision.action === "continue" && target.status === "running" && job.status === "CONTENT_READY" && job.externalExecutionId) {
+      if (!expectedTargetId && decision.action === "continue" && target.status === "running" && job.status === "CONTENT_READY" && job.externalExecutionId) {
         const updated = reconcileGlwCampaignTargetContentReady({
           campaignId,
           targetId: target.targetId,

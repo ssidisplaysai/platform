@@ -162,6 +162,9 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     .sort((left, right) => targetIdentity(left).localeCompare(targetIdentity(right)))
     .map((target): GlwCampaignOperatorTarget => {
       const job = target.jobId ? jobs.get(target.jobId) ?? null : null;
+      const effectiveLifecycleState = target.status === "running" && job?.status === "CONTENT_READY"
+        ? "content_ready"
+        : target.status;
       const projectionTruth = input.projectionTruthByTargetId?.[target.targetId];
       const isReference = target.status === "reference_complete";
       const contextual = isReference
@@ -176,7 +179,7 @@ export function deriveGlwCampaignOperatorReadModel(input: {
       return {
         targetId: target.targetId,
         identity: targetIdentity(target),
-        lifecycleState: target.status,
+        lifecycleState: effectiveLifecycleState,
         jobId: target.jobId,
         executionId: job?.externalExecutionId ?? null,
         executionState: job?.status ?? null,

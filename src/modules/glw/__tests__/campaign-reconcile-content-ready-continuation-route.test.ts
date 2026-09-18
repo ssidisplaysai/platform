@@ -47,6 +47,8 @@ import {
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import {
   listGlwCampaignTargets,
+  markGlwCampaignTargetDraftReady,
+  reconcileGlwCampaignTargetContentReady,
   reconcileGlwContentReadyTargetDraft,
 } from "@/modules/glw/campaign-target-repository";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -62,9 +64,12 @@ function jsonResponse(body: unknown, status: number): Response {
 
 describe("campaign reconcile exact content-ready continuation route", () => {
   const campaignId = "campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview";
-  const targetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-fl";
-  const jobId = "5d877113-638a-40d0-9252-6390ec97c837";
-  const executionId = "691948";
+  const gaTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-ga";
+  const gaJobId = "cb4684bf-477c-45f2-98c3-a37717368b83";
+  const gaExecutionId = "703853";
+  const deTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-de";
+  const deJobId = "67b15376-563c-42b7-8fee-b2f2139b114b";
+  const deExecutionId = "686290";
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -94,16 +99,32 @@ describe("campaign reconcile exact content-ready continuation route", () => {
 
     (listGlwCampaignTargets as jest.Mock).mockReturnValue([
       {
-        targetId,
+        targetId: gaTargetId,
         campaignId,
         organizationId: "led-display-warehouse",
         siteId: "site-led-display-warehouse-production",
         productId: "prod-outdoor-digital-sphere",
-        stateCode: "FL",
+        stateCode: "GA",
+        citySlug: null,
+        cityName: null,
+        status: "running",
+        jobId: gaJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+      {
+        targetId: deTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "DE",
         citySlug: null,
         cityName: null,
         status: "content_ready",
-        jobId,
+        jobId: deJobId,
         wordpressObjectId: null,
         attemptCount: 1,
         lastError: null,
@@ -111,16 +132,34 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       },
     ]);
 
-    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
-      jobId,
-      organizationId: "led-display-warehouse",
-      siteId: "site-led-display-warehouse-production",
-      productId: "prod-outdoor-digital-sphere",
-      status: "CONTENT_READY",
-      externalExecutionId: executionId,
-      wordpressObjectId: null,
-      wordpressStatus: null,
-      generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/florida", excerpt: "x" },
+    (glwPageExecutionRepository.getById as jest.Mock).mockImplementation(async (id: string) => {
+      if (id === gaJobId) {
+        return {
+          jobId: gaJobId,
+          organizationId: "led-display-warehouse",
+          siteId: "site-led-display-warehouse-production",
+          productId: "prod-outdoor-digital-sphere",
+          status: "CONTENT_READY",
+          externalExecutionId: gaExecutionId,
+          wordpressObjectId: null,
+          wordpressStatus: null,
+          generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/georgia", excerpt: "x" },
+        };
+      }
+      if (id === deJobId) {
+        return {
+          jobId: deJobId,
+          organizationId: "led-display-warehouse",
+          siteId: "site-led-display-warehouse-production",
+          productId: "prod-outdoor-digital-sphere",
+          status: "CONTENT_READY",
+          externalExecutionId: deExecutionId,
+          wordpressObjectId: null,
+          wordpressStatus: null,
+          generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/delaware", excerpt: "x" },
+        };
+      }
+      return null;
     });
 
     (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
@@ -128,16 +167,16 @@ describe("campaign reconcile exact content-ready continuation route", () => {
         siteId: "site-led-display-warehouse-production",
         productId: "prod-outdoor-digital-sphere",
         stateCode: "FL",
-        stateName: "Florida",
+        stateName: "Georgia",
         citySlug: "",
         cityName: "",
         pageType: "state_service",
-        title: "Outdoor Digital Sphere in Florida",
-        seoTitle: "Outdoor Digital Sphere in Florida | LEDDisplayWarehouse.com",
+        title: "Outdoor Digital Sphere in Georgia",
+        seoTitle: "Outdoor Digital Sphere in Georgia | LEDDisplayWarehouse.com",
         metaDescription: "x",
         publicationIntent: "draft",
         plannedOperation: "CREATE_STATE",
-        canonicalPath: "outdoor-digital-sphere/florida",
+        canonicalPath: "outdoor-digital-sphere/georgia",
         productTopic: "Outdoor Digital Sphere",
         campaignId,
       },
@@ -155,8 +194,8 @@ describe("campaign reconcile exact content-ready continuation route", () => {
 
   test("fails closed when continuation responds 200 without durable draft persistence", async () => {
     const fetchMock = jest.fn()
-      .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: executionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
-      .mockResolvedValueOnce(jsonResponse({ ok: false, error: "Continuation did not durably persist a WordPress draft.", job: { status: "CONTENT_READY", externalExecutionId: executionId, wordpressObjectId: null, wordpressStatus: null } }, 200));
+      .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
+      .mockResolvedValueOnce(jsonResponse({ ok: false, error: "Continuation did not durably persist a WordPress draft.", job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200));
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -169,9 +208,9 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       },
       body: JSON.stringify({
         confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
-        targetId,
-        jobId,
-        executionId,
+        targetId: gaTargetId,
+        jobId: gaJobId,
+        executionId: gaExecutionId,
       }),
     });
 
@@ -185,26 +224,27 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     const continueRequestBody = JSON.parse((fetchMock.mock.calls[1]?.[1] as { body?: string })?.body ?? "{}");
     expect(continueRequestBody).toMatchObject({
       action: "continue",
-      targetId,
-      jobId,
-      executionId,
+      targetId: gaTargetId,
+      jobId: gaJobId,
+      executionId: gaExecutionId,
     });
+    expect(reconcileGlwCampaignTargetContentReady).not.toHaveBeenCalled();
   });
 
-  test("reconciles to draft_ready when continuation returns durable draft completion", async () => {
+  test("exact GA running + CONTENT_READY continuation reaches draft_ready and leaves DE untouched", async () => {
     const fetchMock = jest.fn()
-      .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: executionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
-      .mockResolvedValueOnce(jsonResponse({ ok: true, job: { status: "COMPLETE", externalExecutionId: executionId, wordpressObjectId: "20199", wordpressStatus: "draft" } }, 200));
+      .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
+      .mockResolvedValueOnce(jsonResponse({ ok: true, job: { status: "COMPLETE", externalExecutionId: gaExecutionId, wordpressObjectId: "20199", wordpressStatus: "draft" } }, 200));
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    (reconcileGlwContentReadyTargetDraft as jest.Mock).mockReturnValue({
-      targetId,
+    (markGlwCampaignTargetDraftReady as jest.Mock).mockReturnValue({
+      targetId: gaTargetId,
       campaignId,
-      stateCode: "FL",
+      stateCode: "GA",
       citySlug: null,
       status: "draft_ready",
-      jobId,
+      jobId: gaJobId,
       wordpressObjectId: "20199",
     });
 
@@ -217,9 +257,9 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       },
       body: JSON.stringify({
         confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
-        targetId,
-        jobId,
-        executionId,
+        targetId: gaTargetId,
+        jobId: gaJobId,
+        executionId: gaExecutionId,
       }),
     });
 
@@ -230,14 +270,98 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(payload.results[0]).toMatchObject({
       action: "draft_ready",
       wordpressObjectId: "20199",
-      executionIdAfter: executionId,
+      executionIdAfter: gaExecutionId,
     });
-    expect(reconcileGlwContentReadyTargetDraft).toHaveBeenCalledWith(expect.objectContaining({
+    expect(markGlwCampaignTargetDraftReady).toHaveBeenCalledWith(expect.objectContaining({
       campaignId,
-      targetId,
-      stateCode: "FL",
-      jobId,
+      stateCode: "GA",
+      jobId: gaJobId,
       wordpressObjectId: "20199",
     }));
+    expect(reconcileGlwContentReadyTargetDraft).not.toHaveBeenCalled();
+    expect(reconcileGlwCampaignTargetContentReady).not.toHaveBeenCalled();
+    const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(calledUrls.every((url) => !url.includes(deJobId))).toBe(true);
+  });
+
+  test("fails closed for mismatched exact target, job, or execution identity", async () => {
+    const baseUrl = "http://localhost/api/glw/campaigns/" + campaignId + "/reconcile";
+    const run = async (body: Record<string, string>) => {
+      const request = new NextRequest(baseUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-gcp-organization-id": "led-display-warehouse",
+          "x-gcp-site-id": "site-led-display-warehouse-production",
+        },
+        body: JSON.stringify({ confirm: "RECONCILE_EXISTING_DRAFT_BATCH", ...body }),
+      });
+      return POST(request, { params: Promise.resolve({ campaignId }) });
+    };
+
+    const wrongTarget = await run({ targetId: "target-wrong", jobId: gaJobId, executionId: gaExecutionId });
+    expect(wrongTarget.status).toBe(409);
+
+    const wrongJob = await run({ targetId: gaTargetId, jobId: "job-wrong", executionId: gaExecutionId });
+    expect(wrongJob.status).toBe(409);
+
+    const wrongExecution = await run({ targetId: gaTargetId, jobId: gaJobId, executionId: "999999" });
+    expect(wrongExecution.status).toBe(409);
+  });
+
+  test("campaign-wide reconcile behavior remains unchanged for running + CONTENT_READY", async () => {
+    const fetchMock = jest.fn().mockResolvedValue(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: gaTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "GA",
+        citySlug: null,
+        cityName: null,
+        status: "running",
+        jobId: gaJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+    ]);
+
+    (reconcileGlwCampaignTargetContentReady as jest.Mock).mockReturnValue({
+      target: {
+        targetId: gaTargetId,
+        campaignId,
+        stateCode: "GA",
+        citySlug: null,
+        cityName: null,
+        status: "content_ready",
+        jobId: gaJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+      },
+      leaseHistory: { leaseId: "lease-ga" },
+    });
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({ confirm: "RECONCILE_EXISTING_DRAFT_BATCH" }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.results).toEqual(expect.arrayContaining([expect.objectContaining({ stateCode: "GA", action: "content_ready" })]));
+    expect(reconcileGlwCampaignTargetContentReady).toHaveBeenCalledWith(expect.objectContaining({ campaignId, targetId: gaTargetId, jobId: gaJobId, externalExecutionId: gaExecutionId }));
+    expect(fetchMock.mock.calls).toHaveLength(1);
   });
 });
