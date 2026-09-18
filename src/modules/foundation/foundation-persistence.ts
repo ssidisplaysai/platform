@@ -167,12 +167,15 @@ export function deepClone<T>(value: T): T {
 export function loadPersistedState<T>(input: {
   namespace: string;
   seedFactory: () => T;
+  persistenceRoot?: string;
 }): {
   state: T;
   revision: number;
   seeded: boolean;
 } {
-  const filePath = namespaceFile(input.namespace);
+  const filePath = input.persistenceRoot && input.persistenceRoot.trim().length > 0
+    ? join(input.persistenceRoot.trim(), `${input.namespace}.json`)
+    : namespaceFile(input.namespace);
   const envelope = readEnvelopeFromDisk<T>(filePath);
 
   if (envelope) {
@@ -196,10 +199,13 @@ export function savePersistedState<T>(input: {
   namespace: string;
   state: T;
   expectedRevision: number;
+  persistenceRoot?: string;
 }): {
   revision: number;
 } {
-  const filePath = namespaceFile(input.namespace);
+  const filePath = input.persistenceRoot && input.persistenceRoot.trim().length > 0
+    ? join(input.persistenceRoot.trim(), `${input.namespace}.json`)
+    : namespaceFile(input.namespace);
   return withPersistenceLock(filePath, () => {
     const existing = readEnvelopeFromDisk<T>(filePath);
     if (!existing && input.expectedRevision !== 0) {
@@ -231,11 +237,14 @@ export function savePersistedState<T>(input: {
 export function resetPersistedState<T>(input: {
   namespace: string;
   seedFactory: () => T;
+  persistenceRoot?: string;
 }): {
   state: T;
   revision: number;
 } {
-  const filePath = namespaceFile(input.namespace);
+  const filePath = input.persistenceRoot && input.persistenceRoot.trim().length > 0
+    ? join(input.persistenceRoot.trim(), `${input.namespace}.json`)
+    : namespaceFile(input.namespace);
   const seeded = input.seedFactory();
   const envelope: PersistenceEnvelope<T> = {
     schemaVersion: PERSISTENCE_SCHEMA_VERSION,
