@@ -1,7 +1,7 @@
 jest.mock("server-only", () => ({}));
 
 import { NextRequest } from "next/server";
-import { authenticateOperator, createScryptPasswordHash, getOperatorSessionSecurityPosture, OPERATOR_CSRF_COOKIE, OPERATOR_CSRF_HEADER, OPERATOR_SESSION_AUTHORITY, OPERATOR_SESSION_COOKIE, resolveAuthenticatedOperatorPrincipal, revokeOperatorSession, validateOperatorMutationRequest } from "../operator-session";
+import { authenticateOperator, createScryptPasswordHash, getOperatorSessionSecurityPosture, OPERATOR_CSRF_COOKIE, OPERATOR_CSRF_HEADER, OPERATOR_SESSION_AUTHORITY, OPERATOR_SESSION_COOKIE, refreshOperatorSessionExpiry, resolveAuthenticatedOperatorPrincipal, revokeOperatorSession, validateOperatorMutationRequest } from "../operator-session";
 
 const password = "correct horse battery staple";
 let environment: NodeJS.ProcessEnv;
@@ -72,5 +72,18 @@ test("F: signing secret source is stable across restart and not embedded in sour
 	expect(postureAfter).toMatchObject({ tokenDigestSecretSource: "PERSISTED_GENERATED", persistenceRoot: root });
 	expect(restartedEnvironment.GENESIS_OPERATOR_SESSION_TOKEN_SECRET).toBeUndefined();
 	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), new Date(), restartedEnvironment)).toMatchObject({ ok: true, principal: { principalId: "operator-001" } });
+});
+test("refreshing a valid session extends expiry and preserves authorization", async () => {
+	const now = new Date("2026-01-01T00:00:00.000Z");
+	const session = await authenticateOperator({ identity: "operator@example.com", password, now, environment });
+	const refreshAt = new Date(now.getTime() + 15 * 60 * 1000);
+	const refreshedExpiry = refreshOperatorSessionExpiry(session.principal.sessionId, refreshAt, environment);
+	expect(refreshedExpiry).not.toBeNull();
+	if (!refreshedExpiry) return;
+	expect(new Date(refreshedExpiry).getTime()).toBeGreaterThan(new Date(session.principal.expiresAt).getTime());
+	const beforeRefreshCutoff = new Date(now.getTime() + 50 * 60 * 1000);
+	const afterOriginalExpiry = new Date(now.getTime() + 65 * 60 * 1000);
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), beforeRefreshCutoff, environment).ok).toBe(true);
+	expect(resolveAuthenticatedOperatorPrincipal(request({ token: session.token, csrf: session.csrfToken }), afterOriginalExpiry, environment).ok).toBe(true);
 });
 test("test principal injection is available only in test runtime", () => { const forged = request({ headers: { "x-gcp-roles": "platform_admin", "x-gcp-principal-id": "synthetic", "x-gcp-session-id": "synthetic-session" } }); expect(resolveAuthenticatedOperatorPrincipal(forged, new Date(), { ...environment, NODE_ENV: "production" }).ok).toBe(false); expect(resolveAuthenticatedOperatorPrincipal(forged, new Date(), { ...environment, NODE_ENV: "test" })).toMatchObject({ ok: true, principal: { principalId: "synthetic", sessionId: "synthetic-session" } }); });

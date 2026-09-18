@@ -56,7 +56,34 @@ const [selectedOrganizationId, setSelectedOrganizationId] = useState(
   const effectiveOrganizationId = resourceSite?.organizationId ?? selectedOrganizationId;
   const effectiveSiteId = resourceSite?.id ?? selectedSiteId;
 
-  useEffect(() => { let active = true; void fetch("/api/operator-session", { cache: "no-store" }).then(async (response) => { const body = await response.json() as { principal?: { roles?: AppRole[] } | null }; if (!active) return; setOperatorRoles(response.ok && body.principal?.roles ? body.principal.roles : []); setSessionAvailability(response.ok ? "AUTHENTICATED" : "AUTHENTICATION_REQUIRED"); }).catch(() => { if (active) { setOperatorRoles([]); setSessionAvailability("AUTHENTICATION_REQUIRED"); } }); return () => { active = false; }; }, []);
+  useEffect(() => {
+    let active = true;
+
+    const sync = async () => {
+      try {
+        const response = await fetch("/api/operator-session", { cache: "no-store" });
+        const body = await response.json() as { principal?: { roles?: AppRole[] } | null };
+        if (!active) return;
+        setOperatorRoles(response.ok && body.principal?.roles ? body.principal.roles : []);
+        setSessionAvailability(response.ok ? "AUTHENTICATED" : "AUTHENTICATION_REQUIRED");
+      } catch {
+        if (active) {
+          setOperatorRoles([]);
+          setSessionAvailability("AUTHENTICATION_REQUIRED");
+        }
+      }
+    };
+
+    void sync();
+    const intervalId = window.setInterval(() => {
+      void sync();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const visibleNavigationItems = useMemo(
     () => getVisibleNavigationItems(FOUNDATION_NAVIGATION_ITEMS, permissions),
