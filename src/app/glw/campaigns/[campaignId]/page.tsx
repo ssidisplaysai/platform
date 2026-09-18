@@ -70,6 +70,14 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
           siteId={model.campaign.siteId}
           campaignStatus={model.campaign.status}
           principalId={foundationContext.user.email}
+          targets={model.targets.map((target) => ({
+            targetId: target.targetId,
+            identity: target.identity,
+            lifecycleState: target.lifecycleState,
+            jobId: target.jobId,
+            executionId: target.executionId,
+            wordpressObjectId: target.wordpressObjectId,
+          }))}
         />
 
         {referenceMediaAuthority ? <GlwReferenceGoLiveReadiness record={referenceMediaAuthority} /> : null}

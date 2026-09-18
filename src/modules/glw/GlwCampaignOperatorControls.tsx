@@ -14,10 +14,20 @@ type QueueSummary = {
   referenceComplete: number;
   queued: number;
   running: number;
+  contentReady: number;
   draftReady: number;
   published: number;
   failed: number;
   skipped: number;
+};
+
+type ContinuableTargetSummary = {
+  targetId: string;
+  identity: string;
+  lifecycleState: string;
+  jobId: string | null;
+  executionId: string | null;
+  wordpressObjectId: string | null;
 };
 
 type SchedulePreview = {
@@ -162,6 +172,7 @@ type Props = {
   siteId: string;
   campaignStatus: string;
   principalId: string;
+  targets: readonly ContinuableTargetSummary[];
 };
 
 export function GlwCampaignOperatorControls({
@@ -169,6 +180,7 @@ export function GlwCampaignOperatorControls({
   organizationId,
   siteId,
   campaignStatus,
+  targets,
 }: Props) {
   const router = useRouter();
   const [scheduler, setScheduler] = useState<SchedulerPayload | null>(null);
@@ -184,6 +196,8 @@ export function GlwCampaignOperatorControls({
   const [publishing, setPublishing] = useState(false);
   const [refreshingSeo, setRefreshingSeo] = useState(false);
   const [enablingReleaseCapability, setEnablingReleaseCapability] = useState(false);
+  const [continuingTarget, setContinuingTarget] = useState(false);
+  const [selectedContinuationTargetId, setSelectedContinuationTargetId] = useState<string>("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const requestHeaders = useCallback((includeJson = false): HeadersInit => {
@@ -244,6 +258,23 @@ export function GlwCampaignOperatorControls({
     const timeout = window.setTimeout(() => void loadScheduler(), 0);
     return () => window.clearTimeout(timeout);
   }, [campaignStatus, loadScheduler]);
+
+  useEffect(() => {
+    const firstContinuable = targets.find((target) =>
+      target.lifecycleState === "content_ready"
+      && Boolean(target.jobId)
+      && Boolean(target.executionId)
+      && !target.wordpressObjectId,
+    );
+    setSelectedContinuationTargetId((current) => current || firstContinuable?.targetId || "");
+  }, [targets]);
+
+  const continuableTargets = targets.filter((target) =>
+    target.lifecycleState === "content_ready"
+    && Boolean(target.jobId)
+    && Boolean(target.executionId)
+    && !target.wordpressObjectId,
+  );
 
   async function authorizeAndDispatchExactTarget() {
     if (!scheduler || dispatchInFlight.current) return;
@@ -310,6 +341,57 @@ export function GlwCampaignOperatorControls({
     }
 
     setReconciling(false);
+    await refreshWorkspace();
+  }
+
+  async function continueContentReadyTarget() {
+    const target = continuableTargets.find((entry) => entry.targetId === selectedContinuationTargetId) ?? null;
+    if (!target || !target.jobId || !target.executionId) return;
+
+    const confirmed = window.confirm(
+      `Continue ${target.identity} to governed WordPress draft using existing job ${target.jobId} and execution ${target.executionId}? No dispatch will be consumed.`,
+    );
+    if (!confirmed) return;
+
+    setContinuingTarget(true);
+    setMessage(null);
+    setError(null);
+
+    const response = await fetch(`/api/glw/campaigns/${campaignId}/reconcile`, {
+      method: "POST",
+      headers: requestHeaders(true),
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: target.targetId,
+        jobId: target.jobId,
+        executionId: target.executionId,
+      }),
+      cache: "no-store",
+    });
+
+    const payload = await response.json().catch(() => null) as ReconcilePayload | { error?: string; results?: ReconcilePayload["results"] } | null;
+
+    if (!response.ok || !payload) {
+      setError(payload && "error" in payload ? (payload.error ?? `Continue to WordPress draft failed (HTTP ${response.status}).`) : `Continue to WordPress draft failed (HTTP ${response.status}).`);
+      setContinuingTarget(false);
+      return;
+    }
+
+    const result = Array.isArray(payload.results) ? payload.results[0] : null;
+    if (!result || (result.action !== "draft_ready" && result.action !== "wait")) {
+      setError(result?.error ?? "Continuation did not produce a draft-ready reconciliation result.");
+      setContinuingTarget(false);
+      await refreshWorkspace();
+      return;
+    }
+
+    if (result.action === "draft_ready") {
+      setMessage(`Continued ${target.identity} to WordPress draft${result.wordpressObjectId ? ` #${result.wordpressObjectId}` : ""} using existing job ${target.jobId}.`);
+    } else {
+      setError(result.error ?? `${target.identity} continuation is still waiting on exact execution completion.`);
+    }
+
+    setContinuingTarget(false);
     await refreshWorkspace();
   }
 
@@ -433,7 +515,9 @@ export function GlwCampaignOperatorControls({
 
   if (campaignStatus !== "active") return null;
 
-  const busy = loading || dispatching || reconciling || publishing || refreshingSeo || enablingReleaseCapability;
+  const busy = loading || dispatching || reconciling || publishing || refreshingSeo || enablingReleaseCapability || continuingTarget;
+  const hasContentReady = (scheduler?.queue.contentReady ?? 0) > 0;
+  const hasRunningOrFailed = (scheduler?.queue.running ?? 0) + (scheduler?.queue.failed ?? 0) > 0;
 
   return (
     <section id="campaign-actions" className="border border-zinc-800 bg-zinc-900/50 p-6">
@@ -444,14 +528,36 @@ export function GlwCampaignOperatorControls({
           <p className="mt-1 max-w-3xl text-sm text-zinc-400">The primary action follows the current lifecycle stage. Maintenance and publication remain separate.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => void reconcileCampaign()} disabled={busy || !scheduler || scheduler.queue.running + scheduler.queue.failed < 1} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
+          <button type="button" onClick={() => void reconcileCampaign()} disabled={busy || !scheduler || !hasRunningOrFailed} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
             {reconciling ? "Reconciling..." : "Reconcile Campaign"}
+          </button>
+          <button type="button" onClick={() => void continueContentReadyTarget()} disabled={busy || !scheduler || !hasContentReady || !selectedContinuationTargetId} className="rounded-lg border border-red-700 bg-red-950/40 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-red-200 transition hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-40">
+            {continuingTarget ? "Continuing..." : "Continue to WordPress Draft"}
           </button>
           <button type="button" onClick={() => void refreshWorkspace()} disabled={busy} className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40">
             {loading ? "Refreshing..." : "Refresh Preview"}
           </button>
         </div>
       </div>
+
+      {hasContentReady ? (
+        <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+          <label className="text-xs uppercase tracking-wider text-zinc-500" htmlFor="content-ready-target">Content-ready target</label>
+          <div />
+          <select
+            id="content-ready-target"
+            value={selectedContinuationTargetId}
+            onChange={(event) => setSelectedContinuationTargetId(event.target.value)}
+            className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-200"
+          >
+            {continuableTargets.map((target) => (
+              <option key={target.targetId} value={target.targetId}>
+                {target.identity} · job {target.jobId} · execution {target.executionId}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
 
       {error ? <p className="mt-4 rounded-lg border border-red-900/60 bg-red-950/30 p-3 text-sm text-red-300">{error}</p> : null}
       {message ? <p className="mt-4 rounded-lg border border-emerald-900/60 bg-emerald-950/30 p-3 text-sm text-emerald-300">{message}</p> : null}

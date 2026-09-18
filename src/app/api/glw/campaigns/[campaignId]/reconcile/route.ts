@@ -12,9 +12,7 @@ import {
   requeueGlwCampaignTargetAfterPreExecutionFailure,
   reconcileGlwContentReadyTargetDraft,
 } from "@/modules/glw/campaign-target-repository";
-import { listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
-import { projectAuthoritativeGeneratedPage } from "@/modules/glw/authoritative-generated-page-projection";
 import {
   resolveGlwCampaignJobReconciliationDecision,
 } from "@/modules/glw/campaign-target-reconciliation";
@@ -46,6 +44,10 @@ function targetIdentity(target: {
   };
 }
 
+function asTrimmed(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
 export async function POST(
   request: NextRequest,
   context: {
@@ -62,6 +64,9 @@ export async function POST(
 
   const body = await request.json().catch(() => null) as {
     confirm?: string;
+    targetId?: string;
+    jobId?: string;
+    executionId?: string;
   } | null;
 
   if (body?.confirm !== "RECONCILE_EXISTING_DRAFT_BATCH") {
@@ -97,8 +102,19 @@ export async function POST(
 
   const releasedExpiredLeaseCount = releaseExpiredGlwCampaignTargetLeases(campaignId);
 
-  const reconcilableTargets =
-    listGlwCampaignTargets(campaignId).filter(
+  const expectedTargetId = asTrimmed(body?.targetId);
+  const expectedJobId = asTrimmed(body?.jobId);
+  const expectedExecutionId = asTrimmed(body?.executionId);
+
+  if (expectedTargetId && (!expectedJobId || !expectedExecutionId)) {
+    return NextResponse.json({
+      error: "Exact target continuation requires targetId, jobId, and executionId.",
+    }, { status: 400 });
+  }
+
+  const allTargets = listGlwCampaignTargets(campaignId);
+  let reconcilableTargets =
+    allTargets.filter(
       (target) =>
         (
           target.status === "running"
@@ -108,6 +124,39 @@ export async function POST(
         && Boolean(target.jobId),
     );
 
+  if (expectedTargetId) {
+    const selected = allTargets.find((target) => target.targetId === expectedTargetId) ?? null;
+    if (!selected || selected.campaignId !== campaignId) {
+      return NextResponse.json({ error: "Selected target does not belong to the exact campaign." }, { status: 409 });
+    }
+    if (selected.status !== "content_ready") {
+      return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
+    }
+    if (!selected.jobId || selected.jobId !== expectedJobId) {
+      return NextResponse.json({ error: "Selected target does not match the exact existing job." }, { status: 409 });
+    }
+    if (selected.wordpressObjectId) {
+      return NextResponse.json({ error: "Selected target already has a conflicting WordPress identity." }, { status: 409 });
+    }
+    if (selected.leaseId) {
+      return NextResponse.json({ error: "Selected target has an active lease and cannot use content-ready continuation." }, { status: 409 });
+    }
+    const selectedJob = await glwPageExecutionRepository.getById(selected.jobId);
+    if (!selectedJob) {
+      return NextResponse.json({ error: "Selected target job was not found." }, { status: 409 });
+    }
+    if ((selectedJob.externalExecutionId ?? "") !== expectedExecutionId) {
+      return NextResponse.json({ error: "Selected target execution identity does not match the exact existing execution." }, { status: 409 });
+    }
+    if (selectedJob.wordpressStatus === "publish") {
+      return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
+    }
+    if (selectedJob.wordpressObjectId) {
+      return NextResponse.json({ error: "Conflicting existing WordPress identity detected on the selected job." }, { status: 409 });
+    }
+    reconcilableTargets = [selected];
+  }
+
   const origin = request.nextUrl.origin;
 
   const results: Array<Record<string, unknown>> = [];
@@ -116,21 +165,6 @@ export async function POST(
     const jobId = target.jobId!;
 
     try {
-      if (target.status === "content_ready") {
-        const job = await glwPageExecutionRepository.getById(jobId);
-        if (!job) throw new Error("CONTENT_READY_JOB_NOT_FOUND");
-        const certifications = listRenderedVisualCertifications({ organizationId: target.organizationId, siteId: target.siteId });
-        const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
-        const projection = projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions });
-        if (projection.target.status !== "draft_ready" || !projection.target.wordpressObjectId) {
-          results.push({ ...targetIdentity(target), jobId, action: "wait", generationStatus: job.status, error: "CURRENT_APPROVED_DRAFT_CERTIFICATION_REQUIRED" });
-          continue;
-        }
-        const updated = reconcileGlwContentReadyTargetDraft({ campaignId, stateCode: target.stateCode, citySlug: target.citySlug, targetId: target.targetId, jobId, wordpressObjectId: projection.target.wordpressObjectId });
-        results.push({ ...targetIdentity(target), jobId, action: "draft_ready", wordpressObjectId: updated.wordpressObjectId });
-        continue;
-      }
-
       const refreshUrl = new URL(
         "/api/glw/page-generation",
         origin,
@@ -182,7 +216,7 @@ export async function POST(
           job,
         );
 
-      if (decision.action === "continue" && job.status === "CONTENT_READY" && job.externalExecutionId) {
+      if (decision.action === "continue" && target.status === "running" && job.status === "CONTENT_READY" && job.externalExecutionId) {
         const updated = reconcileGlwCampaignTargetContentReady({
           campaignId,
           targetId: target.targetId,
@@ -275,7 +309,12 @@ export async function POST(
         };
 
         const updated =
-          target.status === "failed"
+          target.status === "content_ready"
+            ? reconcileGlwContentReadyTargetDraft({
+                ...updateInput,
+                targetId: target.targetId,
+              })
+            : target.status === "failed"
             ? markGlwFailedCampaignTargetDraftReady(updateInput)
             : markGlwCampaignTargetDraftReady(updateInput);
 
@@ -285,6 +324,7 @@ export async function POST(
           action: "draft_ready",
           wordpressObjectId:
             updated.wordpressObjectId,
+          executionIdAfter: job.externalExecutionId ?? null,
         });
 
         continue;

@@ -42,7 +42,7 @@ export type GlwCampaignOperatorReadModel = {
   lifecycle: readonly { key: string; label: string; state: OperatorStageState; detail: string }[];
   currentStage: string;
   nextStage: string;
-  canonicalAction: { kind: "AUTHORIZE" | "ACTIVATE" | "DISPATCH" | "RECONCILE" | "REVIEW_DRAFT" | "PUBLISH" | "NONE"; label: string; href: string; enabled: boolean; reason: string | null };
+  canonicalAction: { kind: "AUTHORIZE" | "ACTIVATE" | "DISPATCH" | "RECONCILE" | "CONTINUE_DRAFT" | "REVIEW_DRAFT" | "PUBLISH" | "NONE"; label: string; href: string; enabled: boolean; reason: string | null };
   capabilities: {
     release: { state: "READY" | "BLOCKED" | "NOT_REQUIRED"; detail: string };
     mcp: { state: "READY" | "BLOCKED" | "NOT_REQUIRED"; detail: string };
@@ -121,8 +121,13 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     }
   } else if (reconcilable || staleRecoverable) {
     currentStage = "Reconciliation";
-    nextStage = staleRecoverable ? "Recover stale execution and release blocked slot" : "Reconcile the exact execution";
-    canonicalAction = { kind: "RECONCILE", label: "Reconcile Campaign", href: "#campaign-actions", enabled: true, reason: null };
+    if (contentReady > 0) {
+      nextStage = "Continue exact content-ready job to a governed WordPress draft";
+      canonicalAction = { kind: "CONTINUE_DRAFT", label: "Continue to WordPress Draft", href: "#campaign-actions", enabled: true, reason: null };
+    } else {
+      nextStage = staleRecoverable ? "Recover stale execution and release blocked slot" : "Reconcile the exact execution";
+      canonicalAction = { kind: "RECONCILE", label: "Reconcile Campaign", href: "#campaign-actions", enabled: true, reason: null };
+    }
   } else if (running > 0) {
     currentStage = "Execution";
     nextStage = "Wait for the running execution, then reconcile";

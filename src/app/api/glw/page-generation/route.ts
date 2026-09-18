@@ -51,6 +51,7 @@ import {
   type GlwGenerationRequestInput,
 } from "@/modules/glw/page-generation";
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
+import { listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 
 const service = createGlwDraftExecutionService({
   repository: glwPageExecutionRepository,
@@ -826,6 +827,8 @@ export async function POST(request: NextRequest) {
     form?: GlwGenerationRequestInput;
     action?: string;
     jobId?: string;
+    targetId?: string;
+    executionId?: string;
   } | null;
 
   if (!body?.form) {
@@ -918,12 +921,47 @@ export async function POST(request: NextRequest) {
   if (action === "continue") {
     const jobId = body.jobId?.trim() ?? "";
     if (!jobId) return NextResponse.json({ error: "Exact GLW jobId is required for continuation." }, { status: 400 });
+    const expectedTargetId = body.targetId?.trim() ?? "";
+    const expectedExecutionId = body.executionId?.trim() ?? "";
 
     const currentJob = await glwPageExecutionRepository.getById(jobId);
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (currentJob.wordpressStatus === "publish") {
+      return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
+    }
     if (!matchesExactContinuationTarget({ job: currentJob, request: preview.request })) {
       return NextResponse.json({ error: "Continuation request does not match the exact persisted GLW target." }, { status: 409 });
+    }
+
+    if (preview.request.campaignId) {
+      const targets = listGlwCampaignTargets(preview.request.campaignId);
+      const target = targets.find((candidate) =>
+        candidate.stateCode === preview.request.stateCode
+        && (candidate.citySlug ?? null) === (preview.request.citySlug ?? null),
+      ) ?? null;
+
+      if (!target || target.campaignId !== preview.request.campaignId) {
+        return NextResponse.json({ error: "Exact campaign target was not found for continuation." }, { status: 409 });
+      }
+      if (expectedTargetId && target.targetId !== expectedTargetId) {
+        return NextResponse.json({ error: "Continuation request targetId does not match the exact campaign target." }, { status: 409 });
+      }
+      if (target.status === "published") {
+        return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
+      }
+      if (!new Set(["content_ready", "running", "failed"]).has(target.status)) {
+        return NextResponse.json({ error: "Campaign target is not in a continuable state." }, { status: 409 });
+      }
+      if (target.jobId !== currentJob.jobId) {
+        return NextResponse.json({ error: "Campaign target does not match the exact existing job." }, { status: 409 });
+      }
+      if (target.wordpressObjectId && target.wordpressObjectId !== currentJob.wordpressObjectId) {
+        return NextResponse.json({ error: "Conflicting WordPress identity exists for this campaign target." }, { status: 409 });
+      }
+      if (expectedExecutionId && (currentJob.externalExecutionId ?? "") !== expectedExecutionId) {
+        return NextResponse.json({ error: "Continuation request executionId does not match the exact existing execution." }, { status: 409 });
+      }
     }
 
     const exactRecoverableContentFailure =

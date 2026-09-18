@@ -110,6 +110,7 @@ describe("campaign operator experience", () => {
     expect(result.currentStage).toBe("Dispatch");
     expect(result.nextStage).toBe("Dispatch the next deterministic target");
     expect(result.canonicalAction).toMatchObject({ kind: "DISPATCH", label: "Run Next Draft Batch", enabled: true });
+    expect(result.canonicalAction.label).not.toContain("Continue to WordPress Draft");
     expect(result.counts).toEqual({ referenceComplete: 1, queued: 2, running: 0, contentReady: 0, draftReady: 1, published: 0, failed: 0 });
     expect(result.capabilities).toMatchObject({ release: { state: "READY" }, mcp: { state: "READY" }, scheduler: { state: "READY" }, publication: { state: "DRAFT_ONLY" } });
     expect(result.targets.map((entry) => entry.identity)).toEqual(["Austin, TX", "Dallas, TX", "Houston, TX", "San Antonio, TX"]);
@@ -137,7 +138,7 @@ describe("campaign operator experience", () => {
     const contentReadyJob = { ...dallasJob, status: "CONTENT_READY", wordpressObjectId: null, wordpressStatus: null } as GlwPageExecutionRecord;
     const result = model({ targets: [target("Austin", "austin", "reference_complete"), runningDallas, target("Houston", "houston", "queued"), target("San Antonio", "san-antonio", "queued")], jobs: [contentReadyJob] });
     expect(result.currentStage).toBe("Reconciliation");
-    expect(result.canonicalAction).toMatchObject({ kind: "RECONCILE", enabled: true });
+    expect(result.canonicalAction).toMatchObject({ kind: "CONTINUE_DRAFT", label: "Continue to WordPress Draft", enabled: true });
     expect(result.counts.contentReady).toBe(1);
   });
 
@@ -157,9 +158,13 @@ describe("campaign operator experience", () => {
 
   test("refreshes server state after every successful mutation and demotes policy-blocked publication", () => {
     const source = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignOperatorControls.tsx"), "utf8");
-    expect(source.match(/await refreshWorkspace\(\)/g)).toHaveLength(4);
+    expect((source.match(/await refreshWorkspace\(\)/g) ?? []).length).toBeGreaterThanOrEqual(5);
     expect(source).toContain("router.refresh()");
     expect(source).toContain("publishPreview?.policyBlocked");
     expect(source).toContain("Publication Blocked by Policy");
+    expect(source).toContain("Continue to WordPress Draft");
+    expect(source).toContain("content-ready-target");
+    expect(source).toContain("targetId: target.targetId");
+    expect(source).toContain("executionId: target.executionId");
   });
 });

@@ -168,6 +168,29 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain('errorCode: "SEO_AUTHORITY_INELIGIBLE"');
   });
 
+  test("continues CONTENT_READY with exact target/job/execution fail-closed guards and without dispatch", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain('if (action === "continue")');
+    expect(source).toContain('const expectedTargetId = body.targetId?.trim() ?? "";');
+    expect(source).toContain('const expectedExecutionId = body.executionId?.trim() ?? "";');
+    expect(source).toContain('Published targets cannot continue through draft continuation.');
+    expect(source).toContain('Campaign target does not match the exact existing job.');
+    expect(source).toContain('Conflicting WordPress identity exists for this campaign target.');
+    expect(source).toContain('Continuation request executionId does not match the exact existing execution.');
+    expect(source).toContain('publicationPerformed: false');
+  });
+
+  test("campaign reconcile reuses existing continue path for content-ready target continuation", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reconcile/route.ts"), "utf8");
+    expect(source).toContain('targetId?: string;');
+    expect(source).toContain('executionId?: string;');
+    expect(source).toContain('Exact target continuation requires targetId, jobId, and executionId.');
+    expect(source).toContain('action: "continue"');
+    expect(source).toContain('reconcileGlwContentReadyTargetDraft');
+    expect(source).toContain('action: "draft_ready"');
+    expect(source).toContain('executionIdAfter: job.externalExecutionId ?? null');
+  });
+
   test("renders approved GLW campaign internal links before generated-content QA", () => {
     const source = readFileSync(
       resolve(
