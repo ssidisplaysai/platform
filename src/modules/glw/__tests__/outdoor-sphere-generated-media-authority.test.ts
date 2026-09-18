@@ -109,7 +109,7 @@ describe("Outdoor Sphere generated contextual media authority", () => {
     expect(source).not.toContain("dispatch allowance consumed");
   });
 
-  test("renderer produces one H1 and required hero/product authority structure", () => {
+  test("renderer keeps PRODUCT_AUTHORITY grounding required while hiding legacy product authority image in public HTML", () => {
     const rendered = renderOutdoorSphereRichWordPress({
       title: "Outdoor Digital Sphere in Georgia",
       stateName: "Georgia",
@@ -132,14 +132,47 @@ describe("Outdoor Sphere generated contextual media authority", () => {
     expect(rendered.html).toContain("data-genesis-hero");
     expect(rendered.html).toContain('data-media-role="CONTEXTUAL_IN_USE"');
     expect(rendered.html).toContain('data-media-role="PRODUCT_AUTHORITY"');
+    expect(rendered.html).toContain('class="glw-sphere-shell glw-sphere-product-grid"');
+    expect(rendered.html).toContain('class="glw-sphere-product-copy"');
+    expect(rendered.html).not.toContain("glw-sphere-product-media-wrap");
+    expect(rendered.html).not.toContain("product-authority.jpg");
+    expect(rendered.html).toContain("contextual-ga.jpg");
     expect(rendered.html).toContain("glw-sphere-hero");
     expect(rendered.html).toContain("glw-sphere-planning");
     expect(rendered.html).toContain("glw-sphere-cta");
+    expect(rendered.html).toContain("Start planning conversation");
+    expect(rendered.html).toContain("Discuss project planning");
     expect(rendered.html).toContain("Retained guide paragraph.");
     expect(rendered.html).not.toContain("Bad Duplicate Heading");
     expect(rendered.html).not.toContain("<img src=\"https://x.test/i.jpg\"");
     expect(rendered.html).not.toContain("<script>");
     expect(rendered.html).not.toContain("javascript:alert(1)");
+  });
+
+  test("renderer uses container-responsive planning grid and narrow-width safety CSS", () => {
+    const rendered = renderOutdoorSphereRichWordPress({
+      title: "Outdoor Digital Sphere in Georgia",
+      stateName: "Georgia",
+      productTopic: "Outdoor Digital Sphere",
+      semanticSourceHtml: "<article><p>Retained guide paragraph.</p></article>",
+      excerpt: "Concept-focused planning guidance for outdoor sphere applications.",
+      contextualMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/contextual-ga.jpg",
+      productAuthorityMediaUrl: "https://leddisplaywarehouse.com/wp-content/uploads/product-authority.jpg",
+      productAuthorityAltText: "Approved outdoor digital sphere product authority",
+      canonicalProductUrl: "https://leddisplaywarehouse.com/outdoor-digital-sphere/",
+      governedCtaUrl: "/outdoor-digital-sphere/",
+    });
+
+    expect(rendered.ok).toBe(true);
+    if (!rendered.ok) return;
+
+    expect(rendered.html).toContain("grid-template-columns:repeat(auto-fit,minmax(140px,1fr))");
+    expect(rendered.html).not.toContain("grid-template-columns:repeat(7,minmax(0,1fr))");
+    expect(rendered.html).toContain(".glw-sphere-shell{max-width:1180px;margin:0 auto;padding:0 20px;min-width:0}");
+    expect(rendered.html).toContain(".glw-sphere-product-grid{display:block;min-width:0}");
+    expect(rendered.html).toContain(".glw-sphere-guide-frame{background:#fff;border:1px solid #d7dedb;padding:30px;max-width:940px;margin:0 auto;min-width:0;overflow-wrap:anywhere}");
+    expect(rendered.html).toContain(".glw-sphere-card{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);padding:14px 12px;font-size:13px;font-weight:700;letter-spacing:.01em;text-align:center;min-width:0;overflow-wrap:anywhere}");
+    expect(rendered.html).toContain("Retained guide paragraph.");
   });
 
   test("renderer fails closed when strict rich inputs are missing", () => {

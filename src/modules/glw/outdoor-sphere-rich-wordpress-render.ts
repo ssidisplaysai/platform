@@ -78,7 +78,6 @@ export function renderOutdoorSphereRichWordPress(
   const contextualMediaUrl = sanitizeUri(input.contextualMediaUrl);
   const productAuthorityMediaUrl = sanitizeUri(input.productAuthorityMediaUrl);
   const excerpt = input.excerpt.trim();
-  const productAuthorityAltText = input.productAuthorityAltText.trim() || `${productTopic} product image`;
   const canonicalProductUrl = sanitizeUri(input.canonicalProductUrl);
   const governedCtaUrl = sanitizeUri(input.governedCtaUrl);
 
@@ -118,8 +117,6 @@ export function renderOutdoorSphereRichWordPress(
   const safeExcerpt = escapeHtml(excerpt);
   const safeProductTopic = escapeHtml(productTopic);
   const safeContextualMediaUrl = escapeHtml(contextualMediaUrl.replace(/[\r\n]/g, ""));
-  const safeProductAuthorityMediaUrl = escapeHtml(productAuthorityMediaUrl);
-  const safeProductAuthorityAltText = escapeHtml(productAuthorityAltText);
 
   const primaryCta = governedCtaUrl
     ? `<a class="glw-sphere-button glw-sphere-button-primary" href="${escapeHtml(governedCtaUrl)}">Discuss project planning</a>`
@@ -142,7 +139,7 @@ export function renderOutdoorSphereRichWordPress(
   const html = `<article class="glw-sphere-page" data-genesis-primary-content="true">
   <style>
     .glw-sphere-page{color:#122022;background:#eef1f0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.6;overflow-x:hidden}
-    .glw-sphere-shell{max-width:1180px;margin:0 auto;padding:0 20px}
+    .glw-sphere-shell{max-width:1180px;margin:0 auto;padding:0 20px;min-width:0}
     .glw-sphere-band{height:10px;background:linear-gradient(90deg,#0f1720,#c2571c,#f1a63a)}
     .glw-sphere-hero{position:relative;min-height:560px;display:flex;align-items:flex-end;background-size:cover;background-position:center;background-image:linear-gradient(110deg,rgba(10,16,22,.9),rgba(10,16,22,.56)),url("${safeContextualMediaUrl}")}
     .glw-sphere-hero-inner{padding:76px 0 72px;color:#fff;max-width:900px}
@@ -154,19 +151,18 @@ export function renderOutdoorSphereRichWordPress(
     .glw-sphere-button-primary{background:#f1a63a;color:#111a22}
     .glw-sphere-button-secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5)}
     .glw-sphere-product{background:#fff;border-top:1px solid #d7dedb;border-bottom:1px solid #d7dedb;padding:70px 0}
-    .glw-sphere-product-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center}
+    .glw-sphere-product-grid{display:block;min-width:0}
+    .glw-sphere-product-copy{max-width:820px;min-width:0}
     .glw-sphere-product-kicker{margin:0;color:#b44713;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.16em}
-    .glw-sphere-product h2{margin:14px 0 18px;font-size:clamp(1.8rem,3.3vw,3rem);line-height:1.08}
-    .glw-sphere-product p{margin:0 0 14px;color:#31464a}
-    .glw-sphere-product-media-wrap{padding:18px;border:1px solid #d9dfde;background:linear-gradient(180deg,#f8faf9,#edf2f0)}
-    .glw-sphere-product-media-wrap img{display:block;width:100%;height:auto;aspect-ratio:20/11;object-fit:cover}
+    .glw-sphere-product h2{margin:14px 0 18px;font-size:clamp(1.8rem,3.3vw,3rem);line-height:1.08;overflow-wrap:anywhere}
+    .glw-sphere-product p{margin:0 0 14px;color:#31464a;overflow-wrap:anywhere}
     .glw-sphere-planning{background:radial-gradient(circle at 12% 0%,#283741 0,#17242f 40%,#0c151d 100%);color:#e8edf0;padding:74px 0}
-    .glw-sphere-planning h2{margin:0 0 18px;font-size:clamp(1.7rem,2.8vw,2.7rem)}
+    .glw-sphere-planning h2{margin:0 0 18px;font-size:clamp(1.7rem,2.8vw,2.7rem);overflow-wrap:anywhere}
     .glw-sphere-planning p{margin:0 0 24px;max-width:68ch;color:rgba(232,237,240,.85)}
-    .glw-sphere-card-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
-    .glw-sphere-card{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);padding:14px 12px;font-size:13px;font-weight:700;letter-spacing:.01em;text-align:center}
+    .glw-sphere-card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;min-width:0}
+    .glw-sphere-card{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);padding:14px 12px;font-size:13px;font-weight:700;letter-spacing:.01em;text-align:center;min-width:0;overflow-wrap:anywhere}
     .glw-sphere-guide{background:#f2f4f3;padding:72px 0 78px;border-top:1px solid #dbe0de;border-bottom:1px solid #dbe0de}
-    .glw-sphere-guide-frame{background:#fff;border:1px solid #d7dedb;padding:30px;max-width:940px;margin:0 auto}
+    .glw-sphere-guide-frame{background:#fff;border:1px solid #d7dedb;padding:30px;max-width:940px;margin:0 auto;min-width:0;overflow-wrap:anywhere}
     .glw-sphere-guide-frame h2,.glw-sphere-guide-frame h3,.glw-sphere-guide-frame h4{line-height:1.2;color:#152328}
     .glw-sphere-guide-frame p,.glw-sphere-guide-frame li,.glw-sphere-guide-frame td,.glw-sphere-guide-frame th{color:#26383c}
     .glw-sphere-guide-frame table{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -182,9 +178,7 @@ export function renderOutdoorSphereRichWordPress(
       .glw-sphere-shell{padding:0 16px}
       .glw-sphere-hero{min-height:500px}
       .glw-sphere-product{padding:54px 0}
-      .glw-sphere-product-grid{grid-template-columns:1fr;gap:24px}
       .glw-sphere-planning{padding:56px 0}
-      .glw-sphere-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
       .glw-sphere-guide{padding:54px 0}
       .glw-sphere-guide-frame{padding:20px}
       .glw-sphere-cta{padding:48px 0}
@@ -201,15 +195,12 @@ export function renderOutdoorSphereRichWordPress(
   </section>
   <section class="glw-sphere-product" data-media-role="PRODUCT_AUTHORITY">
     <div class="glw-sphere-shell glw-sphere-product-grid">
-      <div>
-        <p class="glw-sphere-product-kicker">Approved Product Authority</p>
+      <div class="glw-sphere-product-copy">
+        <p class="glw-sphere-product-kicker">Planning Orientation</p>
         <h2>${safeProductTopic} planning for ${safeStateName}</h2>
-        <p>This section presents owner-approved product authority media and neutral planning direction for early-stage concept development.</p>
+        <p>This section provides neutral planning direction for early-stage concept development.</p>
         <p>No local installation claim is made by this conceptual preview and composition path.</p>
       </div>
-      <figure class="glw-sphere-product-media-wrap">
-        <img src="${safeProductAuthorityMediaUrl}" alt="${safeProductAuthorityAltText}" />
-      </figure>
     </div>
   </section>
   <section class="glw-sphere-planning">
