@@ -1,7 +1,7 @@
 import "server-only";
 
 import { bindGeneratedContextualMediaWordPress, findSuccessfulGeneratedContextualMedia, saveSuccessfulGeneratedContextualMedia } from "@/modules/foundation/generated-contextual-media-repository";
-import { listSitePageMediaAssignments, saveSitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
+import { bindSitePageMediaAssignmentWordPress, listSitePageMediaAssignments, saveSitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
 import { uploadGenesisWordPressGeneratedMedia } from "@/modules/foundation/wordpress-media-writer";
 import type { SiteConfiguration } from "@/modules/foundation/types";
 import type { ContextualMediaAdapterDependencies } from "./contextual-media-production-adapter";
@@ -33,10 +33,36 @@ export function createContextualMediaProductionDependencies(input: {
       return saveSitePageMediaAssignment({ organizationId: identity.organizationId, siteId: identity.siteId, buildSessionId, pageId: identity.targetId, pageRevisionId: identity.pageRevisionId, slotId: item.slot, role: item.mediaRole, asset: { type: "GENERATED", provider: asset.receipt.provider, model: asset.receipt.model, generationJobId: asset.receipt.generationId, effectivePrompt: item.prompt, referenceInputs: item.mediaRole === "LOCAL_CONTEXTUAL_ATMOSPHERE" ? [] : [{ referenceId: productAuthority.assignmentId, role: "PRODUCT_TRUTH", sha256: productSha }], outputSha256: asset.receipt.assetSha256 }, metadata: { altText: item.altText, caption: "Conceptual generated visualization; not documentary evidence.", title: item.role.replaceAll("_", " "), description: "Generated contextual presentation media. Not installation, customer, geographic, or product-specification evidence." }, approval: { candidateId: asset.receipt.generationId, approvedBy: actor, approvedAt: new Date().toISOString() }, wordpressReceipt: asset.wordpressMediaId && asset.wordpressUrl ? { mediaId: asset.wordpressMediaId, url: asset.wordpressUrl, attachedToObjectId: identity.wordpressObjectId, altTextVerified: true, placementVerified: true, verifiedAt: new Date().toISOString() } : null });
     },
     uploadMedia: async ({ identity, item, asset }) => {
-      if (asset.wordpressMediaId && asset.wordpressUrl) return { mediaId: asset.wordpressMediaId, url: asset.wordpressUrl, reused: true };
+      if (asset.wordpressMediaId && asset.wordpressUrl) {
+        bindSitePageMediaAssignmentWordPress({
+          organizationId: identity.organizationId,
+          siteId: identity.siteId,
+          buildSessionId: `contextual-media:${identity.targetId}`,
+          pageRevisionId: identity.pageRevisionId,
+          slotId: item.slot,
+          role: item.mediaRole,
+          generationJobId: asset.receipt.generationId,
+          mediaId: asset.wordpressMediaId,
+          url: asset.wordpressUrl,
+          attachedToObjectId: identity.wordpressObjectId,
+        });
+        return { mediaId: asset.wordpressMediaId, url: asset.wordpressUrl, reused: true };
+      }
       const uploaded = await uploadGenesisWordPressGeneratedMedia({ site: input.site, canonicalSlug: `${identity.targetId}-${item.role.toLowerCase().replaceAll("_", "-")}`, image: { bytes: asset.bytes, mimeType: asset.receipt.mimeType, fileExtension: asset.receipt.mimeType === "image/png" ? "png" : asset.receipt.mimeType === "image/webp" ? "webp" : "jpg" }, title: item.role.replaceAll("_", " "), altText: item.altText, description: "Conceptual generated visualization; not documentary installation, customer, geographic, or product-specification evidence." });
       if (!uploaded.ok) throw new Error(`CONTEXTUAL_MEDIA_WORDPRESS_UPLOAD_FAILED:${uploaded.state}`);
       bindGeneratedContextualMediaWordPress({ generationId: asset.receipt.generationId, mediaId: uploaded.mediaId, url: uploaded.mediaUrl });
+      bindSitePageMediaAssignmentWordPress({
+        organizationId: identity.organizationId,
+        siteId: identity.siteId,
+        buildSessionId: `contextual-media:${identity.targetId}`,
+        pageRevisionId: identity.pageRevisionId,
+        slotId: item.slot,
+        role: item.mediaRole,
+        generationJobId: asset.receipt.generationId,
+        mediaId: uploaded.mediaId,
+        url: uploaded.mediaUrl,
+        attachedToObjectId: identity.wordpressObjectId,
+      });
       return { mediaId: uploaded.mediaId, url: uploaded.mediaUrl, reused: false };
     },
     patchPresentation: input.patchPresentation,

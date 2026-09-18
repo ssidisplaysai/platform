@@ -102,4 +102,135 @@ describe("site page media assignment", () => {
     expect(repository.evaluateProductAuthorityMediaRequirement({ approvedMediaAvailable: true, resolvedAssignment: product })).toEqual({ contract: "PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE", state: "PASS", code: null, generatedMediaUsedAsDocumentarySubstitute: false });
     expect(repository.evaluateProductAuthorityMediaRequirement({ approvedMediaAvailable: true, resolvedAssignment: null })).toEqual({ contract: "PRODUCT_AUTHORITY_MEDIA_REQUIRED_WHEN_AVAILABLE", state: "FAIL", code: "REQUIRED_MEDIA_UNRESOLVED", generatedMediaUsedAsDocumentarySubstitute: false });
   });
+
+  test("binds generated assignment WordPress receipt after upload identity is known", async () => {
+    const repository = await import("../site-page-media-assignment");
+    const assignment = repository.saveSitePageMediaAssignment({
+      ...base(),
+      buildSessionId: "contextual-media:target-fl",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      asset: {
+        type: "GENERATED",
+        provider: "OPENAI_IMAGE",
+        model: "gpt-image-2",
+        generationJobId: "contextual-generation-fl",
+        effectivePrompt: "Conceptual generated contextual visualization only.",
+        referenceInputs: [{ referenceId: "media-assignment-product", role: "PRODUCT_TRUTH", sha256: digest("a") }],
+        outputSha256: digest("b"),
+      },
+    });
+    expect(assignment.wordpressReceipt).toBeNull();
+
+    const bound = repository.bindSitePageMediaAssignmentWordPress({
+      organizationId: "org",
+      siteId: "site",
+      buildSessionId: "contextual-media:target-fl",
+      pageRevisionId: "page-revision-1",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      generationJobId: "contextual-generation-fl",
+      mediaId: 20166,
+      url: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated.jpg",
+      attachedToObjectId: "20163",
+      verifiedAt: "2026-09-18T10:00:00.000Z",
+    });
+
+    expect(bound.wordpressReceipt).toMatchObject({ mediaId: 20166, attachedToObjectId: "20163" });
+  });
+
+  test("binding same generated media receipt is idempotent", async () => {
+    const repository = await import("../site-page-media-assignment");
+    repository.saveSitePageMediaAssignment({
+      ...base(),
+      buildSessionId: "contextual-media:target-fl",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      asset: {
+        type: "GENERATED",
+        provider: "OPENAI_IMAGE",
+        model: "gpt-image-2",
+        generationJobId: "contextual-generation-fl",
+        effectivePrompt: "Conceptual generated contextual visualization only.",
+        referenceInputs: [{ referenceId: "media-assignment-product", role: "PRODUCT_TRUTH", sha256: digest("a") }],
+        outputSha256: digest("b"),
+      },
+    });
+
+    const first = repository.bindSitePageMediaAssignmentWordPress({
+      organizationId: "org",
+      siteId: "site",
+      buildSessionId: "contextual-media:target-fl",
+      pageRevisionId: "page-revision-1",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      generationJobId: "contextual-generation-fl",
+      mediaId: 20166,
+      url: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated.jpg",
+      attachedToObjectId: "20163",
+      verifiedAt: "2026-09-18T10:00:00.000Z",
+    });
+    const second = repository.bindSitePageMediaAssignmentWordPress({
+      organizationId: "org",
+      siteId: "site",
+      buildSessionId: "contextual-media:target-fl",
+      pageRevisionId: "page-revision-1",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      generationJobId: "contextual-generation-fl",
+      mediaId: 20166,
+      url: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated.jpg",
+      attachedToObjectId: "20163",
+      verifiedAt: "2026-09-18T10:05:00.000Z",
+    });
+
+    expect(second.wordpressReceipt).toEqual(first.wordpressReceipt);
+  });
+
+  test("binding different WordPress media to existing generated assignment fails closed", async () => {
+    const repository = await import("../site-page-media-assignment");
+    repository.saveSitePageMediaAssignment({
+      ...base(),
+      buildSessionId: "contextual-media:target-fl",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      asset: {
+        type: "GENERATED",
+        provider: "OPENAI_IMAGE",
+        model: "gpt-image-2",
+        generationJobId: "contextual-generation-fl",
+        effectivePrompt: "Conceptual generated contextual visualization only.",
+        referenceInputs: [{ referenceId: "media-assignment-product", role: "PRODUCT_TRUTH", sha256: digest("a") }],
+        outputSha256: digest("b"),
+      },
+    });
+
+    repository.bindSitePageMediaAssignmentWordPress({
+      organizationId: "org",
+      siteId: "site",
+      buildSessionId: "contextual-media:target-fl",
+      pageRevisionId: "page-revision-1",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      generationJobId: "contextual-generation-fl",
+      mediaId: 20166,
+      url: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated.jpg",
+      attachedToObjectId: "20163",
+      verifiedAt: "2026-09-18T10:00:00.000Z",
+    });
+
+    expect(() => repository.bindSitePageMediaAssignmentWordPress({
+      organizationId: "org",
+      siteId: "site",
+      buildSessionId: "contextual-media:target-fl",
+      pageRevisionId: "page-revision-1",
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      generationJobId: "contextual-generation-fl",
+      mediaId: 20199,
+      url: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated-v2.jpg",
+      attachedToObjectId: "20163",
+      verifiedAt: "2026-09-18T10:10:00.000Z",
+    })).toThrow("MEDIA_ASSIGNMENT_WORDPRESS_BINDING_COLLISION");
+  });
 });

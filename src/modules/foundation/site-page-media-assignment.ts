@@ -76,6 +76,17 @@ function sha(value: string, code: string): string {
   return normalized;
 }
 
+function validUrl(value: string, code: string): string {
+  const normalized = value.trim();
+  try {
+    const parsed = new URL(normalized);
+    if (!parsed.protocol || (parsed.protocol !== "http:" && parsed.protocol !== "https:")) throw new Error(code);
+    return normalized;
+  } catch {
+    throw new Error(code);
+  }
+}
+
 function validate(input: Omit<SitePageMediaAssignment, "assignmentId" | "createdAt">): void {
   required(input.organizationId, "MEDIA_ASSIGNMENT_ORGANIZATION_REQUIRED");
   required(input.siteId, "MEDIA_ASSIGNMENT_SITE_REQUIRED");
@@ -193,6 +204,67 @@ export function saveSitePageMediaAssignment(input: Omit<SitePageMediaAssignment,
     createdAt: new Date().toISOString(),
   };
   loaded.state.assignments.push(assignment);
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  return deepClone(assignment);
+}
+
+export function bindSitePageMediaAssignmentWordPress(input: {
+  organizationId: string;
+  siteId: string;
+  buildSessionId: string;
+  pageRevisionId: string;
+  slotId: string;
+  role: SitePageMediaRole;
+  generationJobId: string;
+  mediaId: number;
+  url: string;
+  attachedToObjectId: string;
+  verifiedAt?: string;
+}): SitePageMediaAssignment {
+  const organizationId = required(input.organizationId, "MEDIA_ASSIGNMENT_ORGANIZATION_REQUIRED");
+  const siteId = required(input.siteId, "MEDIA_ASSIGNMENT_SITE_REQUIRED");
+  const buildSessionId = required(input.buildSessionId, "MEDIA_ASSIGNMENT_SESSION_REQUIRED");
+  const pageRevisionId = required(input.pageRevisionId, "MEDIA_ASSIGNMENT_PAGE_REVISION_REQUIRED");
+  const slotId = required(input.slotId, "MEDIA_ASSIGNMENT_SLOT_REQUIRED");
+  const generationJobId = required(input.generationJobId, "GENERATED_MEDIA_GENERATION_ID_REQUIRED");
+  if (!Number.isSafeInteger(input.mediaId) || input.mediaId < 1) throw new Error("WORDPRESS_MEDIA_ID_INVALID");
+  const url = validUrl(input.url, "WORDPRESS_MEDIA_URL_REQUIRED");
+  const attachedToObjectId = required(input.attachedToObjectId, "WORDPRESS_MEDIA_ATTACHMENT_REQUIRED");
+  const verifiedAt = input.verifiedAt ?? new Date().toISOString();
+  if (!Number.isFinite(Date.parse(verifiedAt))) throw new Error("WORDPRESS_MEDIA_VERIFIED_AT_INVALID");
+
+  const loaded = loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed });
+  const assignment = loaded.state.assignments.find((candidate) =>
+    candidate.organizationId === organizationId
+    && candidate.siteId === siteId
+    && candidate.buildSessionId === buildSessionId
+    && candidate.pageRevisionId === pageRevisionId
+    && candidate.slotId === slotId
+    && candidate.role === input.role
+  );
+  if (!assignment) throw new Error("MEDIA_ASSIGNMENT_WORDPRESS_BINDING_NOT_FOUND");
+  if (assignment.asset.type !== "GENERATED") throw new Error("MEDIA_ASSIGNMENT_WORDPRESS_BINDING_GENERATED_REQUIRED");
+  if (assignment.asset.generationJobId !== generationJobId) throw new Error("MEDIA_ASSIGNMENT_WORDPRESS_BINDING_GENERATION_MISMATCH");
+
+  if (assignment.wordpressReceipt) {
+    if (
+      assignment.wordpressReceipt.mediaId === input.mediaId
+      && assignment.wordpressReceipt.url === url
+      && assignment.wordpressReceipt.attachedToObjectId === attachedToObjectId
+    ) {
+      return deepClone(assignment);
+    }
+    throw new Error("MEDIA_ASSIGNMENT_WORDPRESS_BINDING_COLLISION");
+  }
+
+  assignment.wordpressReceipt = {
+    mediaId: input.mediaId,
+    url,
+    attachedToObjectId,
+    altTextVerified: true,
+    placementVerified: true,
+    verifiedAt,
+  };
   savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
   return deepClone(assignment);
 }

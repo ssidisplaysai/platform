@@ -1,10 +1,11 @@
 jest.mock("server-only", () => ({}));
 jest.mock("../reference-aware-image-service", () => ({ generateGenesisFeaturedImageWithCampaignReferences: jest.fn() }));
 jest.mock("@/modules/foundation/generated-contextual-media-repository", () => ({ bindGeneratedContextualMediaWordPress: jest.fn(), findSuccessfulGeneratedContextualMedia: jest.fn(), saveSuccessfulGeneratedContextualMedia: jest.fn() }));
-jest.mock("@/modules/foundation/site-page-media-assignment", () => ({ listSitePageMediaAssignments: jest.fn(() => []), saveSitePageMediaAssignment: jest.fn((input) => input) }));
+jest.mock("@/modules/foundation/site-page-media-assignment", () => ({ listSitePageMediaAssignments: jest.fn(() => []), saveSitePageMediaAssignment: jest.fn((input) => input), bindSitePageMediaAssignmentWordPress: jest.fn((input) => input) }));
 jest.mock("@/modules/foundation/wordpress-media-writer", () => ({ uploadGenesisWordPressGeneratedMedia: jest.fn() }));
 
 import { bindGeneratedContextualMediaWordPress } from "@/modules/foundation/generated-contextual-media-repository";
+import { bindSitePageMediaAssignmentWordPress, listSitePageMediaAssignments, saveSitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
 import { uploadGenesisWordPressGeneratedMedia } from "@/modules/foundation/wordpress-media-writer";
 import { createContextualMediaProductionDependencies, inertContextualMediaDependencies } from "../contextual-media-production-dependencies";
 import { generateGenesisFeaturedImageWithCampaignReferences } from "../reference-aware-image-service";
@@ -12,6 +13,9 @@ import { generateGenesisFeaturedImageWithCampaignReferences } from "../reference
 const generateWithRefs = jest.mocked(generateGenesisFeaturedImageWithCampaignReferences);
 const uploadGenerated = jest.mocked(uploadGenesisWordPressGeneratedMedia);
 const bindWordPress = jest.mocked(bindGeneratedContextualMediaWordPress);
+const bindAssignmentWordPress = jest.mocked(bindSitePageMediaAssignmentWordPress);
+const listAssignments = jest.mocked(listSitePageMediaAssignments);
+const saveAssignment = jest.mocked(saveSitePageMediaAssignment);
 
 const site = { integrations: { wordpressApiBaseUrl: "https://example.test/wp-json/wp/v2", wordpressCredentialReference: "cred" } } as never;
 const identity = {
@@ -100,6 +104,17 @@ test("WordPress upload/readback is required before binding success", async () =>
   await expect(deps.uploadMedia({ identity, item, asset })).resolves.toMatchObject({ mediaId: 20301, reused: false });
   expect(uploadGenerated).toHaveBeenCalledTimes(1);
   expect(bindWordPress).toHaveBeenCalledWith({ generationId: "contextual-generation-123", mediaId: 20301, url: "https://leddisplaywarehouse.com/wp-content/uploads/contextual.jpg" });
+  expect(bindAssignmentWordPress).toHaveBeenCalledWith(expect.objectContaining({
+    organizationId: identity.organizationId,
+    siteId: identity.siteId,
+    buildSessionId: `contextual-media:${identity.targetId}`,
+    pageRevisionId: identity.pageRevisionId,
+    slotId: item.slot,
+    role: item.mediaRole,
+    generationJobId: asset.receipt.generationId,
+    mediaId: 20301,
+    attachedToObjectId: identity.wordpressObjectId,
+  }));
 });
 
 test("upload failure prevents receipt-to-WordPress binding", async () => {
@@ -107,4 +122,53 @@ test("upload failure prevents receipt-to-WordPress binding", async () => {
   const deps = createContextualMediaProductionDependencies({ site, siteName: "Site", productName: "Product", patchPresentation: jest.fn(), certify: jest.fn() });
   await expect(deps.uploadMedia({ identity, item, asset })).rejects.toThrow("CONTEXTUAL_MEDIA_WORDPRESS_UPLOAD_FAILED:upload_failed");
   expect(bindWordPress).not.toHaveBeenCalled();
+  expect(bindAssignmentWordPress).not.toHaveBeenCalled();
+});
+
+test("existing successful generated media and existing assignment are reused without upload or duplicate assignment", async () => {
+  const existingAssignment = {
+    assignmentId: "media-assignment-existing",
+    organizationId: identity.organizationId,
+    siteId: identity.siteId,
+    buildSessionId: `contextual-media:${identity.targetId}`,
+    pageId: identity.targetId,
+    pageRevisionId: identity.pageRevisionId,
+    slotId: item.slot,
+    role: item.mediaRole,
+    asset: {
+      type: "GENERATED" as const,
+      provider: "OPENAI_IMAGE",
+      model: "gpt-image-2",
+      generationJobId: asset.receipt.generationId,
+      effectivePrompt: item.prompt,
+      referenceInputs: [],
+      outputSha256: asset.receipt.assetSha256,
+    },
+    metadata: { altText: item.altText, caption: null, title: "Contextual", description: "Contextual" },
+    approval: { candidateId: asset.receipt.generationId, approvedBy: "owner", approvedAt: "2026-09-18T00:00:00.000Z" },
+    wordpressReceipt: null,
+    createdAt: "2026-09-18T00:00:00.000Z",
+  } as const;
+  listAssignments.mockReturnValueOnce([existingAssignment] as never);
+
+  const deps = createContextualMediaProductionDependencies({ site, siteName: "Site", productName: "Product", patchPresentation: jest.fn(), certify: jest.fn() });
+  const persisted = deps.persistAssignment({
+    identity,
+    item,
+    asset: { ...asset, wordpressMediaId: 20166, wordpressUrl: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated.jpg" },
+    productAuthority: { assignmentId: "product-1", asset: { type: "APPROVED_EXISTING", sha256: "a".repeat(64) } } as never,
+    actor: "owner",
+  });
+  const uploaded = await deps.uploadMedia({ identity, item, asset: { ...asset, wordpressMediaId: 20166, wordpressUrl: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated.jpg" } });
+
+  expect(persisted).toEqual(existingAssignment);
+  expect(saveAssignment).not.toHaveBeenCalled();
+  expect(uploaded).toEqual({ mediaId: 20166, url: "https://leddisplaywarehouse.com/wp-content/uploads/fl-generated.jpg", reused: true });
+  expect(uploadGenerated).not.toHaveBeenCalled();
+  expect(bindWordPress).not.toHaveBeenCalled();
+  expect(bindAssignmentWordPress).toHaveBeenCalledWith(expect.objectContaining({
+    generationJobId: asset.receipt.generationId,
+    mediaId: 20166,
+    role: item.mediaRole,
+  }));
 });

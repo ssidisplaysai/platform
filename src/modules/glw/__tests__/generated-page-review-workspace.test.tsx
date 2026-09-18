@@ -1,6 +1,8 @@
 jest.mock("server-only", () => ({}));
 
 import React from "react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveGeneratedPageReviewModel, deriveGeneratedPageVisualQaReview } from "../generated-page-review-read-model";
 import { GlwGeneratedPageReviewWorkspace } from "../GlwGeneratedPageReviewWorkspace";
@@ -153,6 +155,13 @@ describe("Genesis generated page review workspace", () => {
     expect(eligible.actions.ownerDecision?.endpoint).toBe("/api/glw/visual-certifications/cert-current/decision");
     expect(ineligibleHtml).not.toContain("Approve Page");
     expect(ineligibleHtml).not.toContain("Needs Fix");
+  });
+
+  test("build model computes current visual identity from authoritative current state, not prior certification identity fallback", () => {
+    const source = readFileSync(join(process.cwd(), "src/modules/glw/generated-page-review-read-model.ts"), "utf8");
+    expect(source).toContain("const currentIdentity: RenderedVisualPageIdentity = { organizationId: job.organizationId");
+    expect(source).toContain("wordpressStatus: wordpressStatus || job.wordpressStatus");
+    expect(source).not.toContain("projection.certification?.identity ??");
   });
 
   test("renders generated contextual media repair action only when eligible", () => {
