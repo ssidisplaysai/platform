@@ -62,6 +62,21 @@ function isExactRecoverableZeroAuthorityFailure(job: {
     && job.wordpressStatus !== "publish";
 }
 
+function isExactRecoverableOutdoorSphereRichCompositionFailure(job: {
+  status: string;
+  errorCode?: string | null;
+  generatedDraft?: unknown;
+  wordpressObjectId?: string | number | null;
+  wordpressStatus?: string | null;
+}): boolean {
+  return job.status === "CONTENT_READY"
+    && job.errorCode === "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED"
+    && Boolean(job.generatedDraft)
+    && Boolean(job.wordpressObjectId)
+    && job.wordpressStatus === "draft"
+    && job.wordpressStatus !== "publish";
+}
+
 export async function POST(
   request: NextRequest,
   context: {
@@ -156,12 +171,14 @@ export async function POST(
     if ((selectedJob.externalExecutionId ?? "") !== expectedExecutionId) {
       return NextResponse.json({ error: "Selected target execution identity does not match the exact existing execution." }, { status: 409 });
     }
+    const selectedIsRecoverablePartialDraftTarget = (selected.status === "failed" || selected.status === "content_ready")
+      && isExactRecoverableOutdoorSphereRichCompositionFailure(selectedJob);
     const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready")
       && isExactRecoverableZeroAuthorityFailure(selectedJob);
-    if (selected.status === "failed" && !selectedIsRecoverableFailedTarget) {
+    if (selected.status === "failed" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget) {
       return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
     }
-    if (selected.status === "content_ready" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget) {
+    if (selected.status === "content_ready" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget) {
       return NextResponse.json({ error: "Selected content-ready target has a failed job that is not recoverable for exact continuation." }, { status: 409 });
     }
     if (selected.status !== "failed" && selected.status !== "content_ready" && selected.status !== "running") {
@@ -173,7 +190,7 @@ export async function POST(
     if (selectedJob.wordpressStatus === "publish") {
       return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
     }
-    if (selectedJob.wordpressObjectId) {
+    if (selectedJob.wordpressObjectId && !selectedIsRecoverablePartialDraftTarget) {
       return NextResponse.json({ error: "Conflicting existing WordPress identity detected on the selected job." }, { status: 409 });
     }
 
@@ -267,6 +284,13 @@ export async function POST(
         && !target.wordpressObjectId
         && isExactRecoverableZeroAuthorityFailure(job),
       );
+      const exactRecoverablePartialDraftContinuation = Boolean(
+        expectedTargetId
+        && (target.status === "failed" || target.status === "content_ready")
+        && target.jobId === expectedJobId
+        && (job.externalExecutionId ?? "") === expectedExecutionId
+        && isExactRecoverableOutdoorSphereRichCompositionFailure(job),
+      );
 
       if (!expectedTargetId && decision.action === "continue" && target.status === "running" && job.status === "CONTENT_READY" && job.externalExecutionId) {
         const updated = reconcileGlwCampaignTargetContentReady({
@@ -289,7 +313,7 @@ export async function POST(
         continue;
       }
 
-      if (decision.action === "continue" || exactRecoverableFailedContinuation) {
+      if (decision.action === "continue" || exactRecoverableFailedContinuation || exactRecoverablePartialDraftContinuation) {
         const { form } =
           buildGlwCampaignProductionGenerationForm({
             campaign,

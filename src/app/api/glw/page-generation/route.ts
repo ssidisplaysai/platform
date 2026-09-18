@@ -75,6 +75,67 @@ function isTerminal(status: string): boolean {
   return status === "COMPLETE" || status === "FAILED";
 }
 
+function parseAbsoluteHttpUrl(value: string | null | undefined): URL | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function resolveStrictProductAuthorityMediaUrl(input: {
+  authority: {
+    asset: {
+      type: string;
+      wordpressMediaId?: unknown;
+      url?: unknown;
+    };
+    wordpressReceipt?: {
+      url?: string | null;
+    } | null;
+  } | null;
+  siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
+}): string | null {
+  const receiptUrl = parseAbsoluteHttpUrl(input.authority?.wordpressReceipt?.url ?? null);
+  if (receiptUrl) {
+    return receiptUrl.toString();
+  }
+
+  if (!input.authority || input.authority.asset.type !== "APPROVED_EXISTING") {
+    return null;
+  }
+
+  const mediaId = input.authority.asset.wordpressMediaId;
+  if (typeof mediaId !== "number" || !Number.isSafeInteger(mediaId) || mediaId < 1) {
+    return null;
+  }
+
+  const assetUrlValue = typeof input.authority.asset.url === "string" ? input.authority.asset.url : null;
+  const assetUrl = parseAbsoluteHttpUrl(assetUrlValue);
+  if (!assetUrl) {
+    return null;
+  }
+
+  const allowedOrigins = new Set<string>();
+  const siteCanonical = parseAbsoluteHttpUrl(input.siteRecord.canonicalUrl);
+  if (siteCanonical) allowedOrigins.add(siteCanonical.origin.toLowerCase());
+  const siteWordPressApi = parseAbsoluteHttpUrl(input.siteRecord.integrations.wordpressApiBaseUrl);
+  if (siteWordPressApi) allowedOrigins.add(siteWordPressApi.origin.toLowerCase());
+
+  if (!allowedOrigins.has(assetUrl.origin.toLowerCase())) {
+    return null;
+  }
+
+  return assetUrl.toString();
+}
+
 async function recoverExecution(job: GlwPageExecutionRecord): Promise<GlwPageExecutionRecord> {
   if (!job.externalExecutionId && (job.status === "DISPATCHED" || job.status === "DISCOVERING_EXECUTION")) {
     return service.discoverExecution(job.jobId, executionReader);
@@ -703,6 +764,35 @@ async function finalizeContentReadyExecution(input: {
     siteId: input.request.siteId,
     productId: input.request.productId,
   });
+  const strictApprovedProductAuthority = strictGeneratedContextualRequired
+    ? (() => {
+        const strictProductRecord = getProductById(input.request.productId);
+        return strictProductRecord?.media.primaryImageReference
+          ? resolveApprovedProductAuthorityMedia({
+              organizationId: input.request.organizationId,
+              siteId: input.request.siteId,
+              productId: input.request.productId,
+              authorityReference: strictProductRecord.media.primaryImageReference,
+            })
+          : null;
+      })()
+    : null;
+  const strictApprovedProductAuthorityMediaUrl = strictGeneratedContextualRequired
+    ? resolveStrictProductAuthorityMediaUrl({
+        authority: strictApprovedProductAuthority,
+        siteRecord: input.siteRecord,
+      })
+    : null;
+  if (strictGeneratedContextualRequired && !strictApprovedProductAuthorityMediaUrl) {
+    return glwPageExecutionRepository.update(draftJob.jobId, {
+      status: "CONTENT_READY",
+      errorCode: "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED",
+      errorMessage: "Outdoor Sphere rich composition requires approved product authority media with a WordPress URL.",
+      featuredImagePresent: true,
+      updatedAt: new Date().toISOString(),
+      completedAt: null,
+    });
+  }
   let mediaResult;
   let generatedImageBytes: Buffer | null = null;
   let generatedImageMimeType: "image/jpeg" | "image/png" | "image/webp" | null = null;
@@ -769,22 +859,9 @@ async function finalizeContentReadyExecution(input: {
   let finalizedWordPressUrl = result.wordpressUrl;
   let finalizedWordPressStatus = result.wordpressStatus;
   let finalizedPresentationArtifact = finalizedArtifact;
-  let strictApprovedProductAuthority = null;
 
   if (strictGeneratedContextualRequired) {
-    const strictProductRecord = getProductById(input.request.productId);
-    strictApprovedProductAuthority = strictProductRecord?.media.primaryImageReference
-      ? resolveApprovedProductAuthorityMedia({
-          organizationId: input.request.organizationId,
-          siteId: input.request.siteId,
-          productId: input.request.productId,
-          authorityReference: strictProductRecord.media.primaryImageReference,
-        })
-      : null;
-
-    if (!strictApprovedProductAuthority
-      || strictApprovedProductAuthority.asset.type !== "APPROVED_EXISTING"
-      || !strictApprovedProductAuthority.wordpressReceipt?.url.trim()) {
+    if (!strictApprovedProductAuthority || !strictApprovedProductAuthorityMediaUrl) {
       return glwPageExecutionRepository.update(draftJob.jobId, {
         status: "CONTENT_READY",
         errorCode: "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED",
@@ -802,7 +879,7 @@ async function finalizeContentReadyExecution(input: {
       semanticSourceHtml: enrichment.artifact.contentHtml,
       excerpt: enrichment.artifact.excerpt,
       contextualMediaUrl: mediaResult.mediaUrl,
-      productAuthorityMediaUrl: strictApprovedProductAuthority.wordpressReceipt.url,
+      productAuthorityMediaUrl: strictApprovedProductAuthorityMediaUrl,
       productAuthorityAltText: strictApprovedProductAuthority.metadata.altText,
       canonicalProductUrl: productAuthority.canonicalProduct?.url ?? null,
       governedCtaUrl: approvedCampaignInternalLinks[0]?.href ?? null,
@@ -1145,6 +1222,15 @@ function isExactRecoverableContentFailure(job: GlwPageExecutionRecord): boolean 
     && Boolean(job.generatedDraft);
 }
 
+function isExactRecoverableOutdoorSphereRichCompositionFailure(job: GlwPageExecutionRecord): boolean {
+  return job.status === "CONTENT_READY"
+    && job.errorCode === "OUTDOOR_SPHERE_RICH_COMPOSITION_REQUIRED"
+    && job.wordpressStatus === "draft"
+    && Boolean(job.wordpressObjectId)
+    && Boolean(job.generatedDraft)
+    && job.wordpressStatus !== "publish";
+}
+
 function isExactRecoverableWordPressFailure(
   job: GlwPageExecutionRecord,
 ): boolean {
@@ -1314,9 +1400,13 @@ export async function POST(request: NextRequest) {
     const exactRecoverableWordPressFailure =
       isExactRecoverableWordPressFailure(currentJob);
 
+    const exactRecoverableOutdoorSphereRichCompositionFailure =
+      isExactRecoverableOutdoorSphereRichCompositionFailure(currentJob);
+
     if (
       !exactRecoverableContentFailure
       && !exactRecoverableWordPressFailure
+      && !exactRecoverableOutdoorSphereRichCompositionFailure
     ) {
       const authority = await verifyMutationAuthority(
         preview.request,

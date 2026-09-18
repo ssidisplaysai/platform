@@ -196,6 +196,46 @@ describe("Outdoor Sphere generated contextual media authority", () => {
     expect(source).toContain('status: "CONTENT_READY"');
   });
 
+  test("strict scope resolves approved PRODUCT_AUTHORITY media URL with bounded fallback only", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("function resolveStrictProductAuthorityMediaUrl");
+    expect(source).toContain("const receiptUrl = parseAbsoluteHttpUrl(input.authority?.wordpressReceipt?.url ?? null);");
+    expect(source).toContain("input.authority.asset.type !== \"APPROVED_EXISTING\"");
+    expect(source).toContain("typeof mediaId !== \"number\" || !Number.isSafeInteger(mediaId) || mediaId < 1");
+    expect(source).toContain("const allowedOrigins = new Set<string>();");
+    expect(source).toContain("if (!allowedOrigins.has(assetUrl.origin.toLowerCase())) {");
+  });
+
+  test("strict scope validates approved PRODUCT_AUTHORITY before generated contextual image execution", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    const resolveStrictUrl = source.indexOf("resolveStrictProductAuthorityMediaUrl({");
+    const strictMissingFailClosed = source.indexOf("if (strictGeneratedContextualRequired && !strictApprovedProductAuthorityMediaUrl)");
+    const imageGeneration = source.indexOf("const imageResult = await generateGenesisFeaturedImageWithCampaignReferences({");
+
+    expect(resolveStrictUrl).toBeGreaterThan(0);
+    expect(strictMissingFailClosed).toBeGreaterThan(resolveStrictUrl);
+    expect(imageGeneration).toBeGreaterThan(strictMissingFailClosed);
+  });
+
+  test("strict scope forbids generated PRODUCT_AUTHORITY media substitution", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/app/api/glw/page-generation/route.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("input.authority.asset.type !== \"APPROVED_EXISTING\"");
+    expect(source).toContain("Outdoor Sphere rich composition requires approved product authority media with a WordPress URL.");
+    expect(source).not.toContain("productAuthorityMediaUrl: mediaResult.mediaUrl");
+  });
+
   test("strict generated contextual repair reconciles WordPress featured media to generated contextual media with exact readback", () => {
     const source = readFileSync(
       join(process.cwd(), "src/modules/glw/contextual-media-production-service.ts"),
