@@ -207,4 +207,113 @@ describe("Genesis generated page review workspace", () => {
     expect(eligibleHtml).toContain("Draft-only contextual image repair");
     expect(ineligibleHtml).not.toContain("Replace Legacy Contextual Image");
   });
+
+  test("strict outdoor sphere uses exact generated contextual assignment for review and preview instead of legacy featured media", () => {
+    const strictCampaign = {
+      ...campaign,
+      campaignId: "campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview",
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+    } as GlwCampaign;
+    const strictTarget = {
+      ...target,
+      targetId: "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-fl",
+      campaignId: strictCampaign.campaignId,
+      organizationId: strictCampaign.organizationId,
+      siteId: strictCampaign.siteId,
+      productId: strictCampaign.productId,
+      status: "draft_ready",
+      wordpressObjectId: "20163",
+      cityName: "Miami",
+      stateCode: "FL",
+    } as GlwCampaignTarget;
+    const strictJob = {
+      ...job,
+      jobId: "5d877113-638a-40d0-9252-6390ec97c837",
+      organizationId: strictCampaign.organizationId,
+      siteId: strictCampaign.siteId,
+      campaignId: strictCampaign.campaignId,
+      productId: strictCampaign.productId,
+      state: "Florida",
+      city: "Miami",
+      wordpressObjectId: "20163",
+      wordpressStatus: "draft",
+      updatedAt: "2026-09-18T02:46:59.526Z",
+      featuredImagePresent: true,
+    } as GlwPageExecutionRecord;
+    const pageRevisionIdentity = "job:5d877113-638a-40d0-9252-6390ec97c837:2026-09-18T02:46:59.526Z";
+    const generatedUrl = "https://leddisplaywarehouse.com/wp-content/uploads/2026/09/fl-contextual-generated.jpg";
+    const legacyUrl = "https://leddisplaywarehouse.com/wp-content/uploads/2026/09/fl-legacy-featured.jpg";
+    const generatedAssignment = {
+      assignmentId: "media-assignment-job:5d877113-638a-40d0-9252-6390ec97c837-POST_HERO_CONTEXTUAL",
+      organizationId: strictCampaign.organizationId,
+      siteId: strictCampaign.siteId,
+      buildSessionId: `contextual-media:${strictTarget.targetId}`,
+      pageId: strictTarget.targetId,
+      pageRevisionId: pageRevisionIdentity,
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      asset: {
+        type: "GENERATED",
+        provider: "OPENAI_IMAGE",
+        model: "gpt-image-2",
+        generationJobId: "contextual-generation-fl",
+        effectivePrompt: "Conceptual contextual visualization only.",
+        referenceInputs: [],
+        outputSha256: "a".repeat(64),
+      },
+      metadata: {
+        altText: "Conceptual contextual visualization in Miami, Florida; not a real customer installation.",
+        caption: null,
+        title: "CONTEXTUAL IN USE",
+        description: "Generated contextual media",
+      },
+      approval: {
+        candidateId: "contextual-generation-fl",
+        approvedBy: "owner",
+        approvedAt: "2026-09-18T02:47:00.000Z",
+      },
+      wordpressReceipt: {
+        mediaId: 20166,
+        url: generatedUrl,
+        attachedToObjectId: "20163",
+        altTextVerified: true,
+        placementVerified: true,
+        verifiedAt: "2026-09-18T02:47:10.000Z",
+      },
+      createdAt: "2026-09-18T02:47:00.000Z",
+    } as SitePageMediaAssignment;
+
+    const strictResult = deriveGeneratedPageReviewModel({
+      campaign: strictCampaign,
+      target: strictTarget,
+      job: strictJob,
+      siteName: "LEDDisplayWarehouse.com",
+      domain: "leddisplaywarehouse.com",
+      productName: "Outdoor Digital Sphere",
+      productAuthorityReference: "wordpress-media:20162",
+      productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+      knowledgePack: { campaignId: strictCampaign.campaignId, organizationId: strictCampaign.organizationId, siteId: strictCampaign.siteId, instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: strictCampaign.productId, scope: "stable_fact" }], updatedAt: "2026-09-18" },
+      wordpressDraft: { id: 20163, slug: "florida", status: "draft", link: "https://leddisplaywarehouse.com/?page_id=20163", modified_gmt: "2026-09-18T02:47:12", featured_media: 20162, title: { raw: strictJob.title }, content: { raw: contentHtml } } as never,
+      wordpressMedia: { id: 20162, source_url: legacyUrl, alt_text: "Legacy media alt" } as never,
+      wordpressReadState: "AUTHENTICATED_EXACT_DRAFT_READ",
+      wordpressEditUrl: "https://leddisplaywarehouse.com/wp-admin/post.php?post=20163&action=edit",
+      mediaAssignments: [generatedAssignment],
+      approvedProductMedia: null,
+      referenceLocations: [],
+      authoritativeContextualMedia: [{ assignmentId: generatedAssignment.assignmentId, role: "CONTEXTUAL_IN_USE", semanticRole: "CONTEXTUAL_IN_USE", mediaId: "20166", rendered: true }],
+      authoritativePageRevisionIdentity: pageRevisionIdentity,
+      generatedContextualReceipts: [{ generationId: "contextual-generation-fl", campaignId: strictCampaign.campaignId, targetId: strictTarget.targetId, productId: strictCampaign.productId, wordpressObjectId: "20163", pageRevisionId: pageRevisionIdentity, mediaRole: "CONTEXTUAL_IN_USE", wordpressMediaId: 20166 }],
+    });
+
+    expect(strictResult.images.contextualInUse.state).toBe("GENERATED_CONTEXTUAL");
+    expect(strictResult.images.contextualInUse.imageUrl).toBe(generatedUrl);
+    expect(strictResult.images.contextualInUse.wordpressMediaId).toBe("20166");
+    expect(strictResult.images.contextualInUse.assignmentId).toBe(generatedAssignment.assignmentId);
+    expect(strictResult.images.contextualInUse.altText).toBe(generatedAssignment.metadata.altText);
+    expect(strictResult.images.contextualInUse.imageUrl).not.toBe(legacyUrl);
+    expect(strictResult.richComposition.preview.contextualImageUrl).toBe(generatedUrl);
+    expect(strictResult.richComposition.preview.contextualAltText).toBe(generatedAssignment.metadata.altText);
+  });
 });

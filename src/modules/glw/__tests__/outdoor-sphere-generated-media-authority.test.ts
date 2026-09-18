@@ -107,4 +107,19 @@ describe("Outdoor Sphere generated contextual media authority", () => {
     expect(source).toContain("publicationPerformed: false");
     expect(source).not.toContain("dispatch allowance consumed");
   });
+
+  test("strict generated contextual repair reconciles WordPress featured media to generated contextual media with exact readback", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/modules/glw/contextual-media-production-service.ts"),
+      "utf8",
+    );
+
+    expect(source).toContain("requiresGeneratedContextualMediaForOutdoorSphere");
+    expect(source).toContain("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
+    expect(source).toContain('featured_media: input.featuredMediaId');
+    expect(source).toContain("CONTEXTUAL_MEDIA_GENERATED_ASSIGNMENT_REQUIRED");
+    expect(source).toContain("CONTEXTUAL_MEDIA_GENERATED_RECEIPT_REQUIRED");
+    expect(source).toContain("CONTEXTUAL_MEDIA_FEATURED_MEDIA_READBACK_MISMATCH");
+    expect(source).toContain("featuredMediaAfter: afterFeatured.featuredMediaId");
+  });
 });

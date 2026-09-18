@@ -46,6 +46,16 @@ describe("contextual presentation media patch", () => {
     expect($("[data-reference-section=APPLICATIONS] p").text()).toBe("Applications copy stays.");
   });
 
+  test("does not mount a duplicate image when the generated URL is already present elsewhere in the page", () => {
+    const generatedUrl = "https://example.test/3.jpg";
+    const liveShape = `<main class="saw-page"><section data-reference-section="HERO"><img src="${generatedUrl}"><h1>Product in State</h1></section><section data-reference-section="APPLICATIONS"><div><p>Applications copy stays.</p></div></section></main>`;
+    const patched = patchContextualPresentationMedia(liveShape, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 3)]);
+    const $ = load(patched, null, false);
+    expect($("img").toArray().filter((node) => $(node).attr("src") === generatedUrl)).toHaveLength(1);
+    expect($(".saw-generated-application-media")).toHaveLength(0);
+    expect($("[data-reference-section=APPLICATIONS]").attr("data-generated-contextual-media")).toBe("true");
+  });
+
   test("resolves and patches contextual media for valid long-form article markup", () => {
     const resolved = resolveContextualPresentationSlots(articleHtml, [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 9)]);
     expect(resolved).toEqual([{ role: "CONTEXTUAL", requestedSlot: "POST_HERO_CONTEXTUAL", actualSection: "ARTICLE_BODY", selector: "h1 + figure img:first-of-type", placement: "IMAGE" }]);

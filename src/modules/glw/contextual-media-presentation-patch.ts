@@ -102,6 +102,11 @@ export function patchContextualPresentationMedia(contentHtml: string, replacemen
       continue;
     }
     if (placement.placement === "MOUNT_IMAGE") {
+      const existingMatch = root.find("img").toArray().some((node) => ($(node).attr("src")?.trim() ?? "") === replacement.url);
+      if (existingMatch) {
+        target.attr("data-generated-contextual-media", "true");
+        continue;
+      }
       target.prepend($("<figure>").addClass("saw-generated-application-media").attr("data-contextual-role", replacement.role).append($("<img>").attr("src", replacement.url).attr("alt", replacement.altText).attr("style", "display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;").attr("data-media-id", String(replacement.mediaId)).attr("data-media-role", replacement.mediaRole).attr("data-contextual-role", replacement.role).attr("data-generated-asset-sha", replacement.assetSha256)));
       target.attr("data-generated-contextual-media", "true");
       continue;

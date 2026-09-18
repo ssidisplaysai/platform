@@ -206,6 +206,10 @@ export function deriveGeneratedPageReviewModel(input: {
   const contextualReady = strictGeneratedContextualRequired
     ? Boolean(generatedContextualAssignment && generatedContextualReceipt)
     : currentContextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered) || Boolean(input.job.featuredImagePresent && mediaId);
+  const strictGeneratedContextualDisplay = strictGeneratedContextualRequired
+    && contextualReady
+    && generatedContextualAssignment
+    && generatedContextualAssignment.wordpressReceipt;
   const exactProductAssignment = (input.mediaAssignments ?? []).find((item): item is ApprovedProductMediaAssignment => item.pageRevisionId === pageRevisionIdentity && item.slotId === "product-authority" && approvedProductMedia(item)) ?? null;
   const resolvedProductAssignment = approvedProductMedia(input.approvedProductMedia) ? input.approvedProductMedia : null;
   const productAssignment = exactProductAssignment ?? resolvedProductAssignment;
@@ -257,7 +261,7 @@ export function deriveGeneratedPageReviewModel(input: {
     && Boolean(wordpressObjectId)
     && Boolean(input.job.externalExecutionId)
     && Boolean(liveHtml)
-    && !contextualReady;
+    && (!contextualReady || (Boolean(generatedContextualAssignment?.wordpressReceipt?.mediaId) && String(input.wordpressDraft?.featured_media ?? "") !== String(generatedContextualAssignment?.wordpressReceipt?.mediaId ?? "")));
   const media = [
     productMediaResolved ? { slotId: "product-authority", role: "PRODUCT_AUTHORITY" as const, requirement: "REQUIRED" as const, assignmentId: productAssignment.assignmentId, readiness: "READY" as const, provenance: `${productAssignment.asset.authorityReference}:APPROVED_PRODUCT_REUSE` } : mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
     localBundle?.media.find((item) => item.role === "CONTEXTUAL_IN_USE") ? { slotId: "contextual-in-use", role: "CONTEXTUAL_IN_USE" as const, requirement: "DESIRED" as const, assignmentId: localBundle.media.find((item) => item.role === "CONTEXTUAL_IN_USE")!.mediaId, readiness: "READY" as const, provenance: "LOCALIZED_COMPOSITION_EVIDENCE" } : mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
@@ -281,7 +285,9 @@ export function deriveGeneratedPageReviewModel(input: {
             ? "GENERATED_CONTEXTUAL"
             : "LEGACY_FEATURED"
           : "MISSING",
-        imageUrl: text(input.wordpressMedia?.source_url) || null,
+        imageUrl: strictGeneratedContextualDisplay
+          ? strictGeneratedContextualDisplay.url
+          : text(input.wordpressMedia?.source_url) || null,
         authority: strictGeneratedContextualRequired
           ? (contextualReady
             ? "Exact generated contextual assignment and receipt bound to this draft revision"
@@ -300,9 +306,15 @@ export function deriveGeneratedPageReviewModel(input: {
             : mediaId
               ? `WordPress media #${mediaId}; selected by the legacy execution.`
               : "No WordPress media receipt persisted."),
-        altText: text(input.wordpressMedia?.alt_text) || null,
-        wordpressMediaId: (strictContextualMediaId || generatedContextualEvidence?.mediaId || currentContextualMedia.find((item) => item.semanticRole === "CONTEXTUAL_IN_USE")?.mediaId || mediaId) || null,
-        assignmentId: generatedContextualAssignment?.assignmentId ?? generatedContextualEvidence?.assignmentId ?? null,
+        altText: strictGeneratedContextualDisplay
+          ? generatedContextualAssignment.metadata.altText
+          : text(input.wordpressMedia?.alt_text) || null,
+        wordpressMediaId: strictGeneratedContextualDisplay
+          ? String(strictGeneratedContextualDisplay.mediaId)
+          : (strictContextualMediaId || generatedContextualEvidence?.mediaId || currentContextualMedia.find((item) => item.semanticRole === "CONTEXTUAL_IN_USE")?.mediaId || mediaId) || null,
+        assignmentId: strictGeneratedContextualDisplay
+          ? generatedContextualAssignment.assignmentId
+          : generatedContextualEvidence?.assignmentId ?? null,
         grounding: strictGeneratedContextualRequired
           ? (contextualReady
             ? "Generated contextual media is product-truth grounded and bound to the exact target, job, and page revision."
@@ -339,7 +351,7 @@ export function deriveGeneratedPageReviewModel(input: {
         organizationId: input.campaign.organizationId,
         siteId: input.campaign.siteId,
         operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA",
-        label: mediaId ? "Replace Legacy Contextual Image" : "Generate Contextual Image",
+        label: strictGeneratedContextualRequired && contextualReady ? "Reconcile Featured Contextual Image" : mediaId ? "Replace Legacy Contextual Image" : "Generate Contextual Image",
         identity: {
           campaignId: input.campaign.campaignId,
           targetId: input.target.targetId,
@@ -353,7 +365,7 @@ export function deriveGeneratedPageReviewModel(input: {
       } : null,
     },
     visualQa,
-    richComposition: { plan: compositionPlan, identityState: "CURRENT", currentRender: { profile: "CONTENT_ARTICLE", certificationState: visualQa.certificationState, overallState: visualQa.overallState }, proposedFindings, safeNextAction: !productMediaResolved ? "Resolve approved PRODUCT_AUTHORITY media through site-page-media-assignment-v1 before owner review; generated media is not a documentary substitute." : !localBundle ? "Build the governed localized composition bundle from the existing CONTENT_READY artifact before owner review." : "Review the non-mutating composition preview. WordPress draft and campaign authority remain unchanged.", preview: { state: "PREVIEW_ONLY", locationLabel, title: artifact?.title ?? input.job.title, excerpt: artifact?.excerpt ?? null, bodyHtml: sanitizePreviewHtml(sourceHtml).replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i, "").replace(/<img\b[^>]*>/gi, ""), productId: input.job.productId, productName: input.productName, productImageUrl: productAssignment?.asset.type === "APPROVED_EXISTING" ? productAssignment.asset.url : null, productAltText: productAssignment?.metadata.altText ?? null, contextualImageUrl: text(input.wordpressMedia?.source_url) || null, contextualAltText: text(input.wordpressMedia?.alt_text) || null, ctaLabel: cta, href: `/glw/pages/${encodeURIComponent(input.job.jobId)}/composition-preview?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}` } },
+    richComposition: { plan: compositionPlan, identityState: "CURRENT", currentRender: { profile: "CONTENT_ARTICLE", certificationState: visualQa.certificationState, overallState: visualQa.overallState }, proposedFindings, safeNextAction: !productMediaResolved ? "Resolve approved PRODUCT_AUTHORITY media through site-page-media-assignment-v1 before owner review; generated media is not a documentary substitute." : !localBundle ? "Build the governed localized composition bundle from the existing CONTENT_READY artifact before owner review." : "Review the non-mutating composition preview. WordPress draft and campaign authority remain unchanged.", preview: { state: "PREVIEW_ONLY", locationLabel, title: artifact?.title ?? input.job.title, excerpt: artifact?.excerpt ?? null, bodyHtml: sanitizePreviewHtml(sourceHtml).replace(/<h1\b[^>]*>[\s\S]*?<\/h1>/i, "").replace(/<img\b[^>]*>/gi, ""), productId: input.job.productId, productName: input.productName, productImageUrl: productAssignment?.asset.type === "APPROVED_EXISTING" ? productAssignment.asset.url : null, productAltText: productAssignment?.metadata.altText ?? null, contextualImageUrl: strictGeneratedContextualDisplay ? strictGeneratedContextualDisplay.url : text(input.wordpressMedia?.source_url) || null, contextualAltText: strictGeneratedContextualDisplay ? generatedContextualAssignment.metadata.altText : text(input.wordpressMedia?.alt_text) || null, ctaLabel: cta, href: `/glw/pages/${encodeURIComponent(input.job.jobId)}/composition-preview?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}` } },
     localizedV2: localBundle ? { state: input.target.status === "content_ready" ? input.localThemeVisualCertification?.state === "READY_FOR_OWNER_REVIEW" ? "READY_FOR_OWNER_REVIEW" : "BLOCKED" : localBundle.composition.validationState, href: `/glw/pages/${encodeURIComponent(input.job.jobId)}/composition-preview-v2?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, localizationLevel: localBundle.theme.localizationLevel, contextFacts: localBundle.context.facts.length, applications: localBundle.applications.applications.map((application) => ({ id: application.applicationId, state: application.compatibility })), linkCounts, media: localBundle.media.map((item) => ({ role: item.role, claimClass: item.claimClass, reviewState: item.ownerReviewState, source: item.source, productTruthReference: item.productTruthReference, sha256: item.sha256, altText: item.altText })), blockers: [...localBundle.composition.blockers, ...(input.target.status === "content_ready" && input.localThemeVisualCertification?.state !== "READY_FOR_OWNER_REVIEW" ? ["RESPONSIVE_VISUAL_CERTIFICATION_REQUIRED"] : [])], claimSafety: { brandAuthorityPrecedence: true, falseProximityClaimsProhibited: true, antiClicheSafeguards: localBundle.theme.safeguards.antiClicheTerms }, visualCertification: input.localThemeVisualCertification ? { certificationId: input.localThemeVisualCertification.certificationId, state: input.localThemeVisualCertification.state, ownerReviewRequired: input.localThemeVisualCertification.ownerReviewRequired, findings: input.localThemeVisualCertification.findings, viewports: input.localThemeVisualCertification.captures.map((capture) => ({ label: capture.viewport, overflow: capture.horizontalOverflow, artifactUrl: `/api/glw/pages/${encodeURIComponent(input.job.jobId)}/localized-preview-v2/certification/${encodeURIComponent(capture.captureId)}?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, width: capture.screenshotArtifact.width, height: capture.screenshotArtifact.height, sha256: capture.screenshotArtifact.sha256 })) } : null, ownerQuestions: ["Does this feel like ProjectorEnclosure?", `Does this feel relevant to ${input.target.cityName ?? input.target.stateCode}?`, `Does it avoid ${expectedState} cliché?`, "Does the product look real and correct?", "Does the in-use scene look credible?", "Does the selected application have authority?", "Do the links make the page more useful?", `Does anything imply a local office, customer, or actual ${input.target.cityName ?? input.target.stateCode} installation?`] } : null,
     marketMatch: input.marketMatchBundle ? { href: `/glw/market-opportunities/dallas?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, previewV3Href: `/glw/pages/${encodeURIComponent(input.job.jobId)}/composition-preview-v3?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, signalCount: input.marketMatchBundle.intelligence.signals.length, catalogCount: input.marketMatchBundle.catalog.length, ranked: input.marketMatchBundle.opportunities.map((item) => ({ application: item.applicationId, product: item.catalogItemId, confidence: item.confidence })), pageStrategy: { primary: input.marketMatchBundle.pageStrategy.primaryApplication, supporting: input.marketMatchBundle.pageStrategy.supportingApplications, crossSell: input.marketMatchBundle.pageStrategy.crossSellCatalogItemIds, rejected: input.marketMatchBundle.pageStrategy.rejectedAdjacencies.length }, mutationAuthorized: false } : null,
     appliedV3: applyReceipt ? { receiptId: applyReceipt.receiptId, status: applyReceipt.wordpressStatus, beforeHash: applyReceipt.beforeHash, afterHash: applyReceipt.afterHash, decisionId: applyReceipt.decisionId, drift: applyComparison?.drift.classification??null, comparisonHref: `/glw/pages/${encodeURIComponent(input.job.jobId)}/wordpress-comparison?organizationId=${encodeURIComponent(input.job.organizationId)}&siteId=${encodeURIComponent(input.job.siteId)}`, ownerReviewRequired: true } : null,

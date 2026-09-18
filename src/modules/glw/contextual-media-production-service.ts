@@ -1,9 +1,10 @@
 import "server-only";
 
 import { createHash } from "node:crypto";
-import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
+import { createAuthenticatedWordPressReadAuthority, normalizeWordPressApiBaseUrl } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { listGeneratedContextualMedia } from "@/modules/foundation/generated-contextual-media-repository";
 import { runGovernedRenderCapture, signGovernedSnapshotPath } from "@/modules/foundation/governed-render-capture-orchestrator";
+import { listSitePageMediaAssignments } from "@/modules/foundation/site-page-media-assignment";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { glwPageExecutionRepository } from "./page-execution-repository";
@@ -11,7 +12,7 @@ import { runContextualMediaProductionAdapter, type ContextualVisualPlanItem } fr
 import { createContextualMediaProductionDependencies } from "./contextual-media-production-dependencies";
 import { patchContextualPresentationMedia } from "./contextual-media-presentation-patch";
 import { resolveContextualMediaProductionAuthority } from "./contextual-media-production-preflight";
-import { buildOutdoorSphereGeneratedContextualPrompt } from "./outdoor-sphere-contextual-media-policy";
+import { buildOutdoorSphereGeneratedContextualPrompt, requiresGeneratedContextualMediaForOutdoorSphere } from "./outdoor-sphere-contextual-media-policy";
 
 const sha256 = (value: string) => createHash("sha256").update(value.trim()).digest("hex");
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
@@ -84,11 +85,14 @@ export async function executeDraftReadyGeneratedContextualMediaRepair(input: {
   const visualPlan = draftReadyContextualRepairPlan({ stateName: input.stateName, cityName: input.cityName });
   const { readiness, site, product, productAuthority, provider, presentationSlots } = await resolveContextualMediaProductionAuthority({ campaignId: input.campaignId, targetId: input.targetId, visualPlan });
   const identity = { organizationId: readiness.identity.organizationId, siteId: readiness.identity.siteId, campaignId: readiness.target.campaignId, targetId: readiness.target.targetId, productId: readiness.identity.productId, wordpressObjectId: readiness.identity.wordpressObjectId, pageRevisionId: readiness.authority.candidateArtifactIdentity };
+  const strictScope = requiresGeneratedContextualMediaForOutdoorSphere({ campaignId: identity.campaignId, organizationId: identity.organizationId, siteId: identity.siteId, productId: identity.productId });
+  if (!strictScope) throw new Error("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
   const jobId = readiness.authority.candidateArtifactIdentity?.split(":")[1] ?? "";
   const job = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
   if (!job || job.organizationId !== identity.organizationId || job.siteId !== identity.siteId || job.productId !== identity.productId) throw new Error("CONTEXTUAL_MEDIA_JOB_AUTHORITY_REQUIRED");
   const credential = resolveWordPressCredentialReference(site.integrations.wordpressCredentialReference);
   if (!site.integrations.wordpressApiBaseUrl || !site.domain || !credential) throw new Error("CONTEXTUAL_MEDIA_WORDPRESS_AUTHORITY_REQUIRED");
+  const apiBaseUrl = normalizeWordPressApiBaseUrl(site.integrations.wordpressApiBaseUrl);
   const reader = createAuthenticatedWordPressReadAuthority({ configuration: { apiBaseUrl: site.integrations.wordpressApiBaseUrl, username: credential.username, applicationPassword: credential.applicationPassword, timeoutMs: 30_000 } });
   const read = async () => { const fetched = await reader.getJson({ path: `/pages/${identity.wordpressObjectId}`, query: new URLSearchParams({ context: "edit", _fields: "id,status,slug,parent,title,content,excerpt,featured_media,meta" }) }); if (!fetched.ok) throw new Error("CONTEXTUAL_MEDIA_DRAFT_READBACK_FAILED"); return pageFields(fetched.body); };
   const before = await read();
@@ -108,13 +112,55 @@ export async function executeDraftReadyGeneratedContextualMediaRepair(input: {
     certify: async () => ({ certificationId: "SKIPPED_DRAFT_READY_REPAIR", state: "PASS" as const }),
   });
   const result = await runContextualMediaProductionAdapter({ mode: "EXECUTE", identity, visualPlan, productAuthority, providerReady: provider.configured, actor: input.actor, dependencies });
+  const generatedAssignment = listSitePageMediaAssignments({ organizationId: identity.organizationId, siteId: identity.siteId, buildSessionId: `contextual-media:${identity.targetId}`, pageRevisionId: identity.pageRevisionId }).find((assignment) => assignment.role === "CONTEXTUAL_IN_USE" && assignment.slotId === "POST_HERO_CONTEXTUAL" && assignment.asset.type === "GENERATED" && Boolean(assignment.wordpressReceipt?.mediaId) && Boolean(assignment.wordpressReceipt?.url)) ?? null;
+  if (!generatedAssignment || !generatedAssignment.wordpressReceipt) throw new Error("CONTEXTUAL_MEDIA_GENERATED_ASSIGNMENT_REQUIRED");
+  const generatedReceipt = listGeneratedContextualMedia({ organizationId: identity.organizationId, siteId: identity.siteId, targetId: identity.targetId }).find((record) => record.campaignId === identity.campaignId && record.targetId === identity.targetId && record.productId === identity.productId && record.wordpressObjectId === identity.wordpressObjectId && record.pageRevisionId === identity.pageRevisionId && record.mediaRole === "CONTEXTUAL_IN_USE" && record.status === "SUCCEEDED" && Boolean(record.wordpressMediaId) && String(record.wordpressMediaId) === String(generatedAssignment.wordpressReceipt?.mediaId)) ?? null;
+  if (!generatedReceipt || !generatedReceipt.wordpressMediaId || !generatedReceipt.wordpressUrl || generatedReceipt.wordpressUrl !== generatedAssignment.wordpressReceipt.url) throw new Error("CONTEXTUAL_MEDIA_GENERATED_RECEIPT_REQUIRED");
+
+  const afterPatch = await read();
+  if (afterPatch.id !== identity.wordpressObjectId || afterPatch.status !== "draft" || afterPatch.slug !== before.slug || afterPatch.parentId !== before.parentId) throw new Error("CONTEXTUAL_MEDIA_DRAFT_IDENTITY_MISMATCH");
+  const featuredMediaBefore = afterPatch.featuredMediaId;
+  if (afterPatch.featuredMediaId !== generatedReceipt.wordpressMediaId) {
+    await setWordPressFeaturedMedia({ apiBaseUrl, username: credential.username, applicationPassword: credential.applicationPassword, wordpressObjectId: identity.wordpressObjectId, featuredMediaId: generatedReceipt.wordpressMediaId });
+  }
+  const afterFeatured = await read();
+  if (afterFeatured.id !== identity.wordpressObjectId || afterFeatured.status !== "draft" || afterFeatured.slug !== afterPatch.slug || afterFeatured.parentId !== afterPatch.parentId || afterFeatured.title !== afterPatch.title || afterFeatured.excerpt !== afterPatch.excerpt || JSON.stringify(afterFeatured.meta) !== JSON.stringify(afterPatch.meta) || afterFeatured.contentHtml !== afterPatch.contentHtml || afterFeatured.featuredMediaId !== generatedReceipt.wordpressMediaId) throw new Error("CONTEXTUAL_MEDIA_FEATURED_MEDIA_READBACK_MISMATCH");
+
   return {
     ...result,
     operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA" as const,
+    featuredMediaBefore,
+    featuredMediaAfter: afterFeatured.featuredMediaId,
     visualCertificationPerformed: false as const,
     publicationPerformed: false as const,
     dispatchPerformed: false as const,
     workflowExecuted: false as const,
     regenerationPerformed: false as const,
   };
+}
+
+function createAuthorizationHeader(username: string, applicationPassword: string): string {
+  return `Basic ${Buffer.from(`${username}:${applicationPassword}`, "utf8").toString("base64")}`;
+}
+
+async function setWordPressFeaturedMedia(input: {
+  apiBaseUrl: string;
+  username: string;
+  applicationPassword: string;
+  wordpressObjectId: string;
+  featuredMediaId: number;
+}) {
+  const authorization = createAuthorizationHeader(input.username, input.applicationPassword);
+  const response = await fetch(`${input.apiBaseUrl}/pages/${encodeURIComponent(input.wordpressObjectId)}`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: authorization,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status: "draft", featured_media: input.featuredMediaId }),
+    cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error("CONTEXTUAL_MEDIA_FEATURED_MEDIA_UPDATE_FAILED");
 }
