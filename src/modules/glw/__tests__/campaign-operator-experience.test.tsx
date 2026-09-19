@@ -113,6 +113,7 @@ describe("campaign operator experience", () => {
     expect(result.canonicalAction.label).not.toContain("Continue to WordPress Draft");
     expect(result.counts).toEqual({ referenceComplete: 1, queued: 2, running: 0, contentReady: 0, draftReady: 1, published: 0, failed: 0 });
     expect(result.capabilities).toMatchObject({ release: { state: "READY" }, mcp: { state: "READY" }, scheduler: { state: "READY" }, publication: { state: "DRAFT_ONLY" } });
+    expect(result.capabilities.release.detail).toBe("Exact release aaaaaaaa");
     expect(result.targets.map((entry) => entry.identity)).toEqual(["Austin, TX", "Dallas, TX", "Houston, TX", "San Antonio, TX"]);
     expect(result.targets.find((entry) => entry.identity === "Dallas, TX")).toMatchObject({
       lifecycleState: "draft_ready",
@@ -134,6 +135,29 @@ describe("campaign operator experience", () => {
     expect(result.canonicalAction).toMatchObject({ kind: "DISPATCH", enabled: false, reason: "MCP execution capability is unavailable." });
     expect(result.capabilities.mcp.state).toBe("BLOCKED");
     expect(result.capabilities.scheduler.state).toBe("BLOCKED");
+  });
+
+  test("surfaces exact-running-release identity requirement when runtime SHA is unavailable", () => {
+    const result = deriveGlwCampaignOperatorReadModel({
+      campaign,
+      targets: [
+        target("Austin", "austin", "reference_complete"),
+        target("Dallas", "dallas", "draft_ready", dallasJob.jobId, "13084"),
+      ],
+      jobs: [dallasJob],
+      latestGrant: grant,
+      releaseCapability: {
+        status: "MISSING",
+        ready: false,
+        reason: "Exact running release identity is required.",
+        capability: null,
+      },
+      mcpConfigured: true,
+      referenceImage,
+    });
+
+    expect(result.capabilities.release.state).toBe("BLOCKED");
+    expect(result.capabilities.release.detail).toBe("Exact running release identity is required.");
   });
 
   test("prioritizes reconciliation over another dispatch for content-ready execution", () => {

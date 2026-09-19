@@ -23,6 +23,16 @@ if (-not (Test-Path -LiteralPath $PersistenceDir)) {
     throw "PERSISTENCE_DIR_NOT_FOUND"
 }
 
+$resolvedGitCommit = ((git -C $Worktree rev-parse --verify "$GitCommit^{commit}" 2>$null) | Select-Object -First 1)
+if (-not $resolvedGitCommit) {
+    throw "GIT_COMMIT_INVALID_OR_UNRESOLVABLE"
+}
+
+$resolvedGitCommit = $resolvedGitCommit.Trim().ToLower()
+if ($resolvedGitCommit -notmatch '^[0-9a-f]{40}$') {
+    throw "GIT_COMMIT_EXACT_SHA_REQUIRED"
+}
+
 $openAiKey = [Environment]::GetEnvironmentVariable("GENESIS_OPENAI_API_KEY", "User")
 $operatorDirectoryJson = [Environment]::GetEnvironmentVariable("GENESIS_OPERATOR_DIRECTORY_JSON", "User")
 
@@ -52,7 +62,7 @@ $command = @(
     "`$env:GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR='$PersistenceDir'",
     "`$env:GENESIS_TRUSTED_LOCAL_OPERATOR='true'",
     "`$env:GENESIS_RENDER_CAPTURE_INTERNAL_ORIGIN='http://localhost:$Port'",
-    "`$env:GIT_COMMIT='$GitCommit'",
+    "`$env:GIT_COMMIT='$resolvedGitCommit'",
     "`$env:GENESIS_OPENAI_API_KEY=[Environment]::GetEnvironmentVariable('GENESIS_OPENAI_API_KEY','User')",
     "`$env:GENESIS_OPERATOR_DIRECTORY_JSON=[Environment]::GetEnvironmentVariable('GENESIS_OPERATOR_DIRECTORY_JSON','User')",
     "node .\node_modules\next\dist\bin\next start -p $Port -H 127.0.0.1 1>> '$stdout' 2>> '$stderr'"
@@ -82,7 +92,8 @@ $post3001 = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction Sile
 Write-Output "RUNTIME_PORT=$Port"
 Write-Output "RUNTIME_PID=$listenerPid"
 Write-Output "LAUNCHER_PID=$($launcher.Id)"
-Write-Output "GIT_COMMIT=$GitCommit"
+Write-Output "GIT_COMMIT_INPUT=$GitCommit"
+Write-Output "GIT_COMMIT=$resolvedGitCommit"
 Write-Output "TRUSTED_LOCAL_OPERATOR=true"
 Write-Output "RENDER_CAPTURE_ORIGIN=http://localhost:$Port"
 Write-Output "PERSISTENCE_DIR_CONFIGURED=$([bool](Test-Path -LiteralPath $PersistenceDir))"

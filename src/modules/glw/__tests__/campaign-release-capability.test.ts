@@ -63,10 +63,30 @@ describe("GLW campaign activation release capability", () => {
 
   test("capability enablement grants neither publication nor owner authorization", () => {
     const route = readFileSync(join(process.cwd(), "src/app/api/glw/release-capabilities/campaign-activation/route.ts"), "utf8");
+    expect(route).toContain("const EXACT_RELEASE_PATTERN = /^[0-9a-f]{40}$/;");
+    expect(route).toContain("runningReleaseSha: releaseSha ?? \"\"");
+    expect(route).toContain("Capability must target the exact running release SHA.");
     expect(route).toContain("ownerAuthorizationCreated: false");
     expect(route).toContain("publicationAuthorized: false");
     expect(route).toContain("activationPerformed: false");
     expect(route).not.toContain("createGlwCampaignActivationGrant");
+  });
+
+  test("campaign controls only enable explicit capability action when runtime SHA is projected", () => {
+    const controls = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignOperatorControls.tsx"), "utf8");
+    expect(controls).toContain("Activation requires an exact running release SHA.");
+    expect(controls).toContain("disabled={busy || !scheduler.releaseAuthority.runningReleaseSha}");
+    expect(controls).toContain('operation: "ENABLE_RELEASE_CAPABILITY"');
+    expect(controls).toContain("releaseSha: scheduler.releaseAuthority.runningReleaseSha");
+  });
+
+  test("runtime3004 trusted-local restart script resolves short commit input to exact SHA", () => {
+    const script = readFileSync(join(process.cwd(), "scripts/restart-runtime3004-trusted-local.ps1"), "utf8");
+    expect(script).toContain("rev-parse --verify");
+    expect(script).toContain("GIT_COMMIT_EXACT_SHA_REQUIRED");
+    expect(script).toContain("`$env:GIT_COMMIT='$resolvedGitCommit'");
+    expect(script).toContain("GIT_COMMIT_INPUT=$GitCommit");
+    expect(script).toContain("TRUSTED_LOCAL_OPERATOR=true");
   });
 
   test("trusted-local scheduler auto-enable remains bounded to exact principal and platform_admin", () => {
