@@ -1754,6 +1754,21 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/georgia", excerpt: "x" },
     });
 
+    (resolveGlwCampaignJobReconciliationDecision as jest.Mock).mockImplementation((job: {
+      status: string;
+      errorCode?: string | null;
+      wordpressObjectId?: string | null;
+      wordpressStatus?: string | null;
+    }) => {
+      if (job.status === "FAILED" && job.errorCode === "GENERATED_CONTENT_QA_FAILED") return { action: "continue" };
+      if (job.status === "CONTENT_READY") return { action: "continue" };
+      if (job.status === "COMPLETE" && job.wordpressStatus === "draft" && job.wordpressObjectId) {
+        return { action: "draft_ready", wordpressObjectId: String(job.wordpressObjectId) };
+      }
+      if (job.status === "FAILED") return { action: "failed", error: "failed" };
+      return { action: "wait" };
+    });
+
     (markGlwCampaignTargetDraftReady as jest.Mock).mockReturnValue({
       targetId: gaTargetId,
       campaignId,
@@ -1920,7 +1935,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       siteId: "site-led-display-warehouse-production",
       productId: "prod-outdoor-digital-sphere",
       status: "FAILED",
-      errorCode: "GENERATED_CONTENT_QA_FAILED",
+      errorCode: "UNRELATED_FAILURE",
       externalExecutionId: gaExecutionId,
       wordpressObjectId: null,
       wordpressStatus: null,
@@ -1946,6 +1961,16 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(response.status).toBe(409);
     expect((await response.json()).error).toContain("content-ready target has a failed job that is not recoverable");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("source contract treats content-ready generated-content FAILED executions as exact recoverable continuation candidates", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reconcile/route.ts"), "utf8");
+    expect(source).toContain("isExactRecoverableGeneratedContentFailure");
+    expect(source).toContain("selectedIsRecoverableContentFailure");
+    expect(source).toContain("job.errorCode === \"GENERATED_CONTENT_QA_FAILED\"");
+    expect(source).toContain("job.errorCode?.startsWith(\"CONTENT_REPAIR_\") === true");
+    expect(source).toContain("selected.status === \"content_ready\" && selectedJob.status === \"FAILED\"");
+    expect(source).toContain("&& !selectedIsRecoverableContentFailure");
   });
 
   test("exact content_ready OUTDOOR_SPHERE recoverable partial draft continues and updates the same draft object", async () => {

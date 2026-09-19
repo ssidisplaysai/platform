@@ -181,6 +181,23 @@ function isExactRecoverableCanonicalIdentityFailure(input: {
     && input.job.wordpressStatus !== "publish";
 }
 
+function isExactRecoverableGeneratedContentFailure(job: {
+  status: string;
+  errorCode?: string | null;
+  generatedDraft?: unknown;
+  wordpressObjectId?: string | number | null;
+  wordpressStatus?: string | null;
+}): boolean {
+  return job.status === "FAILED"
+    && Boolean(job.generatedDraft)
+    && !job.wordpressObjectId
+    && job.wordpressStatus !== "publish"
+    && (
+      job.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      || job.errorCode?.startsWith("CONTENT_REPAIR_") === true
+    );
+}
+
 export async function POST(
   request: NextRequest,
   context: {
@@ -288,6 +305,8 @@ export async function POST(
       && isExactRecoverableOutdoorSphereRichCompositionFailure(selectedJob);
     const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready" || selected.status === "running")
       && isExactRecoverableZeroAuthorityFailure(selectedJob);
+    const selectedIsRecoverableContentFailure = selected.status === "content_ready"
+      && isExactRecoverableGeneratedContentFailure(selectedJob);
     const selectedIsRecoverableCanonicalIdentityFailedTarget = isExactRecoverableCanonicalIdentityFailure({
       target: selected,
       job: selectedJob,
@@ -295,7 +314,7 @@ export async function POST(
     if (selected.status === "failed" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableCanonicalIdentityFailedTarget) {
       return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
     }
-    if (selected.status === "content_ready" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget) {
+    if (selected.status === "content_ready" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableContentFailure) {
       return NextResponse.json({ error: "Selected content-ready target has a failed job that is not recoverable for exact continuation." }, { status: 409 });
     }
     if (selected.status === "running" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget) {
