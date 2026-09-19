@@ -346,7 +346,11 @@ describe("campaign operator experience", () => {
     expect(source).toContain("setReviewQueueState(\"DAILY_LIMIT_REACHED\")");
     expect(source).toContain("setReviewQueueState(\"BLOCKED\")");
     expect(source).toContain("setReviewQueueState(\"COMPLETE\")");
-    expect(source).toContain("dispatchExactTarget({ auto: true })");
+    expect(source).toContain("isSupersededPreflightError");
+    expect(source).toContain("schedulerOverride: freshScheduler");
+    expect(source).toContain("schedulerOverride: retryScheduler");
+    expect(source).toContain("Canonical exact target changed during preflight refresh.");
+    expect(source).toContain("rethrowOnError: true");
     expect(source).toContain("setAutoTargetLock(null);");
     expect(source).toContain("setAutoPipelineStage(\"IDLE\")");
     expect(source).toContain("Current target:");

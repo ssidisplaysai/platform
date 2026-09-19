@@ -458,8 +458,14 @@ export function GlwCampaignOperatorControls({
     clearOperatorFreeProgressionPoll();
   }, [campaignId, clearOperatorFreeProgressionPoll, organizationId, siteId]);
 
-  async function dispatchExactTarget(input?: { auto?: boolean }) {
-    if (!scheduler || dispatchInFlight.current) return;
+  function isSupersededPreflightError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    return error.message.includes("DISPATCH_PREFLIGHT_SUPERSEDED");
+  }
+
+  async function dispatchExactTarget(input?: { auto?: boolean; schedulerOverride?: SchedulerPayload; rethrowOnError?: boolean }) {
+    const activeScheduler = input?.schedulerOverride ?? scheduler;
+    if (!activeScheduler || dispatchInFlight.current) return { accepted: false, exactTargetId: null as string | null };
     const auto = input?.auto === true;
     dispatchInFlight.current = true;
     setDispatching(true);
@@ -468,22 +474,26 @@ export function GlwCampaignOperatorControls({
     }
     setError(null);
     try {
+      let schedulerForFlow = activeScheduler;
       const result = await runExactTargetDispatchFlow({
         campaignId,
         organizationId,
         siteId,
-        scheduler,
+        scheduler: schedulerForFlow,
         requestHeaders,
         confirm: (confirmation) => auto ? true : window.confirm(confirmation),
         onStage: setDispatchStage,
-        onSchedulerRefreshed: (refreshed) => setScheduler(refreshed as SchedulerPayload),
+        onSchedulerRefreshed: (refreshed) => {
+          schedulerForFlow = refreshed as SchedulerPayload;
+          setScheduler(schedulerForFlow);
+        },
       });
       if (!result.accepted) {
         setDispatchStage("READY TO AUTHORIZE");
-        return;
+        return { accepted: false, exactTargetId: null as string | null };
       }
       const payload = result.payload;
-      const exactTargetId = result.scheduler.schedule.nextTargets[0]?.targetId ?? null;
+      const exactTargetId = schedulerForFlow.schedule.nextTargets[0]?.targetId ?? null;
       if (isOutdoorSphereOperatorFreeScope && exactTargetId) {
         setAutoTargetLock({ targetId: exactTargetId, jobId: null, executionId: null });
         setReviewQueueCurrentTargetId(exactTargetId);
@@ -495,9 +505,14 @@ export function GlwCampaignOperatorControls({
       if (isOutdoorSphereOperatorFreeScope && exactTargetId) {
         void runOperatorFreeProgression(exactTargetId);
       }
+      return { accepted: true, exactTargetId };
     } catch (flowError) {
       setError(flowError instanceof Error ? flowError.message : "Exact-target dispatch failed.");
       setDispatchStage("IDLE");
+      if (input?.rethrowOnError) {
+        throw flowError;
+      }
+      return { accepted: false, exactTargetId: null as string | null };
     } finally {
       setDispatching(false);
       dispatchInFlight.current = false;
@@ -744,10 +759,14 @@ export function GlwCampaignOperatorControls({
           return;
         }
 
-        const nextTargetId = freshScheduler.schedule.nextTargets[0]?.targetId ?? null;
-        const projected = nextTargetId
-          ? targetsRef.current.find((target) => target.targetId === nextTargetId) ?? null
-          : null;
+        const initialTargetId = freshScheduler.schedule.nextTargets[0]?.targetId ?? null;
+        if (!initialTargetId) {
+          setReviewQueueState("BLOCKED");
+          setReviewQueueBlockedReason("Exact queued target is unavailable for dispatch.");
+          setAutoPipelineStage("BLOCKED");
+          return;
+        }
+        const projected = targetsRef.current.find((target) => target.targetId === initialTargetId) ?? null;
         if (projected && projected.lifecycleState !== "queued") {
           setReviewQueueState("BLOCKED");
           setReviewQueueBlockedReason(`Selected target is not queued: ${projected.identity} is ${projected.lifecycleState}.`);
@@ -756,9 +775,58 @@ export function GlwCampaignOperatorControls({
         }
 
         setReviewQueueBlockedReason(null);
-        setReviewQueueCurrentTargetId(nextTargetId);
         setAutoPipelineStage("DISPATCH ✓");
-        await dispatchExactTarget({ auto: true });
+        try {
+          await dispatchExactTarget({
+            auto: true,
+            schedulerOverride: freshScheduler,
+            rethrowOnError: true,
+          });
+        } catch (dispatchError) {
+          if (!isSupersededPreflightError(dispatchError)) {
+            throw dispatchError;
+          }
+
+          const retryScheduler = await readSchedulerSnapshot();
+          if (retryScheduler.schedule.remainingAllowance < 1) {
+            setReviewQueueState("DAILY_LIMIT_REACHED");
+            setAutoPipelineStage("DAILY_LIMIT_REACHED");
+            setReviewQueueCurrentTargetId(null);
+            return;
+          }
+          if (retryScheduler.schedule.nextTargets.length !== 1 || retryScheduler.schedule.availableConcurrency < 1) {
+            setReviewQueueState("BLOCKED");
+            setReviewQueueBlockedReason("Exact queued target is unavailable for dispatch.");
+            setAutoPipelineStage("BLOCKED");
+            return;
+          }
+          const retryTargetId = retryScheduler.schedule.nextTargets[0]?.targetId ?? null;
+          if (!retryTargetId || retryTargetId !== initialTargetId) {
+            setReviewQueueState("BLOCKED");
+            setReviewQueueBlockedReason("Canonical exact target changed during preflight refresh.");
+            setAutoPipelineStage("BLOCKED");
+            return;
+          }
+          if (!retryScheduler.executionReadiness.configured || !retryScheduler.executionPreflight.ready || !retryScheduler.wordpressReadiness.ready) {
+            setReviewQueueState("BLOCKED");
+            setReviewQueueBlockedReason("Execution or WordPress authority is unavailable for exact dispatch.");
+            setAutoPipelineStage("BLOCKED");
+            return;
+          }
+          const retryProjected = targetsRef.current.find((target) => target.targetId === retryTargetId) ?? null;
+          if (retryProjected && retryProjected.lifecycleState !== "queued") {
+            setReviewQueueState("BLOCKED");
+            setReviewQueueBlockedReason(`Selected target is not queued: ${retryProjected.identity} is ${retryProjected.lifecycleState}.`);
+            setAutoPipelineStage("BLOCKED");
+            return;
+          }
+
+          await dispatchExactTarget({
+            auto: true,
+            schedulerOverride: retryScheduler,
+            rethrowOnError: true,
+          });
+        }
       } catch (queueError) {
         setReviewQueueState("BLOCKED");
         setReviewQueueBlockedReason(queueError instanceof Error ? queueError.message : "Unable to refresh queue eligibility.");
