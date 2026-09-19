@@ -287,7 +287,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     });
   });
 
-  test("fails closed when continuation responds 200 without durable draft persistence", async () => {
+  test("returns wait when continuation is accepted but durable draft persistence is still pending", async () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
       .mockResolvedValueOnce(jsonResponse({ ok: false, error: "Continuation did not durably persist a WordPress draft.", job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200));
@@ -312,9 +312,13 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     const response = await POST(request, { params: Promise.resolve({ campaignId }) });
     const payload = await response.json();
 
-    expect(response.status).toBe(409);
-    expect(payload.error).toContain("durably persist a WordPress draft");
-    expect(payload.results[0]).toMatchObject({ action: "continue_error" });
+    expect(response.status).toBe(200);
+    expect(payload.error).toBeUndefined();
+    expect(payload.results[0]).toMatchObject({
+      action: "wait",
+      generationStatus: "CONTENT_READY",
+      waitReason: "DRAFT_PERSISTENCE_PENDING",
+    });
 
     const continueRequestBody = JSON.parse((fetchMock.mock.calls[1]?.[1] as { body?: string })?.body ?? "{}");
     expect(continueRequestBody).toMatchObject({

@@ -305,7 +305,7 @@ describe("campaign operator experience", () => {
     expect(source).toContain("Publication Blocked by Policy");
     expect(source).toContain("Continue to WordPress Draft");
     expect(source).toContain("content-ready-target");
-    expect((source.match(/target\.continuationEligible === true/g) ?? []).length).toBe(2);
+    expect((source.match(/target\.continuationEligible === true/g) ?? []).length).toBeGreaterThanOrEqual(2);
     expect(source).toContain("targetId: target.targetId");
     expect(source).toContain("executionId: target.executionId");
     expect(source).toContain("runOperatorFreeProgression");
@@ -356,6 +356,9 @@ describe("campaign operator experience", () => {
     expect(source).toContain("Current target:");
     expect(source).toContain("Ready for Review");
     expect(source).toContain("const processingCount = reviewQueueState === \"ACTIVE\" && autoTargetLock?.targetId ? 1 : 0;");
+    expect(source).toContain("const resumableTargets = targets.filter((target) =>");
+    expect(source).toContain("target.lifecycleState === \"content_ready\" || target.lifecycleState === \"running\"");
+    expect(source).toContain("Multiple in-progress continuation targets detected; exact single-target continuation is required.");
     expect(source).not.toContain("!scheduler.releaseAuthority.capability.ready ||");
     expect(source).not.toContain("const inferableRunningTargets = targets.filter");
     expect(source).not.toContain("reconcilePayload.results[0]");

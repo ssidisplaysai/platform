@@ -727,6 +727,34 @@ export function GlwCampaignOperatorControls({
       void runOperatorFreeProgression(processingTarget.targetId);
       return;
     }
+
+    const resumableTargets = targets.filter((target) =>
+      target.continuationEligible === true
+      && (target.lifecycleState === "content_ready" || target.lifecycleState === "running")
+      && Boolean(target.jobId)
+      && Boolean(target.executionId),
+    );
+
+    if (resumableTargets.length === 1) {
+      const resumable = resumableTargets[0];
+      setReviewQueueCurrentTargetId(resumable.targetId);
+      setAutoTargetLock({
+        targetId: resumable.targetId,
+        jobId: resumable.jobId,
+        executionId: resumable.executionId,
+      });
+      void runOperatorFreeProgression(resumable.targetId);
+      return;
+    }
+
+    if (resumableTargets.length > 1) {
+      setReviewQueueState("BLOCKED");
+      setReviewQueueBlockedReason("Multiple in-progress continuation targets detected; exact single-target continuation is required.");
+      setAutoPipelineStage("BLOCKED");
+      setReviewQueueCurrentTargetId(null);
+      return;
+    }
+
     autoQueueInFlightRef.current = true;
     void (async () => {
       try {

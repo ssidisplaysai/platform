@@ -515,6 +515,31 @@ export async function POST(
           await continueResponse.json();
 
         if (!continueResponse.ok || continuePayload?.ok !== true) {
+          const continuationPendingJob = continuePayload?.job as {
+            status?: string;
+            externalExecutionId?: string | null;
+            wordpressObjectId?: string | number | null;
+            wordpressStatus?: string | null;
+          } | undefined;
+          const continuationPending = Boolean(
+            expectedTargetId
+            && continuationPendingJob
+            && continuationPendingJob.status === "CONTENT_READY"
+            && (continuationPendingJob.externalExecutionId ?? "") === expectedExecutionId
+            && !continuationPendingJob.wordpressObjectId
+            && continuationPendingJob.wordpressStatus !== "publish",
+          );
+          if (continuationPending) {
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "wait",
+              generationStatus: continuationPendingJob?.status ?? "CONTENT_READY",
+              waitReason: "DRAFT_PERSISTENCE_PENDING",
+            });
+            continue;
+          }
+
           results.push({
             ...targetIdentity(target),
             jobId,
@@ -537,6 +562,17 @@ export async function POST(
           );
 
         if (expectedTargetId && decision.action !== "draft_ready") {
+          if (decision.action === "wait" || decision.action === "continue") {
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "wait",
+              generationStatus: job.status,
+              waitReason: "DRAFT_PERSISTENCE_PENDING",
+            });
+            continue;
+          }
+
           results.push({
             ...targetIdentity(target),
             jobId,
