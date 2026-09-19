@@ -184,7 +184,7 @@ describe("campaign operator experience", () => {
     expect(result.capabilities.scheduler.detail).not.toContain("Running target occupies the execution slot");
   });
 
-  test("treats exact failed ZERO_AUTHORITY_CANONICALIZATION_BLOCKED with generated draft as content_ready lifecycle", () => {
+  test("classifies exact failed ZERO_AUTHORITY_CANONICALIZATION_BLOCKED as owner-retry-required", () => {
     const failedDallas = target("Dallas", "dallas", "failed", dallasJob.jobId);
     const recoverableFailedJob = {
       ...dallasJob,
@@ -199,9 +199,37 @@ describe("campaign operator experience", () => {
       jobs: [recoverableFailedJob],
     });
     expect(result.currentStage).toBe("Reconciliation");
-    expect(result.canonicalAction).toMatchObject({ kind: "CONTINUE_DRAFT", enabled: true });
-    expect(result.counts.contentReady).toBe(1);
-    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("content_ready");
+    expect(result.canonicalAction).toMatchObject({ kind: "RECONCILE", enabled: true });
+    expect(result.counts.contentReady).toBe(0);
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("failed");
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.queueRecoveryClass).toBe("OWNER_RETRY_REQUIRED");
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.ownerAttentionRequired).toBe(true);
+    expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.continuationEligible).toBe(false);
+  });
+
+  test("classifies MI-style content-ready failures as resumable continuation and queued targets as queued_new_dispatch", () => {
+    const miTarget = target("Michigan", "michigan", "content_ready", "job-mi");
+    const miJob = {
+      ...dallasJob,
+      jobId: "job-mi",
+      externalExecutionId: "726697",
+      status: "FAILED",
+      errorCode: "GENERATED_CONTENT_QA_FAILED",
+      errorMessage: "Unsupported factual claims detected under GLW_REFERENCE_CLAIM_AUTHORITY_V1_2.",
+      generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/michigan", excerpt: "x" },
+      wordpressObjectId: null,
+      wordpressStatus: null,
+    } as GlwPageExecutionRecord;
+    const mnTarget = target("Minnesota", "minnesota", "queued", null, null);
+
+    const result = model({
+      targets: [target("Austin", "austin", "reference_complete"), miTarget, mnTarget],
+      jobs: [miJob],
+    });
+
+    expect(result.targets.find((entry) => entry.identity === "Michigan, TX")?.queueRecoveryClass).toBe("RESUMABLE_CONTINUATION");
+    expect(result.targets.find((entry) => entry.identity === "Michigan, TX")?.continuationEligible).toBe(true);
+    expect(result.targets.find((entry) => entry.identity === "Minnesota, TX")?.queueRecoveryClass).toBe("QUEUED_NEW_DISPATCH");
   });
 
   test("treats failed OUTDOOR_SPHERE rich-composition partial draft as content_ready lifecycle only for draft WordPress state", () => {
@@ -312,6 +340,9 @@ describe("campaign operator experience", () => {
     expect(source).toContain("/api/glw/campaigns/${campaignId}/reconcile");
     expect(source).toContain("/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification");
     expect(source).toContain("Operator-free progression reached READY FOR OWNER REVIEW");
+    expect(source).toContain("resolveQueueRecoveryClass");
+    expect(source).toContain("queueRecoveryClass?: \"RESUMABLE_CONTINUATION\" | \"OWNER_RETRY_REQUIRED\" | \"QUEUED_NEW_DISPATCH\" | \"NONE\"");
+    expect(source).toContain("Owner Attention Required");
     expect(source).toContain("const [autoTargetLock, setAutoTargetLock]");
     expect(source).toContain("const [autoTargetLockHydrated, setAutoTargetLockHydrated]");
     expect(source).toContain("const autoProgressPollTimerRef = useRef<number | null>(null)");
@@ -358,7 +389,7 @@ describe("campaign operator experience", () => {
     expect(source).toContain("const processingCount = reviewQueueState === \"ACTIVE\" && autoTargetLock?.targetId ? 1 : 0;");
     expect(source).toContain("const resumableTargets = targets.filter((target) =>");
     expect(source).toContain("target.lifecycleState === \"content_ready\" || target.lifecycleState === \"running\"");
-    expect(source).toContain("Multiple in-progress continuation targets detected; exact single-target continuation is required.");
+    expect(source).toContain("if (resumableTargets.length >= 1)");
     expect(source).not.toContain("!scheduler.releaseAuthority.capability.ready ||");
     expect(source).not.toContain("const inferableRunningTargets = targets.filter");
     expect(source).not.toContain("reconcilePayload.results[0]");

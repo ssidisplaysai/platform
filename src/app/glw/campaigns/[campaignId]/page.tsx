@@ -68,6 +68,8 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
             targetId: target.targetId,
             identity: target.identity,
             lifecycleState: target.lifecycleState,
+            queueRecoveryClass: target.queueRecoveryClass,
+            ownerAttentionRequired: target.ownerAttentionRequired,
             continuationEligible: target.continuationEligible,
             jobId: target.jobId,
             executionId: target.executionId,

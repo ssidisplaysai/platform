@@ -25,6 +25,8 @@ type ContinuableTargetSummary = {
   targetId: string;
   identity: string;
   lifecycleState: string;
+  queueRecoveryClass?: "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE";
+  ownerAttentionRequired?: boolean;
   continuationEligible: boolean;
   jobId: string | null;
   executionId: string | null;
@@ -192,6 +194,23 @@ type OperatorFreeTargetLock = {
 };
 
 type ReviewQueueState = "IDLE" | "ACTIVE" | "COMPLETE" | "DAILY_LIMIT_REACHED" | "BLOCKED";
+
+function resolveQueueRecoveryClass(target: ContinuableTargetSummary): "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE" {
+  if (target.queueRecoveryClass) return target.queueRecoveryClass;
+  if (target.ownerAttentionRequired) return "OWNER_RETRY_REQUIRED";
+  if (
+    target.continuationEligible === true
+    && (target.lifecycleState === "content_ready" || target.lifecycleState === "running")
+    && Boolean(target.jobId)
+    && Boolean(target.executionId)
+  ) {
+    return "RESUMABLE_CONTINUATION";
+  }
+  if (target.lifecycleState === "queued" && !target.jobId && !target.wordpressObjectId) {
+    return "QUEUED_NEW_DISPATCH";
+  }
+  return "NONE";
+}
 
 export function GlwCampaignOperatorControls({
   campaignId,
@@ -404,7 +423,15 @@ export function GlwCampaignOperatorControls({
   }, [isOutdoorSphereOperatorFreeScope, queueStateStorageKey, reviewQueueBlockedReason, reviewQueueCurrentTargetId, reviewQueueState]);
 
   const continuableTargets = targets.filter((target) =>
-    target.continuationEligible === true,
+    resolveQueueRecoveryClass(target) === "RESUMABLE_CONTINUATION",
+  );
+
+  const ownerRetryTargets = targets.filter((target) =>
+    resolveQueueRecoveryClass(target) === "OWNER_RETRY_REQUIRED",
+  );
+
+  const queuedNewDispatchTargets = targets.filter((target) =>
+    resolveQueueRecoveryClass(target) === "QUEUED_NEW_DISPATCH",
   );
 
   const autoTarget = autoTargetLock
@@ -729,13 +756,13 @@ export function GlwCampaignOperatorControls({
     }
 
     const resumableTargets = targets.filter((target) =>
-      target.continuationEligible === true
+      resolveQueueRecoveryClass(target) === "RESUMABLE_CONTINUATION"
       && (target.lifecycleState === "content_ready" || target.lifecycleState === "running")
       && Boolean(target.jobId)
       && Boolean(target.executionId),
-    );
+    ).sort((left, right) => left.identity.localeCompare(right.identity));
 
-    if (resumableTargets.length === 1) {
+    if (resumableTargets.length >= 1) {
       const resumable = resumableTargets[0];
       setReviewQueueCurrentTargetId(resumable.targetId);
       setAutoTargetLock({
@@ -744,14 +771,6 @@ export function GlwCampaignOperatorControls({
         executionId: resumable.executionId,
       });
       void runOperatorFreeProgression(resumable.targetId);
-      return;
-    }
-
-    if (resumableTargets.length > 1) {
-      setReviewQueueState("BLOCKED");
-      setReviewQueueBlockedReason("Multiple in-progress continuation targets detected; exact single-target continuation is required.");
-      setAutoPipelineStage("BLOCKED");
-      setReviewQueueCurrentTargetId(null);
       return;
     }
 
@@ -1098,6 +1117,8 @@ export function GlwCampaignOperatorControls({
     target.lifecycleState === "draft_ready" && target.visualCertificationCurrentPass,
   ).length;
   const processingCount = reviewQueueState === "ACTIVE" && autoTargetLock?.targetId ? 1 : 0;
+  const ownerAttentionCount = ownerRetryTargets.length;
+  const queuedNewDispatchCount = queuedNewDispatchTargets.length;
   const queueUsedToday = scheduler?.schedule.alreadyDispatchedToday ?? 0;
   const queueDailyLimit = scheduler?.schedule.dailyLimit ?? 0;
   const queueRemainingAllowance = scheduler?.schedule.remainingAllowance ?? 0;
@@ -1153,7 +1174,7 @@ export function GlwCampaignOperatorControls({
               </button>
             </div>
           </div>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
               <p className="uppercase tracking-wider text-zinc-500">Review Queue</p>
               <p className="mt-1 font-semibold text-white">{reviewQueueState}</p>
@@ -1163,15 +1184,36 @@ export function GlwCampaignOperatorControls({
               <p className="mt-1 text-lg font-bold text-white">{readyForOwnerReviewCount}</p>
             </div>
             <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
-              <p className="uppercase tracking-wider text-zinc-500">Processing · Queued</p>
-              <p className="mt-1 text-lg font-bold text-white">{processingCount} · {scheduler?.queue.queued ?? 0}</p>
+              <p className="uppercase tracking-wider text-zinc-500">Processing</p>
+              <p className="mt-1 text-lg font-bold text-white">{processingCount}</p>
             </div>
             <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
+              <p className="uppercase tracking-wider text-zinc-500">Queued</p>
+              <p className="mt-1 text-lg font-bold text-white">{queuedNewDispatchCount}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
+              <p className="uppercase tracking-wider text-zinc-500">Owner Attention</p>
+              <p className="mt-1 text-lg font-bold text-white">{ownerAttentionCount}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300 sm:col-span-2 xl:col-span-5">
               <p className="uppercase tracking-wider text-zinc-500">Used Today</p>
               <p className="mt-1 text-lg font-bold text-white">{queueUsedToday} / {queueDailyLimit}</p>
               <p className="mt-1 text-[11px] text-zinc-500">Remaining {queueRemainingAllowance}</p>
             </div>
           </div>
+          {ownerAttentionCount > 0 ? (
+            <div className="mt-3 rounded-lg border border-amber-900/60 bg-amber-950/20 p-3 text-xs text-amber-200">
+              <p className="font-semibold uppercase tracking-wider">Owner Attention Required</p>
+              <p className="mt-1">{ownerAttentionCount} target{ownerAttentionCount === 1 ? "" : "s"}</p>
+              <ul className="mt-2 space-y-1 text-zinc-300">
+                {ownerRetryTargets.map((target) => (
+                  <li key={`owner-retry-${target.targetId}`}>
+                    {target.identity} - Regeneration required. {target.issue ?? "Protected factual claim could not be safely canonicalized."}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {reviewQueueState === "ACTIVE" && reviewQueueCurrentTargetId ? (
             <p className="mt-3 text-xs text-zinc-300">Current target: {reviewQueueCurrentTargetId}</p>
           ) : null}

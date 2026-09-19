@@ -19,11 +19,14 @@ import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-pag
 
 export type OperatorStageState = "COMPLETE" | "CURRENT" | "PARTIAL" | "BLOCKED" | "UPCOMING" | "NOT_REQUIRED";
 export type OperatorImageState = "APPROVED" | "READY" | "GENERATING" | "MISSING" | "DEGRADED" | "NOT_WIRED";
+export type GlwQueueRecoveryClass = "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE";
 
 export type GlwCampaignOperatorTarget = {
   targetId: string;
   identity: string;
   lifecycleState: string;
+  queueRecoveryClass: GlwQueueRecoveryClass;
+  ownerAttentionRequired: boolean;
   continuationEligible: boolean;
   jobId: string | null;
   executionId: string | null;
@@ -72,7 +75,7 @@ function referenceImageState(candidate: GlwReferenceImageCandidate | null): GlwC
   return { state: "DEGRADED", detail: `Latest campaign application visual is ${candidate.status.toLowerCase().replaceAll("_", " ")}.` };
 }
 
-function isRecoverableZeroAuthorityFailedTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
+function isOwnerRetryRequiredZeroAuthorityTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
   return target.status === "failed"
     && Boolean(job)
     && job!.status === "FAILED"
@@ -126,7 +129,6 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     const job = target.jobId ? jobs.get(target.jobId) : null;
     return target.status === "content_ready"
       || (target.status === "running" && job?.status === "CONTENT_READY")
-      || isRecoverableZeroAuthorityFailedTarget(target, job)
       || isRecoverableOutdoorSphereRichCompositionTarget(target, job);
   }).length;
   const authorized = Boolean(input.latestGrant?.consumedAt || input.latestGrant?.claimedAt || (input.latestGrant && !input.latestGrant.consumedAt && new Date(input.latestGrant.expiresAt) > new Date()));
@@ -203,15 +205,23 @@ export function deriveGlwCampaignOperatorReadModel(input: {
     .sort((left, right) => targetIdentity(left).localeCompare(targetIdentity(right)))
     .map((target): GlwCampaignOperatorTarget => {
       const job = target.jobId ? jobs.get(target.jobId) ?? null : null;
+      const ownerRetryRequired = isOwnerRetryRequiredZeroAuthorityTarget(target, job);
       const effectiveLifecycleState = (target.status === "running" && job?.status === "CONTENT_READY")
-        || isRecoverableZeroAuthorityFailedTarget(target, job)
         || isRecoverableOutdoorSphereRichCompositionTarget(target, job)
         ? "content_ready"
         : target.status;
       const continuationEligible = effectiveLifecycleState === "content_ready"
+        && !ownerRetryRequired
         && Boolean(target.jobId)
         && Boolean(job?.externalExecutionId)
         && (!target.wordpressObjectId || isRecoverableOutdoorSphereRichCompositionTarget(target, job));
+      const queueRecoveryClass: GlwQueueRecoveryClass = ownerRetryRequired
+        ? "OWNER_RETRY_REQUIRED"
+        : continuationEligible
+          ? "RESUMABLE_CONTINUATION"
+          : (target.status === "queued" && !target.jobId && !target.wordpressObjectId)
+            ? "QUEUED_NEW_DISPATCH"
+            : "NONE";
       const projectionTruth = input.projectionTruthByTargetId?.[target.targetId];
       const isReference = target.status === "reference_complete";
       const contextual = isReference
@@ -227,6 +237,8 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         targetId: target.targetId,
         identity: targetIdentity(target),
         lifecycleState: effectiveLifecycleState,
+        queueRecoveryClass,
+        ownerAttentionRequired: queueRecoveryClass === "OWNER_RETRY_REQUIRED",
         continuationEligible,
         jobId: target.jobId,
         executionId: job?.externalExecutionId ?? null,
