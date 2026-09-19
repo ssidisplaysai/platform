@@ -554,7 +554,7 @@ export async function POST(
               citySlug: target.citySlug,
             });
 
-          const canonicalPathFromForm = normalizeCanonicalPath(form.canonicalPath ?? "");
+          const canonicalPathFromForm = normalizeCanonicalPath(form.slug ?? "");
           const canonicalPathFromJob = normalizeCanonicalPath(job.slug ?? "");
           if (!canonicalPathFromForm) {
             const updatedFailed =

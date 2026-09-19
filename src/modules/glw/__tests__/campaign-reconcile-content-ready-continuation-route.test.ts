@@ -49,6 +49,8 @@ jest.mock("@/modules/foundation/wordpress-credential-resolver", () => ({
 }));
 
 import { NextRequest } from "next/server";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { POST } from "@/app/api/glw/campaigns/[campaignId]/reconcile/route";
 import {
   authorizeRequest,
@@ -193,7 +195,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
         metaDescription: "x",
         publicationIntent: "draft",
         plannedOperation: "CREATE_STATE",
-        canonicalPath: "outdoor-digital-sphere/georgia",
+        slug: "outdoor-digital-sphere/georgia",
         productTopic: "Outdoor Digital Sphere",
         campaignId,
       },
@@ -507,7 +509,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
       form: {
         publicationIntent: "draft",
-        canonicalPath: "outdoor-digital-sphere/florida",
+        slug: "outdoor-digital-sphere/florida",
       },
     });
 
@@ -739,7 +741,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       }, 200));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({ form: { publicationIntent: "draft", canonicalPath: "" } });
+    (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({ form: { publicationIntent: "draft", slug: "" } });
     (listGlwCampaignTargets as jest.Mock).mockReturnValue([
       {
         targetId: gaTargetId,
@@ -977,7 +979,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
       form: {
         publicationIntent: "draft",
-        canonicalPath: "outdoor-digital-sphere/iowa",
+        slug: "outdoor-digital-sphere/iowa",
       },
     });
 
@@ -1142,7 +1144,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
       form: {
         publicationIntent: "draft",
-        canonicalPath: "outdoor-digital-sphere/iowa",
+        slug: "outdoor-digital-sphere/iowa",
       },
     });
 
@@ -1305,6 +1307,17 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(payload.error).toContain("WordPress identity does not match");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(markGlwFailedCampaignTargetDraftReady).not.toHaveBeenCalled();
+  });
+
+  test("canonical recovery uses form.slug and does not depend on form.canonicalPath", () => {
+    const productionGenerationSource = readFileSync(resolve(process.cwd(), "src/modules/glw/campaign-production-generation.ts"), "utf8");
+    const generationInputSource = readFileSync(resolve(process.cwd(), "src/modules/glw/page-generation.ts"), "utf8");
+    const reconcileSource = readFileSync(resolve(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reconcile/route.ts"), "utf8");
+
+    expect(productionGenerationSource).toContain("form = createDefaultGlwGenerationInput(");
+    expect(generationInputSource).toContain("slug: createGlwCanonicalPath(");
+    expect(reconcileSource).toContain("const canonicalPathFromForm = normalizeCanonicalPath(form.slug ?? \"\");");
+    expect(reconcileSource).not.toContain("normalizeCanonicalPath(form.canonicalPath ?? \"\")");
   });
 
   test("exact GA running + CONTENT_READY with unexpired lease fails closed", async () => {
