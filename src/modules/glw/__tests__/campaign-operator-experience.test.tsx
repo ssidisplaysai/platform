@@ -347,6 +347,16 @@ describe("campaign operator experience", () => {
     expect(source).toContain("EXACT_TARGET_PROTOCOL_RESULT_MISSING");
     expect(source).toContain("const generationComplete = Boolean(");
     expect(source).toContain("[\"content_ready\", \"draft_ready\", \"failed\", \"published\"].includes(autoTarget.lifecycleState)");
+    expect(source).toContain("Prepare Pages for Owner Review");
+    expect(source).toContain('type ReviewQueueState = "IDLE" | "ACTIVE" | "COMPLETE" | "DAILY_LIMIT_REACHED" | "BLOCKED";');
+    expect(source).toContain("setReviewQueueState(\"DAILY_LIMIT_REACHED\")");
+    expect(source).toContain("setReviewQueueState(\"BLOCKED\")");
+    expect(source).toContain("setReviewQueueState(\"COMPLETE\")");
+    expect(source).toContain("dispatchExactTarget({ auto: true })");
+    expect(source).toContain("setAutoTargetLock(null)");
+    expect(source).toContain("Current target:");
+    expect(source).toContain("Ready for Review");
+    expect(source).not.toContain("!scheduler.releaseAuthority.capability.ready ||");
     expect(source).not.toContain("inferableRunningTargets = targets.filter((target) =>\n      target.lifecycleState === \"content_ready\"");
     expect(source).not.toContain("reconcilePayload.results[0]");
   });

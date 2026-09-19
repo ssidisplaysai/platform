@@ -94,5 +94,7 @@ describe("GLW campaign activation release capability", () => {
     expect(route).toContain("const releaseAuthority = resolveReleaseCapability(campaign);");
     expect(route).not.toContain("enableGlwCampaignActivationReleaseCapability({");
     expect(route).not.toContain("trustedLocalAutoEnableAllowed");
+    expect(route).not.toContain("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED");
+    expect(route).not.toContain("&& releaseAuthority.capability.ready");
   });
 });

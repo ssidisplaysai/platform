@@ -212,7 +212,6 @@ export async function GET(
   let dispatchPreflight = null;
   if (
     selectedTarget
-    && releaseAuthority.capability.ready
     && wordpressReadiness.ready
     && executionPreflight.ready
     && availableConcurrency > 0
@@ -367,7 +366,6 @@ export async function POST(
     appendDispatchRequestOutcome({ requestReceiptId, patch: { ...patch, outcome: "FAILED" } });
     return NextResponse.json({ error, code, requestReceiptId }, { status });
   };
-  if (!releaseAuthority.capability.ready) return fail("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED", releaseAuthority.capability.reason ?? "Release capability unavailable.", 503, { releaseAuthorityResult: "FAIL" });
   const wordpressReadiness = resolveWordPressReadiness(campaign);
   if (!wordpressReadiness.ready) return fail("GLW_WORDPRESS_AUTHORITY_REQUIRED", wordpressReadiness.reason ?? "WordPress authority unavailable.", 503, { releaseAuthorityResult: "PASS", wordpressAuthorityResult: "FAIL" });
   const executionReadiness = getGlwN8nMcpConfigurationStatus();

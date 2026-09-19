@@ -191,6 +191,8 @@ type OperatorFreeTargetLock = {
   executionId: string | null;
 };
 
+type ReviewQueueState = "IDLE" | "ACTIVE" | "COMPLETE" | "DAILY_LIMIT_REACHED" | "BLOCKED";
+
 export function GlwCampaignOperatorControls({
   campaignId,
   organizationId,
@@ -218,6 +220,12 @@ export function GlwCampaignOperatorControls({
   const autoTargetLockRef = useRef<OperatorFreeTargetLock | null>(null);
   const autoProgressPollTimerRef = useRef<number | null>(null);
   const autoProgressPollIntervalMs = 5000;
+  const [reviewQueueState, setReviewQueueState] = useState<ReviewQueueState>("IDLE");
+  const [reviewQueueCurrentTargetId, setReviewQueueCurrentTargetId] = useState<string | null>(null);
+  const [reviewQueueBlockedReason, setReviewQueueBlockedReason] = useState<string | null>(null);
+  const reviewQueueStateRef = useRef<ReviewQueueState>("IDLE");
+  const queueStateStorageKey = `glw:auto-review-queue:${campaignId}:${organizationId}:${siteId}`;
+  const autoQueueInFlightRef = useRef(false);
   const dispatchInFlight = useRef(false);
   const [reconciling, setReconciling] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -236,6 +244,10 @@ export function GlwCampaignOperatorControls({
     };
     return includeJson ? operatorMutationHeaders(headers) : headers;
   }, [organizationId, siteId]);
+
+  useEffect(() => {
+    reviewQueueStateRef.current = reviewQueueState;
+  }, [reviewQueueState]);
 
   const clearOperatorFreeProgressionPoll = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -351,8 +363,34 @@ export function GlwCampaignOperatorControls({
   }, [isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
 
   useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
+    const serialized = window.sessionStorage.getItem(queueStateStorageKey);
+    if (!serialized) return;
+    try {
+      const parsed = JSON.parse(serialized) as {
+        state?: ReviewQueueState;
+        currentTargetId?: string | null;
+        blockedReason?: string | null;
+      };
+      const state = parsed?.state;
+      if (state === "ACTIVE" || state === "DAILY_LIMIT_REACHED" || state === "BLOCKED") {
+        setReviewQueueState(state);
+      }
+      if (typeof parsed?.currentTargetId === "string" && parsed.currentTargetId.trim().length > 0) {
+        setReviewQueueCurrentTargetId(parsed.currentTargetId);
+      }
+      if (typeof parsed?.blockedReason === "string" && parsed.blockedReason.trim().length > 0) {
+        setReviewQueueBlockedReason(parsed.blockedReason);
+      }
+    } catch {
+      window.sessionStorage.removeItem(queueStateStorageKey);
+    }
+  }, [isOutdoorSphereOperatorFreeScope, queueStateStorageKey]);
+
+  useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined" || !autoTargetLockHydrated) return;
     if (!autoTargetLock) {
+      autoTargetLockRef.current = null;
       window.sessionStorage.removeItem(targetLockStorageKey);
       clearOperatorFreeProgressionPoll();
       return;
@@ -360,6 +398,19 @@ export function GlwCampaignOperatorControls({
     autoTargetLockRef.current = autoTargetLock;
     window.sessionStorage.setItem(targetLockStorageKey, JSON.stringify(autoTargetLock));
   }, [autoTargetLock, autoTargetLockHydrated, clearOperatorFreeProgressionPoll, isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
+
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
+    if (reviewQueueState === "IDLE" || reviewQueueState === "COMPLETE") {
+      window.sessionStorage.removeItem(queueStateStorageKey);
+      return;
+    }
+    window.sessionStorage.setItem(queueStateStorageKey, JSON.stringify({
+      state: reviewQueueState,
+      currentTargetId: reviewQueueCurrentTargetId,
+      blockedReason: reviewQueueBlockedReason,
+    }));
+  }, [isOutdoorSphereOperatorFreeScope, queueStateStorageKey, reviewQueueBlockedReason, reviewQueueCurrentTargetId, reviewQueueState]);
 
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;
@@ -417,6 +468,11 @@ export function GlwCampaignOperatorControls({
   }, [isOutdoorSphereOperatorFreeScope, autoTargetLock, autoTarget?.jobId, autoTarget?.executionId]);
 
   useEffect(() => {
+    if (reviewQueueState !== "ACTIVE") return;
+    setReviewQueueCurrentTargetId(autoTargetLock?.targetId ?? null);
+  }, [autoTargetLock?.targetId, reviewQueueState]);
+
+  useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
     const handleVisibilityChange = () => {
       if (document.visibilityState !== "visible") return;
@@ -440,11 +496,14 @@ export function GlwCampaignOperatorControls({
     clearOperatorFreeProgressionPoll();
   }, [campaignId, clearOperatorFreeProgressionPoll, organizationId, siteId]);
 
-  async function authorizeAndDispatchExactTarget() {
+  async function dispatchExactTarget(input?: { auto?: boolean }) {
     if (!scheduler || dispatchInFlight.current) return;
+    const auto = input?.auto === true;
     dispatchInFlight.current = true;
     setDispatching(true);
-    setMessage(null);
+    if (!auto) {
+      setMessage(null);
+    }
     setError(null);
     try {
       const result = await runExactTargetDispatchFlow({
@@ -453,7 +512,7 @@ export function GlwCampaignOperatorControls({
         siteId,
         scheduler,
         requestHeaders,
-        confirm: (confirmation) => window.confirm(confirmation),
+        confirm: (confirmation) => auto ? true : window.confirm(confirmation),
         onStage: setDispatchStage,
         onSchedulerRefreshed: (refreshed) => setScheduler(refreshed as SchedulerPayload),
       });
@@ -465,8 +524,11 @@ export function GlwCampaignOperatorControls({
       const exactTargetId = result.scheduler.schedule.nextTargets[0]?.targetId ?? null;
       if (isOutdoorSphereOperatorFreeScope && exactTargetId) {
         setAutoTargetLock({ targetId: exactTargetId, jobId: null, executionId: null });
+        setReviewQueueCurrentTargetId(exactTargetId);
       }
-      setMessage(`Exact target dispatch submitted: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
+      if (!auto) {
+        setMessage(`Exact target dispatch submitted: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
+      }
       await refreshWorkspace();
       if (isOutdoorSphereOperatorFreeScope && exactTargetId) {
         void runOperatorFreeProgression(exactTargetId);
@@ -478,6 +540,25 @@ export function GlwCampaignOperatorControls({
       setDispatching(false);
       dispatchInFlight.current = false;
     }
+  }
+
+  async function authorizeAndDispatchExactTarget() {
+    await dispatchExactTarget();
+  }
+
+  function startOwnerReviewQueue() {
+    if (!isOutdoorSphereOperatorFreeScope || !scheduler || busy) return;
+    setReviewQueueBlockedReason(null);
+    setReviewQueueCurrentTargetId(autoTargetLock?.targetId ?? null);
+    setReviewQueueState("ACTIVE");
+    setAutoPipelineStage("DISPATCH ✓");
+  }
+
+  function stopOwnerReviewQueue() {
+    setReviewQueueState("IDLE");
+    setReviewQueueBlockedReason(null);
+    setReviewQueueCurrentTargetId(null);
+    clearOperatorFreeProgressionPoll();
   }
 
   async function runOperatorFreeProgression(targetIdOverride?: string) {
@@ -509,6 +590,10 @@ export function GlwCampaignOperatorControls({
     }
     if (exactTarget.lifecycleState === "draft_ready" && exactTarget.visualCertificationCurrentPass) {
       setAutoPipelineStage("READY FOR OWNER REVIEW");
+      if (reviewQueueStateRef.current === "ACTIVE") {
+        setAutoTargetLock(null);
+        setReviewQueueCurrentTargetId(null);
+      }
       clearOperatorFreeProgressionPoll();
       return;
     }
@@ -545,6 +630,11 @@ export function GlwCampaignOperatorControls({
       if (!reconcileResponse.ok || !reconcilePayload) {
         setError(reconcilePayload && "error" in reconcilePayload ? (reconcilePayload.error ?? `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`) : `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`);
         setAutoPipelineStage("FAILED");
+        if (reviewQueueStateRef.current === "ACTIVE") {
+          setReviewQueueState("BLOCKED");
+          setReviewQueueBlockedReason(reconcilePayload && "error" in reconcilePayload ? (reconcilePayload.error ?? "Automatic reconciliation failed.") : "Automatic reconciliation failed.");
+          setReviewQueueCurrentTargetId(exactTarget.targetId);
+        }
         clearOperatorFreeProgressionPoll();
         return;
       }
@@ -563,6 +653,11 @@ export function GlwCampaignOperatorControls({
       if (["failed", "error", "continue_error"].includes(result.action)) {
         setError(result.error ?? "Automatic progression halted with a recoverable failure.");
         setAutoPipelineStage("FAILED");
+        if (reviewQueueStateRef.current === "ACTIVE") {
+          setReviewQueueState("BLOCKED");
+          setReviewQueueBlockedReason(result.error ?? "Automatic progression halted with a recoverable failure.");
+          setReviewQueueCurrentTargetId(exactTarget.targetId);
+        }
         await refreshWorkspace();
         clearOperatorFreeProgressionPoll();
         return;
@@ -580,12 +675,23 @@ export function GlwCampaignOperatorControls({
         if (!captureResponse.ok && capturePayload?.error !== "VISUAL_CERTIFICATION_IDENTITY_ALREADY_EXISTS") {
           setError(capturePayload?.error ?? `Automatic visual certification failed (HTTP ${captureResponse.status}).`);
           setAutoPipelineStage("FAILED");
+          if (reviewQueueStateRef.current === "ACTIVE") {
+            setReviewQueueState("BLOCKED");
+            setReviewQueueBlockedReason(capturePayload?.error ?? "Automatic visual certification failed.");
+            setReviewQueueCurrentTargetId(exactTarget.targetId);
+          }
           await refreshWorkspace();
           clearOperatorFreeProgressionPoll();
           return;
         }
         setAutoPipelineStage("READY FOR OWNER REVIEW");
-        setMessage("Operator-free progression reached READY FOR OWNER REVIEW. Owner touchpoints remain Approve/Needs Fix and Publish.");
+        if (reviewQueueStateRef.current === "ACTIVE") {
+          setMessage("Prepared one page to READY FOR OWNER REVIEW. Continuing with the next exact queued target.");
+        } else {
+          setMessage("Operator-free progression reached READY FOR OWNER REVIEW. Owner touchpoints remain Approve/Needs Fix and Publish.");
+        }
+        setAutoTargetLock(null);
+        setReviewQueueCurrentTargetId(null);
         await refreshWorkspace();
         clearOperatorFreeProgressionPoll();
         return;
@@ -624,6 +730,73 @@ export function GlwCampaignOperatorControls({
     }
     void runOperatorFreeProgression();
   }, [isOutdoorSphereOperatorFreeScope, autoTargetLockHydrated, loading, scheduler, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass, clearOperatorFreeProgressionPoll]);
+
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || loading || !scheduler) return;
+    if (reviewQueueState !== "ACTIVE") return;
+    if (autoQueueInFlightRef.current || dispatching || dispatchInFlight.current || reconciling || continuingTarget || publishing || refreshingSeo || enablingReleaseCapability) {
+      return;
+    }
+
+    const processingTarget = autoTargetLock?.targetId
+      ? targets.find((target) => target.targetId === autoTargetLock.targetId) ?? null
+      : null;
+
+    if (processingTarget) {
+      setReviewQueueCurrentTargetId(processingTarget.targetId);
+      void runOperatorFreeProgression(processingTarget.targetId);
+      return;
+    }
+
+    if (scheduler.schedule.remainingAllowance < 1 && scheduler.queue.queued > 0) {
+      setReviewQueueState("DAILY_LIMIT_REACHED");
+      setAutoPipelineStage("DAILY_LIMIT_REACHED");
+      setReviewQueueCurrentTargetId(null);
+      return;
+    }
+
+    if (scheduler.queue.queued < 1) {
+      setReviewQueueState("COMPLETE");
+      setAutoPipelineStage("COMPLETE");
+      setReviewQueueCurrentTargetId(null);
+      return;
+    }
+
+    if (scheduler.schedule.nextTargets.length !== 1 || scheduler.schedule.availableConcurrency < 1) {
+      setReviewQueueState("BLOCKED");
+      setReviewQueueBlockedReason("Exact queued target is unavailable for dispatch.");
+      setAutoPipelineStage("BLOCKED");
+      return;
+    }
+
+    if (!scheduler.executionReadiness.configured || !scheduler.executionPreflight.ready || !scheduler.wordpressReadiness.ready) {
+      setReviewQueueState("BLOCKED");
+      setReviewQueueBlockedReason("Execution or WordPress authority is unavailable for exact dispatch.");
+      setAutoPipelineStage("BLOCKED");
+      return;
+    }
+
+    autoQueueInFlightRef.current = true;
+    setReviewQueueBlockedReason(null);
+    setAutoPipelineStage("DISPATCH ✓");
+    void dispatchExactTarget({ auto: true }).finally(() => {
+      autoQueueInFlightRef.current = false;
+    });
+  }, [
+    isOutdoorSphereOperatorFreeScope,
+    autoTargetLockHydrated,
+    loading,
+    scheduler,
+    reviewQueueState,
+    autoTargetLock?.targetId,
+    dispatching,
+    reconciling,
+    continuingTarget,
+    publishing,
+    refreshingSeo,
+    enablingReleaseCapability,
+    targets,
+  ]);
 
   async function reconcileCampaign() {
     const confirmed = window.confirm(
@@ -839,6 +1012,13 @@ export function GlwCampaignOperatorControls({
   const generationComplete = Boolean(
     autoTarget && ["content_ready", "draft_ready", "failed", "published"].includes(autoTarget.lifecycleState),
   );
+  const readyForOwnerReviewCount = targets.filter((target) =>
+    target.lifecycleState === "draft_ready" && target.visualCertificationCurrentPass,
+  ).length;
+  const processingCount = autoTargetLock?.targetId ? 1 : (scheduler?.queue.running ?? 0) > 0 || (scheduler?.queue.contentReady ?? 0) > 0 ? 1 : 0;
+  const queueUsedToday = scheduler?.schedule.alreadyDispatchedToday ?? 0;
+  const queueDailyLimit = scheduler?.schedule.dailyLimit ?? 0;
+  const queueRemainingAllowance = scheduler?.schedule.remainingAllowance ?? 0;
 
   return (
     <section id="campaign-actions" className="border border-zinc-800 bg-zinc-900/50 p-6">
@@ -867,8 +1047,55 @@ export function GlwCampaignOperatorControls({
 
       {isOutdoorSphereOperatorFreeScope ? (
         <div className="mt-4 rounded-xl border border-emerald-900/60 bg-emerald-950/20 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Operator-Free Pipeline V1</p>
-          <p className="mt-1 text-sm text-zinc-300">No manual Reconcile or Continue actions are required between authorization and owner review for this campaign.</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Operator-Free Pipeline V1</p>
+              <p className="mt-1 text-sm text-zinc-300">No manual Reconcile or Continue actions are required between dispatch and owner review for this campaign.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => startOwnerReviewQueue()}
+                disabled={busy || !scheduler || reviewQueueState === "ACTIVE"}
+                className="rounded-lg border border-emerald-700 bg-emerald-900/30 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-emerald-200 transition hover:border-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Prepare Pages for Owner Review
+              </button>
+              <button
+                type="button"
+                onClick={() => stopOwnerReviewQueue()}
+                disabled={reviewQueueState !== "ACTIVE"}
+                className="rounded-lg border border-zinc-700 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Stop Queue
+              </button>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
+              <p className="uppercase tracking-wider text-zinc-500">Review Queue</p>
+              <p className="mt-1 font-semibold text-white">{reviewQueueState}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
+              <p className="uppercase tracking-wider text-zinc-500">Ready for Review</p>
+              <p className="mt-1 text-lg font-bold text-white">{readyForOwnerReviewCount}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
+              <p className="uppercase tracking-wider text-zinc-500">Processing · Queued</p>
+              <p className="mt-1 text-lg font-bold text-white">{processingCount} · {scheduler?.queue.queued ?? 0}</p>
+            </div>
+            <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-xs text-zinc-300">
+              <p className="uppercase tracking-wider text-zinc-500">Used Today</p>
+              <p className="mt-1 text-lg font-bold text-white">{queueUsedToday} / {queueDailyLimit}</p>
+              <p className="mt-1 text-[11px] text-zinc-500">Remaining {queueRemainingAllowance}</p>
+            </div>
+          </div>
+          {reviewQueueCurrentTargetId ? (
+            <p className="mt-3 text-xs text-zinc-300">Current target: {reviewQueueCurrentTargetId}</p>
+          ) : null}
+          {reviewQueueBlockedReason ? (
+            <p className="mt-2 text-xs text-red-300">Queue blocked: {reviewQueueBlockedReason}</p>
+          ) : null}
           <ol className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-5">
             {[
               ["Authorized", true],
@@ -1031,7 +1258,7 @@ export function GlwCampaignOperatorControls({
           </div>
           <div className="mt-5 border border-zinc-800 bg-zinc-950/70 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs uppercase tracking-wider text-zinc-500">Exact Authorized Target</p><p className="mt-1 text-sm text-zinc-300">{scheduler.schedule.nextTargets[0] ? (scheduler.schedule.nextTargets[0].cityName ? `${scheduler.schedule.nextTargets[0].cityName}, ${scheduler.schedule.nextTargets[0].stateCode}` : scheduler.schedule.nextTargets[0].stateCode) : "No queued target is eligible for owner authorization."}</p>{scheduler.dispatchPreflight ? <p className="mt-2 text-xs text-zinc-500">Preflight {scheduler.dispatchPreflight.preflightReceiptId} · expires {new Date(scheduler.dispatchPreflight.expiresAt).toLocaleTimeString()}</p> : null}</div><span className="border border-zinc-700 px-3 py-1 text-xs uppercase text-zinc-300">exact-target preflight</span></div></div>
           <p className="mt-3 text-xs font-semibold uppercase text-zinc-400">{dispatchStage}</p>
-          <button type="button" onClick={() => void authorizeAndDispatchExactTarget()} disabled={busy || !scheduler.executionReadiness.configured || !scheduler.executionPreflight.ready || !scheduler.releaseAuthority.capability.ready || !scheduler.wordpressReadiness.ready || scheduler.schedule.availableConcurrency < 1 || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length !== 1} className="mt-2 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40">{dispatching ? dispatchStage : scheduler.schedule.nextTargets[0] ? `Authorize & Dispatch ${scheduler.schedule.nextTargets[0].cityName ?? scheduler.schedule.nextTargets[0].stateCode} Draft` : "No Exact Target Available"}</button>
+          <button type="button" onClick={() => void authorizeAndDispatchExactTarget()} disabled={busy || !scheduler.executionReadiness.configured || !scheduler.executionPreflight.ready || !scheduler.wordpressReadiness.ready || scheduler.schedule.availableConcurrency < 1 || scheduler.schedule.remainingAllowance < 1 || scheduler.schedule.nextTargets.length !== 1} className="mt-2 rounded-lg bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40">{dispatching ? dispatchStage : scheduler.schedule.nextTargets[0] ? `Authorize & Dispatch ${scheduler.schedule.nextTargets[0].cityName ?? scheduler.schedule.nextTargets[0].stateCode} Draft` : "No Exact Target Available"}</button>
         </>
       ) : loading ? <p className="mt-5 text-sm text-zinc-400">Loading scheduler preview...</p> : null}
     </section>
