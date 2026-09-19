@@ -175,6 +175,73 @@ describe("rendered visual certification contract", () => {
     expect(() => decideRenderedVisualCertification({ certificationId: saved.certificationId, decision: "APPROVED", actor: "owner", currentIdentity: changedIdentity })).toThrow("VISUAL_CERTIFICATION_STALE");
   });
 
+  test("keeps approved certification CURRENT across approval metadata and publication metadata changes when render identity is unchanged", () => {
+    const saved = saveRenderedVisualCertification(certification());
+    const approved = decideRenderedVisualCertification({
+      certificationId: saved.certificationId,
+      decision: "APPROVED",
+      actor: "owner",
+      note: "First approval",
+      currentIdentity: saved.identity,
+      now: "2026-09-12T12:02:00.000Z",
+    });
+
+    const publishedIdentity = {
+      ...saved.identity,
+      wordpressStatus: "publish" as const,
+    };
+
+    expect(getRenderedVisualCertificationState({ currentIdentity: publishedIdentity })).toMatchObject({
+      certificationState: "CURRENT",
+      decisionState: "CURRENT",
+      decision: { certificationId: saved.certificationId, decision: "APPROVED" },
+    });
+    expect(renderedVisualPublicationEligible({
+      certification: saved,
+      decision: approved,
+      currentIdentity: publishedIdentity,
+    })).toBe(true);
+
+    const reapproved = decideRenderedVisualCertification({
+      certificationId: saved.certificationId,
+      decision: "APPROVED",
+      actor: "owner",
+      note: "Approval timestamp updated",
+      currentIdentity: publishedIdentity,
+      now: "2026-09-12T12:05:00.000Z",
+    });
+
+    expect(reapproved.decidedAt).toBe("2026-09-12T12:05:00.000Z");
+    expect(getRenderedVisualCertificationState({ currentIdentity: publishedIdentity })).toMatchObject({
+      certificationState: "CURRENT",
+      decisionState: "CURRENT",
+      decision: { certificationId: saved.certificationId, decision: "APPROVED" },
+    });
+    expect(listRenderedVisualOwnerDecisions(saved.certificationId)).toHaveLength(2);
+  });
+
+  test("stales certification when render-affecting identity changes", () => {
+    const saved = saveRenderedVisualCertification(certification());
+    decideRenderedVisualCertification({
+      certificationId: saved.certificationId,
+      decision: "APPROVED",
+      actor: "owner",
+      currentIdentity: saved.identity,
+    });
+
+    expect(getRenderedVisualCertificationState({
+      currentIdentity: { ...saved.identity, contentHash: hash("content-r2") },
+    })).toMatchObject({ certificationState: "STALE", decisionState: "STALE" });
+
+    expect(getRenderedVisualCertificationState({
+      currentIdentity: { ...saved.identity, pageRevisionIdentity: "page-r2" },
+    })).toMatchObject({ certificationState: "STALE", decisionState: "STALE" });
+
+    expect(getRenderedVisualCertificationState({
+      currentIdentity: { ...saved.identity, renderedContentHash: hash("render-r2") },
+    })).toMatchObject({ certificationState: "STALE", decisionState: "STALE" });
+  });
+
   test("keeps visual approval independent from launch, campaign, and publication authority", () => {
     const saved = saveRenderedVisualCertification(certification({ identity: { ...certification().identity, campaignId: "campaign", targetId: "target", jobId: "job", wordpressStatus: "draft" } }));
     const decision = decideRenderedVisualCertification({ certificationId: saved.certificationId, decision: "APPROVED", actor: "owner", currentIdentity: saved.identity });

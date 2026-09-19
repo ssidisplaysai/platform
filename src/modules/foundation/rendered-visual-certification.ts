@@ -230,7 +230,14 @@ export function renderedVisualOverallState(findings: readonly RenderedVisualFind
 }
 
 export function sameRenderedVisualPageIdentity(left: RenderedVisualPageIdentity, right: RenderedVisualPageIdentity): boolean {
-  return left.organizationId === right.organizationId && left.siteId === right.siteId && left.pageId === right.pageId && left.pageRevisionIdentity === right.pageRevisionIdentity && left.canonicalPath === right.canonicalPath && left.contentHash === right.contentHash && left.renderedContentHash === right.renderedContentHash && left.campaignId === right.campaignId && left.targetId === right.targetId && left.jobId === right.jobId && left.externalExecutionId === right.externalExecutionId && left.wordpressObjectId === right.wordpressObjectId && left.wordpressStatus === right.wordpressStatus;
+  return left.organizationId === right.organizationId
+    && left.siteId === right.siteId
+    && left.pageId === right.pageId
+    && left.pageRevisionIdentity === right.pageRevisionIdentity
+    && left.canonicalPath === right.canonicalPath
+    && left.contentHash === right.contentHash
+    && left.renderedContentHash === right.renderedContentHash
+    && left.wordpressObjectId === right.wordpressObjectId;
 }
 
 export function renderedVisualDecisionCurrency(input: { certification: RenderedVisualCertification; decision: RenderedVisualOwnerDecision | null; currentIdentity: RenderedVisualPageIdentity }): "PENDING" | "CURRENT" | "STALE" {
