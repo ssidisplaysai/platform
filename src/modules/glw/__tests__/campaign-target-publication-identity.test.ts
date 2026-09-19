@@ -4,7 +4,9 @@ import {
   initializeGlwCityCampaignTargets,
   leaseGlwCampaignTargets,
   listGlwCampaignTargets,
+  markGlwCampaignTargetFailed,
   markGlwCampaignTargetDraftReady,
+  markGlwFailedCampaignTargetDraftReady,
   markGlwCampaignTargetPublished,
   previewGlwCampaignTargets,
   reconcileGlwCampaignTargetDraftAfterPublicationFailure,
@@ -128,6 +130,42 @@ describe("campaign publication target identity", () => {
     expect(updated.wordpressObjectId).toBe("20169");
     expect(updated.canonicalPath).toBe("outdoor-digital-sphere/georgia");
     expect(updated.applicationPath).toBe("outdoor-digital-sphere/georgia");
+    expect(updated.canonicalParentId).toBe("20114");
+  });
+
+  test("recovers a failed target to draft_ready with the same existing WordPress object and canonical identity", () => {
+    const campaignId = `campaign-state-identity-recovery-${process.pid}-${Date.now()}`;
+    initializeGlwCampaignTargets({
+      campaignId,
+      organizationId: "org",
+      siteId: "site",
+      productId: "product",
+      stateCodes: ["DE", "IA"],
+      referenceStateCode: "DE",
+      referenceJobId: "reference-job",
+      referenceWordpressObjectId: "200",
+    });
+    leaseGlwCampaignTargets({ campaignId, pagesPerDay: 1, dispatchDate: "2026-09-18", leaseId: "lease-state" });
+    attachGlwCampaignTargetJob({ campaignId, stateCode: "IA", leaseId: "lease-state", jobId: "job-ia" });
+    markGlwCampaignTargetFailed({ campaignId, stateCode: "IA", jobId: "job-ia", error: "DRAFT_READY_CANONICAL_PATH_REQUIRED" });
+
+    const updated = markGlwFailedCampaignTargetDraftReady({
+      campaignId,
+      stateCode: "IA",
+      jobId: "job-ia",
+      wordpressObjectId: "20186",
+      canonicalIdentity: {
+        canonicalPath: "outdoor-digital-sphere/iowa",
+        applicationPath: "outdoor-digital-sphere/iowa",
+        canonicalParentId: "20114",
+      },
+    });
+
+    expect(updated.status).toBe("draft_ready");
+    expect(updated.jobId).toBe("job-ia");
+    expect(updated.wordpressObjectId).toBe("20186");
+    expect(updated.canonicalPath).toBe("outdoor-digital-sphere/iowa");
+    expect(updated.applicationPath).toBe("outdoor-digital-sphere/iowa");
     expect(updated.canonicalParentId).toBe("20114");
   });
 });

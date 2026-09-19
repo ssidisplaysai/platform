@@ -71,11 +71,14 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
             continuationEligible: target.continuationEligible,
             jobId: target.jobId,
             executionId: target.executionId,
+            executionState: target.executionState,
             wordpressObjectId: target.wordpressObjectId,
+            wordpressStatus: target.wordpressStatus,
             canonicalPath: target.canonicalPath,
             applicationPath: target.applicationPath,
             canonicalParentId: target.canonicalParentId,
             visualCertificationCurrentPass: target.visualCertificationCurrentPass,
+            issue: target.issue,
           }))}
         />
 

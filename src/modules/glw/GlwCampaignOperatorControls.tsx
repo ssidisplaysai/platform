@@ -28,11 +28,14 @@ type ContinuableTargetSummary = {
   continuationEligible: boolean;
   jobId: string | null;
   executionId: string | null;
+  executionState: string | null;
   wordpressObjectId: string | null;
+  wordpressStatus: string | null;
   canonicalPath: string | null;
   applicationPath: string | null;
   canonicalParentId: string | null;
   visualCertificationCurrentPass: boolean;
+  issue: string | null;
 };
 
 type SchedulePreview = {
@@ -325,9 +328,26 @@ export function GlwCampaignOperatorControls({
       && Boolean(target.jobId)
       && Boolean(target.executionId),
     );
-    if (inferableRunningTargets.length !== 1) return;
+    const inferableCanonicalIdentityRecoveryTargets = targets.filter((target) =>
+      target.lifecycleState === "failed"
+      && target.issue === "DRAFT_READY_CANONICAL_PATH_REQUIRED"
+      && target.executionState === "COMPLETE"
+      && target.wordpressStatus === "draft"
+      && Boolean(target.targetId)
+      && Boolean(target.jobId)
+      && Boolean(target.executionId)
+      && Boolean(target.wordpressObjectId)
+      && !target.canonicalPath
+      && !target.applicationPath
+      && !target.canonicalParentId,
+    );
+    const inferableTargets = [
+      ...inferableRunningTargets,
+      ...inferableCanonicalIdentityRecoveryTargets,
+    ];
+    if (inferableTargets.length !== 1) return;
 
-    const runningTarget = inferableRunningTargets[0];
+    const runningTarget = inferableTargets[0];
     setAutoTargetLock({
       targetId: runningTarget.targetId,
       jobId: runningTarget.jobId,

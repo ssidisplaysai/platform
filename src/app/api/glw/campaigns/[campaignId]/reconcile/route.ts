@@ -146,6 +146,30 @@ function isExactRecoverableOutdoorSphereRichCompositionFailure(job: {
     && job.wordpressStatus !== "publish";
 }
 
+function isExactRecoverableCanonicalIdentityFailure(input: {
+  target: {
+    status: string;
+    lastError?: string | null;
+    wordpressObjectId?: string | number | null;
+  };
+  job: {
+    status: string;
+    externalExecutionId?: string | null;
+    generatedDraft?: unknown;
+    wordpressObjectId?: string | number | null;
+    wordpressStatus?: string | null;
+  };
+}): boolean {
+  return input.target.status === "failed"
+    && input.target.lastError === "DRAFT_READY_CANONICAL_PATH_REQUIRED"
+    && !input.target.wordpressObjectId
+    && input.job.status === "COMPLETE"
+    && Boolean(input.job.generatedDraft)
+    && Boolean(input.job.wordpressObjectId)
+    && input.job.wordpressStatus === "draft"
+    && input.job.wordpressStatus !== "publish";
+}
+
 export async function POST(
   request: NextRequest,
   context: {
@@ -244,7 +268,11 @@ export async function POST(
       && isExactRecoverableOutdoorSphereRichCompositionFailure(selectedJob);
     const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready" || selected.status === "running")
       && isExactRecoverableZeroAuthorityFailure(selectedJob);
-    if (selected.status === "failed" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget) {
+    const selectedIsRecoverableCanonicalIdentityFailedTarget = isExactRecoverableCanonicalIdentityFailure({
+      target: selected,
+      job: selectedJob,
+    });
+    if (selected.status === "failed" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableCanonicalIdentityFailedTarget) {
       return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
     }
     if (selected.status === "content_ready" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget) {
@@ -259,7 +287,7 @@ export async function POST(
     if (selectedJob.wordpressStatus === "publish") {
       return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
     }
-    if (selectedJob.wordpressObjectId && !selectedIsRecoverablePartialDraftTarget) {
+    if (selectedJob.wordpressObjectId && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableCanonicalIdentityFailedTarget) {
       return NextResponse.json({ error: "Conflicting existing WordPress identity detected on the selected job." }, { status: 409 });
     }
 
@@ -508,8 +536,7 @@ export async function POST(
 
           const canonicalPathFromForm = normalizeCanonicalPath(form.canonicalPath ?? "");
           const canonicalPathFromJob = normalizeCanonicalPath(job.slug ?? "");
-          const canonicalPath = canonicalPathFromForm || canonicalPathFromJob;
-          if (!canonicalPath || !canonicalPathFromForm || !canonicalPathFromJob || canonicalPathFromForm !== canonicalPathFromJob) {
+          if (!canonicalPathFromForm) {
             const updatedFailed =
               markGlwCampaignTargetFailed({
                 campaignId,
@@ -531,7 +558,7 @@ export async function POST(
             siteId: campaign.siteId,
             wordpressObjectId: decision.wordpressObjectId,
           });
-          const expectedSlug = canonicalPath.split("/").filter(Boolean).at(-1) ?? "";
+          const expectedSlug = canonicalPathFromForm.split("/").filter(Boolean).at(-1) ?? "";
           if (!expectedSlug || readback.slug !== expectedSlug) {
             const updatedFailed =
               markGlwCampaignTargetFailed({
@@ -550,8 +577,26 @@ export async function POST(
             continue;
           }
 
+          if (canonicalPathFromJob && canonicalPathFromJob !== canonicalPathFromForm) {
+            const updatedFailed =
+              markGlwCampaignTargetFailed({
+                campaignId,
+                stateCode: target.stateCode,
+                citySlug: target.citySlug,
+                jobId,
+                error: "DRAFT_READY_CANONICAL_PATH_REQUIRED",
+              });
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "failed",
+              error: updatedFailed.lastError,
+            });
+            continue;
+          }
+
           canonicalIdentity = {
-            canonicalPath,
+            canonicalPath: canonicalPathFromForm,
             applicationPath: canonicalPathFromForm,
             canonicalParentId: readback.parentId,
           };

@@ -280,8 +280,14 @@ describe("campaign operator experience", () => {
     expect(source).toContain("setAutoTargetLockHydrated(true)");
     expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;");
     expect(source).toContain("const inferableRunningTargets = targets.filter");
+    expect(source).toContain("const inferableCanonicalIdentityRecoveryTargets = targets.filter");
+    expect(source).toContain("target.issue === \"DRAFT_READY_CANONICAL_PATH_REQUIRED\"");
+    expect(source).toContain("target.executionState === \"COMPLETE\"");
+    expect(source).toContain("target.wordpressStatus === \"draft\"");
+    expect(source).toContain("&& Boolean(target.wordpressObjectId)");
     expect(source).toContain("target.lifecycleState === \"running\"");
-    expect(source).toContain("if (inferableRunningTargets.length !== 1) return;");
+    expect(source).toContain("const inferableTargets = [");
+    expect(source).toContain("if (inferableTargets.length !== 1) return;");
     expect(source).toContain("targetId: exactTarget.targetId");
     expect(source).toContain("jobId: exactTarget.jobId");
     expect(source).toContain("executionId: exactTarget.executionId");
@@ -297,7 +303,10 @@ describe("campaign operator experience", () => {
   test("campaign detail page passes continuationEligible into controls target summaries", () => {
     const pageSource = readFileSync(join(process.cwd(), "src/app/glw/campaigns/[campaignId]/page.tsx"), "utf8");
     expect(pageSource).toContain("continuationEligible: target.continuationEligible");
+    expect(pageSource).toContain("executionState: target.executionState");
+    expect(pageSource).toContain("wordpressStatus: target.wordpressStatus");
     expect(pageSource).toContain("canonicalPath: target.canonicalPath");
     expect(pageSource).toContain("visualCertificationCurrentPass: target.visualCertificationCurrentPass");
+    expect(pageSource).toContain("issue: target.issue");
   });
 });
