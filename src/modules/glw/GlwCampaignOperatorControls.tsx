@@ -210,8 +210,12 @@ export function GlwCampaignOperatorControls({
   const [dispatching, setDispatching] = useState(false);
   const [dispatchStage, setDispatchStage] = useState<ExactDispatchStage>("IDLE");
   const [autoPipelineStage, setAutoPipelineStage] = useState<string>("IDLE");
+  const [autoNextCheckAt, setAutoNextCheckAt] = useState<number | null>(null);
   const [autoTargetLock, setAutoTargetLock] = useState<OperatorFreeTargetLock | null>(null);
   const [autoTargetLockHydrated, setAutoTargetLockHydrated] = useState(false);
+  const autoTargetLockRef = useRef<OperatorFreeTargetLock | null>(null);
+  const autoProgressPollTimerRef = useRef<number | null>(null);
+  const autoProgressPollIntervalMs = 5000;
   const dispatchInFlight = useRef(false);
   const [reconciling, setReconciling] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -230,6 +234,39 @@ export function GlwCampaignOperatorControls({
     };
     return includeJson ? operatorMutationHeaders(headers) : headers;
   }, [organizationId, siteId]);
+
+  const clearOperatorFreeProgressionPoll = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (autoProgressPollTimerRef.current !== null) {
+      window.clearTimeout(autoProgressPollTimerRef.current);
+      autoProgressPollTimerRef.current = null;
+    }
+    setAutoNextCheckAt(null);
+  }, []);
+
+  function scheduleOperatorFreeProgressionPoll(delayMs = autoProgressPollIntervalMs) {
+    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
+    if (!autoTargetLockRef.current?.targetId) {
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
+    clearOperatorFreeProgressionPoll();
+    const effectiveDelayMs = document.visibilityState === "hidden"
+      ? Math.max(delayMs, 15_000)
+      : delayMs;
+    setAutoNextCheckAt(Date.now() + effectiveDelayMs);
+    autoProgressPollTimerRef.current = window.setTimeout(() => {
+      if (!autoTargetLockRef.current?.targetId) {
+        clearOperatorFreeProgressionPoll();
+        return;
+      }
+      if (autoProgressInFlight.current) {
+        scheduleOperatorFreeProgressionPoll(1000);
+        return;
+      }
+      void runOperatorFreeProgression(autoTargetLockRef.current.targetId);
+    }, effectiveDelayMs);
+  }
 
   const loadScheduler = useCallback(async () => {
     setLoading(true);
@@ -315,10 +352,12 @@ export function GlwCampaignOperatorControls({
     if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined" || !autoTargetLockHydrated) return;
     if (!autoTargetLock) {
       window.sessionStorage.removeItem(targetLockStorageKey);
+      clearOperatorFreeProgressionPoll();
       return;
     }
+    autoTargetLockRef.current = autoTargetLock;
     window.sessionStorage.setItem(targetLockStorageKey, JSON.stringify(autoTargetLock));
-  }, [autoTargetLock, autoTargetLockHydrated, isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
+  }, [autoTargetLock, autoTargetLockHydrated, clearOperatorFreeProgressionPoll, isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
 
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;
@@ -375,6 +414,30 @@ export function GlwCampaignOperatorControls({
     });
   }, [isOutdoorSphereOperatorFreeScope, autoTargetLock, autoTarget?.jobId, autoTarget?.executionId]);
 
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!autoTargetLockRef.current?.targetId) return;
+      clearOperatorFreeProgressionPoll();
+      void runOperatorFreeProgression(autoTargetLockRef.current.targetId);
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [clearOperatorFreeProgressionPoll, isOutdoorSphereOperatorFreeScope]);
+
+  useEffect(() => {
+    return () => {
+      clearOperatorFreeProgressionPoll();
+    };
+  }, [clearOperatorFreeProgressionPoll]);
+
+  useEffect(() => {
+    clearOperatorFreeProgressionPoll();
+  }, [campaignId, clearOperatorFreeProgressionPoll, organizationId, siteId]);
+
   async function authorizeAndDispatchExactTarget() {
     if (!scheduler || dispatchInFlight.current) return;
     dispatchInFlight.current = true;
@@ -416,25 +479,48 @@ export function GlwCampaignOperatorControls({
   }
 
   async function runOperatorFreeProgression(targetIdOverride?: string) {
-    if (!isOutdoorSphereOperatorFreeScope || autoProgressInFlight.current) return;
+    if (!isOutdoorSphereOperatorFreeScope) {
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
+
+    if (autoProgressInFlight.current) {
+      scheduleOperatorFreeProgressionPoll(1000);
+      return;
+    }
 
     const lockedTargetId = targetIdOverride ?? autoTargetLock?.targetId ?? null;
-    if (!lockedTargetId) return;
+    if (!lockedTargetId) {
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
     const exactTarget = targets.find((target) => target.targetId === lockedTargetId) ?? null;
     if (!exactTarget) {
-      setAutoPipelineStage("WAITING / GENERATION");
+      setAutoPipelineStage("WAITING FOR GENERATION");
       await refreshWorkspace();
+      scheduleOperatorFreeProgressionPoll();
+      return;
+    }
+    if (exactTarget.lifecycleState === "published") {
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
+    if (exactTarget.lifecycleState === "draft_ready" && exactTarget.visualCertificationCurrentPass) {
+      setAutoPipelineStage("READY FOR OWNER REVIEW");
+      clearOperatorFreeProgressionPoll();
       return;
     }
 
     autoProgressInFlight.current = true;
     setAutoPipelineStage("DISPATCH ✓");
     setError(null);
+    clearOperatorFreeProgressionPoll();
 
     try {
       if (!exactTarget.jobId || !exactTarget.executionId) {
-        setAutoPipelineStage("WAITING / GENERATION");
+        setAutoPipelineStage("WAITING FOR GENERATION");
         await refreshWorkspace();
+        scheduleOperatorFreeProgressionPoll();
         return;
       }
 
@@ -457,6 +543,7 @@ export function GlwCampaignOperatorControls({
       if (!reconcileResponse.ok || !reconcilePayload) {
         setError(reconcilePayload && "error" in reconcilePayload ? (reconcilePayload.error ?? `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`) : `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`);
         setAutoPipelineStage("FAILED");
+        clearOperatorFreeProgressionPoll();
         return;
       }
 
@@ -465,15 +552,17 @@ export function GlwCampaignOperatorControls({
         : null;
 
       if (!result) {
-        setAutoPipelineStage("WAITING / GENERATION");
+        setAutoPipelineStage("WAITING FOR GENERATION");
         setError("EXACT_TARGET_PROTOCOL_RESULT_MISSING");
         await refreshWorkspace();
+        scheduleOperatorFreeProgressionPoll();
         return;
       }
       if (["failed", "error", "continue_error"].includes(result.action)) {
         setError(result.error ?? "Automatic progression halted with a recoverable failure.");
         setAutoPipelineStage("FAILED");
         await refreshWorkspace();
+        clearOperatorFreeProgressionPoll();
         return;
       }
 
@@ -490,16 +579,23 @@ export function GlwCampaignOperatorControls({
           setError(capturePayload?.error ?? `Automatic visual certification failed (HTTP ${captureResponse.status}).`);
           setAutoPipelineStage("FAILED");
           await refreshWorkspace();
+          clearOperatorFreeProgressionPoll();
           return;
         }
         setAutoPipelineStage("READY FOR OWNER REVIEW");
         setMessage("Operator-free progression reached READY FOR OWNER REVIEW. Owner touchpoints remain Approve/Needs Fix and Publish.");
         await refreshWorkspace();
+        clearOperatorFreeProgressionPoll();
         return;
       }
 
-      setAutoPipelineStage("WAITING / GENERATION");
+      if (result.action === "wait") {
+        setAutoPipelineStage("WAITING FOR GENERATION");
+      } else {
+        setAutoPipelineStage("GENERATION / RECONCILIATION");
+      }
       await refreshWorkspace();
+      scheduleOperatorFreeProgressionPoll();
     } finally {
       autoProgressInFlight.current = false;
     }
@@ -507,13 +603,21 @@ export function GlwCampaignOperatorControls({
 
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || loading || !scheduler) return;
-    if (!autoTargetLock?.targetId) return;
+    if (!autoTargetLock?.targetId) {
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
     if (autoTarget?.lifecycleState === "draft_ready" && autoTarget.visualCertificationCurrentPass) {
       setAutoPipelineStage("READY FOR OWNER REVIEW");
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
+    if (autoTarget?.lifecycleState === "published") {
+      clearOperatorFreeProgressionPoll();
       return;
     }
     void runOperatorFreeProgression();
-  }, [isOutdoorSphereOperatorFreeScope, autoTargetLockHydrated, loading, scheduler, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass]);
+  }, [isOutdoorSphereOperatorFreeScope, autoTargetLockHydrated, loading, scheduler, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass, clearOperatorFreeProgressionPoll]);
 
   async function reconcileCampaign() {
     const confirmed = window.confirm(
@@ -778,6 +882,9 @@ export function GlwCampaignOperatorControls({
             ))}
           </ol>
           <p className="mt-3 text-xs text-zinc-400">Current automatic stage: {autoPipelineStage}</p>
+          {autoNextCheckAt ? (
+            <p className="mt-1 text-xs text-zinc-500">Automatic check in ~{Math.max(1, Math.ceil((autoNextCheckAt - Date.now()) / 1000))}s</p>
+          ) : null}
         </div>
       ) : null}
 

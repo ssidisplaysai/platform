@@ -276,6 +276,11 @@ describe("campaign operator experience", () => {
     expect(source).toContain("Operator-free progression reached READY FOR OWNER REVIEW");
     expect(source).toContain("const [autoTargetLock, setAutoTargetLock]");
     expect(source).toContain("const [autoTargetLockHydrated, setAutoTargetLockHydrated]");
+    expect(source).toContain("const autoProgressPollTimerRef = useRef<number | null>(null)");
+    expect(source).toContain("const autoProgressPollIntervalMs = 5000");
+    expect(source).toContain("function scheduleOperatorFreeProgressionPoll(delayMs = autoProgressPollIntervalMs)");
+    expect(source).toContain("if (autoProgressInFlight.current) {");
+    expect(source).toContain("scheduleOperatorFreeProgressionPoll(1000)");
     expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || typeof window === \"undefined\" || !autoTargetLockHydrated) return;");
     expect(source).toContain("setAutoTargetLockHydrated(true)");
     expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;");
@@ -291,9 +296,15 @@ describe("campaign operator experience", () => {
     expect(source).toContain("targetId: exactTarget.targetId");
     expect(source).toContain("jobId: exactTarget.jobId");
     expect(source).toContain("executionId: exactTarget.executionId");
+    expect(source).toContain("action === \"wait\"");
+    expect(source).toContain("setAutoPipelineStage(\"WAITING FOR GENERATION\")");
+    expect(source).toContain("scheduleOperatorFreeProgressionPoll()");
+    expect(source).toContain("clearOperatorFreeProgressionPoll()");
+    expect(source).toContain("document.addEventListener(\"visibilitychange\"");
+    expect(source).toContain("if (autoTarget?.lifecycleState === \"published\")");
+    expect(source).toContain("Automatic check in ~");
     expect(source).toContain("if (!exactTarget.jobId || !exactTarget.executionId)");
     expect(source).toContain("EXACT_TARGET_PROTOCOL_RESULT_MISSING");
-    expect(source).toContain("setAutoPipelineStage(\"WAITING / GENERATION\")");
     expect(source).toContain("const generationComplete = Boolean(");
     expect(source).toContain("[\"content_ready\", \"draft_ready\", \"failed\", \"published\"].includes(autoTarget.lifecycleState)");
     expect(source).not.toContain("inferableRunningTargets = targets.filter((target) =>\n      target.lifecycleState === \"content_ready\"");
