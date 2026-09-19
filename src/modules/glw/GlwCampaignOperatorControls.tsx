@@ -180,6 +180,12 @@ type Props = {
   targets: readonly ContinuableTargetSummary[];
 };
 
+type OperatorFreeTargetLock = {
+  targetId: string;
+  jobId: string | null;
+  executionId: string | null;
+};
+
 export function GlwCampaignOperatorControls({
   campaignId,
   organizationId,
@@ -201,6 +207,7 @@ export function GlwCampaignOperatorControls({
   const [dispatching, setDispatching] = useState(false);
   const [dispatchStage, setDispatchStage] = useState<ExactDispatchStage>("IDLE");
   const [autoPipelineStage, setAutoPipelineStage] = useState<string>("IDLE");
+  const [autoTargetLock, setAutoTargetLock] = useState<OperatorFreeTargetLock | null>(null);
   const dispatchInFlight = useRef(false);
   const [reconciling, setReconciling] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -210,6 +217,7 @@ export function GlwCampaignOperatorControls({
   const [selectedContinuationTargetId, setSelectedContinuationTargetId] = useState<string>("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const targetLockStorageKey = `glw:auto-target-lock:${campaignId}:${organizationId}:${siteId}`;
   const requestHeaders = useCallback((includeJson = false): HeadersInit => {
     const headers = {
       ...(includeJson ? { "Content-Type": "application/json" } : {}),
@@ -276,16 +284,52 @@ export function GlwCampaignOperatorControls({
     setSelectedContinuationTargetId((current) => current || firstContinuable?.targetId || "");
   }, [targets]);
 
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
+    const serialized = window.sessionStorage.getItem(targetLockStorageKey);
+    if (!serialized) return;
+    try {
+      const parsed = JSON.parse(serialized) as OperatorFreeTargetLock;
+      if (parsed && typeof parsed.targetId === "string" && parsed.targetId.trim().length > 0) {
+        setAutoTargetLock({
+          targetId: parsed.targetId,
+          jobId: parsed.jobId ?? null,
+          executionId: parsed.executionId ?? null,
+        });
+      }
+    } catch {
+      window.sessionStorage.removeItem(targetLockStorageKey);
+    }
+  }, [isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
+
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
+    if (!autoTargetLock) {
+      window.sessionStorage.removeItem(targetLockStorageKey);
+      return;
+    }
+    window.sessionStorage.setItem(targetLockStorageKey, JSON.stringify(autoTargetLock));
+  }, [autoTargetLock, isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
+
   const continuableTargets = targets.filter((target) =>
     target.continuationEligible === true,
   );
 
-  const autoTarget = targets.find((target) =>
-    target.lifecycleState === "running"
-    || target.lifecycleState === "content_ready"
-    || (target.lifecycleState === "failed" && target.continuationEligible)
-    || (target.lifecycleState === "draft_ready" && !target.visualCertificationCurrentPass),
-  ) ?? null;
+  const autoTarget = autoTargetLock
+    ? targets.find((target) => target.targetId === autoTargetLock.targetId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || !autoTargetLock || !autoTarget?.jobId) return;
+    const nextJobId = autoTarget.jobId;
+    const nextExecutionId = autoTarget.executionId ?? null;
+    if (autoTargetLock.jobId === nextJobId && autoTargetLock.executionId === nextExecutionId) return;
+    setAutoTargetLock({
+      targetId: autoTargetLock.targetId,
+      jobId: nextJobId,
+      executionId: nextExecutionId,
+    });
+  }, [isOutdoorSphereOperatorFreeScope, autoTargetLock, autoTarget?.jobId, autoTarget?.executionId]);
 
   async function authorizeAndDispatchExactTarget() {
     if (!scheduler || dispatchInFlight.current) return;
@@ -309,10 +353,14 @@ export function GlwCampaignOperatorControls({
         return;
       }
       const payload = result.payload;
+      const exactTargetId = result.scheduler.schedule.nextTargets[0]?.targetId ?? null;
+      if (isOutdoorSphereOperatorFreeScope && exactTargetId) {
+        setAutoTargetLock({ targetId: exactTargetId, jobId: null, executionId: null });
+      }
       setMessage(`Exact target dispatch submitted: ${payload.dispatchedCount ?? 0} accepted, ${payload.errorCount ?? 0} dispatch errors. Publication performed: ${payload.publicationPerformed === true ? "yes" : "no"}.`);
       await refreshWorkspace();
-      if (isOutdoorSphereOperatorFreeScope) {
-        void runOperatorFreeProgression();
+      if (isOutdoorSphereOperatorFreeScope && exactTargetId) {
+        void runOperatorFreeProgression(exactTargetId);
       }
     } catch (flowError) {
       setError(flowError instanceof Error ? flowError.message : "Exact-target dispatch failed.");
@@ -323,90 +371,90 @@ export function GlwCampaignOperatorControls({
     }
   }
 
-  async function runOperatorFreeProgression() {
+  async function runOperatorFreeProgression(targetIdOverride?: string) {
     if (!isOutdoorSphereOperatorFreeScope || autoProgressInFlight.current) return;
-    if (!autoTarget || !autoTarget.jobId) return;
+
+    const lockedTargetId = targetIdOverride ?? autoTargetLock?.targetId ?? null;
+    if (!lockedTargetId) return;
+    const exactTarget = targets.find((target) => target.targetId === lockedTargetId) ?? null;
+    if (!exactTarget) {
+      setAutoPipelineStage("WAITING / GENERATION");
+      await refreshWorkspace();
+      return;
+    }
 
     autoProgressInFlight.current = true;
     setAutoPipelineStage("DISPATCH ✓");
     setError(null);
 
-    const startedAt = Date.now();
-    const timeoutMs = 180_000;
-    const delays = [0, 1500, 2500, 4000, 6000, 8000, 10_000, 12_000];
-
     try {
-      for (const delayMs of delays) {
-        if (Date.now() - startedAt > timeoutMs) {
-          setError("Operator-free progression timed out before ready-for-review state; target remains recoverable with exact failure evidence.");
-          setAutoPipelineStage("TIMEOUT");
-          return;
-        }
-        if (delayMs > 0) {
-          await new Promise((resolve) => window.setTimeout(resolve, delayMs));
-        }
-
-        setAutoPipelineStage("GENERATION / RECONCILIATION");
-        const reconcileBody: Record<string, string> = {
-          confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
-        };
-        if (autoTarget.continuationEligible && autoTarget.executionId) {
-          reconcileBody.targetId = autoTarget.targetId;
-          reconcileBody.jobId = autoTarget.jobId;
-          reconcileBody.executionId = autoTarget.executionId;
-        }
-
-        const reconcileResponse = await fetch(`/api/glw/campaigns/${campaignId}/reconcile`, {
-          method: "POST",
-          headers: requestHeaders(true),
-          body: JSON.stringify(reconcileBody),
-          cache: "no-store",
-        });
-
-        const reconcilePayload = await reconcileResponse.json().catch(() => null) as ReconcilePayload | { error?: string; results?: ReconcilePayload["results"] } | null;
-        if (!reconcileResponse.ok || !reconcilePayload) {
-          setError(reconcilePayload && "error" in reconcilePayload ? (reconcilePayload.error ?? `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`) : `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`);
-          setAutoPipelineStage("FAILED");
-          return;
-        }
-
-        const result = Array.isArray(reconcilePayload.results)
-          ? reconcilePayload.results.find((entry) => entry.jobId === autoTarget.jobId) ?? reconcilePayload.results[0] ?? null
-          : null;
-
-        if (!result) {
-          continue;
-        }
-        if (["failed", "error", "continue_error"].includes(result.action)) {
-          setError(result.error ?? "Automatic progression halted with a recoverable failure.");
-          setAutoPipelineStage("FAILED");
-          await refreshWorkspace();
-          return;
-        }
-
-        if (result.action === "draft_ready") {
-          setAutoPipelineStage("VISUAL CERTIFICATION");
-          const captureResponse = await fetch(`/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification`, {
-            method: "POST",
-            headers: requestHeaders(true),
-            body: JSON.stringify({ mode: "CURRENT" }),
-            cache: "no-store",
-          });
-          const capturePayload = await captureResponse.json().catch(() => null) as { error?: string } | null;
-          if (!captureResponse.ok && capturePayload?.error !== "VISUAL_CERTIFICATION_IDENTITY_ALREADY_EXISTS") {
-            setError(capturePayload?.error ?? `Automatic visual certification failed (HTTP ${captureResponse.status}).`);
-            setAutoPipelineStage("FAILED");
-            await refreshWorkspace();
-            return;
-          }
-          setAutoPipelineStage("READY FOR OWNER REVIEW");
-          setMessage("Operator-free progression reached READY FOR OWNER REVIEW. Owner touchpoints remain Approve/Needs Fix and Publish.");
-          await refreshWorkspace();
-          return;
-        }
+      if (!exactTarget.jobId || !exactTarget.executionId) {
+        setAutoPipelineStage("WAITING / GENERATION");
+        await refreshWorkspace();
+        return;
       }
 
-      setAutoPipelineStage("WAITING");
+      setAutoPipelineStage("GENERATION / RECONCILIATION");
+      const reconcileBody = {
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: exactTarget.targetId,
+        jobId: exactTarget.jobId,
+        executionId: exactTarget.executionId,
+      };
+
+      const reconcileResponse = await fetch(`/api/glw/campaigns/${campaignId}/reconcile`, {
+        method: "POST",
+        headers: requestHeaders(true),
+        body: JSON.stringify(reconcileBody),
+        cache: "no-store",
+      });
+
+      const reconcilePayload = await reconcileResponse.json().catch(() => null) as ReconcilePayload | { error?: string; results?: ReconcilePayload["results"] } | null;
+      if (!reconcileResponse.ok || !reconcilePayload) {
+        setError(reconcilePayload && "error" in reconcilePayload ? (reconcilePayload.error ?? `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`) : `Automatic reconciliation failed (HTTP ${reconcileResponse.status}).`);
+        setAutoPipelineStage("FAILED");
+        return;
+      }
+
+      const result = Array.isArray(reconcilePayload.results)
+        ? reconcilePayload.results.find((entry) => entry.jobId === exactTarget.jobId) ?? null
+        : null;
+
+      if (!result) {
+        setAutoPipelineStage("WAITING / GENERATION");
+        setError("EXACT_TARGET_PROTOCOL_RESULT_MISSING");
+        await refreshWorkspace();
+        return;
+      }
+      if (["failed", "error", "continue_error"].includes(result.action)) {
+        setError(result.error ?? "Automatic progression halted with a recoverable failure.");
+        setAutoPipelineStage("FAILED");
+        await refreshWorkspace();
+        return;
+      }
+
+      if (result.action === "draft_ready") {
+        setAutoPipelineStage("VISUAL CERTIFICATION");
+        const captureResponse = await fetch(`/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification`, {
+          method: "POST",
+          headers: requestHeaders(true),
+          body: JSON.stringify({ mode: "CURRENT" }),
+          cache: "no-store",
+        });
+        const capturePayload = await captureResponse.json().catch(() => null) as { error?: string } | null;
+        if (!captureResponse.ok && capturePayload?.error !== "VISUAL_CERTIFICATION_IDENTITY_ALREADY_EXISTS") {
+          setError(capturePayload?.error ?? `Automatic visual certification failed (HTTP ${captureResponse.status}).`);
+          setAutoPipelineStage("FAILED");
+          await refreshWorkspace();
+          return;
+        }
+        setAutoPipelineStage("READY FOR OWNER REVIEW");
+        setMessage("Operator-free progression reached READY FOR OWNER REVIEW. Owner touchpoints remain Approve/Needs Fix and Publish.");
+        await refreshWorkspace();
+        return;
+      }
+
+      setAutoPipelineStage("WAITING / GENERATION");
       await refreshWorkspace();
     } finally {
       autoProgressInFlight.current = false;
@@ -415,13 +463,13 @@ export function GlwCampaignOperatorControls({
 
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || loading || !scheduler) return;
-    if (!autoTarget?.jobId) return;
+    if (!autoTargetLock?.targetId) return;
     if (autoTarget.lifecycleState === "draft_ready" && autoTarget.visualCertificationCurrentPass) {
       setAutoPipelineStage("READY FOR OWNER REVIEW");
       return;
     }
     void runOperatorFreeProgression();
-  }, [isOutdoorSphereOperatorFreeScope, loading, scheduler, autoTarget?.jobId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass]);
+  }, [isOutdoorSphereOperatorFreeScope, loading, scheduler, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass]);
 
   async function reconcileCampaign() {
     const confirmed = window.confirm(

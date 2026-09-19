@@ -274,6 +274,13 @@ describe("campaign operator experience", () => {
     expect(source).toContain("/api/glw/campaigns/${campaignId}/reconcile");
     expect(source).toContain("/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification");
     expect(source).toContain("Operator-free progression reached READY FOR OWNER REVIEW");
+    expect(source).toContain("const [autoTargetLock, setAutoTargetLock]");
+    expect(source).toContain("targetId: exactTarget.targetId");
+    expect(source).toContain("jobId: exactTarget.jobId");
+    expect(source).toContain("executionId: exactTarget.executionId");
+    expect(source).toContain("if (!exactTarget.jobId || !exactTarget.executionId)");
+    expect(source).toContain("EXACT_TARGET_PROTOCOL_RESULT_MISSING");
+    expect(source).not.toContain("reconcilePayload.results[0]");
   });
 
   test("campaign detail page passes continuationEligible into controls target summaries", () => {
