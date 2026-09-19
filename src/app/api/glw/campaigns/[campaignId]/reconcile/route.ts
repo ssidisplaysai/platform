@@ -242,13 +242,16 @@ export async function POST(
     }
     const selectedIsRecoverablePartialDraftTarget = (selected.status === "failed" || selected.status === "content_ready")
       && isExactRecoverableOutdoorSphereRichCompositionFailure(selectedJob);
-    const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready")
+    const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready" || selected.status === "running")
       && isExactRecoverableZeroAuthorityFailure(selectedJob);
     if (selected.status === "failed" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget) {
       return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
     }
     if (selected.status === "content_ready" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget) {
       return NextResponse.json({ error: "Selected content-ready target has a failed job that is not recoverable for exact continuation." }, { status: 409 });
+    }
+    if (selected.status === "running" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget) {
+      return NextResponse.json({ error: "Selected running target has a failed job that is not recoverable for exact continuation." }, { status: 409 });
     }
     if (selected.status !== "failed" && selected.status !== "content_ready" && selected.status !== "running") {
       return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
@@ -344,7 +347,7 @@ export async function POST(
 
       const exactRecoverableFailedContinuation = Boolean(
         expectedTargetId
-        && (target.status === "failed" || target.status === "content_ready")
+        && (target.status === "failed" || target.status === "content_ready" || target.status === "running")
         && target.jobId === expectedJobId
         && (job.externalExecutionId ?? "") === expectedExecutionId
         && !target.wordpressObjectId

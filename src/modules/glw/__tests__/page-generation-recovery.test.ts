@@ -229,7 +229,7 @@ describe("GLW selective page generation recovery", () => {
     );
 
     expect(source).toContain("applyScopedThemeTitleSuppression");
-    expect(source).toContain("suppressionEligible = input.siteRecord.domain === \"leddisplaywarehouse.com\"");
+    expect(source).toContain("suppressionEligible = strictGeneratedContextualRequired");
     expect(source).toContain("preWriteSuppression");
     expect(source).toContain("postWriteSuppression");
     expect(source).toContain("generatedDraft: finalizedArtifact");
@@ -248,6 +248,18 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain('|| input.job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"');
     expect(source).toContain("&& Boolean(input.job.generatedDraft);");
     expect(source).toContain("const rawGeneratedDraft = input.job.rawGeneratedDraft ?? input.job.generatedDraft;");
+  });
+
+  test("requests zero-authority fallback only for Outdoor Sphere LDW state-service scope", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("function resolveZeroAuthorityFallbackPolicy(request: GlwGenerationRequest): GlwZeroAuthorityFallbackPolicy");
+    expect(source).toContain('request.organizationId === "led-display-warehouse"');
+    expect(source).toContain('request.siteId === "site-led-display-warehouse-production"');
+    expect(source).toContain('request.productId === "prod-outdoor-digital-sphere"');
+    expect(source).toContain('request.pageType === "state_service"');
+    expect(source).toContain('return "OUTDOOR_SPHERE_STATE_SERVICE"');
+    expect(source).toContain('return "STRICT"');
+    expect(source).toContain("fallbackPolicy: resolveZeroAuthorityFallbackPolicy(input.request)");
   });
 
   test("keeps unrelated FAILED errors non-recoverable and continue path finalizes without generation dispatch", () => {

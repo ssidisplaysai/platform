@@ -9,7 +9,11 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_5" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_6" as const;
+
+export type GlwZeroAuthorityFallbackPolicy =
+  | "STRICT"
+  | "OUTDOOR_SPHERE_STATE_SERVICE";
 
 export type GlwZeroAuthorityDisposition =
   | "REMOVE"
@@ -25,6 +29,7 @@ export type GlwZeroAuthorityTransformation = {
   disposition: GlwZeroAuthorityDisposition;
   safeToTransform: boolean;
   ruleId: string;
+  fallbackPolicy: GlwZeroAuthorityFallbackPolicy;
 };
 
 export type GlwZeroAuthorityCanonicalizationReceipt = {
@@ -34,6 +39,7 @@ export type GlwZeroAuthorityCanonicalizationReceipt = {
   rawArtifactSha256: string;
   canonicalizedArtifactSha256: string | null;
   authoritativeFactReferenceCount: 0;
+  fallbackPolicy: GlwZeroAuthorityFallbackPolicy;
   transformations: readonly GlwZeroAuthorityTransformation[];
   blockedClaims: readonly string[];
   consumesN8nExecution: false;
@@ -83,9 +89,162 @@ function uniqueBlockingSpans(findings: readonly GlwClaimAuthorityFinding[]): Map
   return spans;
 }
 
-function transformationFor(text: string, claimClasses: readonly GlwReferenceClaimClass[]): GlwZeroAuthorityTransformation {
+function resolveConservativeFallbackClass(claimClasses: readonly GlwReferenceClaimClass[]): GlwReferenceClaimClass | null {
+  const priority: readonly GlwReferenceClaimClass[] = [
+    "LOCATION_FACT",
+    "MARKET_ADOPTION",
+    "PRODUCT_SPECIFICATION",
+    "BRIGHTNESS",
+    "PERFORMANCE",
+    "DURABILITY",
+    "INGRESS_PROTECTION",
+    "CLIMATE",
+    "INTERACTIVITY",
+    "REMOTE_MANAGEMENT",
+    "INSTALLATION_SERVICE",
+    "INSTALLATION_CAPABILITY",
+    "TRAINING",
+    "SERVICE_AVAILABILITY",
+    "SERVICE_CAPABILITY",
+    "WARRANTY",
+    "PRICING",
+    "INVENTORY",
+    "PRODUCT_CAPABILITY",
+  ];
+  for (const candidate of priority) {
+    if (claimClasses.includes(candidate)) return candidate;
+  }
+  return null;
+}
+
+function outdoorSphereFallbackTransformation(input: {
+  text: string;
+  claimClasses: readonly GlwReferenceClaimClass[];
+}): GlwZeroAuthorityTransformation {
+  const conservativeClass = resolveConservativeFallbackClass(input.claimClasses);
+
+  if (conservativeClass === "LOCATION_FACT" || conservativeClass === "MARKET_ADOPTION") {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: null,
+      disposition: "REMOVE",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_REMOVE_LOCAL_ASSERTION",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass && ["PRODUCT_SPECIFICATION", "BRIGHTNESS", "PERFORMANCE"].includes(conservativeClass)) {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "Which technical and performance specifications should the selected supplier confirm in writing for the proposed configuration?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_SPECIFICATION",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass && ["DURABILITY", "INGRESS_PROTECTION", "CLIMATE"].includes(conservativeClass)) {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "What environmental exposure, protection, and durability requirements should the selected supplier and qualified professionals confirm for the proposed installation?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_ENVIRONMENT",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass && ["INTERACTIVITY", "REMOTE_MANAGEMENT"].includes(conservativeClass)) {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "What control, connectivity, or interaction requirements should the project team confirm with the selected supplier for the proposed concept?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_INTERACTION",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass && ["INSTALLATION_SERVICE", "INSTALLATION_CAPABILITY"].includes(conservativeClass)) {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "What installation responsibilities and site requirements should the project team confirm with the selected supplier and qualified professionals?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_INSTALLATION",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass && ["TRAINING", "SERVICE_AVAILABILITY", "SERVICE_CAPABILITY"].includes(conservativeClass)) {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "What operational, training, maintenance, and support responsibilities should the selected supplier confirm for the proposed project?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_SERVICE",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass === "WARRANTY") {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "Which warranty terms can the selected supplier confirm in writing for the proposed configuration?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_WARRANTY",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass === "PRICING") {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "What pricing and project-cost information can the selected supplier confirm for the proposed configuration?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_PRICING",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  if (conservativeClass === "INVENTORY") {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "What current availability and lead-time information can the selected supplier confirm for the proposed configuration?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_INVENTORY",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
+  return {
+    claimClasses: input.claimClasses,
+    originalText: input.text,
+    canonicalText: "What capabilities should the project team confirm with the selected supplier for the proposed configuration?",
+    disposition: "CONVERT_TO_BUYER_QUESTION",
+    safeToTransform: true,
+    ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_CAPABILITY",
+    fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+  };
+}
+
+function transformationFor(text: string, claimClasses: readonly GlwReferenceClaimClass[], fallbackPolicy: GlwZeroAuthorityFallbackPolicy): GlwZeroAuthorityTransformation {
   if (claimClasses.includes("LOCATION_FACT") && /^[A-Z][A-Za-z .'-]+ is home to\b/.test(text)) {
-    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_UNSUPPORTED_LOCAL_MARKET_ASSERTION" };
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_UNSUPPORTED_LOCAL_MARKET_ASSERTION", fallbackPolicy };
   }
 
   if (claimClasses.includes("INTERACTIVITY") && /^This allows for\b/i.test(text) && /\binteractive\b/i.test(text)) {
@@ -96,6 +255,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "CAPABILITY_ASSERTION_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -108,6 +268,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "GENERIC_CAPABILITY_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -121,6 +282,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "PROJECT_SCHEDULE_GUIDANCE_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -128,7 +290,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     /\badd unique planning challenges and opportunities\b/i.test(text)
     || /^Audience Comfort:\s*In winter months\b/i.test(text)
   )) {
-    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_CLIMATE_ASSERTION" };
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_CLIMATE_ASSERTION", fallbackPolicy };
   }
 
   if (claimClasses.includes("CLIMATE")) {
@@ -139,6 +301,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "CLIMATE_ASSERTION_TO_BUYER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -150,11 +313,12 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "WARRANTY_ASSERTION_TO_BUYER_QUESTION",
+      fallbackPolicy,
     };
   }
 
   if (claimClasses.includes("PRICING") && /^Engage Early:\s*Begin supplier conversations\b/i.test(text)) {
-    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_COST_PLANNING_ASSERTION" };
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_COST_PLANNING_ASSERTION", fallbackPolicy };
   }
 
   if (claimClasses.includes("PRICING") && /\b(?:pricing|price|costs?)\b/i.test(text)) {
@@ -165,11 +329,12 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "PRICING_ASSERTION_TO_BUYER_QUESTION",
+      fallbackPolicy,
     };
   }
 
   if (claimClasses.includes("MARKET_ADOPTION") && /\b(?:trends?|adoption|growth|increasing use|popularity|market movement|industry direction|regional demand)\b/i.test(text)) {
-    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_UNSUPPORTED_MARKET_ASSERTION" };
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_UNSUPPORTED_MARKET_ASSERTION", fallbackPolicy };
   }
 
   if (claimClasses.includes("PRODUCT_SPECIFICATION")
@@ -183,6 +348,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "REPLACE_WITH_EVALUATION_FRAMEWORK",
       safeToTransform: true,
       ruleId: "UNSUPPORTED_COMPARISON_TO_BUYER_EVALUATION_FRAMEWORK",
+      fallbackPolicy,
     };
   }
 
@@ -199,6 +365,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "REPLACE_WITH_EVALUATION_FRAMEWORK",
       safeToTransform: true,
       ruleId: "UNSUPPORTED_STRUCTURED_COMPARISON_TO_BUYER_EVALUATION_FRAMEWORK",
+      fallbackPolicy,
     };
   }
 
@@ -207,7 +374,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
     || /^Underestimating the importance of content planning\b/i.test(text)
     || /^Spherical, multidirectional$/i.test(text)
   )) {
-    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_PRODUCT_ASSUMPTION" };
+    return { claimClasses, originalText: text, canonicalText: null, disposition: "REMOVE", safeToTransform: true, ruleId: "REMOVE_NONESSENTIAL_PRODUCT_ASSUMPTION", fallbackPolicy };
   }
 
   if (claimClasses.includes("PRODUCT_SPECIFICATION") && /^Explore our .+ solutions for additional product specifications, turnkey package details, and display options\.?$/i.test(text)) {
@@ -218,6 +385,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "GENERIC_SPECIFICATION_CTA_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -229,6 +397,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "PRODUCT_SPECIFICATION_ASSERTION_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -242,6 +411,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_CONCEPTUAL_APPLICATION",
       safeToTransform: true,
       ruleId: "SPHERICAL_GEOMETRY_WITHOUT_ENGAGEMENT_CLAIM",
+      fallbackPolicy,
     };
   }
 
@@ -253,6 +423,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "DURABILITY_ASSERTION_TO_ENVIRONMENTAL_REQUIREMENT_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -264,6 +435,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "INGRESS_ASSERTION_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -275,6 +447,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "TRAINING_ASSERTION_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -286,6 +459,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "INSTALLATION_ASSERTION_TO_RESPONSIBILITY_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -297,6 +471,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "SERVICE_MAINTENANCE_ASSERTION_TO_SUPPLIER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -309,6 +484,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "CONTENT_PLANNING_BUYER_QUESTION_TO_NEUTRAL_EVALUATION",
+      fallbackPolicy,
     };
   }
 
@@ -327,6 +503,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "SPHERICAL_CONTENT_PLANNING_ASSERTION_TO_BUYER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -344,6 +521,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "PROJECT_DOCUMENTATION_DIRECTIVE_TO_BUYER_QUESTION",
+      fallbackPolicy,
     };
   }
 
@@ -360,6 +538,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_CONCEPTUAL_APPLICATION",
       safeToTransform: true,
       ruleId: "LABELED_APPLICATION_TO_EXPLICIT_CONCEPT",
+      fallbackPolicy,
     };
   }
 
@@ -374,6 +553,7 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_CONCEPTUAL_APPLICATION",
       safeToTransform: true,
       ruleId: "UNLABELED_INTERACTIVITY_TO_EXPLICIT_CONCEPT",
+      fallbackPolicy,
     };
   }
 
@@ -400,10 +580,15 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "INTERACTIVITY_ASSERTION_TO_CONDITIONAL_VERIFICATION",
+      fallbackPolicy,
     };
   }
 
-  return { claimClasses, originalText: text, canonicalText: null, disposition: "BLOCK", safeToTransform: false, ruleId: "AMBIGUOUS_PROTECTED_ASSERTION" };
+  if (fallbackPolicy === "OUTDOOR_SPHERE_STATE_SERVICE") {
+    return outdoorSphereFallbackTransformation({ text, claimClasses });
+  }
+
+  return { claimClasses, originalText: text, canonicalText: null, disposition: "BLOCK", safeToTransform: false, ruleId: "AMBIGUOUS_PROTECTED_ASSERTION", fallbackPolicy };
 }
 
 const BUYER_EVALUATION_FRAMEWORK = `<div data-authority-neutral-evaluation-framework="true"><h3>Buyer evaluation framework</h3><ul><li><strong>Audience and viewing:</strong> What viewing directions and distances should the project team evaluate?</li><li><strong>Content planning:</strong> What content approach should the project team review for the proposed display?</li><li><strong>Site planning:</strong> What placement, access, and installation constraints should qualified professionals review?</li></ul></div>`;
@@ -538,6 +723,12 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
   rawArtifact: GlwGeneratedDraftArtifact;
   authoritativeFactReferenceIds: readonly string[];
   findings: readonly GlwClaimAuthorityFinding[];
+  fallbackPolicy?: GlwZeroAuthorityFallbackPolicy;
+  authority?: {
+    references: readonly { referenceId: string; role: string }[];
+    authoritativeFactReferenceIds: readonly string[];
+    supportedClaimMappings: readonly GlwProtectedClaimAuthorityMapping[];
+  } | null;
 }): {
   ok: boolean;
   rawArtifact: GlwGeneratedDraftArtifact;
@@ -545,6 +736,7 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
   receipt: GlwZeroAuthorityCanonicalizationReceipt;
 } {
   const rawArtifact = structuredClone(input.rawArtifact);
+  const fallbackPolicy = input.fallbackPolicy ?? "STRICT";
   const rawArtifactSha256 = sha256(rawArtifact.contentHtml);
   if (input.authoritativeFactReferenceIds.length > 0) {
     return {
@@ -558,6 +750,7 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
         rawArtifactSha256,
         canonicalizedArtifactSha256: null,
         authoritativeFactReferenceCount: 0,
+        fallbackPolicy,
         transformations: [],
         blockedClaims: ["ZERO_AUTHORITY_POLICY_NOT_APPLICABLE"],
         consumesN8nExecution: false,
@@ -567,7 +760,7 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
   }
 
   const transformations: GlwZeroAuthorityTransformation[] = [...uniqueBlockingSpans(input.findings)].map(([text, claimClasses]) =>
-    transformationFor(text, claimClasses));
+    transformationFor(text, claimClasses, fallbackPolicy));
   const blockedClaims = transformations.filter((entry) => !entry.safeToTransform).map((entry) => entry.originalText);
   let contentHtml = rawArtifact.contentHtml;
 
@@ -600,6 +793,7 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
         disposition: "CONVERT_TO_BUYER_QUESTION",
         safeToTransform: true,
         ruleId: "REDUCE_SUPPLIER_QUESTION_REPETITION",
+        fallbackPolicy,
       };
       const next = applyTransformation(contentHtml, copyQualityTransformation);
       if (next === null) blockedClaims.push(repetitiveQuestion);
@@ -613,12 +807,27 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
   const canonicalizedArtifact = blockedClaims.length === 0
     ? { ...rawArtifact, contentHtml }
     : null;
-  const canonicalizedArtifactSha256 = canonicalizedArtifact ? sha256(canonicalizedArtifact.contentHtml) : null;
+
+  if (canonicalizedArtifact && input.authority) {
+    const authority = input.authority;
+    const postCanonicalAuthority = evaluateGlwReferenceClaimAuthority({ artifact: canonicalizedArtifact, authority });
+    const remainingUnsupported = postCanonicalAuthority.findings
+      .filter((finding) => finding.authorityStatus === "UNSUPPORTED")
+      .map((finding) => finding.claimText);
+    if (remainingUnsupported.length > 0) {
+      for (const claim of remainingUnsupported) {
+        if (!blockedClaims.includes(claim)) blockedClaims.push(claim);
+      }
+    }
+  }
+
+  const finalizedArtifact = blockedClaims.length === 0 ? canonicalizedArtifact : null;
+  const canonicalizedArtifactSha256 = finalizedArtifact ? sha256(finalizedArtifact.contentHtml) : null;
 
   return {
-    ok: Boolean(canonicalizedArtifact),
+    ok: Boolean(finalizedArtifact),
     rawArtifact,
-    canonicalizedArtifact,
+    canonicalizedArtifact: finalizedArtifact,
     receipt: {
       receiptId: `glw-zero-authority-${rawArtifactSha256.slice(0, 12)}-${canonicalizedArtifactSha256?.slice(0, 12) ?? "blocked"}`,
       policyVersion: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
@@ -626,6 +835,7 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
       rawArtifactSha256,
       canonicalizedArtifactSha256,
       authoritativeFactReferenceCount: 0,
+      fallbackPolicy,
       transformations,
       blockedClaims,
       consumesN8nExecution: false,

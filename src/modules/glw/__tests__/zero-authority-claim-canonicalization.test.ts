@@ -4,6 +4,7 @@ import {
   canonicalizeGlwZeroAuthorityClaims,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
+  type GlwZeroAuthorityFallbackPolicy,
   rehabilitateGlwExistingArtifact,
 } from "../zero-authority-claim-canonicalization";
 import { evaluateGlwStateLocalizationContamination } from "../state-localization-contamination";
@@ -22,8 +23,19 @@ function supportedFinding(claimClass: GlwReferenceClaimClass, claimText: string)
   return { claimClass, claimText, authoritySource: "approved-authority", authorityStatus: "SUPPORTED", authorityKind: "REFERENCE_SUPPORTED", predicateId: `supportedClaim.${claimClass}` };
 }
 
-function canonicalize(contentHtml: string, findings: readonly GlwClaimAuthorityFinding[]) {
-  return canonicalizeGlwZeroAuthorityClaims({ rawArtifact: artifact(contentHtml), authoritativeFactReferenceIds: [], findings });
+function canonicalize(
+  contentHtml: string,
+  findings: readonly GlwClaimAuthorityFinding[],
+  options?: {
+    fallbackPolicy?: GlwZeroAuthorityFallbackPolicy;
+  },
+) {
+  return canonicalizeGlwZeroAuthorityClaims({
+    rawArtifact: artifact(contentHtml),
+    authoritativeFactReferenceIds: [],
+    findings,
+    fallbackPolicy: options?.fallbackPolicy,
+  });
 }
 
 describe("GLW zero-authority deterministic claim canonicalization", () => {
@@ -490,6 +502,69 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     const result = canonicalize(`<p>${text}</p>`, [finding("REMOTE_MANAGEMENT", text)]);
     expect(result.ok).toBe(false);
     expect(result.receipt.blockedClaims).toEqual([text]);
+  });
+
+  test("keeps specific V2_5 transforms as first priority even in Outdoor Sphere fallback mode", () => {
+    const text = "The system supports interactive content.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_CAPABILITY", text)], {
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.receipt.transformations[0]).toMatchObject({
+      ruleId: "GENERIC_CAPABILITY_TO_SUPPLIER_QUESTION",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    });
+  });
+
+  test("STRICT mode blocks unmatched protected capability assertions", () => {
+    const text = "Capability posture should be assumed project-wide.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_CAPABILITY", text)], {
+      fallbackPolicy: "STRICT",
+    });
+    expect(result.ok).toBe(false);
+    expect(result.receipt.transformations[0]).toMatchObject({
+      ruleId: "AMBIGUOUS_PROTECTED_ASSERTION",
+      fallbackPolicy: "STRICT",
+    });
+  });
+
+  test("Outdoor Sphere fallback converts unmatched capability/specification and removes unsupported local/market facts", () => {
+    const capability = "Capability posture should be assumed project-wide.";
+    const specification = "Specification baseline applies automatically in this market.";
+    const localFact = "Iowa is home to statewide digital sphere standards.";
+    const market = "Regional adoption and market movement prove universal readiness.";
+    const result = canonicalize(
+      `<p>${capability}</p><p>${specification}</p><p>${localFact}</p><p>${market}</p>`,
+      [
+        finding("PRODUCT_CAPABILITY", capability),
+        finding("PRODUCT_SPECIFICATION", specification),
+        finding("LOCATION_FACT", localFact),
+        finding("MARKET_ADOPTION", market),
+      ],
+      { fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE" },
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What capabilities should the project team confirm with the selected supplier for the proposed configuration?");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("Which technical and performance specifications should the selected supplier confirm in writing for the proposed configuration?");
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(localFact);
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain(market);
+  });
+
+  test("Outdoor Sphere fallback replacement strips unsupported detail and passes post-transform authority recheck", () => {
+    const text = "Capability posture should be assumed project-wide with guaranteed impact and local performance outcomes.";
+    const result = canonicalize(`<p>${text}</p>`, [finding("PRODUCT_CAPABILITY", text)], {
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What capabilities should the project team confirm with the selected supplier for the proposed configuration?");
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("guaranteed impact");
+    expect(result.receipt.blockedClaims).toEqual([]);
+
+    const qa = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+    expect(qa.findings.filter((entry) => entry.authorityStatus === "UNSUPPORTED")).toEqual([]);
   });
 
   test("does not conceal cross-state contamination", () => {

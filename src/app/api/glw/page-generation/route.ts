@@ -21,7 +21,7 @@ import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-ser
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
-import { canonicalizeGlwZeroAuthorityClaims } from "@/modules/glw/zero-authority-claim-canonicalization";
+import { canonicalizeGlwZeroAuthorityClaims, type GlwZeroAuthorityFallbackPolicy } from "@/modules/glw/zero-authority-claim-canonicalization";
 import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
 import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery, validateGlwReferenceOwnerClaimForRecoveredContent } from "@/modules/glw/reference-owner-authority";
@@ -278,6 +278,12 @@ async function finalizeContentReadyExecution(input: {
       rawArtifact: rawGeneratedDraft,
       authoritativeFactReferenceIds: [],
       findings: rawClaimAuthority.findings,
+      fallbackPolicy: resolveZeroAuthorityFallbackPolicy(input.request),
+      authority: {
+        references: input.request.referenceGenerationAuthority.references,
+        authoritativeFactReferenceIds: [],
+        supportedClaimMappings: [],
+      },
     });
     if (!canonicalization.ok || !canonicalization.canonicalizedArtifact) {
       const timestamp = new Date().toISOString();
@@ -1220,6 +1226,18 @@ function matchesExactContinuationTarget(input: {
     && input.job.productId === input.request.productId
     && input.job.slug === input.request.canonicalPath.replace(/^\//, "").replace(/\/$/, "")
     && input.job.publicationIntent === "draft";
+}
+
+function resolveZeroAuthorityFallbackPolicy(request: GlwGenerationRequest): GlwZeroAuthorityFallbackPolicy {
+  if (
+    request.organizationId === "led-display-warehouse"
+    && request.siteId === "site-led-display-warehouse-production"
+    && request.productId === "prod-outdoor-digital-sphere"
+    && request.pageType === "state_service"
+  ) {
+    return "OUTDOOR_SPHERE_STATE_SERVICE";
+  }
+  return "STRICT";
 }
 
 function isExactRecoverableContentFailure(job: GlwPageExecutionRecord): boolean {
