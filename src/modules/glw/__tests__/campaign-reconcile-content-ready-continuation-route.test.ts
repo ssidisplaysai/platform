@@ -1538,6 +1538,18 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(calledUrls.every((url) => !url.includes(deJobId))).toBe(true);
   });
 
+  test("source contract preserves exact zero-authority recoverability with identity-locked continue action", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reconcile/route.ts"), "utf8");
+    expect(source).toContain("isExactRecoverableZeroAuthorityFailure");
+    expect(source).toContain("expectedTargetId");
+    expect(source).toContain("expectedJobId");
+    expect(source).toContain("expectedExecutionId");
+    expect(source).toContain("Selected target execution identity does not match the exact existing execution.");
+    expect(source).toContain("action: \"continue\"");
+    expect(source).toContain("executionId: expectedTargetId ? expectedExecutionId");
+    expect(source).toContain("targetId: effectiveTarget.targetId");
+  });
+
   test("exact running target with FAILED ZERO_AUTHORITY and generatedDraft recovers on same identity without redispatch", async () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(jsonResponse({

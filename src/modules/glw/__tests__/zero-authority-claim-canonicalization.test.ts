@@ -567,6 +567,34 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(qa.findings.filter((entry) => entry.authorityStatus === "UNSUPPORTED")).toEqual([]);
   });
 
+  test("Outdoor Sphere fixed-point canonicalization re-evaluates residual unsupported claims across passes", () => {
+    const source = readFileSync(join(process.cwd(), "src/modules/glw/zero-authority-claim-canonicalization.ts"), "utf8");
+    expect(source).toContain("for (let pass = 1; pass <= maxPasses; pass += 1)");
+    expect(source).toContain("currentFindings = authority ? post.findings : currentFindings;");
+    expect(source).toContain("const unsupportedAfter = authority");
+    expect(source).toContain("unsupportedAfter.length === 0");
+    expect(source).toContain("...(passes.length > 0 ? { passes } : {})");
+  });
+
+  test("source contract enforces no-progress fail-closed and bounded max-pass exhaustion for Outdoor Sphere fixed-point mode", () => {
+    const source = readFileSync(join(process.cwd(), "src/modules/glw/zero-authority-claim-canonicalization.ts"), "utf8");
+    expect(source).toContain("const maxPasses = fallbackPolicy === \"OUTDOOR_SPHERE_STATE_SERVICE\" && authority ? 3 : 1;");
+    expect(source).toContain("if (outputHash === inputHash || seenOutputHashes.has(outputHash)) {");
+    expect(source).toContain("if (pass === maxPasses) {");
+    expect(source).toContain("unsupportedAfter.length === 0");
+    expect(source).toContain("passes.push({");
+  });
+
+  test("strict mode remains single-pass fail-closed and non-Outdoors scope remains strict", () => {
+    const source = readFileSync(join(process.cwd(), "src/modules/glw/zero-authority-claim-canonicalization.ts"), "utf8");
+    const generationRoute = readFileSync(join(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+
+    expect(source).toContain("fallbackPolicy?: GlwZeroAuthorityFallbackPolicy;");
+    expect(source).toContain("const maxPasses = fallbackPolicy === \"OUTDOOR_SPHERE_STATE_SERVICE\" && authority ? 3 : 1;");
+    expect(generationRoute).toContain("return \"OUTDOOR_SPHERE_STATE_SERVICE\";");
+    expect(generationRoute).toContain("return \"STRICT\";");
+  });
+
   test("does not conceal cross-state contamination", () => {
     const html = "<h1>Outdoor Digital Sphere in Indiana</h1><p>Our Illinois installations serve local venues.</p>";
     const result = canonicalize(html, []);

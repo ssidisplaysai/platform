@@ -9,7 +9,7 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_6" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_7" as const;
 
 export type GlwZeroAuthorityFallbackPolicy =
   | "STRICT"
@@ -41,6 +41,14 @@ export type GlwZeroAuthorityCanonicalizationReceipt = {
   authoritativeFactReferenceCount: 0;
   fallbackPolicy: GlwZeroAuthorityFallbackPolicy;
   transformations: readonly GlwZeroAuthorityTransformation[];
+  passes?: readonly {
+    pass: number;
+    inputHash: string;
+    unsupportedBefore: readonly string[];
+    transformations: readonly GlwZeroAuthorityTransformation[];
+    outputHash: string;
+    unsupportedAfter: readonly string[];
+  }[];
   blockedClaims: readonly string[];
   consumesN8nExecution: false;
   modelInvoked: false;
@@ -759,13 +767,29 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
     };
   }
 
-  const transformations: GlwZeroAuthorityTransformation[] = [...uniqueBlockingSpans(input.findings)].map(([text, claimClasses]) =>
-    transformationFor(text, claimClasses, fallbackPolicy));
-  const blockedClaims = transformations.filter((entry) => !entry.safeToTransform).map((entry) => entry.originalText);
-  let contentHtml = rawArtifact.contentHtml;
+  const transformations: GlwZeroAuthorityTransformation[] = [];
+  const blockedClaims: string[] = [];
+  const passes: Array<{
+    pass: number;
+    inputHash: string;
+    unsupportedBefore: readonly string[];
+    transformations: readonly GlwZeroAuthorityTransformation[];
+    outputHash: string;
+    unsupportedAfter: readonly string[];
+  }> = [];
 
-  if (blockedClaims.length === 0) {
-    const applicationOrder = [...transformations].sort((left, right) => {
+  let contentHtml = rawArtifact.contentHtml;
+  const authority = input.authority ?? null;
+  const maxPasses = fallbackPolicy === "OUTDOOR_SPHERE_STATE_SERVICE" && authority ? 3 : 1;
+  const seenOutputHashes = new Set<string>();
+  let currentFindings = input.findings;
+
+  const applyCanonicalizationPass = (inputPass: {
+    html: string;
+    passTransformations: GlwZeroAuthorityTransformation[];
+  }): { html: string; failed: boolean } => {
+    let nextHtml = inputPass.html;
+    const applicationOrder = [...inputPass.passTransformations].sort((left, right) => {
       const leftComparison = left.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK" ? 0 : 1;
       const rightComparison = right.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK" ? 0 : 1;
       const leftRemoval = left.disposition === "REMOVE" ? 1 : 0;
@@ -773,15 +797,118 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
       return leftComparison - rightComparison || leftRemoval - rightRemoval || left.originalText.length - right.originalText.length;
     });
     for (const transformation of applicationOrder) {
-      const comparisonReplacement = transformations.find((entry) => entry.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK");
+      const comparisonReplacement = inputPass.passTransformations.find((entry) => entry.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK");
       if (comparisonReplacement && transformation !== comparisonReplacement && comparisonReplacement.originalText.includes(transformation.originalText)) continue;
-      const next = applyTransformation(contentHtml, transformation);
+      const next = applyTransformation(nextHtml, transformation);
       if (next === null) {
         blockedClaims.push(transformation.originalText);
-        break;
+        return { html: nextHtml, failed: true };
       }
-      contentHtml = next;
+      nextHtml = next;
     }
+
+    const $ = cheerio.load(nextHtml, null, false);
+    const supplierQuestions = $("p,li").filter((_, element) => /selected supplier|supplier confirm/i.test($(element).text())).length;
+    const repetitiveQuestion = "Does the supplier confirm that content can be customized and managed to suit these environmental factors?";
+    if (supplierQuestions > 5 && nextHtml.includes(repetitiveQuestion)) {
+      const copyQualityTransformation: GlwZeroAuthorityTransformation = {
+        claimClasses: [],
+        originalText: repetitiveQuestion,
+        canonicalText: "What content-management requirements should the project team document for the proposed display?",
+        disposition: "CONVERT_TO_BUYER_QUESTION",
+        safeToTransform: true,
+        ruleId: "REDUCE_SUPPLIER_QUESTION_REPETITION",
+        fallbackPolicy,
+      };
+      const next = applyTransformation(nextHtml, copyQualityTransformation);
+      if (next === null) {
+        blockedClaims.push(repetitiveQuestion);
+        return { html: nextHtml, failed: true };
+      }
+      transformations.push(copyQualityTransformation);
+      inputPass.passTransformations.push(copyQualityTransformation);
+      nextHtml = next;
+    }
+
+    return { html: nextHtml, failed: false };
+  };
+
+  for (let pass = 1; pass <= maxPasses; pass += 1) {
+    const unsupportedMap = uniqueBlockingSpans(currentFindings);
+    const unsupportedBefore = [...unsupportedMap.keys()];
+    if (unsupportedBefore.length === 0) break;
+
+    const passTransformations = [...unsupportedMap.entries()].map(([text, claimClasses]) =>
+      transformationFor(text, claimClasses, fallbackPolicy));
+    transformations.push(...passTransformations);
+
+    for (const candidate of passTransformations) {
+      if (!candidate.safeToTransform) {
+        blockedClaims.push(candidate.originalText);
+      }
+    }
+    if (blockedClaims.length > 0) {
+      const inputHash = sha256(contentHtml);
+      passes.push({
+        pass,
+        inputHash,
+        unsupportedBefore,
+        transformations: passTransformations,
+        outputHash: inputHash,
+        unsupportedAfter: unsupportedBefore,
+      });
+      break;
+    }
+
+    const inputHash = sha256(contentHtml);
+    const applied = applyCanonicalizationPass({ html: contentHtml, passTransformations });
+    contentHtml = applied.html;
+    const outputHash = sha256(contentHtml);
+    const post = authority
+      ? evaluateGlwReferenceClaimAuthority({
+          artifact: { ...rawArtifact, contentHtml },
+          authority,
+        })
+      : { findings: [] as GlwClaimAuthorityFinding[] };
+    const unsupportedAfter = authority
+      ? post.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED").map((finding) => finding.claimText)
+      : [];
+
+    passes.push({
+      pass,
+      inputHash,
+      unsupportedBefore,
+      transformations: passTransformations,
+      outputHash,
+      unsupportedAfter,
+    });
+
+    if (applied.failed) break;
+
+    if (unsupportedAfter.length === 0) {
+      break;
+    }
+
+    if (outputHash === inputHash || seenOutputHashes.has(outputHash)) {
+      for (const claim of unsupportedAfter) {
+        if (!blockedClaims.includes(claim)) blockedClaims.push(claim);
+      }
+      break;
+    }
+
+    seenOutputHashes.add(outputHash);
+
+    if (pass === maxPasses) {
+      for (const claim of unsupportedAfter) {
+        if (!blockedClaims.includes(claim)) blockedClaims.push(claim);
+      }
+      break;
+    }
+
+    currentFindings = authority ? post.findings : currentFindings;
+  }
+
+  if (blockedClaims.length === 0) {
     const $ = cheerio.load(contentHtml, null, false);
     const supplierQuestions = $("p,li").filter((_, element) => /selected supplier|supplier confirm/i.test($(element).text())).length;
     const repetitiveQuestion = "Does the supplier confirm that content can be customized and managed to suit these environmental factors?";
@@ -804,23 +931,7 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
     }
   }
 
-  const canonicalizedArtifact = blockedClaims.length === 0
-    ? { ...rawArtifact, contentHtml }
-    : null;
-
-  if (canonicalizedArtifact && input.authority) {
-    const authority = input.authority;
-    const postCanonicalAuthority = evaluateGlwReferenceClaimAuthority({ artifact: canonicalizedArtifact, authority });
-    const remainingUnsupported = postCanonicalAuthority.findings
-      .filter((finding) => finding.authorityStatus === "UNSUPPORTED")
-      .map((finding) => finding.claimText);
-    if (remainingUnsupported.length > 0) {
-      for (const claim of remainingUnsupported) {
-        if (!blockedClaims.includes(claim)) blockedClaims.push(claim);
-      }
-    }
-  }
-
+  const canonicalizedArtifact = { ...rawArtifact, contentHtml };
   const finalizedArtifact = blockedClaims.length === 0 ? canonicalizedArtifact : null;
   const canonicalizedArtifactSha256 = finalizedArtifact ? sha256(finalizedArtifact.contentHtml) : null;
 
@@ -837,6 +948,7 @@ export function canonicalizeGlwZeroAuthorityClaims(input: {
       authoritativeFactReferenceCount: 0,
       fallbackPolicy,
       transformations,
+      ...(passes.length > 0 ? { passes } : {}),
       blockedClaims,
       consumesN8nExecution: false,
       modelInvoked: false,
