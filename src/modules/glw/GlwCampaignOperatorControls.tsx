@@ -706,6 +706,9 @@ export function GlwCampaignOperatorControls({
   const hasRunningOrFailed = (scheduler?.queue.running ?? 0) + (scheduler?.queue.failed ?? 0) > 0;
   const canonicalIdentityReady = Boolean(autoTarget?.canonicalPath && autoTarget?.applicationPath && autoTarget?.canonicalParentId);
   const visualReady = Boolean(autoTarget?.visualCertificationCurrentPass);
+  const generationComplete = Boolean(
+    autoTarget && ["content_ready", "draft_ready", "failed", "published"].includes(autoTarget.lifecycleState),
+  );
 
   return (
     <section id="campaign-actions" className="border border-zinc-800 bg-zinc-900/50 p-6">
@@ -740,7 +743,7 @@ export function GlwCampaignOperatorControls({
             {[
               ["Authorized", true],
               ["Dispatch", Boolean(autoTarget?.jobId)],
-              ["Generation", Boolean(autoTarget?.executionId || autoTarget?.jobId)],
+              ["Generation", generationComplete],
               ["Content Ready", Boolean(autoTarget?.lifecycleState === "content_ready" || autoTarget?.lifecycleState === "draft_ready")],
               ["Rich Composition", Boolean(autoTarget?.wordpressObjectId)],
               ["Contextual Media", Boolean(autoTarget?.lifecycleState === "draft_ready")],

@@ -253,9 +253,6 @@ export async function POST(
     if (selected.status !== "failed" && selected.status !== "content_ready" && selected.status !== "running") {
       return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
     }
-    if (selected.status === "running" && selectedJob.status !== "CONTENT_READY") {
-      return NextResponse.json({ error: "Selected running target is not in an exact content-ready execution state." }, { status: 409 });
-    }
     if (selectedJob.wordpressStatus === "publish") {
       return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
     }
@@ -623,7 +620,30 @@ export async function POST(
 
   if (expectedTargetId) {
     const selectedResult = results[0] ?? null;
-    if (!selectedResult || selectedResult.action !== "draft_ready") {
+    if (!selectedResult) {
+      return NextResponse.json({
+        campaignId,
+        reconciledTargetCount: reconcilableTargets.length,
+        releasedExpiredLeaseCount,
+        results,
+        publicationIntent: "draft",
+        publicationPerformed: false,
+        error: "Exact content-ready continuation failed before durable WordPress draft persistence.",
+      }, { status: 409 });
+    }
+
+    if (selectedResult.action === "wait") {
+      return NextResponse.json({
+        campaignId,
+        reconciledTargetCount: reconcilableTargets.length,
+        releasedExpiredLeaseCount,
+        results,
+        publicationIntent: "draft",
+        publicationPerformed: false,
+      });
+    }
+
+    if (selectedResult.action !== "draft_ready") {
       return NextResponse.json({
         campaignId,
         reconciledTargetCount: reconcilableTargets.length,

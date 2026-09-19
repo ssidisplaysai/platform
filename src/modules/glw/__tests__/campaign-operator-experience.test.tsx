@@ -287,6 +287,9 @@ describe("campaign operator experience", () => {
     expect(source).toContain("executionId: exactTarget.executionId");
     expect(source).toContain("if (!exactTarget.jobId || !exactTarget.executionId)");
     expect(source).toContain("EXACT_TARGET_PROTOCOL_RESULT_MISSING");
+    expect(source).toContain("setAutoPipelineStage(\"WAITING / GENERATION\")");
+    expect(source).toContain("const generationComplete = Boolean(");
+    expect(source).toContain("[\"content_ready\", \"draft_ready\", \"failed\", \"published\"].includes(autoTarget.lifecycleState)");
     expect(source).not.toContain("inferableRunningTargets = targets.filter((target) =>\n      target.lifecycleState === \"content_ready\"");
     expect(source).not.toContain("reconcilePayload.results[0]");
   });

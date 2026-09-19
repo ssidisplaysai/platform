@@ -290,6 +290,57 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(reconcileGlwCampaignTargetContentReady).not.toHaveBeenCalled();
   });
 
+  test("exact running DISPATCHED target returns wait with HTTP 200 and stays exact scoped", async () => {
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({ job: { status: "DISPATCHED", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200));
+
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
+      jobId: gaJobId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      status: "DISPATCHED",
+      externalExecutionId: gaExecutionId,
+      wordpressObjectId: null,
+      wordpressStatus: null,
+      generatedDraft: null,
+    });
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: gaTargetId,
+        jobId: gaJobId,
+        executionId: gaExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.results[0]).toMatchObject({
+      action: "wait",
+      stateCode: "GA",
+      jobId: gaJobId,
+      generationStatus: "DISPATCHED",
+    });
+    expect(markGlwCampaignTargetDraftReady).not.toHaveBeenCalled();
+    expect(reconcileGlwCampaignTargetContentReady).not.toHaveBeenCalled();
+    expect(markGlwCampaignTargetFailed).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
+    expect(calledUrls.every((url) => !url.includes(deJobId))).toBe(true);
+  });
+
   test("exact GA running + CONTENT_READY with expired lease reconciles lease and remains eligible for continuation", async () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
