@@ -107,8 +107,17 @@ describe("Genesis generated page review workspace", () => {
     expect(html).toContain("Contextual In-Use");
     expect(html).toContain("Generation / Execution Trace");
     expect(html).toContain("579510");
+    expect(html.indexOf("Rendered Visual Certification")).toBeLessThan(html.indexOf("Actual WordPress Draft"));
     expect(html).not.toMatch(/>Publish(?: Page)?</);
     expect(html).not.toContain("Approve Review");
+  });
+
+  test("shows published as the primary owner state when lifecycle is published", () => {
+    const html = renderToStaticMarkup(
+      <GlwGeneratedPageReviewWorkspace model={model({ targetStatus: "published" })} />,
+    );
+
+    expect(html).toContain("PUBLISHED ✓");
   });
 
   test("fails visibly when authenticated WordPress content is unavailable and preserves navigation context", () => {
@@ -129,6 +138,10 @@ describe("Genesis generated page review workspace", () => {
     const stale = deriveGeneratedPageVisualQaReview({ certification, decision, certificationState: "STALE", decisionState: "STALE" });
     const currentHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={{ ...model(), visualQa: current }} />);
     const staleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={{ ...model(), visualQa: stale }} />);
+    expect(currentHtml).toContain("visual-capture-tab-desktop");
+    expect(currentHtml).toContain("visual-capture-tab-mobile");
+    expect(currentHtml).toContain("Expand Full Capture");
+    expect(currentHtml).toContain("Collapse Capture");
     expect(currentHtml).toContain("DESKTOP Capture");
     expect(currentHtml).toContain("MOBILE Capture");
     expect(currentHtml).toContain("86%");
@@ -137,7 +150,7 @@ describe("Genesis generated page review workspace", () => {
     expect(currentHtml).toContain("Evidence currency: CURRENT");
     expect(currentHtml).toContain("Visual Review Current");
     expect(currentHtml).toContain("Recapture");
-    expect(currentHtml).toContain("/api/glw/visual-certifications/cert-1/artifacts/capture-DESKTOP");
+    expect(currentHtml).toContain("DESKTOP visual certification capture");
     expect(staleHtml).toContain("VISUAL REVIEW STALE");
     expect(staleHtml).toContain("Re-run Visual Review");
     expect(staleHtml).toContain("Recapture and re-run visual review");

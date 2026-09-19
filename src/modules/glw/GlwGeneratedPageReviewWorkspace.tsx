@@ -61,6 +61,21 @@ export function GlwGeneratedPageReviewWorkspace({
   const imageStyle = (url: string) => ({
     backgroundImage: `url("${url.replaceAll('"', "%22")}")`,
   });
+  const isPublished = model.identity.lifecycleState === "published";
+  const primaryStateLabel = isPublished
+    ? "PUBLISHED ✓"
+    : model.reviewState.replaceAll("_", " ");
+  const primaryStateTone = isPublished
+    ? "text-emerald-300"
+    : stateTone[model.reviewState];
+  const desktopCapture =
+    model.visualQa.captures.find(
+      (capture) => capture.viewportClass === "DESKTOP",
+    ) ?? model.visualQa.captures[0] ?? null;
+  const mobileCapture =
+    model.visualQa.captures.find(
+      (capture) => capture.viewportClass === "MOBILE",
+    ) ?? model.visualQa.captures[1] ?? null;
   return (
     <div className="min-w-0 max-w-full space-y-6 overflow-x-hidden">
       <nav
@@ -82,9 +97,9 @@ export function GlwGeneratedPageReviewWorkspace({
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
           <div className="min-w-0">
             <p
-              className={`text-xs font-semibold uppercase tracking-[0.25em] ${stateTone[model.reviewState]}`}
+              className={`text-xs font-semibold uppercase tracking-[0.25em] ${primaryStateTone}`}
             >
-              {model.reviewState.replaceAll("_", " ")}
+              {primaryStateLabel}
             </p>
             <h1 className="mt-3 break-words text-3xl font-black text-white">
               {model.identity.title}
@@ -146,6 +161,314 @@ export function GlwGeneratedPageReviewWorkspace({
           />
         </dl>
       </header>
+
+      <section
+        className="border border-zinc-800 bg-zinc-900/45 p-5"
+        aria-label="Rendered visual QA"
+      >
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.22em] text-red-400">
+              Visual Review
+            </p>
+            <h2 className="mt-2 text-xl font-bold text-white">
+              Rendered Visual Certification
+            </h2>
+          </div>
+          <div className="text-right">
+            <State value={model.visualQa.overallState} />
+            <p className="mt-1 text-[11px] uppercase text-zinc-600">
+              {model.visualQa.certificationState.replaceAll("_", " ")}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <GlwVisualReviewAction
+            {...model.actions.visualCapture}
+            state={model.visualQa.certificationState}
+          />
+        </div>
+        {model.actions.ownerDecision ? (
+          <div className="mt-4 border-t border-zinc-800 pt-4">
+            <GlwOwnerReviewDecisionAction
+              {...model.actions.ownerDecision}
+              currentDecision={model.visualQa.decision?.decision ?? null}
+            />
+          </div>
+        ) : null}
+        {model.actions.publish ? (
+          <div className="mt-4 border-t border-zinc-800 pt-4">
+            <GlwPublishPageAction
+              endpoint={model.actions.publish.endpoint}
+              organizationId={model.actions.publish.organizationId}
+              siteId={model.actions.publish.siteId}
+              targetId={model.actions.publish.targetId}
+            />
+          </div>
+        ) : null}
+        {model.visualQa.stale ? (
+          <div className="mt-4 border border-amber-700 bg-amber-950/25 p-4">
+            <p className="font-semibold text-amber-200">VISUAL REVIEW STALE</p>
+            <p className="mt-1 text-sm text-amber-300">
+              The stored capture set does not match the current page revision or
+              render identity.
+            </p>
+          </div>
+        ) : null}
+        {model.visualQa.captures.length > 0 ? (
+          <div className="mt-5">
+            <input
+              id="visual-capture-tab-desktop"
+              type="radio"
+              name="visual-capture-tab"
+              className="peer/desktop sr-only"
+              defaultChecked
+            />
+            <input
+              id="visual-capture-tab-mobile"
+              type="radio"
+              name="visual-capture-tab"
+              className="peer/mobile sr-only"
+            />
+            <div
+              className="mb-4 inline-flex overflow-hidden border border-zinc-700"
+              role="tablist"
+              aria-label="Visual capture viewport"
+            >
+              <label
+                htmlFor="visual-capture-tab-desktop"
+                className="cursor-pointer border-r border-zinc-700 px-4 py-2 text-xs font-bold text-zinc-300 peer-checked/desktop:bg-zinc-100 peer-checked/desktop:text-zinc-900"
+              >
+                Desktop
+              </label>
+              <label
+                htmlFor="visual-capture-tab-mobile"
+                className="cursor-pointer px-4 py-2 text-xs font-bold text-zinc-300 peer-checked/mobile:bg-zinc-100 peer-checked/mobile:text-zinc-900"
+              >
+                Mobile
+              </label>
+            </div>
+
+            {desktopCapture ? (
+              <article className="hidden min-w-0 bg-zinc-950 p-4 peer-checked/desktop:block">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-white">
+                      DESKTOP Capture
+                    </p>
+                    <p className="mt-1 text-[11px] text-zinc-600">
+                      {desktopCapture.captureId}
+                    </p>
+                  </div>
+                  <State
+                    value={
+                      desktopCapture.horizontalOverflow > 0 ? "BLOCKED" : "PASS"
+                    }
+                  />
+                </div>
+                <details className="group mt-4 border border-zinc-800 p-3">
+                  <summary className="cursor-pointer text-xs font-semibold text-zinc-300">
+                    <span className="group-open:hidden">Expand Full Capture</span>
+                    <span className="hidden group-open:inline">Collapse Capture</span>
+                  </summary>
+                  {artifactImage(desktopCapture.artifactReference) ? (
+                    <img
+                      src={artifactImage(desktopCapture.artifactReference) ?? undefined}
+                      alt="DESKTOP visual certification capture"
+                      className="mt-3 w-full max-h-[700px] object-contain object-top group-open:max-h-none"
+                    />
+                  ) : (
+                    <div className="mt-3 flex h-[700px] items-center justify-center border border-dashed border-zinc-800 text-xs text-zinc-600">
+                      Artifact stored outside browser-accessible media
+                    </div>
+                  )}
+                </details>
+                <dl className="mt-4 grid grid-cols-2 gap-3">
+                  <TraceItem
+                    label="Viewport"
+                    value={`${desktopCapture.viewportWidth} × ${desktopCapture.viewportHeight}`}
+                  />
+                  <TraceItem
+                    label="Document"
+                    value={`${desktopCapture.documentWidth} × ${desktopCapture.documentHeight}`}
+                  />
+                  <TraceItem
+                    label="Content width"
+                    value={
+                      desktopCapture.primaryContentWidth === null
+                        ? null
+                        : `${Math.round(desktopCapture.primaryContentWidth)}px`
+                    }
+                  />
+                  <TraceItem
+                    label="Utilization"
+                    value={
+                      desktopCapture.utilization === null
+                        ? null
+                        : `${Math.round(desktopCapture.utilization * 100)}%`
+                    }
+                  />
+                  <TraceItem
+                    label="Overflow"
+                    value={`${desktopCapture.horizontalOverflow}px`}
+                  />
+                  <TraceItem
+                    label="Hero"
+                    value={desktopCapture.heroState.replaceAll("_", " ")}
+                  />
+                  <TraceItem
+                    label="Media rendered"
+                    value={`${desktopCapture.mediaRendered}/${desktopCapture.mediaAssigned} assigned`}
+                  />
+                  <TraceItem label="Sections" value={desktopCapture.sectionCount} />
+                </dl>
+              </article>
+            ) : null}
+
+            {mobileCapture ? (
+              <article className="hidden min-w-0 bg-zinc-950 p-4 peer-checked/mobile:block">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-white">
+                      MOBILE Capture
+                    </p>
+                    <p className="mt-1 text-[11px] text-zinc-600">
+                      {mobileCapture.captureId}
+                    </p>
+                  </div>
+                  <State
+                    value={
+                      mobileCapture.horizontalOverflow > 0 ? "BLOCKED" : "PASS"
+                    }
+                  />
+                </div>
+                <details className="group mt-4 border border-zinc-800 p-3">
+                  <summary className="cursor-pointer text-xs font-semibold text-zinc-300">
+                    <span className="group-open:hidden">Expand Full Capture</span>
+                    <span className="hidden group-open:inline">Collapse Capture</span>
+                  </summary>
+                  {artifactImage(mobileCapture.artifactReference) ? (
+                    <img
+                      src={artifactImage(mobileCapture.artifactReference) ?? undefined}
+                      alt="MOBILE visual certification capture"
+                      className="mt-3 w-full max-h-[700px] object-contain object-top group-open:max-h-none"
+                    />
+                  ) : (
+                    <div className="mt-3 flex h-[700px] items-center justify-center border border-dashed border-zinc-800 text-xs text-zinc-600">
+                      Artifact stored outside browser-accessible media
+                    </div>
+                  )}
+                </details>
+                <dl className="mt-4 grid grid-cols-2 gap-3">
+                  <TraceItem
+                    label="Viewport"
+                    value={`${mobileCapture.viewportWidth} × ${mobileCapture.viewportHeight}`}
+                  />
+                  <TraceItem
+                    label="Document"
+                    value={`${mobileCapture.documentWidth} × ${mobileCapture.documentHeight}`}
+                  />
+                  <TraceItem
+                    label="Content width"
+                    value={
+                      mobileCapture.primaryContentWidth === null
+                        ? null
+                        : `${Math.round(mobileCapture.primaryContentWidth)}px`
+                    }
+                  />
+                  <TraceItem
+                    label="Utilization"
+                    value={
+                      mobileCapture.utilization === null
+                        ? null
+                        : `${Math.round(mobileCapture.utilization * 100)}%`
+                    }
+                  />
+                  <TraceItem
+                    label="Overflow"
+                    value={`${mobileCapture.horizontalOverflow}px`}
+                  />
+                  <TraceItem
+                    label="Hero"
+                    value={mobileCapture.heroState.replaceAll("_", " ")}
+                  />
+                  <TraceItem
+                    label="Media rendered"
+                    value={`${mobileCapture.mediaRendered}/${mobileCapture.mediaAssigned} assigned`}
+                  />
+                  <TraceItem label="Sections" value={mobileCapture.sectionCount} />
+                </dl>
+              </article>
+            ) : null}
+          </div>
+        ) : (
+          <div className="mt-5 border border-dashed border-zinc-800 p-5 text-sm text-zinc-400">
+            <p className="font-semibold text-white">
+              Desktop Capture · NOT EVALUATED
+            </p>
+            <p className="mt-2">Mobile Capture · NOT EVALUATED</p>
+            <p className="mt-3 text-xs text-zinc-500">
+              No persisted capture set matches this page revision.
+            </p>
+          </div>
+        )}
+        {model.visualQa.findings.length > 0 ? (
+          <div className="mt-5 divide-y divide-zinc-800">
+            <p className="pb-3 text-xs uppercase tracking-wider text-zinc-500">
+              Findings
+            </p>
+            {model.visualQa.findings.map((finding) => (
+              <div
+                key={finding.findingCode}
+                className="grid gap-2 py-3 md:grid-cols-[9rem_1fr]"
+              >
+                <p className="text-xs">
+                  <State value={finding.state} /> · {finding.category}
+                </p>
+                <div>
+                  <p className="text-sm text-white">{finding.summary}</p>
+                  <p className="mt-1 text-xs text-zinc-600">
+                    Rule {finding.rule.ruleId} · {finding.rule.version}
+                  </p>
+                  {finding.safeRecommendation ? (
+                    <p className="mt-1 text-xs text-zinc-400">
+                      Safe recommendation: {finding.safeRecommendation}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <div className="mt-5 grid gap-4 border-t border-zinc-800 pt-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs uppercase text-zinc-500">Owner Decision</p>
+            <p className="mt-2 text-sm font-semibold text-white">
+              {model.visualQa.decision?.decision.replaceAll("_", " ") ??
+                "PENDING"}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Evidence currency: {model.visualQa.decisionState}
+            </p>
+            {model.visualQa.decision?.note ? (
+              <p className="mt-2 text-xs text-zinc-400">
+                {model.visualQa.decision.note}
+              </p>
+            ) : null}
+          </div>
+          <div>
+            <p className="text-xs uppercase text-zinc-500">Safe Next Step</p>
+            <p className="mt-2 text-sm text-zinc-300">
+              {model.visualQa.safeNextStep}
+            </p>
+          </div>
+        </div>
+        <p className="mt-4 text-xs text-zinc-600">{model.visualQa.authority}</p>
+        <p className="mt-2 text-xs text-zinc-500">
+          Visual approval is independent from publication, campaign activation,
+          content QA, and launch certification.
+        </p>
+      </section>
 
       {model.wordpressStaging ? (
         <section className="border border-emerald-800 bg-emerald-950/20 p-5" aria-label="Owner-approved WordPress staging">
@@ -312,6 +635,115 @@ export function GlwGeneratedPageReviewWorkspace({
             </p>
           </div>
         )}
+      </section>
+
+      <section
+        className="border border-zinc-800 bg-zinc-900/45 p-5"
+        aria-label="Image review"
+      >
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-red-400">
+            Image Review
+          </p>
+          <h2 className="mt-2 text-xl font-bold text-white">
+            Product truth and in-use context
+          </h2>
+        </div>
+        <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-px bg-zinc-800 lg:grid-cols-2">
+          <article className="min-w-0 bg-zinc-950 p-5">
+            <p className="text-xs uppercase tracking-wider text-zinc-500">
+              Product Authority
+            </p>
+            <p
+              className={`mt-2 text-xl font-bold ${model.images.productAuthority.state === "ASSIGNED" ? "text-emerald-300" : "text-amber-300"}`}
+            >
+              {model.images.productAuthority.state}
+            </p>
+            {model.images.productAuthority.imageUrl ? (
+              <div
+                role="img"
+                aria-label={
+                  model.images.productAuthority.altText ??
+                  "Approved product image"
+                }
+                className="mt-4 aspect-[16/9] bg-zinc-900 bg-contain bg-center bg-no-repeat"
+                style={imageStyle(model.images.productAuthority.imageUrl)}
+              />
+            ) : (
+              <div className="mt-4 flex aspect-[16/9] items-center justify-center border border-dashed border-zinc-800 bg-zinc-900 text-center text-sm text-zinc-500">
+                No target-level product image assignment
+              </div>
+            )}
+            <p className="mt-4 text-sm text-zinc-300">
+              {model.images.productAuthority.authority}
+            </p>
+            <p className="mt-2 break-all text-xs text-zinc-500">
+              {model.images.productAuthority.provenance}
+            </p>
+            {model.images.productAuthority.altText ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                Alt: {model.images.productAuthority.altText}
+              </p>
+            ) : null}
+            <p className="mt-3 text-xs text-amber-300">
+              {model.images.productAuthority.renderedInCurrentWordPress
+                ? "Rendered in current WordPress."
+                : "Assigned for planning and preview; not rendered in current WordPress."}
+            </p>
+          </article>
+          <article className="min-w-0 bg-zinc-950 p-5">
+            <p className="text-xs uppercase tracking-wider text-zinc-500">
+              Contextual In-Use
+            </p>
+            <p
+              className={`mt-2 text-xl font-bold ${model.images.contextualInUse.state === "LEGACY_FEATURED" ? "text-sky-300" : "text-amber-300"}`}
+            >
+              {model.images.contextualInUse.state.replaceAll("_", " ")}
+            </p>
+            {model.images.contextualInUse.imageUrl ? (
+              <div
+                role="img"
+                aria-label={
+                  model.images.contextualInUse.altText ??
+                  "Contextual in-use image"
+                }
+                className="mt-4 aspect-[16/9] bg-zinc-900 bg-contain bg-center bg-no-repeat"
+                style={imageStyle(model.images.contextualInUse.imageUrl)}
+              />
+            ) : (
+              <div className="mt-4 flex aspect-[16/9] items-center justify-center border border-dashed border-zinc-800 bg-zinc-900 text-sm text-zinc-500">
+                Contextual image unavailable
+              </div>
+            )}
+            <p className="mt-4 text-sm text-zinc-300">
+              {model.images.contextualInUse.authority}
+            </p>
+            <p className="mt-2 break-words text-xs text-zinc-500">
+              {model.images.contextualInUse.provenance}
+            </p>
+            <p className="mt-2 text-xs text-zinc-500">
+              Grounding: {model.images.contextualInUse.grounding}
+            </p>
+            {model.images.contextualInUse.altText ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                Alt: {model.images.contextualInUse.altText}
+              </p>
+            ) : null}
+            {model.actions.generatedContextualRepair ? (
+              <GlwGeneratedContextualMediaRepairAction
+                endpoint={model.actions.generatedContextualRepair.endpoint}
+                organizationId={model.actions.generatedContextualRepair.organizationId}
+                siteId={model.actions.generatedContextualRepair.siteId}
+                operation={model.actions.generatedContextualRepair.operation}
+                label={model.actions.generatedContextualRepair.label}
+                identity={model.actions.generatedContextualRepair.identity}
+              />
+            ) : null}
+          </article>
+        </div>
+        <p className="mt-3 text-xs font-semibold text-amber-300">
+          {model.images.contractState.replaceAll("_", " ")}
+        </p>
       </section>
 
       <section
@@ -914,329 +1346,6 @@ export function GlwGeneratedPageReviewWorkspace({
           </p>
         </section>
       ) : null}
-
-      <section
-        className="border border-zinc-800 bg-zinc-900/45 p-5"
-        aria-label="Rendered visual QA"
-      >
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-red-400">
-              Visual Review
-            </p>
-            <h2 className="mt-2 text-xl font-bold text-white">
-              Rendered Visual Certification
-            </h2>
-          </div>
-          <div className="text-right">
-            <State value={model.visualQa.overallState} />
-            <p className="mt-1 text-[11px] uppercase text-zinc-600">
-              {model.visualQa.certificationState.replaceAll("_", " ")}
-            </p>
-          </div>
-        </div>
-        <div className="mt-4">
-          <GlwVisualReviewAction
-            {...model.actions.visualCapture}
-            state={model.visualQa.certificationState}
-          />
-        </div>
-        {model.actions.ownerDecision ? (
-          <div className="mt-4 border-t border-zinc-800 pt-4">
-            <GlwOwnerReviewDecisionAction
-              {...model.actions.ownerDecision}
-              currentDecision={model.visualQa.decision?.decision ?? null}
-            />
-          </div>
-        ) : null}
-        {model.actions.publish ? (
-          <div className="mt-4 border-t border-zinc-800 pt-4">
-            <GlwPublishPageAction
-              endpoint={model.actions.publish.endpoint}
-              organizationId={model.actions.publish.organizationId}
-              siteId={model.actions.publish.siteId}
-              targetId={model.actions.publish.targetId}
-            />
-          </div>
-        ) : null}
-        {model.visualQa.stale ? (
-          <div className="mt-4 border border-amber-700 bg-amber-950/25 p-4">
-            <p className="font-semibold text-amber-200">VISUAL REVIEW STALE</p>
-            <p className="mt-1 text-sm text-amber-300">
-              The stored capture set does not match the current page revision or
-              render identity.
-            </p>
-          </div>
-        ) : null}
-        {model.visualQa.captures.length > 0 ? (
-          <div className="mt-5 grid gap-px bg-zinc-800 lg:grid-cols-2">
-            {model.visualQa.captures.map((capture) => {
-              const preview = artifactImage(capture.artifactReference);
-              return (
-                <article
-                  key={capture.captureId}
-                  className="min-w-0 bg-zinc-950 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase text-white">
-                        {capture.viewportClass} Capture
-                      </p>
-                      <p className="mt-1 text-[11px] text-zinc-600">
-                        {capture.captureId}
-                      </p>
-                    </div>
-                    <State
-                      value={
-                        capture.horizontalOverflow > 0 ? "BLOCKED" : "PASS"
-                      }
-                    />
-                  </div>
-                  {preview ? (
-                    <div
-                      role="img"
-                      aria-label={`${capture.viewportClass} visual certification capture`}
-                      className="mt-4 aspect-video bg-zinc-900 bg-contain bg-center bg-no-repeat"
-                      style={{
-                        backgroundImage: `url("${preview.replaceAll('"', "%22")}")`,
-                      }}
-                    />
-                  ) : (
-                    <div className="mt-4 flex aspect-video items-center justify-center border border-dashed border-zinc-800 text-xs text-zinc-600">
-                      Artifact stored outside browser-accessible media
-                    </div>
-                  )}
-                  <dl className="mt-4 grid grid-cols-2 gap-3">
-                    <TraceItem
-                      label="Viewport"
-                      value={`${capture.viewportWidth} × ${capture.viewportHeight}`}
-                    />
-                    <TraceItem
-                      label="Document"
-                      value={`${capture.documentWidth} × ${capture.documentHeight}`}
-                    />
-                    <TraceItem
-                      label="Content width"
-                      value={
-                        capture.primaryContentWidth === null
-                          ? null
-                          : `${Math.round(capture.primaryContentWidth)}px`
-                      }
-                    />
-                    <TraceItem
-                      label="Utilization"
-                      value={
-                        capture.utilization === null
-                          ? null
-                          : `${Math.round(capture.utilization * 100)}%`
-                      }
-                    />
-                    <TraceItem
-                      label="Overflow"
-                      value={`${capture.horizontalOverflow}px`}
-                    />
-                    <TraceItem
-                      label="Hero"
-                      value={capture.heroState.replaceAll("_", " ")}
-                    />
-                    <TraceItem
-                      label="Media rendered"
-                      value={`${capture.mediaRendered}/${capture.mediaAssigned} assigned`}
-                    />
-                    <TraceItem label="Sections" value={capture.sectionCount} />
-                  </dl>
-                  <details className="mt-4 border-t border-zinc-800 pt-3">
-                    <summary className="cursor-pointer text-xs text-zinc-400">
-                      Artifact identity
-                    </summary>
-                    <p className="mt-2 break-all text-xs text-zinc-600">
-                      {capture.artifactReference}
-                    </p>
-                    <code className="mt-1 block break-all text-[11px] text-zinc-700">
-                      SHA-256 {capture.artifactSha256}
-                    </code>
-                  </details>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="mt-5 border border-dashed border-zinc-800 p-5 text-sm text-zinc-400">
-            <p className="font-semibold text-white">
-              Desktop Capture · NOT EVALUATED
-            </p>
-            <p className="mt-2">Mobile Capture · NOT EVALUATED</p>
-            <p className="mt-3 text-xs text-zinc-500">
-              No persisted capture set matches this page revision.
-            </p>
-          </div>
-        )}
-        {model.visualQa.findings.length > 0 ? (
-          <div className="mt-5 divide-y divide-zinc-800">
-            <p className="pb-3 text-xs uppercase tracking-wider text-zinc-500">
-              Findings
-            </p>
-            {model.visualQa.findings.map((finding) => (
-              <div
-                key={finding.findingCode}
-                className="grid gap-2 py-3 md:grid-cols-[9rem_1fr]"
-              >
-                <p className="text-xs">
-                  <State value={finding.state} /> · {finding.category}
-                </p>
-                <div>
-                  <p className="text-sm text-white">{finding.summary}</p>
-                  <p className="mt-1 text-xs text-zinc-600">
-                    Rule {finding.rule.ruleId} · {finding.rule.version}
-                  </p>
-                  {finding.safeRecommendation ? (
-                    <p className="mt-1 text-xs text-zinc-400">
-                      Safe recommendation: {finding.safeRecommendation}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        <div className="mt-5 grid gap-4 border-t border-zinc-800 pt-4 sm:grid-cols-2">
-          <div>
-            <p className="text-xs uppercase text-zinc-500">Owner Decision</p>
-            <p className="mt-2 text-sm font-semibold text-white">
-              {model.visualQa.decision?.decision.replaceAll("_", " ") ??
-                "PENDING"}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Evidence currency: {model.visualQa.decisionState}
-            </p>
-            {model.visualQa.decision?.note ? (
-              <p className="mt-2 text-xs text-zinc-400">
-                {model.visualQa.decision.note}
-              </p>
-            ) : null}
-          </div>
-          <div>
-            <p className="text-xs uppercase text-zinc-500">Safe Next Step</p>
-            <p className="mt-2 text-sm text-zinc-300">
-              {model.visualQa.safeNextStep}
-            </p>
-          </div>
-        </div>
-        <p className="mt-4 text-xs text-zinc-600">{model.visualQa.authority}</p>
-        <p className="mt-2 text-xs text-zinc-500">
-          Visual approval is independent from publication, campaign activation,
-          content QA, and launch certification.
-        </p>
-      </section>
-
-      <section
-        className="border border-zinc-800 bg-zinc-900/45 p-5"
-        aria-label="Image review"
-      >
-        <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-red-400">
-            Image Review
-          </p>
-          <h2 className="mt-2 text-xl font-bold text-white">
-            Product truth and in-use context
-          </h2>
-        </div>
-        <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-px bg-zinc-800 lg:grid-cols-2">
-          <article className="min-w-0 bg-zinc-950 p-5">
-            <p className="text-xs uppercase tracking-wider text-zinc-500">
-              Product Authority
-            </p>
-            <p
-              className={`mt-2 text-xl font-bold ${model.images.productAuthority.state === "ASSIGNED" ? "text-emerald-300" : "text-amber-300"}`}
-            >
-              {model.images.productAuthority.state}
-            </p>
-            {model.images.productAuthority.imageUrl ? (
-              <div
-                role="img"
-                aria-label={
-                  model.images.productAuthority.altText ??
-                  "Approved product image"
-                }
-                className="mt-4 aspect-[16/9] bg-zinc-900 bg-contain bg-center bg-no-repeat"
-                style={imageStyle(model.images.productAuthority.imageUrl)}
-              />
-            ) : (
-              <div className="mt-4 flex aspect-[16/9] items-center justify-center border border-dashed border-zinc-800 bg-zinc-900 text-center text-sm text-zinc-500">
-                No target-level product image assignment
-              </div>
-            )}
-            <p className="mt-4 text-sm text-zinc-300">
-              {model.images.productAuthority.authority}
-            </p>
-            <p className="mt-2 break-all text-xs text-zinc-500">
-              {model.images.productAuthority.provenance}
-            </p>
-            {model.images.productAuthority.altText ? (
-              <p className="mt-2 text-xs text-zinc-500">
-                Alt: {model.images.productAuthority.altText}
-              </p>
-            ) : null}
-            <p className="mt-3 text-xs text-amber-300">
-              {model.images.productAuthority.renderedInCurrentWordPress
-                ? "Rendered in current WordPress."
-                : "Assigned for planning and preview; not rendered in current WordPress."}
-            </p>
-          </article>
-          <article className="min-w-0 bg-zinc-950 p-5">
-            <p className="text-xs uppercase tracking-wider text-zinc-500">
-              Contextual In-Use
-            </p>
-            <p
-              className={`mt-2 text-xl font-bold ${model.images.contextualInUse.state === "LEGACY_FEATURED" ? "text-sky-300" : "text-amber-300"}`}
-            >
-              {model.images.contextualInUse.state.replaceAll("_", " ")}
-            </p>
-            {model.images.contextualInUse.imageUrl ? (
-              <div
-                role="img"
-                aria-label={
-                  model.images.contextualInUse.altText ??
-                  "Contextual in-use image"
-                }
-                className="mt-4 aspect-[16/9] bg-zinc-900 bg-contain bg-center bg-no-repeat"
-                style={imageStyle(model.images.contextualInUse.imageUrl)}
-              />
-            ) : (
-              <div className="mt-4 flex aspect-[16/9] items-center justify-center border border-dashed border-zinc-800 bg-zinc-900 text-sm text-zinc-500">
-                Contextual image unavailable
-              </div>
-            )}
-            <p className="mt-4 text-sm text-zinc-300">
-              {model.images.contextualInUse.authority}
-            </p>
-            <p className="mt-2 break-words text-xs text-zinc-500">
-              {model.images.contextualInUse.provenance}
-            </p>
-            <p className="mt-2 text-xs text-zinc-500">
-              Grounding: {model.images.contextualInUse.grounding}
-            </p>
-            {model.images.contextualInUse.altText ? (
-              <p className="mt-2 text-xs text-zinc-500">
-                Alt: {model.images.contextualInUse.altText}
-              </p>
-            ) : null}
-            {model.actions.generatedContextualRepair ? (
-              <GlwGeneratedContextualMediaRepairAction
-                endpoint={model.actions.generatedContextualRepair.endpoint}
-                organizationId={model.actions.generatedContextualRepair.organizationId}
-                siteId={model.actions.generatedContextualRepair.siteId}
-                operation={model.actions.generatedContextualRepair.operation}
-                label={model.actions.generatedContextualRepair.label}
-                identity={model.actions.generatedContextualRepair.identity}
-              />
-            ) : null}
-          </article>
-        </div>
-        <p className="mt-3 text-xs font-semibold text-amber-300">
-          {model.images.contractState.replaceAll("_", " ")}
-        </p>
-      </section>
 
       <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <section
