@@ -90,6 +90,8 @@ type ReconcilePayload = {
     action: string;
     wordpressObjectId?: string | null;
     generationStatus?: string;
+    waitReason?: string;
+    leaseExpiresAt?: string | null;
     httpStatus?: number;
     error?: string;
   }[];
@@ -590,7 +592,11 @@ export function GlwCampaignOperatorControls({
       }
 
       if (result.action === "wait") {
-        setAutoPipelineStage("WAITING FOR GENERATION");
+        if (result.waitReason === "ACTIVE_LEASE") {
+          setAutoPipelineStage("WAITING FOR ACTIVE LEASE");
+        } else {
+          setAutoPipelineStage("WAITING FOR GENERATION");
+        }
       } else {
         setAutoPipelineStage("GENERATION / RECONCILIATION");
       }

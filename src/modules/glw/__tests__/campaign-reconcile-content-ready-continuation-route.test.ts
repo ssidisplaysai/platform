@@ -1320,7 +1320,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(reconcileSource).not.toContain("normalizeCanonicalPath(form.canonicalPath ?? \"\")");
   });
 
-  test("exact GA running + CONTENT_READY with unexpired lease fails closed", async () => {
+  test("exact GA running + CONTENT_READY with unexpired lease returns wait ACTIVE_LEASE without mutation", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -1365,9 +1365,17 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     const response = await POST(request, { params: Promise.resolve({ campaignId }) });
     const payload = await response.json();
 
-    expect(response.status).toBe(409);
-    expect(payload.error).toContain("lease is still active");
+    expect(response.status).toBe(200);
+    expect(payload.results[0]).toMatchObject({
+      action: "wait",
+      generationStatus: "CONTENT_READY",
+      waitReason: "ACTIVE_LEASE",
+    });
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(markGlwCampaignTargetDraftReady).not.toHaveBeenCalled();
+    expect(markGlwFailedCampaignTargetDraftReady).not.toHaveBeenCalled();
+    expect(reconcileGlwContentReadyTargetDraft).not.toHaveBeenCalled();
+    expect(markGlwCampaignTargetFailed).not.toHaveBeenCalled();
   });
 
   test("exact GA running + CONTENT_READY continuation reaches draft_ready and leaves DE untouched", async () => {

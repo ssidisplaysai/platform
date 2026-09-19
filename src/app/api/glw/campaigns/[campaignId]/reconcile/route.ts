@@ -326,8 +326,22 @@ export async function POST(
         selectedReconcilableTarget = updated.target;
       } catch {
         return NextResponse.json({
-          error: "Selected target lease is still active and cannot continue until it expires.",
-        }, { status: 409 });
+          campaignId,
+          reconciledTargetCount: 1,
+          releasedExpiredLeaseCount,
+          results: [
+            {
+              ...targetIdentity(selected),
+              jobId: selected.jobId,
+              action: "wait",
+              generationStatus: selectedJob.status,
+              waitReason: "ACTIVE_LEASE",
+              leaseExpiresAt: selected.leaseExpiresAt ?? null,
+            },
+          ],
+          publicationIntent: "draft",
+          publicationPerformed: false,
+        });
       }
     }
 
@@ -437,8 +451,10 @@ export async function POST(
           results.push({
             ...targetIdentity(target),
             jobId,
-            action: "error",
-            error: "Selected target lease is still active and cannot continue until it expires.",
+            action: "wait",
+            generationStatus: job.status,
+            waitReason: "ACTIVE_LEASE",
+            leaseExpiresAt: target.leaseExpiresAt ?? null,
           });
           continue;
         }

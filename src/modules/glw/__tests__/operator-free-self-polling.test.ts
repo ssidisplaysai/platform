@@ -18,6 +18,8 @@ describe("operator-free self polling contracts", () => {
     const source = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignOperatorControls.tsx"), "utf8");
 
     expect(source).toContain("if (result.action === \"wait\")");
+    expect(source).toContain("if (result.waitReason === \"ACTIVE_LEASE\")");
+    expect(source).toContain("setAutoPipelineStage(\"WAITING FOR ACTIVE LEASE\")");
     expect(source).toContain("setAutoPipelineStage(\"WAITING FOR GENERATION\")");
     expect(source).toContain("await refreshWorkspace();");
     expect(source).toContain("scheduleOperatorFreeProgressionPoll();");

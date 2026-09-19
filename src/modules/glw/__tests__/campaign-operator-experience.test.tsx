@@ -297,6 +297,8 @@ describe("campaign operator experience", () => {
     expect(source).toContain("jobId: exactTarget.jobId");
     expect(source).toContain("executionId: exactTarget.executionId");
     expect(source).toContain("action === \"wait\"");
+    expect(source).toContain("result.waitReason === \"ACTIVE_LEASE\"");
+    expect(source).toContain("setAutoPipelineStage(\"WAITING FOR ACTIVE LEASE\")");
     expect(source).toContain("setAutoPipelineStage(\"WAITING FOR GENERATION\")");
     expect(source).toContain("scheduleOperatorFreeProgressionPoll()");
     expect(source).toContain("clearOperatorFreeProgressionPoll()");
