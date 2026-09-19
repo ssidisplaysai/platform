@@ -358,25 +358,53 @@ export async function POST(
         && isExactRecoverableOutdoorSphereRichCompositionFailure(job),
       );
 
-      if (!expectedTargetId && decision.action === "continue" && target.status === "running" && job.status === "CONTENT_READY" && job.externalExecutionId) {
-        const updated = reconcileGlwCampaignTargetContentReady({
-          campaignId,
-          targetId: target.targetId,
-          stateCode: target.stateCode,
-          citySlug: target.citySlug,
-          jobId,
-          leaseId: target.leaseId ?? "",
-          externalExecutionId: job.externalExecutionId,
-        });
-        results.push({
-          ...targetIdentity(target),
-          jobId,
-          action: "content_ready",
-          targetStatus: updated.target.status,
-          attemptCount: updated.target.attemptCount,
-          leaseHistory: updated.leaseHistory,
-        });
-        continue;
+      let effectiveTarget = target;
+
+      if (decision.action === "continue" && target.status === "running" && job.status === "CONTENT_READY" && job.externalExecutionId) {
+        if (expectedTargetId && (target.targetId !== expectedTargetId || target.jobId !== expectedJobId || job.externalExecutionId !== expectedExecutionId)) {
+          results.push({
+            ...targetIdentity(target),
+            jobId,
+            action: "error",
+            error: "Selected target execution identity does not match the exact existing execution.",
+          });
+          continue;
+        }
+
+        let updated;
+        try {
+          updated = reconcileGlwCampaignTargetContentReady({
+            campaignId,
+            targetId: target.targetId,
+            stateCode: target.stateCode,
+            citySlug: target.citySlug,
+            jobId,
+            leaseId: target.leaseId ?? "",
+            externalExecutionId: job.externalExecutionId,
+          });
+        } catch {
+          results.push({
+            ...targetIdentity(target),
+            jobId,
+            action: "error",
+            error: "Selected target lease is still active and cannot continue until it expires.",
+          });
+          continue;
+        }
+
+        effectiveTarget = updated.target;
+
+        if (!expectedTargetId) {
+          results.push({
+            ...targetIdentity(target),
+            jobId,
+            action: "content_ready",
+            targetStatus: updated.target.status,
+            attemptCount: updated.target.attemptCount,
+            leaseHistory: updated.leaseHistory,
+          });
+          continue;
+        }
       }
 
       if (decision.action === "continue" || exactRecoverableFailedContinuation || exactRecoverablePartialDraftContinuation) {
@@ -409,7 +437,7 @@ export async function POST(
               form,
               action: "continue",
               jobId,
-              targetId: target.targetId,
+              targetId: effectiveTarget.targetId,
               executionId: expectedTargetId ? expectedExecutionId : (job.externalExecutionId ?? null),
             }),
             cache: "no-store",
@@ -528,8 +556,8 @@ export async function POST(
 
         const updateInput = {
           campaignId,
-          stateCode: target.stateCode,
-          citySlug: target.citySlug,
+          stateCode: effectiveTarget.stateCode,
+          citySlug: effectiveTarget.citySlug,
           jobId,
           wordpressObjectId:
             decision.wordpressObjectId,
@@ -537,12 +565,12 @@ export async function POST(
         };
 
         const updated =
-          target.status === "content_ready"
+          effectiveTarget.status === "content_ready"
             ? reconcileGlwContentReadyTargetDraft({
                 ...updateInput,
-                targetId: target.targetId,
+                targetId: effectiveTarget.targetId,
               })
-            : target.status === "failed"
+            : effectiveTarget.status === "failed"
             ? markGlwFailedCampaignTargetDraftReady(updateInput)
             : markGlwCampaignTargetDraftReady(updateInput);
 

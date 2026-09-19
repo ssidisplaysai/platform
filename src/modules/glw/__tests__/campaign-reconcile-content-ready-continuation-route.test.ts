@@ -241,6 +241,37 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       lastError: error,
     }));
 
+    (reconcileGlwCampaignTargetContentReady as jest.Mock).mockImplementation(({ campaignId: sourceCampaignId, targetId, stateCode, citySlug, jobId, leaseId, externalExecutionId }: {
+      campaignId: string;
+      targetId: string;
+      stateCode: string;
+      citySlug?: string | null;
+      jobId: string;
+      leaseId: string;
+      externalExecutionId: string;
+    }) => ({
+      target: {
+        targetId,
+        campaignId: sourceCampaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode,
+        citySlug: citySlug ?? null,
+        cityName: null,
+        status: "content_ready",
+        jobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+      leaseHistory: {
+        leaseId,
+        externalExecutionId,
+      },
+    }));
+
     (resolveGlwCampaignJobReconciliationDecision as jest.Mock).mockImplementation((job: { status: string; wordpressObjectId?: string | null; wordpressStatus?: string | null }) => {
       if (job.status === "CONTENT_READY") return { action: "continue" };
       if (job.status === "COMPLETE" && job.wordpressStatus === "draft" && job.wordpressObjectId) {
@@ -287,7 +318,12 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       jobId: gaJobId,
       executionId: gaExecutionId,
     });
-    expect(reconcileGlwCampaignTargetContentReady).not.toHaveBeenCalled();
+    expect(reconcileGlwCampaignTargetContentReady).toHaveBeenCalledWith(expect.objectContaining({
+      campaignId,
+      targetId: gaTargetId,
+      jobId: gaJobId,
+      externalExecutionId: gaExecutionId,
+    }));
   });
 
   test("exact running DISPATCHED target returns wait with HTTP 200 and stays exact scoped", async () => {
@@ -556,7 +592,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    (markGlwCampaignTargetDraftReady as jest.Mock).mockReturnValue({
+    (reconcileGlwContentReadyTargetDraft as jest.Mock).mockReturnValue({
       targetId: gaTargetId,
       campaignId,
       stateCode: "GA",
@@ -590,14 +626,20 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       wordpressObjectId: "20199",
       executionIdAfter: gaExecutionId,
     });
-    expect(markGlwCampaignTargetDraftReady).toHaveBeenCalledWith(expect.objectContaining({
+    expect(reconcileGlwContentReadyTargetDraft).toHaveBeenCalledWith(expect.objectContaining({
       campaignId,
+      targetId: gaTargetId,
       stateCode: "GA",
       jobId: gaJobId,
       wordpressObjectId: "20199",
     }));
-    expect(reconcileGlwContentReadyTargetDraft).not.toHaveBeenCalled();
-    expect(reconcileGlwCampaignTargetContentReady).not.toHaveBeenCalled();
+    expect(reconcileGlwCampaignTargetContentReady).toHaveBeenCalledWith(expect.objectContaining({
+      campaignId,
+      targetId: gaTargetId,
+      jobId: gaJobId,
+      externalExecutionId: gaExecutionId,
+    }));
+    expect(markGlwCampaignTargetDraftReady).not.toHaveBeenCalled();
     const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
     expect(calledUrls.every((url) => !url.includes(deJobId))).toBe(true);
   });
