@@ -672,21 +672,28 @@ export function reconcileGlwCampaignTargetContentReady(input: {
   stateCode: string;
   citySlug?: string | null;
   jobId: string;
-  leaseId: string;
+  leaseId?: string | null;
   externalExecutionId: string;
   now?: Date;
-}): { target: GlwCampaignTarget; leaseHistory: { leaseId: string; leasedAt: string; expiredAt: string; jobId: string; externalExecutionId: string; dispatchDate: string } } {
+}): { target: GlwCampaignTarget; leaseHistory: { leaseId: string | null; leasedAt: string | null; expiredAt: string | null; jobId: string; externalExecutionId: string; dispatchDate: string | null } } {
   loadState();
   const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
   const current = targetStore.get(targetKey);
   const now = input.now ?? new Date();
-  if (!current || current.targetId !== input.targetId || current.status !== "running" || current.jobId !== input.jobId || current.leaseId !== input.leaseId) {
+  if (!current || current.targetId !== input.targetId || current.status !== "running" || current.jobId !== input.jobId) {
+    throw new Error("CONTENT_READY_TARGET_IDENTITY_MISMATCH");
+  }
+  const expectedLeaseId = input.leaseId?.trim() || null;
+  if (expectedLeaseId && current.leaseId !== expectedLeaseId) {
     throw new Error("CONTENT_READY_TARGET_IDENTITY_MISMATCH");
   }
   if (current.wordpressObjectId) throw new Error("CONTENT_READY_TARGET_WORDPRESS_OBJECT_FORBIDDEN");
-  if (!current.leasedAt || !current.leaseExpiresAt || !current.dispatchDate) throw new Error("CONTENT_READY_TARGET_LEASE_HISTORY_REQUIRED");
-  const expiresAt = new Date(current.leaseExpiresAt);
-  if (!Number.isFinite(expiresAt.getTime()) || expiresAt > now) throw new Error("CONTENT_READY_TARGET_LEASE_NOT_EXPIRED");
+
+  if (current.leaseId && current.leaseExpiresAt) {
+    const expiresAt = new Date(current.leaseExpiresAt);
+    if (!Number.isFinite(expiresAt.getTime()) || expiresAt > now) throw new Error("CONTENT_READY_TARGET_LEASE_NOT_EXPIRED");
+  }
+
   const timestamp = now.toISOString();
   const leaseHistory = {
     leaseId: current.leaseId,

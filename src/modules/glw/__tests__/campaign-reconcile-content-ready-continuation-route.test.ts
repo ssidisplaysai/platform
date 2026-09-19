@@ -660,6 +660,118 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(calledUrls.every((url) => !url.includes(deJobId))).toBe(true);
   });
 
+  test("exact GA running + CONTENT_READY without lease metadata still normalizes to content_ready and continues same identity", async () => {
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
+      .mockResolvedValueOnce(jsonResponse({ ok: true, job: { status: "COMPLETE", externalExecutionId: gaExecutionId, wordpressObjectId: "20199", wordpressStatus: "draft", slug: "outdoor-digital-sphere/georgia" } }, 200));
+
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: gaTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "GA",
+        citySlug: null,
+        cityName: null,
+        status: "running",
+        jobId: gaJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+      {
+        targetId: deTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "DE",
+        citySlug: null,
+        cityName: null,
+        status: "content_ready",
+        jobId: deJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+    ]);
+
+    (reconcileGlwCampaignTargetContentReady as jest.Mock).mockReturnValue({
+      target: {
+        targetId: gaTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "GA",
+        citySlug: null,
+        cityName: null,
+        status: "content_ready",
+        jobId: gaJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+      leaseHistory: {
+        leaseId: null,
+        leasedAt: null,
+        expiredAt: null,
+        jobId: gaJobId,
+        externalExecutionId: gaExecutionId,
+        dispatchDate: "2026-09-13",
+      },
+    });
+
+    (reconcileGlwContentReadyTargetDraft as jest.Mock).mockReturnValue({
+      targetId: gaTargetId,
+      campaignId,
+      stateCode: "GA",
+      citySlug: null,
+      status: "draft_ready",
+      jobId: gaJobId,
+      wordpressObjectId: "20199",
+    });
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: gaTargetId,
+        jobId: gaJobId,
+        executionId: gaExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.results[0]).toMatchObject({ action: "draft_ready", stateCode: "GA", wordpressObjectId: "20199", executionIdAfter: gaExecutionId });
+    expect(reconcileGlwCampaignTargetContentReady).toHaveBeenCalledWith(expect.objectContaining({
+      campaignId,
+      targetId: gaTargetId,
+      stateCode: "GA",
+      jobId: gaJobId,
+      leaseId: null,
+      externalExecutionId: gaExecutionId,
+    }));
+    const continueRequestBody = JSON.parse((fetchMock.mock.calls[1]?.[1] as { body?: string })?.body ?? "{}");
+    expect(continueRequestBody).toMatchObject({ action: "continue", targetId: gaTargetId, jobId: gaJobId, executionId: gaExecutionId });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   test("fails closed when non-empty job slug mismatches governed canonical form path", async () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(jsonResponse({

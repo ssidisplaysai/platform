@@ -312,7 +312,7 @@ export async function POST(
     }
 
     let selectedReconcilableTarget = selected;
-    if (selected.status === "running" && selectedJob.status === "CONTENT_READY" && selected.leaseId) {
+    if (selected.status === "running" && selectedJob.status === "CONTENT_READY") {
       try {
         const updated = reconcileGlwCampaignTargetContentReady({
           campaignId,
@@ -320,7 +320,7 @@ export async function POST(
           stateCode: selected.stateCode,
           citySlug: selected.citySlug,
           jobId: selected.jobId,
-          leaseId: selected.leaseId,
+          leaseId: selected.leaseId ?? null,
           externalExecutionId: selectedJob.externalExecutionId ?? "",
         });
         selectedReconcilableTarget = updated.target;
@@ -444,7 +444,7 @@ export async function POST(
             stateCode: target.stateCode,
             citySlug: target.citySlug,
             jobId,
-            leaseId: target.leaseId ?? "",
+            leaseId: target.leaseId ?? null,
             externalExecutionId: job.externalExecutionId,
           });
         } catch {

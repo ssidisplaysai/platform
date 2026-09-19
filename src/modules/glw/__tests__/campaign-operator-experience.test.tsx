@@ -146,6 +146,20 @@ describe("campaign operator experience", () => {
     expect(result.targets.find((entry) => entry.identity === "Dallas, TX")?.lifecycleState).toBe("content_ready");
   });
 
+  test("does not report a running slot when the only running target job is terminal CONTENT_READY", () => {
+    const runningDallas = target("Dallas", "dallas", "running", dallasJob.jobId);
+    const contentReadyJob = { ...dallasJob, status: "CONTENT_READY", wordpressObjectId: null, wordpressStatus: null } as GlwPageExecutionRecord;
+    const result = model({
+      targets: [target("Austin", "austin", "reference_complete"), runningDallas, target("Houston", "houston", "queued")],
+      jobs: [contentReadyJob],
+    });
+
+    expect(result.counts.running).toBe(0);
+    expect(result.counts.contentReady).toBe(1);
+    expect(result.capabilities.scheduler.state).toBe("READY");
+    expect(result.capabilities.scheduler.detail).not.toContain("Running target occupies the execution slot");
+  });
+
   test("treats exact failed ZERO_AUTHORITY_CANONICALIZATION_BLOCKED with generated draft as content_ready lifecycle", () => {
     const failedDallas = target("Dallas", "dallas", "failed", dallasJob.jobId);
     const recoverableFailedJob = {

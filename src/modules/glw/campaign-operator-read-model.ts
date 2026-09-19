@@ -93,6 +93,14 @@ function isRecoverableOutdoorSphereRichCompositionTarget(target: GlwCampaignTarg
     && job!.wordpressStatus === "draft";
 }
 
+function isActiveRunningExecutionTarget(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): boolean {
+  if (target.status !== "running") return false;
+  if (!job) return true;
+  if (job.status === "CONTENT_READY" || job.status === "COMPLETE") return false;
+  if (job.status === "FAILED") return false;
+  return true;
+}
+
 export function deriveGlwCampaignOperatorReadModel(input: {
   campaign: GlwCampaign;
   targets: readonly GlwCampaignTarget[];
@@ -107,7 +115,10 @@ export function deriveGlwCampaignOperatorReadModel(input: {
   const jobs = new Map(input.jobs.map((job) => [job.jobId, job]));
   const referenceComplete = input.targets.filter((target) => target.status === "reference_complete").length;
   const queued = input.targets.filter((target) => target.status === "queued").length;
-  const running = input.targets.filter((target) => target.status === "running").length;
+  const running = input.targets.filter((target) => {
+    const job = target.jobId ? jobs.get(target.jobId) : null;
+    return isActiveRunningExecutionTarget(target, job ?? null);
+  }).length;
   const draftReady = input.targets.filter((target) => target.status === "draft_ready").length;
   const published = input.targets.filter((target) => target.status === "published").length;
   const failed = input.targets.filter((target) => target.status === "failed").length;
