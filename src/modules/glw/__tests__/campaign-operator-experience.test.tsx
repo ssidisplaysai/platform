@@ -275,11 +275,19 @@ describe("campaign operator experience", () => {
     expect(source).toContain("/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification");
     expect(source).toContain("Operator-free progression reached READY FOR OWNER REVIEW");
     expect(source).toContain("const [autoTargetLock, setAutoTargetLock]");
+    expect(source).toContain("const [autoTargetLockHydrated, setAutoTargetLockHydrated]");
+    expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || typeof window === \"undefined\" || !autoTargetLockHydrated) return;");
+    expect(source).toContain("setAutoTargetLockHydrated(true)");
+    expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;");
+    expect(source).toContain("const inferableRunningTargets = targets.filter");
+    expect(source).toContain("target.lifecycleState === \"running\"");
+    expect(source).toContain("if (inferableRunningTargets.length !== 1) return;");
     expect(source).toContain("targetId: exactTarget.targetId");
     expect(source).toContain("jobId: exactTarget.jobId");
     expect(source).toContain("executionId: exactTarget.executionId");
     expect(source).toContain("if (!exactTarget.jobId || !exactTarget.executionId)");
     expect(source).toContain("EXACT_TARGET_PROTOCOL_RESULT_MISSING");
+    expect(source).not.toContain("inferableRunningTargets = targets.filter((target) =>\n      target.lifecycleState === \"content_ready\"");
     expect(source).not.toContain("reconcilePayload.results[0]");
   });
 

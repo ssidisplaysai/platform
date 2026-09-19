@@ -208,6 +208,7 @@ export function GlwCampaignOperatorControls({
   const [dispatchStage, setDispatchStage] = useState<ExactDispatchStage>("IDLE");
   const [autoPipelineStage, setAutoPipelineStage] = useState<string>("IDLE");
   const [autoTargetLock, setAutoTargetLock] = useState<OperatorFreeTargetLock | null>(null);
+  const [autoTargetLockHydrated, setAutoTargetLockHydrated] = useState(false);
   const dispatchInFlight = useRef(false);
   const [reconciling, setReconciling] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -287,7 +288,10 @@ export function GlwCampaignOperatorControls({
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
     const serialized = window.sessionStorage.getItem(targetLockStorageKey);
-    if (!serialized) return;
+    if (!serialized) {
+      setAutoTargetLockHydrated(true);
+      return;
+    }
     try {
       const parsed = JSON.parse(serialized) as OperatorFreeTargetLock;
       if (parsed && typeof parsed.targetId === "string" && parsed.targetId.trim().length > 0) {
@@ -299,17 +303,37 @@ export function GlwCampaignOperatorControls({
       }
     } catch {
       window.sessionStorage.removeItem(targetLockStorageKey);
+    } finally {
+      setAutoTargetLockHydrated(true);
     }
   }, [isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
 
   useEffect(() => {
-    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
+    if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined" || !autoTargetLockHydrated) return;
     if (!autoTargetLock) {
       window.sessionStorage.removeItem(targetLockStorageKey);
       return;
     }
     window.sessionStorage.setItem(targetLockStorageKey, JSON.stringify(autoTargetLock));
-  }, [autoTargetLock, isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
+  }, [autoTargetLock, autoTargetLockHydrated, isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
+
+  useEffect(() => {
+    if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;
+    const inferableRunningTargets = targets.filter((target) =>
+      target.lifecycleState === "running"
+      && Boolean(target.targetId)
+      && Boolean(target.jobId)
+      && Boolean(target.executionId),
+    );
+    if (inferableRunningTargets.length !== 1) return;
+
+    const runningTarget = inferableRunningTargets[0];
+    setAutoTargetLock({
+      targetId: runningTarget.targetId,
+      jobId: runningTarget.jobId,
+      executionId: runningTarget.executionId,
+    });
+  }, [autoTargetLock, autoTargetLockHydrated, isOutdoorSphereOperatorFreeScope, targets]);
 
   const continuableTargets = targets.filter((target) =>
     target.continuationEligible === true,
@@ -462,14 +486,14 @@ export function GlwCampaignOperatorControls({
   }
 
   useEffect(() => {
-    if (!isOutdoorSphereOperatorFreeScope || loading || !scheduler) return;
+    if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || loading || !scheduler) return;
     if (!autoTargetLock?.targetId) return;
-    if (autoTarget.lifecycleState === "draft_ready" && autoTarget.visualCertificationCurrentPass) {
+    if (autoTarget?.lifecycleState === "draft_ready" && autoTarget.visualCertificationCurrentPass) {
       setAutoPipelineStage("READY FOR OWNER REVIEW");
       return;
     }
     void runOperatorFreeProgression();
-  }, [isOutdoorSphereOperatorFreeScope, loading, scheduler, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass]);
+  }, [isOutdoorSphereOperatorFreeScope, autoTargetLockHydrated, loading, scheduler, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass]);
 
   async function reconcileCampaign() {
     const confirmed = window.confirm(
