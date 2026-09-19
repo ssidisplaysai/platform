@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, forwardOperatorMutationContext, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
@@ -23,6 +24,8 @@ import {
   buildGlwCampaignProductionGenerationForm,
 } from "@/modules/glw/campaign-production-generation";
 import { isOutdoorSphereCampaignScope } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
+import { canonicalizeAndRevalidateGlwZeroAuthorityClaims } from "@/modules/glw/zero-authority-claim-canonicalization";
+import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
 
 function internalHeaders(
   request: NextRequest,
@@ -56,6 +59,38 @@ function normalizeCanonicalPath(value: string): string {
   return value.trim().toLowerCase().replace(/^\/+|\/+$/g, "");
 }
 
+function sha256Text(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function normalizeHtmlForIdentityComparison(value: string): string {
+  return value.replace(/\s+/g, " ").replace(/>\s+</g, "><").trim();
+}
+
+function text(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function readStoredWordPressContent(page: Record<string, unknown>): string {
+  const content = page.content;
+  if (!content || typeof content !== "object" || Array.isArray(content)) {
+    return "";
+  }
+
+  const contentRecord = content as Record<string, unknown>;
+  return text(contentRecord.raw) || text(contentRecord.rendered);
+}
+
+function readWordPressPageTitle(page: Record<string, unknown>): string {
+  const title = page.title;
+  if (!title || typeof title !== "object" || Array.isArray(title)) {
+    return "";
+  }
+
+  const titleRecord = title as Record<string, unknown>;
+  return text(titleRecord.raw) || text(titleRecord.rendered);
+}
+
 async function readWordPressDraftIdentity(input: {
   siteId: string;
   wordpressObjectId: string;
@@ -78,7 +113,7 @@ async function readWordPressDraftIdentity(input: {
 
   const read = await reader.getJson({
     path: `/pages/${input.wordpressObjectId}`,
-    query: new URLSearchParams({ context: "edit", _fields: "id,status,slug,parent" }),
+    query: new URLSearchParams({ context: "edit", _fields: "id,status,slug,parent,title,content,link" }),
   });
 
   if (!read.ok || !read.body || typeof read.body !== "object" || Array.isArray(read.body)) {
@@ -90,6 +125,9 @@ async function readWordPressDraftIdentity(input: {
   const wordpressStatus = typeof page.status === "string" ? page.status.trim() : "";
   const slug = typeof page.slug === "string" ? page.slug.trim() : "";
   const parentId = String(page.parent ?? "").trim();
+  const title = readWordPressPageTitle(page);
+  const storedContent = readStoredWordPressContent(page);
+  const link = text(page.link);
 
   if (wordpressObjectId !== input.wordpressObjectId || wordpressStatus !== "draft") {
     throw new Error("DRAFT_READY_WORDPRESS_IDENTITY_MISMATCH");
@@ -99,8 +137,244 @@ async function readWordPressDraftIdentity(input: {
   }
 
   return {
+    wordpressObjectId,
+    wordpressStatus,
+    title,
     slug,
     parentId,
+    storedContent,
+    link,
+    reader,
+  };
+}
+
+async function validateSameTargetUnprojectedWordPressIdentity(input: {
+  campaign: {
+    campaignId: string;
+    organizationId: string;
+    siteId: string;
+    productId: string;
+  };
+  target: {
+    targetId: string;
+    stateCode: string;
+    citySlug?: string | null;
+    status: string;
+    wordpressObjectId?: string | null;
+  };
+  job: {
+    jobId: string;
+    externalExecutionId?: string | null;
+    status: string;
+    wordpressObjectId?: string | number | null;
+    wordpressStatus?: string | null;
+    generatedDraft?: {
+      title: string;
+      contentHtml: string;
+      slug: string;
+      excerpt?: string;
+      seoTitle?: string;
+      metaDescription?: string;
+      focusKeyphrase?: string;
+    } | null;
+  };
+  expectedExecutionId: string;
+}): Promise<{
+  ok: true;
+  wordpressObjectId: string;
+  canonicalIdentity: {
+    canonicalPath: string;
+    applicationPath: string;
+    canonicalParentId: string;
+  };
+} | {
+  ok: false;
+  code: string;
+  error: string;
+}> {
+  if (input.target.status !== "content_ready") {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_TARGET_STATUS_INVALID",
+      error: "Selected target is not in content-ready state for same-target identity projection.",
+    };
+  }
+
+  const targetWordPressObjectId = text(input.target.wordpressObjectId);
+  if (targetWordPressObjectId) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_TARGET_ALREADY_BOUND",
+      error: "Selected target already has a canonical WordPress identity.",
+    };
+  }
+
+  const jobWordPressObjectId = input.job.wordpressObjectId == null
+    ? ""
+    : String(input.job.wordpressObjectId).trim();
+
+  if (!jobWordPressObjectId) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_JOB_WORDPRESS_ID_REQUIRED",
+      error: "Selected job does not expose a WordPress draft identity for same-target projection.",
+    };
+  }
+
+  if (input.job.status !== "CONTENT_READY" || input.job.wordpressStatus !== "draft" || !input.job.generatedDraft) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_JOB_STATE_INVALID",
+      error: "Selected job is not an eligible content-ready draft identity candidate.",
+    };
+  }
+
+  if ((input.job.externalExecutionId ?? "") !== input.expectedExecutionId) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_EXECUTION_MISMATCH",
+      error: "Selected target execution identity does not match the exact existing execution.",
+    };
+  }
+
+  const { form } = buildGlwCampaignProductionGenerationForm({
+    campaign: input.campaign,
+    stateCode: input.target.stateCode,
+    citySlug: input.target.citySlug,
+  });
+  const canonicalPath = normalizeCanonicalPath(form.slug ?? "");
+  if (!canonicalPath) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_CANONICAL_PATH_REQUIRED",
+      error: "Canonical path is required before same-target WordPress identity projection.",
+    };
+  }
+
+  const readback = await readWordPressDraftIdentity({
+    siteId: input.campaign.siteId,
+    wordpressObjectId: jobWordPressObjectId,
+  });
+
+  if (readback.wordpressStatus !== "draft") {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_WORDPRESS_STATUS_INVALID",
+      error: "Same-target WordPress identity must remain a draft.",
+    };
+  }
+
+  const expectedTitle = text(input.job.generatedDraft.title);
+  if (expectedTitle && readback.title !== expectedTitle) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_WORDPRESS_TITLE_MISMATCH",
+      error: "Same-target WordPress draft title no longer matches the exact selected job artifact.",
+    };
+  }
+
+  const expectedSlug = canonicalPath.split("/").filter(Boolean).at(-1) ?? "";
+  if (!expectedSlug || readback.slug !== expectedSlug) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_WORDPRESS_SLUG_MISMATCH",
+      error: "Same-target WordPress draft slug does not match the canonical target path.",
+    };
+  }
+
+  const uniquenessRead = await readback.reader.getJson({
+    path: "/pages",
+    query: new URLSearchParams({
+      slug: readback.slug,
+      parent: readback.parentId,
+      context: "edit",
+      status: "publish,draft,pending,private,future",
+      per_page: "100",
+      _fields: "id,slug,parent,status",
+    }),
+  });
+
+  if (!uniquenessRead.ok || !Array.isArray(uniquenessRead.body)) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_WORDPRESS_UNIQUENESS_READ_FAILED",
+      error: "Unable to verify uniqueness for the selected WordPress draft identity.",
+    };
+  }
+
+  const matching = uniquenessRead.body
+    .filter((candidate) => {
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+        return false;
+      }
+
+      const value = candidate as Record<string, unknown>;
+      return String(value.id ?? "").trim() === jobWordPressObjectId
+        && text(value.slug) === readback.slug
+        && String(value.parent ?? "").trim() === readback.parentId;
+    });
+
+  if (matching.length !== 1 || uniquenessRead.body.length !== 1) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_WORDPRESS_UNIQUENESS_CONFLICT",
+      error: "Multiple WordPress identities match the canonical target draft identity.",
+    };
+  }
+
+  const storedContentSha = sha256Text(readback.storedContent);
+  const expectedDraft = input.job.generatedDraft;
+  const expectedContentSha = sha256Text(expectedDraft.contentHtml);
+  const storedNormalizedSha = sha256Text(normalizeHtmlForIdentityComparison(readback.storedContent));
+  const expectedNormalizedSha = sha256Text(normalizeHtmlForIdentityComparison(expectedDraft.contentHtml));
+
+  if (storedContentSha !== expectedContentSha && storedNormalizedSha !== expectedNormalizedSha) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_CONTENT_HASH_MISMATCH",
+      error: "Selected WordPress draft content no longer matches the exact selected job artifact.",
+    };
+  }
+
+  const zeroAuthority = { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] };
+  const wordpressClaims = evaluateGlwReferenceClaimAuthority({
+    artifact: {
+      ...expectedDraft,
+      contentHtml: readback.storedContent,
+    },
+    authority: zeroAuthority,
+  });
+  const unsupportedWordPressClaims = wordpressClaims.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");
+  if (!wordpressClaims.ok || unsupportedWordPressClaims.length > 0) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_CLAIM_AUTHORITY_FAILED",
+      error: "Selected WordPress draft content failed claim authority revalidation.",
+    };
+  }
+
+  const currentArtifactClaims = canonicalizeAndRevalidateGlwZeroAuthorityClaims({
+    artifact: expectedDraft,
+    authority: zeroAuthority,
+    fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+  });
+  const unsupportedCurrentClaims = currentArtifactClaims.finalClaimAuthority.findings.filter((finding) => finding.authorityStatus === "UNSUPPORTED");
+  if (!currentArtifactClaims.finalClaimAuthority.ok || unsupportedCurrentClaims.length > 0) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_UNPROJECTED_CURRENT_ARTIFACT_CLAIM_AUTHORITY_FAILED",
+      error: "Current selected job artifact failed claim authority revalidation.",
+    };
+  }
+
+  return {
+    ok: true,
+    wordpressObjectId: jobWordPressObjectId,
+    canonicalIdentity: {
+      canonicalPath,
+      applicationPath: canonicalPath,
+      canonicalParentId: readback.parentId,
+    },
   };
 }
 
@@ -263,6 +537,24 @@ export async function POST(
   }
 
   const allTargets = listGlwCampaignTargets(campaignId);
+  let exactTargetPreflightResult:
+    | {
+        action: "draft_ready";
+        target: {
+          stateCode: string;
+          citySlug?: string | null;
+          cityName?: string | null;
+        };
+        jobId: string;
+        wordpressObjectId: string;
+        canonicalIdentity: {
+          canonicalPath: string;
+          applicationPath: string;
+          canonicalParentId: string;
+        };
+        executionIdAfter: string | null;
+      }
+    | null = null;
   let reconcilableTargets =
     allTargets.filter(
       (target) =>
@@ -301,6 +593,37 @@ export async function POST(
     if ((selectedJob.externalExecutionId ?? "") !== expectedExecutionId) {
       return NextResponse.json({ error: "Selected target execution identity does not match the exact existing execution." }, { status: 409 });
     }
+
+    if (selected.status === "draft_ready") {
+      if (!selectedTargetWordPressObjectId || !selectedJobWordPressObjectId || selectedTargetWordPressObjectId !== selectedJobWordPressObjectId) {
+        return NextResponse.json({ error: "Selected draft-ready target WordPress identity does not match the exact existing job WordPress identity." }, { status: 409 });
+      }
+      if (selectedJob.wordpressStatus !== "draft") {
+        return NextResponse.json({ error: "Selected draft-ready target no longer maps to a draft WordPress object." }, { status: 409 });
+      }
+
+      return NextResponse.json({
+        campaignId,
+        reconciledTargetCount: 1,
+        releasedExpiredLeaseCount,
+        results: [
+          {
+            ...targetIdentity(selected),
+            jobId: selected.jobId,
+            action: "draft_ready",
+            wordpressObjectId: selectedTargetWordPressObjectId,
+            canonicalPath: selected.canonicalPath ?? null,
+            applicationPath: selected.applicationPath ?? null,
+            canonicalParentId: selected.canonicalParentId ?? null,
+            executionIdAfter: selectedJob.externalExecutionId ?? null,
+            reconciliationReason: "IDEMPOTENT_DRAFT_READY",
+          },
+        ],
+        publicationIntent: "draft",
+        publicationPerformed: false,
+      });
+    }
+
     const selectedIsRecoverablePartialDraftTarget = (selected.status === "failed" || selected.status === "content_ready")
       && isExactRecoverableOutdoorSphereRichCompositionFailure(selectedJob);
     const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready" || selected.status === "running")
@@ -311,6 +634,35 @@ export async function POST(
       target: selected,
       job: selectedJob,
     });
+
+    const selectedSameTargetUnprojectedIdentityCandidate = Boolean(
+      !selectedTargetWordPressObjectId
+      && selectedJobWordPressObjectId
+      && !selectedIsRecoverablePartialDraftTarget
+      && !selectedIsRecoverableCanonicalIdentityFailedTarget
+      && selected.status === "content_ready"
+      && selectedJob.status === "CONTENT_READY"
+      && selectedJob.wordpressStatus === "draft"
+      && selectedJob.generatedDraft,
+    );
+
+    let selectedSameTargetUnprojectedIdentityResult: Awaited<ReturnType<typeof validateSameTargetUnprojectedWordPressIdentity>> | null = null;
+    if (selectedSameTargetUnprojectedIdentityCandidate) {
+      selectedSameTargetUnprojectedIdentityResult = await validateSameTargetUnprojectedWordPressIdentity({
+        campaign,
+        target: selected,
+        job: selectedJob,
+        expectedExecutionId,
+      });
+
+      if (!selectedSameTargetUnprojectedIdentityResult.ok) {
+        return NextResponse.json({
+          error: selectedSameTargetUnprojectedIdentityResult.error,
+          code: selectedSameTargetUnprojectedIdentityResult.code,
+        }, { status: 409 });
+      }
+    }
+
     if (selected.status === "failed" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableCanonicalIdentityFailedTarget) {
       return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
     }
@@ -326,8 +678,33 @@ export async function POST(
     if (selectedJob.wordpressStatus === "publish") {
       return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
     }
-    if (selectedJob.wordpressObjectId && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableCanonicalIdentityFailedTarget) {
+    if (selectedJob.wordpressObjectId && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableCanonicalIdentityFailedTarget && !selectedSameTargetUnprojectedIdentityResult) {
       return NextResponse.json({ error: "Conflicting existing WordPress identity detected on the selected job." }, { status: 409 });
+    }
+
+    if (selectedSameTargetUnprojectedIdentityResult?.ok) {
+      const updated = reconcileGlwContentReadyTargetDraft({
+        campaignId,
+        targetId: selected.targetId,
+        stateCode: selected.stateCode,
+        citySlug: selected.citySlug,
+        jobId: selected.jobId,
+        wordpressObjectId: selectedSameTargetUnprojectedIdentityResult.wordpressObjectId,
+        canonicalIdentity: selectedSameTargetUnprojectedIdentityResult.canonicalIdentity,
+      });
+
+      exactTargetPreflightResult = {
+        action: "draft_ready",
+        target: selected,
+        jobId: selected.jobId,
+        wordpressObjectId: updated.wordpressObjectId ?? selectedSameTargetUnprojectedIdentityResult.wordpressObjectId,
+        canonicalIdentity: {
+          canonicalPath: updated.canonicalPath ?? selectedSameTargetUnprojectedIdentityResult.canonicalIdentity.canonicalPath,
+          applicationPath: updated.applicationPath ?? selectedSameTargetUnprojectedIdentityResult.canonicalIdentity.applicationPath,
+          canonicalParentId: updated.canonicalParentId ?? selectedSameTargetUnprojectedIdentityResult.canonicalIdentity.canonicalParentId,
+        },
+        executionIdAfter: selectedJob.externalExecutionId ?? null,
+      };
     }
 
     let selectedReconcilableTarget = selected;
@@ -370,6 +747,29 @@ export async function POST(
   const origin = request.nextUrl.origin;
 
   const results: Array<Record<string, unknown>> = [];
+
+  if (expectedTargetId && exactTargetPreflightResult) {
+    results.push({
+      ...targetIdentity(exactTargetPreflightResult.target),
+      jobId: exactTargetPreflightResult.jobId,
+      action: "draft_ready",
+      wordpressObjectId: exactTargetPreflightResult.wordpressObjectId,
+      canonicalPath: exactTargetPreflightResult.canonicalIdentity.canonicalPath,
+      applicationPath: exactTargetPreflightResult.canonicalIdentity.applicationPath,
+      canonicalParentId: exactTargetPreflightResult.canonicalIdentity.canonicalParentId,
+      executionIdAfter: exactTargetPreflightResult.executionIdAfter,
+      reconciliationReason: "SAME_TARGET_UNPROJECTED_WORDPRESS_IDENTITY",
+    });
+
+    return NextResponse.json({
+      campaignId,
+      reconciledTargetCount: 1,
+      releasedExpiredLeaseCount,
+      results,
+      publicationIntent: "draft",
+      publicationPerformed: false,
+    });
+  }
 
   for (const target of reconcilableTargets) {
     const jobId = target.jobId!;
