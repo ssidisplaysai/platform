@@ -224,6 +224,7 @@ export function GlwCampaignOperatorControls({
   const [reviewQueueCurrentTargetId, setReviewQueueCurrentTargetId] = useState<string | null>(null);
   const [reviewQueueBlockedReason, setReviewQueueBlockedReason] = useState<string | null>(null);
   const reviewQueueStateRef = useRef<ReviewQueueState>("IDLE");
+  const targetsRef = useRef<readonly ContinuableTargetSummary[]>(targets);
   const queueStateStorageKey = `glw:auto-review-queue:${campaignId}:${organizationId}:${siteId}`;
   const autoQueueInFlightRef = useRef(false);
   const dispatchInFlight = useRef(false);
@@ -248,6 +249,10 @@ export function GlwCampaignOperatorControls({
   useEffect(() => {
     reviewQueueStateRef.current = reviewQueueState;
   }, [reviewQueueState]);
+
+  useEffect(() => {
+    targetsRef.current = targets;
+  }, [targets]);
 
   const clearOperatorFreeProgressionPoll = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -326,6 +331,20 @@ export function GlwCampaignOperatorControls({
     router.refresh();
   }, [loadScheduler, router]);
 
+  const readSchedulerSnapshot = useCallback(async () => {
+    const response = await fetch(`/api/glw/campaigns/${campaignId}/scheduler`, {
+      method: "GET",
+      headers: requestHeaders(),
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => null) as SchedulerPayload & { error?: string } | null;
+    if (!response.ok || !payload) {
+      throw new Error(payload?.error ?? `Unable to load scheduler preview (HTTP ${response.status}).`);
+    }
+    setScheduler(payload);
+    return payload;
+  }, [campaignId, requestHeaders]);
+
   useEffect(() => {
     if (campaignStatus !== "active") return;
     const timeout = window.setTimeout(() => void loadScheduler(), 0);
@@ -342,48 +361,20 @@ export function GlwCampaignOperatorControls({
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
     const serialized = window.sessionStorage.getItem(targetLockStorageKey);
-    if (!serialized) {
-      setAutoTargetLockHydrated(true);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(serialized) as OperatorFreeTargetLock;
-      if (parsed && typeof parsed.targetId === "string" && parsed.targetId.trim().length > 0) {
-        setAutoTargetLock({
-          targetId: parsed.targetId,
-          jobId: parsed.jobId ?? null,
-          executionId: parsed.executionId ?? null,
-        });
-      }
-    } catch {
+    if (serialized) {
       window.sessionStorage.removeItem(targetLockStorageKey);
-    } finally {
-      setAutoTargetLockHydrated(true);
     }
+    setAutoTargetLockHydrated(true);
   }, [isOutdoorSphereOperatorFreeScope, targetLockStorageKey]);
 
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || typeof window === "undefined") return;
     const serialized = window.sessionStorage.getItem(queueStateStorageKey);
-    if (!serialized) return;
-    try {
-      const parsed = JSON.parse(serialized) as {
-        state?: ReviewQueueState;
-        currentTargetId?: string | null;
-        blockedReason?: string | null;
-      };
-      const state = parsed?.state;
-      if (state === "ACTIVE" || state === "DAILY_LIMIT_REACHED" || state === "BLOCKED") {
-        setReviewQueueState(state);
-      }
-      if (typeof parsed?.currentTargetId === "string" && parsed.currentTargetId.trim().length > 0) {
-        setReviewQueueCurrentTargetId(parsed.currentTargetId);
-      }
-      if (typeof parsed?.blockedReason === "string" && parsed.blockedReason.trim().length > 0) {
-        setReviewQueueBlockedReason(parsed.blockedReason);
-      }
-    } catch {
+    if (serialized) {
       window.sessionStorage.removeItem(queueStateStorageKey);
+      setReviewQueueState("IDLE");
+      setReviewQueueCurrentTargetId(null);
+      setReviewQueueBlockedReason(null);
     }
   }, [isOutdoorSphereOperatorFreeScope, queueStateStorageKey]);
 
@@ -412,41 +403,6 @@ export function GlwCampaignOperatorControls({
     }));
   }, [isOutdoorSphereOperatorFreeScope, queueStateStorageKey, reviewQueueBlockedReason, reviewQueueCurrentTargetId, reviewQueueState]);
 
-  useEffect(() => {
-    if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;
-    const inferableRunningTargets = targets.filter((target) =>
-      target.lifecycleState === "running"
-      && Boolean(target.targetId)
-      && Boolean(target.jobId)
-      && Boolean(target.executionId),
-    );
-    const inferableCanonicalIdentityRecoveryTargets = targets.filter((target) =>
-      target.lifecycleState === "failed"
-      && target.issue === "DRAFT_READY_CANONICAL_PATH_REQUIRED"
-      && target.executionState === "COMPLETE"
-      && target.wordpressStatus === "draft"
-      && Boolean(target.targetId)
-      && Boolean(target.jobId)
-      && Boolean(target.executionId)
-      && Boolean(target.wordpressObjectId)
-      && !target.canonicalPath
-      && !target.applicationPath
-      && !target.canonicalParentId,
-    );
-    const inferableTargets = [
-      ...inferableRunningTargets,
-      ...inferableCanonicalIdentityRecoveryTargets,
-    ];
-    if (inferableTargets.length !== 1) return;
-
-    const runningTarget = inferableTargets[0];
-    setAutoTargetLock({
-      targetId: runningTarget.targetId,
-      jobId: runningTarget.jobId,
-      executionId: runningTarget.executionId,
-    });
-  }, [autoTargetLock, autoTargetLockHydrated, isOutdoorSphereOperatorFreeScope, targets]);
-
   const continuableTargets = targets.filter((target) =>
     target.continuationEligible === true,
   );
@@ -470,6 +426,12 @@ export function GlwCampaignOperatorControls({
   useEffect(() => {
     if (reviewQueueState !== "ACTIVE") return;
     setReviewQueueCurrentTargetId(autoTargetLock?.targetId ?? null);
+  }, [autoTargetLock?.targetId, reviewQueueState]);
+
+  useEffect(() => {
+    if (reviewQueueState === "IDLE" && !autoTargetLock?.targetId) {
+      setAutoPipelineStage("IDLE");
+    }
   }, [autoTargetLock?.targetId, reviewQueueState]);
 
   useEffect(() => {
@@ -548,16 +510,19 @@ export function GlwCampaignOperatorControls({
 
   function startOwnerReviewQueue() {
     if (!isOutdoorSphereOperatorFreeScope || !scheduler || busy) return;
+    setAutoTargetLock(null);
     setReviewQueueBlockedReason(null);
-    setReviewQueueCurrentTargetId(autoTargetLock?.targetId ?? null);
+    setReviewQueueCurrentTargetId(null);
     setReviewQueueState("ACTIVE");
-    setAutoPipelineStage("DISPATCH ✓");
+    setAutoPipelineStage("IDLE");
   }
 
   function stopOwnerReviewQueue() {
+    setAutoTargetLock(null);
     setReviewQueueState("IDLE");
     setReviewQueueBlockedReason(null);
     setReviewQueueCurrentTargetId(null);
+    setAutoPipelineStage("IDLE");
     clearOperatorFreeProgressionPoll();
   }
 
@@ -747,39 +712,59 @@ export function GlwCampaignOperatorControls({
       void runOperatorFreeProgression(processingTarget.targetId);
       return;
     }
-
-    if (scheduler.schedule.remainingAllowance < 1 && scheduler.queue.queued > 0) {
-      setReviewQueueState("DAILY_LIMIT_REACHED");
-      setAutoPipelineStage("DAILY_LIMIT_REACHED");
-      setReviewQueueCurrentTargetId(null);
-      return;
-    }
-
-    if (scheduler.queue.queued < 1) {
-      setReviewQueueState("COMPLETE");
-      setAutoPipelineStage("COMPLETE");
-      setReviewQueueCurrentTargetId(null);
-      return;
-    }
-
-    if (scheduler.schedule.nextTargets.length !== 1 || scheduler.schedule.availableConcurrency < 1) {
-      setReviewQueueState("BLOCKED");
-      setReviewQueueBlockedReason("Exact queued target is unavailable for dispatch.");
-      setAutoPipelineStage("BLOCKED");
-      return;
-    }
-
-    if (!scheduler.executionReadiness.configured || !scheduler.executionPreflight.ready || !scheduler.wordpressReadiness.ready) {
-      setReviewQueueState("BLOCKED");
-      setReviewQueueBlockedReason("Execution or WordPress authority is unavailable for exact dispatch.");
-      setAutoPipelineStage("BLOCKED");
-      return;
-    }
-
     autoQueueInFlightRef.current = true;
-    setReviewQueueBlockedReason(null);
-    setAutoPipelineStage("DISPATCH ✓");
-    void dispatchExactTarget({ auto: true }).finally(() => {
+    void (async () => {
+      try {
+        const freshScheduler = await readSchedulerSnapshot();
+        if (freshScheduler.schedule.remainingAllowance < 1 && freshScheduler.queue.queued > 0) {
+          setReviewQueueState("DAILY_LIMIT_REACHED");
+          setAutoPipelineStage("DAILY_LIMIT_REACHED");
+          setReviewQueueCurrentTargetId(null);
+          return;
+        }
+
+        if (freshScheduler.queue.queued < 1) {
+          setReviewQueueState("COMPLETE");
+          setAutoPipelineStage("COMPLETE");
+          setReviewQueueCurrentTargetId(null);
+          return;
+        }
+
+        if (freshScheduler.schedule.nextTargets.length !== 1 || freshScheduler.schedule.availableConcurrency < 1) {
+          setReviewQueueState("BLOCKED");
+          setReviewQueueBlockedReason("Exact queued target is unavailable for dispatch.");
+          setAutoPipelineStage("BLOCKED");
+          return;
+        }
+
+        if (!freshScheduler.executionReadiness.configured || !freshScheduler.executionPreflight.ready || !freshScheduler.wordpressReadiness.ready) {
+          setReviewQueueState("BLOCKED");
+          setReviewQueueBlockedReason("Execution or WordPress authority is unavailable for exact dispatch.");
+          setAutoPipelineStage("BLOCKED");
+          return;
+        }
+
+        const nextTargetId = freshScheduler.schedule.nextTargets[0]?.targetId ?? null;
+        const projected = nextTargetId
+          ? targetsRef.current.find((target) => target.targetId === nextTargetId) ?? null
+          : null;
+        if (projected && projected.lifecycleState !== "queued") {
+          setReviewQueueState("BLOCKED");
+          setReviewQueueBlockedReason(`Selected target is not queued: ${projected.identity} is ${projected.lifecycleState}.`);
+          setAutoPipelineStage("BLOCKED");
+          return;
+        }
+
+        setReviewQueueBlockedReason(null);
+        setReviewQueueCurrentTargetId(nextTargetId);
+        setAutoPipelineStage("DISPATCH ✓");
+        await dispatchExactTarget({ auto: true });
+      } catch (queueError) {
+        setReviewQueueState("BLOCKED");
+        setReviewQueueBlockedReason(queueError instanceof Error ? queueError.message : "Unable to refresh queue eligibility.");
+        setAutoPipelineStage("BLOCKED");
+      }
+    })().finally(() => {
       autoQueueInFlightRef.current = false;
     });
   }, [
@@ -796,6 +781,7 @@ export function GlwCampaignOperatorControls({
     refreshingSeo,
     enablingReleaseCapability,
     targets,
+    readSchedulerSnapshot,
   ]);
 
   async function reconcileCampaign() {
@@ -1015,7 +1001,7 @@ export function GlwCampaignOperatorControls({
   const readyForOwnerReviewCount = targets.filter((target) =>
     target.lifecycleState === "draft_ready" && target.visualCertificationCurrentPass,
   ).length;
-  const processingCount = autoTargetLock?.targetId ? 1 : (scheduler?.queue.running ?? 0) > 0 || (scheduler?.queue.contentReady ?? 0) > 0 ? 1 : 0;
+  const processingCount = reviewQueueState === "ACTIVE" && autoTargetLock?.targetId ? 1 : 0;
   const queueUsedToday = scheduler?.schedule.alreadyDispatchedToday ?? 0;
   const queueDailyLimit = scheduler?.schedule.dailyLimit ?? 0;
   const queueRemainingAllowance = scheduler?.schedule.remainingAllowance ?? 0;
@@ -1090,7 +1076,7 @@ export function GlwCampaignOperatorControls({
               <p className="mt-1 text-[11px] text-zinc-500">Remaining {queueRemainingAllowance}</p>
             </div>
           </div>
-          {reviewQueueCurrentTargetId ? (
+          {reviewQueueState === "ACTIVE" && reviewQueueCurrentTargetId ? (
             <p className="mt-3 text-xs text-zinc-300">Current target: {reviewQueueCurrentTargetId}</p>
           ) : null}
           {reviewQueueBlockedReason ? (

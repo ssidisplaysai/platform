@@ -321,16 +321,10 @@ describe("campaign operator experience", () => {
     expect(source).toContain("scheduleOperatorFreeProgressionPoll(1000)");
     expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || typeof window === \"undefined\" || !autoTargetLockHydrated) return;");
     expect(source).toContain("setAutoTargetLockHydrated(true)");
-    expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || autoTargetLock) return;");
-    expect(source).toContain("const inferableRunningTargets = targets.filter");
-    expect(source).toContain("const inferableCanonicalIdentityRecoveryTargets = targets.filter");
-    expect(source).toContain("target.issue === \"DRAFT_READY_CANONICAL_PATH_REQUIRED\"");
-    expect(source).toContain("target.executionState === \"COMPLETE\"");
-    expect(source).toContain("target.wordpressStatus === \"draft\"");
-    expect(source).toContain("&& Boolean(target.wordpressObjectId)");
-    expect(source).toContain("target.lifecycleState === \"running\"");
-    expect(source).toContain("const inferableTargets = [");
-    expect(source).toContain("if (inferableTargets.length !== 1) return;");
+    expect(source).toContain("window.sessionStorage.removeItem(targetLockStorageKey)");
+    expect(source).toContain("const readSchedulerSnapshot = useCallback(async () => {");
+    expect(source).toContain("const freshScheduler = await readSchedulerSnapshot();");
+    expect(source).toContain("Selected target is not queued:");
     expect(source).toContain("targetId: exactTarget.targetId");
     expect(source).toContain("jobId: exactTarget.jobId");
     expect(source).toContain("executionId: exactTarget.executionId");
@@ -353,11 +347,13 @@ describe("campaign operator experience", () => {
     expect(source).toContain("setReviewQueueState(\"BLOCKED\")");
     expect(source).toContain("setReviewQueueState(\"COMPLETE\")");
     expect(source).toContain("dispatchExactTarget({ auto: true })");
-    expect(source).toContain("setAutoTargetLock(null)");
+    expect(source).toContain("setAutoTargetLock(null);");
+    expect(source).toContain("setAutoPipelineStage(\"IDLE\")");
     expect(source).toContain("Current target:");
     expect(source).toContain("Ready for Review");
+    expect(source).toContain("const processingCount = reviewQueueState === \"ACTIVE\" && autoTargetLock?.targetId ? 1 : 0;");
     expect(source).not.toContain("!scheduler.releaseAuthority.capability.ready ||");
-    expect(source).not.toContain("inferableRunningTargets = targets.filter((target) =>\n      target.lifecycleState === \"content_ready\"");
+    expect(source).not.toContain("const inferableRunningTargets = targets.filter");
     expect(source).not.toContain("reconcilePayload.results[0]");
   });
 
