@@ -335,6 +335,54 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     }));
   });
 
+  test("returns continue_error with claim-specific blocker when claim revalidation fails before WordPress", async () => {
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({ job: { status: "CONTENT_READY", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200))
+      .mockResolvedValueOnce(jsonResponse({
+        ok: false,
+        code: "CLAIM_AUTHORITY_REVALIDATION_FAILED",
+        error: "Claim authority revalidation failed before WordPress draft persistence.",
+        claimFailureReasons: {
+          "unsupportedClaim.INTERACTIVITY.1": "INTERACTIVITY: Clarify Project Purpose...",
+        },
+        job: {
+          status: "FAILED",
+          errorCode: "GENERATED_CONTENT_QA_FAILED",
+          externalExecutionId: gaExecutionId,
+          wordpressObjectId: null,
+          wordpressStatus: null,
+        },
+      }, 409));
+
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: gaTargetId,
+        jobId: gaJobId,
+        executionId: gaExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload.results[0]).toMatchObject({
+      action: "continue_error",
+      httpStatus: 409,
+      error: "Claim authority revalidation failed before WordPress draft persistence.",
+    });
+    expect(payload.results[0]?.waitReason).toBeUndefined();
+  });
+
   test("exact running DISPATCHED target returns wait with HTTP 200 and stays exact scoped", async () => {
     const fetchMock = jest.fn()
       .mockResolvedValueOnce(jsonResponse({ job: { status: "DISPATCHED", externalExecutionId: gaExecutionId, wordpressObjectId: null, wordpressStatus: null } }, 200));

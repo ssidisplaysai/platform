@@ -21,7 +21,11 @@ import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-ser
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
-import { canonicalizeGlwZeroAuthorityClaims, type GlwZeroAuthorityFallbackPolicy } from "@/modules/glw/zero-authority-claim-canonicalization";
+import {
+  canonicalizeAndRevalidateGlwZeroAuthorityClaims,
+  canonicalizeGlwZeroAuthorityClaims,
+  type GlwZeroAuthorityFallbackPolicy,
+} from "@/modules/glw/zero-authority-claim-canonicalization";
 import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
 import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery, validateGlwReferenceOwnerClaimForRecoveredContent } from "@/modules/glw/reference-owner-authority";
@@ -481,18 +485,45 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  const claimAuthority = input.request.referenceAuthorityBinding
-    ? evaluateGlwReferenceClaimAuthority({
+  const claimAuthorityContext = input.request.referenceGenerationAuthority
+    ? {
+        references: input.request.referenceGenerationAuthority.references,
+        authoritativeFactReferenceIds: input.request.referenceGenerationAuthority.authoritativeFactReferenceIds,
+        supportedClaimMappings: input.request.referenceGenerationAuthority.supportedClaimMappings,
+      }
+    : null;
+  const claimParity = input.request.referenceAuthorityBinding && claimAuthorityContext
+    ? canonicalizeAndRevalidateGlwZeroAuthorityClaims({
         artifact: enrichment.artifact,
-        authority: input.request.referenceGenerationAuthority
-          ? {
-              references: input.request.referenceGenerationAuthority.references,
-              authoritativeFactReferenceIds: input.request.referenceGenerationAuthority.authoritativeFactReferenceIds,
-              supportedClaimMappings: input.request.referenceGenerationAuthority.supportedClaimMappings,
-            }
-          : null,
+        authority: claimAuthorityContext,
+        fallbackPolicy: resolveZeroAuthorityFallbackPolicy(input.request),
       })
     : null;
+  if (claimParity && claimParity.canonicalizationSucceeded) {
+    enrichment = {
+      ...enrichment,
+      artifact: claimParity.artifact,
+    };
+    qa = evaluateGlwGeneratedContentQa({
+      artifact: enrichment.artifact,
+      request: input.request,
+      siteDomain: input.siteRecord.domain,
+      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      additionalAllowedDomains: enrichment.approvedExternalDomains,
+      requiredCanonicalProductLink: productAuthority.canonicalProduct
+        ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
+        : null,
+      authorizedComparisonStateCodes: input.request.referenceGenerationAuthority?.localizationPolicy.authorizedComparisonStateCodes,
+    });
+  }
+  const claimAuthority = claimParity
+    ? claimParity.finalClaimAuthority
+    : (input.request.referenceAuthorityBinding
+      ? evaluateGlwReferenceClaimAuthority({
+          artifact: enrichment.artifact,
+          authority: claimAuthorityContext,
+        })
+      : null);
   const productAuthorityFailures = Object.fromEntries(
     ["stateProductAuthorityLink", "canonicalProductReference"]
       .filter((key) => qa.checks[key]?.ok === false)
@@ -521,7 +552,13 @@ async function finalizeContentReadyExecution(input: {
       errorCode: "GENERATED_CONTENT_QA_FAILED",
       errorMessage: `Unsupported factual claims detected under ${claimAuthority.policyVersion}.`,
       qaStatus: "FAILED",
-      qaChecks: { ...qa.checks, claimAuthority: { policyVersion: claimAuthority.policyVersion, findings: claimAuthority.findings } },
+      qaChecks: {
+        ...qa.checks,
+        claimAuthority: { policyVersion: claimAuthority.policyVersion, findings: claimAuthority.findings },
+        ...(claimParity?.canonicalizationReceipt
+          ? { zeroAuthorityCanonicalizationRevalidation: claimParity.canonicalizationReceipt }
+          : {}),
+      },
       qaFailureReasons: { ...qa.failureReasons, ...claimAuthority.failureReasons },
       wordCount: qa.wordCount,
       updatedAt: timestamp,
@@ -1468,6 +1505,28 @@ export async function POST(request: NextRequest) {
       finalized.status === "COMPLETE"
       && finalized.wordpressStatus === "draft"
       && Boolean(finalized.wordpressObjectId);
+
+    const claimAuthorityFailureReasons = Object.entries(finalized.qaFailureReasons ?? {})
+      .filter(([key]) => key.startsWith("unsupportedClaim."))
+      .reduce<Record<string, string>>((accumulator, [key, value]) => {
+        accumulator[key] = value;
+        return accumulator;
+      }, {});
+    const claimAuthorityRevalidationFailed =
+      finalized.status === "FAILED"
+      && finalized.errorCode === "GENERATED_CONTENT_QA_FAILED"
+      && Object.keys(claimAuthorityFailureReasons).length > 0;
+
+    if (claimAuthorityRevalidationFailed) {
+      return NextResponse.json({
+        ok: false,
+        error: "Claim authority revalidation failed before WordPress draft persistence.",
+        code: "CLAIM_AUTHORITY_REVALIDATION_FAILED",
+        claimFailureReasons: claimAuthorityFailureReasons,
+        job: finalized,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
 
     if (!durableDraftPersisted) {
       return NextResponse.json({

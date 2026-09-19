@@ -25,6 +25,7 @@ import { resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-
 import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION, GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT } from "@/modules/glw/reference-generation-claim-contract";
 import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 import {
+  canonicalizeAndRevalidateGlwZeroAuthorityClaims,
   canonicalizeGlwZeroAuthorityClaims,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
@@ -74,14 +75,20 @@ async function resolveCandidate(input: {
   const rawArtifact = job.rawGeneratedDraft ?? job.generatedDraft;
   const rawArtifactSha256 = sha256(rawArtifact.contentHtml);
   if (rawArtifactSha256 !== input.rawArtifactSha256) throw new Error("RAW_ARTIFACT_HASH_MISMATCH");
-  const rawClaims = evaluateGlwReferenceClaimAuthority({ artifact: rawArtifact, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+  const zeroAuthorityContext = { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] };
+  const rawClaims = evaluateGlwReferenceClaimAuthority({ artifact: rawArtifact, authority: zeroAuthorityContext });
   const canonicalization = canonicalizeGlwZeroAuthorityClaims({ rawArtifact, authoritativeFactReferenceIds: [], findings: rawClaims.findings });
   if (!canonicalization.ok || !canonicalization.canonicalizedArtifact) throw new Error("ZERO_AUTHORITY_CANONICALIZATION_BLOCKED");
   if (canonicalization.receipt.receiptId !== input.canonicalizationReceiptId || canonicalization.receipt.canonicalizedArtifactSha256 !== input.canonicalizedArtifactSha256) throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
 
-  const claims = evaluateGlwReferenceClaimAuthority({ artifact: canonicalization.canonicalizedArtifact, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
-  const qa = evaluateGlwGeneratedContentQa({
+  const claimsParity = canonicalizeAndRevalidateGlwZeroAuthorityClaims({
     artifact: canonicalization.canonicalizedArtifact,
+    authority: zeroAuthorityContext,
+    fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+  });
+  const claims = claimsParity.finalClaimAuthority;
+  const qa = evaluateGlwGeneratedContentQa({
+    artifact: claimsParity.artifact,
     request: { pageType: "state_service", stateCode: state.code, stateName: state.name, cityName: null, productTopic: job.productTopic, canonicalPath: job.slug } as never,
     siteDomain: site.domain,
     minimumWordCount: MINIMUM_WORD_COUNT,
@@ -136,7 +143,12 @@ async function resolveCandidate(input: {
     parentStatus: "draft",
     exactRuntime: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
   };
-  return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact: canonicalization.canonicalizedArtifact, canonicalizationReceipt: canonicalization.receipt, claims, qa, qaEvidence, generationAuthority, liveContext };
+  const canonicalizedArtifact = claimsParity.artifact;
+  const canonicalizedArtifactSha256 = sha256(canonicalizedArtifact.contentHtml);
+  if (canonicalization.receipt.canonicalizedArtifactSha256 !== canonicalizedArtifactSha256) {
+    throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
+  }
+  return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact, canonicalizationReceipt: claimsParity.canonicalizationReceipt ?? canonicalization.receipt, claims, qa, qaEvidence, generationAuthority, liveContext };
 }
 
 export async function GET(request: NextRequest, context: Context) {

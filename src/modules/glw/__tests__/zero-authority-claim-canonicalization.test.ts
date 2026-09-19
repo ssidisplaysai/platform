@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { evaluateGlwReferenceClaimAuthority, type GlwClaimAuthorityFinding, type GlwReferenceClaimClass } from "../reference-claim-authority";
 import {
+  canonicalizeAndRevalidateGlwZeroAuthorityClaims,
   canonicalizeGlwZeroAuthorityClaims,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
   GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
@@ -39,6 +40,45 @@ function canonicalize(
 }
 
 describe("GLW zero-authority deterministic claim canonicalization", () => {
+  test("parity helper transforms remaining unsupported interactive planning sentence and revalidates to pass", () => {
+    const text = "Clarify Project Purpose: Define clear objectives for your digital sphere\u2014brand expression, event information, interactive storytelling, or decorative digital art\u2014so that technology evaluation aligns directly with intended outcomes.";
+    const source = artifact(`<p>${text}</p>`);
+    const authority = { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] };
+
+    const result = canonicalizeAndRevalidateGlwZeroAuthorityClaims({
+      artifact: source,
+      authority,
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    });
+
+    expect(result.initialClaimAuthority.ok).toBe(false);
+    expect(result.canonicalizationAttempted).toBe(true);
+    expect(result.canonicalizationSucceeded).toBe(true);
+    expect(result.finalClaimAuthority.ok).toBe(true);
+    expect(result.canonicalizationReceipt?.transformations).toContainEqual(expect.objectContaining({
+      ruleId: "LABELED_APPLICATION_TO_EXPLICIT_CONCEPT",
+      disposition: "CONVERT_TO_CONCEPTUAL_APPLICATION",
+      safeToTransform: true,
+    }));
+  });
+
+  test("parity helper is no-op when authority already passes", () => {
+    const source = artifact("<p>What project requirements should the selected supplier confirm for the proposed installation?</p>");
+    const authority = { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] };
+
+    const result = canonicalizeAndRevalidateGlwZeroAuthorityClaims({
+      artifact: source,
+      authority,
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    });
+
+    expect(result.initialClaimAuthority.ok).toBe(true);
+    expect(result.finalClaimAuthority.ok).toBe(true);
+    expect(result.canonicalizationAttempted).toBe(false);
+    expect(result.canonicalizationReceipt).toBeNull();
+    expect(result.artifact.contentHtml).toBe(source.contentHtml);
+  });
+
   test.each([
     ["PRODUCT_CAPABILITY", "The system supports interactive content.", "CONVERT_TO_BUYER_QUESTION"],
     ["INTERACTIVITY", "The sphere provides interactive experiences.", "CONVERT_TO_BUYER_QUESTION"],

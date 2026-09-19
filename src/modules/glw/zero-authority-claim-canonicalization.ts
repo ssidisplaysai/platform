@@ -54,6 +54,15 @@ export type GlwZeroAuthorityCanonicalizationReceipt = {
   modelInvoked: false;
 };
 
+export type GlwZeroAuthorityClaimParityResult = {
+  initialClaimAuthority: ReturnType<typeof evaluateGlwReferenceClaimAuthority>;
+  finalClaimAuthority: ReturnType<typeof evaluateGlwReferenceClaimAuthority>;
+  artifact: GlwGeneratedDraftArtifact;
+  canonicalizationAttempted: boolean;
+  canonicalizationSucceeded: boolean;
+  canonicalizationReceipt: GlwZeroAuthorityCanonicalizationReceipt | null;
+};
+
 const POLICY = {
   version: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
   appliesWhenAuthoritativeFactReferenceIdsEmpty: true,
@@ -1003,19 +1012,109 @@ export function rehabilitateGlwExistingArtifact(input: {
     authoritativeFactReferenceIds: [],
     supportedClaimMappings: [],
   };
-  const before = evaluateGlwReferenceClaimAuthority({ artifact: input.artifact, authority });
+  const parity = canonicalizeAndRevalidateGlwZeroAuthorityClaims({
+    artifact: input.artifact,
+    authority,
+    fallbackPolicy: "STRICT",
+  });
+  return {
+    ok: parity.finalClaimAuthority.ok,
+    before: parity.initialClaimAuthority,
+    canonicalization: parity.canonicalizationReceipt
+      ? {
+          ok: parity.canonicalizationSucceeded,
+          rawArtifact: input.artifact,
+          canonicalizedArtifact: parity.canonicalizationSucceeded ? parity.artifact : null,
+          receipt: parity.canonicalizationReceipt,
+        }
+      : {
+          ok: true,
+          rawArtifact: input.artifact,
+          canonicalizedArtifact: parity.artifact,
+          receipt: {
+            receiptId: "glw-zero-authority-noop",
+            policyVersion: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
+            policyFingerprint: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
+            rawArtifactSha256: sha256(input.artifact.contentHtml),
+            canonicalizedArtifactSha256: sha256(parity.artifact.contentHtml),
+            authoritativeFactReferenceCount: 0,
+            fallbackPolicy: "STRICT",
+            transformations: [],
+            blockedClaims: [],
+            consumesN8nExecution: false,
+            modelInvoked: false,
+          },
+        },
+    after: parity.finalClaimAuthority,
+  };
+}
+
+export function canonicalizeAndRevalidateGlwZeroAuthorityClaims(input: {
+  artifact: GlwGeneratedDraftArtifact;
+  authority: {
+    references: readonly { referenceId: string; role: string }[];
+    authoritativeFactReferenceIds: readonly string[];
+    supportedClaimMappings: readonly GlwProtectedClaimAuthorityMapping[];
+  };
+  fallbackPolicy: GlwZeroAuthorityFallbackPolicy;
+}): GlwZeroAuthorityClaimParityResult {
+  const initialClaimAuthority = evaluateGlwReferenceClaimAuthority({
+    artifact: input.artifact,
+    authority: input.authority,
+  });
+
+  if (initialClaimAuthority.ok) {
+    return {
+      initialClaimAuthority,
+      finalClaimAuthority: initialClaimAuthority,
+      artifact: input.artifact,
+      canonicalizationAttempted: false,
+      canonicalizationSucceeded: false,
+      canonicalizationReceipt: null,
+    };
+  }
+
+  if (input.authority.authoritativeFactReferenceIds.length > 0) {
+    return {
+      initialClaimAuthority,
+      finalClaimAuthority: initialClaimAuthority,
+      artifact: input.artifact,
+      canonicalizationAttempted: false,
+      canonicalizationSucceeded: false,
+      canonicalizationReceipt: null,
+    };
+  }
+
   const canonicalization = canonicalizeGlwZeroAuthorityClaims({
     rawArtifact: input.artifact,
-    authoritativeFactReferenceIds: authority.authoritativeFactReferenceIds,
-    findings: before.findings,
+    authoritativeFactReferenceIds: [],
+    findings: initialClaimAuthority.findings,
+    fallbackPolicy: input.fallbackPolicy,
+    authority: input.authority,
   });
-  const after = canonicalization.canonicalizedArtifact
-    ? evaluateGlwReferenceClaimAuthority({ artifact: canonicalization.canonicalizedArtifact, authority })
-    : null;
+
+  if (!canonicalization.ok || !canonicalization.canonicalizedArtifact) {
+    return {
+      initialClaimAuthority,
+      finalClaimAuthority: initialClaimAuthority,
+      artifact: input.artifact,
+      canonicalizationAttempted: true,
+      canonicalizationSucceeded: false,
+      canonicalizationReceipt: canonicalization.receipt,
+    };
+  }
+
+  const finalClaimAuthority = evaluateGlwReferenceClaimAuthority({
+    artifact: canonicalization.canonicalizedArtifact,
+    authority: input.authority,
+  });
+
   return {
-    ok: canonicalization.ok && Boolean(after?.ok),
-    before,
-    canonicalization,
-    after,
+    initialClaimAuthority,
+    finalClaimAuthority,
+    artifact: canonicalization.canonicalizedArtifact,
+    canonicalizationAttempted: true,
+    canonicalizationSucceeded: true,
+    canonicalizationReceipt: canonicalization.receipt,
   };
 }
