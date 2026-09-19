@@ -1121,6 +1121,192 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(calledUrls.every((url) => !url.includes(idJobId))).toBe(true);
   });
 
+  test("exact IA failed canonical identity target with matching existing target/job WordPress identity is recoverable", async () => {
+    const iaTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-ia";
+    const iaJobId = "d3a1f95d-d633-44cb-8f2e-7de98b63f1be";
+    const iaExecutionId = "711019";
+
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        job: {
+          status: "COMPLETE",
+          externalExecutionId: iaExecutionId,
+          wordpressObjectId: "20186",
+          wordpressStatus: "draft",
+          slug: "",
+          generatedDraft: { title: "IA", contentHtml: "<p>IA</p>", slug: "outdoor-digital-sphere/iowa", excerpt: "x" },
+        },
+      }, 200));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
+      form: {
+        publicationIntent: "draft",
+        canonicalPath: "outdoor-digital-sphere/iowa",
+      },
+    });
+
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: iaTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "IA",
+        citySlug: null,
+        cityName: null,
+        status: "failed",
+        jobId: iaJobId,
+        wordpressObjectId: "20186",
+        attemptCount: 1,
+        lastError: "DRAFT_READY_CANONICAL_PATH_REQUIRED",
+        leaseId: null,
+      },
+    ]);
+
+    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
+      jobId: iaJobId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      status: "COMPLETE",
+      externalExecutionId: iaExecutionId,
+      wordpressObjectId: "20186",
+      wordpressStatus: "draft",
+      slug: "",
+      generatedDraft: { title: "IA", contentHtml: "<p>IA</p>", slug: "outdoor-digital-sphere/iowa", excerpt: "x" },
+    });
+
+    (createAuthenticatedWordPressReadAuthority as jest.Mock).mockReturnValue({
+      getJson: jest.fn(async () => ({
+        ok: true,
+        body: {
+          id: 20186,
+          status: "draft",
+          slug: "iowa",
+          parent: 20114,
+        },
+      })),
+    });
+
+    (markGlwFailedCampaignTargetDraftReady as jest.Mock).mockReturnValue({
+      targetId: iaTargetId,
+      campaignId,
+      stateCode: "IA",
+      citySlug: null,
+      status: "draft_ready",
+      jobId: iaJobId,
+      wordpressObjectId: "20186",
+      canonicalPath: "outdoor-digital-sphere/iowa",
+      applicationPath: "outdoor-digital-sphere/iowa",
+      canonicalParentId: "20114",
+    });
+
+    const request = new NextRequest(`http://localhost/api/glw/campaigns/${campaignId}/reconcile`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: iaTargetId,
+        jobId: iaJobId,
+        executionId: iaExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.results[0]).toMatchObject({
+      stateCode: "IA",
+      action: "draft_ready",
+      wordpressObjectId: "20186",
+      canonicalPath: "outdoor-digital-sphere/iowa",
+      applicationPath: "outdoor-digital-sphere/iowa",
+      canonicalParentId: "20114",
+      executionIdAfter: iaExecutionId,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((fetchMock.mock.calls[0]?.[1] as { method?: string } | undefined)?.method).toBe("GET");
+    expect(markGlwFailedCampaignTargetDraftReady).toHaveBeenCalledWith(expect.objectContaining({
+      campaignId,
+      stateCode: "IA",
+      jobId: iaJobId,
+      wordpressObjectId: "20186",
+    }));
+    expect(markGlwCampaignTargetDraftReady).not.toHaveBeenCalled();
+    expect(reconcileGlwContentReadyTargetDraft).not.toHaveBeenCalled();
+  });
+
+  test("exact IA failed canonical identity target fails closed when target/job WordPress identities mismatch", async () => {
+    const iaTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-ia";
+    const iaJobId = "d3a1f95d-d633-44cb-8f2e-7de98b63f1be";
+    const iaExecutionId = "711019";
+
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: iaTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "IA",
+        citySlug: null,
+        cityName: null,
+        status: "failed",
+        jobId: iaJobId,
+        wordpressObjectId: "20185",
+        attemptCount: 1,
+        lastError: "DRAFT_READY_CANONICAL_PATH_REQUIRED",
+        leaseId: null,
+      },
+    ]);
+
+    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
+      jobId: iaJobId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      status: "COMPLETE",
+      externalExecutionId: iaExecutionId,
+      wordpressObjectId: "20186",
+      wordpressStatus: "draft",
+      slug: "",
+      generatedDraft: { title: "IA", contentHtml: "<p>IA</p>", slug: "outdoor-digital-sphere/iowa", excerpt: "x" },
+    });
+
+    const request = new NextRequest(`http://localhost/api/glw/campaigns/${campaignId}/reconcile`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: iaTargetId,
+        jobId: iaJobId,
+        executionId: iaExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload.error).toContain("WordPress identity does not match");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(markGlwFailedCampaignTargetDraftReady).not.toHaveBeenCalled();
+  });
+
   test("exact GA running + CONTENT_READY with unexpired lease fails closed", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;

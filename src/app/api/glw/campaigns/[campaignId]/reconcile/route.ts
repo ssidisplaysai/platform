@@ -160,12 +160,23 @@ function isExactRecoverableCanonicalIdentityFailure(input: {
     wordpressStatus?: string | null;
   };
 }): boolean {
+  const targetWordPressObjectId = input.target.wordpressObjectId == null
+    ? null
+    : String(input.target.wordpressObjectId).trim();
+  const jobWordPressObjectId = input.job.wordpressObjectId == null
+    ? null
+    : String(input.job.wordpressObjectId).trim();
+  const matchingWordPressIdentity = Boolean(
+    !targetWordPressObjectId
+    || (jobWordPressObjectId && targetWordPressObjectId === jobWordPressObjectId),
+  );
+
   return input.target.status === "failed"
     && input.target.lastError === "DRAFT_READY_CANONICAL_PATH_REQUIRED"
-    && !input.target.wordpressObjectId
     && input.job.status === "COMPLETE"
     && Boolean(input.job.generatedDraft)
-    && Boolean(input.job.wordpressObjectId)
+    && Boolean(jobWordPressObjectId)
+    && matchingWordPressIdentity
     && input.job.wordpressStatus === "draft"
     && input.job.wordpressStatus !== "publish";
 }
@@ -254,12 +265,21 @@ export async function POST(
     if (!selected.jobId || selected.jobId !== expectedJobId) {
       return NextResponse.json({ error: "Selected target does not match the exact existing job." }, { status: 409 });
     }
-    if (selected.wordpressObjectId) {
-      return NextResponse.json({ error: "Selected target already has a conflicting WordPress identity." }, { status: 409 });
-    }
     const selectedJob = await glwPageExecutionRepository.getById(selected.jobId);
     if (!selectedJob) {
       return NextResponse.json({ error: "Selected target job was not found." }, { status: 409 });
+    }
+    const selectedTargetWordPressObjectId = selected.wordpressObjectId == null
+      ? null
+      : String(selected.wordpressObjectId).trim();
+    const selectedJobWordPressObjectId = selectedJob.wordpressObjectId == null
+      ? null
+      : String(selectedJob.wordpressObjectId).trim();
+    if (selectedTargetWordPressObjectId && selectedJobWordPressObjectId && selectedTargetWordPressObjectId !== selectedJobWordPressObjectId) {
+      return NextResponse.json({ error: "Selected target WordPress identity does not match the exact existing job WordPress identity." }, { status: 409 });
+    }
+    if (selectedTargetWordPressObjectId && !selectedJobWordPressObjectId) {
+      return NextResponse.json({ error: "Selected target WordPress identity does not match the exact existing job WordPress identity." }, { status: 409 });
     }
     if ((selectedJob.externalExecutionId ?? "") !== expectedExecutionId) {
       return NextResponse.json({ error: "Selected target execution identity does not match the exact existing execution." }, { status: 409 });
