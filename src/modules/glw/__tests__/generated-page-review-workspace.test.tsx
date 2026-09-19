@@ -140,6 +140,13 @@ describe("Genesis generated page review workspace", () => {
     const staleHtml = renderToStaticMarkup(<GlwGeneratedPageReviewWorkspace model={{ ...model(), visualQa: stale }} />);
     expect(currentHtml).toContain("visual-capture-tab-desktop");
     expect(currentHtml).toContain("visual-capture-tab-mobile");
+    expect(currentHtml).toContain("visual-capture-expand-desktop");
+    expect(currentHtml).toContain("visual-capture-expand-mobile");
+    expect(currentHtml).toContain("max-h-[560px]");
+    expect(currentHtml).toContain("peer-checked/desktop-expand:max-h-none");
+    expect(currentHtml).toContain("peer-checked/mobile-expand:max-h-none");
+    expect(currentHtml).toContain("checked=\"\"");
+    expect(currentHtml).not.toContain("group-open:max-h-none");
     expect(currentHtml).toContain("Expand Full Capture");
     expect(currentHtml).toContain("Collapse Capture");
     expect(currentHtml).toContain("DESKTOP Capture");

@@ -266,23 +266,36 @@ export function GlwGeneratedPageReviewWorkspace({
                     }
                   />
                 </div>
-                <details className="group mt-4 border border-zinc-800 p-3">
-                  <summary className="cursor-pointer text-xs font-semibold text-zinc-300">
-                    <span className="group-open:hidden">Expand Full Capture</span>
-                    <span className="hidden group-open:inline">Collapse Capture</span>
-                  </summary>
-                  {artifactImage(desktopCapture.artifactReference) ? (
+                <input
+                  id="visual-capture-expand-desktop"
+                  type="checkbox"
+                  className="peer/desktop-expand sr-only"
+                />
+                {artifactImage(desktopCapture.artifactReference) ? (
+                  <div className="mt-4 max-h-[560px] overflow-hidden border border-zinc-800 p-3 peer-checked/desktop-expand:max-h-none">
                     <img
                       src={artifactImage(desktopCapture.artifactReference) ?? undefined}
                       alt="DESKTOP visual certification capture"
-                      className="mt-3 w-full max-h-[700px] object-contain object-top group-open:max-h-none"
+                      className="w-full object-contain object-top"
                     />
-                  ) : (
-                    <div className="mt-3 flex h-[700px] items-center justify-center border border-dashed border-zinc-800 text-xs text-zinc-600">
-                      Artifact stored outside browser-accessible media
-                    </div>
-                  )}
-                </details>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex h-[560px] items-center justify-center border border-dashed border-zinc-800 text-xs text-zinc-600">
+                    Artifact stored outside browser-accessible media
+                  </div>
+                )}
+                <label
+                  htmlFor="visual-capture-expand-desktop"
+                  className="mt-3 inline-flex cursor-pointer border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 peer-checked/desktop-expand:hidden"
+                >
+                  Expand Full Capture
+                </label>
+                <label
+                  htmlFor="visual-capture-expand-desktop"
+                  className="mt-3 hidden cursor-pointer border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 peer-checked/desktop-expand:inline-flex"
+                >
+                  Collapse Capture
+                </label>
                 <dl className="mt-4 grid grid-cols-2 gap-3">
                   <TraceItem
                     label="Viewport"
@@ -342,23 +355,36 @@ export function GlwGeneratedPageReviewWorkspace({
                     }
                   />
                 </div>
-                <details className="group mt-4 border border-zinc-800 p-3">
-                  <summary className="cursor-pointer text-xs font-semibold text-zinc-300">
-                    <span className="group-open:hidden">Expand Full Capture</span>
-                    <span className="hidden group-open:inline">Collapse Capture</span>
-                  </summary>
-                  {artifactImage(mobileCapture.artifactReference) ? (
+                <input
+                  id="visual-capture-expand-mobile"
+                  type="checkbox"
+                  className="peer/mobile-expand sr-only"
+                />
+                {artifactImage(mobileCapture.artifactReference) ? (
+                  <div className="mt-4 max-h-[560px] overflow-hidden border border-zinc-800 p-3 peer-checked/mobile-expand:max-h-none">
                     <img
                       src={artifactImage(mobileCapture.artifactReference) ?? undefined}
                       alt="MOBILE visual certification capture"
-                      className="mt-3 w-full max-h-[700px] object-contain object-top group-open:max-h-none"
+                      className="w-full object-contain object-top"
                     />
-                  ) : (
-                    <div className="mt-3 flex h-[700px] items-center justify-center border border-dashed border-zinc-800 text-xs text-zinc-600">
-                      Artifact stored outside browser-accessible media
-                    </div>
-                  )}
-                </details>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex h-[560px] items-center justify-center border border-dashed border-zinc-800 text-xs text-zinc-600">
+                    Artifact stored outside browser-accessible media
+                  </div>
+                )}
+                <label
+                  htmlFor="visual-capture-expand-mobile"
+                  className="mt-3 inline-flex cursor-pointer border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 peer-checked/mobile-expand:hidden"
+                >
+                  Expand Full Capture
+                </label>
+                <label
+                  htmlFor="visual-capture-expand-mobile"
+                  className="mt-3 hidden cursor-pointer border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:border-zinc-500 peer-checked/mobile-expand:inline-flex"
+                >
+                  Collapse Capture
+                </label>
                 <dl className="mt-4 grid grid-cols-2 gap-3">
                   <TraceItem
                     label="Viewport"
