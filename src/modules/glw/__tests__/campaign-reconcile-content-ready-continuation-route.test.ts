@@ -89,6 +89,9 @@ describe("campaign reconcile exact content-ready continuation route", () => {
   const deTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-de";
   const deJobId = "67b15376-563c-42b7-8fee-b2f2139b114b";
   const deExecutionId = "686290";
+  const kyTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-ky";
+  const kyJobId = "8b5e8054-670e-4d8e-a30c-2552d24f7659";
+  const kyExecutionId = "714444";
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -1536,6 +1539,18 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(continueRequestBody).toMatchObject({ action: "continue", targetId: gaTargetId, jobId: gaJobId, executionId: gaExecutionId });
     const calledUrls = fetchMock.mock.calls.map((call) => String(call[0]));
     expect(calledUrls.every((url) => !url.includes(deJobId))).toBe(true);
+  });
+
+  test("source contract binds exact KY job/execution identity to the same zero-authority continuation path", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reconcile/route.ts"), "utf8");
+    expect(kyJobId).toBe("8b5e8054-670e-4d8e-a30c-2552d24f7659");
+    expect(kyExecutionId).toBe("714444");
+    expect(source).toContain("isExactRecoverableZeroAuthorityFailure");
+    expect(source).toContain("target.jobId === expectedJobId");
+    expect(source).toContain("(job.externalExecutionId ?? \"\") === expectedExecutionId");
+    expect(source).toContain("action: \"continue\"");
+    expect(source).toContain("jobId,");
+    expect(source).toContain("executionId: expectedTargetId ? expectedExecutionId");
   });
 
   test("source contract preserves exact zero-authority recoverability with identity-locked continue action", () => {

@@ -9,7 +9,7 @@ import {
 } from "./reference-claim-authority";
 
 export const GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION =
-  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_7" as const;
+  "GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_V2_8" as const;
 
 export type GlwZeroAuthorityFallbackPolicy =
   | "STRICT"
@@ -129,6 +129,18 @@ function outdoorSphereFallbackTransformation(input: {
   text: string;
   claimClasses: readonly GlwReferenceClaimClass[];
 }): GlwZeroAuthorityTransformation {
+  if (isCanonicalConceptualApplication(input.text)) {
+    return {
+      claimClasses: input.claimClasses,
+      originalText: input.text,
+      canonicalText: "What visual or experience concept should the project team evaluate for the proposed installation?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "TERMINAL_CONCEPTUAL_APPLICATION_TO_BUYER_QUESTION",
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+    };
+  }
+
   const conservativeClass = resolveConservativeFallbackClass(input.claimClasses);
 
   if (conservativeClass === "LOCATION_FACT" || conservativeClass === "MARKET_ADOPTION") {
@@ -248,6 +260,14 @@ function outdoorSphereFallbackTransformation(input: {
     ruleId: "OUTDOOR_SPHERE_CLASS_FALLBACK_CAPABILITY",
     fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
   };
+}
+
+function isCanonicalConceptualApplication(text: string): boolean {
+  const normalized = normalizeText(text).toLowerCase();
+  return normalized.startsWith("one possible concept a project team could consider is")
+    || normalized.includes(" one possible concept a project team could consider is")
+    || normalized.startsWith("organizations may evaluate spherical displays as a potential way to create:")
+    || normalized.includes("organizations may evaluate spherical displays as a potential way to create:");
 }
 
 function transformationFor(text: string, claimClasses: readonly GlwReferenceClaimClass[], fallbackPolicy: GlwZeroAuthorityFallbackPolicy): GlwZeroAuthorityTransformation {
@@ -529,6 +549,20 @@ function transformationFor(text: string, claimClasses: readonly GlwReferenceClai
       disposition: "CONVERT_TO_BUYER_QUESTION",
       safeToTransform: true,
       ruleId: "PROJECT_DOCUMENTATION_DIRECTIVE_TO_BUYER_QUESTION",
+      fallbackPolicy,
+    };
+  }
+
+  if (fallbackPolicy === "OUTDOOR_SPHERE_STATE_SERVICE"
+    && isCanonicalConceptualApplication(text)
+    && claimClasses.some((claimClass) => ["INTERACTIVITY", "PRODUCT_CAPABILITY", "PRODUCT_SPECIFICATION", "REMOTE_MANAGEMENT"].includes(claimClass))) {
+    return {
+      claimClasses,
+      originalText: text,
+      canonicalText: "What visual or experience concept should the project team evaluate for the proposed installation?",
+      disposition: "CONVERT_TO_BUYER_QUESTION",
+      safeToTransform: true,
+      ruleId: "TERMINAL_CONCEPTUAL_APPLICATION_TO_BUYER_QUESTION",
       fallbackPolicy,
     };
   }

@@ -576,6 +576,53 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(source).toContain("...(passes.length > 0 ? { passes } : {})");
   });
 
+  test("terminal conceptual canonicalization avoids recursive wrapping for KY residual shape and is idempotent", () => {
+    const residual = "Organizations may evaluate spherical displays as a potential way to create: One possible concept a project team could consider is one possible concept a project team could consider is an interactive experience, subject to confirmation of the selected system and project requirements.";
+    const rawArtifact = artifact(`<p>${residual}</p>`);
+    const authority = { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] };
+
+    const first = canonicalizeGlwZeroAuthorityClaims({
+      rawArtifact,
+      authoritativeFactReferenceIds: [],
+      findings: [finding("PRODUCT_SPECIFICATION", residual)],
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+      authority,
+    });
+
+    expect(first.ok).toBe(true);
+    expect(first.receipt.blockedClaims).toEqual([]);
+    expect(first.receipt.modelInvoked).toBe(false);
+    expect(first.receipt.consumesN8nExecution).toBe(false);
+    expect(first.receipt.transformations).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        ruleId: "TERMINAL_CONCEPTUAL_APPLICATION_TO_BUYER_QUESTION",
+        disposition: "CONVERT_TO_BUYER_QUESTION",
+        safeToTransform: true,
+      }),
+    ]));
+    expect(first.canonicalizedArtifact?.contentHtml).toContain("What visual or experience concept should the project team evaluate for the proposed installation?");
+    expect(first.canonicalizedArtifact?.contentHtml).not.toContain("one possible concept a project team could consider is one possible concept");
+
+    const afterFirst = evaluateGlwReferenceClaimAuthority({ artifact: first.canonicalizedArtifact!, authority });
+    expect(afterFirst.findings.filter((entry) => entry.authorityStatus === "UNSUPPORTED")).toEqual([]);
+
+    const second = canonicalizeGlwZeroAuthorityClaims({
+      rawArtifact: first.canonicalizedArtifact!,
+      authoritativeFactReferenceIds: [],
+      findings: afterFirst.findings,
+      fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
+      authority,
+    });
+
+    expect(second.ok).toBe(true);
+    expect(second.receipt.blockedClaims).toEqual([]);
+    expect(second.canonicalizedArtifact?.contentHtml).toBe(first.canonicalizedArtifact?.contentHtml);
+
+    const source = readFileSync(join(process.cwd(), "src/modules/glw/zero-authority-claim-canonicalization.ts"), "utf8");
+    expect(source).toContain("const maxPasses = fallbackPolicy === \"OUTDOOR_SPHERE_STATE_SERVICE\" && authority ? 3 : 1;");
+    expect(source).toContain("TERMINAL_CONCEPTUAL_APPLICATION_TO_BUYER_QUESTION");
+  });
+
   test("source contract enforces no-progress fail-closed and bounded max-pass exhaustion for Outdoor Sphere fixed-point mode", () => {
     const source = readFileSync(join(process.cwd(), "src/modules/glw/zero-authority-claim-canonicalization.ts"), "utf8");
     expect(source).toContain("const maxPasses = fallbackPolicy === \"OUTDOOR_SPHERE_STATE_SERVICE\" && authority ? 3 : 1;");
