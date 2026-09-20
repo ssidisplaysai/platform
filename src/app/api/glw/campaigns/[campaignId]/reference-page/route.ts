@@ -752,6 +752,7 @@ export async function POST(request: NextRequest, context: Context) {
       targetStateCode: target.state.code,
       targetCitySlug: target.citySlug,
       referenceJobId: existing.jobId,
+      referenceJobStatus: existing.status,
       referenceWordpressObjectId: existing.wordpressObjectId,
     });
     if (!targetReady) {

@@ -6,6 +6,7 @@ import {
   initializeGlwCityCampaignTargets,
   listGlwCampaignTargets,
   previewGlwCampaignTargets,
+  reconcileGlwReferenceTargetContentReadyForContinuation,
 } from "@/modules/glw/campaign-target-repository";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 
@@ -36,6 +37,7 @@ export function ensureDraftCampaignContinuationTarget(input: {
   targetStateCode: string;
   targetCitySlug?: string | null;
   referenceJobId: string;
+  referenceJobStatus: string;
   referenceWordpressObjectId: string | null;
 }): boolean {
   if (hasExactTarget({
@@ -96,6 +98,15 @@ export function ensureDraftCampaignContinuationTarget(input: {
       referenceJobId: input.referenceJobId,
       referenceWordpressObjectId: input.referenceWordpressObjectId,
       certifiedTargets: listGlwCertifiedStateCampaignTargets(input.campaign),
+    });
+  }
+
+  if (input.referenceJobStatus === "CONTENT_READY") {
+    reconcileGlwReferenceTargetContentReadyForContinuation({
+      campaignId: input.campaign.campaignId,
+      stateCode: input.targetStateCode,
+      citySlug: input.targetCitySlug,
+      expectedJobId: input.referenceJobId,
     });
   }
 

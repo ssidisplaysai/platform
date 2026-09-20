@@ -213,6 +213,9 @@ describe("reference preactivation continuation route", () => {
       const afterInitTargets = listGlwCampaignTargets(campaignId);
       expect(afterInitTargets).toHaveLength(30);
       expect(afterInitTargets.some((target) => target.stateCode === "TX" && target.citySlug === null)).toBe(true);
+      const referenceTarget = afterInitTargets.find((target) => target.stateCode === "TX" && target.citySlug === null);
+      expect(referenceTarget?.status).toBe("content_ready");
+      expect(afterInitTargets.filter((target) => target.status === "queued")).toHaveLength(29);
 
       const lookup = resolveExactContinuationCampaignTarget({
         targets: afterInitTargets,
@@ -225,7 +228,6 @@ describe("reference preactivation continuation route", () => {
         expectedJobId: referenceJobId,
         expectedExecutionId: originalExecutionId,
         actualExecutionId: originalExecutionId,
-        allowedStatuses: ["reference_complete", "content_ready", "running", "failed"],
       });
       expect(lookup.ok).toBe(true);
 
@@ -304,6 +306,7 @@ describe("reference preactivation continuation route", () => {
       targetStateCode: "TX",
       targetCitySlug: null,
       referenceJobId,
+      referenceJobStatus: "CONTENT_READY",
       referenceWordpressObjectId: null,
     })).toBe(true);
     const second = listGlwCampaignTargets(campaignId);

@@ -408,6 +408,45 @@ export function initializeGlwCityCampaignTargets(input: {
   return listGlwCampaignTargets(input.campaignId);
 }
 
+export function reconcileGlwReferenceTargetContentReadyForContinuation(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug?: string | null;
+  expectedJobId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+
+  if (!current) {
+    throw new Error("REFERENCE_TARGET_NOT_FOUND");
+  }
+  if (current.status !== "reference_complete") {
+    throw new Error("REFERENCE_TARGET_NOT_REFERENCE_COMPLETE");
+  }
+  if (current.jobId !== input.expectedJobId) {
+    throw new Error("REFERENCE_TARGET_JOB_IDENTITY_MISMATCH");
+  }
+  if (current.wordpressObjectId) {
+    throw new Error("REFERENCE_TARGET_WORDPRESS_IDENTITY_CONFLICT");
+  }
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "content_ready",
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
 export type GlwCampaignTargetQueueSummary = {
   total: number;
   prepared: number;

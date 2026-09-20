@@ -60,6 +60,7 @@ describe("reference continuation target initialization", () => {
       targetStateCode: "TX",
       targetCitySlug: null,
       referenceJobId: "a1371f29-8952-438d-9ed4-583da68d4fbb",
+      referenceJobStatus: "CONTENT_READY",
       referenceWordpressObjectId: null,
     });
 
@@ -67,6 +68,9 @@ describe("reference continuation target initialization", () => {
     expect(initialized).toBe(true);
     expect(targets).toHaveLength(30);
     expect(targets.some((target) => target.stateCode === "TX" && target.citySlug === null)).toBe(true);
+    const referenceTarget = targets.find((target) => target.stateCode === "TX" && target.citySlug === null);
+    expect(referenceTarget?.status).toBe("content_ready");
+    expect(targets.filter((target) => target.status === "queued")).toHaveLength(29);
     expect(campaign.status).toBe("draft");
   });
 
@@ -78,6 +82,7 @@ describe("reference continuation target initialization", () => {
       targetStateCode: "TX",
       targetCitySlug: null,
       referenceJobId: "job-1",
+      referenceJobStatus: "CONTENT_READY",
       referenceWordpressObjectId: null,
     })).toBe(true);
 
@@ -89,6 +94,7 @@ describe("reference continuation target initialization", () => {
       targetStateCode: "TX",
       targetCitySlug: null,
       referenceJobId: "job-1",
+      referenceJobStatus: "CONTENT_READY",
       referenceWordpressObjectId: null,
     })).toBe(true);
 
@@ -105,6 +111,7 @@ describe("reference continuation target initialization", () => {
       targetStateCode: "AK",
       targetCitySlug: null,
       referenceJobId: "job-1",
+      referenceJobStatus: "CONTENT_READY",
       referenceWordpressObjectId: null,
     });
 
@@ -120,6 +127,7 @@ describe("reference continuation target initialization", () => {
       targetStateCode: "TX",
       targetCitySlug: null,
       referenceJobId: "job-1",
+      referenceJobStatus: "CONTENT_READY",
       referenceWordpressObjectId: null,
     })).toBe(true);
 
