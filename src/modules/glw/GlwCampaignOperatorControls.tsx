@@ -25,7 +25,7 @@ type ContinuableTargetSummary = {
   targetId: string;
   identity: string;
   lifecycleState: string;
-  queueRecoveryClass?: "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE";
+  queueRecoveryClass?: "POST_DRAFT_REVIEW_COMPLETION" | "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE";
   ownerAttentionRequired?: boolean;
   continuationEligible: boolean;
   jobId: string | null;
@@ -195,9 +195,16 @@ type OperatorFreeTargetLock = {
 
 type ReviewQueueState = "IDLE" | "ACTIVE" | "COMPLETE" | "DAILY_LIMIT_REACHED" | "BLOCKED";
 
-function resolveQueueRecoveryClass(target: ContinuableTargetSummary): "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE" {
+function resolveQueueRecoveryClass(target: ContinuableTargetSummary): "POST_DRAFT_REVIEW_COMPLETION" | "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE" {
   if (target.queueRecoveryClass) return target.queueRecoveryClass;
   if (target.ownerAttentionRequired) return "OWNER_RETRY_REQUIRED";
+  if (
+    target.lifecycleState === "draft_ready"
+    && Boolean(target.wordpressObjectId)
+    && !target.visualCertificationCurrentPass
+  ) {
+    return "POST_DRAFT_REVIEW_COMPLETION";
+  }
   if (
     target.continuationEligible === true
     && (target.lifecycleState === "content_ready" || target.lifecycleState === "running")
@@ -432,6 +439,10 @@ export function GlwCampaignOperatorControls({
 
   const queuedNewDispatchTargets = targets.filter((target) =>
     resolveQueueRecoveryClass(target) === "QUEUED_NEW_DISPATCH",
+  );
+
+  const postDraftReviewCompletionTargets = targets.filter((target) =>
+    resolveQueueRecoveryClass(target) === "POST_DRAFT_REVIEW_COMPLETION",
   );
 
   const autoTarget = autoTargetLock
@@ -755,6 +766,28 @@ export function GlwCampaignOperatorControls({
       return;
     }
 
+    const postDraftTargets = postDraftReviewCompletionTargets
+      .filter((target) =>
+        target.lifecycleState === "draft_ready"
+        && Boolean(target.wordpressObjectId)
+        && !target.visualCertificationCurrentPass
+        && Boolean(target.jobId)
+        && Boolean(target.executionId),
+      )
+      .sort((left, right) => left.identity.localeCompare(right.identity));
+
+    if (postDraftTargets.length >= 1) {
+      const postDraft = postDraftTargets[0];
+      setReviewQueueCurrentTargetId(postDraft.targetId);
+      setAutoTargetLock({
+        targetId: postDraft.targetId,
+        jobId: postDraft.jobId,
+        executionId: postDraft.executionId,
+      });
+      void runOperatorFreeProgression(postDraft.targetId);
+      return;
+    }
+
     const resumableTargets = targets.filter((target) =>
       resolveQueueRecoveryClass(target) === "RESUMABLE_CONTINUATION"
       && (target.lifecycleState === "content_ready" || target.lifecycleState === "running")
@@ -896,6 +929,7 @@ export function GlwCampaignOperatorControls({
     refreshingSeo,
     enablingReleaseCapability,
     targets,
+    postDraftReviewCompletionTargets,
     readSchedulerSnapshot,
   ]);
 

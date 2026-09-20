@@ -87,7 +87,7 @@ const referenceImage = {
   revision: 1,
 } as GlwReferenceImageCandidate;
 
-function model(overrides: { targets?: GlwCampaignTarget[]; jobs?: GlwPageExecutionRecord[]; mcpConfigured?: boolean } = {}) {
+function model(overrides: { targets?: GlwCampaignTarget[]; jobs?: GlwPageExecutionRecord[]; mcpConfigured?: boolean; visualCertificationPassByTargetId?: Record<string, boolean> } = {}) {
   return deriveGlwCampaignOperatorReadModel({
     campaign,
     targets: overrides.targets ?? [
@@ -101,6 +101,7 @@ function model(overrides: { targets?: GlwCampaignTarget[]; jobs?: GlwPageExecuti
     releaseCapability: { status: "READY", ready: true, reason: null, capability: { releaseSha: "a".repeat(40) } } as never,
     mcpConfigured: overrides.mcpConfigured ?? true,
     referenceImage,
+    visualCertificationPassByTargetId: overrides.visualCertificationPassByTargetId,
   });
 }
 
@@ -232,6 +233,50 @@ describe("campaign operator experience", () => {
     expect(result.targets.find((entry) => entry.identity === "Minnesota, TX")?.queueRecoveryClass).toBe("QUEUED_NEW_DISPATCH");
   });
 
+  test("classifies draft_ready with existing WordPress identity and missing visual pass as post_draft_review_completion", () => {
+    const miDraftReady = target("Michigan", "michigan", "draft_ready", "job-mi", "20234");
+    const miJob = {
+      ...dallasJob,
+      jobId: "job-mi",
+      externalExecutionId: "726697",
+      status: "COMPLETE",
+      wordpressObjectId: "20234",
+      wordpressStatus: "draft",
+    } as GlwPageExecutionRecord;
+    const mnContentReady = target("Minnesota", "minnesota", "content_ready", "job-mn", null);
+    const mnJob = {
+      ...dallasJob,
+      jobId: "job-mn",
+      externalExecutionId: "731576",
+      status: "CONTENT_READY",
+      wordpressObjectId: null,
+      wordpressStatus: null,
+    } as GlwPageExecutionRecord;
+    const moQueued = target("Missouri", "missouri", "queued", null, null);
+    const deFailed = target("Delaware", "delaware", "failed", "job-de", null);
+    const deFailedJob = {
+      ...dallasJob,
+      jobId: "job-de",
+      externalExecutionId: "731000",
+      status: "FAILED",
+      errorCode: "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED",
+      generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/delaware", excerpt: "x" },
+      wordpressObjectId: null,
+      wordpressStatus: null,
+    } as GlwPageExecutionRecord;
+
+    const result = model({
+      targets: [target("Austin", "austin", "reference_complete"), miDraftReady, mnContentReady, moQueued, deFailed],
+      jobs: [miJob, mnJob, deFailedJob],
+      visualCertificationPassByTargetId: { [miDraftReady.targetId]: false },
+    });
+
+    expect(result.targets.find((entry) => entry.identity === "Michigan, TX")?.queueRecoveryClass).toBe("POST_DRAFT_REVIEW_COMPLETION");
+    expect(result.targets.find((entry) => entry.identity === "Minnesota, TX")?.queueRecoveryClass).toBe("RESUMABLE_CONTINUATION");
+    expect(result.targets.find((entry) => entry.identity === "Missouri, TX")?.queueRecoveryClass).toBe("QUEUED_NEW_DISPATCH");
+    expect(result.targets.find((entry) => entry.identity === "Delaware, TX")?.queueRecoveryClass).toBe("OWNER_RETRY_REQUIRED");
+  });
+
   test("treats failed OUTDOOR_SPHERE rich-composition partial draft as content_ready lifecycle only for draft WordPress state", () => {
     const failedDallas = target("Dallas", "dallas", "failed", dallasJob.jobId);
     const recoverablePartialDraftJob = {
@@ -341,7 +386,7 @@ describe("campaign operator experience", () => {
     expect(source).toContain("/api/glw/pages/${encodeURIComponent(result.jobId)}/visual-certification");
     expect(source).toContain("Operator-free progression reached READY FOR OWNER REVIEW");
     expect(source).toContain("resolveQueueRecoveryClass");
-    expect(source).toContain("queueRecoveryClass?: \"RESUMABLE_CONTINUATION\" | \"OWNER_RETRY_REQUIRED\" | \"QUEUED_NEW_DISPATCH\" | \"NONE\"");
+    expect(source).toContain("queueRecoveryClass?: \"POST_DRAFT_REVIEW_COMPLETION\" | \"RESUMABLE_CONTINUATION\" | \"OWNER_RETRY_REQUIRED\" | \"QUEUED_NEW_DISPATCH\" | \"NONE\"");
     expect(source).toContain("Owner Attention Required");
     expect(source).toContain("const [autoTargetLock, setAutoTargetLock]");
     expect(source).toContain("const [autoTargetLockHydrated, setAutoTargetLockHydrated]");
@@ -387,6 +432,9 @@ describe("campaign operator experience", () => {
     expect(source).toContain("Current target:");
     expect(source).toContain("Ready for Review");
     expect(source).toContain("const processingCount = reviewQueueState === \"ACTIVE\" && autoTargetLock?.targetId ? 1 : 0;");
+    expect(source).toContain("const postDraftReviewCompletionTargets = targets.filter((target) =>");
+    expect(source).toContain("resolveQueueRecoveryClass(target) === \"POST_DRAFT_REVIEW_COMPLETION\"");
+    expect(source.indexOf("if (postDraftTargets.length >= 1)")).toBeLessThan(source.indexOf("if (resumableTargets.length >= 1)"));
     expect(source).toContain("const resumableTargets = targets.filter((target) =>");
     expect(source).toContain("target.lifecycleState === \"content_ready\" || target.lifecycleState === \"running\"");
     expect(source).toContain("if (resumableTargets.length >= 1)");

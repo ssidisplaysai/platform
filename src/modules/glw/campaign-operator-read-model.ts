@@ -19,7 +19,7 @@ import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-pag
 
 export type OperatorStageState = "COMPLETE" | "CURRENT" | "PARTIAL" | "BLOCKED" | "UPCOMING" | "NOT_REQUIRED";
 export type OperatorImageState = "APPROVED" | "READY" | "GENERATING" | "MISSING" | "DEGRADED" | "NOT_WIRED";
-export type GlwQueueRecoveryClass = "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE";
+export type GlwQueueRecoveryClass = "POST_DRAFT_REVIEW_COMPLETION" | "RESUMABLE_CONTINUATION" | "OWNER_RETRY_REQUIRED" | "QUEUED_NEW_DISPATCH" | "NONE";
 
 export type GlwCampaignOperatorTarget = {
   targetId: string;
@@ -210,6 +210,12 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         || isRecoverableOutdoorSphereRichCompositionTarget(target, job)
         ? "content_ready"
         : target.status;
+      const visualCertificationCurrentPass = input.visualCertificationPassByTargetId?.[target.targetId] ?? false;
+      const resolvedWordpressObjectId = target.wordpressObjectId ?? job?.wordpressObjectId ?? null;
+      const postDraftReviewCompletionEligible = effectiveLifecycleState === "draft_ready"
+        && !ownerRetryRequired
+        && Boolean(resolvedWordpressObjectId)
+        && !visualCertificationCurrentPass;
       const continuationEligible = effectiveLifecycleState === "content_ready"
         && !ownerRetryRequired
         && Boolean(target.jobId)
@@ -217,7 +223,9 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         && (!target.wordpressObjectId || isRecoverableOutdoorSphereRichCompositionTarget(target, job));
       const queueRecoveryClass: GlwQueueRecoveryClass = ownerRetryRequired
         ? "OWNER_RETRY_REQUIRED"
-        : continuationEligible
+        : postDraftReviewCompletionEligible
+          ? "POST_DRAFT_REVIEW_COMPLETION"
+          : continuationEligible
           ? "RESUMABLE_CONTINUATION"
           : (target.status === "queued" && !target.jobId && !target.wordpressObjectId)
             ? "QUEUED_NEW_DISPATCH"
@@ -243,13 +251,13 @@ export function deriveGlwCampaignOperatorReadModel(input: {
         jobId: target.jobId,
         executionId: job?.externalExecutionId ?? null,
         executionState: job?.status ?? null,
-        wordpressObjectId: target.wordpressObjectId ?? job?.wordpressObjectId ?? null,
+        wordpressObjectId: resolvedWordpressObjectId,
         wordpressStatus: job?.wordpressStatus ?? (target.status === "published" ? "publish" : target.status === "draft_ready" ? "draft" : null),
         wordpressUrl: job?.wordpressUrl ?? null,
         canonicalPath: target.canonicalPath ?? null,
         applicationPath: target.applicationPath ?? null,
         canonicalParentId: target.canonicalParentId ?? null,
-        visualCertificationCurrentPass: input.visualCertificationPassByTargetId?.[target.targetId] ?? false,
+        visualCertificationCurrentPass,
         productAuthorityImage: projectionTruth?.productAuthorityRendered
           ? { state: "READY", detail: "Current governed rendered visual certification verifies PRODUCT_AUTHORITY media rendering." }
           : { state: "NOT_WIRED", detail: "Target-level PRODUCT_AUTHORITY assignment is not exposed by the campaign backend." },
