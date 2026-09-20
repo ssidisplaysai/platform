@@ -21,6 +21,7 @@ import { renderSiteStudioAuthorityLinks, resolveSiteStudioProductAuthority } fro
 import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-service";
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
+import { resolveFinalizationArtifactSource } from "@/modules/glw/finalization-artifact-source";
 import { evaluateGlwReferenceClaimAuthority, type GlwClaimAuthorityFinding, type GlwReferenceClaimClass } from "@/modules/glw/reference-claim-authority";
 import {
   canonicalizeAndRevalidateGlwZeroAuthorityClaims,
@@ -331,8 +332,13 @@ async function finalizeContentReadyExecution(input: {
     });
   }
 
-  const rawGeneratedDraft = input.job.rawGeneratedDraft ?? input.job.generatedDraft;
-  let artifactForPipeline = input.job.canonicalizedGeneratedDraft ?? input.job.generatedDraft;
+  const recoverableFailure = recoverableQaFailure || recoverableWordPressFailure;
+  const artifactSource = resolveFinalizationArtifactSource({
+    job: input.job,
+    recoverableFailure,
+  });
+  const rawGeneratedDraft = artifactSource.rawGeneratedDraft;
+  let artifactForPipeline = artifactSource.artifactForPipeline;
   if (input.request.referenceAuthorityBinding
     && input.request.referenceGenerationAuthority
     && input.request.referenceGenerationAuthority.authoritativeFactReferenceIds.length === 0) {

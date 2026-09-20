@@ -247,7 +247,7 @@ describe("GLW selective page generation recovery", () => {
     expect(source).toContain("const recoverableQaFailure =");
     expect(source).toContain('|| input.job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"');
     expect(source).toContain("&& Boolean(input.job.generatedDraft);");
-    expect(source).toContain("const rawGeneratedDraft = input.job.rawGeneratedDraft ?? input.job.generatedDraft;");
+    expect(source).toContain("resolveFinalizationArtifactSource({");
   });
 
   test("requests zero-authority fallback only for Outdoor Sphere LDW state-service scope", () => {
@@ -279,6 +279,22 @@ describe("GLW selective page generation recovery", () => {
     expect(unrelatedFailure).toBeGreaterThan(contentRepairFailure);
     expect(finalizeCall).toBeGreaterThan(continueBranch);
     expect(dispatchCall).toBeGreaterThan(generateBranch);
+  });
+
+  test("recoverable FAILED content still reruns claim authority before WordPress draft persistence", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    const recoverableFailure = source.indexOf('job.errorCode === "GENERATED_CONTENT_QA_FAILED"');
+    const continueBranch = source.indexOf('if (action === "continue")');
+    const finalizeCall = source.indexOf("finalizeContentReadyExecution({", continueBranch);
+    const claimAuthorityCheck = source.indexOf("if (claimAuthority && !claimAuthority.ok)", recoverableFailure);
+    const claimFailureWrite = source.indexOf('errorMessage: `Unsupported factual claims detected under ${claimAuthority.policyVersion}.`', claimAuthorityCheck);
+    const wordpressWrite = source.indexOf("writeGenesisWordPressDraft", claimFailureWrite);
+
+    expect(recoverableFailure).toBeGreaterThan(0);
+    expect(finalizeCall).toBeGreaterThan(continueBranch);
+    expect(claimAuthorityCheck).toBeGreaterThan(recoverableFailure);
+    expect(claimFailureWrite).toBeGreaterThan(claimAuthorityCheck);
+    expect(wordpressWrite).toBeGreaterThan(claimFailureWrite);
   });
 
 });
