@@ -37,6 +37,7 @@ type MediaRecord = {
   altTextAuthority: string;
   captionAuthority: string;
   hash: string;
+  createdAt: string;
   updatedAt: string;
   contentUrl: string;
 };
@@ -63,8 +64,12 @@ type CampaignMediaPolicyPayload = {
   policy: {
     mode: "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALLOWLIST";
     allowlistMediaAuthorityIds: string[];
+    campaignHeroMediaAuthorityId?: string | null;
   };
   effectiveMediaAuthorityIds: string[];
+  campaignHeroMediaAuthorityId?: string | null;
+  effectiveHeroMediaAuthorityId?: string | null;
+  productDefaultHeroMediaAuthorityId?: string | null;
   readiness: {
     state: "REFERENCE_COMPOSITION_MEDIA_READY" | "PRODUCT_MEDIA_AUTHORITY_REQUIRED";
     approvedProductAuthorityMediaCount: number;
@@ -72,6 +77,8 @@ type CampaignMediaPolicyPayload = {
     approvedApplicationMediaCount: number;
     approvedLocalAtmosphereMediaCount: number;
     heroAuthorityReady: boolean;
+    campaignHeroReady?: boolean;
+    productAuthorityReady?: boolean;
     supportingProductMediaReady: boolean;
     applicationMediaReady: boolean;
     mediaProvenanceReady: boolean;
@@ -92,6 +99,7 @@ function MediaReviewCard(props: {
   record: MediaRecord;
   busy: boolean;
   campaignEligible: boolean | null;
+  campaignScopedHeroMode: boolean;
   onSelectHero: (record: MediaRecord) => Promise<void>;
   onRevise: (record: MediaRecord, visualDirection: string) => Promise<void>;
   onReview: (record: MediaRecord, decision: "APPROVE" | "REJECT", review: {
@@ -136,7 +144,7 @@ function MediaReviewCard(props: {
       {props.campaignEligible === false ? <p className="mt-2 text-xs font-semibold text-amber-300">NOT USED IN THIS CAMPAIGN</p> : null}
       {generatedCandidate && props.record.generationPrompt ? <p className="mt-2 text-xs text-zinc-400">Prompt metadata recorded ({props.record.generationProvider ?? "unknown provider"} / {props.record.generationModel ?? "unknown model"}).</p> : null}
       {props.record.ownerApproval === "APPROVED" ? <p className="mt-3 text-xs text-emerald-300">Approved by {props.record.ownerPrincipalId ?? "recorded owner"} at {props.record.ownerApprovalTimestamp ? new Date(props.record.ownerApprovalTimestamp).toLocaleString() : "recorded time"}. Reclassification requires a separate governed action.</p> : null}
-      {props.record.heroSelected ? <p className="mt-3 text-xs font-semibold text-emerald-300">Selected primary hero by {props.record.heroSelectedBy ?? "recorded owner"}.</p> : props.record.heroSelectable ? <button type="button" disabled={props.busy} onClick={() => void props.onSelectHero(props.record)} className="mt-3 border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-300 disabled:opacity-40">Set as Hero</button> : null}
+      {props.record.heroSelected ? <p className="mt-3 text-xs font-semibold text-emerald-300">Selected primary hero by {props.record.heroSelectedBy ?? "recorded owner"}.</p> : (!props.campaignScopedHeroMode && props.record.heroSelectable) ? <button type="button" disabled={props.busy} onClick={() => void props.onSelectHero(props.record)} className="mt-3 border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-300 disabled:opacity-40">Set as Hero</button> : null}
       {controls.reviewFieldsEditable ? <div className="mt-4 border-t border-zinc-800 pt-3">
         <p className="text-xs font-semibold text-zinc-300">{props.record.ownerApproval === "REJECTED" ? "Reconsider rejected media" : "Owner review"}</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -174,7 +182,9 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
   const [campaignMediaPolicy, setCampaignMediaPolicy] = useState<CampaignMediaPolicyPayload | null>(null);
   const [busy, setBusy] = useState(false);
   const [allowlistBusyMediaId, setAllowlistBusyMediaId] = useState<string | null>(null);
+  const [campaignHeroBusyMediaId, setCampaignHeroBusyMediaId] = useState<string | null>(null);
   const [allowlistError, setAllowlistError] = useState<{ mediaAuthorityId: string; message: string } | null>(null);
+  const [campaignHeroError, setCampaignHeroError] = useState<{ mediaAuthorityId: string; message: string } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const endpoint = `/api/glw/products/${encodeURIComponent(props.productId)}/media-authority?stateCode=${encodeURIComponent(props.targetStateCode)}`;
   const policyEndpoint = props.campaignId
@@ -215,6 +225,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
   async function saveCampaignMediaPolicy(input: {
     mode: "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALLOWLIST";
     allowlistMediaAuthorityIds: readonly string[];
+    campaignHeroMediaAuthorityId?: string | null;
   }) {
     if (!policyEndpoint) return;
     const response = await fetch(policyEndpoint, {
@@ -237,6 +248,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       await saveCampaignMediaPolicy({
         mode,
         allowlistMediaAuthorityIds: campaignMediaPolicy.policy.allowlistMediaAuthorityIds,
+        campaignHeroMediaAuthorityId: campaignMediaPolicy.policy.campaignHeroMediaAuthorityId ?? null,
       });
       setMessage(mode === "INHERIT_PRODUCT_MEDIA" ? "Campaign now inherits globally eligible product media." : "Campaign now enforces an explicit media allowlist.");
       await props.onAuthorityChanged?.();
@@ -263,6 +275,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       await saveCampaignMediaPolicy({
         mode: campaignMediaPolicy.policy.mode,
         allowlistMediaAuthorityIds: Array.from(current),
+        campaignHeroMediaAuthorityId: campaignMediaPolicy.policy.campaignHeroMediaAuthorityId ?? null,
       });
       setMessage("Campaign allowlist updated.");
       await props.onAuthorityChanged?.();
@@ -272,6 +285,33 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       setMessage(text);
     } finally {
       setAllowlistBusyMediaId(null);
+    }
+  }
+
+  async function setCampaignHeroMediaId(mediaAuthorityId: string | null) {
+    if (!campaignMediaPolicy) return;
+    if (mediaAuthorityId && campaignHeroBusyMediaId === mediaAuthorityId) return;
+    setCampaignHeroBusyMediaId(mediaAuthorityId ?? "__clear__");
+    if (mediaAuthorityId) {
+      setCampaignHeroError(null);
+    }
+    setMessage(null);
+    try {
+      await saveCampaignMediaPolicy({
+        mode: campaignMediaPolicy.policy.mode,
+        allowlistMediaAuthorityIds: campaignMediaPolicy.policy.allowlistMediaAuthorityIds,
+        campaignHeroMediaAuthorityId: mediaAuthorityId,
+      });
+      setMessage(mediaAuthorityId ? "Campaign hero updated." : "Campaign hero cleared.");
+      await props.onAuthorityChanged?.();
+    } catch (error) {
+      const text = error instanceof Error ? error.message : "Campaign hero update failed.";
+      if (mediaAuthorityId) {
+        setCampaignHeroError({ mediaAuthorityId, message: text });
+      }
+      setMessage(text);
+    } finally {
+      setCampaignHeroBusyMediaId(null);
     }
   }
 
@@ -473,20 +513,47 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
                       </span>
                     </div>
                     <div className="mt-2 flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => { void toggleAllowlistMediaId(record.mediaAuthorityId); }}
-                        disabled={busy || allowlistBusyMediaId === record.mediaAuthorityId}
-                        className="min-h-9 min-w-44 border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-300 disabled:border-zinc-800 disabled:text-zinc-500"
-                      >
-                        {allowlistBusyMediaId === record.mediaAuthorityId
-                          ? "Updating..."
-                          : campaignMediaPolicy.policy.allowlistMediaAuthorityIds.includes(record.mediaAuthorityId)
-                            ? "Remove from campaign"
-                            : "Use in this campaign"}
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => { void toggleAllowlistMediaId(record.mediaAuthorityId); }}
+                          disabled={busy || allowlistBusyMediaId === record.mediaAuthorityId}
+                          className="min-h-9 min-w-44 border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-300 disabled:border-zinc-800 disabled:text-zinc-500"
+                        >
+                          {allowlistBusyMediaId === record.mediaAuthorityId
+                            ? "Updating..."
+                            : campaignMediaPolicy.policy.allowlistMediaAuthorityIds.includes(record.mediaAuthorityId)
+                              ? "Remove from campaign"
+                              : "Use in this campaign"}
+                        </button>
+                        {campaignMediaPolicy.effectiveMediaAuthorityIds.includes(record.mediaAuthorityId) && record.heroEligible && record.ownerApproval === "APPROVED" ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (campaignMediaPolicy.policy.campaignHeroMediaAuthorityId === record.mediaAuthorityId) {
+                                void setCampaignHeroMediaId(null);
+                                return;
+                              }
+                              if (!window.confirm(`Set ${record.originalFilename} as Campaign Hero? This will not change Product Default Hero.`)) return;
+                              void setCampaignHeroMediaId(record.mediaAuthorityId);
+                            }}
+                            disabled={busy || campaignHeroBusyMediaId === record.mediaAuthorityId || campaignHeroBusyMediaId === "__clear__"}
+                            className="min-h-9 min-w-44 border border-emerald-700 px-3 py-2 text-xs font-semibold text-emerald-300 disabled:border-zinc-800 disabled:text-zinc-500"
+                          >
+                            {campaignHeroBusyMediaId === record.mediaAuthorityId
+                              ? "Saving..."
+                              : campaignMediaPolicy.policy.campaignHeroMediaAuthorityId === record.mediaAuthorityId
+                                ? "Remove campaign hero"
+                                : "Set as Campaign Hero"}
+                          </button>
+                        ) : null}
+                      </div>
                       {allowlistError?.mediaAuthorityId === record.mediaAuthorityId ? <span className="text-xs text-red-300">{allowlistError.message}</span> : null}
                     </div>
+                    {campaignHeroError?.mediaAuthorityId === record.mediaAuthorityId ? <p className="mt-2 text-xs text-red-300">{campaignHeroError.message}</p> : null}
+                    <p className="mt-2 text-xs text-zinc-500">
+                      Campaign Hero: {campaignMediaPolicy.policy.campaignHeroMediaAuthorityId === record.mediaAuthorityId ? "YES" : "NO"} · Product Default Hero: {campaignMediaPolicy.productDefaultHeroMediaAuthorityId === record.mediaAuthorityId ? "YES" : "NO"}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -495,7 +562,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
 
           <div className="mt-2 text-xs text-zinc-400">
             <p>Effective readiness: {campaignMediaPolicy.readiness.state.replaceAll("_", " ")}</p>
-            <p className="mt-1">Hero: {campaignMediaPolicy.readiness.heroAuthorityReady ? "READY" : "NOT READY"} · Supporting: {campaignMediaPolicy.readiness.supportingProductMediaReady ? "READY" : "NOT READY"} · Application: {campaignMediaPolicy.readiness.applicationMediaReady ? "READY" : "NOT READY"}</p>
+            <p className="mt-1">Campaign Hero: {campaignMediaPolicy.readiness.campaignHeroReady ?? campaignMediaPolicy.readiness.heroAuthorityReady ? "READY" : "NOT READY"} · Product Authority: {campaignMediaPolicy.readiness.productAuthorityReady === false ? "NOT READY" : "READY"} · Supporting: {campaignMediaPolicy.readiness.supportingProductMediaReady ? "READY" : "NOT READY"} · Application: {campaignMediaPolicy.readiness.applicationMediaReady ? "READY" : "NOT READY"}</p>
             {campaignMediaPolicy.readiness.blockers.length > 0 ? <p className="mt-1">Blockers: {campaignMediaPolicy.readiness.blockers.join(", ")}</p> : null}
           </div>
         </section>
@@ -526,7 +593,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
 
       {message ? <p className="mt-3 text-sm text-amber-300" role="status">{message}</p> : null}
 
-      {payload?.records.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{payload.records.map((record) => <MediaReviewCard key={`${record.mediaAuthorityId}:${record.updatedAt}`} record={record} busy={busy} campaignEligible={campaignMediaPolicy ? effectiveIdSet.has(record.mediaAuthorityId) : null} onReview={review} onSelectHero={selectHero} onRevise={reviseCandidate} targetStateCode={props.targetStateCode} />)}</div> : null}
+      {payload?.records.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{payload.records.map((record) => <MediaReviewCard key={`${record.mediaAuthorityId}:${record.updatedAt}`} record={record} busy={busy} campaignEligible={campaignMediaPolicy ? effectiveIdSet.has(record.mediaAuthorityId) : null} campaignScopedHeroMode={Boolean(props.campaignId)} onReview={review} onSelectHero={selectHero} onRevise={reviseCandidate} targetStateCode={props.targetStateCode} />)}</div> : null}
 
       {resolvedReadiness ? <div className="mt-4 border-t border-zinc-800 pt-3 text-xs text-zinc-300"><p>Product authority: {resolvedReadiness.approvedProductAuthorityMediaCount} · Contextual: {resolvedReadiness.approvedContextualMediaCount} · Application: {resolvedReadiness.approvedApplicationMediaCount} · Local atmosphere: {resolvedReadiness.approvedLocalAtmosphereMediaCount}</p><p className="mt-1">Hero: {resolvedReadiness.heroAuthorityReady ? "READY" : "NOT READY"} · Supporting: {resolvedReadiness.supportingProductMediaReady ? "READY" : "NOT READY"} · Application: {resolvedReadiness.applicationMediaReady ? "READY" : "NOT READY"} · Provenance: {resolvedReadiness.mediaProvenanceReady ? "READY" : "NOT READY"}</p><p className="mt-1 text-zinc-500">Product fact authority remains {resolvedReadiness.productFactAuthorityScope.replaceAll("_", " ")}.</p></div> : null}
     </section>

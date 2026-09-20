@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
-import { evaluateCampaignProductMediaReadiness, resolveEffectiveCampaignMediaRecords, resolveGlwCampaignMediaPolicy } from "@/modules/glw/campaign-media-policy";
+import { evaluateCampaignProductMediaReadiness, resolveCampaignPresentationHero, resolveEffectiveCampaignMediaRecords, resolveGlwCampaignMediaPolicy } from "@/modules/glw/campaign-media-policy";
 import { listGlwCampaigns, updateGlwCampaignMediaPolicy } from "@/modules/glw/campaign-repository";
 import { listProductMediaAuthority } from "@/modules/glw/product-media-authority";
 
@@ -32,12 +32,16 @@ function buildPayload(input: { campaignId: string; organizationId: string; siteI
     productMediaRecords,
     stateCode: input.stateCode,
   });
+  const hero = resolveCampaignPresentationHero({ campaign, effectiveMediaRecords: effectiveRecords });
 
   return {
     campaign,
     policy,
     effectiveMediaAuthorityIds: effectiveRecords.map((record) => record.mediaAuthorityId),
     readiness,
+    campaignHeroMediaAuthorityId: hero.campaignHeroMediaAuthorityId,
+    effectiveHeroMediaAuthorityId: hero.hero?.mediaAuthorityId ?? null,
+    productDefaultHeroMediaAuthorityId: productMediaRecords.find((record) => record.ownerApproval === "APPROVED" && record.heroSelected && record.heroEligible)?.mediaAuthorityId ?? null,
   };
 }
 
@@ -65,6 +69,9 @@ export async function GET(request: NextRequest, context: Context) {
     policy: payload.policy,
     effectiveMediaAuthorityIds: payload.effectiveMediaAuthorityIds,
     readiness: payload.readiness,
+    campaignHeroMediaAuthorityId: payload.campaignHeroMediaAuthorityId,
+    effectiveHeroMediaAuthorityId: payload.effectiveHeroMediaAuthorityId,
+    productDefaultHeroMediaAuthorityId: payload.productDefaultHeroMediaAuthorityId,
   });
 }
 
@@ -82,6 +89,7 @@ export async function PATCH(request: NextRequest, context: Context) {
   const body = await request.json().catch(() => null) as {
     mode?: "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALLOWLIST";
     allowlistMediaAuthorityIds?: string[];
+    campaignHeroMediaAuthorityId?: string | null;
   } | null;
 
   const mode = body?.mode;
@@ -92,11 +100,41 @@ export async function PATCH(request: NextRequest, context: Context) {
   const allowlistMediaAuthorityIds = Array.isArray(body?.allowlistMediaAuthorityIds)
     ? body!.allowlistMediaAuthorityIds
     : [];
+  const campaignHeroMediaAuthorityId = typeof body?.campaignHeroMediaAuthorityId === "string"
+    ? body.campaignHeroMediaAuthorityId.trim() || null
+    : body?.campaignHeroMediaAuthorityId === null
+      ? null
+      : (campaign.campaignMediaPolicy?.campaignHeroMediaAuthorityId?.trim() || null);
+
+  if (campaignHeroMediaAuthorityId) {
+    const productMediaRecords = listProductMediaAuthority({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      productId: campaign.productId,
+    });
+    const nextCampaign = {
+      ...campaign,
+      campaignMediaPolicy: {
+        mode,
+        allowlistMediaAuthorityIds,
+        campaignHeroMediaAuthorityId,
+      },
+    };
+    const effectiveRecords = resolveEffectiveCampaignMediaRecords({
+      campaign: nextCampaign,
+      productMediaRecords,
+    });
+    const heroRecord = effectiveRecords.find((record) => record.mediaAuthorityId === campaignHeroMediaAuthorityId);
+    if (!heroRecord || heroRecord.ownerApproval !== "APPROVED" || !heroRecord.heroEligible) {
+      return NextResponse.json({ error: "Campaign hero must be approved, hero-eligible, and campaign-effective." }, { status: 409 });
+    }
+  }
 
   const result = updateGlwCampaignMediaPolicy({
     campaignId,
     mode,
     allowlistMediaAuthorityIds,
+    campaignHeroMediaAuthorityId,
   });
   if (!result.campaign) {
     return NextResponse.json({ errors: result.errors }, { status: 400 });
@@ -119,5 +157,8 @@ export async function PATCH(request: NextRequest, context: Context) {
     policy: payload.policy,
     effectiveMediaAuthorityIds: payload.effectiveMediaAuthorityIds,
     readiness: payload.readiness,
+    campaignHeroMediaAuthorityId: payload.campaignHeroMediaAuthorityId,
+    effectiveHeroMediaAuthorityId: payload.effectiveHeroMediaAuthorityId,
+    productDefaultHeroMediaAuthorityId: payload.productDefaultHeroMediaAuthorityId,
   });
 }

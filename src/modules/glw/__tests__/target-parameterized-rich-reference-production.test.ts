@@ -49,7 +49,22 @@ jest.mock("../product-media-authority", () => ({
     { mediaAuthorityId: "hero", hash: "a".repeat(64), ownerApproval: "APPROVED", approvedUsageScopes: ["PRODUCT_AUTHORITY"], heroSelected: true, heroEligible: true, contextualUseAllowed: false, applicationUseAllowed: false, productRepresentationAllowed: true },
     { mediaAuthorityId: "supporting", hash: "b".repeat(64), ownerApproval: "APPROVED", approvedUsageScopes: ["CONTEXTUAL_IN_USE", "APPLICATION_EXPERIENCE"], heroSelected: false, heroEligible: false, contextualUseAllowed: true, applicationUseAllowed: true, productRepresentationAllowed: false },
   ],
-  evaluateProductMediaReadiness: () => ({ ready: true, blockers: [] }),
+  evaluateProductMediaReadiness: () => ({
+    contractVersion: "GLW_PRODUCT_MEDIA_AUTHORITY_V1",
+    state: "REFERENCE_COMPOSITION_MEDIA_READY",
+    ready: true,
+    approvedProductAuthorityMediaCount: 1,
+    approvedContextualMediaCount: 1,
+    approvedApplicationMediaCount: 1,
+    approvedLocalAtmosphereMediaCount: 0,
+    heroAuthorityReady: true,
+    supportingProductMediaReady: true,
+    applicationMediaReady: true,
+    mediaProvenanceReady: true,
+    productFactAuthorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY",
+    productFactsExpanded: false,
+    blockers: [],
+  }),
 }));
 
 import type { AuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";

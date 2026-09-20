@@ -23,9 +23,11 @@ function createSeedState(): CampaignRepositoryState {
 
 function normalizeCampaignMediaPolicy(policy?: GlwCampaignMediaPolicy): GlwCampaignMediaPolicy {
   const ids = Array.from(new Set((policy?.allowlistMediaAuthorityIds ?? []).map((id) => id.trim()).filter(Boolean)));
+  const campaignHeroMediaAuthorityId = policy?.campaignHeroMediaAuthorityId?.trim() || null;
   return {
     mode: policy?.mode === "EXPLICIT_ALLOWLIST" ? "EXPLICIT_ALLOWLIST" : "INHERIT_PRODUCT_MEDIA",
     allowlistMediaAuthorityIds: ids,
+    campaignHeroMediaAuthorityId,
   };
 }
 
@@ -219,6 +221,7 @@ export function updateGlwCampaignMediaPolicy(input: {
   campaignId: string;
   mode: "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALLOWLIST";
   allowlistMediaAuthorityIds: readonly string[];
+  campaignHeroMediaAuthorityId?: string | null;
 }): {
   campaign: GlwCampaign | null;
   errors: readonly string[];
@@ -235,6 +238,7 @@ export function updateGlwCampaignMediaPolicy(input: {
     campaignMediaPolicy: normalizeCampaignMediaPolicy({
       mode: input.mode,
       allowlistMediaAuthorityIds: input.allowlistMediaAuthorityIds,
+      campaignHeroMediaAuthorityId: input.campaignHeroMediaAuthorityId,
     }),
     updatedAt: new Date().toISOString(),
   };

@@ -6,6 +6,7 @@ export type GlwCampaignMediaPolicyMode = "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALL
 export type GlwCampaignMediaPolicy = {
   mode: GlwCampaignMediaPolicyMode;
   allowlistMediaAuthorityIds: readonly string[];
+  campaignHeroMediaAuthorityId?: string | null;
 };
 
 export type GlwCampaignCityTarget = {

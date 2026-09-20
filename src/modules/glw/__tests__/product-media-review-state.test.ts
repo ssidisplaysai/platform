@@ -31,6 +31,8 @@ describe("product media review UI state", () => {
     expect(source).toContain("const resolvedReadiness = campaignMediaPolicy?.readiness ?? payload?.readiness ?? null;");
     expect(source).toContain("NOT USED IN THIS CAMPAIGN");
     expect(source).toContain("Campaign-approved media:");
-    expect(source).toContain("Hero: {campaignMediaPolicy.readiness.heroAuthorityReady ? \"READY\" : \"NOT READY\"}");
+    expect(source).toContain("Set as Campaign Hero");
+    expect(source).toContain("Product Default Hero");
+    expect(source).toContain("Campaign Hero: {campaignMediaPolicy.readiness.campaignHeroReady ?? campaignMediaPolicy.readiness.heroAuthorityReady ? \"READY\" : \"NOT READY\"}");
   });
 });

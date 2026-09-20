@@ -11,7 +11,7 @@ import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
 import { listGlwCampaigns } from "./campaign-repository";
 import { previewGlwCampaignTargets, listGlwCampaignTargets, type GlwCampaignTarget } from "./campaign-target-repository";
 import { buildGlwCampaignProductionGenerationForm } from "./campaign-production-generation";
-import { evaluateCampaignProductMediaReadiness, resolveEffectiveCampaignMediaRecords } from "./campaign-media-policy";
+import { evaluateCampaignProductMediaReadiness, resolveCampaignPresentationHero, resolveEffectiveCampaignMediaRecords } from "./campaign-media-policy";
 import { getGlwReferenceStateSelection } from "./reference-state-selection-repository";
 import { resolveGlwReferenceGenerationAuthority } from "./reference-generation-authority";
 import { glwPageExecutionRepository } from "./page-execution-repository";
@@ -177,7 +177,7 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
     stateCode: state.code,
   });
   if (!mediaReadiness.ready) throw new Error(`RICH_REFERENCE_MEDIA_AUTHORITY_REQUIRED:${mediaReadiness.blockers.join(",")}`);
-  const hero = effectiveMediaRecords.find((record) => record.ownerApproval === "APPROVED" && record.heroSelected && record.heroEligible) ?? null;
+  const hero = resolveCampaignPresentationHero({ campaign, effectiveMediaRecords }).hero;
   const supporting = effectiveMediaRecords.find((record) => record.ownerApproval === "APPROVED" && record.mediaAuthorityId !== hero?.mediaAuthorityId && (record.contextualUseAllowed || record.applicationUseAllowed || record.productRepresentationAllowed)) ?? null;
   if (!hero || !supporting) throw new Error("RICH_REFERENCE_MEDIA_SELECTION_REQUIRED");
 
