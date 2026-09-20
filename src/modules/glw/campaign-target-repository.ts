@@ -666,6 +666,55 @@ export function requeueGlwCampaignTargetAfterPreExecutionFailure(input: {
   return deepClone(updated);
 }
 
+export function abandonGlwUnfinishedTargetAndRequeue(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug?: string | null;
+  targetId: string;
+  expectedStatus: "failed" | "content_ready" | "draft_ready";
+  expectedJobId: string;
+  expectedWordpressObjectId: string | null;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+
+  if (
+    !current
+    || current.targetId !== input.targetId
+    || current.status !== input.expectedStatus
+    || current.jobId !== input.expectedJobId
+    || current.wordpressObjectId !== input.expectedWordpressObjectId
+  ) {
+    throw new Error("ABANDON_UNFINISHED_TARGET_IDENTITY_MISMATCH");
+  }
+
+  if (current.status === "published") {
+    throw new Error("ABANDON_UNFINISHED_TARGET_PUBLISHED_FORBIDDEN");
+  }
+
+  if (current.leaseId) {
+    throw new Error("ABANDON_UNFINISHED_TARGET_ACTIVE_LEASE_FORBIDDEN");
+  }
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "queued",
+    jobId: null,
+    wordpressObjectId: null,
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
 export function reconcileGlwCampaignTargetContentReady(input: {
   campaignId: string;
   targetId: string;
