@@ -244,10 +244,33 @@ describe("GLW selective page generation recovery", () => {
 
   test("treats FAILED zero-authority canonicalization with generated draft as recoverable for finalization", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
-    expect(source).toContain("const recoverableQaFailure =");
-    expect(source).toContain('|| input.job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"');
-    expect(source).toContain("&& Boolean(input.job.generatedDraft);");
+    expect(source).toContain("const recoverableQaFailure = input.recoveryContext?.qaFailure ?? isExactRecoverableContentFailure(input.job);");
+    expect(source).toContain("const recoverableWordPressFailure = input.recoveryContext?.wordPressFailure ?? isExactRecoverableWordPressFailure(input.job);");
     expect(source).toContain("resolveFinalizationArtifactSource({");
+  });
+
+  test("production-shaped QA recovery continuation preserves FAILED GENERATED_CONTENT_QA_FAILED intent through post-enrichment bounded repair guard", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain("recoveryContext?: {");
+    expect(source).toContain("qaFailure: boolean;");
+    expect(source).toContain("wordPressFailure: boolean;");
+    expect(source).toContain("qaFailure: isExactRecoverableContentFailure(currentJob)");
+    expect(source).toContain("wordPressFailure: isExactRecoverableWordPressFailure(currentJob)");
+    expect(source).toContain("qaFailure: exactRecoverableContentFailure");
+    expect(source).toContain("wordPressFailure: exactRecoverableWordPressFailure");
+    expect(source).toContain("&& recoverableQaFailure");
+
+    const prepare = source.indexOf("prepareGeneratedContentForSite({");
+    const qa = source.indexOf("let qa = evaluateGlwGeneratedContentQa({", prepare);
+    const bounded = source.indexOf("const eligibleForBoundedRepair =", qa);
+    const repair = source.indexOf("repairGlwStateContentToMinimum({", bounded);
+    const dispatch = source.indexOf("service.execute(preview.request)", repair);
+
+    expect(prepare).toBeGreaterThan(0);
+    expect(qa).toBeGreaterThan(prepare);
+    expect(bounded).toBeGreaterThan(qa);
+    expect(repair).toBeGreaterThan(bounded);
+    expect(dispatch).toBeGreaterThan(repair);
   });
 
   test("requests zero-authority fallback only for Outdoor Sphere LDW state-service scope", () => {
@@ -283,7 +306,7 @@ describe("GLW selective page generation recovery", () => {
 
   test("recoverable FAILED content still reruns claim authority before WordPress draft persistence", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
-    const recoverableFailure = source.indexOf('job.errorCode === "GENERATED_CONTENT_QA_FAILED"');
+    const recoverableFailure = source.indexOf("const recoverableQaFailure = input.recoveryContext?.qaFailure ?? isExactRecoverableContentFailure(input.job);");
     const continueBranch = source.indexOf('if (action === "continue")');
     const finalizeCall = source.indexOf("finalizeContentReadyExecution({", continueBranch);
     const claimAuthorityCheck = source.indexOf("if (claimAuthority && !claimAuthority.ok)", recoverableFailure);

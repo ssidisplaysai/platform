@@ -295,27 +295,13 @@ async function finalizeContentReadyExecution(input: {
   request: GlwGenerationRequest;
   siteRecord: NonNullable<ReturnType<typeof getSiteById>>;
   continuationTargetId?: string;
+  recoveryContext?: {
+    qaFailure: boolean;
+    wordPressFailure: boolean;
+  };
 }): Promise<GlwPageExecutionRecord> {
-  const recoverableQaFailure =
-    input.job.status === "FAILED"
-    && (input.job.errorCode === "GENERATED_CONTENT_QA_FAILED"
-      || input.job.errorCode === "ZERO_AUTHORITY_CANONICALIZATION_BLOCKED"
-      || input.job.errorCode?.startsWith("CONTENT_REPAIR_") === true)
-    && Boolean(input.job.generatedDraft);
-
-
-  const recoverableWordPressFailure =
-    input.job.status === "FAILED"
-    && Boolean(input.job.generatedDraft)
-    && Boolean(
-      input.job.errorCode
-      && new Set([
-        "WORDPRESS_HIERARCHY_READ_FAILED",
-        "WORDPRESS_HIERARCHY_WRITE_FAILED",
-        "WORDPRESS_READ_FAILED",
-        "WORDPRESS_WRITE_FAILED",
-      ]).has(input.job.errorCode),
-    );
+  const recoverableQaFailure = input.recoveryContext?.qaFailure ?? isExactRecoverableContentFailure(input.job);
+  const recoverableWordPressFailure = input.recoveryContext?.wordPressFailure ?? isExactRecoverableWordPressFailure(input.job);
 
   if (
     input.job.status !== "CONTENT_READY"
@@ -1502,7 +1488,15 @@ export async function POST(request: NextRequest) {
     const jobId = body.jobId?.trim() ?? "";
     const currentJob = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
     if (!currentJob) return NextResponse.json({ error: "Exact recovered job is required for finalization." }, { status: 400 });
-    const job = await finalizeContentReadyExecution({ job: currentJob, request: preview.request, siteRecord: preview.siteRecord });
+    const job = await finalizeContentReadyExecution({
+      job: currentJob,
+      request: preview.request,
+      siteRecord: preview.siteRecord,
+      recoveryContext: {
+        qaFailure: isExactRecoverableContentFailure(currentJob),
+        wordPressFailure: isExactRecoverableWordPressFailure(currentJob),
+      },
+    });
     return NextResponse.json({ ok: job.status === "COMPLETE", job, sameJobRecovered: true, generationJobCreated: false, publicationPerformed: false });
   }
 
@@ -1583,6 +1577,10 @@ export async function POST(request: NextRequest) {
         request: preview.request,
         siteRecord: preview.siteRecord,
         continuationTargetId: expectedTargetId || undefined,
+        recoveryContext: {
+          qaFailure: exactRecoverableContentFailure,
+          wordPressFailure: exactRecoverableWordPressFailure,
+        },
       });
     } catch (error) {
       return NextResponse.json({
