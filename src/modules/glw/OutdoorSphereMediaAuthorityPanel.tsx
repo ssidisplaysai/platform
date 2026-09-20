@@ -173,6 +173,8 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
   const [generatedVisualDirection, setGeneratedVisualDirection] = useState("");
   const [campaignMediaPolicy, setCampaignMediaPolicy] = useState<CampaignMediaPolicyPayload | null>(null);
   const [busy, setBusy] = useState(false);
+  const [allowlistBusyMediaId, setAllowlistBusyMediaId] = useState<string | null>(null);
+  const [allowlistError, setAllowlistError] = useState<{ mediaAuthorityId: string; message: string } | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const endpoint = `/api/glw/products/${encodeURIComponent(props.productId)}/media-authority?stateCode=${encodeURIComponent(props.targetStateCode)}`;
   const policyEndpoint = props.campaignId
@@ -246,7 +248,7 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
   }
 
   async function toggleAllowlistMediaId(mediaAuthorityId: string) {
-    if (!campaignMediaPolicy) return;
+    if (!campaignMediaPolicy || allowlistBusyMediaId === mediaAuthorityId) return;
     const current = new Set(campaignMediaPolicy.policy.allowlistMediaAuthorityIds);
     if (current.has(mediaAuthorityId)) {
       current.delete(mediaAuthorityId);
@@ -254,7 +256,8 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       current.add(mediaAuthorityId);
     }
 
-    setBusy(true);
+    setAllowlistBusyMediaId(mediaAuthorityId);
+    setAllowlistError(null);
     setMessage(null);
     try {
       await saveCampaignMediaPolicy({
@@ -264,9 +267,11 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
       setMessage("Campaign allowlist updated.");
       await props.onAuthorityChanged?.();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Campaign allowlist update failed.");
+      const text = error instanceof Error ? error.message : "Campaign allowlist update failed.";
+      setAllowlistError({ mediaAuthorityId, message: text });
+      setMessage(text);
     } finally {
-      setBusy(false);
+      setAllowlistBusyMediaId(null);
     }
   }
 
@@ -450,20 +455,39 @@ export function OutdoorSphereMediaAuthorityPanel(props: { organizationId: string
               <p className="text-xs text-zinc-400">Allowlisted IDs: {campaignMediaPolicy.policy.allowlistMediaAuthorityIds.length}</p>
               <div className="mt-2 max-h-48 space-y-2 overflow-auto">
                 {(payload?.records ?? []).map((record) => (
-                  <label key={record.mediaAuthorityId} className="flex items-center justify-between gap-3 rounded border border-zinc-800 px-2 py-2 text-xs text-zinc-200">
-                    <span className="min-w-0 truncate">{record.originalFilename}</span>
-                    <span className="flex items-center gap-2">
-                      <span className={campaignMediaPolicy.effectiveMediaAuthorityIds.includes(record.mediaAuthorityId) ? "text-emerald-300" : "text-zinc-500"}>
-                        {campaignMediaPolicy.effectiveMediaAuthorityIds.includes(record.mediaAuthorityId) ? "EFFECTIVE" : "NOT EFFECTIVE"}
+                  <div key={record.mediaAuthorityId} className="rounded border border-zinc-800 px-2 py-2 text-xs text-zinc-200">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="min-w-0 truncate">{record.originalFilename}</span>
+                      <span className="flex items-center gap-2">
+                        <span className={campaignMediaPolicy.effectiveMediaAuthorityIds.includes(record.mediaAuthorityId) ? "text-emerald-300" : "text-zinc-500"}>
+                          {campaignMediaPolicy.effectiveMediaAuthorityIds.includes(record.mediaAuthorityId) ? "USED IN THIS CAMPAIGN" : "NOT USED IN THIS CAMPAIGN"}
+                        </span>
+                        <input
+                          type="checkbox"
+                          checked={campaignMediaPolicy.policy.allowlistMediaAuthorityIds.includes(record.mediaAuthorityId)}
+                          readOnly
+                          aria-readonly="true"
+                          tabIndex={-1}
+                          className="pointer-events-none"
+                        />
                       </span>
-                      <input
-                        type="checkbox"
-                        checked={campaignMediaPolicy.policy.allowlistMediaAuthorityIds.includes(record.mediaAuthorityId)}
-                        onChange={() => { void toggleAllowlistMediaId(record.mediaAuthorityId); }}
-                        disabled={busy}
-                      />
-                    </span>
-                  </label>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => { void toggleAllowlistMediaId(record.mediaAuthorityId); }}
+                        disabled={busy || allowlistBusyMediaId === record.mediaAuthorityId}
+                        className="min-h-9 min-w-44 border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-300 disabled:border-zinc-800 disabled:text-zinc-500"
+                      >
+                        {allowlistBusyMediaId === record.mediaAuthorityId
+                          ? "Updating..."
+                          : campaignMediaPolicy.policy.allowlistMediaAuthorityIds.includes(record.mediaAuthorityId)
+                            ? "Remove from campaign"
+                            : "Use in this campaign"}
+                      </button>
+                      {allowlistError?.mediaAuthorityId === record.mediaAuthorityId ? <span className="text-xs text-red-300">{allowlistError.message}</span> : null}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
