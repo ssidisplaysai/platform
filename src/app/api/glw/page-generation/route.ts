@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { load } from "cheerio";
 import { NextRequest, NextResponse } from "next/server";
 import {
   authorizeRequest,
@@ -20,7 +21,7 @@ import { renderSiteStudioAuthorityLinks, resolveSiteStudioProductAuthority } fro
 import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-service";
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
-import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
+import { evaluateGlwReferenceClaimAuthority, type GlwClaimAuthorityFinding, type GlwReferenceClaimClass } from "@/modules/glw/reference-claim-authority";
 import {
   canonicalizeAndRevalidateGlwZeroAuthorityClaims,
   canonicalizeGlwZeroAuthorityClaims,
@@ -78,6 +79,71 @@ const sha256Bytes = (value: Buffer) => createHash("sha256").update(value).digest
 
 function isTerminal(status: string): boolean {
   return status === "COMPLETE" || status === "FAILED";
+}
+
+const ZERO_AUTHORITY_PROTECTED_CLASSES = new Set<GlwReferenceClaimClass>([
+  "LOCATION_FACT",
+  "MARKET_ADOPTION",
+  "CLIMATE",
+  "PRODUCT_CAPABILITY",
+  "PRODUCT_SPECIFICATION",
+  "DURABILITY",
+  "INGRESS_PROTECTION",
+  "BRIGHTNESS",
+  "INTERACTIVITY",
+  "REMOTE_MANAGEMENT",
+  "INSTALLATION_SERVICE",
+  "TRAINING",
+  "WARRANTY",
+  "SERVICE_AVAILABILITY",
+  "PRICING",
+  "INVENTORY",
+  "PERFORMANCE",
+  "INSTALLATION_CAPABILITY",
+  "SERVICE_CAPABILITY",
+]);
+
+function normalizeClaimText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function omitUnsupportedProtectedClaims(input: {
+  html: string;
+  findings: readonly GlwClaimAuthorityFinding[];
+}): { html: string; omittedClaims: string[] } {
+  const claims = input.findings
+    .filter((finding) => finding.authorityStatus === "UNSUPPORTED" && ZERO_AUTHORITY_PROTECTED_CLASSES.has(finding.claimClass))
+    .map((finding) => normalizeClaimText(finding.claimText))
+    .filter(Boolean)
+    .sort((left, right) => right.length - left.length);
+  if (claims.length === 0) return { html: input.html, omittedClaims: [] };
+
+  const omitted = new Set<string>();
+  const $ = load(input.html, null, false);
+  const blocks = "li,p,dd,dt,h1,h2,h3,h4,h5,h6,td,th";
+
+  for (const claim of claims) {
+    let removed = false;
+    $(blocks).each((_, element) => {
+      const elementText = normalizeClaimText($(element).text());
+      if (!removed && elementText.includes(claim)) {
+        $(element).remove();
+        removed = true;
+      }
+    });
+    if (removed) omitted.add(claim);
+  }
+
+  let html = $.html();
+  for (const claim of claims) {
+    if (omitted.has(claim)) continue;
+    if (html.includes(claim)) {
+      html = html.split(claim).join("");
+      omitted.add(claim);
+    }
+  }
+
+  return { html, omittedClaims: [...omitted] };
 }
 
 function parseAbsoluteHttpUrl(value: string | null | undefined): URL | null {
@@ -270,16 +336,35 @@ async function finalizeContentReadyExecution(input: {
   if (input.request.referenceAuthorityBinding
     && input.request.referenceGenerationAuthority
     && input.request.referenceGenerationAuthority.authoritativeFactReferenceIds.length === 0) {
-    const rawClaimAuthority = evaluateGlwReferenceClaimAuthority({
-      artifact: rawGeneratedDraft,
+    let zeroAuthorityArtifact = rawGeneratedDraft;
+    let rawClaimAuthority = evaluateGlwReferenceClaimAuthority({
+      artifact: zeroAuthorityArtifact,
       authority: {
         references: input.request.referenceGenerationAuthority.references,
         authoritativeFactReferenceIds: [],
         supportedClaimMappings: [],
       },
     });
+    const omitted = omitUnsupportedProtectedClaims({
+      html: zeroAuthorityArtifact.contentHtml,
+      findings: rawClaimAuthority.findings,
+    });
+    if (omitted.omittedClaims.length > 0) {
+      zeroAuthorityArtifact = {
+        ...zeroAuthorityArtifact,
+        contentHtml: omitted.html,
+      };
+      rawClaimAuthority = evaluateGlwReferenceClaimAuthority({
+        artifact: zeroAuthorityArtifact,
+        authority: {
+          references: input.request.referenceGenerationAuthority.references,
+          authoritativeFactReferenceIds: [],
+          supportedClaimMappings: [],
+        },
+      });
+    }
     const canonicalization = canonicalizeGlwZeroAuthorityClaims({
-      rawArtifact: rawGeneratedDraft,
+      rawArtifact: zeroAuthorityArtifact,
       authoritativeFactReferenceIds: [],
       findings: rawClaimAuthority.findings,
       fallbackPolicy: resolveZeroAuthorityFallbackPolicy(input.request),
@@ -1350,7 +1435,7 @@ export async function POST(request: NextRequest) {
     : null;
   const isCampaignReferenceRequest = Boolean(
     preview.request.additionalInstructions?.startsWith("CAMPAIGN REFERENCE PAGE")
-    || identityBoundReferenceCampaign,
+    || (identityBoundReferenceCampaign && preview.request.campaignId === identityBoundReferenceCampaign.campaignId),
   );
   if (isCampaignReferenceRequest) {
     const campaign = identityBoundReferenceCampaign ?? listGlwCampaigns().find((candidate) =>
