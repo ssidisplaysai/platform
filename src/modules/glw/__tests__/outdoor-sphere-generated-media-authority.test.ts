@@ -95,7 +95,8 @@ describe("Outdoor Sphere generated contextual media authority", () => {
       "utf8",
     );
 
-    expect(source).toContain("selectedGeneratedContextualAssignment && selectedGeneratedContextualReceipt");
+    expect(source).toContain("selectedGeneratedContextualAssignment");
+    expect(source).toContain("generatedContextualReceipt");
     expect(source).toContain("receipt.pageRevisionId === pageRevisionIdentity");
     expect(source).toContain("receipt.targetId === input.target.targetId");
     expect(source).toContain("Legacy featured media is not accepted as contextual in-use authority for this campaign.");
@@ -109,6 +110,7 @@ describe("Outdoor Sphere generated contextual media authority", () => {
 
     expect(source).toContain("CONTEXTUAL_MEDIA_RECEIPT_REQUIRED");
     expect(source).toContain("model.images.contextualInUse.state !== \"GENERATED_CONTEXTUAL\"");
+    expect(source).toContain("model.images.contextualInUse.state !== \"ASSIGNED_FEATURED\"");
     expect(source).toContain("assignmentId: model.images.contextualInUse.assignmentId");
   });
 

@@ -53,7 +53,11 @@ export async function resolveGeneratedPageCaptureAuthority(input: { organization
     organizationId: input.organizationId,
     siteId: input.siteId,
   });
-  if (strictGeneratedContextualRequired && model.images.contextualInUse.state !== "GENERATED_CONTEXTUAL") {
+  if (
+    strictGeneratedContextualRequired
+    && model.images.contextualInUse.state !== "GENERATED_CONTEXTUAL"
+    && model.images.contextualInUse.state !== "ASSIGNED_FEATURED"
+  ) {
     throw new Error("CONTEXTUAL_MEDIA_RECEIPT_REQUIRED");
   }
   return {

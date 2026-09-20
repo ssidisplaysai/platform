@@ -13,6 +13,7 @@ import { getLocalThemeVisualCertification } from "@/modules/foundation/local-the
 import type { LocalThemeVisualCertification } from "@/modules/foundation/local-theme-visual-certification";
 import { getMarketProductMatchBundle, type MarketProductMatchBundle } from "@/modules/foundation/local-market-product-match-repository";
 import { getDallasApplyState } from "./dallas-rich-composition-apply-repository";
+import { resolvePreCaptureContextualAssignment } from "./contextual-precert-media-evidence";
 import { getDallasPublicationState } from "./dallas-reference-page-publication-repository";
 import { getDallasThemeIntegrationState } from "./dallas-public-theme-integration-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
@@ -59,7 +60,7 @@ export type GeneratedPageReviewModel = {
   seo: { title: string | null; titleState: ReviewSignal; metaDescription: string | null; metaDescriptionState: ReviewSignal; canonicalState: ReviewSignal; redirectState: ReviewSignal; indexabilityState: ReviewSignal; h1Count: number; h1State: ReviewSignal; developmentUrlLeakState: ReviewSignal; detail: string };
   images: {
     productAuthority: { state: "ASSIGNED" | "RESOLVED_APPROVED" | "NOT_WIRED"; imageUrl: string | null; authority: string; provenance: string; altText: string | null; wordpressMediaId: string | null; renderedInCurrentWordPress: false };
-    contextualInUse: { state: "GENERATED_CONTEXTUAL" | "LEGACY_FEATURED" | "MISSING"; imageUrl: string | null; authority: string; provenance: string; altText: string | null; wordpressMediaId: string | null; assignmentId: string | null; grounding: string };
+    contextualInUse: { state: "GENERATED_CONTEXTUAL" | "ASSIGNED_FEATURED" | "LEGACY_FEATURED" | "MISSING"; imageUrl: string | null; authority: string; provenance: string; altText: string | null; wordpressMediaId: string | null; assignmentId: string | null; grounding: string };
     contractState: "LEGACY_IMAGE_STATE" | "MULTI_ROLE_IMAGE_STATE";
   };
   evidence: readonly { source: string; status: string; usedFor: string }[];
@@ -254,8 +255,19 @@ export function deriveGeneratedPageReviewModel(input: {
     && generatedContextualReceipt.mediaRole === "CONTEXTUAL_IN_USE"
     && generatedContextualReceipt.wordpressObjectId === wordpressObjectId,
   );
+  const preCaptureContextualAssignment = resolvePreCaptureContextualAssignment({
+    assignments: input.mediaAssignments ?? [],
+    targetId: input.target.targetId,
+    pageRevisionIdentity,
+    buildSessionId: `contextual-media:${input.target.targetId}`,
+    featuredMediaId,
+    wordpressObjectId: wordpressObjectId ?? "",
+    jobId: input.job.jobId,
+    jobUpdatedAt: input.job.updatedAt,
+  });
+  const preCaptureContextualReady = Boolean(preCaptureContextualAssignment);
   const contextualReady = strictGeneratedContextualRequired
-    ? Boolean(strictGeneratedReceiptValid)
+    ? Boolean(strictGeneratedReceiptValid || preCaptureContextualReady)
     : currentContextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered) || Boolean(input.job.featuredImagePresent && mediaId);
   const strictGeneratedContextualDisplay = strictGeneratedContextualRequired
     && contextualReady
@@ -339,29 +351,35 @@ export function deriveGeneratedPageReviewModel(input: {
       contextualInUse: {
         state: contextualReady
           ? strictGeneratedContextualRequired
-            ? "GENERATED_CONTEXTUAL"
+            ? (strictGeneratedReceiptValid ? "GENERATED_CONTEXTUAL" : "ASSIGNED_FEATURED")
             : "LEGACY_FEATURED"
           : "MISSING",
         imageUrl: strictGeneratedContextualDisplay
           ? strictGeneratedContextualDisplay.url
+          : preCaptureContextualAssignment?.asset.type === "APPROVED_EXISTING"
+            ? preCaptureContextualAssignment.asset.url
           : text(input.wordpressMedia?.source_url) || null,
         authority: strictGeneratedContextualRequired
-          ? (contextualReady
+          ? (strictGeneratedReceiptValid
             ? (usedContextualCarryForward
               ? "Generated contextual assignment and receipt carried forward from prior revision under current rendered PASS evidence"
               : "Exact generated contextual assignment and receipt bound to this draft revision")
-            : "Generated contextual receipt required for this campaign target")
+            : (preCaptureContextualReady
+              ? "Current revision site-page assignment and verified WordPress receipt satisfy pre-capture contextual evidence"
+              : "Generated contextual receipt required for this campaign target"))
           : (currentContextualMedia.length
             ? "Current governed rendered visual certification"
             : mediaAuthority
               ? `${text(mediaAuthority.selectedProvenance) || "Legacy execution media"}`
               : "Legacy execution evidence"),
         provenance: strictGeneratedContextualRequired
-          ? (generatedContextualReceipt
+          ? (strictGeneratedReceiptValid && generatedContextualReceipt
             ? (usedContextualCarryForward
               ? `Generated receipt ${generatedContextualReceipt.generationId}; WordPress media #${generatedContextualReceipt.wordpressMediaId ?? "unknown"}; prior assignment accepted via current rendered PASS evidence.`
               : `Generated receipt ${generatedContextualReceipt.generationId}; WordPress media #${generatedContextualReceipt.wordpressMediaId ?? "unknown"}.`)
-            : "No exact generated contextual receipt persisted for this page revision.")
+            : (preCaptureContextualAssignment
+              ? `Assignment ${preCaptureContextualAssignment.assignmentId}; WordPress media #${preCaptureContextualAssignment.wordpressReceipt?.mediaId ?? "unknown"}; pre-capture evidence only.`
+              : "No exact generated contextual receipt persisted for this page revision."))
           : (currentContextualMedia.length
             ? currentContextualMedia.map((item) => `${item.role}: WordPress media #${item.mediaId}`).join("; ")
             : mediaId
@@ -369,19 +387,26 @@ export function deriveGeneratedPageReviewModel(input: {
               : "No WordPress media receipt persisted."),
         altText: strictGeneratedContextualDisplay
           ? selectedGeneratedContextualAssignment.metadata.altText
+          : preCaptureContextualAssignment?.metadata.altText
+            ? preCaptureContextualAssignment.metadata.altText
           : text(input.wordpressMedia?.alt_text) || null,
         wordpressMediaId: strictGeneratedContextualDisplay
           ? String(strictGeneratedContextualDisplay.mediaId)
-          : (strictContextualMediaId || generatedContextualEvidence?.mediaId || currentContextualMedia.find((item) => item.semanticRole === "CONTEXTUAL_IN_USE")?.mediaId || mediaId) || null,
+          : (preCaptureContextualAssignment?.wordpressReceipt?.mediaId ? String(preCaptureContextualAssignment.wordpressReceipt.mediaId) : null)
+            || (strictContextualMediaId || generatedContextualEvidence?.mediaId || currentContextualMedia.find((item) => item.semanticRole === "CONTEXTUAL_IN_USE")?.mediaId || mediaId) || null,
         assignmentId: strictGeneratedContextualDisplay
           ? selectedGeneratedContextualAssignment.assignmentId
+          : preCaptureContextualAssignment?.assignmentId
+            ? preCaptureContextualAssignment.assignmentId
           : generatedContextualEvidence?.assignmentId ?? null,
         grounding: strictGeneratedContextualRequired
-          ? (contextualReady
+          ? (strictGeneratedReceiptValid
             ? (usedContextualCarryForward
               ? "Generated contextual media is product-truth grounded and identity-matched to current rendered PASS evidence and featured media."
               : "Generated contextual media is product-truth grounded and bound to the exact target, job, and page revision.")
-            : "Legacy featured media is not accepted as contextual in-use authority for this campaign.")
+            : (preCaptureContextualReady
+              ? "Pre-capture contextual evidence is current and verified, but rendered visual certification is still required for final authority."
+              : "Legacy featured media is not accepted as contextual in-use authority for this campaign."))
           : (currentContextualMedia.length
             ? "Governed contextual assignments rendered in the current certified WordPress presentation."
             : productAuthority?.exactProductMatch === true
