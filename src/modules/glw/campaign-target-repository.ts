@@ -269,7 +269,7 @@ export function initializeGlwCampaignTargets(input: {
   stateCodes: readonly string[];
   referenceStateCode: string;
   referenceJobId: string;
-  referenceWordpressObjectId: string;
+  referenceWordpressObjectId: string | null;
   certifiedTargets?: readonly { stateCode: string; wordpressObjectId: string; jobId?: string | null }[];
 }): readonly GlwCampaignTarget[] {
   loadState();

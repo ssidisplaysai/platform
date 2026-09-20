@@ -21,6 +21,7 @@ import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { evaluateCampaignProductMediaReadiness } from "@/modules/glw/campaign-media-policy";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { createGlwCampaignStateTargetId } from "@/modules/glw/campaign-target-repository";
+import { ensureDraftCampaignContinuationTarget } from "@/modules/glw/reference-continuation-targets";
 import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchReferenceFailure, recordGlwCampaignLaunchReferenceReviewRequired, recordGlwCampaignLaunchReferenceStarted } from "@/modules/glw/campaign-launch-authority";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -742,6 +743,20 @@ export async function POST(request: NextRequest, context: Context) {
           error: "Existing reference job is not ready for WordPress continuation.",
           job: existing,
         },
+        { status: 409 },
+      );
+    }
+
+    const targetReady = ensureDraftCampaignContinuationTarget({
+      campaign,
+      targetStateCode: target.state.code,
+      targetCitySlug: target.citySlug,
+      referenceJobId: existing.jobId,
+      referenceWordpressObjectId: existing.wordpressObjectId,
+    });
+    if (!targetReady) {
+      return NextResponse.json(
+        { error: "Exact campaign target was not found for continuation." },
         { status: 409 },
       );
     }
