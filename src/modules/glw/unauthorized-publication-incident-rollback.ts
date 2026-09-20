@@ -10,10 +10,11 @@ import type { GenesisWordPressExactStatusTransitionResult } from "@/modules/foun
 import { transitionGenesisWordPressPageStatus } from "@/modules/foundation/wordpress-publish-writer";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { listGlwCampaigns } from "./campaign-repository";
+import { evaluateCampaignProductMediaReadiness } from "./campaign-media-policy";
 import { listGlwCampaignTargets, reconcileGlwCampaignTargetDraftAfterPublicationFailure } from "./campaign-target-repository";
 import { EXACT_WORDPRESS_PUBLICATION, listExactPublicationRollbackReceipts } from "./exact-publication-rollback-authority";
 import { reconcileGlwPageExecutionDraftAfterUnauthorizedPublicationIncident, glwPageExecutionRepository } from "./page-execution-repository";
-import { evaluateProductMediaReadiness, listProductMediaAuthority } from "./product-media-authority";
+import { listProductMediaAuthority } from "./product-media-authority";
 import type { GlwTrustedOperatorPrincipal } from "./trusted-operator-principal";
 
 export const GLW_UNAUTHORIZED_PUBLICATION_INCIDENT_ROLLBACK_VERSION = "GLW_UNAUTHORIZED_PUBLICATION_INCIDENT_ROLLBACK_V1" as const;
@@ -218,14 +219,20 @@ function evaluateMissingGateEvidence(input: {
   let productAuthoritySatisfied = false;
   let productAuthorityBlockers: readonly string[] = ["PRODUCT_AUTHORITY_SCOPE_UNAVAILABLE"];
   try {
-    const readiness = evaluateProductMediaReadiness(
-      listProductMediaAuthority({
+    const campaign = listGlwCampaigns().find((entry) => entry.campaignId === input.campaignId) ?? null;
+    if (!campaign) {
+      throw new Error("INCIDENT_ROLLBACK_CAMPAIGN_NOT_FOUND");
+    }
+
+    const readiness = evaluateCampaignProductMediaReadiness({
+      campaign,
+      productMediaRecords: listProductMediaAuthority({
         organizationId: input.organizationId,
         siteId: input.siteId,
         productId: input.productId,
       }),
-      { stateCode: input.stateCode },
-    );
+      stateCode: input.stateCode,
+    });
     productAuthoritySatisfied = readiness.ready;
     productAuthorityBlockers = readiness.blockers;
   } catch {

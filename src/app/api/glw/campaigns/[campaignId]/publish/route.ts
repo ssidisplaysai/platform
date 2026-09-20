@@ -14,6 +14,7 @@ import { getSiteById } from "@/modules/foundation/site-repository";
 import { transitionGenesisWordPressPageStatus } from "@/modules/foundation/wordpress-publish-writer";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
+import { evaluateCampaignProductMediaReadiness } from "@/modules/glw/campaign-media-policy";
 import {
   type GlwCampaignTarget,
   listGlwCampaignTargets,
@@ -28,7 +29,7 @@ import {
   recordExactPublicationRollbackReceipt,
   type ExactPublicationRollbackContext,
 } from "@/modules/glw/exact-publication-rollback-authority";
-import { listProductMediaAuthority, evaluateProductMediaReadiness } from "@/modules/glw/product-media-authority";
+import { listProductMediaAuthority } from "@/modules/glw/product-media-authority";
 import { reconcileGlwPageExecutionPublished, glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
 
@@ -192,14 +193,21 @@ async function evaluateTargetGate(input: {
   }
 
   try {
-    const readiness = evaluateProductMediaReadiness(
-      listProductMediaAuthority({
+    const campaign = listGlwCampaigns().find((entry) => entry.campaignId === input.campaignId) ?? null;
+    if (!campaign) {
+      blockers.push("CAMPAIGN_NOT_FOUND");
+      return { eligible: false, blockers };
+    }
+
+    const readiness = evaluateCampaignProductMediaReadiness({
+      campaign,
+      productMediaRecords: listProductMediaAuthority({
         organizationId: input.organizationId,
         siteId: input.siteId,
         productId: input.productId,
       }),
-      { stateCode: target.stateCode },
-    );
+      stateCode: target.stateCode,
+    });
     if (!readiness.ready) blockers.push(...readiness.blockers.map((blocker) => `PRODUCT_AUTHORITY_${blocker}`));
   } catch {
     blockers.push("PRODUCT_AUTHORITY_UNSATISFIED");

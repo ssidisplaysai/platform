@@ -24,6 +24,13 @@ describe("product media review UI state", () => {
     expect(source).toContain('action: "RUN_HERO_PREFLIGHT"');
     expect(source).toContain('action: "AUTHORIZE_HERO_SELECTION"');
     expect(source).toContain('action: "SELECT_PRODUCT_MEDIA_HERO"');
+    expect(source).toContain("Generated Visual Candidates");
+    expect(source).toContain('action: "GENERATE_VISUAL_CANDIDATE"');
+    expect(source).toContain('action: "REVISE_GENERATED_VISUAL_CANDIDATE"');
     expect(source).not.toContain("/>Hero eligible</label>");
+    expect(source).toContain("const resolvedReadiness = campaignMediaPolicy?.readiness ?? payload?.readiness ?? null;");
+    expect(source).toContain("NOT USED IN THIS CAMPAIGN");
+    expect(source).toContain("Campaign-approved media:");
+    expect(source).toContain("Hero: {campaignMediaPolicy.readiness.heroAuthorityReady ? \"READY\" : \"NOT READY\"}");
   });
 });

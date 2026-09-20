@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, resolveRequestPrincipal, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { getProductById } from "@/modules/foundation/product-repository";
+import { getSiteById } from "@/modules/foundation/site-repository";
+import { generateGenesisFeaturedImageWithCampaignReferences } from "@/modules/glw/reference-aware-image-service";
 import {
   correctApprovedProductMediaUsageScope,
   evaluateProductMediaReadiness,
@@ -15,6 +18,7 @@ import {
   reconcileLegacyProductMediaApprovals,
   reviewProductMedia,
   selectProductMediaHero,
+  type GeneratedVisualCandidateRole,
   type ProductMediaAuthorityClass,
   type ProductMediaSourceType,
 } from "@/modules/glw/product-media-authority";
@@ -22,7 +26,22 @@ import {
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ productId: string }> };
 const AUTHORITY_CLASSES = new Set<ProductMediaAuthorityClass>(["PRODUCT_AUTHORITY", "CONTEXTUAL_IN_USE", "APPLICATION_EXPERIENCE", "LOCAL_CONTEXTUAL_ATMOSPHERE"]);
-const SOURCE_TYPES = new Set<ProductMediaSourceType>(["FACTORY_SUPPLIED", "OWNER_SUPPLIED", "OWNER_APPROVED_EXISTING", "GENESIS_GENERATED_CONTEXTUAL", "REFERENCE_ONLY", "UNVERIFIED"]);
+const SOURCE_TYPES = new Set<ProductMediaSourceType>(["FACTORY_SUPPLIED", "OWNER_SUPPLIED", "OWNER_APPROVED_EXISTING", "GENESIS_GENERATED_CONTEXTUAL", "GENESIS_GENERATED_VISUAL_CANDIDATE", "REFERENCE_ONLY", "UNVERIFIED"]);
+const CANDIDATE_ROLES = new Set<GeneratedVisualCandidateRole>(["HERO", "CONTEXTUAL_IN_USE"]);
+
+function roleUsageScope(role: GeneratedVisualCandidateRole): ProductMediaAuthorityClass[] {
+  return role === "HERO" ? ["CONTEXTUAL_IN_USE"] : ["CONTEXTUAL_IN_USE"];
+}
+
+function roleAuthorityClass(role: GeneratedVisualCandidateRole): ProductMediaAuthorityClass {
+  return role === "HERO" ? "CONTEXTUAL_IN_USE" : "CONTEXTUAL_IN_USE";
+}
+
+function rolePrompt(role: GeneratedVisualCandidateRole, visualDirection: string): string {
+  return role === "HERO"
+    ? `Create a premium website HERO image with strong product presence while remaining conceptual and non-documentary. ${visualDirection}`
+    : `Create a contextual in-use visualization suitable for supporting placement and conceptual usage. ${visualDirection}`;
+}
 
 function scopeAllowed(request: NextRequest, productId: string): boolean {
   const scope = resolveRequestScope(request);
@@ -117,6 +136,9 @@ export async function POST(request: NextRequest, context: Context) {
     const body = await request.json().catch(() => null) as {
       action?: string;
       mediaAuthorityId?: string;
+      campaignId?: string;
+      candidateRole?: GeneratedVisualCandidateRole;
+      visualDirection?: string;
       decision?: "APPROVE" | "REJECT";
       authorityClass?: ProductMediaAuthorityClass;
       usageScopes?: ProductMediaAuthorityClass[];
@@ -135,6 +157,69 @@ export async function POST(request: NextRequest, context: Context) {
       preflightReceiptId?: string;
       grantId?: string;
     } | null;
+    if (["GENERATE_VISUAL_CANDIDATE", "REVISE_GENERATED_VISUAL_CANDIDATE"].includes(body?.action ?? "")) {
+      const candidateRole = body?.candidateRole;
+      const visualDirection = (body?.visualDirection ?? "").trim();
+      if (!candidateRole || !CANDIDATE_ROLES.has(candidateRole) || !visualDirection) throw new Error("PRODUCT_MEDIA_GENERATED_VISUAL_REQUEST_INVALID");
+      if (body?.action === "REVISE_GENERATED_VISUAL_CANDIDATE" && !body.mediaAuthorityId) throw new Error("PRODUCT_MEDIA_GENERATED_VISUAL_REVISION_TARGET_REQUIRED");
+      const records = listProductMediaAuthority({ organizationId: OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID, siteId: OUTDOOR_DIGITAL_SPHERE_SITE_ID, productId });
+      const factualGrounding = records.find((record) =>
+        record.ownerApproval === "APPROVED"
+        && record.authorityClass === "PRODUCT_AUTHORITY"
+        && record.productRepresentationAllowed
+        && (record.approvedUsageScopes ?? record.usageScopes).includes("PRODUCT_AUTHORITY"));
+      if (!factualGrounding) throw new Error("PRODUCT_MEDIA_GENERATED_VISUAL_PRODUCT_GROUNDING_REQUIRED");
+      const site = getSiteById(OUTDOOR_DIGITAL_SPHERE_SITE_ID);
+      const product = getProductById(productId);
+      if (!site || !product) throw new Error("PRODUCT_MEDIA_GENERATED_VISUAL_FOUNDATION_REQUIRED");
+      const generationResult = await generateGenesisFeaturedImageWithCampaignReferences({
+        prompt: rolePrompt(candidateRole, visualDirection),
+        siteName: site.displayName,
+        productTopic: product.productName,
+        campaignId: body?.campaignId ?? null,
+      });
+      if (!generationResult.ok) throw new Error(`PRODUCT_MEDIA_GENERATED_VISUAL_FAILED:${generationResult.state}`);
+      const prior = body.action === "REVISE_GENERATED_VISUAL_CANDIDATE"
+        ? records.find((record) => record.mediaAuthorityId === body.mediaAuthorityId && record.sourceType === "GENESIS_GENERATED_VISUAL_CANDIDATE")
+        : null;
+      if (body.action === "REVISE_GENERATED_VISUAL_CANDIDATE" && !prior) throw new Error("PRODUCT_MEDIA_GENERATED_VISUAL_REVISION_TARGET_INVALID");
+      const record = await intakeProductMedia({
+        organizationId: OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID,
+        siteId: OUTDOOR_DIGITAL_SPHERE_SITE_ID,
+        productId,
+        originalFilename: `${candidateRole.toLowerCase()}-${Date.now()}.jpg`,
+        mimeType: generationResult.image.mimeType,
+        bytes: generationResult.image.bytes,
+        sourceType: "GENESIS_GENERATED_VISUAL_CANDIDATE",
+        generatedCandidateRole: candidateRole,
+        campaignId: body?.campaignId ?? null,
+        generationPrompt: rolePrompt(candidateRole, visualDirection),
+        generationModel: generationResult.image.model,
+        generationProvider: generationResult.image.provider,
+        generationReferenceMetadata: {
+          requestedRole: candidateRole,
+          operation: body.action,
+          ...(prior ? { revisedFromMediaAuthorityId: prior.mediaAuthorityId } : {}),
+        },
+        sourceDescription: `Generated visual candidate for ${candidateRole.replaceAll("_", " ").toLowerCase()} usage.`,
+        provenance: `generated-visual-candidate:${candidateRole}:${new Date().toISOString()}`,
+        authorityClass: roleAuthorityClass(candidateRole),
+        usageScopes: roleUsageScope(candidateRole),
+        depictsActualProduct: false,
+        heroEligible: false,
+        altTextAuthority: candidateRole === "HERO"
+          ? `${product.productName} conceptual hero visualization`
+          : `${product.productName} conceptual contextual visualization`,
+        captionAuthority: "Conceptual generated visualization; visual usage authority only.",
+      });
+      return NextResponse.json({
+        ...result(request.nextUrl.searchParams.get("stateCode")),
+        record: publicRecord(record),
+        generationAttempted: true,
+        ownerApprovalPersisted: false,
+        downstreamSideEffectsPerformed: false,
+      }, { status: 201 });
+    }
     if (["RUN_HERO_PREFLIGHT", "AUTHORIZE_HERO_SELECTION", "SELECT_PRODUCT_MEDIA_HERO"].includes(body?.action ?? "")) {
       if (!body?.mediaAuthorityId || !body.hash || !/^[0-9a-f]{64}$/.test(body.hash)) throw new Error("PRODUCT_MEDIA_HERO_TARGET_INVALID");
       const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";

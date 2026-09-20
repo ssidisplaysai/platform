@@ -18,13 +18,14 @@ import {
 } from "@/modules/glw/campaign-reference-approval-repository";
 import { resolveGlwCampaignGenerationContext } from "@/modules/glw/campaign-generation-context";
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
+import { evaluateCampaignProductMediaReadiness } from "@/modules/glw/campaign-media-policy";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { createGlwCampaignStateTargetId } from "@/modules/glw/campaign-target-repository";
 import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchReferenceFailure, recordGlwCampaignLaunchReferenceReviewRequired, recordGlwCampaignLaunchReferenceStarted } from "@/modules/glw/campaign-launch-authority";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
-import { evaluateProductMediaReadiness, listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID, type ProductMediaReadiness } from "@/modules/glw/product-media-authority";
+import { listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID, type ProductMediaReadiness } from "@/modules/glw/product-media-authority";
 import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
@@ -54,7 +55,7 @@ function referenceMediaReadiness(productMediaReadiness: ProductMediaReadiness | 
 function campaignProductMediaReadiness(campaign: GlwCampaign, stateCode: string): ProductMediaReadiness | null {
   if (campaign.productId !== OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID) return null;
   const records = listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId });
-  return evaluateProductMediaReadiness(records, { stateCode });
+  return evaluateCampaignProductMediaReadiness({ campaign, productMediaRecords: records, stateCode });
 }
 
 function ownerReviewReadiness(job: Awaited<ReturnType<typeof glwPageExecutionRepository.getById>>, media: ReturnType<typeof referenceMediaReadiness>) {
@@ -205,12 +206,7 @@ export async function GET(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
-  const productMediaRecords = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
-    ? listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId })
-    : [];
-  const productMediaReadiness = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
-    ? evaluateProductMediaReadiness(productMediaRecords, { stateCode: target.state.code })
-    : null;
+  const productMediaReadiness = campaignProductMediaReadiness(campaign, target.state.code);
   const mediaReadiness = referenceMediaReadiness(productMediaReadiness, productRecord.media.primaryImageReference);
   const approvedProductMediaAvailable = mediaReadiness.productAuthorityMediaAvailable;
   const wordpressAuthority = await inspectSiteWordPressReadAuthority(siteRecord);

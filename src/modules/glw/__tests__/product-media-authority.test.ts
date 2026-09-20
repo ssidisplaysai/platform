@@ -32,7 +32,7 @@ describe("Outdoor Digital Sphere product media authority", () => {
 
   test("never promotes generated, unverified, or non-product media to product authority", async () => {
     const repository = await import("../product-media-authority");
-    for (const sourceType of ["GENESIS_GENERATED_CONTEXTUAL", "REFERENCE_ONLY", "UNVERIFIED"] as const) {
+    for (const sourceType of ["GENESIS_GENERATED_CONTEXTUAL", "GENESIS_GENERATED_VISUAL_CANDIDATE", "REFERENCE_ONLY", "UNVERIFIED"] as const) {
       const pending = await intake({ sourceType, originalFilename: `${sourceType}.jpg`, bytes: Buffer.concat([image, Buffer.from(sourceType)]) });
       expect(() => repository.reviewProductMedia({ ...scope, mediaAuthorityId: pending.mediaAuthorityId, decision: "APPROVE", authorityClass: "PRODUCT_AUTHORITY", usageScopes: ["PRODUCT_AUTHORITY"], depictsActualProduct: true, heroEligible: true, altTextAuthority: "Sphere", captionAuthority: "", authorityAndScopesConfirmed: true, localAtmosphereConfirmed: false, principalId: "owner", sessionId: "session" })).toThrow("PRODUCT_AUTHORITY_REQUIRES_OWNER_APPROVED_GROUNDED_PRODUCT_MEDIA");
     }

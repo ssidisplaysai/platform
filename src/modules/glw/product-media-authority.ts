@@ -24,8 +24,11 @@ export type ProductMediaSourceType =
   | "OWNER_SUPPLIED"
   | "OWNER_APPROVED_EXISTING"
   | "GENESIS_GENERATED_CONTEXTUAL"
+  | "GENESIS_GENERATED_VISUAL_CANDIDATE"
   | "REFERENCE_ONLY"
   | "UNVERIFIED";
+
+export type GeneratedVisualCandidateRole = "HERO" | "CONTEXTUAL_IN_USE";
 
 export type ProductMediaAuthorityClass =
   | "PRODUCT_AUTHORITY"
@@ -45,6 +48,12 @@ export type ProductMediaAuthorityRecord = {
   mimeType: "image/jpeg" | "image/png" | "image/webp";
   dimensions: { width: number; height: number };
   sourceType: ProductMediaSourceType;
+  generatedCandidateRole: GeneratedVisualCandidateRole | null;
+  campaignId: string | null;
+  generationPrompt: string | null;
+  generationModel: string | null;
+  generationProvider: string | null;
+  generationReferenceMetadata: Readonly<Record<string, string>>;
   sourceDescription: string;
   ownerApproval: ProductMediaApprovalState;
   ownerApprovalTimestamp: string | null;
@@ -169,8 +178,17 @@ function load() {
 
 function normalizedRecord(record: ProductMediaAuthorityRecord): ProductMediaAuthorityRecord {
   const ownerApproval = (record.ownerApproval as string) === "PENDING" ? "PENDING_OWNER_APPROVAL" : record.ownerApproval;
+  const legacyRole = record.sourceType === "GENESIS_GENERATED_VISUAL_CANDIDATE"
+    ? (record.generatedCandidateRole ?? "CONTEXTUAL_IN_USE")
+    : null;
   return {
     ...record,
+    generatedCandidateRole: legacyRole,
+    campaignId: record.campaignId ?? null,
+    generationPrompt: record.generationPrompt ?? null,
+    generationModel: record.generationModel ?? null,
+    generationProvider: record.generationProvider ?? null,
+    generationReferenceMetadata: record.generationReferenceMetadata ?? {},
     ownerApproval,
     proposedUsageScopes: [...(record.proposedUsageScopes ?? record.usageScopes)],
     approvedUsageScopes: [...(record.approvedUsageScopes ?? (ownerApproval === "APPROVED" ? record.usageScopes : []))],
@@ -202,6 +220,12 @@ export async function intakeProductMedia(input: {
   mimeType: string;
   bytes: Buffer;
   sourceType: ProductMediaSourceType;
+  generatedCandidateRole?: GeneratedVisualCandidateRole | null;
+  campaignId?: string | null;
+  generationPrompt?: string | null;
+  generationModel?: string | null;
+  generationProvider?: string | null;
+  generationReferenceMetadata?: Readonly<Record<string, string>>;
   sourceDescription: string;
   provenance: string;
   authorityClass: ProductMediaAuthorityClass;
@@ -237,6 +261,12 @@ export async function intakeProductMedia(input: {
     mimeType: input.mimeType as ProductMediaAuthorityRecord["mimeType"],
     dimensions: { width: metadata.width, height: metadata.height },
     sourceType: input.sourceType,
+    generatedCandidateRole: input.generatedCandidateRole ?? null,
+    campaignId: input.campaignId?.trim() || null,
+    generationPrompt: input.generationPrompt?.trim() || null,
+    generationModel: input.generationModel?.trim() || null,
+    generationProvider: input.generationProvider?.trim() || null,
+    generationReferenceMetadata: input.generationReferenceMetadata ? { ...input.generationReferenceMetadata } : {},
     sourceDescription: input.sourceDescription.trim(),
     ownerApproval: "PENDING_OWNER_APPROVAL",
     ownerApprovalTimestamp: null,
@@ -306,11 +336,19 @@ export function reviewProductMedia(input: {
   if (input.decision === "APPROVE" && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && !input.localAtmosphereConfirmed) throw new Error("LOCAL_ATMOSPHERE_CONFIRMATION_REQUIRED");
   const localAtmosphereStateCodes = [...new Set((input.localAtmosphereStateCodes ?? []).map((stateCode) => stateCode.trim().toUpperCase()).filter((stateCode) => /^[A-Z]{2}$/.test(stateCode)))];
   if (input.decision === "APPROVE" && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && localAtmosphereStateCodes.length === 0) throw new Error("LOCAL_ATMOSPHERE_GEOGRAPHY_REQUIRED");
+  const generatedRole = record.generatedCandidateRole;
+  const generatedVisualCandidate = record.sourceType === "GENESIS_GENERATED_VISUAL_CANDIDATE";
   const groundedProductSource = (["FACTORY_SUPPLIED", "OWNER_SUPPLIED", "OWNER_APPROVED_EXISTING"] as ProductMediaSourceType[]).includes(record.sourceType);
   if (input.decision === "APPROVE" && input.authorityClass === "PRODUCT_AUTHORITY" && (!groundedProductSource || !input.depictsActualProduct)) {
     throw new Error("PRODUCT_AUTHORITY_REQUIRES_OWNER_APPROVED_GROUNDED_PRODUCT_MEDIA");
   }
+  if (input.decision === "APPROVE" && generatedVisualCandidate && input.authorityClass === "PRODUCT_AUTHORITY") {
+    throw new Error("GENERATED_VISUAL_CANDIDATE_PRODUCT_AUTHORITY_FORBIDDEN");
+  }
   if (input.decision === "APPROVE" && record.sourceType === "GENESIS_GENERATED_CONTEXTUAL" && input.depictsActualProduct) {
+    throw new Error("GENERATED_MEDIA_CANNOT_ASSERT_ACTUAL_PRODUCT");
+  }
+  if (input.decision === "APPROVE" && generatedVisualCandidate && input.depictsActualProduct) {
     throw new Error("GENERATED_MEDIA_CANNOT_ASSERT_ACTUAL_PRODUCT");
   }
   const approved = input.decision === "APPROVE";
@@ -328,7 +366,7 @@ export function reviewProductMedia(input: {
   record.applicationUseAllowed = approved && scopes.includes("APPLICATION_EXPERIENCE");
   record.localAtmosphereUseAllowed = approved && scopes.includes("LOCAL_CONTEXTUAL_ATMOSPHERE") && localAtmosphereStateCodes.length > 0;
   record.localAtmosphereStateCodes = record.localAtmosphereUseAllowed ? localAtmosphereStateCodes : [];
-  record.heroEligible = false;
+  record.heroEligible = approved && generatedVisualCandidate && generatedRole === "HERO";
   record.heroSelected = false;
   record.heroSelectedBy = null;
   record.heroSelectedAt = null;
@@ -342,6 +380,12 @@ export function reviewProductMedia(input: {
 
 export function isProductMediaHeroSelectable(record: ProductMediaAuthorityRecord): boolean {
   const scopes = record.approvedUsageScopes ?? record.usageScopes;
+  if (record.sourceType === "GENESIS_GENERATED_VISUAL_CANDIDATE") {
+    return record.ownerApproval === "APPROVED"
+      && record.generatedCandidateRole === "HERO"
+      && record.heroEligible
+      && scopes.includes("CONTEXTUAL_IN_USE");
+  }
   return record.ownerApproval === "APPROVED"
     && record.authorityClass === "PRODUCT_AUTHORITY"
     && scopes.includes("PRODUCT_AUTHORITY")
@@ -422,7 +466,7 @@ export function selectProductMediaHero(input: Parameters<typeof heroContext>[0] 
   const previousHero = loaded.state.records.find((record) => record.organizationId === input.organizationId && record.siteId === input.siteId && record.productId === input.productId && (record.heroSelected ?? record.heroEligible)) ?? null;
   for (const record of loaded.state.records.filter((candidate) => candidate.organizationId === input.organizationId && candidate.siteId === input.siteId && candidate.productId === input.productId)) {
     const isSelected = record.mediaAuthorityId === selected.mediaAuthorityId;
-    record.heroEligible = isSelected;
+    if (isSelected) record.heroEligible = true;
     record.heroSelected = isSelected;
     record.heroSelectedBy = isSelected ? input.principalId : null;
     record.heroSelectedAt = isSelected ? now.toISOString() : null;

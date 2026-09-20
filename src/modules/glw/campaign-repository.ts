@@ -6,7 +6,7 @@ import {
   savePersistedState,
 } from "@/modules/foundation/foundation-persistence";
 import { GLW_CAMPAIGN_ALL_STATE_CODES } from "./campaign-geography";
-import type { GlwCampaign, NewGlwCampaignInput } from "./campaign-types";
+import type { GlwCampaign, GlwCampaignMediaPolicy, NewGlwCampaignInput } from "./campaign-types";
 
 const PERSISTENCE_NAMESPACE = "glw-campaign-repository";
 
@@ -21,10 +21,25 @@ function createSeedState(): CampaignRepositoryState {
   return { campaigns: [] };
 }
 
+function normalizeCampaignMediaPolicy(policy?: GlwCampaignMediaPolicy): GlwCampaignMediaPolicy {
+  const ids = Array.from(new Set((policy?.allowlistMediaAuthorityIds ?? []).map((id) => id.trim()).filter(Boolean)));
+  return {
+    mode: policy?.mode === "EXPLICIT_ALLOWLIST" ? "EXPLICIT_ALLOWLIST" : "INHERIT_PRODUCT_MEDIA",
+    allowlistMediaAuthorityIds: ids,
+  };
+}
+
+function normalizeCampaign(campaign: GlwCampaign): GlwCampaign {
+  return {
+    ...campaign,
+    campaignMediaPolicy: normalizeCampaignMediaPolicy(campaign.campaignMediaPolicy),
+  };
+}
+
 function applyState(state: CampaignRepositoryState): void {
   campaignStore.clear();
   state.campaigns.forEach((campaign) => {
-    campaignStore.set(campaign.campaignId, deepClone(campaign));
+    campaignStore.set(campaign.campaignId, normalizeCampaign(deepClone(campaign)));
   });
 }
 
@@ -185,6 +200,7 @@ export function createGlwCampaign(input: NewGlwCampaignInput): {
     pagesPerDay: input.pagesPerDay,
     publicationPolicy: input.publicationPolicy,
     imageRequired: input.imageRequired,
+    campaignMediaPolicy: normalizeCampaignMediaPolicy(),
     status: "draft",
     completedTargetCount: 0,
     failedTargetCount: 0,
@@ -197,6 +213,36 @@ export function createGlwCampaign(input: NewGlwCampaignInput): {
   campaignStore.set(id, campaign);
   persistState();
   return { campaign: deepClone(campaign), errors: [] };
+}
+
+export function updateGlwCampaignMediaPolicy(input: {
+  campaignId: string;
+  mode: "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALLOWLIST";
+  allowlistMediaAuthorityIds: readonly string[];
+}): {
+  campaign: GlwCampaign | null;
+  errors: readonly string[];
+} {
+  loadState();
+
+  const existing = campaignStore.get(input.campaignId);
+  if (!existing) {
+    return { campaign: null, errors: ["Campaign not found."] };
+  }
+
+  const updated: GlwCampaign = {
+    ...existing,
+    campaignMediaPolicy: normalizeCampaignMediaPolicy({
+      mode: input.mode,
+      allowlistMediaAuthorityIds: input.allowlistMediaAuthorityIds,
+    }),
+    updatedAt: new Date().toISOString(),
+  };
+
+  campaignStore.set(input.campaignId, updated);
+  persistState();
+
+  return { campaign: deepClone(updated), errors: [] };
 }
 export function activateGlwCampaign(campaignId: string): {
   campaign: GlwCampaign | null;

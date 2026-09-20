@@ -740,7 +740,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
       {campaign.productId === "prod-outdoor-digital-sphere" ? (
         <>
           <p className="mt-4 text-xs font-semibold text-zinc-300">Campaign media readiness: {referenceResult?.productMediaReadiness?.state.replaceAll("_", " ") ?? "CHECKING"}</p>
-          <OutdoorSphereMediaAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} productId={campaign.productId} targetStateCode={referenceState} onAuthorityChanged={() => recoverReferencePage(false)} />
+          <OutdoorSphereMediaAuthorityPanel organizationId={organizationId} siteId={campaign.siteId} productId={campaign.productId} campaignId={campaign.campaignId} targetStateCode={referenceState} onAuthorityChanged={() => recoverReferencePage(false)} />
         </>
       ) : null}
 

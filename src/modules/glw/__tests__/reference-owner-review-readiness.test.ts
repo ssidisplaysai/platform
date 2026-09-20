@@ -71,7 +71,7 @@ describe("GLW reference owner-review readiness", () => {
     const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8").replace(/\s/g, "");
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8").replace(/\s/g, "");
     const panel = readFileSync(join(process.cwd(), "src/modules/glw/OutdoorSphereMediaAuthorityPanel.tsx"), "utf8").replace(/\s/g, "");
-    expect(route).toContain("evaluateProductMediaReadiness(records,{stateCode})");
+    expect(route).toContain("evaluateCampaignProductMediaReadiness({campaign,productMediaRecords:records,stateCode})");
     expect(route).toContain("campaignProductMediaReadiness(campaign,target.state.code)");
     expect(route).toContain("ownerReviewReadiness(job,mediaReadiness)");
     expect(route).toContain("resolveTargetParameterizedRichReferenceProduction");

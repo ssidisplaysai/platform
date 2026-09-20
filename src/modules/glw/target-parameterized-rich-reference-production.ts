@@ -11,11 +11,12 @@ import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
 import { listGlwCampaigns } from "./campaign-repository";
 import { previewGlwCampaignTargets, listGlwCampaignTargets, type GlwCampaignTarget } from "./campaign-target-repository";
 import { buildGlwCampaignProductionGenerationForm } from "./campaign-production-generation";
+import { evaluateCampaignProductMediaReadiness, resolveEffectiveCampaignMediaRecords } from "./campaign-media-policy";
 import { getGlwReferenceStateSelection } from "./reference-state-selection-repository";
 import { resolveGlwReferenceGenerationAuthority } from "./reference-generation-authority";
 import { glwPageExecutionRepository } from "./page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, buildLocalGlwGenerationPreview, getGlwState } from "./page-generation";
-import { evaluateProductMediaReadiness, listProductMediaAuthority } from "./product-media-authority";
+import { listProductMediaAuthority } from "./product-media-authority";
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability, type GlwTargetPreflightResult } from "./target-preflight";
 
 export const TARGET_PARAMETERIZED_RICH_REFERENCE_PRODUCTION_VERSION = "GENESIS_TARGET_PARAMETERIZED_RICH_REFERENCE_PRODUCTION_V1" as const;
@@ -169,10 +170,15 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
   if (!targetPreflight.canonicalParentId || (!mutation.createAvailable && !mutation.updateAvailable)) throw new Error("RICH_REFERENCE_DRAFT_TARGET_UNAVAILABLE");
 
   const mediaRecords = listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId });
-  const mediaReadiness = evaluateProductMediaReadiness(mediaRecords, { stateCode: state.code });
+  const effectiveMediaRecords = resolveEffectiveCampaignMediaRecords({ campaign, productMediaRecords: mediaRecords });
+  const mediaReadiness = evaluateCampaignProductMediaReadiness({
+    campaign,
+    productMediaRecords: mediaRecords,
+    stateCode: state.code,
+  });
   if (!mediaReadiness.ready) throw new Error(`RICH_REFERENCE_MEDIA_AUTHORITY_REQUIRED:${mediaReadiness.blockers.join(",")}`);
-  const hero = mediaRecords.find((record) => record.ownerApproval === "APPROVED" && record.heroSelected && record.heroEligible) ?? null;
-  const supporting = mediaRecords.find((record) => record.ownerApproval === "APPROVED" && record.mediaAuthorityId !== hero?.mediaAuthorityId && (record.contextualUseAllowed || record.applicationUseAllowed || record.productRepresentationAllowed)) ?? null;
+  const hero = effectiveMediaRecords.find((record) => record.ownerApproval === "APPROVED" && record.heroSelected && record.heroEligible) ?? null;
+  const supporting = effectiveMediaRecords.find((record) => record.ownerApproval === "APPROVED" && record.mediaAuthorityId !== hero?.mediaAuthorityId && (record.contextualUseAllowed || record.applicationUseAllowed || record.productRepresentationAllowed)) ?? null;
   if (!hero || !supporting) throw new Error("RICH_REFERENCE_MEDIA_SELECTION_REQUIRED");
 
   const generationAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: state.code });
@@ -188,7 +194,7 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
     ? listRenderedVisualCertifications({ organizationId: campaign.organizationId, siteId: campaign.siteId }).filter((item) => item.identity.jobId === job.jobId && item.identity.contentHash === candidateArtifactSha).at(-1) ?? null
     : null;
   const canonicalPath = `/${targetPreflight.canonicalPath.replace(/^\/+|\/+$/g, "")}/`;
-  const mediaAuthorityFingerprint = sha256(mediaRecords.map((record) => ({ id: record.mediaAuthorityId, hash: record.hash, approval: record.ownerApproval, scopes: [...record.approvedUsageScopes].sort(), hero: record.heroSelected })).sort((left, right) => left.id.localeCompare(right.id)));
+  const mediaAuthorityFingerprint = sha256(effectiveMediaRecords.map((record) => ({ id: record.mediaAuthorityId, hash: record.hash, approval: record.ownerApproval, scopes: [...record.approvedUsageScopes].sort(), hero: record.heroSelected })).sort((left, right) => left.id.localeCompare(right.id)));
 
   return {
     version: TARGET_PARAMETERIZED_RICH_REFERENCE_PRODUCTION_VERSION,

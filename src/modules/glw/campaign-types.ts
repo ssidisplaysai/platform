@@ -1,6 +1,12 @@
 export type GlwCampaignStatus = "draft" | "active" | "paused" | "complete";
 export type GlwCampaignPublicationPolicy = "draft_only" | "publish_after_gates";
 export type GlwCampaignPageType = "state_service" | "city_service";
+export type GlwCampaignMediaPolicyMode = "INHERIT_PRODUCT_MEDIA" | "EXPLICIT_ALLOWLIST";
+
+export type GlwCampaignMediaPolicy = {
+  mode: GlwCampaignMediaPolicyMode;
+  allowlistMediaAuthorityIds: readonly string[];
+};
 
 export type GlwCampaignCityTarget = {
   stateCode: string;
@@ -20,6 +26,7 @@ export type GlwCampaign = {
   pagesPerDay: number;
   publicationPolicy: GlwCampaignPublicationPolicy;
   imageRequired: boolean;
+  campaignMediaPolicy?: GlwCampaignMediaPolicy;
   status: GlwCampaignStatus;
   completedTargetCount: number;
   failedTargetCount: number;
