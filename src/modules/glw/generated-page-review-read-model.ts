@@ -243,8 +243,19 @@ export function deriveGeneratedPageReviewModel(input: {
   const usedContextualCarryForward = Boolean(!generatedContextualAssignment && carryForwardGeneratedContextualAssignment && carryForwardGeneratedContextualReceipt);
   const strictContextualMediaId = String(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId ?? generatedContextualEvidence?.mediaId ?? "");
   const generatedContextualReceipt = selectedGeneratedContextualReceipt;
+  const strictGeneratedAssignmentMediaId = String(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId ?? "");
+  const strictGeneratedReceiptMediaId = String(generatedContextualReceipt?.wordpressMediaId ?? "");
+  const strictGeneratedReceiptValid = Boolean(
+    selectedGeneratedContextualAssignment
+    && generatedContextualReceipt
+    && strictGeneratedAssignmentMediaId
+    && strictGeneratedReceiptMediaId
+    && strictGeneratedAssignmentMediaId === strictGeneratedReceiptMediaId
+    && generatedContextualReceipt.mediaRole === "CONTEXTUAL_IN_USE"
+    && generatedContextualReceipt.wordpressObjectId === wordpressObjectId,
+  );
   const contextualReady = strictGeneratedContextualRequired
-    ? Boolean(selectedGeneratedContextualAssignment && selectedGeneratedContextualReceipt)
+    ? Boolean(strictGeneratedReceiptValid)
     : currentContextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered) || Boolean(input.job.featuredImagePresent && mediaId);
   const strictGeneratedContextualDisplay = strictGeneratedContextualRequired
     && contextualReady

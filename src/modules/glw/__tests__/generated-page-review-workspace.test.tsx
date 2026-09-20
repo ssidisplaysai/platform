@@ -794,4 +794,105 @@ describe("Genesis generated page review workspace", () => {
 
     expect(mismatchMediaResult.images.contextualInUse.state).toBe("MISSING");
   });
+
+  test("strict outdoor sphere does not mark contextual complete when generated assignment exists without a matching durable receipt", () => {
+    const strictCampaign = {
+      ...campaign,
+      campaignId: "campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview",
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+    } as GlwCampaign;
+    const strictTarget = {
+      ...target,
+      targetId: "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-mi",
+      campaignId: strictCampaign.campaignId,
+      organizationId: strictCampaign.organizationId,
+      siteId: strictCampaign.siteId,
+      productId: strictCampaign.productId,
+      status: "draft_ready",
+      wordpressObjectId: "20234",
+      cityName: "Michigan",
+      stateCode: "MI",
+    } as GlwCampaignTarget;
+    const strictJob = {
+      ...job,
+      jobId: "065a7276-397b-4c7d-a465-dcf65bd9ef2e",
+      organizationId: strictCampaign.organizationId,
+      siteId: strictCampaign.siteId,
+      campaignId: strictCampaign.campaignId,
+      productId: strictCampaign.productId,
+      state: "Michigan",
+      city: "Detroit",
+      wordpressObjectId: "20234",
+      wordpressStatus: "draft",
+      externalExecutionId: "726697",
+      updatedAt: "2026-09-19T21:38:05.428Z",
+    } as GlwPageExecutionRecord;
+    const pageRevisionIdentity = "job:065a7276-397b-4c7d-a465-dcf65bd9ef2e:2026-09-19T21:38:05.428Z";
+    const generatedAssignment = {
+      assignmentId: "media-assignment-mi-contextual",
+      organizationId: strictCampaign.organizationId,
+      siteId: strictCampaign.siteId,
+      buildSessionId: `contextual-media:${strictTarget.targetId}`,
+      pageId: strictTarget.targetId,
+      pageRevisionId: pageRevisionIdentity,
+      slotId: "POST_HERO_CONTEXTUAL",
+      role: "CONTEXTUAL_IN_USE",
+      asset: {
+        type: "GENERATED",
+        provider: "OPENAI_IMAGE",
+        model: "gpt-image-2",
+        generationJobId: "contextual-generation-mi",
+        effectivePrompt: "Conceptual contextual visualization only.",
+        referenceInputs: [],
+        outputSha256: "d".repeat(64),
+      },
+      metadata: {
+        altText: "Conceptual contextual visualization in Michigan; not a real customer installation.",
+        caption: null,
+        title: "CONTEXTUAL IN USE",
+        description: "Generated contextual media",
+      },
+      approval: {
+        candidateId: "contextual-generation-mi",
+        approvedBy: "owner",
+        approvedAt: "2026-09-19T21:38:05.428Z",
+      },
+      wordpressReceipt: {
+        mediaId: 20235,
+        url: "https://leddisplaywarehouse.com/wp-content/uploads/2026/09/mi-contextual-generated.jpg",
+        attachedToObjectId: "20234",
+        altTextVerified: true,
+        placementVerified: true,
+        verifiedAt: "2026-09-19T21:38:06.000Z",
+      },
+      createdAt: "2026-09-19T21:38:05.500Z",
+    } as SitePageMediaAssignment;
+
+    const result = deriveGeneratedPageReviewModel({
+      campaign: strictCampaign,
+      target: strictTarget,
+      job: strictJob,
+      siteName: "LEDDisplayWarehouse.com",
+      domain: "leddisplaywarehouse.com",
+      productName: "Outdoor Digital Sphere",
+      productAuthorityReference: "wordpress-media:20162",
+      productAuthoritySource: "OWNER_APPROVED_CANONICAL_PRODUCT",
+      knowledgePack: { campaignId: strictCampaign.campaignId, organizationId: strictCampaign.organizationId, siteId: strictCampaign.siteId, instructions: "Use approved authority.", references: [], revision: 2, status: "ready", authorityReferences: [{ sourceType: "product", sourceId: strictCampaign.productId, scope: "stable_fact" }], updatedAt: "2026-09-19" },
+      wordpressDraft: { id: 20234, slug: "michigan", status: "draft", link: "https://leddisplaywarehouse.com/?page_id=20234", modified_gmt: "2026-09-19T21:38:07", featured_media: 20235, title: { raw: strictJob.title }, content: { raw: contentHtml } } as never,
+      wordpressMedia: { id: 20235, source_url: "https://leddisplaywarehouse.com/wp-content/uploads/2026/09/mi-contextual-generated.jpg", alt_text: "Michigan contextual media" } as never,
+      wordpressReadState: "AUTHENTICATED_EXACT_DRAFT_READ",
+      wordpressEditUrl: "https://leddisplaywarehouse.com/wp-admin/post.php?post=20234&action=edit",
+      mediaAssignments: [generatedAssignment],
+      approvedProductMedia: null,
+      referenceLocations: [],
+      authoritativeContextualMedia: [{ assignmentId: generatedAssignment.assignmentId, role: "CONTEXTUAL_IN_USE", semanticRole: "CONTEXTUAL_IN_USE", mediaId: "20235", rendered: true }],
+      authoritativePageRevisionIdentity: pageRevisionIdentity,
+      generatedContextualReceipts: [],
+    });
+
+    expect(result.images.contextualInUse.state).toBe("MISSING");
+    expect(result.actions.generatedContextualRepair?.operation).toBe("REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA");
+  });
 });

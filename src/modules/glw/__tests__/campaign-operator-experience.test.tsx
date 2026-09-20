@@ -395,6 +395,8 @@ describe("campaign operator experience", () => {
     expect(source).toContain("function scheduleOperatorFreeProgressionPoll(delayMs = autoProgressPollIntervalMs)");
     expect(source).toContain("if (autoProgressInFlight.current) {");
     expect(source).toContain("scheduleOperatorFreeProgressionPoll(1000)");
+    expect(source).toContain("if (reviewQueueStateRef.current === \"BLOCKED\") {");
+    expect(source).toContain("setAutoPipelineStage(\"BLOCKED\")");
     expect(source).toContain("if (!isOutdoorSphereOperatorFreeScope || typeof window === \"undefined\" || !autoTargetLockHydrated) return;");
     expect(source).toContain("setAutoTargetLockHydrated(true)");
     expect(source).toContain("window.sessionStorage.removeItem(targetLockStorageKey)");
@@ -408,6 +410,7 @@ describe("campaign operator experience", () => {
     expect(source).toContain("result.waitReason === \"ACTIVE_LEASE\"");
     expect(source).toContain("setAutoPipelineStage(\"WAITING FOR ACTIVE LEASE\")");
     expect(source).toContain("setAutoPipelineStage(\"WAITING FOR GENERATION\")");
+    expect(source).toContain("setAutoPipelineStage(\"CAPTURE_FAILED\")");
     expect(source).toContain("scheduleOperatorFreeProgressionPoll()");
     expect(source).toContain("clearOperatorFreeProgressionPoll()");
     expect(source).toContain("document.addEventListener(\"visibilitychange\"");

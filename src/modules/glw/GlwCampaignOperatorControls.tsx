@@ -585,6 +585,13 @@ export function GlwCampaignOperatorControls({
       return;
     }
 
+    if (reviewQueueStateRef.current === "BLOCKED") {
+      setAutoPipelineStage("BLOCKED");
+      setAutoTargetLock(null);
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
+
     if (autoProgressInFlight.current) {
       scheduleOperatorFreeProgressionPoll(1000);
       return;
@@ -653,6 +660,7 @@ export function GlwCampaignOperatorControls({
           setReviewQueueBlockedReason(reconcilePayload && "error" in reconcilePayload ? (reconcilePayload.error ?? "Automatic reconciliation failed.") : "Automatic reconciliation failed.");
           setReviewQueueCurrentTargetId(exactTarget.targetId);
         }
+        setAutoTargetLock(null);
         clearOperatorFreeProgressionPoll();
         return;
       }
@@ -676,6 +684,7 @@ export function GlwCampaignOperatorControls({
           setReviewQueueBlockedReason(result.error ?? "Automatic progression halted with a recoverable failure.");
           setReviewQueueCurrentTargetId(exactTarget.targetId);
         }
+        setAutoTargetLock(null);
         await refreshWorkspace();
         clearOperatorFreeProgressionPoll();
         return;
@@ -692,12 +701,13 @@ export function GlwCampaignOperatorControls({
         const capturePayload = await captureResponse.json().catch(() => null) as { error?: string } | null;
         if (!captureResponse.ok && capturePayload?.error !== "VISUAL_CERTIFICATION_IDENTITY_ALREADY_EXISTS") {
           setError(capturePayload?.error ?? `Automatic visual certification failed (HTTP ${captureResponse.status}).`);
-          setAutoPipelineStage("FAILED");
+          setAutoPipelineStage("CAPTURE_FAILED");
           if (reviewQueueStateRef.current === "ACTIVE") {
             setReviewQueueState("BLOCKED");
             setReviewQueueBlockedReason(capturePayload?.error ?? "Automatic visual certification failed.");
             setReviewQueueCurrentTargetId(exactTarget.targetId);
           }
+          setAutoTargetLock(null);
           await refreshWorkspace();
           clearOperatorFreeProgressionPoll();
           return;
@@ -733,6 +743,10 @@ export function GlwCampaignOperatorControls({
 
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || loading || !scheduler) return;
+    if (reviewQueueState === "BLOCKED") {
+      clearOperatorFreeProgressionPoll();
+      return;
+    }
     if (!autoTargetLock?.targetId) {
       clearOperatorFreeProgressionPoll();
       return;
@@ -747,7 +761,7 @@ export function GlwCampaignOperatorControls({
       return;
     }
     void runOperatorFreeProgression();
-  }, [isOutdoorSphereOperatorFreeScope, autoTargetLockHydrated, loading, scheduler, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass, clearOperatorFreeProgressionPoll]);
+  }, [isOutdoorSphereOperatorFreeScope, autoTargetLockHydrated, loading, scheduler, reviewQueueState, autoTargetLock?.targetId, autoTarget?.jobId, autoTarget?.executionId, autoTarget?.lifecycleState, autoTarget?.visualCertificationCurrentPass, clearOperatorFreeProgressionPoll]);
 
   useEffect(() => {
     if (!isOutdoorSphereOperatorFreeScope || !autoTargetLockHydrated || loading || !scheduler) return;
