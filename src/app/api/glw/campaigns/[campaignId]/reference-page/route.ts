@@ -523,7 +523,7 @@ export async function PATCH(request: NextRequest, context: Context) {
 
   if (
     job.status !== "COMPLETE"
-    || job.qaStatus !== "COMPLETE"
+    || (job.qaStatus !== "COMPLETE" && job.qaStatus !== "PASSED")
     || job.wordpressStatus !== "draft"
     || !job.wordpressObjectId
     || !featuredImageVerified
