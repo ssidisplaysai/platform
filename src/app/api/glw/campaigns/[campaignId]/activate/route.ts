@@ -19,6 +19,10 @@ import {
 } from "@/modules/glw/campaign-target-repository";
 import { listGlwCertifiedStateCampaignTargets, resolveGlwCertifiedStateActivationReference } from "@/modules/glw/campaign-certified-state-targets";
 import {
+  buildWordpressDraftReferenceApprovalAuthority,
+  referenceApprovalMatchesTargetIdentity,
+} from "@/modules/glw/campaign-activation-reference-authority";
+import {
   applyRecoveredCityCampaignTargetAdoption,
   planRecoveredCityCampaignTargetAdoption,
 } from "@/modules/glw/campaign-recovered-target-adoption";
@@ -238,12 +242,22 @@ export async function POST(
     referenceCitySlug,
   );
 
+  const selectedStateTarget = !isCityCampaign
+    ? listGlwCampaignTargets(campaign.campaignId).find((target) => target.stateCode === referenceStateCode && !target.citySlug) ?? null
+    : null;
+
   const governedReferenceApproval = referenceCitySlug
     ? getGovernedLocalCampaignReferenceApproval(campaign.campaignId, referenceStateCode, referenceCitySlug)
     : null;
   const certifiedTargets = isCityCampaign ? [] : listGlwCertifiedStateCampaignTargets(campaign);
   const certifiedReference = isCityCampaign ? null : resolveGlwCertifiedStateActivationReference(campaign, referenceStateCode);
-  if (!approval && !certifiedReference) {
+  const matchingWordpressDraftApproval = !isCityCampaign && referenceApprovalMatchesTargetIdentity({
+    approval,
+    stateCode: referenceStateCode,
+    citySlug: null,
+    target: selectedStateTarget,
+  }) ? approval : null;
+  if (!governedReferenceApproval && !matchingWordpressDraftApproval && !certifiedReference) {
     return NextResponse.json(
       {
         error: isCityCampaign
@@ -253,13 +267,24 @@ export async function POST(
       { status: 409 },
     );
   }
-  const activationReference = governedReferenceApproval ?? (certifiedReference ? {
-    receiptSha256: certifiedReference.evidenceFingerprint,
-    referenceRevision: 1,
-    imageCandidateId: certifiedReference.certificationId,
-    imageCandidateRevision: 1,
-  } : null);
-  const wordpressApproval = approval?.approvalKind === "GOVERNED_LOCAL_REFERENCE" ? null : approval;
+  const activationReference = governedReferenceApproval
+    ?? (matchingWordpressDraftApproval
+      ? buildWordpressDraftReferenceApprovalAuthority({
+        campaignId: campaign.campaignId,
+        stateCode: referenceStateCode,
+        citySlug: null,
+        jobId: matchingWordpressDraftApproval.jobId,
+        wordpressObjectId: matchingWordpressDraftApproval.wordpressObjectId,
+      })
+      : certifiedReference
+        ? {
+          receiptSha256: certifiedReference.evidenceFingerprint,
+          referenceRevision: 1,
+          imageCandidateId: certifiedReference.certificationId,
+          imageCandidateRevision: 1,
+        }
+        : null);
+  const wordpressApproval = matchingWordpressDraftApproval;
   const referenceJob = wordpressApproval
     ? await glwPageExecutionRepository.getById(wordpressApproval.jobId)
     : null;

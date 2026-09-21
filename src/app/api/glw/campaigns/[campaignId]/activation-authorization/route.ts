@@ -4,8 +4,9 @@ import { createGlwCampaignActivationGrant, createGlwCampaignTargetFingerprint, l
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { listGlwCampaignTargets, previewGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
-import { getGovernedLocalCampaignReferenceApproval, listGlwCampaignReferenceApprovals } from "@/modules/glw/campaign-reference-approval-repository";
+import { getGlwCampaignReferenceApproval, getGovernedLocalCampaignReferenceApproval, listGlwCampaignReferenceApprovals } from "@/modules/glw/campaign-reference-approval-repository";
 import { listGlwCertifiedStateCampaignTargets, resolveGlwCertifiedStateActivationReference } from "@/modules/glw/campaign-certified-state-targets";
+import { resolveStateServiceActivationReferenceAuthority } from "@/modules/glw/campaign-activation-reference-authority";
 import { selectDeterministicCityReference } from "@/modules/glw/projector-enclosure-texas-reference";
 import { getGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operator-principal";
@@ -38,11 +39,30 @@ function runningReleaseIdentity() {
   return { gitCommit: ready ? gitCommit : null, ready, reason: ready ? null : "Exact running release identity is required." };
 }
 
-function readiness(campaign: ReturnType<typeof listGlwCampaigns>[number]) {
+function readiness(campaign: ReturnType<typeof listGlwCampaigns>[number], targets: ReturnType<typeof listGlwCampaignTargets>) {
   const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
-  const approvedReferenceCount = campaign.pageType === "state_service"
-    ? listGlwCertifiedStateCampaignTargets(campaign).length
-    : listGlwCampaignReferenceApprovals(campaign.campaignId).length;
+  let approvedReferenceCount = 0;
+  if (campaign.pageType === "state_service") {
+    const selection = getGlwReferenceStateSelection(campaign.campaignId);
+    const selectedTarget = selection
+      ? targets.find((target) => target.stateCode === selection.stateCode && !target.citySlug) ?? null
+      : null;
+    const draftApproval = selection
+      ? getGlwCampaignReferenceApproval(campaign.campaignId, selection.stateCode, null)
+      : null;
+    const certifiedReference = selection
+      ? resolveGlwCertifiedStateActivationReference(campaign, selection.stateCode)
+      : null;
+    approvedReferenceCount = resolveStateServiceActivationReferenceAuthority({
+      campaignId: campaign.campaignId,
+      stateCode: selection?.stateCode ?? "",
+      selectedTarget,
+      draftApproval,
+      publicCertifiedReference: certifiedReference,
+    }).approvedReferenceCount;
+  } else {
+    approvedReferenceCount = listGlwCampaignReferenceApprovals(campaign.campaignId).length;
+  }
   return { knowledgePackReady: Boolean(pack?.instructions.trim()), approvedReferenceCount };
 }
 
@@ -66,7 +86,7 @@ export async function GET(request: NextRequest, context: Context) {
   const grants = listGlwCampaignActivationGrants(result.campaign.campaignId);
   const releaseIdentity = runningReleaseIdentity();
   return NextResponse.json({
-    readiness: readiness(result.campaign),
+    readiness: readiness(result.campaign, result.targets),
     grant: publicGrant(grants.at(-1) ?? null),
     releaseIdentity,
     mutationPerformed: false,
@@ -83,7 +103,7 @@ export async function POST(request: NextRequest, context: Context) {
   if ("error" in result) return result.error;
   const body = await request.json().catch(() => null) as { operation?: string; expiresInMinutes?: number } | null;
   if (body?.operation !== "AUTHORIZE_ACTIVATION") return NextResponse.json({ error: "Explicit AUTHORIZE_ACTIVATION operation is required." }, { status: 400 });
-  const prerequisites = readiness(result.campaign);
+  const prerequisites = readiness(result.campaign, result.targets);
   if (!prerequisites.knowledgePackReady || prerequisites.approvedReferenceCount < 1) {
     return NextResponse.json({ error: "Approved campaign reference and knowledge pack are required before authorization.", readiness: prerequisites }, { status: 409 });
   }
@@ -94,13 +114,23 @@ export async function POST(request: NextRequest, context: Context) {
   const stateSelection = result.campaign.pageType === "state_service" ? getGlwReferenceStateSelection(result.campaign.campaignId) : null;
   const certifiedTargets = result.campaign.pageType === "state_service" ? listGlwCertifiedStateCampaignTargets(result.campaign) : [];
   const certifiedReference = stateSelection ? resolveGlwCertifiedStateActivationReference(result.campaign, stateSelection.stateCode) : null;
+  const selectedStateTarget = stateSelection
+    ? result.targets.find((target) => target.stateCode === stateSelection.stateCode && !target.citySlug) ?? null
+    : null;
+  const draftReferenceApproval = stateSelection
+    ? getGlwCampaignReferenceApproval(result.campaign.campaignId, stateSelection.stateCode, null)
+    : null;
+  const stateServiceReferenceAuthority = result.campaign.pageType === "state_service"
+    ? resolveStateServiceActivationReferenceAuthority({
+      campaignId: result.campaign.campaignId,
+      stateCode: stateSelection?.stateCode ?? "",
+      selectedTarget: selectedStateTarget,
+      draftApproval: draftReferenceApproval,
+      publicCertifiedReference: certifiedReference,
+    })
+    : null;
   const governedReference = cityReference ? getGovernedLocalCampaignReferenceApproval(result.campaign.campaignId, cityReference.stateCode, cityReference.citySlug) : null;
-  const referenceApproval = governedReference ?? (certifiedReference ? {
-    receiptSha256: certifiedReference.evidenceFingerprint,
-    referenceRevision: 1,
-    imageCandidateId: certifiedReference.certificationId,
-    imageCandidateRevision: 1,
-  } : null);
+  const referenceApproval = governedReference ?? stateServiceReferenceAuthority?.referenceApproval ?? null;
   if (!referenceApproval) return NextResponse.json({ error: "Exact governed reference approval receipt is required before authorization." }, { status: 409 });
   const releaseIdentity = runningReleaseIdentity();
   if (!releaseIdentity.ready || !releaseIdentity.gitCommit) {
@@ -114,7 +144,7 @@ export async function POST(request: NextRequest, context: Context) {
     productId: result.campaign.productId,
     stateCodes: result.campaign.stateCodes,
     referenceStateCode: stateSelection?.stateCode ?? "",
-    referenceWordpressObjectId: certifiedReference?.wordpressObjectId ?? null,
+    referenceWordpressObjectId: selectedStateTarget?.wordpressObjectId ?? certifiedReference?.wordpressObjectId ?? null,
     certifiedTargets,
   });
   const targetFingerprint = createGlwCampaignTargetFingerprint(result.campaign, targets);

@@ -14,7 +14,10 @@ import { resolveGlwCampaignActivationReleaseCapability } from "./campaign-releas
 import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
 import { getGlwLocalReferenceDraft } from "./campaign-local-reference-repository";
 import { getLatestGlwReferenceImageCandidate } from "./campaign-reference-image-candidate-repository";
+import { getGlwCampaignReferenceApproval } from "./campaign-reference-approval-repository";
 import { getRenderedVisualCertificationState, listRenderedVisualCertifications, listRenderedVisualOwnerDecisions } from "@/modules/foundation/rendered-visual-certification-repository";
+import { getGlwReferenceStateSelection } from "./reference-state-selection-repository";
+import { referenceApprovalMatchesTargetIdentity } from "./campaign-activation-reference-authority";
 import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-page-projection";
 
 export type OperatorStageState = "COMPLETE" | "CURRENT" | "PARTIAL" | "BLOCKED" | "UPCOMING" | "NOT_REQUIRED";
@@ -112,11 +115,13 @@ export function deriveGlwCampaignOperatorReadModel(input: {
   releaseCapability: GlwCampaignActivationReleaseCapabilityState;
   mcpConfigured: boolean;
   referenceImage: GlwReferenceImageCandidate | null;
+  selectedStateReferenceApproved?: boolean;
   projectionTruthByTargetId?: Readonly<Record<string, { productAuthorityRendered: boolean; contextualRendered: boolean }>>;
   visualCertificationPassByTargetId?: Readonly<Record<string, boolean>>;
 }): GlwCampaignOperatorReadModel {
   const jobs = new Map(input.jobs.map((job) => [job.jobId, job]));
-  const referenceComplete = input.targets.filter((target) => target.status === "reference_complete").length;
+  const lifecycleReferenceComplete = input.targets.filter((target) => target.status === "reference_complete").length;
+  const referenceComplete = Math.max(lifecycleReferenceComplete, input.selectedStateReferenceApproved ? 1 : 0);
   const queued = input.targets.filter((target) => target.status === "queued").length;
   const running = input.targets.filter((target) => {
     const job = target.jobId ? jobs.get(target.jobId) : null;
@@ -321,11 +326,24 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
     }),
   ) as Readonly<Record<string, boolean>>;
   const latestGrant = listGlwCampaignActivationGrants(campaignId).at(-1) ?? null;
+  const selectedStateReferenceApproved = (() => {
+    if (campaign.pageType !== "state_service") return false;
+    const selection = getGlwReferenceStateSelection(campaign.campaignId);
+    if (!selection) return false;
+    const target = targets.find((candidate) => candidate.stateCode === selection.stateCode && !candidate.citySlug) ?? null;
+    const approval = getGlwCampaignReferenceApproval(campaign.campaignId, selection.stateCode, null);
+    return referenceApprovalMatchesTargetIdentity({
+      approval,
+      stateCode: selection.stateCode,
+      citySlug: null,
+      target,
+    });
+  })();
   const runningReleaseSha = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
   const releaseCapability = resolveGlwCampaignActivationReleaseCapability({ organizationId: campaign.organizationId, siteId: campaign.siteId, runningReleaseSha });
   const mcpConfigured = getGlwN8nMcpConfigurationStatus().configured;
   const referenceTarget = targets.find((target) => target.status === "reference_complete" && target.citySlug && target.cityName) ?? null;
   const referenceDraft = referenceTarget?.citySlug ? getGlwLocalReferenceDraft(campaignId, referenceTarget.stateCode, referenceTarget.citySlug) : null;
   const referenceImage = referenceDraft ? getLatestGlwReferenceImageCandidate({ organizationId: campaign.organizationId, siteId: campaign.siteId, campaignId, referenceDraftId: referenceDraft.referenceDraftId }) : null;
-  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage, projectionTruthByTargetId, visualCertificationPassByTargetId });
+  return deriveGlwCampaignOperatorReadModel({ campaign, targets: projectedTargets, jobs, latestGrant, releaseCapability, mcpConfigured, referenceImage, selectedStateReferenceApproved, projectionTruthByTargetId, visualCertificationPassByTargetId });
 }
