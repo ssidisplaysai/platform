@@ -9,7 +9,10 @@ import {
   resolveRequestPrincipal,
   resolveRequestScope,
 } from "@/modules/foundation/api-auth";
+import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
+import { getProductById } from "@/modules/foundation/product-repository";
 import { getSiteById } from "@/modules/foundation/site-repository";
+import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import {
   buildGlwCampaignProductionGenerationForm,
 } from "@/modules/glw/campaign-production-generation";
@@ -24,11 +27,18 @@ import {
 import { recordGlwCampaignLaunchDispatch } from "@/modules/glw/campaign-launch-authority";
 import { resolveGlwCampaignActivationReleaseCapability } from "@/modules/glw/campaign-release-capability";
 import { getGlwN8nMcpConfigurationStatus, preflightGlwN8nMcpExecution } from "@/modules/glw/n8n-mcp-adapter";
+import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import {
+  adaptProductForGeneration,
+  adaptSiteForGeneration,
+  buildLocalGlwGenerationPreview,
+} from "@/modules/glw/page-generation";
 import {
   appendDispatchRequestOutcome,
   authorizeExactTargetDispatchRequest,
   saveExactTargetDispatchPreflight,
 } from "@/modules/glw/exact-target-dispatch-authority";
+import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
 
 const MAX_CONCURRENT_EXECUTION = 1;
 const EXACT_RELEASE_PATTERN = /^[0-9a-f]{40}$/;
@@ -366,6 +376,9 @@ export async function POST(
     appendDispatchRequestOutcome({ requestReceiptId, patch: { ...patch, outcome: "FAILED" } });
     return NextResponse.json({ error, code, requestReceiptId }, { status });
   };
+  if (!releaseAuthority.capability.ready) {
+    return fail("GLW_CAMPAIGN_RELEASE_CAPABILITY_REQUIRED", "Campaign dispatch release capability is required.", 503, { releaseAuthorityResult: "FAIL" });
+  }
   const wordpressReadiness = resolveWordPressReadiness(campaign);
   if (!wordpressReadiness.ready) return fail("GLW_WORDPRESS_AUTHORITY_REQUIRED", wordpressReadiness.reason ?? "WordPress authority unavailable.", 503, { releaseAuthorityResult: "PASS", wordpressAuthorityResult: "FAIL" });
   const executionReadiness = getGlwN8nMcpConfigurationStatus();
@@ -378,6 +391,61 @@ export async function POST(
   const preview = previewGlwCampaignTargetLease({ campaignId: campaign.campaignId, pagesPerDay: campaign.pagesPerDay, dispatchDate, maxTargets: 1 });
   if (preview.allowance < 1) return fail("GLW_CAMPAIGN_DAILY_ALLOWANCE_EXHAUSTED", "Campaign daily allowance is exhausted.", 409);
   if (preview.selected.length !== 1 || preview.selected[0].targetId !== target.targetId) return fail("OWNER_DISPATCH_TARGET_NOT_CURRENT", "Exact authorized target is not the current deterministic eligible target.", 409);
+
+  const siteRecord = getSiteById(campaign.siteId);
+  const productRecord = getProductById(campaign.productId);
+  if (!siteRecord || !productRecord || siteRecord.organizationId !== campaign.organizationId || productRecord.organizationId !== campaign.organizationId) {
+    return fail("GLW_TARGET_MUTATION_AUTHORITY_REQUIRED", "Campaign site and product authority are unavailable.", 409);
+  }
+
+  const generationSite = adaptSiteForGeneration(siteRecord);
+  const generationProduct = adaptProductForGeneration(productRecord, siteRecord.siteId);
+  const { form: candidateForm } = buildGlwCampaignProductionGenerationForm({
+    campaign,
+    stateCode: target.stateCode,
+    citySlug: target.citySlug,
+  });
+
+  const previewInput = buildLocalGlwGenerationPreview({
+    form: candidateForm,
+    sites: [generationSite],
+    products: [generationProduct],
+  });
+  if (!previewInput.request) {
+    return fail("GLW_TARGET_MUTATION_AUTHORITY_REQUIRED", "Exact canonical target generation input is invalid.", 409);
+  }
+
+  let wordpressReadAuthority: ReturnType<typeof createAuthenticatedWordPressReadAuthority> | null = null;
+  try {
+    const credential = resolveWordPressCredentialReference(siteRecord.integrations.wordpressCredentialReference);
+    wordpressReadAuthority = createAuthenticatedWordPressReadAuthority({
+      configuration: {
+        apiBaseUrl: siteRecord.integrations.wordpressApiBaseUrl,
+        username: credential.username,
+        applicationPassword: credential.applicationPassword,
+        timeoutMs: 30_000,
+      },
+    });
+  } catch {
+    return fail("GLW_WORDPRESS_AUTHORITY_REQUIRED", "Exact active site WordPress authority is unavailable.", 503, { releaseAuthorityResult: "PASS", wordpressAuthorityResult: "FAIL" });
+  }
+
+  const targetPreflight = await readGlwTargetPreflight({
+    request: previewInput.request,
+    wordpressReadAuthority,
+    localExecutions: await glwPageExecutionRepository.list(),
+  });
+  const mutationAvailability = resolveGlwTargetMutationAvailability(targetPreflight, previewInput.request.pageType);
+  if (!targetPreflight.canonicalParentId || !mutationAvailability.plannedOperation) {
+    return fail("GLW_TARGET_MUTATION_AUTHORITY_REQUIRED", mutationAvailability.message, 409);
+  }
+
+  const form = {
+    ...candidateForm,
+    plannedOperation: mutationAvailability.plannedOperation,
+    wordpressObjectId: mutationAvailability.wordpressObjectId ?? null,
+  };
+
   const leaseId = randomUUID();
   const leased = leaseGlwCampaignTargets({ campaignId: campaign.campaignId, pagesPerDay: campaign.pagesPerDay, dispatchDate, leaseId, maxTargets: 1, maxConcurrentExecution: MAX_CONCURRENT_EXECUTION });
   if (leased.length !== 1 || leased[0].targetId !== target.targetId) return fail("OWNER_DISPATCH_LEASE_MISMATCH", "Exact authorized target was not leased.", 409);
@@ -387,13 +455,6 @@ export async function POST(
 
   for (const target of leased) {
     try {
-      const { form } =
-        buildGlwCampaignProductionGenerationForm({
-          campaign,
-          stateCode: target.stateCode,
-          citySlug: target.citySlug,
-        });
-
       if (form.publicationIntent !== "draft") {
         throw new Error(
           "Production campaign executor rejected non-draft publication intent.",

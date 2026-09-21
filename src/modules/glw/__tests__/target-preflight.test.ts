@@ -361,6 +361,92 @@ describe("GLW canonical target preflight", () => {
       plannedOperation: null,
     });
   });
+
+  test("authoritatively exposes exact update for an existing draft state target", async () => {
+    const stateRequest = {
+      ...request(),
+      pageType: "state_service" as const,
+      stateCode: "DE",
+      stateName: "Delaware",
+      citySlug: "",
+      cityName: "",
+      slug: "indoor-led-video-wall/delaware",
+      title: "Indoor LED Video Wall in Delaware",
+      canonicalPath: "indoor-led-video-wall/delaware",
+      plannedOperation: "CREATE_STATE" as const,
+    };
+
+    const authority = authorityFromBodies([
+      [{ id: 124, slug: "indoor-led-video-wall", parent: 0, status: "publish" }],
+      [{ id: 20236, slug: "delaware", parent: 124, status: "draft" }],
+    ]);
+
+    const target = await readGlwTargetPreflight({
+      request: stateRequest,
+      wordpressReadAuthority: authority,
+      localExecutions: [],
+    });
+
+    expect(target).toMatchObject({
+      state: "EXISTS_DRAFT",
+      wordpressObjectId: "20236",
+      wordpressStatus: "draft",
+      canonicalPath: "indoor-led-video-wall/delaware",
+      canonicalSlug: "delaware",
+      canonicalParentId: "124",
+    });
+
+    expect(resolveGlwTargetMutationAvailability(target, "state_service")).toMatchObject({
+      createAvailable: false,
+      updateAvailable: true,
+      plannedOperation: "UPDATE_STATE",
+      wordpressObjectId: "20236",
+    });
+  });
+
+  test("fails closed for ambiguous state target identity", async () => {
+    const stateRequest = {
+      ...request(),
+      pageType: "state_service" as const,
+      stateCode: "DE",
+      stateName: "Delaware",
+      citySlug: "",
+      cityName: "",
+      slug: "indoor-led-video-wall/delaware",
+      title: "Indoor LED Video Wall in Delaware",
+      canonicalPath: "indoor-led-video-wall/delaware",
+      plannedOperation: "CREATE_STATE" as const,
+    };
+
+    const authority = authorityFromBodies([
+      [{ id: 124, slug: "indoor-led-video-wall", parent: 0, status: "publish" }],
+      [
+        { id: 20236, slug: "delaware", parent: 124, status: "draft" },
+        { id: 20237, slug: "delaware", parent: 124, status: "draft" },
+      ],
+    ]);
+
+    const target = await readGlwTargetPreflight({
+      request: stateRequest,
+      wordpressReadAuthority: authority,
+      localExecutions: [],
+    });
+
+    expect(target).toMatchObject({
+      state: "UNKNOWN",
+      hierarchy: {
+        stateParent: { state: "AMBIGUOUS" },
+        generationAvailable: false,
+      },
+    });
+
+    expect(resolveGlwTargetMutationAvailability(target, "state_service")).toMatchObject({
+      createAvailable: false,
+      updateAvailable: false,
+      plannedOperation: null,
+    });
+  });
+
   test("keeps publication outside target-preflight mutation availability", () => {
     expect(resolveGlwTargetMutationAvailability(result("ABSENT")).plannedOperation).toBe("CREATE_CITY");
     expect(resolveGlwTargetMutationAvailability(result("EXISTS_DRAFT")).plannedOperation).toBe("UPDATE_CITY");
