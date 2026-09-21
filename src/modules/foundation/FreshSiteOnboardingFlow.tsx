@@ -37,6 +37,13 @@ type Assessment = {
   effort: "LOW" | "MODERATE";
 };
 
+type OnboardingCreateResponse = {
+  site: SiteConfiguration;
+  preflight: PublicWordPressPreflightResult;
+  bindingResult?: "fresh_site_created" | "existing_authority_bound" | "existing_authority_created";
+  authorityReused?: boolean;
+};
+
 const STEPS: Array<[Step, string]> = [
   [1, "Site Details"],
   [2, "Location"],
@@ -180,14 +187,16 @@ export function FreshSiteOnboardingFlow(input: {
         headers: headers(organizationId),
         cache: "no-store",
       });
-      const existing = findFreshSiteCollision({
-        sites: sitesPayload.sites,
-        prospectiveSiteId,
-        domain: cleanDomain,
-      });
-      if (existing) {
-        setCollision(existing);
-        return;
+      if (intent === "fresh") {
+        const existing = findFreshSiteCollision({
+          sites: sitesPayload.sites,
+          prospectiveSiteId,
+          domain: cleanDomain,
+        });
+        if (existing) {
+          setCollision(existing);
+          return;
+        }
       }
       const payload = await requestJson<{ result: PublicWordPressPreflightResult }>("/api/sites/onboarding-preflight", {
         method: "POST",
@@ -206,7 +215,7 @@ export function FreshSiteOnboardingFlow(input: {
     if (!preflight?.ready) return;
     setBusy("create");
     setError(null);
-    const input: NewSiteInput & { onboardingIntent: "fresh"; wordpressApiOverride: string | null } = {
+    const input: NewSiteInput & { onboardingIntent: "fresh" | "existing"; wordpressApiOverride: string | null } = {
       organizationId,
       siteName: siteName.trim(),
       displayName: displayName.trim(),
@@ -233,17 +242,29 @@ export function FreshSiteOnboardingFlow(input: {
         brandProfileReference: null,
         analyticsProfileReference: null,
       },
-      notes: "Fresh WordPress onboarding through GLW.",
-      onboardingIntent: "fresh",
+      notes: intent === "existing"
+        ? "Existing WordPress onboarding through GLW."
+        : "Fresh WordPress onboarding through GLW.",
+      onboardingIntent: intent,
       wordpressApiOverride: advanced ? apiOverride : null,
     };
     try {
-      const payload = await requestJson<{ site: SiteConfiguration }>("/api/sites/onboarding-create", {
+      const payload = await requestJson<OnboardingCreateResponse>("/api/sites/onboarding-create", {
         method: "POST",
         headers: headers(organizationId),
         body: JSON.stringify(input),
       });
       setSite(payload.site);
+      setCredentialsStored(Boolean(payload.site.integrations.wordpressCredentialReference));
+
+      if (intent === "existing") {
+        setStep(3);
+        if (payload.bindingResult === "existing_authority_bound" && payload.authorityReused) {
+          setError(null);
+        }
+        return;
+      }
+
       setStep(2);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Site shell creation failed.");
@@ -358,7 +379,7 @@ export function FreshSiteOnboardingFlow(input: {
     }
   }
 
-  const identityReady = intent === "fresh" && Boolean(siteName.trim() && displayName.trim() && organizationId && cleanDomain);
+  const identityReady = Boolean(siteName.trim() && displayName.trim() && organizationId && cleanDomain);
   const configurationComplete = Object.values(selectedProfiles).every(Boolean);
 
   return (
@@ -393,7 +414,7 @@ export function FreshSiteOnboardingFlow(input: {
                 <button type="button" onClick={() => { setIntent("fresh"); resetEvidence(); }} className={`px-4 py-2 text-sm ${intent === "fresh" ? "bg-red-600 text-white" : "text-zinc-300"}`}>Fresh WordPress Site</button>
                 <button type="button" onClick={() => { setIntent("existing"); resetEvidence(); }} className={`px-4 py-2 text-sm ${intent === "existing" ? "bg-red-600 text-white" : "text-zinc-300"}`}>Existing WordPress Site</button>
               </div>
-              {intent === "existing" ? <p className="mt-3 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">Existing-site integration assessment is planned but is not certified in V1. Choose Fresh WordPress Site to continue.</p> : null}
+              {intent === "existing" ? <p className="mt-3 border-l-2 border-emerald-500 pl-3 text-sm text-emerald-200">Genesis will bind an existing site authority when domain identity already exists; otherwise it creates a safe draft-only Genesis context without mutating WordPress.</p> : null}
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm text-zinc-300">Organization<select value={organizationId} onChange={(event) => { setOrganizationId(event.target.value); resetEvidence(); }} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white">{organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}</select></label>
@@ -413,7 +434,7 @@ export function FreshSiteOnboardingFlow(input: {
             {collision ? <section className="border border-amber-700 bg-amber-950/20 p-4"><p className="text-xs font-semibold text-amber-300">SITE_ALREADY_EXISTS</p><p className="mt-2 text-sm text-zinc-200">{collision.displayName} already owns {collision.domain ?? "this site identity"}. The create form remains unchanged.</p><Link href={`/sites/${encodeURIComponent(collision.siteId)}`} className="mt-3 inline-block text-sm font-semibold text-amber-200 underline underline-offset-4">Open existing site configuration</Link></section> : null}
             <div className="flex flex-wrap justify-end gap-3">
               <button type="button" disabled={!identityReady || busy !== null} onClick={runPreflight} className="border border-zinc-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "preflight" ? "Checking..." : "Run Public Preflight"}</button>
-              <button type="button" disabled={!preflight?.ready || busy !== null} onClick={createShell} className="bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "create" ? "Creating..." : "Create Safe Site Shell"}</button>
+              <button type="button" disabled={!preflight?.ready || busy !== null} onClick={createShell} className="bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "create" ? "Creating..." : intent === "existing" ? "Bind Existing Site Authority" : "Create Safe Site Shell"}</button>
             </div>
           </div>
         ) : null}
@@ -440,7 +461,7 @@ export function FreshSiteOnboardingFlow(input: {
               <label className="text-sm text-zinc-300">Application Password<input type="password" autoComplete="new-password" value={applicationPassword} onChange={(event) => setApplicationPassword(event.target.value)} className="mt-1 h-11 w-full border border-zinc-700 bg-zinc-900 px-3 text-white" /></label>
             </div>
             {credentialsStored ? <p className="border-l-2 border-emerald-500 pl-3 text-sm text-emerald-200">Credentials stored. No secret value is returned or retained in the form.</p> : null}
-            <div className="flex flex-wrap justify-between gap-3"><button type="button" onClick={() => setStep(2)} className="border border-zinc-700 px-4 py-2 text-sm text-zinc-200">Back</button><div className="flex gap-3"><button type="button" disabled={!username.trim() || !applicationPassword.trim() || busy !== null} onClick={storeCredentials} className="border border-zinc-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "credentials" ? "Storing..." : "Store Credentials"}</button><button type="button" disabled={!credentialsStored || busy !== null} onClick={() => assessConnection(4)} className="bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "assessment" ? "Testing..." : "Run Read-Only Connection Test"}</button></div></div>
+            <div className="flex flex-wrap justify-between gap-3"><button type="button" onClick={() => setStep(intent === "existing" ? 1 : 2)} className="border border-zinc-700 px-4 py-2 text-sm text-zinc-200">Back</button><div className="flex gap-3"><button type="button" disabled={!username.trim() || !applicationPassword.trim() || busy !== null} onClick={storeCredentials} className="border border-zinc-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "credentials" ? "Storing..." : "Store Credentials"}</button><button type="button" disabled={!credentialsStored || busy !== null} onClick={() => assessConnection(4)} className="bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{busy === "assessment" ? "Testing..." : "Run Read-Only Connection Test"}</button></div></div>
           </div>
         ) : null}
 

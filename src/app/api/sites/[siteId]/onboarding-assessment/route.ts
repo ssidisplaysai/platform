@@ -82,6 +82,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }).site;
   if (!updated) return NextResponse.json({ error: "Site connection state could not be saved." }, { status: 500 });
 
+  const blockers = assessment.requirements
+    .filter((requirement) => requirement.status === "MISSING")
+    .map((requirement) => `${requirement.label}: ${requirement.details}`);
+
+  const warnings = assessment.requirements
+    .filter((requirement) => requirement.status === "OPTIONAL")
+    .map((requirement) => `${requirement.label}: ${requirement.details}`);
+
+  const hierarchyVisible = assessment.inventory.pages > 0
+    || assessment.inventory.posts > 0
+    || assessment.inventory.categories > 0
+    || assessment.inventory.tags > 0;
+
   return NextResponse.json({
     authenticated: true,
     identity: { verified: true },
@@ -89,5 +102,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
     yoast: "optional_not_detected",
     site: updated,
     assessment,
+    existingSiteAssessment: {
+      authorityBinding: existing.siteId,
+      credentialReferenceConfigured: Boolean(reference),
+      wordpressAuthentication: "READ_ONLY_AUTHENTICATED",
+      inventorySummary: {
+        pages: assessment.inventory.pages,
+        posts: assessment.inventory.posts,
+        media: assessment.inventory.media,
+        categories: assessment.inventory.categories,
+        tags: assessment.inventory.tags,
+      },
+      hierarchyVisible,
+      readiness: assessment.readiness.ready ? "READY" : "BLOCKED",
+      blockers,
+      warnings,
+      integrateRebuildRecommendation: assessment.complexity === "LOW"
+        ? "INTEGRATE_EXISTING_AUTHORITY"
+        : "REVIEW_INTEGRATE_VS_REBUILD",
+      testedByMutation: false,
+    },
   });
 }
