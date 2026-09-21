@@ -8,6 +8,8 @@ import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-re
 import { buildGlwExactRetryContract, generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority, type GlwReferenceGenerationAuthorityBinding } from "@/modules/glw/reference-generation-authority";
 import { evaluateGlwReferenceOwnerReviewReadiness } from "@/modules/glw/reference-owner-review-readiness";
 import { resolveGlwRichReferenceReadiness } from "@/modules/glw/rich-reference-composition-resolver";
+import { buildGeneratedPageReviewModel } from "@/modules/glw/generated-page-review-read-model";
+import { evaluateReferenceApprovalVisualCertificationBridge } from "@/modules/glw/reference-current-visual-certification-bridge";
 import { getGlwReferenceStateSelection, saveGlwReferenceStateSelection } from "@/modules/glw/reference-state-selection-repository";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
 import { consumeGlwReferenceOwnerGrant, GlwReferenceOwnerAuthorityError, type GlwReferenceOwnerOperationType } from "@/modules/glw/reference-owner-authority";
@@ -59,13 +61,17 @@ function campaignProductMediaReadiness(campaign: GlwCampaign, stateCode: string)
   return evaluateCampaignProductMediaReadiness({ campaign, productMediaRecords: records, stateCode });
 }
 
-function ownerReviewReadiness(job: Awaited<ReturnType<typeof glwPageExecutionRepository.getById>>, media: ReturnType<typeof referenceMediaReadiness>) {
+function ownerReviewReadiness(
+  job: Awaited<ReturnType<typeof glwPageExecutionRepository.getById>>,
+  media: ReturnType<typeof referenceMediaReadiness>,
+  actualHostVisualCertified: boolean,
+) {
   if (!job?.generatedDraft) return null;
   return evaluateGlwReferenceOwnerReviewReadiness({
     artifact: job.generatedDraft,
     target: { productName: job.productTopic, productCanonicalPath: `/${job.slug.split("/").filter(Boolean)[0]}/`, stateName: job.state ?? "" },
     media,
-    actualHostVisualCertified: false,
+    actualHostVisualCertified,
     authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] },
   });
 }
@@ -303,7 +309,7 @@ export async function GET(request: NextRequest, context: Context) {
       retryContract,
       workflow,
       relatedReference,
-      ownerReviewReadiness: ownerReviewReadiness(legacyJob, mediaReadiness),
+      ownerReviewReadiness: ownerReviewReadiness(legacyJob, mediaReadiness, false),
       richCompositionReadiness: legacyJob ? resolveGlwRichReferenceReadiness({ campaign, job: legacyJob, approvedProductMediaAvailable }) : null,
       productMediaReadiness,
       targetParameterizedOrchestration,
@@ -346,7 +352,7 @@ export async function GET(request: NextRequest, context: Context) {
         retryContract,
         workflow: projectGlwReferenceWorkflow(job),
         relatedReference: null,
-        ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
+        ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness, false),
         richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
         productMediaReadiness,
         targetParameterizedOrchestration,
@@ -375,7 +381,7 @@ export async function GET(request: NextRequest, context: Context) {
     retryContract,
     workflow: projectGlwReferenceWorkflow(job),
     relatedReference: null,
-    ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness),
+    ownerReviewReadiness: ownerReviewReadiness(job, mediaReadiness, false),
     richCompositionReadiness: resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable }),
     productMediaReadiness,
     targetParameterizedOrchestration,
@@ -482,11 +488,31 @@ export async function PATCH(request: NextRequest, context: Context) {
   if (!productRecord) return NextResponse.json({ error: "Campaign product must still exist." }, { status: 409 });
   const productMediaReadiness = campaignProductMediaReadiness(campaign, target.state.code);
   const mediaReadiness = referenceMediaReadiness(productMediaReadiness, productRecord.media.primaryImageReference);
-  const reviewReadiness = ownerReviewReadiness(job, mediaReadiness);
+  const reviewModel = await buildGeneratedPageReviewModel({
+    organizationId: campaign.organizationId,
+    siteId: campaign.siteId,
+    jobId: job.jobId,
+  });
+  const expectedPageRevisionIdentity = `job:${job.jobId}:${job.updatedAt}`;
+  const visualBridge = evaluateReferenceApprovalVisualCertificationBridge({
+    campaignId: campaign.campaignId,
+    expectedJobId: job.jobId,
+    expectedWordPressObjectId: job.wordpressObjectId,
+    expectedPageRevisionIdentity,
+    reviewModel,
+  });
+  const reviewReadiness = ownerReviewReadiness(job, mediaReadiness, visualBridge.ready);
   const richCompositionReadiness = resolveGlwRichReferenceReadiness({ campaign, job, approvedProductMediaAvailable: mediaReadiness.productAuthorityMediaAvailable });
-  if (!reviewReadiness?.ready || !richCompositionReadiness?.ready) {
+  const readinessBlocked = (!reviewReadiness?.ready || !richCompositionReadiness?.ready) && !visualBridge.ready;
+  if (readinessBlocked) {
     return NextResponse.json(
-      { error: "Owner-reviewed reference composition requires remediation before approval.", code: "REFERENCE_OWNER_REVIEW_REMEDIATION_REQUIRED", ownerReviewReadiness: reviewReadiness, richCompositionReadiness },
+      {
+        error: "Owner-reviewed reference composition requires remediation before approval.",
+        code: "REFERENCE_OWNER_REVIEW_REMEDIATION_REQUIRED",
+        ownerReviewReadiness: reviewReadiness,
+        richCompositionReadiness,
+        visualCertificationBridge: { ready: visualBridge.ready, failedChecks: visualBridge.failedChecks },
+      },
       { status: 409 },
     );
   }
