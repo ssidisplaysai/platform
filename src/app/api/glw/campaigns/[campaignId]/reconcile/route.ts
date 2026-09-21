@@ -332,7 +332,12 @@ async function validateExactWordPressDraftCanonicalIdentity(input: {
     };
   }
 
-  if (input.job.status !== "CONTENT_READY" || input.job.wordpressStatus !== "draft" || !input.job.generatedDraft) {
+  const normalizedJobWordPressStatus = text(input.job.wordpressStatus).toLowerCase();
+  const localWordPressDraftStatusEligible = input.pathName === "UNPROJECTED"
+    ? normalizedJobWordPressStatus === "draft"
+    : normalizedJobWordPressStatus === "" || normalizedJobWordPressStatus === "draft";
+
+  if (input.job.status !== "CONTENT_READY" || !localWordPressDraftStatusEligible || !input.job.generatedDraft) {
     return {
       ok: false,
       code: `${codePrefix}_JOB_STATE_INVALID`,
@@ -774,6 +779,7 @@ export async function POST(
       });
     }
 
+    const selectedJobWordPressStatus = text(selectedJob.wordpressStatus).toLowerCase();
     const selectedIsRecoverablePartialDraftTarget = (selected.status === "failed" || selected.status === "content_ready")
       && isExactRecoverableOutdoorSphereRichCompositionFailure(selectedJob);
     const selectedIsRecoverableFailedTarget = (selected.status === "failed" || selected.status === "content_ready" || selected.status === "running")
@@ -792,7 +798,7 @@ export async function POST(
       && !selectedIsRecoverableCanonicalIdentityFailedTarget
       && selected.status === "content_ready"
       && selectedJob.status === "CONTENT_READY"
-      && selectedJob.wordpressStatus === "draft"
+      && selectedJobWordPressStatus === "draft"
       && selectedJob.generatedDraft,
     );
 
@@ -821,7 +827,7 @@ export async function POST(
       && !selectedIsRecoverableCanonicalIdentityFailedTarget
       && selected.status === "content_ready"
       && selectedJob.status === "CONTENT_READY"
-      && selectedJob.wordpressStatus === "draft"
+      && (selectedJobWordPressStatus === "" || selectedJobWordPressStatus === "draft")
       && selectedJob.generatedDraft,
     );
 

@@ -2484,6 +2484,162 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     });
   });
 
+  test("exact DE pre-bound continuation allows null local wordpressStatus when live identity is still a draft", async () => {
+    const exactDeTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-led-sphere-overview-de";
+    const exactDeJobId = "a5b714a8-b2a2-42d0-aa08-026599e89c6b";
+    const exactDeExecutionId = "755574";
+
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        job: {
+          status: "CONTENT_READY",
+          externalExecutionId: exactDeExecutionId,
+          wordpressObjectId: "20236",
+          wordpressStatus: null,
+        },
+      }, 200))
+      .mockResolvedValueOnce(jsonResponse({
+        ok: true,
+        job: {
+          status: "COMPLETE",
+          externalExecutionId: exactDeExecutionId,
+          wordpressObjectId: "20236",
+          wordpressStatus: "draft",
+          slug: "outdoor-digital-sphere/delaware",
+        },
+      }, 200));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: exactDeTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "DE",
+        citySlug: null,
+        cityName: null,
+        status: "content_ready",
+        jobId: exactDeJobId,
+        wordpressObjectId: "20236",
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+    ]);
+
+    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
+      jobId: exactDeJobId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      status: "CONTENT_READY",
+      externalExecutionId: exactDeExecutionId,
+      wordpressObjectId: "20236",
+      wordpressStatus: null,
+      generatedDraft: {
+        title: "Outdoor Digital Sphere in Delaware",
+        contentHtml: "<p>x</p>",
+        slug: "outdoor-digital-sphere/delaware",
+        excerpt: "x",
+      },
+    });
+
+    (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
+      form: {
+        publicationIntent: "draft",
+        slug: "outdoor-digital-sphere/delaware",
+      },
+    });
+
+    (createAuthenticatedWordPressReadAuthority as jest.Mock).mockReturnValue({
+      getJson: jest.fn(async ({ path }: { path: string }) => {
+        if (path === "/pages") {
+          return {
+            ok: true,
+            body: [
+              {
+                id: 20236,
+                status: "draft",
+                slug: "delaware",
+                parent: 20114,
+              },
+            ],
+          };
+        }
+
+        return {
+          ok: true,
+          body: {
+            id: 20236,
+            status: "draft",
+            slug: "delaware",
+            parent: 20114,
+            title: { raw: "Outdoor Digital Sphere in Delaware" },
+            content: { raw: "<p>existing</p>" },
+            link: "https://leddisplaywarehouse.com/?page_id=20236",
+          },
+        };
+      }),
+    });
+
+    (reconcileGlwContentReadyTargetDraft as jest.Mock).mockReturnValue({
+      targetId: exactDeTargetId,
+      campaignId,
+      stateCode: "DE",
+      citySlug: null,
+      status: "draft_ready",
+      jobId: exactDeJobId,
+      wordpressObjectId: "20236",
+      canonicalPath: "outdoor-digital-sphere/delaware",
+      applicationPath: "outdoor-digital-sphere/delaware",
+      canonicalParentId: "20114",
+    });
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: exactDeTargetId,
+        jobId: exactDeJobId,
+        executionId: exactDeExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.results[0]).toMatchObject({
+      action: "draft_ready",
+      stateCode: "DE",
+      wordpressObjectId: "20236",
+      executionIdAfter: exactDeExecutionId,
+    });
+    expect(payload.results[0]?.error).toBeUndefined();
+    expect(reconcileGlwContentReadyTargetDraft).toHaveBeenCalledWith(expect.objectContaining({
+      campaignId,
+      targetId: exactDeTargetId,
+      stateCode: "DE",
+      jobId: exactDeJobId,
+      wordpressObjectId: "20236",
+    }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const continueRequestBody = JSON.parse((fetchMock.mock.calls[1]?.[1] as { body?: string })?.body ?? "{}");
+    expect(continueRequestBody).toMatchObject({
+      action: "continue",
+      targetId: exactDeTargetId,
+      jobId: exactDeJobId,
+      executionId: exactDeExecutionId,
+    });
+  });
+
   test("exact content_ready pre-bound path fails closed when target and job WordPress IDs differ", async () => {
     const fetchMock = jest.fn();
     global.fetch = fetchMock as unknown as typeof fetch;
