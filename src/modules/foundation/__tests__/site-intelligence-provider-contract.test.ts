@@ -170,6 +170,40 @@ describe("SITE_INTELLIGENCE_PROVIDER_CONTRACT_V1", () => {
     const oversized = validResponse(); oversized.opportunities = Array.from({ length: 26 }, (_, index) => ({ ...oversized.opportunities[0], opportunityId: `opportunity-${index}` }));
     await expect(parseSiteIntelligenceProviderResponseV1(oversized, request(), publicDns)).rejects.toThrow("opportunity_bounds");
   });
+
+  test("enforces strict continuation bounds and exact focus opportunity", async () => {
+    const continuation = request("OPPORTUNITY_CONTINUATION");
+    const continuationResponse = () => {
+      const value = validResponse();
+      value.evidence = Array.from({ length: 4 }, (_, index) => ({ ...value.evidence[0], evidenceId: `evidence-${index + 1}` }));
+      value.opportunities[0].evidenceIds = value.evidence.map((item) => item.evidenceId);
+      return value;
+    };
+
+    await expect(parseSiteIntelligenceProviderResponseV1(continuationResponse(), continuation, publicDns)).resolves.toMatchObject({
+      executionId: "execution-1",
+      opportunities: [{ opportunityId: "opportunity-1" }],
+    });
+
+    const wrongFocus = continuationResponse();
+    wrongFocus.opportunities[0].opportunityId = "other-opportunity";
+    await expect(parseSiteIntelligenceProviderResponseV1(wrongFocus, continuation, publicDns)).rejects.toThrow("continuation_focus_mismatch");
+
+    const tooMany = continuationResponse();
+    tooMany.opportunities = Array.from({ length: 2 }, (_, index) => ({ ...tooMany.opportunities[0], opportunityId: `opportunity-${index + 1}` }));
+    tooMany.opportunities[0].opportunityId = "opportunity-1";
+    await expect(parseSiteIntelligenceProviderResponseV1(tooMany, continuation, publicDns)).rejects.toThrow("opportunity_bounds");
+
+    const evidenceLight = continuationResponse();
+    evidenceLight.evidence = evidenceLight.evidence.slice(0, 3);
+    evidenceLight.opportunities[0].evidenceIds = evidenceLight.evidence.map((item) => item.evidenceId);
+    await expect(parseSiteIntelligenceProviderResponseV1(evidenceLight, continuation, publicDns)).rejects.toThrow("evidence_bounds");
+
+    const evidenceHeavy = continuationResponse();
+    evidenceHeavy.evidence = Array.from({ length: 11 }, (_, index) => ({ ...evidenceHeavy.evidence[0], evidenceId: `evidence-${index + 1}` }));
+    evidenceHeavy.opportunities[0].evidenceIds = evidenceHeavy.evidence.map((item) => item.evidenceId);
+    await expect(parseSiteIntelligenceProviderResponseV1(evidenceHeavy, continuation, publicDns)).rejects.toThrow("evidence_bounds");
+  });
 });
 
 describe("site intelligence n8n contract boundary", () => {

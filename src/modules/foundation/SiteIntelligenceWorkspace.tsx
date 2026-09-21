@@ -44,17 +44,23 @@ export function SiteIntelligenceWorkspace(props: Props) {
   const [providerConfigured, setProviderConfigured] = useState(false);
   const [capabilityEvidenceOptions, setCapabilityEvidenceOptions] = useState<CapabilityEvidenceOption[]>([]);
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence`, {
+  async function loadWorkspaceSnapshot() {
+    const response = await fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence`, {
       headers: headers(props.organizationId, props.siteId),
       cache: "no-store",
-    })
-      .then(async (response) => {
-        const payload = await response.json() as { workspace?: Workspace; provider?: { configured: boolean }; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
-        if (!response.ok) throw new Error(payload.error ?? "Unable to load site intelligence.");
-        if (!cancelled) { setWorkspace(payload.workspace ?? null); setProviderConfigured(Boolean(payload.provider?.configured)); setCapabilityEvidenceOptions(payload.capabilityEvidenceOptions ?? []); }
-      })
+    });
+    const payload = await response.json() as { workspace?: Workspace; provider?: { configured: boolean }; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
+    if (!response.ok) throw new Error(payload.error ?? "Unable to load site intelligence.");
+    setWorkspace(payload.workspace ?? null);
+    setProviderConfigured(Boolean(payload.provider?.configured));
+    setCapabilityEvidenceOptions(payload.capabilityEvidenceOptions ?? []);
+    return payload.workspace ?? null;
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    loadWorkspaceSnapshot()
+      .then((snapshot) => { if (!cancelled) setWorkspace(snapshot); })
       .catch((reason) => { if (!cancelled) setError(reason instanceof Error ? reason.message : "Unable to load site intelligence."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
@@ -63,16 +69,29 @@ export function SiteIntelligenceWorkspace(props: Props) {
   async function action(body: Record<string, unknown>) {
     setBusy(true); setError(null);
     try {
-      const response = await fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence`, {
-        method: "POST",
-        headers: headers(props.organizationId, props.siteId),
-        body: JSON.stringify({ ...body, expectedRevision: workspace?.revision ?? 0, actor: "site-owner" }),
-      });
-      const payload = await response.json() as { workspace?: Workspace; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
-      if (!response.ok || !payload.workspace) throw new Error(payload.error ?? "Site intelligence action failed.");
-      setWorkspace(payload.workspace);
-      if (payload.capabilityEvidenceOptions) setCapabilityEvidenceOptions(payload.capabilityEvidenceOptions);
-      return payload.workspace;
+      let expectedRevision = workspace?.revision ?? 0;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const response = await fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence`, {
+          method: "POST",
+          headers: headers(props.organizationId, props.siteId),
+          body: JSON.stringify({ ...body, expectedRevision, actor: "site-owner" }),
+        });
+        const payload = await response.json() as { workspace?: Workspace; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
+        if (response.ok && payload.workspace) {
+          setWorkspace(payload.workspace);
+          if (payload.capabilityEvidenceOptions) setCapabilityEvidenceOptions(payload.capabilityEvidenceOptions);
+          return payload.workspace;
+        }
+        const errorMessage = payload.error ?? "Site intelligence action failed.";
+        const isRevisionConflict = response.status === 409 || /conflict/i.test(errorMessage);
+        if (attempt === 0 && isRevisionConflict) {
+          const latest = await loadWorkspaceSnapshot();
+          expectedRevision = latest?.revision ?? expectedRevision;
+          continue;
+        }
+        throw new Error(errorMessage);
+      }
+      return null;
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Site intelligence action failed.");
       return null;
@@ -110,7 +129,7 @@ export function SiteIntelligenceWorkspace(props: Props) {
           </div>
           <ResearchExecutionList workspace={workspace} busy={busy} onAction={action} />
           <EvidenceJournal workspace={workspace} />
-          <OpportunityBoard workspace={workspace} capabilityEvidenceOptions={capabilityEvidenceOptions} busy={busy} onAction={action} />
+          <OpportunityBoard organizationId={props.organizationId} siteId={props.siteId} workspace={workspace} capabilityEvidenceOptions={capabilityEvidenceOptions} busy={busy} onAction={action} />
           <PostCapabilityNextStep workspace={workspace} busy={busy} onAction={action} />
           {workspace.intelligenceState === "INTELLIGENCE_READY_FOR_REVIEW" ? <button type="button" disabled={busy || !workspace.opportunities.some((opportunity) => opportunity.ownerDecision === "APPROVED")} onClick={() => action({ action: "APPROVE_INTELLIGENCE", reason: "Owner approved reviewed site intelligence." })} className="bg-red-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">APPROVE INTELLIGENCE</button> : null}
           <div id="strategy-review" tabIndex={-1} className="scroll-mt-4 focus:outline focus:outline-2 focus:outline-offset-4 focus:outline-red-500"><StrategyPanel key={`strategy-${workspace.strategyRevisions.at(-1)?.revision ?? 0}`} workspace={workspace} busy={busy} onAction={action} /></div>
@@ -137,9 +156,9 @@ function EvidenceJournal({ workspace }: { workspace: Workspace }) {
   return <section className="border border-zinc-800 bg-zinc-950"><header className="border-b border-zinc-800 p-5"><h2 className="font-semibold text-white">Evidence & Provenance Journal</h2><p className="mt-1 text-sm text-zinc-400">Research observations remain distinct from owner-supplied capability authority.</p></header>{workspace.evidence.length === 0 ? <p className="p-5 text-sm text-zinc-500">No evidence collected.</p> : <div>{workspace.evidence.map((item) => <article key={item.evidenceId} className="border-b border-zinc-800 p-4 last:border-0"><p className="text-sm text-zinc-200">{item.observedClaim}</p><dl className="mt-2 grid gap-2 text-xs text-zinc-500 sm:grid-cols-4"><div><dt>Source</dt><dd className="break-all text-zinc-300">{item.sourceReference}</dd></div><div><dt>Type / authority</dt><dd className="text-zinc-300">{item.sourceType} / {item.authority}</dd></div><div><dt>Entity</dt><dd className="text-zinc-300">{item.entity ?? "Not specified"}</dd></div><div><dt>Retrieved / confidence</dt><dd className="text-zinc-300">{item.retrievedAt} / {item.confidence}</dd></div></dl></article>)}</div>}</section>;
 }
 
-function OpportunityBoard({ workspace, capabilityEvidenceOptions, busy, onAction }: { workspace: Workspace; capabilityEvidenceOptions: CapabilityEvidenceOption[]; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {
+function OpportunityBoard({ organizationId, siteId, workspace, capabilityEvidenceOptions, busy, onAction }: { organizationId: string; siteId: string; workspace: Workspace; capabilityEvidenceOptions: CapabilityEvidenceOption[]; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {
   const opportunities = selectDistinctCapabilityOpportunities(workspace.opportunities);
-  return <section id="capability-review" className="border border-zinc-800 bg-zinc-950"><header className="border-b border-zinc-800 p-5"><h2 className="font-semibold text-white">Opportunity Board</h2><p className="mt-1 text-sm text-zinc-400">Review market fit and current capability as two separate business decisions.</p></header>{opportunities.length === 0 ? <p className="p-5 text-sm text-zinc-500">No opportunities recorded. Bounded research is awaiting provider results.</p> : <div>{opportunities.map((opportunity) => <SiteCapabilityOwnerWorkflow key={opportunity.opportunityId} opportunity={opportunity} capabilityEvidenceOptions={capabilityEvidenceOptions} publicBrandIdentity={workspace.publicBrandIdentity} busy={busy} onAction={onAction} />)}</div>}</section>;
+  return <section id="capability-review" className="border border-zinc-800 bg-zinc-950"><header className="border-b border-zinc-800 p-5"><h2 className="font-semibold text-white">Opportunity Board</h2><p className="mt-1 text-sm text-zinc-400">Review market fit and current capability as two separate business decisions.</p></header>{opportunities.length === 0 ? <p className="p-5 text-sm text-zinc-500">No opportunities recorded. Bounded research is awaiting provider results.</p> : <div>{opportunities.map((opportunity) => <SiteCapabilityOwnerWorkflow key={opportunity.opportunityId} organizationId={organizationId} siteId={siteId} workspaceRevision={workspace.revision} opportunity={opportunity} capabilityEvidenceOptions={capabilityEvidenceOptions} publicBrandIdentity={workspace.publicBrandIdentity} busy={busy} onAction={onAction} />)}</div>}</section>;
 }
 
 function PostCapabilityNextStep({ workspace, busy, onAction }: { workspace: Workspace; busy: boolean; onAction(body: Record<string, unknown>): Promise<Workspace | null> }) {

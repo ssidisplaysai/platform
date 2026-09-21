@@ -22,6 +22,9 @@ import {
 } from "./site-capability-owner-ux";
 
 type Props = {
+  organizationId: string;
+  siteId: string;
+  workspaceRevision: number;
   opportunity: SiteOpportunity;
   capabilityEvidenceOptions: CapabilityEvidenceOption[];
   publicBrandIdentity: string;
@@ -42,7 +45,7 @@ function evidenceTypeLabel(option: CapabilityEvidenceOption): string {
   return "Owner-provided material";
 }
 
-export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOptions, publicBrandIdentity, busy, onAction }: Props) {
+export function SiteCapabilityOwnerWorkflow({ organizationId, siteId, workspaceRevision, opportunity, capabilityEvidenceOptions, publicBrandIdentity, busy, onAction }: Props) {
   const latestAuthority = opportunity.capabilityAuthorityRevisions?.at(-1);
   const [capabilityChoice, setCapabilityChoice] = useState<OwnerCapabilityChoice | null>(() => ownerCapabilityChoice(opportunity.capabilityState));
   const [selectedEvidence, setSelectedEvidence] = useState<string[]>(opportunity.capabilityEvidenceIds);
@@ -55,6 +58,10 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
   }));
   const [ownerConfirmed, setOwnerConfirmed] = useState(() => Boolean(latestAuthority?.attestation.trim() && latestAuthority.decision === opportunity.capabilityState));
   const [limitations, setLimitations] = useState(opportunity.capabilityNotes ?? "");
+  const [proofUrl, setProofUrl] = useState("");
+  const [proofNotes, setProofNotes] = useState("");
+  const [proofFiles, setProofFiles] = useState<File[]>([]);
+  const [proofUploading, setProofUploading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const canonicalState = capabilityChoice ? canonicalCapabilityState(capabilityChoice) : null;
   const currentDecision = canonicalState === "VERIFIED" || canonicalState === "QUALIFIED";
@@ -92,6 +99,95 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
     setFeedback(result ? "Capability decision saved." : "Capability decision failed. Review the workspace error and try again.");
   }
 
+  function normalizeCapabilityProofUrl(reference: string): string | null {
+    try {
+      const url = new URL(reference.trim());
+      if (url.protocol !== "https:" || url.username || url.password) return null;
+      url.hostname = url.hostname.toLowerCase();
+      url.hash = "";
+      if (url.pathname !== "/") url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+      return url.toString();
+    } catch {
+      return null;
+    }
+  }
+
+  async function attachProofUrl() {
+    setFeedback(null);
+    const normalized = normalizeCapabilityProofUrl(proofUrl);
+    if (!normalized) {
+      setFeedback("Provide a valid HTTPS proof URL.");
+      return;
+    }
+    const result = await onAction({
+      action: "ADD_URL_REFERENCE",
+      reference: normalized,
+      classification: "OWNER_SUPPLIED_REFERENCE",
+      sentiment: "REFERENCE_ONLY",
+      notes: proofNotes,
+      reason: `Owner attached proof URL for ${opportunity.opportunityId}.`,
+    });
+    if (!result) {
+      setFeedback("Proof URL failed to attach. Review the workspace error and try again.");
+      return;
+    }
+    const created = [...result.creativeInputs].reverse().find((input) => input.kind === "URL" && input.reference === normalized);
+    if (created) {
+      const referenceId = `creative:${created.inputId}`;
+      setSelectedEvidence((current) => [...new Set([...current, referenceId])]);
+      setEvidenceRelevance((current) => ({ ...current, [referenceId]: current[referenceId] ?? "DIRECT_CAPABILITY_PROOF" }));
+      setOwnerConfirmed(true);
+    }
+    setProofUrl("");
+    setProofNotes("");
+    setFeedback("Proof URL attached to this capability review.");
+  }
+
+  async function uploadProofFiles() {
+    if (!proofFiles.length) return;
+    setProofUploading(true);
+    setFeedback(null);
+    try {
+      const form = new FormData();
+      proofFiles.forEach((file) => form.append("files", file));
+      form.set("classification", "OWNER_SUPPLIED_REFERENCE");
+      form.set("sentiment", "REFERENCE_ONLY");
+      form.set("notes", `Capability proof for ${opportunity.name}${proofNotes.trim() ? ` - ${proofNotes.trim()}` : ""}`);
+      form.set("expectedRevision", String(workspaceRevision));
+      const response = await fetch(`/api/sites/${encodeURIComponent(siteId)}/intelligence/assets`, {
+        method: "POST",
+        headers: {
+          "x-gcp-roles": "ops_manager",
+          "x-gcp-organization-id": organizationId,
+          "x-gcp-site-id": siteId,
+        },
+        body: form,
+      });
+      const payload = await response.json() as { workspace?: SiteIntelligenceWorkspace; error?: string };
+      if (!response.ok || !payload.workspace) throw new Error(payload.error ?? "Proof file upload failed.");
+      const known = new Set(capabilityEvidenceOptions.map((option) => option.referenceId));
+      const references = payload.workspace.creativeInputs
+        .filter((input) => input.binaryAsset && input.classification === "OWNER_SUPPLIED_REFERENCE")
+        .map((input) => `creative:${input.inputId}`)
+        .filter((referenceId) => !known.has(referenceId));
+      if (references.length) {
+        setSelectedEvidence((current) => [...new Set([...current, ...references])]);
+        setEvidenceRelevance((current) => {
+          const next = { ...current };
+          for (const referenceId of references) if (!next[referenceId]) next[referenceId] = "DIRECT_CAPABILITY_PROOF";
+          return next;
+        });
+      }
+      setOwnerConfirmed(true);
+      setProofFiles([]);
+      setFeedback("Proof files uploaded and attached to this capability review.");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Proof file upload failed.");
+    } finally {
+      setProofUploading(false);
+    }
+  }
+
   return (
     <article className="border-b border-zinc-800 p-5 last:border-0">
       <header className="flex flex-wrap justify-between gap-3">
@@ -112,15 +208,27 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
         <p className="text-xs font-semibold uppercase text-emerald-300">Current capability</p>
         <h4 className="mt-1 font-semibold text-white">Can we actually provide this today?</h4>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">{OWNER_CAPABILITY_CHOICES.map((choice) => <button key={choice.value} type="button" aria-pressed={capabilityChoice === choice.value} disabled={busy} onClick={() => { setCapabilityChoice(choice.value); setOwnerConfirmed(false); setFeedback(null); }} className="border border-emerald-800 px-3 py-3 text-left text-xs font-semibold text-emerald-100 aria-pressed:bg-emerald-900">{choice.label}</button>)}</div>
+        {currentDecision ? <div className="mt-4 border border-emerald-800/70 bg-emerald-950/30 p-4">
+          <p className="text-xs font-semibold uppercase text-emerald-300">CONFIRM CAPABILITY</p>
+          <p className="mt-1 text-xs text-zinc-300">How do you want to establish authority?</p>
+          <div className="mt-3 flex flex-wrap gap-2"><button type="button" disabled={busy} onClick={() => { setOwnerConfirmed(true); setFeedback("Owner authority confirmed for this capability."); }} className="border border-emerald-700 px-3 py-2 text-xs font-semibold text-emerald-100">I ACCEPT RESPONSIBILITY - CONFIRM CAPABILITY</button><button type="button" disabled={busy} onClick={() => { const section = document.getElementById("capability-proof"); section?.scrollIntoView({ behavior: "smooth", block: "start" }); }} className="border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-100">ADD PROOF</button></div>
+        </div> : null}
         {canonicalState === "FUTURE_CAPABILITY" ? <p className="mt-3 text-sm text-blue-200">Genesis may consider this strategically, but it cannot describe it as a current capability.</p> : null}
         {canonicalState === "REJECTED" ? <p className="mt-3 text-sm text-zinc-300">Genesis will not treat this as a current organizational capability. This does not reject the market.</p> : null}
       </section>
 
-      {currentDecision ? <section className="mt-4 border border-zinc-800 p-4">
+      {currentDecision ? <section id="capability-proof" className="mt-4 border border-zinc-800 p-4">
         <p className="text-xs font-semibold uppercase text-zinc-400">Proof</p>
         <h4 className="mt-1 font-semibold text-white">How can we support this?</h4>
         <p className="mt-1 text-xs text-zinc-500">{status.proofRequired ? "Independent proof is required for this protected claim." : "Supporting proof is optional and can independently verify the owner-confirmed capability."} General references do not establish independent proof.</p>
         {status.proofReason ? <p className="mt-2 text-xs text-amber-200">{status.proofReason}</p> : null}
+        <div className="mt-3 grid gap-3 border border-zinc-800 bg-zinc-950 p-3">
+          <p className="text-xs text-zinc-400">Attach independent proof directly from this card.</p>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]"><input type="url" value={proofUrl} onChange={(event) => setProofUrl(event.target.value)} placeholder="https://example.com/capability-proof" className="h-10 w-full border border-zinc-700 bg-zinc-900 px-3 text-white" /><button type="button" disabled={busy || !proofUrl.trim()} onClick={attachProofUrl} className="border border-zinc-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">ATTACH URL PROOF</button></div>
+          <input value={proofNotes} onChange={(event) => setProofNotes(event.target.value)} placeholder="Optional proof notes" className="h-10 w-full border border-zinc-700 bg-zinc-900 px-3 text-white" />
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]"><input type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" onChange={(event) => setProofFiles(Array.from(event.target.files ?? []))} className="block w-full border border-dashed border-zinc-700 p-3 text-zinc-300" /><button type="button" disabled={busy || proofUploading || proofFiles.length === 0} onClick={uploadProofFiles} className="border border-zinc-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">UPLOAD FILE PROOF</button></div>
+          <p className="text-xs text-zinc-500">File uploads reuse the existing Reference Library storage authority and are attached to this capability review.</p>
+        </div>
         {capabilityEvidenceOptions.length ? <div className="mt-3 grid gap-2 sm:grid-cols-2">{capabilityEvidenceOptions.map((option) => {
           const selected = selectedEvidence.includes(option.referenceId);
           const relevance = evidenceRelevance[option.referenceId] ?? inferEvidenceRelevance(option);
@@ -133,7 +241,7 @@ export function SiteCapabilityOwnerWorkflow({ opportunity, capabilityEvidenceOpt
 
       {requiresConfirmation ? <label className="mt-4 flex gap-3 border border-zinc-800 p-4 text-sm text-zinc-200"><input type="checkbox" checked={ownerConfirmed} onChange={(event) => setOwnerConfirmed(event.target.checked)} /><span>{canonicalState === "FUTURE_CAPABILITY" ? `I confirm that ${publicBrandIdentity} does not currently have this capability.` : `I confirm that ${publicBrandIdentity} currently has this capability.`}<span className="mt-1 block text-xs text-zinc-500">Owner confirmation is recorded as owner authority. {status.proofRequired ? "This protected claim also requires independent proof." : "Independent proof may be added now or later."}</span></span></label> : null}
 
-      <div className="mt-4 grid gap-3 border border-zinc-800 bg-zinc-950 p-4 sm:grid-cols-[1fr_auto] sm:items-end"><div><p className="text-xs font-semibold uppercase text-zinc-500">Capability status</p><strong className={`mt-1 block ${status.label === "VERIFIED" || status.label === "OWNER CONFIRMED" || status.label === "QUALIFIED" ? "text-emerald-200" : status.label === "NOT A CURRENT CAPABILITY" ? "text-blue-200" : "text-amber-200"}`}>{status.label}</strong><dl className="mt-2 grid grid-cols-2 gap-2 text-xs text-zinc-400"><div><dt>Owner confirmed</dt><dd>{status.ownerConfirmation}</dd></div><div><dt>Supporting proof</dt><dd>{status.supportingProof}</dd></div></dl>{getCapabilityAuthorityAssurance(opportunity) === "OWNER_ATTESTED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner attestation · Evidence status: Not independently verified</p> : getCapabilityAuthorityAssurance(opportunity) === "EVIDENCE_VERIFIED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner + evidence</p> : null}{opportunity.capabilityState === "QUALIFIED" && opportunity.capabilityNotes ? <p className="mt-2 text-xs text-zinc-300">Limitations: {opportunity.capabilityNotes}</p> : null}</div><button type="button" disabled={busy || !status.canSubmit} onClick={saveCapability} className="bg-emerald-700 px-4 py-3 text-xs font-semibold text-white disabled:opacity-40">SAVE CAPABILITY REVIEW</button></div>
+      <div className="mt-4 grid gap-3 border border-zinc-800 bg-zinc-950 p-4 sm:grid-cols-[1fr_auto] sm:items-end"><div><p className="text-xs font-semibold uppercase text-zinc-500">Capability status</p><strong className={`mt-1 block ${status.label === "VERIFIED" || status.label === "OWNER CONFIRMED" || status.label === "QUALIFIED" ? "text-emerald-200" : status.label === "NOT A CURRENT CAPABILITY" ? "text-blue-200" : "text-amber-200"}`}>{status.label}</strong><dl className="mt-2 grid grid-cols-2 gap-2 text-xs text-zinc-400"><div><dt>Owner authority</dt><dd>{status.ownerConfirmation === "Confirmed" ? "Confirmed" : "Not provided"}</dd></div><div><dt>Independent proof</dt><dd>{status.supportingProof === "Verified" ? "Verified" : status.supportingProof === "Needed" ? "Needed" : "Not provided"}</dd></div></dl>{getCapabilityAuthorityAssurance(opportunity) === "OWNER_ATTESTED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner attestation · Evidence status: Not independently verified</p> : getCapabilityAuthorityAssurance(opportunity) === "EVIDENCE_VERIFIED" ? <p className="mt-2 text-xs text-zinc-400">Authority source: Owner + evidence</p> : null}{opportunity.capabilityState === "QUALIFIED" && opportunity.capabilityNotes ? <p className="mt-2 text-xs text-zinc-300">Limitations: {opportunity.capabilityNotes}</p> : null}</div><button type="button" disabled={busy || !status.canSubmit} onClick={saveCapability} className="bg-emerald-700 px-4 py-3 text-xs font-semibold text-white disabled:opacity-40">SAVE CAPABILITY REVIEW</button></div>
       {feedback ? <p role="status" className="mt-3 border border-zinc-700 bg-zinc-900 p-2 text-xs text-zinc-200">{feedback}</p> : null}
     </article>
   );
