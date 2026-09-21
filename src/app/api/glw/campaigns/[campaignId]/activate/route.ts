@@ -22,6 +22,7 @@ import {
   buildWordpressDraftReferenceApprovalAuthority,
   referenceApprovalMatchesTargetIdentity,
 } from "@/modules/glw/campaign-activation-reference-authority";
+import { isGlwReferenceQaSuccess } from "@/modules/glw/reference-qa-status";
 import {
   applyRecoveredCityCampaignTargetAdoption,
   planRecoveredCityCampaignTargetAdoption,
@@ -297,7 +298,7 @@ export async function POST(
     || referenceJob.state !== state.name
     || (isCityCampaign && referenceJob.city !== cityTarget?.cityName)
     || referenceJob.status !== "COMPLETE"
-    || referenceJob.qaStatus !== "COMPLETE"
+    || !isGlwReferenceQaSuccess(referenceJob.qaStatus)
     || referenceJob.wordpressStatus !== "draft"
     || referenceJob.wordpressObjectId !== wordpressApproval?.wordpressObjectId
     || !referenceJob.wordpressObjectId
