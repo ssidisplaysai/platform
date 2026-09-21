@@ -484,15 +484,19 @@ export async function PATCH(request: NextRequest, context: Context) {
       { status: 409 },
     );
   }
-  const productRecord = getProductById(campaign.productId);
-  if (!productRecord) return NextResponse.json({ error: "Campaign product must still exist." }, { status: 409 });
-  const productMediaReadiness = campaignProductMediaReadiness(campaign, target.state.code);
-  const mediaReadiness = referenceMediaReadiness(productMediaReadiness, productRecord.media.primaryImageReference);
   const reviewModel = await buildGeneratedPageReviewModel({
     organizationId: campaign.organizationId,
     siteId: campaign.siteId,
     jobId: job.jobId,
   });
+  const featuredImageVerified = job.featuredImagePresent === true
+    || reviewModel?.images.contextualInUse.state === "GENERATED_CONTEXTUAL"
+    || reviewModel?.images.contextualInUse.state === "ASSIGNED_FEATURED"
+    || reviewModel?.images.contextualInUse.state === "LEGACY_FEATURED";
+  const productRecord = getProductById(campaign.productId);
+  if (!productRecord) return NextResponse.json({ error: "Campaign product must still exist." }, { status: 409 });
+  const productMediaReadiness = campaignProductMediaReadiness(campaign, target.state.code);
+  const mediaReadiness = referenceMediaReadiness(productMediaReadiness, productRecord.media.primaryImageReference);
   const expectedPageRevisionIdentity = `job:${job.jobId}:${job.updatedAt}`;
   const visualBridge = evaluateReferenceApprovalVisualCertificationBridge({
     campaignId: campaign.campaignId,
@@ -522,7 +526,7 @@ export async function PATCH(request: NextRequest, context: Context) {
     || job.qaStatus !== "COMPLETE"
     || job.wordpressStatus !== "draft"
     || !job.wordpressObjectId
-    || job.featuredImagePresent !== true
+    || !featuredImageVerified
   ) {
     return NextResponse.json(
       {
