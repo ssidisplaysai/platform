@@ -74,7 +74,12 @@ function createReferenceJob(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function createTarget(status: string, stateCode: string, citySlug: string | null = null) {
+function createTarget(
+  status: string,
+  stateCode: string,
+  citySlug: string | null = null,
+  overrides: Record<string, unknown> = {},
+) {
   return {
     campaignId: CAMPAIGN_ID,
     stateCode,
@@ -82,6 +87,7 @@ function createTarget(status: string, stateCode: string, citySlug: string | null
     status,
     jobId: status === "queued" ? null : JOB_ID,
     wordpressObjectId: status === "queued" ? null : WORDPRESS_OBJECT_ID,
+    ...overrides,
   };
 }
 
@@ -216,21 +222,21 @@ describe("GLW activation reference integrity alignment", () => {
     certifiedTargets = [];
     referenceJob = createReferenceJob();
     initializedTargets = [
-      createTarget("reference_complete", "TX"),
+      createTarget("draft_ready", "TX"),
       createTarget("queued", "CA"),
     ];
   });
 
-  test("state_service draft reference passes with reference_complete target lifecycle", async () => {
+  test("approved WordPress draft authority passes with exact draft_ready target", async () => {
     const response = await execute();
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body.activation.referenceStateCode).toBe("TX");
-    expect(body.activation.referenceComplete).toBe(1);
+    expect((body.targets as any[]).find((target) => target.stateCode === "TX")?.status).toBe("draft_ready");
   });
 
-  test("state_service draft reference does not require a published reference target", async () => {
+  test("approved WordPress draft authority passes with exact reference_complete target", async () => {
     initializedTargets = [
       createTarget("reference_complete", "TX"),
       createTarget("queued", "CA"),
@@ -240,10 +246,62 @@ describe("GLW activation reference integrity alignment", () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect((body.targets as any[]).some((target) => target.stateCode === "TX" && target.status === "published")).toBe(false);
+    expect((body.targets as any[]).find((target) => target.stateCode === "TX")?.status).toBe("reference_complete");
   });
 
-  test("public-certified state reference still passes published path", async () => {
+  test("wrong draft reference jobId is rejected", async () => {
+    initializedTargets = [
+      createTarget("draft_ready", "TX", null, { jobId: "wrong-job" }),
+      createTarget("queued", "CA"),
+    ];
+
+    const response = await execute();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("Campaign target queue failed activation integrity checks.");
+  });
+
+  test("wrong draft reference wordpressObjectId is rejected", async () => {
+    initializedTargets = [
+      createTarget("draft_ready", "TX", null, { wordpressObjectId: "99999" }),
+      createTarget("queued", "CA"),
+    ];
+
+    const response = await execute();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("Campaign target queue failed activation integrity checks.");
+  });
+
+  test("queued reference target is rejected", async () => {
+    initializedTargets = [
+      createTarget("queued", "TX"),
+      createTarget("queued", "CA"),
+    ];
+
+    const response = await execute();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("Campaign target queue failed activation integrity checks.");
+  });
+
+  test("published target does not satisfy WordPress-draft reference authority path", async () => {
+    initializedTargets = [
+      createTarget("published", "TX"),
+      createTarget("queued", "CA"),
+    ];
+
+    const response = await execute();
+    const body = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body.error).toBe("Campaign target queue failed activation integrity checks.");
+  });
+
+  test("public-certified state reference still passes existing published semantics", async () => {
     approval = null;
     certifiedReference = {
       certificationId: "cert-1",
@@ -261,35 +319,25 @@ describe("GLW activation reference integrity alignment", () => {
     expect(response.status).toBe(200);
   });
 
-  test("wrong reference state target is rejected", async () => {
+  test("30-target campaign with 29 queued and one exact draft reference passes integrity", async () => {
+    const additionalStateCodes = Array.from({ length: 29 }, (_, index) => `S${String(index + 1).padStart(2, "0")}`);
+    campaign = createStateCampaign({ stateCodes: ["TX", ...additionalStateCodes] });
     initializedTargets = [
-      createTarget("reference_complete", "CA"),
-      createTarget("queued", "TX"),
+      createTarget("draft_ready", "TX", null, { jobId: JOB_ID, wordpressObjectId: WORDPRESS_OBJECT_ID }),
+      ...additionalStateCodes.map((code) => createTarget("queued", code)),
     ];
 
     const response = await execute();
     const body = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(body.error).toBe("Campaign target queue failed activation integrity checks.");
-  });
-
-  test("missing reference target is rejected", async () => {
-    initializedTargets = [
-      createTarget("queued", "TX"),
-      createTarget("queued", "CA"),
-    ];
-
-    const response = await execute();
-    const body = await response.json();
-
-    expect(response.status).toBe(500);
-    expect(body.error).toBe("Campaign target queue failed activation integrity checks.");
+    expect(response.status).toBe(200);
+    expect(body.activation.totalTargets).toBe(30);
+    expect(body.activation.queued).toBe(29);
   });
 
   test("target count mismatch is rejected", async () => {
     initializedTargets = [
-      createTarget("reference_complete", "TX"),
+      createTarget("draft_ready", "TX"),
     ];
 
     const response = await execute();
@@ -323,7 +371,7 @@ describe("GLW activation reference integrity alignment", () => {
 
   test("draft reference never becomes published as an activation side effect", async () => {
     initializedTargets = [
-      createTarget("reference_complete", "TX"),
+      createTarget("draft_ready", "TX"),
       createTarget("queued", "CA"),
     ];
 
@@ -332,6 +380,6 @@ describe("GLW activation reference integrity alignment", () => {
     const txTarget = (body.targets as any[]).find((target) => target.stateCode === "TX");
 
     expect(response.status).toBe(200);
-    expect(txTarget.status).toBe("reference_complete");
+    expect(txTarget.status).toBe("draft_ready");
   });
 });

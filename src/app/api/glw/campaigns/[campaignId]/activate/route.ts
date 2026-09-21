@@ -426,12 +426,20 @@ export async function POST(
   const usesPublicCertifiedReferenceAuthority = !isCityCampaign
     && !matchingWordpressDraftApproval
     && Boolean(certifiedReference);
+  const matchingWordpressDraftTargets = usesWordpressDraftReferenceAuthority
+    ? targets.filter((target) =>
+      target.stateCode === referenceStateCode
+      && !target.citySlug
+      && target.jobId === matchingWordpressDraftApproval?.jobId
+      && target.wordpressObjectId === matchingWordpressDraftApproval?.wordpressObjectId
+      && (target.status === "draft_ready" || target.status === "reference_complete"))
+    : [];
 
   const referenceIdentityMatches = isCityCampaign
     ? referenceTargets[0]?.stateCode === referenceStateCode
       && referenceTargets[0]?.citySlug === referenceCitySlug
     : usesWordpressDraftReferenceAuthority
-      ? referenceTargets.some((target) => target.stateCode === referenceStateCode && !target.citySlug)
+      ? matchingWordpressDraftTargets.length === 1
       : usesPublicCertifiedReferenceAuthority
         ? publishedTargets.some((target) => target.stateCode === referenceStateCode && !target.citySlug)
         : false;
