@@ -44,6 +44,66 @@ type OnboardingCreateResponse = {
   authorityReused?: boolean;
 };
 
+type SelectedOnboardingProfiles = {
+  seoProfileReference: string;
+  promptProfileReference: string;
+  imageProfileReference: string;
+  brandProfileReference: string;
+  workflowReference: string;
+};
+
+type ExistingAuthorityProfileSnapshot = {
+  profiles?: Partial<SiteConfiguration["profiles"]> | null;
+  integrations?: Partial<SiteConfiguration["integrations"]> | null;
+};
+
+function isSelectableProfileReference(
+  profiles: IntegrationProfileConfiguration[],
+  type: IntegrationProfileType,
+  reference: string,
+): boolean {
+  return profiles.some((profile) => (
+    profile.profileId === reference
+    && profile.profileType === type
+    && profile.status === "active"
+    && profile.enabled
+  ));
+}
+
+export function hydrateExistingAuthorityProfileSelection(
+  selection: SelectedOnboardingProfiles,
+  site: ExistingAuthorityProfileSnapshot | null,
+  profiles: IntegrationProfileConfiguration[],
+): SelectedOnboardingProfiles {
+  if (!site) return selection;
+
+  const next = { ...selection };
+
+  const mappings: Array<{
+    field: "seoProfileReference" | "promptProfileReference" | "imageProfileReference" | "brandProfileReference";
+    type: IntegrationProfileType;
+  }> = [
+    { field: "seoProfileReference", type: "seo" },
+    { field: "promptProfileReference", type: "prompt" },
+    { field: "imageProfileReference", type: "image" },
+    { field: "brandProfileReference", type: "brand" },
+  ];
+
+  for (const mapping of mappings) {
+    const reference = site.profiles?.[mapping.field] ?? null;
+    if (reference && isSelectableProfileReference(profiles, mapping.type, reference)) {
+      next[mapping.field] = reference;
+    }
+  }
+
+  const workflowReference = site.integrations?.workflowReference ?? null;
+  if (workflowReference && isSelectableProfileReference(profiles, "workflow", workflowReference)) {
+    next.workflowReference = workflowReference;
+  }
+
+  return next;
+}
+
 const STEPS: Array<[Step, string]> = [
   [1, "Site Details"],
   [2, "Location"],
@@ -105,7 +165,7 @@ export function FreshSiteOnboardingFlow(input: {
   const [applicationPassword, setApplicationPassword] = useState("");
   const [credentialsStored, setCredentialsStored] = useState(Boolean(input.initialSite?.integrations.wordpressCredentialReference));
   const [profiles, setProfiles] = useState<IntegrationProfileConfiguration[]>([]);
-  const [selectedProfiles, setSelectedProfiles] = useState({
+  const [selectedProfiles, setSelectedProfiles] = useState<SelectedOnboardingProfiles>({
     seoProfileReference: input.initialSite?.profiles.seoProfileReference ?? "",
     promptProfileReference: input.initialSite?.profiles.promptProfileReference ?? "",
     imageProfileReference: input.initialSite?.profiles.imageProfileReference ?? "",
@@ -258,10 +318,10 @@ export function FreshSiteOnboardingFlow(input: {
       setCredentialsStored(Boolean(payload.site.integrations.wordpressCredentialReference));
 
       if (intent === "existing") {
-        setStep(3);
         if (payload.bindingResult === "existing_authority_bound" && payload.authorityReused) {
-          setError(null);
+          setSelectedProfiles((current) => hydrateExistingAuthorityProfileSelection(current, payload.site, profiles));
         }
+        setStep(3);
         return;
       }
 

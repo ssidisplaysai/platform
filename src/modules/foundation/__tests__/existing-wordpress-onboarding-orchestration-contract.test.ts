@@ -43,6 +43,18 @@ describe("existing WordPress onboarding orchestration contract", () => {
     expect(onboardingFlow).not.toContain("is not certified in V1");
   });
 
+  test("hydrates existing authority profile selections from registered active references", () => {
+    expect(onboardingFlow).toContain("hydrateExistingAuthorityProfileSelection");
+    expect(onboardingFlow).toContain('if (payload.bindingResult === "existing_authority_bound" && payload.authorityReused)');
+    expect(onboardingFlow).toContain('setSelectedProfiles((current) => hydrateExistingAuthorityProfileSelection(current, payload.site, profiles));');
+  });
+
+  test("does not auto-substitute organization defaults for invalid stored references", () => {
+    expect(onboardingFlow).not.toContain("defaultForOrganization");
+    expect(onboardingFlow).not.toContain("profile-seo-ssi-default");
+    expect(onboardingFlow).not.toContain("profile-workflow-ssi-site-studio");
+  });
+
   test("preserves bounded no-mutation signals in assessment output", () => {
     expect(onboardingAssessmentRoute).toContain("testedByMutation: false");
     expect(onboardingAssessmentRoute).toContain("writeCapability");
