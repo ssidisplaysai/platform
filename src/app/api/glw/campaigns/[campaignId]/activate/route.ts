@@ -421,10 +421,28 @@ export async function POST(
     ? campaign.cityTargets?.length ?? 0
     : campaign.stateCodes.length;
 
+  const usesWordpressDraftReferenceAuthority = !isCityCampaign
+    && Boolean(matchingWordpressDraftApproval);
+  const usesPublicCertifiedReferenceAuthority = !isCityCampaign
+    && !matchingWordpressDraftApproval
+    && Boolean(certifiedReference);
+
   const referenceIdentityMatches = isCityCampaign
     ? referenceTargets[0]?.stateCode === referenceStateCode
       && referenceTargets[0]?.citySlug === referenceCitySlug
-    : publishedTargets.some((target) => target.stateCode === referenceStateCode);
+    : usesWordpressDraftReferenceAuthority
+      ? referenceTargets.some((target) => target.stateCode === referenceStateCode && !target.citySlug)
+      : usesPublicCertifiedReferenceAuthority
+        ? publishedTargets.some((target) => target.stateCode === referenceStateCode && !target.citySlug)
+        : false;
+
+  const expectedQueuedTargetCount = isCityCampaign
+    ? null
+    : usesWordpressDraftReferenceAuthority
+      ? expectedTargetCount - certifiedTargets.length - 1
+      : usesPublicCertifiedReferenceAuthority
+        ? expectedTargetCount - certifiedTargets.length
+        : null;
 
   const allCityTargetsAccountedFor = isCityCampaign
     ? referenceTargets.length
@@ -439,7 +457,7 @@ export async function POST(
     || (isCityCampaign && referenceTargets.length !== 1)
     || !referenceIdentityMatches
     || !allCityTargetsAccountedFor
-    || (!isCityCampaign && queuedTargets.length !== expectedTargetCount - certifiedTargets.length)
+    || (!isCityCampaign && (expectedQueuedTargetCount === null || queuedTargets.length !== expectedQueuedTargetCount))
   ) {
     return NextResponse.json(
       {
