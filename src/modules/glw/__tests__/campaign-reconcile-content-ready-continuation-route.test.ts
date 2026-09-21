@@ -25,6 +25,7 @@ jest.mock("@/modules/glw/campaign-target-repository", () => ({
 jest.mock("@/modules/glw/page-execution-repository", () => ({
   glwPageExecutionRepository: {
     getById: jest.fn(),
+    list: jest.fn(),
   },
 }));
 
@@ -183,6 +184,7 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       }
       return null;
     });
+    (glwPageExecutionRepository.list as jest.Mock).mockResolvedValue([]);
 
     (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
       form: {
@@ -2482,6 +2484,473 @@ describe("campaign reconcile exact content-ready continuation route", () => {
       jobId: deJobId,
       executionId: deExecutionId,
     });
+  });
+
+  test("exact DE job-bound pre-write continuation binds UPDATE_STATE and exact WordPress identity before continue", async () => {
+    const exactDeTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-digital-sphere-unpublished-states-v2-de";
+    const exactDeJobId = "a5b714a8-b2a2-42d0-aa08-026599e89c6b";
+    const exactDeExecutionId = "755574";
+
+    const fetchMock = jest.fn()
+      .mockResolvedValueOnce(jsonResponse({
+        job: {
+          status: "CONTENT_READY",
+          externalExecutionId: exactDeExecutionId,
+          wordpressObjectId: "20236",
+          wordpressStatus: null,
+          generatedDraft: {
+            title: "Outdoor Digital Sphere in Delaware",
+            contentHtml: "<p>x</p>",
+            slug: "outdoor-digital-sphere/delaware",
+            excerpt: "x",
+          },
+        },
+      }, 200))
+      .mockResolvedValueOnce(jsonResponse({
+        ok: true,
+        job: {
+          status: "COMPLETE",
+          externalExecutionId: exactDeExecutionId,
+          wordpressObjectId: "20236",
+          wordpressStatus: "draft",
+          slug: "outdoor-digital-sphere/delaware",
+        },
+      }, 200));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: exactDeTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "DE",
+        citySlug: null,
+        cityName: null,
+        status: "content_ready",
+        jobId: exactDeJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+    ]);
+
+    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
+      jobId: exactDeJobId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      status: "CONTENT_READY",
+      externalExecutionId: exactDeExecutionId,
+      wordpressObjectId: "20236",
+      wordpressStatus: null,
+      generatedDraft: {
+        title: "Outdoor Digital Sphere in Delaware",
+        contentHtml: "<p>x</p>",
+        slug: "outdoor-digital-sphere/delaware",
+        excerpt: "x",
+      },
+    });
+
+    (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
+      form: {
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        pageType: "state_service",
+        stateCode: "DE",
+        citySlug: "",
+        slug: "outdoor-digital-sphere/delaware",
+        title: "Outdoor Digital Sphere in Delaware",
+        seoTitle: "Outdoor Digital Sphere in Delaware | LEDDisplayWarehouse.com",
+        metaDescription: "x",
+        publicationIntent: "draft",
+        plannedOperation: "CREATE_STATE",
+        wordpressObjectId: null,
+        productTopic: "Outdoor Digital Sphere",
+        campaignId,
+      },
+    });
+
+    (createAuthenticatedWordPressReadAuthority as jest.Mock).mockReturnValue({
+      getJson: jest.fn(async ({ path, query }: { path: string; query?: URLSearchParams }) => {
+        if (path === "/pages/20236") {
+          return {
+            ok: true,
+            body: {
+              id: 20236,
+              status: "draft",
+              slug: "delaware",
+              parent: 20114,
+              title: { raw: "Outdoor Digital Sphere in Delaware" },
+              content: { raw: "<p>older persisted content</p>" },
+              link: "https://leddisplaywarehouse.com/?page_id=20236",
+            },
+          };
+        }
+
+        if (path === "/pages" && query?.get("slug") === "outdoor-digital-sphere" && query?.get("parent") === "0") {
+          return {
+            ok: true,
+            body: [
+              {
+                id: 20114,
+                status: "draft",
+                slug: "outdoor-digital-sphere",
+                parent: 0,
+              },
+            ],
+          };
+        }
+
+        if (path === "/pages" && query?.get("slug") === "delaware" && query?.get("parent") === "20114") {
+          return {
+            ok: true,
+            body: [
+              {
+                id: 20236,
+                status: "draft",
+                slug: "delaware",
+                parent: 20114,
+              },
+            ],
+          };
+        }
+
+        return {
+          ok: true,
+          body: [],
+        };
+      }),
+    });
+
+    (reconcileGlwContentReadyTargetDraft as jest.Mock).mockReturnValue({
+      targetId: exactDeTargetId,
+      campaignId,
+      stateCode: "DE",
+      citySlug: null,
+      status: "draft_ready",
+      jobId: exactDeJobId,
+      wordpressObjectId: "20236",
+      canonicalPath: "outdoor-digital-sphere/delaware",
+      applicationPath: "outdoor-digital-sphere/delaware",
+      canonicalParentId: "20114",
+    });
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: exactDeTargetId,
+        jobId: exactDeJobId,
+        executionId: exactDeExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.results[0]).toMatchObject({
+      action: "draft_ready",
+      stateCode: "DE",
+      wordpressObjectId: "20236",
+      executionIdAfter: exactDeExecutionId,
+    });
+    expect(payload.results[0]?.reconciliationReason).toBeUndefined();
+    expect(reconcileGlwContentReadyTargetDraft).toHaveBeenCalledWith(expect.objectContaining({
+      campaignId,
+      targetId: exactDeTargetId,
+      stateCode: "DE",
+      jobId: exactDeJobId,
+      wordpressObjectId: "20236",
+    }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const continueRequestBody = JSON.parse((fetchMock.mock.calls[1]?.[1] as { body?: string })?.body ?? "{}");
+    expect(continueRequestBody).toMatchObject({
+      action: "continue",
+      targetId: exactDeTargetId,
+      jobId: exactDeJobId,
+      executionId: exactDeExecutionId,
+    });
+    expect(continueRequestBody.form).toMatchObject({
+      publicationIntent: "draft",
+      plannedOperation: "UPDATE_STATE",
+      wordpressObjectId: "20236",
+    });
+    expect(continueRequestBody.form.plannedOperation).not.toBe("CREATE_STATE");
+  });
+
+  test("exact DE job-bound pre-write continuation fails closed when live mutation identity disagrees with job WordPress ID", async () => {
+    const exactDeTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-digital-sphere-unpublished-states-v2-de";
+    const exactDeJobId = "a5b714a8-b2a2-42d0-aa08-026599e89c6b";
+    const exactDeExecutionId = "755574";
+
+    const fetchMock = jest.fn().mockResolvedValueOnce(jsonResponse({
+      job: {
+        status: "CONTENT_READY",
+        externalExecutionId: exactDeExecutionId,
+        wordpressObjectId: "20236",
+        wordpressStatus: null,
+        generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/delaware", excerpt: "x" },
+      },
+    }, 200));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: exactDeTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "DE",
+        citySlug: null,
+        cityName: null,
+        status: "content_ready",
+        jobId: exactDeJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+    ]);
+
+    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
+      jobId: exactDeJobId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      status: "CONTENT_READY",
+      externalExecutionId: exactDeExecutionId,
+      wordpressObjectId: "20236",
+      wordpressStatus: null,
+      generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/delaware", excerpt: "x" },
+    });
+
+    (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
+      form: {
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        pageType: "state_service",
+        stateCode: "DE",
+        citySlug: "",
+        slug: "outdoor-digital-sphere/delaware",
+        title: "x",
+        seoTitle: "x",
+        metaDescription: "x",
+        publicationIntent: "draft",
+        plannedOperation: "CREATE_STATE",
+        wordpressObjectId: null,
+        productTopic: "Outdoor Digital Sphere",
+        campaignId,
+      },
+    });
+
+    (createAuthenticatedWordPressReadAuthority as jest.Mock)
+      .mockReturnValueOnce({
+        getJson: jest.fn(async ({ path, query }: { path: string; query?: URLSearchParams }) => {
+          if (path === "/pages/20236") {
+            return {
+              ok: true,
+              body: {
+                id: 20236,
+                status: "draft",
+                slug: "delaware",
+                parent: 20114,
+                title: { raw: "x" },
+                content: { raw: "<p>x</p>" },
+                link: "https://leddisplaywarehouse.com/?page_id=20236",
+              },
+            };
+          }
+          if (path === "/pages" && query?.get("slug") === "delaware" && query?.get("parent") === "20114") {
+            return {
+              ok: true,
+              body: [{ id: 20236, status: "draft", slug: "delaware", parent: 20114 }],
+            };
+          }
+          return {
+            ok: true,
+            body: [{ id: 20114, status: "draft", slug: "outdoor-digital-sphere", parent: 0 }],
+          };
+        }),
+      })
+      .mockReturnValueOnce({
+        getJson: jest.fn(async ({ query }: { query?: URLSearchParams }) => {
+          if (query?.get("slug") === "outdoor-digital-sphere") {
+            return {
+              ok: true,
+              body: [{ id: 20114, status: "draft", slug: "outdoor-digital-sphere", parent: 0 }],
+            };
+          }
+          return {
+            ok: true,
+            body: [{ id: 99999, status: "draft", slug: "delaware", parent: 20114 }],
+          };
+        }),
+      });
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: exactDeTargetId,
+        jobId: exactDeJobId,
+        executionId: exactDeExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload.error).toContain("authoritative exact update identity");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("exact DE job-bound pre-write continuation fails closed when live target preflight resolves ABSENT", async () => {
+    const exactDeTargetId = "target-campaign-led-display-warehouse-site-led-display-warehouse-production-outdoor-digital-sphere-unpublished-states-v2-de";
+    const exactDeJobId = "a5b714a8-b2a2-42d0-aa08-026599e89c6b";
+    const exactDeExecutionId = "755574";
+
+    const fetchMock = jest.fn().mockResolvedValueOnce(jsonResponse({
+      job: {
+        status: "CONTENT_READY",
+        externalExecutionId: exactDeExecutionId,
+        wordpressObjectId: "20236",
+        wordpressStatus: null,
+        generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/delaware", excerpt: "x" },
+      },
+    }, 200));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    (listGlwCampaignTargets as jest.Mock).mockReturnValue([
+      {
+        targetId: exactDeTargetId,
+        campaignId,
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        stateCode: "DE",
+        citySlug: null,
+        cityName: null,
+        status: "content_ready",
+        jobId: exactDeJobId,
+        wordpressObjectId: null,
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+      },
+    ]);
+
+    (glwPageExecutionRepository.getById as jest.Mock).mockResolvedValue({
+      jobId: exactDeJobId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      status: "CONTENT_READY",
+      externalExecutionId: exactDeExecutionId,
+      wordpressObjectId: "20236",
+      wordpressStatus: null,
+      generatedDraft: { title: "x", contentHtml: "<p>x</p>", slug: "outdoor-digital-sphere/delaware", excerpt: "x" },
+    });
+
+    (buildGlwCampaignProductionGenerationForm as jest.Mock).mockReturnValue({
+      form: {
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        pageType: "state_service",
+        stateCode: "DE",
+        citySlug: "",
+        slug: "outdoor-digital-sphere/delaware",
+        title: "x",
+        seoTitle: "x",
+        metaDescription: "x",
+        publicationIntent: "draft",
+        plannedOperation: "CREATE_STATE",
+        wordpressObjectId: null,
+        productTopic: "Outdoor Digital Sphere",
+        campaignId,
+      },
+    });
+
+    (createAuthenticatedWordPressReadAuthority as jest.Mock)
+      .mockReturnValueOnce({
+        getJson: jest.fn(async ({ path, query }: { path: string; query?: URLSearchParams }) => {
+          if (path === "/pages/20236") {
+            return {
+              ok: true,
+              body: {
+                id: 20236,
+                status: "draft",
+                slug: "delaware",
+                parent: 20114,
+                title: { raw: "x" },
+                content: { raw: "<p>x</p>" },
+                link: "https://leddisplaywarehouse.com/?page_id=20236",
+              },
+            };
+          }
+          if (path === "/pages" && query?.get("slug") === "delaware" && query?.get("parent") === "20114") {
+            return {
+              ok: true,
+              body: [{ id: 20236, status: "draft", slug: "delaware", parent: 20114 }],
+            };
+          }
+          return {
+            ok: true,
+            body: [{ id: 20114, status: "draft", slug: "outdoor-digital-sphere", parent: 0 }],
+          };
+        }),
+      })
+      .mockReturnValueOnce({
+        getJson: jest.fn(async ({ query }: { query?: URLSearchParams }) => {
+          if (query?.get("slug") === "outdoor-digital-sphere") {
+            return {
+              ok: true,
+              body: [{ id: 20114, status: "draft", slug: "outdoor-digital-sphere", parent: 0 }],
+            };
+          }
+          return {
+            ok: true,
+            body: [],
+          };
+        }),
+      });
+
+    const request = new NextRequest("http://localhost/api/glw/campaigns/" + campaignId + "/reconcile", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-gcp-organization-id": "led-display-warehouse",
+        "x-gcp-site-id": "site-led-display-warehouse-production",
+      },
+      body: JSON.stringify({
+        confirm: "RECONCILE_EXISTING_DRAFT_BATCH",
+        targetId: exactDeTargetId,
+        jobId: exactDeJobId,
+        executionId: exactDeExecutionId,
+      }),
+    });
+
+    const response = await POST(request, { params: Promise.resolve({ campaignId }) });
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload.error).toContain("authoritative exact update identity");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   test("exact DE pre-bound continuation allows null local wordpressStatus when live identity is still a draft", async () => {

@@ -23,9 +23,11 @@ import {
 import {
   buildGlwCampaignProductionGenerationForm,
 } from "@/modules/glw/campaign-production-generation";
+import type { GlwGenerationRequest, GlwLocalPlannedOperation } from "@/modules/glw/page-generation";
 import { isOutdoorSphereCampaignScope } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
 import { canonicalizeAndRevalidateGlwZeroAuthorityClaims } from "@/modules/glw/zero-authority-claim-canonicalization";
 import { evaluateGlwReferenceClaimAuthority } from "@/modules/glw/reference-claim-authority";
+import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
 
 function internalHeaders(
   request: NextRequest,
@@ -280,6 +282,9 @@ async function validateExactWordPressDraftCanonicalIdentity(input: {
   };
   job: {
     jobId: string;
+    organizationId?: string;
+    siteId?: string;
+    productId?: string;
     externalExecutionId?: string | null;
     status: string;
     wordpressObjectId?: string | number | null;
@@ -295,7 +300,7 @@ async function validateExactWordPressDraftCanonicalIdentity(input: {
     } | null;
   };
   expectedExecutionId: string;
-  pathName: "UNPROJECTED" | "PREBOUND";
+  pathName: "UNPROJECTED" | "PREBOUND" | "JOB_BOUND_PREWRITE";
 }): Promise<{
   ok: true;
   wordpressObjectId: string;
@@ -473,6 +478,9 @@ async function validateSameTargetPreboundWordPressIdentity(input: {
   };
   job: {
     jobId: string;
+    organizationId?: string;
+    siteId?: string;
+    productId?: string;
     externalExecutionId?: string | null;
     status: string;
     wordpressObjectId?: string | number | null;
@@ -531,6 +539,110 @@ async function validateSameTargetPreboundWordPressIdentity(input: {
     wordpressObjectId: validation.wordpressObjectId,
     canonicalIdentity: validation.canonicalIdentity,
   };
+}
+
+async function validateSameTargetJobBoundPrewriteWordPressIdentity(input: {
+  campaign: {
+    campaignId: string;
+    organizationId: string;
+    siteId: string;
+    productId: string;
+  };
+  target: {
+    targetId: string;
+    stateCode: string;
+    citySlug?: string | null;
+    status: string;
+    wordpressObjectId?: string | null;
+  };
+  job: {
+    jobId: string;
+    organizationId?: string;
+    siteId?: string;
+    productId?: string;
+    externalExecutionId?: string | null;
+    status: string;
+    wordpressObjectId?: string | number | null;
+    wordpressStatus?: string | null;
+    generatedDraft?: {
+      title: string;
+      contentHtml: string;
+      slug: string;
+      excerpt?: string;
+      seoTitle?: string;
+      metaDescription?: string;
+      focusKeyphrase?: string;
+    } | null;
+  };
+  expectedExecutionId: string;
+}): Promise<{
+  ok: true;
+  wordpressObjectId: string;
+  canonicalIdentity: {
+    canonicalPath: string;
+    applicationPath: string;
+    canonicalParentId: string;
+  };
+} | {
+  ok: false;
+  code: string;
+  error: string;
+}> {
+  if (text(input.target.wordpressObjectId)) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_JOB_BOUND_PREWRITE_TARGET_ALREADY_BOUND",
+      error: "Selected target already has a canonical WordPress identity.",
+    };
+  }
+
+  const jobWordPressObjectId = input.job.wordpressObjectId == null
+    ? ""
+    : String(input.job.wordpressObjectId).trim();
+  if (!jobWordPressObjectId) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_JOB_BOUND_PREWRITE_JOB_WORDPRESS_ID_REQUIRED",
+      error: "Selected job does not expose a WordPress draft identity for exact continuation.",
+    };
+  }
+
+  if (
+    text(input.job.organizationId) !== input.campaign.organizationId
+    || text(input.job.siteId) !== input.campaign.siteId
+    || text(input.job.productId) !== input.campaign.productId
+  ) {
+    return {
+      ok: false,
+      code: "SAME_TARGET_JOB_BOUND_PREWRITE_CAMPAIGN_IDENTITY_MISMATCH",
+      error: "Selected job identity does not match the exact campaign scope.",
+    };
+  }
+
+  const validation = await validateExactWordPressDraftCanonicalIdentity({
+    campaign: input.campaign,
+    target: input.target,
+    job: input.job,
+    expectedExecutionId: input.expectedExecutionId,
+    pathName: "JOB_BOUND_PREWRITE",
+  });
+
+  if (!validation.ok) {
+    return validation;
+  }
+
+  return {
+    ok: true,
+    wordpressObjectId: validation.wordpressObjectId,
+    canonicalIdentity: validation.canonicalIdentity,
+  };
+}
+
+function resolveUpdateOperationFromPageType(pageType: string): GlwLocalPlannedOperation | null {
+  if (pageType === "state_service") return "UPDATE_STATE";
+  if (pageType === "city_service") return "UPDATE_CITY";
+  if (pageType === "general_service") return "UPDATE_GENERAL";
+  return null;
 }
 
 function isOutdoorSphereTargetScope(input: {
@@ -848,6 +960,35 @@ export async function POST(
       }
     }
 
+    const selectedSameTargetJobBoundPrewriteCandidate = Boolean(
+      !selectedTargetWordPressObjectId
+      && selectedJobWordPressObjectId
+      && !selectedSameTargetUnprojectedIdentityCandidate
+      && !selectedIsRecoverablePartialDraftTarget
+      && !selectedIsRecoverableCanonicalIdentityFailedTarget
+      && selected.status === "content_ready"
+      && selectedJob.status === "CONTENT_READY"
+      && (selectedJobWordPressStatus === "" || selectedJobWordPressStatus === "draft")
+      && selectedJob.generatedDraft,
+    );
+
+    let selectedSameTargetJobBoundPrewriteIdentityResult: Awaited<ReturnType<typeof validateSameTargetJobBoundPrewriteWordPressIdentity>> | null = null;
+    if (selectedSameTargetJobBoundPrewriteCandidate) {
+      selectedSameTargetJobBoundPrewriteIdentityResult = await validateSameTargetJobBoundPrewriteWordPressIdentity({
+        campaign,
+        target: selected,
+        job: selectedJob,
+        expectedExecutionId,
+      });
+
+      if (!selectedSameTargetJobBoundPrewriteIdentityResult.ok) {
+        return NextResponse.json({
+          error: selectedSameTargetJobBoundPrewriteIdentityResult.error,
+          code: selectedSameTargetJobBoundPrewriteIdentityResult.code,
+        }, { status: 409 });
+      }
+    }
+
     if (selected.status === "failed" && !selectedIsRecoverableFailedTarget && !selectedIsRecoverablePartialDraftTarget && !selectedIsRecoverableCanonicalIdentityFailedTarget) {
       return NextResponse.json({ error: "Selected failed target is not recoverable for exact continuation." }, { status: 409 });
     }
@@ -867,7 +1008,8 @@ export async function POST(
       && !selectedIsRecoverablePartialDraftTarget
       && !selectedIsRecoverableCanonicalIdentityFailedTarget
       && !selectedSameTargetUnprojectedIdentityResult
-      && !selectedSameTargetPreboundIdentityResult) {
+      && !selectedSameTargetPreboundIdentityResult
+      && !selectedSameTargetJobBoundPrewriteIdentityResult) {
       return NextResponse.json({ error: "Conflicting existing WordPress identity detected on the selected job." }, { status: 409 });
     }
 
@@ -1096,6 +1238,119 @@ export async function POST(
           );
         }
 
+        let continuationForm = form;
+        const continuationJobWordPressObjectId = text(job.wordpressObjectId);
+        const continuationJobWordPressStatus = text(job.wordpressStatus).toLowerCase();
+        const exactJobBoundPrewriteContinuationCandidate = Boolean(
+          expectedTargetId
+          && !exactRecoverablePartialDraftContinuation
+          && !exactRecoverableFailedContinuation
+          && target.targetId === expectedTargetId
+          && target.jobId === expectedJobId
+          && target.status === "content_ready"
+          && !target.wordpressObjectId
+          && continuationJobWordPressObjectId
+          && job.status === "CONTENT_READY"
+          && (continuationJobWordPressStatus === "" || continuationJobWordPressStatus === "draft")
+          && job.generatedDraft
+          && (job.externalExecutionId ?? "") === expectedExecutionId,
+        );
+
+        if (exactJobBoundPrewriteContinuationCandidate) {
+          const expectedUpdateOperation = resolveUpdateOperationFromPageType(form.pageType);
+          if (!expectedUpdateOperation) {
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "continue_error",
+              httpStatus: 409,
+              error: "Exact content-ready continuation lacks a supported page type for authoritative update continuation.",
+            });
+            continue;
+          }
+
+          const preflightRequest: GlwGenerationRequest = {
+            siteId: form.siteId,
+            productId: form.productId,
+            pageType: form.pageType,
+            stateCode: form.stateCode,
+            citySlug: form.citySlug,
+            slug: form.slug,
+            title: form.title,
+            seoTitle: form.seoTitle,
+            metaDescription: form.metaDescription,
+            publicationIntent: "draft",
+            plannedOperation: form.plannedOperation ?? expectedUpdateOperation,
+            wordpressObjectId: form.wordpressObjectId ?? null,
+            additionalInstructions: form.additionalInstructions,
+            imageDirection: form.imageDirection,
+            campaignId: form.campaignId,
+            organizationId: campaign.organizationId,
+            siteName: campaign.siteId,
+            siteDomain: null,
+            siteCanonicalUrl: null,
+            wordpressApiBaseUrl: null,
+            productTopic: form.productTopic,
+            stateName: null,
+            cityName: null,
+            canonicalPath: form.slug,
+            externalExecutionAllowed: false,
+          };
+
+          const site = getSiteById(campaign.siteId);
+          const apiBaseUrl = site?.integrations.wordpressApiBaseUrl?.trim() ?? "";
+          const credential = resolveWordPressCredentialReference(site?.integrations.wordpressCredentialReference ?? null);
+          if (!site || !apiBaseUrl || !credential) {
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "continue_error",
+              httpStatus: 409,
+              error: "Exact content-ready continuation requires authenticated WordPress authority.",
+            });
+            continue;
+          }
+
+          const wordpressReadAuthority = createAuthenticatedWordPressReadAuthority({
+            configuration: {
+              apiBaseUrl,
+              username: credential.username,
+              applicationPassword: credential.applicationPassword,
+              timeoutMs: 30_000,
+            },
+          });
+
+          const targetPreflight = await readGlwTargetPreflight({
+            request: preflightRequest,
+            wordpressReadAuthority,
+            localExecutions: await glwPageExecutionRepository.list(),
+          });
+          const mutationAvailability = resolveGlwTargetMutationAvailability(targetPreflight, preflightRequest.pageType);
+          const authoritativeWordPressObjectId = text(mutationAvailability.wordpressObjectId);
+
+          if (
+            mutationAvailability.plannedOperation !== expectedUpdateOperation
+            || !authoritativeWordPressObjectId
+            || authoritativeWordPressObjectId !== continuationJobWordPressObjectId
+          ) {
+            results.push({
+              ...targetIdentity(target),
+              jobId,
+              action: "continue_error",
+              httpStatus: 409,
+              error: "Exact content-ready continuation requires authoritative exact update identity before persistence.",
+            });
+            continue;
+          }
+
+          continuationForm = {
+            ...form,
+            plannedOperation: expectedUpdateOperation,
+            wordpressObjectId: authoritativeWordPressObjectId,
+            publicationIntent: "draft",
+          };
+        }
+
         const continueResponse = await fetch(
           new URL(
             "/api/glw/page-generation",
@@ -1109,7 +1364,7 @@ export async function POST(
               target.siteId,
             ),
             body: JSON.stringify({
-              form,
+              form: continuationForm,
               action: "continue",
               jobId,
               targetId: effectiveTarget.targetId,
