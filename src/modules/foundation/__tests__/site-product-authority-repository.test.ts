@@ -91,6 +91,54 @@ describe("site product/service authority repository", () => {
     expect(() => repository.addOwnerKnowledgeSource({ ...scope, label: "Certification", statement: "We are NSF certified.", sourceRole: "TECHNICAL_SPECIFICATION", actor: "owner" })).toThrow("PROTECTED_CLAIM_EVIDENCE_REQUIRED");
   });
 
+  test("upload filename artifacts do not become offering candidates for image or pdf sources", async () => {
+    const repository = await import("../site-product-authority-repository");
+    const strategyProposal = strategy();
+    const uploaded = [
+      repository.addUploadedSource({ ...scope, assetId: "asset-jpg", originalFileName: "Shared_image__82_.Jpg", sha256: "hash-jpg", mediaType: "image/jpeg", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "", actor: "owner" }),
+      repository.addUploadedSource({ ...scope, assetId: "asset-png", originalFileName: "IMG_1001.PNG", sha256: "hash-png", mediaType: "image/png", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "", actor: "owner" }),
+      repository.addUploadedSource({ ...scope, assetId: "asset-webp", originalFileName: "shop-photo-3.webp", sha256: "hash-webp", mediaType: "image/webp", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "", actor: "owner" }),
+      repository.addUploadedSource({ ...scope, assetId: "asset-pdf", originalFileName: "countertop-catalog.pdf", sha256: "hash-pdf", mediaType: "application/pdf", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "", actor: "owner" }),
+    ];
+
+    expect(() => repository.proposeAuthorityCandidatesFromSources({
+      organizationId: scope.organizationId,
+      siteId: scope.siteId,
+      strategy: strategyProposal,
+      actor: "owner",
+      sourceIds: uploaded.map((source) => source.sourceId),
+    })).toThrow("SOURCE_CANDIDATE_PROPOSAL_INSUFFICIENT_EVIDENCE");
+
+    const workspace = repository.getSiteAuthorityWorkspace({ ...scope, strategy: strategyProposal });
+    expect(workspace.sources.filter((source) => source.kind === "UPLOAD")).toHaveLength(4);
+    expect(workspace.candidates.some((candidate) => /shared image|img 1001|shop photo|catalog/i.test(candidate.displayName))).toBe(false);
+    expect(repository.listGenerationAuthority(scope)).toEqual([]);
+  });
+
+  test("legitimate owner-provided upload label can still propose pending candidate with provenance", async () => {
+    const repository = await import("../site-product-authority-repository");
+    const strategyProposal = strategy();
+    const imageSource = repository.addUploadedSource({ ...scope, assetId: "asset-2", originalFileName: "Shared_image__82_.Jpg", sha256: "hash-2", mediaType: "image/jpeg", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "Homeline Enclosure", actor: "owner" });
+
+    const proposed = repository.proposeAuthorityCandidatesFromSources({
+      organizationId: scope.organizationId,
+      siteId: scope.siteId,
+      strategy: strategyProposal,
+      actor: "owner",
+      sourceIds: [imageSource.sourceId],
+    });
+
+    expect(proposed).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        decision: "PENDING",
+        displayName: "Homeline Enclosure",
+        sourceIds: [imageSource.sourceId],
+      }),
+    ]));
+    expect(proposed.some((candidate) => /shared image/i.test(candidate.displayName))).toBe(false);
+    expect(repository.listGenerationAuthority(scope)).toEqual([]);
+  });
+
   test("explicit approval supports editing, reusable source links, isolation, and future grounding", async () => {
     const repository = await import("../site-product-authority-repository");
     const productRepository = await import("../product-repository");

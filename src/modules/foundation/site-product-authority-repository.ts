@@ -326,16 +326,68 @@ function sanitizeCandidateName(value: string): string | null {
   if (/^(products?|services?|solutions?|offerings?|catalog|store)$/i.test(cleaned)) return null;
   const words = cleaned.split(" ").filter(Boolean);
   if (words.length === 1 && words[0].length < 6) return null;
+  if (isLikelyAssetFilenameIdentity(cleaned)) return null;
   return display(cleaned.toLowerCase());
 }
 
-function sourceTextCandidates(source: SiteSource): string[] {
+function isLikelyAssetFilenameIdentity(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  if (/\.(jpe?g|png|webp|gif|pdf)$/i.test(trimmed)) return true;
+
+  const tokens = trimmed
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(" ")
+    .filter(Boolean);
+  if (!tokens.length) return false;
+
+  const extension = new Set(["jpg", "jpeg", "png", "webp", "gif", "pdf"]);
+  const filenameCues = new Set(["image", "img", "photo", "picture", "screenshot", "scan", "shared", "upload", "file", "document"]);
+  const hasExtensionToken = tokens.some((token) => extension.has(token));
+  const hasFilenameCue = tokens.some((token) => filenameCues.has(token));
+  if (hasExtensionToken && hasFilenameCue) return true;
+  if (hasExtensionToken && tokens.length <= 4) return true;
+  return /^\w+[_-]\w+/.test(trimmed) && hasExtensionToken;
+}
+
+function sourceValuesForCandidateExtraction(source: SiteSource): string[] {
+  const values: string[] = [];
+  const pushIfPresent = (value: string | null) => {
+    const trimmed = String(value ?? "").trim();
+    if (trimmed) values.push(trimmed);
+  };
+
+  if (source.kind === "OWNER_KNOWLEDGE") {
+    pushIfPresent(source.ownerStatement);
+    pushIfPresent(source.extractedRepresentation);
+    pushIfPresent(source.label);
+    return values;
+  }
+
+  if (source.kind === "UPLOAD") {
+    pushIfPresent(source.ownerStatement);
+    pushIfPresent(source.extractedRepresentation);
+    if (!isLikelyAssetFilenameIdentity(source.label)) {
+      pushIfPresent(source.label);
+    }
+    return values;
+  }
+
   const urlName = source.normalizedUrl
     ? decodeURIComponent(new URL(source.normalizedUrl).pathname.split("/").filter(Boolean).at(-1) ?? "")
     : "";
-  const values = [source.label, source.title, source.extractedRepresentation, source.ownerStatement, urlName]
-    .map((value) => String(value ?? "").trim())
-    .filter(Boolean);
+  pushIfPresent(source.label);
+  pushIfPresent(source.title);
+  pushIfPresent(source.extractedRepresentation);
+  pushIfPresent(source.ownerStatement);
+  pushIfPresent(urlName);
+  return values;
+}
+
+function sourceTextCandidates(source: SiteSource): string[] {
+  const values = sourceValuesForCandidateExtraction(source);
 
   const names = new Set<string>();
   for (const value of values) {
@@ -345,6 +397,7 @@ function sourceTextCandidates(source: SiteSource): string[] {
       .filter(Boolean)
       .slice(0, 6);
     for (const fragment of fragments) {
+      if (isLikelyAssetFilenameIdentity(fragment)) continue;
       const normalized = sanitizeCandidateName(fragment);
       if (normalized) names.add(normalized);
     }

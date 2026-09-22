@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -314,7 +315,15 @@ export function SiteProductAuthorityWorkspace(props: Props) {
           </div>
         ) : (
           workspace.candidates.map((candidate) => (
-            <CandidateCard key={candidate.authorityId} candidate={candidate} sources={workspace.sources} busy={busy} onSave={post} />
+            <CandidateCard
+              key={candidate.authorityId}
+              organizationId={props.organizationId}
+              siteId={props.siteId}
+              candidate={candidate}
+              sources={workspace.sources}
+              busy={busy}
+              onSave={post}
+            />
           ))
         )}
       </section>
@@ -360,11 +369,15 @@ export function SiteProductAuthorityWorkspace(props: Props) {
 }
 
 function CandidateCard({
+  organizationId,
+  siteId,
   candidate,
   sources,
   busy,
   onSave,
 }: {
+  organizationId: string;
+  siteId: string;
   candidate: SiteProductServiceAuthority;
   sources: SiteSource[];
   busy: boolean;
@@ -376,6 +389,7 @@ function CandidateCard({
   const [limitations, setLimitations] = useState(candidate.limitations ?? "");
   const [ownerConfirmed, setOwnerConfirmed] = useState(Boolean(candidate.ownerAttestation));
   const [sourceIds, setSourceIds] = useState(candidate.sourceIds);
+  const [previewingSource, setPreviewingSource] = useState<SiteSource | null>(null);
 
   function decide(decision: AuthorityDecision) {
     return onSave({
@@ -432,22 +446,42 @@ function CandidateCard({
         {sources.length ? (
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {sources.map((source) => (
-              <label key={source.sourceId} className="flex gap-2 border border-zinc-800 p-3 text-xs text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={sourceIds.includes(source.sourceId)}
-                  onChange={(event) => {
-                    setSourceIds((current) =>
-                      event.target.checked
-                        ? [...new Set([...current, source.sourceId])]
-                        : current.filter((item) => item !== source.sourceId));
-                  }}
-                />
-                <span>
-                  <span className="font-semibold text-white">{source.label}</span>
-                  <span className="ml-1 text-zinc-500">{source.sourceRole}</span>
-                </span>
-              </label>
+              <div key={source.sourceId} className="border border-zinc-800 p-3 text-xs text-zinc-300">
+                <label className="flex gap-2">
+                  <input
+                    type="checkbox"
+                    checked={sourceIds.includes(source.sourceId)}
+                    onChange={(event) => {
+                      setSourceIds((current) =>
+                        event.target.checked
+                          ? [...new Set([...current, source.sourceId])]
+                          : current.filter((item) => item !== source.sourceId));
+                    }}
+                  />
+                  <span>
+                    <span className="font-semibold text-white">{source.label}</span>
+                    <span className="ml-1 text-zinc-500">{source.sourceRole}</span>
+                  </span>
+                </label>
+
+                {source.kind === "UPLOAD" && source.assetId && source.mediaType?.startsWith("image/") ? (
+                  <div className="mt-3 rounded border border-zinc-800 bg-zinc-900/30 p-2">
+                    <EvidenceImageThumbnail
+                      organizationId={organizationId}
+                      siteId={siteId}
+                      assetId={source.assetId}
+                      fileName={source.originalFileName ?? source.label}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewingSource(source)}
+                      className="mt-2 border border-zinc-700 px-2 py-1 text-[11px] font-semibold text-zinc-100"
+                    >
+                      Preview image evidence
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             ))}
           </div>
         ) : (
@@ -474,6 +508,125 @@ function CandidateCard({
           DO NOT OFFER
         </button>
       </div>
+
+      {previewingSource?.assetId ? (
+        <EvidenceImageDialog
+          organizationId={organizationId}
+          siteId={siteId}
+          assetId={previewingSource.assetId}
+          fileName={previewingSource.originalFileName ?? previewingSource.label}
+          onClose={() => setPreviewingSource(null)}
+        />
+      ) : null}
     </article>
+  );
+}
+
+function EvidenceImageThumbnail({
+  organizationId,
+  siteId,
+  assetId,
+  fileName,
+}: {
+  organizationId: string;
+  siteId: string;
+  assetId: string;
+  fileName: string;
+}) {
+  const [source, setSource] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+    fetch(`/api/sites/${encodeURIComponent(siteId)}/intelligence/assets/${encodeURIComponent(assetId)}`, {
+      headers: {
+        "x-gcp-roles": "ops_manager",
+        "x-gcp-organization-id": organizationId,
+        "x-gcp-site-id": siteId,
+      },
+      cache: "no-store",
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Preview unavailable");
+        return response.blob();
+      })
+      .then((blob) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSource(objectUrl);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [assetId, organizationId, siteId]);
+
+  return source
+    ? <Image src={source} alt={fileName} width={192} height={120} unoptimized className="h-24 w-40 rounded border border-zinc-700 object-cover" />
+    : <div className="flex h-24 w-40 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-[11px] text-zinc-500">Loading evidence...</div>;
+}
+
+function EvidenceImageDialog({
+  organizationId,
+  siteId,
+  assetId,
+  fileName,
+  onClose,
+}: {
+  organizationId: string;
+  siteId: string;
+  assetId: string;
+  fileName: string;
+  onClose(): void;
+}) {
+  const [source, setSource] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+    fetch(`/api/sites/${encodeURIComponent(siteId)}/intelligence/assets/${encodeURIComponent(assetId)}`, {
+      headers: {
+        "x-gcp-roles": "ops_manager",
+        "x-gcp-organization-id": organizationId,
+        "x-gcp-site-id": siteId,
+      },
+      cache: "no-store",
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Preview unavailable");
+        return response.blob();
+      })
+      .then((blob) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSource(objectUrl);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [assetId, organizationId, siteId]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 p-4" role="dialog" aria-modal="true">
+      <div className="max-h-[90vh] w-full max-w-4xl overflow-auto border border-zinc-700 bg-zinc-950 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-white">Evidence preview</p>
+          <button type="button" onClick={onClose} className="border border-zinc-700 px-3 py-1 text-xs font-semibold text-zinc-100">Close</button>
+        </div>
+        <p className="mt-2 text-xs text-zinc-400">{fileName}</p>
+        <div className="mt-4">
+          {source ? (
+            <Image src={source} alt={fileName} width={1400} height={900} unoptimized className="h-auto max-h-[70vh] w-full object-contain" />
+          ) : (
+            <div className="flex h-72 items-center justify-center border border-zinc-700 bg-zinc-900 text-xs text-zinc-500">Loading evidence preview...</div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
