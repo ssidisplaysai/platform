@@ -1,8 +1,14 @@
 import "server-only";
 
 import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
-import { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT, serializeGlwReferenceGenerationClaimContract } from "./reference-generation-claim-contract";
+import { listGlwCampaigns } from "./campaign-repository";
+import {
+  buildGlwReferenceGenerationClaimContract,
+  serializeGlwReferenceGenerationClaimContract,
+  type GlwReferenceGenerationClaimContract,
+} from "./reference-generation-claim-contract";
 import type { GlwReferenceClaimClass } from "./reference-claim-authority";
+import { resolveGlwProductAuthority } from "./site-internal-link-authority";
 
 export type GlwCampaignGenerationContext = {
   campaignId: string;
@@ -13,7 +19,7 @@ export type GlwResolvedCampaignGenerationContext = {
   campaignId: string;
   additionalInstructions: string;
   imageDirection: string;
-  claimContract: typeof GLW_REFERENCE_GENERATION_CLAIM_CONTRACT;
+  claimContract: GlwReferenceGenerationClaimContract;
   referenceAuthority: {
     references: ReadonlyArray<{ referenceId: string; fileName: string; role: string; scope: string }>;
     authoritativeFactReferenceIds: readonly string[];
@@ -55,6 +61,22 @@ export function resolveGlwCampaignGenerationContext(
     ? visualReferences.map((reference) => `${reference.role.replaceAll("_", " ")}: ${reference.fileName}`).join("; ")
     : "No campaign visual references are classified for image direction.";
   const effectiveInstructions = buildGlwEffectiveCampaignInstructions(instructions);
+  const campaign = listGlwCampaigns().find((candidate) => candidate.campaignId === input.campaignId) ?? null;
+  const requiredProductLink = campaign
+    ? resolveGlwProductAuthority({
+        organizationId: campaign.organizationId,
+        siteId: campaign.siteId,
+        productId: campaign.productId,
+      })
+    : null;
+  const claimContract = buildGlwReferenceGenerationClaimContract({
+    requiredProductLink: requiredProductLink
+      ? {
+          anchorText: requiredProductLink.anchorText,
+          href: requiredProductLink.path,
+        }
+      : null,
+  });
 
   return {
     campaignId: input.campaignId,
@@ -66,14 +88,14 @@ export function resolveGlwCampaignGenerationContext(
       input.referencePage
         ? "This is one editorial reference page only. Keep WordPress status draft and do not imply campaign activation."
         : "This page is part of the approved production campaign. Follow the approved reference, preserve factual accuracy and campaign consistency, and do not acquire publication authority from these instructions.",
-      serializeGlwReferenceGenerationClaimContract(),
+      serializeGlwReferenceGenerationClaimContract(claimContract),
     ].join("\n\n"),
     imageDirection: [
       "Follow the approved campaign instructions when composing the featured image.",
       `Campaign visual reference inventory: ${visualInventory}`,
       "Reference filenames and classifications provide visual direction only; do not infer unsupported product specifications or claims from them.",
     ].join(" "),
-    claimContract: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT,
+    claimContract,
     referenceAuthority: {
       references: pack.references.map((reference) => ({
         referenceId: reference.referenceId,

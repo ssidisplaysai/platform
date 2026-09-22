@@ -40,6 +40,7 @@ describe("normal campaign production authority binding", () => {
         campaignInstructionsLoaded: true,
         referenceFileNames: [],
         productAuthorityPath: "/outdoor-digital-sphere/",
+        productAuthorityAnchorText: "Outdoor Digital Sphere",
         productAuthorityKnown: true,
       },
       productTopic: product.topic,

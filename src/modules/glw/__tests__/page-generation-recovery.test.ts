@@ -304,6 +304,34 @@ describe("GLW selective page generation recovery", () => {
     expect(dispatchCall).toBeGreaterThan(generateBranch);
   });
 
+  test("adds explicit same-job terminal retry action with product-authority and runtime gates", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain('if (action === "retry_failed_execution")');
+    expect(source).toContain("hasValidRetryProductAuthority(preview.request)");
+    expect(source).toContain('code: "RETRY_PRODUCT_AUTHORITY_INVALID"');
+    expect(source).toContain('code: "RETRY_RUNTIME_INVALID"');
+    expect(source).toContain("service.retryFailedExecution({");
+    expect(source).toContain("sameJobRetried: true");
+    expect(source).toContain("retryRequestId");
+  });
+
+  test("adds duplicate quarantine action and blocks quarantined continuation/retry/recovery", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain('if (action === "quarantine_duplicate")');
+    expect(source).toContain('code: "DUPLICATE_QUARANTINE_ACTIVE"');
+    expect(source).toContain('disposition: "QUARANTINED_SUPERSEDED_DUPLICATE"');
+    expect(source).toContain("executionDuplicateQuarantine");
+    expect(source).toContain("isGlwExecutionQuarantined(currentJob)");
+  });
+
+  test("keeps failed-dispatch recovery and continue action paths intact", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
+    expect(source).toContain('if (action === "recover_failed_dispatch")');
+    expect(source).toContain("service.recoverFailedDispatch(jobId, preview.request)");
+    expect(source).toContain('if (action === "continue")');
+    expect(source).toContain("finalizeContentReadyExecution({");
+  });
+
   test("recoverable FAILED content still reruns claim authority before WordPress draft persistence", () => {
     const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/page-generation/route.ts"), "utf8");
     const recoverableFailure = source.indexOf("const recoverableQaFailure = input.recoveryContext?.qaFailure ?? isExactRecoverableContentFailure(input.job);");

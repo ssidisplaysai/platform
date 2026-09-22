@@ -31,7 +31,7 @@ import {
 } from "@/modules/glw/zero-authority-claim-canonicalization";
 import { generationAuthorityBindingsMatch, resolveGlwReferenceGenerationAuthority } from "@/modules/glw/reference-generation-authority";
 import { resolveGlwReferenceOwnerLiveContext } from "@/modules/glw/reference-owner-live-context";
-import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery, validateGlwReferenceOwnerClaimForRecoveredContent } from "@/modules/glw/reference-owner-authority";
+import { consumeGlwReferenceOwnerClaimForDispatch, GlwReferenceOwnerAuthorityError, validateGlwReferenceOwnerClaimForFailedDispatchRecovery, validateGlwReferenceOwnerClaimForRecoveredContent, validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry } from "@/modules/glw/reference-owner-authority";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { enrichGlwGeneratedContentForSeo } from "@/modules/glw/seo-enrichment";
@@ -48,6 +48,7 @@ import {
 import {
   createGlwDraftExecutionService,
   GlwDraftOnlyExecutionError,
+  isGlwExecutionQuarantined,
   type GlwPageExecutionRecord,
 } from "@/modules/glw/page-execution";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -1414,6 +1415,25 @@ function isExactRecoverableWordPressFailure(
     );
 }
 
+function hasValidRetryProductAuthority(request: GlwGenerationRequest): boolean {
+  const productAuthority = request.referenceGenerationAuthority?.productAuthority;
+  const requiredProductLink = request.referenceGenerationClaimContract?.requiredProductLink;
+  if (!productAuthority?.known) return false;
+  if (!productAuthority.path || !productAuthority.anchorText.trim()) return false;
+  if (!requiredProductLink?.href || !requiredProductLink.anchorText.trim()) return false;
+  return productAuthority.path === requiredProductLink.href
+    && productAuthority.anchorText.trim() === requiredProductLink.anchorText.trim();
+}
+
+function quarantineErrorResponse(): NextResponse {
+  return NextResponse.json({
+    error: "Duplicate quarantine is active for this job.",
+    code: "DUPLICATE_QUARANTINE_ACTIVE",
+    generationJobCreated: false,
+    publicationPerformed: false,
+  }, { status: 409 });
+}
+
 export async function POST(request: NextRequest) {
   const auth = authorizeRequest(request, "sites:update");
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -1430,6 +1450,10 @@ export async function POST(request: NextRequest) {
     jobId?: string;
     targetId?: string;
     executionId?: string;
+    retryRequestId?: string;
+    supersededByJobId?: string;
+    quarantineRequestId?: string;
+    quarantineReason?: string;
   } | null;
 
   if (!body?.form) {
@@ -1442,6 +1466,87 @@ export async function POST(request: NextRequest) {
   }
 
   const action = body.action?.trim() ?? "generate";
+
+  if (action === "quarantine_duplicate") {
+    const jobId = body.jobId?.trim() ?? "";
+    const supersededByJobId = body.supersededByJobId?.trim() ?? "";
+    const expectedExecutionId = body.executionId?.trim() ?? "";
+    const quarantineRequestId = body.quarantineRequestId?.trim() ?? `${jobId}:superseded-by:${supersededByJobId}`;
+    const quarantineReason = body.quarantineReason?.trim() ?? "Accidental duplicate superseded by canonical job.";
+
+    if (!jobId) return NextResponse.json({ error: "Exact duplicate GLW jobId is required for quarantine." }, { status: 400 });
+    if (!supersededByJobId) return NextResponse.json({ error: "Exact supersededByJobId is required for quarantine." }, { status: 400 });
+    if (jobId === supersededByJobId) return NextResponse.json({ error: "Duplicate jobId and supersededByJobId must differ." }, { status: 409 });
+
+    const duplicateJob = await glwPageExecutionRepository.getById(jobId);
+    if (!duplicateJob) return NextResponse.json({ error: "Duplicate GLW execution was not found." }, { status: 404 });
+    if (duplicateJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const canonicalJob = await glwPageExecutionRepository.getById(supersededByJobId);
+    if (!canonicalJob) return NextResponse.json({ error: "Superseding GLW execution was not found." }, { status: 404 });
+    if (canonicalJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    if (!matchesExactContinuationTarget({ job: duplicateJob, request: preview.request })) {
+      return NextResponse.json({ error: "Quarantine request does not match the exact duplicate persisted GLW target." }, { status: 409 });
+    }
+    if (!matchesExactContinuationTarget({ job: canonicalJob, request: preview.request })) {
+      return NextResponse.json({ error: "Superseding job does not match the exact persisted GLW target." }, { status: 409 });
+    }
+    if (expectedExecutionId && duplicateJob.externalExecutionId !== expectedExecutionId) {
+      return NextResponse.json({ error: "Quarantine request executionId does not match the exact duplicate execution identity." }, { status: 409 });
+    }
+    if (duplicateJob.wordpressStatus === "publish") {
+      return NextResponse.json({ error: "Published duplicate jobs cannot be quarantined through draft-only duplicate quarantine." }, { status: 409 });
+    }
+    if (duplicateJob.wordpressObjectId || duplicateJob.wordpressUrl || duplicateJob.wordpressStatus === "draft") {
+      return NextResponse.json({ error: "Duplicate quarantine requires no WordPress mutation side effects on the duplicate job." }, { status: 409 });
+    }
+
+    if (isGlwExecutionQuarantined(duplicateJob)) {
+      return NextResponse.json({
+        ok: true,
+        job: duplicateJob,
+        supersededByJobId,
+        alreadyQuarantined: true,
+        publicationPerformed: false,
+      });
+    }
+
+    const timestamp = new Date().toISOString();
+    const existingChecks = duplicateJob.qaChecks && typeof duplicateJob.qaChecks === "object" && !Array.isArray(duplicateJob.qaChecks)
+      ? duplicateJob.qaChecks as Readonly<Record<string, unknown>>
+      : {};
+    const quarantined = await glwPageExecutionRepository.update(duplicateJob.jobId, {
+      status: "FAILED",
+      disposition: "QUARANTINED_SUPERSEDED_DUPLICATE",
+      errorCode: "DUPLICATE_JOB_QUARANTINED",
+      errorMessage: `Duplicate job quarantined and superseded by ${supersededByJobId}.`,
+      qaChecks: {
+        ...existingChecks,
+        executionDuplicateQuarantine: {
+          operation: "QUARANTINE_DUPLICATE",
+          quarantineRequestId,
+          quarantineReason,
+          supersededByJobId,
+          supersedingExecutionId: canonicalJob.externalExecutionId,
+          duplicateExecutionId: duplicateJob.externalExecutionId,
+          previousStatus: duplicateJob.status,
+          quarantinedAt: timestamp,
+        },
+      },
+      updatedAt: timestamp,
+      completedAt: timestamp,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      job: quarantined,
+      supersededByJobId,
+      quarantineApplied: true,
+      publicationPerformed: false,
+    });
+  }
+
   const matchingDraftCampaigns = listGlwCampaigns().filter((candidate) =>
     candidate.status === "draft"
     && candidate.organizationId === preview.request.organizationId
@@ -1484,13 +1589,21 @@ export async function POST(request: NextRequest) {
         failedJobId: preview.request.referenceOwnerFailedJobId,
         failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,
       });
-      if (action === "recover_failed_dispatch" || action === "finalize_recovered_dispatch") {
+      if (action === "recover_failed_dispatch" || action === "finalize_recovered_dispatch" || action === "retry_failed_execution") {
         const recoveryJobId = body.jobId?.trim() ?? "";
         const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
         if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
         const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
         if (action === "recover_failed_dispatch") {
           validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
+        } else if (action === "retry_failed_execution") {
+          const expectedFailedExecutionId = body.executionId?.trim() ?? "";
+          validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry({
+            claimId: preview.request.referenceOwnerAuthorityClaimId,
+            expectedFailedExecutionId,
+            job: recoveryJob,
+            liveContext: recoveryContext,
+          });
         } else {
           validateGlwReferenceOwnerClaimForRecoveredContent({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
         }
@@ -1508,6 +1621,10 @@ export async function POST(request: NextRequest) {
   if (action === "recover_failed_dispatch") {
     const jobId = body.jobId?.trim() ?? "";
     if (!jobId) return NextResponse.json({ error: "Exact failed job is required for recovery." }, { status: 400 });
+    const currentJob = await glwPageExecutionRepository.getById(jobId);
+    if (currentJob && isGlwExecutionQuarantined(currentJob)) {
+      return quarantineErrorResponse();
+    }
     const job = await service.recoverFailedDispatch(jobId, preview.request);
     return NextResponse.json({ ok: job.status !== "FAILED", job, sameJobRecovered: true, generationJobCreated: false, publicationPerformed: false });
   }
@@ -1516,6 +1633,9 @@ export async function POST(request: NextRequest) {
     const jobId = body.jobId?.trim() ?? "";
     const currentJob = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
     if (!currentJob) return NextResponse.json({ error: "Exact recovered job is required for finalization." }, { status: 400 });
+    if (isGlwExecutionQuarantined(currentJob)) {
+      return quarantineErrorResponse();
+    }
     const job = await finalizeContentReadyExecution({
       job: currentJob,
       request: preview.request,
@@ -1537,6 +1657,9 @@ export async function POST(request: NextRequest) {
     const currentJob = await glwPageExecutionRepository.getById(jobId);
     if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
     if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (isGlwExecutionQuarantined(currentJob)) {
+      return quarantineErrorResponse();
+    }
     if (currentJob.wordpressStatus === "publish") {
       return NextResponse.json({ error: "Published targets cannot continue through draft continuation." }, { status: 409 });
     }
@@ -1662,6 +1785,62 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  if (action === "retry_failed_execution") {
+    const jobId = body.jobId?.trim() ?? "";
+    if (!jobId) return NextResponse.json({ error: "Exact failed GLW jobId is required for retry." }, { status: 400 });
+    const expectedFailedExecutionId = body.executionId?.trim() ?? "";
+    if (!expectedFailedExecutionId) return NextResponse.json({ error: "Exact failed external executionId is required for retry." }, { status: 400 });
+    if (!hasValidRetryProductAuthority(preview.request)) {
+      return NextResponse.json({
+        error: "Retry requires valid canonical product authority and required product link.",
+        code: "RETRY_PRODUCT_AUTHORITY_INVALID",
+        generationJobCreated: false,
+      }, { status: 409 });
+    }
+    const runtime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
+    if (!/^[0-9a-f]{40}$/.test(runtime)) {
+      return NextResponse.json({
+        error: "Retry requires an exact runtime release SHA.",
+        code: "RETRY_RUNTIME_INVALID",
+        generationJobCreated: false,
+      }, { status: 409 });
+    }
+
+    const currentJob = await glwPageExecutionRepository.getById(jobId);
+    if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
+    if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (isGlwExecutionQuarantined(currentJob)) {
+      return quarantineErrorResponse();
+    }
+    if (currentJob.publicationIntent !== "draft" || currentJob.requestedPublicationMode !== "draft") {
+      return NextResponse.json({
+        error: "Retry is limited to draft publication intent.",
+        code: "RETRY_DRAFT_ONLY_REQUIRED",
+      }, { status: 409 });
+    }
+    if (!matchesExactContinuationTarget({ job: currentJob, request: preview.request })) {
+      return NextResponse.json({ error: "Retry request does not match the exact persisted GLW target." }, { status: 409 });
+    }
+
+    const retryRequestId = body.retryRequestId?.trim() || `${jobId}:${expectedFailedExecutionId}`;
+    const retried = await service.retryFailedExecution({
+      jobId,
+      request: preview.request,
+      expectedFailedExecutionId,
+      retryRequestId,
+      reader: executionReader,
+    });
+
+    return NextResponse.json({
+      ok: retried.status !== "FAILED",
+      job: retried,
+      sameJobRetried: true,
+      generationJobCreated: false,
+      publicationPerformed: false,
+      retryRequestId,
+    });
+  }
+
   if (action !== "generate") {
     return NextResponse.json({ error: "Unsupported generation action." }, { status: 400 });
   }
@@ -1718,6 +1897,9 @@ export async function GET(request: NextRequest) {
   const currentJob = await glwPageExecutionRepository.getById(jobId);
   if (!currentJob) return NextResponse.json({ error: "GLW execution was not found." }, { status: 404 });
   if (currentJob.organizationId !== scope.organizationId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (isGlwExecutionQuarantined(currentJob)) {
+    return NextResponse.json({ job: currentJob, quarantineActive: true, mutationPerformed: false });
+  }
 
   const refresh = request.nextUrl.searchParams.get("refresh") === "true";
   const job = refresh && !isTerminal(currentJob.status)

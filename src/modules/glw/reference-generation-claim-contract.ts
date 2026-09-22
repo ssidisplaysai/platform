@@ -5,7 +5,53 @@ import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "./state-loc
 
 export { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "./reference-generation-claim-contract-version";
 
-export const GLW_REFERENCE_GENERATION_CLAIM_CONTRACT = {
+export type GlwReferenceGenerationRequiredProductLink = {
+  anchorText: string;
+  href: string;
+};
+
+export type GlwReferenceGenerationClaimContract = {
+  version: string;
+  qaPolicyVersion: string;
+  rules: {
+    supportedFact: string;
+    conceptualApplication: string;
+    unsupportedFact: string;
+    unknownFact: string;
+    visualReference: string;
+    sourceToClaimMapping: string;
+    navigationAuthority: string;
+    buyerQuestionFallback: string;
+    trendAuthority: string;
+    genericProductKnowledge: string;
+    headingSeparation: string;
+  };
+  sourceToClaimMapping: {
+    requiredForProtectedFacts: true;
+    requiredFields: ["authoritativeFactReferenceId", "supportedAssertion"];
+    noAuthorityMappingNoProtectedFact: true;
+  };
+  productAuthority: {
+    scope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY";
+    establishes: string[];
+    doesNotEstablish: string[];
+  };
+  buyerQuestionFallback: {
+    requiredPrefixes: string[];
+  };
+  prohibitedWithoutExplicitAuthority: readonly string[];
+  unsupportedExamples: string[];
+  requiredProductLink: GlwReferenceGenerationRequiredProductLink | null;
+  localizationPolicy: {
+    version: string;
+    expectedStateRequired: true;
+    unauthorizedNonTargetStateContextProhibited: true;
+    navigationAndMetadataExcluded: true;
+    authorizedComparisonRequiresExplicitStateCode: true;
+  };
+};
+
+export const GLW_REFERENCE_GENERATION_CLAIM_CONTRACT: GlwReferenceGenerationClaimContract = {
   version: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION,
   qaPolicyVersion: GLW_REFERENCE_QA_POLICY_VERSION,
   rules: {
@@ -45,10 +91,7 @@ export const GLW_REFERENCE_GENERATION_CLAIM_CONTRACT = {
     "certifications, warranties, service coverage, inventory, pricing, or availability",
     "monitoring, diagnostics, sensors, software, interactivity, or installation services",
   ],
-  requiredProductLink: {
-    anchorText: "Outdoor Digital Sphere",
-    href: "/outdoor-digital-sphere/",
-  },
+  requiredProductLink: null,
   localizationPolicy: {
     version: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION,
     expectedStateRequired: true,
@@ -56,7 +99,43 @@ export const GLW_REFERENCE_GENERATION_CLAIM_CONTRACT = {
     navigationAndMetadataExcluded: true,
     authorizedComparisonRequiresExplicitStateCode: true,
   },
-} as const;
+};
+
+export function buildGlwReferenceGenerationClaimContract(input?: {
+  requiredProductLink?: GlwReferenceGenerationRequiredProductLink | null;
+}): GlwReferenceGenerationClaimContract {
+  const requiredProductLink = input?.requiredProductLink ?? null;
+  return {
+    ...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT,
+    rules: {
+      ...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules,
+    },
+    sourceToClaimMapping: {
+      ...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.sourceToClaimMapping,
+      requiredFields: [...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.sourceToClaimMapping.requiredFields] as ["authoritativeFactReferenceId", "supportedAssertion"],
+    },
+    productAuthority: {
+      ...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.productAuthority,
+      establishes: [...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.productAuthority.establishes],
+      doesNotEstablish: [...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.productAuthority.doesNotEstablish],
+    },
+    buyerQuestionFallback: {
+      ...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.buyerQuestionFallback,
+      requiredPrefixes: [...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.buyerQuestionFallback.requiredPrefixes],
+    },
+    prohibitedWithoutExplicitAuthority: [...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.prohibitedWithoutExplicitAuthority],
+    unsupportedExamples: [...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.unsupportedExamples],
+    requiredProductLink: requiredProductLink
+      ? {
+          anchorText: requiredProductLink.anchorText,
+          href: requiredProductLink.href,
+        }
+      : null,
+    localizationPolicy: {
+      ...GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.localizationPolicy,
+    },
+  };
+}
 
 export const GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT = fingerprintGlwAuthority(GLW_REFERENCE_GENERATION_CLAIM_CONTRACT);
 export const GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT = fingerprintGlwAuthority({
@@ -72,22 +151,24 @@ export const GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT = fingerpri
   authorizedComparisonSupported: true,
 });
 
-export function serializeGlwReferenceGenerationClaimContract(): string {
+export function serializeGlwReferenceGenerationClaimContract(
+  contract: GlwReferenceGenerationClaimContract = GLW_REFERENCE_GENERATION_CLAIM_CONTRACT,
+): string {
   return [
     `GENERATION CLAIM CONTRACT (${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION})`,
-    `SUPPORTED FACT: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.supportedFact}`,
-    `CONCEPTUAL APPLICATION: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.conceptualApplication}`,
-    `UNSUPPORTED FACT: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.unsupportedFact}`,
-    `UNKNOWN: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.unknownFact}`,
-    `VISUAL/CONTENT REFERENCE: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.visualReference}`,
-    `SOURCE-TO-CLAIM MAPPING: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.sourceToClaimMapping}`,
-    `PRODUCT AUTHORITY: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.navigationAuthority}`,
-    `BUYER QUESTION FALLBACK: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.buyerQuestionFallback}`,
-    `TREND AUTHORITY: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.trendAuthority}`,
-    `GENERIC PRODUCT KNOWLEDGE: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.genericProductKnowledge}`,
-    `HEADING SEPARATION: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.rules.headingSeparation}`,
-    `PROHIBITED WITHOUT EXPLICIT AUTHORITY: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.prohibitedWithoutExplicitAuthority.join(", ")}`,
-    `UNSUPPORTED EXAMPLES: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.unsupportedExamples.join("; ")}`,
-    `REQUIRED PRODUCT LINK: ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.requiredProductLink.anchorText} -> ${GLW_REFERENCE_GENERATION_CLAIM_CONTRACT.requiredProductLink.href}`,
+    `SUPPORTED FACT: ${contract.rules.supportedFact}`,
+    `CONCEPTUAL APPLICATION: ${contract.rules.conceptualApplication}`,
+    `UNSUPPORTED FACT: ${contract.rules.unsupportedFact}`,
+    `UNKNOWN: ${contract.rules.unknownFact}`,
+    `VISUAL/CONTENT REFERENCE: ${contract.rules.visualReference}`,
+    `SOURCE-TO-CLAIM MAPPING: ${contract.rules.sourceToClaimMapping}`,
+    `PRODUCT AUTHORITY: ${contract.rules.navigationAuthority}`,
+    `BUYER QUESTION FALLBACK: ${contract.rules.buyerQuestionFallback}`,
+    `TREND AUTHORITY: ${contract.rules.trendAuthority}`,
+    `GENERIC PRODUCT KNOWLEDGE: ${contract.rules.genericProductKnowledge}`,
+    `HEADING SEPARATION: ${contract.rules.headingSeparation}`,
+    `PROHIBITED WITHOUT EXPLICIT AUTHORITY: ${contract.prohibitedWithoutExplicitAuthority.join(", ")}`,
+    `UNSUPPORTED EXAMPLES: ${contract.unsupportedExamples.join("; ")}`,
+    `REQUIRED PRODUCT LINK: ${contract.requiredProductLink ? `${contract.requiredProductLink.anchorText} -> ${contract.requiredProductLink.href}` : "NONE"}`,
   ].join("\n");
 }

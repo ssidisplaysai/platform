@@ -382,6 +382,50 @@ export function validateGlwReferenceOwnerClaimForRecoveredContent(input: {
   return deepClone(claim);
 }
 
+export function validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry(input: {
+  claimId: string;
+  expectedFailedExecutionId: string;
+  job: {
+    jobId: string;
+    organizationId: string;
+    siteId: string;
+    state: string | null;
+    status: string;
+    externalExecutionId: string | null;
+    generatedDraft: unknown;
+    wordpressObjectId: string | null;
+    wordpressStatus: string | null;
+    wordpressUrl: string | null;
+  };
+  liveContext: Omit<GlwReferenceOwnerContext, "principalId" | "principalSessionId" | "exactRuntime">;
+}): GlwReferenceOwnerClaim {
+  const claim = load().state.claims.find((candidate) => candidate.claimId === input.claimId);
+  if (!claim) throw new GlwReferenceOwnerAuthorityError("CLAIM_NOT_FOUND", "Consumed reference owner claim was not found.");
+  if (!claim.dispatchValidatedAt) throw new GlwReferenceOwnerAuthorityError("CLAIM_DISPATCH_NOT_VALIDATED", "Reference owner claim never crossed the dispatch boundary.");
+  if (input.job.status !== "FAILED") {
+    throw new GlwReferenceOwnerAuthorityError("JOB_NOT_TERMINAL_FAILED", "Only a terminal failed job can be retried in place.");
+  }
+  if (!input.job.externalExecutionId || input.job.externalExecutionId !== input.expectedFailedExecutionId) {
+    throw new GlwReferenceOwnerAuthorityError("FAILED_EXECUTION_MISMATCH", "Retry requires the exact persisted failed execution identity.");
+  }
+  if (input.job.generatedDraft || input.job.wordpressObjectId || input.job.wordpressUrl || input.job.wordpressStatus === "publish") {
+    throw new GlwReferenceOwnerAuthorityError("JOB_SIDE_EFFECTS_PRESENT", "Retry requires a failed execution with no downstream content or WordPress side effects.");
+  }
+  if (claim.organizationId !== input.job.organizationId || claim.siteId !== input.job.siteId || claim.referenceState !== stateCodeForJobState(input.job.state)) {
+    throw new GlwReferenceOwnerAuthorityError("JOB_CLAIM_SCOPE_MISMATCH", "Failed job does not match the validated claim scope.");
+  }
+
+  const live = {
+    ...input.liveContext,
+    principalId: claim.principalId,
+    principalSessionId: claim.principalSessionId,
+    exactRuntime: claim.exactRuntime,
+  };
+  assertExactContext(live);
+  assertContextMatch(claim, live);
+  return deepClone(claim);
+}
+
 function stateCodeForJobState(state: string | null): string | null {
   const normalized = state?.trim().toLowerCase() ?? "";
   return GLW_CAMPAIGN_US_STATES.find((candidate) => candidate.name.toLowerCase() === normalized)?.code ?? null;

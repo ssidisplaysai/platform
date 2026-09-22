@@ -37,7 +37,7 @@ export function attachGlwCampaignProductionAuthority(input: {
     productAuthority: {
       known: input.generationAuthority.productAuthorityKnown,
       path: input.generationAuthority.productAuthorityPath,
-      anchorText: input.productTopic,
+      anchorText: input.generationAuthority.productAuthorityAnchorText ?? input.productTopic,
       authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY",
     },
     localizationPolicy: {

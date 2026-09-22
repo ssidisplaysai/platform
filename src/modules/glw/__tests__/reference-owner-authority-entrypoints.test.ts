@@ -26,6 +26,8 @@ describe("GLW reference owner authority entry points", () => {
     expect(dispatch).toBeGreaterThan(mutation);
     expect(generationRoute).toContain("identityBoundReferenceCampaign");
     expect(generationRoute).toContain('candidate.status === "draft"');
+    expect(generationRoute).toContain('action === "retry_failed_execution"');
+    expect(generationRoute).toContain("validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry");
   });
 
   test("issuance route resolves trusted principal before accepting action data", () => {

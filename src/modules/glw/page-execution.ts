@@ -106,6 +106,27 @@ export type GlwPageExecutionRecord = {
   completedAt: string | null;
 };
 
+const GLW_DUPLICATE_QUARANTINE_DISPOSITION = "QUARANTINED_SUPERSEDED_DUPLICATE";
+
+export function isGlwExecutionQuarantined(record: GlwPageExecutionRecord): boolean {
+  if (record.disposition === GLW_DUPLICATE_QUARANTINE_DISPOSITION) return true;
+  const checks = record.qaChecks;
+  if (!checks || typeof checks !== "object" || Array.isArray(checks)) return false;
+  return Boolean((checks as Record<string, unknown>).executionDuplicateQuarantine);
+}
+
+type GlwExecutionRetryHistoryEntry = {
+  operation: "RETRY_FAILED_EXECUTION";
+  retryRequestId: string;
+  attemptNumber: number;
+  previousExecutionId: string;
+  previousExecutionState: "FAILED";
+  previousErrorMessage: string | null;
+  retriedAt: string;
+  newExecutionId: string | null;
+  acceptedStatus: "accepted" | "running" | "complete" | "failed" | "dispatch_failed";
+};
+
 export type GlwN8nDraftRequest = {
   jobId: string;
   callbackUrl: string;
@@ -445,6 +466,69 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function asReadonlyRecord(value: unknown): Readonly<Record<string, unknown>> | null {
+  const record = asRecord(value);
+  return record ? record as Readonly<Record<string, unknown>> : null;
+}
+
+function mergeReadonlyRecords(
+  base: Readonly<Record<string, unknown>> | null | undefined,
+  patch: Readonly<Record<string, unknown>> | null | undefined,
+): Readonly<Record<string, unknown>> | null {
+  const left = base ? { ...base } : {};
+  const right = patch ? { ...patch } : {};
+  const merged = { ...left, ...right };
+  return Object.keys(merged).length > 0 ? merged : null;
+}
+
+function normalizeCanonicalPath(value: string): string {
+  return value.replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
+function normalizeRetryHistory(
+  checks: Readonly<Record<string, unknown>> | null | undefined,
+): GlwExecutionRetryHistoryEntry[] {
+  const entries = asRecord(checks)?.executionRetryHistory;
+  if (!Array.isArray(entries)) return [];
+  return entries
+    .map((entry) => asRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => Boolean(entry))
+    .map((entry) => {
+      const operation = optionalString(entry.operation);
+      const retryRequestId = optionalString(entry.retryRequestId);
+      const previousExecutionId = optionalString(entry.previousExecutionId);
+      const previousExecutionState = optionalString(entry.previousExecutionState);
+      const retriedAt = optionalString(entry.retriedAt);
+      const acceptedStatus = optionalString(entry.acceptedStatus);
+      if (
+        operation !== "RETRY_FAILED_EXECUTION"
+        || !retryRequestId
+        || !previousExecutionId
+        || previousExecutionState !== "FAILED"
+        || !retriedAt
+        || !acceptedStatus
+      ) {
+        return null;
+      }
+      const attempt = Number(entry.attemptNumber);
+      const newExecutionId = optionalString(entry.newExecutionId);
+      return {
+        operation,
+        retryRequestId,
+        attemptNumber: Number.isFinite(attempt) && attempt > 0 ? Math.floor(attempt) : 1,
+        previousExecutionId,
+        previousExecutionState: "FAILED" as const,
+        previousErrorMessage: optionalString(entry.previousErrorMessage),
+        retriedAt,
+        newExecutionId,
+        acceptedStatus: ["accepted", "running", "complete", "failed", "dispatch_failed"].includes(acceptedStatus)
+          ? acceptedStatus as "accepted" | "running" | "complete" | "failed" | "dispatch_failed"
+          : "accepted",
+      };
+    })
+    .filter((entry): entry is GlwExecutionRetryHistoryEntry => Boolean(entry));
+}
+
 function extractNodeJson(runData: unknown, nodeName: string): Record<string, unknown> | null {
   const runs = asRecord(runData)?.[nodeName];
   if (!Array.isArray(runs) || runs.length === 0) return null;
@@ -694,6 +778,7 @@ export function createGlwDraftExecutionService(input: {
   const createJobId = input.createJobId ?? (() => crypto.randomUUID());
   const now = input.now ?? (() => new Date().toISOString());
   const recoveringDispatches = new Set<string>();
+  const retryingTerminalFailures = new Set<string>();
 
   async function applyTerminalResult(
     jobId: string,
@@ -701,6 +786,7 @@ export function createGlwDraftExecutionService(input: {
   ): Promise<GlwPageExecutionRecord> {
     const existing = await input.repository.getById(jobId);
     if (!existing) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+    if (isGlwExecutionQuarantined(existing)) return existing;
     if (existing.status === "COMPLETE" || existing.status === "FAILED") return existing;
     if (existing.externalExecutionId && result.executionId && existing.externalExecutionId !== result.executionId) {
       throw new GlwUnknownExecutionError("Execution identity does not match the tracked GLW job.");
@@ -709,6 +795,8 @@ export function createGlwDraftExecutionService(input: {
     const timestamp = now();
     if (result.kind === "complete") {
       const contentReady = Boolean(result.generatedDraft && !result.wordpressObjectId);
+      const qaChecks = mergeReadonlyRecords(asReadonlyRecord(existing.qaChecks), result.qaChecks);
+      const qaFailureReasons = mergeReadonlyRecords(asReadonlyRecord(existing.qaFailureReasons), result.qaFailureReasons);
       return input.repository.update(jobId, {
         status: contentReady ? "CONTENT_READY" : "COMPLETE",
         externalExecutionId: result.executionId,
@@ -719,8 +807,8 @@ export function createGlwDraftExecutionService(input: {
         requestedPublicationMode: result.requestedPublicationMode ?? "draft",
         disposition: result.disposition ?? null,
         qaStatus: result.qaStatus ?? (contentReady ? "CONTENT_READY" : "COMPLETE"),
-        qaChecks: result.qaChecks ?? null,
-        qaFailureReasons: result.qaFailureReasons ?? null,
+        qaChecks,
+        qaFailureReasons,
         title: result.pageTitle ?? result.generatedDraft?.title ?? existing.title,
         seoTitle: result.seoTitle ?? result.generatedDraft?.seoTitle ?? existing.seoTitle,
         focusKeyphrase: result.focusKeyphrase ?? result.generatedDraft?.focusKeyphrase ?? null,
@@ -733,14 +821,17 @@ export function createGlwDraftExecutionService(input: {
       });
     }
 
+    const qaChecks = mergeReadonlyRecords(asReadonlyRecord(existing.qaChecks), result.qaChecks);
+    const qaFailureReasons = mergeReadonlyRecords(asReadonlyRecord(existing.qaFailureReasons), result.qaFailureReasons);
+
     return input.repository.update(jobId, {
       status: "FAILED",
       externalExecutionId: result.executionId,
       errorCode: result.errorCode,
       errorMessage: redactGlwExecutionError(result.errorMessage),
       qaStatus: result.qaStatus ?? (result.errorCode === "FAILED_QA" ? "FAILED_QA" : null),
-      qaChecks: result.qaChecks ?? null,
-      qaFailureReasons: result.qaFailureReasons ?? null,
+      qaChecks,
+      qaFailureReasons,
       updatedAt: timestamp,
       completedAt: timestamp,
     });
@@ -754,6 +845,9 @@ export function createGlwDraftExecutionService(input: {
       try {
         const current = await input.repository.getById(jobId);
         if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+        if (isGlwExecutionQuarantined(current)) {
+          throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+        }
         if (current.status !== "FAILED" || current.errorCode !== "DISPATCH_FAILED" || current.externalExecutionId || current.dispatchedAt || current.generatedDraft || current.wordpressObjectId) {
           throw new GlwExecutionResultError("Only a side-effect-free failed dispatch can be recovered in place.");
         }
@@ -796,6 +890,160 @@ export function createGlwDraftExecutionService(input: {
         recoveringDispatches.delete(jobId);
       }
     },
+    async retryFailedExecution(inputRetry: {
+      jobId: string;
+      request: GlwGenerationRequest;
+      expectedFailedExecutionId: string;
+      retryRequestId: string;
+      reader: GlwN8nExecutionReader;
+    }): Promise<GlwPageExecutionRecord> {
+      const retryRequestId = inputRetry.retryRequestId.trim();
+      const expectedFailedExecutionId = inputRetry.expectedFailedExecutionId.trim();
+      if (!retryRequestId) {
+        throw new GlwExecutionResultError("Retry request ID is required for idempotency.");
+      }
+      if (!expectedFailedExecutionId) {
+        throw new GlwExecutionResultError("Exact failed external execution ID is required.");
+      }
+
+      if (retryingTerminalFailures.has(inputRetry.jobId)) {
+        throw new GlwExecutionResultError("Terminal failed execution retry is already in progress for this job.");
+      }
+      retryingTerminalFailures.add(inputRetry.jobId);
+
+      try {
+        const current = await input.repository.getById(inputRetry.jobId);
+        if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${inputRetry.jobId}`);
+        if (isGlwExecutionQuarantined(current)) {
+          throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+        }
+
+        const exactIdentity = current.organizationId === inputRetry.request.organizationId
+          && current.siteId === inputRetry.request.siteId
+          && current.productId === inputRetry.request.productId
+          && current.state === inputRetry.request.stateName
+          && current.city === inputRetry.request.cityName
+          && normalizeCanonicalPath(current.slug) === normalizeCanonicalPath(inputRetry.request.canonicalPath)
+          && current.publicationIntent === "draft"
+          && current.requestedPublicationMode === "draft";
+        if (!exactIdentity) {
+          throw new GlwExecutionResultError("Terminal retry request does not match the exact persisted job identity.");
+        }
+
+        const retryHistory = normalizeRetryHistory(current.qaChecks);
+        const existingRetry = retryHistory.find((entry) =>
+          entry.retryRequestId === retryRequestId
+          && entry.previousExecutionId === expectedFailedExecutionId);
+
+        if (existingRetry?.newExecutionId && current.externalExecutionId === existingRetry.newExecutionId) {
+          return current;
+        }
+
+        if (current.status === "DISPATCHED" || current.status === "DISCOVERING_EXECUTION" || current.status === "RUNNING") {
+          throw new GlwExecutionResultError("A terminal retry cannot start while an execution is already active for this job.");
+        }
+
+        if (current.status !== "FAILED") {
+          throw new GlwExecutionResultError("Only a terminal failed execution can be retried in place.");
+        }
+        if (!current.externalExecutionId) {
+          throw new GlwExecutionResultError("Terminal retry requires an existing external execution identity.");
+        }
+        if (current.externalExecutionId !== expectedFailedExecutionId) {
+          throw new GlwExecutionResultError("Retry request executionId does not match the exact persisted failed execution.");
+        }
+        if (current.generatedDraft) {
+          throw new GlwExecutionResultError("Terminal retry is blocked because a generated draft already exists.");
+        }
+        if (current.wordpressObjectId || current.wordpressStatus === "publish" || current.wordpressUrl) {
+          throw new GlwExecutionResultError("Terminal retry is blocked because downstream WordPress side effects were detected.");
+        }
+
+        const failedSnapshot = await inputRetry.reader.readExecution(expectedFailedExecutionId);
+        if (failedSnapshot.executionId !== expectedFailedExecutionId) {
+          throw new GlwExecutionResultError("Retry execution snapshot identity mismatch.");
+        }
+        if (failedSnapshot.state === "RUNNING") {
+          throw new GlwExecutionResultError("Terminal retry is blocked because the previous external execution is still running.");
+        }
+        if (failedSnapshot.state === "SUCCESS") {
+          throw new GlwExecutionResultError("Terminal retry is blocked because the previous external execution succeeded.");
+        }
+
+        const timestamp = now();
+        const attemptNumber = retryHistory.length + 1;
+        const baseEntry = {
+          operation: "RETRY_FAILED_EXECUTION" as const,
+          retryRequestId,
+          attemptNumber,
+          previousExecutionId: expectedFailedExecutionId,
+          previousExecutionState: "FAILED" as const,
+          previousErrorMessage: failedSnapshot.errorMessage ?? null,
+          retriedAt: timestamp,
+        };
+
+        let response: GlwN8nDraftResponse;
+        try {
+          response = await input.dispatcher.dispatch(mapGenerationRequestToN8nDraft(inputRetry.jobId, inputRetry.request));
+        } catch (error) {
+          const failedEntry: GlwExecutionRetryHistoryEntry = {
+            ...baseEntry,
+            newExecutionId: null,
+            acceptedStatus: "dispatch_failed",
+          };
+          return input.repository.update(inputRetry.jobId, {
+            status: "FAILED",
+            errorCode: "RETRY_DISPATCH_FAILED",
+            errorMessage: redactGlwExecutionError(error),
+            qaChecks: {
+              ...(asReadonlyRecord(current.qaChecks) ?? {}),
+              executionRetryCurrent: failedEntry,
+              executionRetryHistory: [...retryHistory, failedEntry],
+            },
+            updatedAt: timestamp,
+            completedAt: timestamp,
+          });
+        }
+
+        const newExecutionId = optionalString(response.executionId);
+        if (!newExecutionId) {
+          throw new GlwExecutionResultError("Retry dispatch did not return an external execution identity.");
+        }
+        if (newExecutionId === expectedFailedExecutionId) {
+          throw new GlwExecutionResultError("Retry dispatch returned the same failed execution identity.");
+        }
+
+        const retryEntry: GlwExecutionRetryHistoryEntry = {
+          ...baseEntry,
+          newExecutionId,
+          acceptedStatus: response.kind === "accepted" ? response.status : response.status,
+        };
+
+        const dispatched = await input.repository.update(inputRetry.jobId, {
+          status: response.kind === "accepted"
+            ? (response.status === "running" ? "RUNNING" : "DISPATCHED")
+            : "RUNNING",
+          externalExecutionId: newExecutionId,
+          errorCode: null,
+          errorMessage: null,
+          completedAt: null,
+          dispatchedAt: timestamp,
+          qaChecks: {
+            ...(asReadonlyRecord(current.qaChecks) ?? {}),
+            executionRetryCurrent: retryEntry,
+            executionRetryHistory: [...retryHistory, retryEntry],
+          },
+          updatedAt: timestamp,
+        });
+
+        if (response.kind === "complete" || response.kind === "failed") {
+          return applyTerminalResult(dispatched.jobId, response);
+        }
+        return dispatched;
+      } finally {
+        retryingTerminalFailures.delete(inputRetry.jobId);
+      }
+    },
     async discoverExecution(
       jobId: string,
       reader: GlwN8nExecutionReader,
@@ -810,6 +1058,9 @@ export function createGlwDraftExecutionService(input: {
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+      if (isGlwExecutionQuarantined(current)) {
+        throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+      }
       if (current.externalExecutionId) return current;
       if (!current.dispatchedAt) {
         throw new GlwExecutionResultError("Tracked GLW job has no dispatch boundary.");
@@ -881,6 +1132,9 @@ export function createGlwDraftExecutionService(input: {
       const delay = options?.delay ?? ((milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds)));
       let current = await input.repository.getById(jobId);
       if (!current) throw new GlwUnknownExecutionError(`Unknown GLW job: ${jobId}`);
+      if (isGlwExecutionQuarantined(current)) {
+        throw new GlwExecutionResultError("Duplicate quarantine is active for this job.");
+      }
       if (current.status === "COMPLETE" || current.status === "FAILED" || current.status === "CONTENT_READY") return current;
       if (!current.externalExecutionId) {
         throw new GlwExecutionResultError("Tracked GLW job has no n8n execution identity.");

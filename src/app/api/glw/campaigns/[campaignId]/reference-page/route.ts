@@ -609,8 +609,10 @@ export async function POST(request: NextRequest, context: Context) {
   const body = await request.json().catch(() => null) as {
     stateCode?: string;
     citySlug?: string;
-    action?: "continue" | "recover_failed_dispatch" | "finalize_recovered_dispatch";
+    action?: "continue" | "recover_failed_dispatch" | "finalize_recovered_dispatch" | "retry_failed_execution";
     jobId?: string;
+    executionId?: string;
+    retryRequestId?: string;
     referenceAuthorityBinding?: GlwReferenceGenerationAuthorityBinding;
     ownerGrantId?: string;
     preflightReceiptId?: string;
@@ -672,15 +674,25 @@ export async function POST(request: NextRequest, context: Context) {
     return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
   }
   const failedDispatchRecovery = body?.action === "recover_failed_dispatch" || body?.action === "finalize_recovered_dispatch";
-  if (!failedDispatchRecovery && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
+  const terminalExecutionRetry = body?.action === "retry_failed_execution";
+  if (!failedDispatchRecovery && !terminalExecutionRetry && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
     return NextResponse.json({ error: "An exact single-use owner grant and matching preflight receipt are required.", code: "REFERENCE_OWNER_AUTHORITY_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
   }
   let ownerClaim: { claimId: string; operationType: GlwReferenceOwnerOperationType; failedJobId: string | null; failedArtifactSha256: string | null };
-  if (failedDispatchRecovery) {
-    if (!body?.jobId || !body.recoveryClaimId || body.ownerOperationType !== "REFERENCE_GENERATION_RETRY" || !body.failedJobId || !body.failedArtifactSha256) {
+  if (failedDispatchRecovery || terminalExecutionRetry) {
+    const requiresRetryEvidence = failedDispatchRecovery;
+    if (!body?.jobId || !body.recoveryClaimId || !body.ownerOperationType || (requiresRetryEvidence && (!body.failedJobId || !body.failedArtifactSha256))) {
       return NextResponse.json({ error: "Exact failed-dispatch recovery identity is required.", code: "REFERENCE_RECOVERY_IDENTITY_REQUIRED", generationJobCreated: false }, { status: 409 });
     }
-    ownerClaim = { claimId: body.recoveryClaimId, operationType: body.ownerOperationType, failedJobId: body.failedJobId, failedArtifactSha256: body.failedArtifactSha256 };
+    if (terminalExecutionRetry && !body.executionId?.trim()) {
+      return NextResponse.json({ error: "Exact failed execution identity is required for retry.", code: "REFERENCE_RETRY_EXECUTION_REQUIRED", generationJobCreated: false }, { status: 409 });
+    }
+    ownerClaim = {
+      claimId: body.recoveryClaimId,
+      operationType: body.ownerOperationType,
+      failedJobId: body.failedJobId ?? null,
+      failedArtifactSha256: body.failedArtifactSha256 ?? null,
+    };
   } else {
     try {
       const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
@@ -745,7 +757,7 @@ export async function POST(request: NextRequest, context: Context) {
     productAuthority: {
       known: generationAuthority.productAuthorityKnown,
       path: generationAuthority.productAuthorityPath,
-      anchorText: "Outdoor Digital Sphere",
+      anchorText: generationAuthority.productAuthorityAnchorText ?? product.topic,
       authorityScope: "NAVIGATION_AND_PRODUCT_IDENTITY_ONLY",
     },
     localizationPolicy: {
@@ -772,8 +784,14 @@ export async function POST(request: NextRequest, context: Context) {
   });
 
   let generationBody: Record<string, unknown> = { form };
-  if (failedDispatchRecovery) {
-    generationBody = { action: body!.action, jobId: body!.jobId, form };
+  if (failedDispatchRecovery || terminalExecutionRetry) {
+    generationBody = {
+      action: body!.action,
+      jobId: body!.jobId,
+      executionId: body!.executionId,
+      retryRequestId: body!.retryRequestId,
+      form,
+    };
   }
   if (body?.action === "continue") {
     const jobId = body.jobId?.trim() ?? "";

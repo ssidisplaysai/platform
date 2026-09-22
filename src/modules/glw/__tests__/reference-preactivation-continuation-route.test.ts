@@ -80,6 +80,7 @@ function installRouteMocks(input: {
       qaPolicyVersion: "v1",
       productAuthorityKnown: true,
       productAuthorityPath: "/outdoor-digital-sphere/",
+      productAuthorityAnchorText: "Outdoor Digital Sphere",
     }),
     buildGlwExactRetryContract: () => null,
   }));

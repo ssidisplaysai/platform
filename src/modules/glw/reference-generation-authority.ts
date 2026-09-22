@@ -6,7 +6,7 @@ import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 import { fingerprintGlwAuthority, GLW_REFERENCE_QA_POLICY_VERSION } from "./reference-claim-authority";
 import { GLW_REFERENCE_CLAIM_AUTHORITY_FINGERPRINT, GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT, GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT } from "./reference-generation-claim-contract";
 import { GLW_N8N_MODEL_CONTRACT_WORKFLOW_FINGERPRINT } from "./n8n-workflow-identity";
-import { resolveGlwAllowedInternalLinks } from "./site-internal-link-authority";
+import { resolveGlwAllowedInternalLinks, resolveGlwProductAuthority } from "./site-internal-link-authority";
 import { buildGlwEffectiveCampaignInstructions } from "./campaign-generation-context";
 
 export type GlwReferenceGenerationAuthorityBinding = {
@@ -28,6 +28,7 @@ export function resolveGlwReferenceGenerationAuthority(input: {
   campaignInstructionsLoaded: true;
   referenceFileNames: readonly string[];
   productAuthorityPath: string | null;
+  productAuthorityAnchorText: string | null;
   productAuthorityKnown: boolean;
 } {
   const instructions = input.pack.instructions.trim();
@@ -42,18 +43,19 @@ export function resolveGlwReferenceGenerationAuthority(input: {
       scope: reference.scope,
       sha256: fingerprintGlwAuthority(readFileSync(reference.storagePath)),
     }));
-  const productSlugById: Readonly<Record<string, string>> = {
-    "prod-indoor-digital-sphere": "indoor-digital-sphere",
-    "prod-outdoor-digital-sphere": "outdoor-digital-sphere",
-    "prod-ssi-accent-rear-projection-film": "accent-rear-projection-film",
-  };
-  const productSlug = productSlugById[input.campaign.productId] ?? "unknown";
+  const productAuthorityIdentity = resolveGlwProductAuthority({
+    organizationId: input.campaign.organizationId,
+    siteId: input.campaign.siteId,
+    productId: input.campaign.productId,
+  });
   const productLinks = resolveGlwAllowedInternalLinks({
     organizationId: input.campaign.organizationId,
     siteId: input.campaign.siteId,
     productId: input.campaign.productId,
     stateCode: input.stateCode,
-    canonicalPath: `/${productSlug}/${input.stateCode.toLowerCase()}/`,
+    canonicalPath: productAuthorityIdentity
+      ? `${productAuthorityIdentity.path}${input.stateCode.toLowerCase()}/`
+      : `/${input.stateCode.toLowerCase()}/`,
   });
   const productAuthority = productLinks.find((link) => link.authorityClass === "product") ?? null;
   return {
@@ -73,6 +75,7 @@ export function resolveGlwReferenceGenerationAuthority(input: {
     campaignInstructionsLoaded: true,
     referenceFileNames: references.map((reference) => reference.fileName),
     productAuthorityPath: productAuthority?.href ?? null,
+    productAuthorityAnchorText: productAuthority?.anchorText ?? null,
     productAuthorityKnown: Boolean(productAuthority),
   };
 }
