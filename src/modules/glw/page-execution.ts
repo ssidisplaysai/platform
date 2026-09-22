@@ -565,7 +565,7 @@ function countHtmlWords(value: unknown): number | null {
   return text ? text.split(" ").length : null;
 }
 
-function normalizeGeneratedText(value: string): string {
+export function normalizeGlwGeneratedText(value: string): string {
   return value
     .replace(/Ã¢â‚¬â„¢/g, "’")
     .replace(/Ã¢â‚¬â€œ/g, "–")
@@ -602,16 +602,16 @@ function normalizeGeneratedDraft(
   );
   if (!rawTitle || !rawContentHtml || !slug) return null;
 
-  const title = normalizeGeneratedText(rawTitle);
-  const contentHtml = normalizeGeneratedText(rawContentHtml);
+  const title = normalizeGlwGeneratedText(rawTitle);
+  const contentHtml = normalizeGlwGeneratedText(rawContentHtml);
   const excerpt = optionalString(generated.excerpt ?? generated.meta_description ?? generated.metaDescription);
   const seoTitle = optionalString(generated.seo_title ?? generated.meta_title);
   const metaDescription = optionalString(generated.meta_description ?? generated.metaDescription);
   const focusKeyphrase = optionalString(generated.focus_keyphrase ?? generated.focus_keyword);
-  const normalizedExcerpt = excerpt ? normalizeGeneratedText(excerpt) : null;
-  const normalizedSeoTitle = seoTitle ? normalizeGeneratedText(seoTitle) : null;
-  const normalizedMetaDescription = metaDescription ? normalizeGeneratedText(metaDescription) : null;
-  const normalizedFocusKeyphrase = focusKeyphrase ? normalizeGeneratedText(focusKeyphrase) : null;
+  const normalizedExcerpt = excerpt ? normalizeGlwGeneratedText(excerpt) : null;
+  const normalizedSeoTitle = seoTitle ? normalizeGlwGeneratedText(seoTitle) : null;
+  const normalizedMetaDescription = metaDescription ? normalizeGlwGeneratedText(metaDescription) : null;
+  const normalizedFocusKeyphrase = focusKeyphrase ? normalizeGlwGeneratedText(focusKeyphrase) : null;
 
   for (const value of [title, contentHtml, normalizedExcerpt, normalizedSeoTitle, normalizedMetaDescription, normalizedFocusKeyphrase]) {
     if (value) assertNoGeneratedMojibake(value);

@@ -11,6 +11,10 @@ import { getGlwState } from "@/modules/glw/page-generation";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import {
+  normalizeGlwDraftArtifactEncoding,
+  projectGlwLegacyEncodingNormalizedReceipt,
+} from "@/modules/glw/reference-draft-persistence-encoding";
+import {
   consumeGlwReferenceDraftPersistenceGrant,
   GlwReferenceDraftPersistenceAuthorityError,
   GLW_REFERENCE_DRAFT_PERSISTENCE_OPERATION,
@@ -113,8 +117,17 @@ async function resolveCandidate(input: {
     ? persistedCanonicalizationReceipt!
     : canonicalization.receipt;
 
+  const encodingNormalization = normalizeGlwDraftArtifactEncoding(certifiedCanonicalizedArtifact);
+  const artifactForClaimsParity = encodingNormalization.artifact;
+  if (encodingNormalization.changed && encodingNormalization.markersBefore.length === 0) {
+    throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
+  }
+  if (encodingNormalization.markersAfter.length > 0) {
+    throw new Error("FINAL_PRE_PERSISTENCE_QA_FAILED");
+  }
+
   const claimsParity = canonicalizeAndRevalidateGlwZeroAuthorityClaims({
-    artifact: certifiedCanonicalizedArtifact,
+    artifact: artifactForClaimsParity,
     authority: zeroAuthorityContext,
     fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
   });
@@ -148,6 +161,21 @@ async function resolveCandidate(input: {
   if (targetObjects.length !== 0) throw new Error("WORDPRESS_TARGET_COLLISION");
 
   const generationAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: state.code });
+  const canonicalizedArtifact = claimsParity.artifact;
+  const canonicalizedArtifactSha256 = sha256(canonicalizedArtifact.contentHtml);
+  const canonicalizationReceipt = claimsParity.canonicalizationReceipt
+    ?? (encodingNormalization.changed
+      ? projectGlwLegacyEncodingNormalizedReceipt({
+          receipt: certifiedCanonicalizationReceipt,
+          rawArtifactHtml: rawArtifact.contentHtml,
+          canonicalizedArtifactHtml: canonicalizedArtifact.contentHtml,
+        })
+      : certifiedCanonicalizationReceipt);
+  const claimsParityCanonicalizedArtifactSha256 = claimsParity.canonicalizationReceipt?.canonicalizedArtifactSha256;
+  if ((claimsParityCanonicalizedArtifactSha256 ?? canonicalizationReceipt.canonicalizedArtifactSha256) !== canonicalizedArtifactSha256) {
+    throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
+  }
+
   const wordpressAuthorityText = [site.siteId, credentialReference, credential.username, "READY"].join(":");
   const qaEvidence = { claimPolicyVersion: claims.policyVersion, claimFindings: claims.findings, checks: qa.checks, failureReasons: qa.failureReasons, wordCount: qa.wordCount };
   const liveContext: Omit<GlwReferenceDraftPersistenceContext, "principalId" | "principalSessionId"> = {
@@ -159,8 +187,8 @@ async function resolveCandidate(input: {
     generationJobId: job.jobId,
     n8nExecutionId: job.externalExecutionId,
     rawArtifactSha256,
-    canonicalizedArtifactSha256: certifiedCanonicalizationReceipt.canonicalizedArtifactSha256,
-    canonicalizationReceiptId: certifiedCanonicalizationReceipt.receiptId,
+    canonicalizedArtifactSha256: canonicalizationReceipt.canonicalizedArtifactSha256,
+    canonicalizationReceiptId: canonicalizationReceipt.receiptId,
     canonicalizationPolicyVersion: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
     canonicalizationPolicyFingerprint: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
     generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
@@ -175,13 +203,7 @@ async function resolveCandidate(input: {
     parentStatus: "draft",
     exactRuntime: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
   };
-  const canonicalizedArtifact = claimsParity.artifact;
-  const canonicalizedArtifactSha256 = sha256(canonicalizedArtifact.contentHtml);
-  const claimsParityCanonicalizedArtifactSha256 = claimsParity.canonicalizationReceipt?.canonicalizedArtifactSha256;
-  if ((claimsParityCanonicalizedArtifactSha256 ?? certifiedCanonicalizationReceipt.canonicalizedArtifactSha256) !== canonicalizedArtifactSha256) {
-    throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
-  }
-  return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact, canonicalizationReceipt: claimsParity.canonicalizationReceipt ?? certifiedCanonicalizationReceipt, claims, qa, qaEvidence, generationAuthority, liveContext };
+  return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact, canonicalizationReceipt, claims, qa, qaEvidence, generationAuthority, liveContext };
 }
 
 export async function GET(request: NextRequest, context: Context) {
