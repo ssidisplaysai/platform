@@ -27,6 +27,113 @@ describe("bounded Site Build plan synthesis", () => {
     expect(() => synthesizeSiteBuildPlan({ ...base, candidates: [{ ...approved, protectedClaimBlockers: ["Proof required"] }] })).toThrow("APPROVED_PRODUCT_SERVICE_AUTHORITY_REQUIRED");
   });
 
+  test("fails closed when strategy-derived positioning is unsupported by approved product/capability authority", () => {
+    const unsupportedStrategy = {
+      ...strategy,
+      homepageGoals: ["Present marine welding authority for naval fleet retrofits"],
+      primaryAudience: "Marine procurement directors",
+    };
+    const workspace = {
+      opportunities: [{
+        opportunityId: "o-food",
+        name: "Bakery prep systems",
+        category: "Foodservice equipment",
+        buyer: "Bakery operators",
+        problemUseCase: "Organizing bakery prep areas",
+        ownerDecision: "APPROVED",
+        capabilityState: "VERIFIED",
+        capabilityEvidenceIds: [],
+        capabilityAuthorityRevisions: [{ decision: "VERIFIED", attestation: "Owner confirms.", evidenceIds: [], evidenceRelevance: [], authorityBasis: "OWNER_ATTESTATION", revision: 1 }],
+      }],
+      strategyRevisions: [unsupportedStrategy],
+      creativeRevisions: [creative],
+    } as SiteIntelligenceWorkspace;
+    const candidate = {
+      ...approved,
+      displayName: "Bakery Prep Systems",
+      slug: "bakery-prep-systems",
+      description: "Owner-confirmed bakery prep systems.",
+    } as SiteProductServiceAuthority;
+
+    expect(() => synthesizeSiteBuildPlan({
+      buildSessionId: "build-unsupported",
+      site: { siteId: "site-1", organizationId: "org-1", displayName: "Site" } as SiteConfiguration,
+      intelligence: workspace,
+      strategy: unsupportedStrategy as never,
+      creative: creative as never,
+      candidates: [candidate],
+      sources: [],
+      authoritySnapshot: snapshot,
+      revision: 1,
+      actor: "owner",
+    })).toThrow(/BUILD_PLAN_AUTHORITY_COMPATIBILITY_FAILED/);
+  });
+
+  test("fails closed for unsupported strategy audience and succeeds when capability authority supports it", () => {
+    const compatibleCandidate = {
+      ...approved,
+      displayName: "Audio Display Pods",
+      slug: "audio-display-pods",
+      description: "Owner-confirmed audio display pods.",
+    } as SiteProductServiceAuthority;
+
+    const unsupportedAudienceStrategy = {
+      ...strategy,
+      homepageGoals: ["Present approved audio display offerings"],
+      primaryAudience: "Airport operations managers",
+    };
+    const unsupportedAudienceWorkspace = {
+      opportunities: [{
+        opportunityId: "o-av",
+        name: "Retail audio pods",
+        category: "Retail display systems",
+        buyer: "Retail managers",
+        problemUseCase: "Improve in-store media displays",
+        ownerDecision: "APPROVED",
+        capabilityState: "VERIFIED",
+        capabilityEvidenceIds: [],
+        capabilityAuthorityRevisions: [{ decision: "VERIFIED", attestation: "Owner confirms.", evidenceIds: [], evidenceRelevance: [], authorityBasis: "OWNER_ATTESTATION", revision: 1 }],
+      }],
+      strategyRevisions: [unsupportedAudienceStrategy],
+      creativeRevisions: [creative],
+    } as SiteIntelligenceWorkspace;
+
+    expect(() => synthesizeSiteBuildPlan({
+      buildSessionId: "build-audience-unsupported",
+      site: { siteId: "site-1", organizationId: "org-1", displayName: "Site" } as SiteConfiguration,
+      intelligence: unsupportedAudienceWorkspace,
+      strategy: unsupportedAudienceStrategy as never,
+      creative: creative as never,
+      candidates: [compatibleCandidate],
+      sources: [],
+      authoritySnapshot: snapshot,
+      revision: 1,
+      actor: "owner",
+    })).toThrow(/BUILD_PLAN_AUTHORITY_COMPATIBILITY_FAILED/);
+
+    const supportedAudienceWorkspace = {
+      ...unsupportedAudienceWorkspace,
+      opportunities: [{
+        ...unsupportedAudienceWorkspace.opportunities[0],
+        buyer: "Airport operations managers",
+      }],
+    } as SiteIntelligenceWorkspace;
+
+    const supportedPlan = synthesizeSiteBuildPlan({
+      buildSessionId: "build-audience-supported",
+      site: { siteId: "site-1", organizationId: "org-1", displayName: "Site" } as SiteConfiguration,
+      intelligence: supportedAudienceWorkspace,
+      strategy: unsupportedAudienceStrategy as never,
+      creative: creative as never,
+      candidates: [compatibleCandidate],
+      sources: [],
+      authoritySnapshot: snapshot,
+      revision: 1,
+      actor: "owner",
+    });
+    expect(supportedPlan.pages.find((item) => item.pageType === "OFFERING")?.name).toBe("Audio Display Pods");
+  });
+
   test("detects every material upstream authority change", () => {
     expect(isSiteBuildSnapshotCurrent(snapshot, snapshot)).toBe(true);
     for (const changed of [{ strategyRevision: 9 }, { creativeRevision: 2 }, { marketFingerprint: "changed" }, { capabilityFingerprint: "changed" }, { productServiceFingerprint: "changed" }, { sourcesFingerprint: "changed" }, { generationPolicyVersion: "changed" }]) expect(isSiteBuildSnapshotCurrent(snapshot, { ...snapshot, ...changed })).toBe(false);

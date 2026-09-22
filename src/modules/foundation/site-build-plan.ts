@@ -44,6 +44,126 @@ function summarize(previous: SiteBuildPlanPage[], next: SiteBuildPlanPage[]): Si
   return { added, removed, changed, unchanged };
 }
 
+const STRATEGY_STOPWORDS = new Set([
+  "the", "and", "with", "from", "that", "this", "these", "those", "for", "into", "onto", "about", "around", "across", "through",
+  "your", "their", "will", "what", "where", "when", "while", "without", "within", "under", "over", "current", "approved", "owner",
+  "present", "explain", "help", "drive", "using", "only", "site", "business", "project", "projects", "buyers", "buyer", "focus",
+]);
+
+type CompatibilityIssue = {
+  strategyField: string;
+  material: string;
+  checkedAuthority: {
+    productAuthorityIds: string[];
+    capabilityIds: string[];
+    sourceIds: string[];
+    negativeAuthorityIds: string[];
+  };
+  reason: string;
+  upstreamAuthorityRevision: string;
+};
+
+function normalizeToken(token: string): string {
+  const lower = token.toLowerCase();
+  if (lower.length > 7 && lower.endsWith("ation")) return lower.slice(0, -5);
+  if (lower.length > 6 && lower.endsWith("ment")) return lower.slice(0, -4);
+  if (lower.length > 6 && lower.endsWith("ing")) return lower.slice(0, -3);
+  if (lower.length > 5 && lower.endsWith("ers")) return lower.slice(0, -3);
+  if (lower.length > 5 && lower.endsWith("ies")) return `${lower.slice(0, -3)}y`;
+  if (lower.length > 4 && lower.endsWith("ed")) return lower.slice(0, -2);
+  if (lower.length > 4 && lower.endsWith("es")) return lower.slice(0, -2);
+  if (lower.length > 4 && lower.endsWith("s")) return lower.slice(0, -1);
+  return lower;
+}
+
+function semanticTokens(value: string): Set<string> {
+  return new Set(
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(" ")
+      .map((token) => normalizeToken(token.trim()))
+      .filter((token) => token.length >= 4 && !STRATEGY_STOPWORDS.has(token)),
+  );
+}
+
+function overlapCount(left: Set<string>, right: Set<string>): number {
+  let count = 0;
+  for (const token of left) if (right.has(token)) count += 1;
+  return count;
+}
+
+function compatibilityIssues(input: {
+  strategy: SiteStrategyProposal;
+  approvedOfferings: SiteProductServiceAuthority[];
+  candidates: SiteProductServiceAuthority[];
+  opportunities: Array<{ opportunityId: string; name?: string; category?: string; buyer?: string; problemUseCase?: string; demandSignal?: string; ownerDecision?: string; capabilityState?: string; capabilityAuthorityRevisions?: Array<{ attestation?: string; qualificationNotes?: string }> }>;
+  sources: SiteSource[];
+}): CompatibilityIssue[] {
+  const approvedSourceIds = new Set(input.approvedOfferings.flatMap((offering) => offering.sourceIds));
+  const factualSources = input.sources.filter((source) => source.approvalState === "OWNER_APPROVED" && source.authority !== "REFERENCE_ONLY");
+  const linkedSources = factualSources.filter((source) => approvedSourceIds.has(source.sourceId));
+  const activeSources = linkedSources.length ? linkedSources : factualSources;
+  const approvedCapabilities = input.opportunities.filter((opportunity) => opportunity.ownerDecision === "APPROVED" && isCapabilityReviewComplete(opportunity as never));
+  const negativeCapabilities = input.opportunities.filter((opportunity) => opportunity.ownerDecision === "APPROVED" && (opportunity.capabilityState === "FUTURE_CAPABILITY" || opportunity.capabilityState === "REJECTED"));
+  const negativeOfferings = input.candidates.filter((offering) => offering.decision === "REJECTED" || offering.decision === "FUTURE");
+
+  const positiveAuthorityText = [
+    ...input.approvedOfferings.flatMap((offering) => [offering.displayName, offering.description, offering.limitations ?? ""]),
+    ...approvedCapabilities.flatMap((opportunity) => [
+      opportunity.name ?? "",
+      opportunity.category ?? "",
+      opportunity.buyer ?? "",
+      opportunity.problemUseCase ?? "",
+      opportunity.demandSignal ?? "",
+      ...(opportunity.capabilityAuthorityRevisions ?? []).flatMap((revision) => [revision.attestation ?? "", revision.qualificationNotes ?? ""]),
+    ]),
+    ...activeSources.flatMap((source) => [source.label, source.ownerStatement ?? "", source.title ?? "", source.extractedRepresentation ?? ""]),
+  ].filter(Boolean);
+
+  const negativeAuthorityText = [
+    ...negativeCapabilities.flatMap((opportunity) => [opportunity.name ?? "", opportunity.category ?? "", opportunity.buyer ?? "", opportunity.problemUseCase ?? ""]),
+    ...negativeOfferings.flatMap((offering) => [offering.displayName, offering.description, offering.limitations ?? ""]),
+  ].filter(Boolean);
+
+  const positiveTokenSets = positiveAuthorityText.map((value) => semanticTokens(value)).filter((tokens) => tokens.size > 0);
+  const negativeTokenSets = negativeAuthorityText.map((value) => semanticTokens(value)).filter((tokens) => tokens.size > 0);
+
+  const material: Array<{ strategyField: string; text: string }> = [
+    ...input.strategy.homepageGoals.map((goal, index) => ({ strategyField: `homepageGoals[${index}]`, text: goal })),
+    ...input.strategy.primaryAudience.split(/,| and /i).map((audience) => ({ strategyField: "primaryAudience", text: audience.trim() })).filter((item) => item.text.length > 0),
+  ];
+
+  const issues: CompatibilityIssue[] = [];
+  for (const item of material) {
+    const tokens = semanticTokens(item.text);
+    if (!tokens.size) continue;
+    const needed = Math.max(1, Math.min(3, Math.ceil(tokens.size * 0.34)));
+    const bestPositive = positiveTokenSets.reduce((best, current) => Math.max(best, overlapCount(tokens, current)), 0);
+    const bestNegative = negativeTokenSets.reduce((best, current) => Math.max(best, overlapCount(tokens, current)), 0);
+    if (bestPositive >= needed) continue;
+
+    issues.push({
+      strategyField: item.strategyField,
+      material: item.text,
+      checkedAuthority: {
+        productAuthorityIds: input.approvedOfferings.map((offering) => offering.authorityId),
+        capabilityIds: approvedCapabilities.map((opportunity) => String(opportunity.opportunityId ?? "")).filter(Boolean),
+        sourceIds: activeSources.map((source) => source.sourceId),
+        negativeAuthorityIds: [
+          ...negativeCapabilities.map((opportunity) => String(opportunity.opportunityId ?? "")).filter(Boolean),
+          ...negativeOfferings.map((offering) => offering.authorityId),
+        ],
+      },
+      reason: bestNegative > bestPositive
+        ? `Material overlaps negative authority (${bestNegative}) more than approved authority (${bestPositive}).`
+        : `Material lacks sufficient semantic overlap with approved authority (${bestPositive}/${needed} token matches).`,
+      upstreamAuthorityRevision: `strategy-${input.strategy.revision}`,
+    });
+  }
+  return issues;
+}
+
 function applyOwnerDirection(input: { buildSessionId: string; site: SiteConfiguration; priorPlan: SiteBuildPlanProposal; instructions: string; approvedOfferings: SiteProductServiceAuthority[]; siteAuthority: SiteBuildPageAuthority[] }): { pages: SiteBuildPlanPage[]; summary: SiteBuildPlanChangeSummary } {
   const pages = structuredClone(input.priorPlan.pages);
   const addPattern = /\badd\s+(?:a\s+|an\s+)?(?:first-class\s+)?(.+?)\s+page\b/gi;
@@ -91,6 +211,23 @@ export function synthesizeSiteBuildPlan(input: {
   const approvedOpportunityIds = new Set(opportunities.filter((item) => item.ownerDecision === "APPROVED" && isCapabilityReviewComplete(item)).map((item) => item.opportunityId));
   const approvedOfferings = input.candidates.filter((item) => (item.decision === "APPROVED" || item.decision === "QUALIFIED") && (item.protectedClaimBlockers.length === 0 || item.authorityBasis === "OWNER_ATTESTED_AND_EVIDENCE"));
   if (!approvedOfferings.length) throw new Error("APPROVED_PRODUCT_SERVICE_AUTHORITY_REQUIRED");
+  const issues = compatibilityIssues({
+    strategy: input.strategy,
+    approvedOfferings,
+    candidates: input.candidates,
+    opportunities: opportunities as never,
+    sources: input.sources,
+  });
+  if (issues.length) {
+    throw new Error(`BUILD_PLAN_AUTHORITY_COMPATIBILITY_FAILED:${JSON.stringify({
+      unsupported: issues,
+      authorityChecked: {
+        approvedProductAuthorityCount: approvedOfferings.length,
+        approvedCapabilityCount: opportunities.filter((item) => item.ownerDecision === "APPROVED" && isCapabilityReviewComplete(item)).length,
+        approvedSourceCount: input.sources.filter((source) => source.approvalState === "OWNER_APPROVED" && source.authority !== "REFERENCE_ONLY").length,
+      },
+    })}`);
+  }
   const semanticMarkets = new Map<string, Set<string>>();
   for (const classification of input.strategy.synthesisContext?.semanticClassifications ?? []) {
     if (!approvedOpportunityIds.has(classification.opportunityId)) continue;
