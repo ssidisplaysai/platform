@@ -86,11 +86,18 @@ async function resolveCandidate(input: {
   const persistedCanonicalizedArtifactSha256 = persistedCanonicalizedArtifact
     ? sha256(persistedCanonicalizedArtifact.contentHtml)
     : null;
+  const persistedReceiptRawSha256 = persistedCanonicalizationReceipt?.rawArtifactSha256 ?? null;
+  const persistedReceiptCanonicalizedSha256 = persistedCanonicalizationReceipt?.canonicalizedArtifactSha256 ?? null;
+  const persistedReceiptLegacyCanonicalTuple = Boolean(
+    persistedReceiptRawSha256
+    && persistedReceiptCanonicalizedSha256
+    && persistedReceiptRawSha256 === persistedReceiptCanonicalizedSha256,
+  );
   const persistedCanonicalizationCertified = Boolean(
     persistedCanonicalizedArtifact
     && persistedCanonicalizationReceipt
     && persistedCanonicalizationReceipt.receiptId === input.canonicalizationReceiptId
-    && persistedCanonicalizationReceipt.rawArtifactSha256 === rawArtifactSha256
+    && (persistedCanonicalizationReceipt.rawArtifactSha256 === rawArtifactSha256 || persistedReceiptLegacyCanonicalTuple)
     && persistedCanonicalizedArtifactSha256
     && persistedCanonicalizationReceipt.canonicalizedArtifactSha256 === persistedCanonicalizedArtifactSha256
     && persistedCanonicalizationReceipt.canonicalizedArtifactSha256 === input.canonicalizedArtifactSha256,
