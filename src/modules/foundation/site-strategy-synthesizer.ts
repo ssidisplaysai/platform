@@ -45,7 +45,7 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
   const researchedGeographies = unique(classifications.flatMap((item) => item.researchedGeographies));
   const expansionGeographies = researchedGeographies.filter((scope) => !/^(national|nationwide(?: united states| us)?|united states)$/i.test(scope));
   const locationSeoOpportunities = unique(classifications.filter((item) => item.roles.includes("GEOGRAPHY")).flatMap((item) => item.seoOpportunities));
-  const proofRequirements = unique([...classifications.flatMap((item) => item.proofRequirements), "Relevant completed-project photography", "Material and fabrication specifications", "Customer or project examples"]);
+  const proofRequirements = unique([...classifications.flatMap((item) => item.proofRequirements), "Relevant completed-project photography", "Technical specifications and performance details", "Customer or project examples"]);
   const marketNames = unique(approved.map((opportunity) => opportunity.name));
   const evidenceIds = unique(approved.flatMap((opportunity) => opportunity.evidenceIds));
   const evidenceClaims = workspace.evidence.filter((item) => evidenceIds.includes(item.evidenceId)).map((item) => item.observedClaim);
@@ -54,14 +54,15 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
   const audience = buyers[0] ?? "Commercial project buyers";
   const brandName = context.publicBrandIdentity.trim();
   const marketFocus = verticals.slice(0, 3).join(", ") || "commercial and institutional project environments";
-  const brandDescription = context.brandProfile.description?.split(/\s+for\s+/i).at(-1)?.replace(/\.$/, "") ?? "";
-  const brandFocus = unique(brandDescription.split(/,|\band related\b/i).filter((value) => /stainless|counter|fabrication/i.test(value))).slice(0, 3).join(", ") || "commercial stainless projects";
+  const authorityFocusTerms = authorityNames.length ? authorityNames : marketNames;
+  const brandFocus = authorityFocusTerms.slice(0, 3).join(", ").toLowerCase() || "approved capabilities and project requirements";
+  const approvedCapabilitySummary = authorityNames.length ? `, with approved capabilities such as ${authorityNames.slice(0, 3).join(", ").toLowerCase()}` : "";
   const opportunityPrioritization = [...approved].sort((left, right) => {
     const value = { HIGH: 3, MODERATE: 2, LOW: 1, UNKNOWN: 0 };
     return value[right.commercialValue] - value[left.commercialValue] || right.confidence - left.confidence;
   }).map((opportunity) => opportunity.name);
   return {
-    positioning: `${brandName} is a commercial project resource for ${audience.toLowerCase()} planning stainless solutions across ${marketFocus.toLowerCase()}.`,
+    positioning: `${brandName} is a commercial project resource for ${audience.toLowerCase()} planning complex projects across ${marketFocus.toLowerCase()}${approvedCapabilitySummary}.`,
     primaryAudience: audience,
     secondaryAudiences: buyers.slice(1),
     valueProposition: `Help ${audience.toLowerCase()} turn project requirements into clear specifications, relevant proof, and a quote-ready conversation for ${brandFocus}.`,
@@ -69,7 +70,7 @@ export function synthesizeInitialSiteStrategy(workspace: SiteIntelligenceWorkspa
     productServiceFamilies: authorityNames,
     informationArchitecture: ["Home", "Capabilities", "Markets", "Projects", "About", "Request a Quote"],
     proposedSitemap: unique(["/", "/capabilities", ...verticals.map((vertical) => `/markets/${vertical.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`), "/projects", "/about", "/request-a-quote"]),
-    homepageGoals: unique(["Explain the primary market focus", "Present relevant project and fabrication proof", "Help buyers navigate by application and project need", "Drive qualified quote requests", ...referenceGuidance.filter((item) => item.startsWith("Favor:")).map((item) => item.slice(7))]),
+    homepageGoals: unique(["Explain the primary market focus", "Present relevant project and capability proof", "Help buyers navigate by application and project need", "Drive qualified quote requests", ...referenceGuidance.filter((item) => item.startsWith("Favor:")).map((item) => item.slice(7))]),
     conversionPaths: unique(["Market and application content to request-a-quote", "Project proof to project consultation", ...salesChannels.map((channel) => `${channel} resources to specification and quote intake`)]),
     ctaHierarchy: ["Request a Quote", "Discuss Your Project", salesChannels.length ? "Submit Specifications" : "Review Project Requirements"],
     trustProofRequirements: unique([...proofRequirements, "Clear fulfillment and service-area details", ...referenceGuidance.filter((item) => item.startsWith("Reference:")).map((item) => item.slice(10))]),

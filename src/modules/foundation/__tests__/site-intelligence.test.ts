@@ -164,6 +164,27 @@ describe("site intelligence authority", () => {
     expect(workspace.strategyRevisions).toHaveLength(1);
   });
 
+  test("creative revised generation keeps organization isolation and immutable prior revision history", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ ...scope, publicBrandIdentity: "Rocklin Metal" });
+    workspace = repository.startSiteIntelligence({ ...scope, expectedRevision: workspace.revision, providerReference: "provider" });
+    workspace = repository.recordSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunity: opportunity(), evidence: [evidence()] });
+    workspace = repository.decideSiteOpportunity({ ...scope, expectedRevision: workspace.revision, opportunityId: "opportunity-1", decision: "APPROVED" });
+    workspace = repository.approveSiteIntelligence({ ...scope, expectedRevision: workspace.revision });
+    workspace = repository.addStrategyProposal({ ...scope, expectedRevision: workspace.revision, proposal: strategyProposal() });
+    workspace = repository.decideStrategy({ ...scope, expectedRevision: workspace.revision, decision: "APPROVED" });
+    workspace = repository.addCreativeProposal({ ...scope, expectedRevision: workspace.revision, proposal: creativeProposal(1) });
+    workspace = repository.decideCreativeProposal({ ...scope, expectedRevision: workspace.revision, decision: "REVISION_REQUESTED", reason: "Use owner corrections." });
+    const historical = structuredClone(workspace.creativeRevisions[0]);
+
+    expect(() => repository.addCreativeProposal({ ...scope, organizationId: "other-org", expectedRevision: workspace.revision, reason: "Invalid cross-org update.", proposal: { ...creativeProposal(1), reason: "cross-org" } })).toThrow("ORGANIZATION_MISMATCH");
+
+    workspace = repository.addCreativeProposal({ ...scope, expectedRevision: workspace.revision, reason: "Explicit revised generation.", proposal: { ...creativeProposal(1), reason: "Owner revision applied." } });
+    expect(workspace.creativeRevisions).toHaveLength(2);
+    expect(workspace.creativeRevisions[0]).toEqual(historical);
+    expect(workspace.creativeRevisions[1]).toMatchObject({ revision: 2, status: "PROPOSED" });
+  });
+
   test("asset classification keeps external references non-publishable", () => {
     expect(isPublishableSiteAsset("COMPETITOR_REFERENCE_ONLY")).toBe(false);
     expect(isPublishableSiteAsset("EXTERNAL_INSPIRATION_ONLY")).toBe(false);
