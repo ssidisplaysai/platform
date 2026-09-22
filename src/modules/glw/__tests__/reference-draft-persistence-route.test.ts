@@ -44,4 +44,26 @@ describe("reference draft persistence route", () => {
     expect(route).toContain("WORDPRESS_STORED_CONTENT_QA_FAILED");
     expect(route).toContain('wordpressStatus: "draft"');
   });
+
+  test("resolves parent identity from governed hierarchy instead of hardcoded IDs", () => {
+    expect(route).toContain("resolveGovernedParentResolution");
+    expect(route).toContain("WORDPRESS_PRODUCT_PARENT_NOT_UNIQUE");
+    expect(route).toContain("WORDPRESS_STATE_PARENT_NOT_UNIQUE");
+    expect(route).toContain("WORDPRESS_STATE_PARENT_STATUS_INVALID");
+    expect(route).toContain("WORDPRESS_CANONICAL_PATH_INVALID");
+    expect(route).not.toContain("parentId !== 20114");
+    expect(route).not.toContain("WORDPRESS_PRODUCT_PARENT_IDENTITY_CHANGED");
+  });
+
+  test("enforces city hierarchy depth before target collision check", () => {
+    const resolveParent = route.indexOf("const parent = await resolveGovernedParentResolution");
+    const stateRead = route.indexOf("WORDPRESS_STATE_PARENT_READ_FAILED");
+    const targetRead = route.indexOf("const targetRead = await reader.getJson");
+    const targetCollision = route.indexOf("WORDPRESS_TARGET_COLLISION");
+    expect(resolveParent).toBeGreaterThan(0);
+    expect(stateRead).toBeGreaterThan(0);
+    expect(resolveParent).toBeLessThan(targetRead);
+    expect(stateRead).toBeLessThan(targetRead);
+    expect(targetRead).toBeLessThan(targetCollision);
+  });
 });

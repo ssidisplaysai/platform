@@ -34,7 +34,7 @@ export type GlwReferenceDraftPersistenceContext = {
   canonicalPath: string;
   parentId: string;
   parentSlug: string;
-  parentStatus: "draft";
+  parentStatus: "draft" | "publish";
   exactRuntime: string;
 };
 
@@ -107,7 +107,7 @@ function assertContext(context: GlwReferenceDraftPersistenceContext): void {
   }
   if (!/^[0-9a-f]{40}$/.test(context.exactRuntime)) throw new GlwReferenceDraftPersistenceAuthorityError("RUNTIME_INVALID", "Runtime must be an exact Git SHA.");
   if (!/^[1-9]\d*$/.test(context.parentId)) throw new GlwReferenceDraftPersistenceAuthorityError("PARENT_ID_INVALID", "An exact WordPress parent ID is required.");
-  if (!context.parentSlug || context.parentStatus !== "draft") throw new GlwReferenceDraftPersistenceAuthorityError("PARENT_IDENTITY_INVALID", "Exact parent slug and draft status are required.");
+  if (!context.parentSlug || (context.parentStatus !== "draft" && context.parentStatus !== "publish")) throw new GlwReferenceDraftPersistenceAuthorityError("PARENT_IDENTITY_INVALID", "Exact parent slug and status are required.");
 }
 
 function assertMatch(expected: GlwReferenceDraftPersistenceContext, actual: GlwReferenceDraftPersistenceContext): void {

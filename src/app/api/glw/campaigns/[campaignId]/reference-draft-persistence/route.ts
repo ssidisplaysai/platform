@@ -58,6 +58,109 @@ function pageObjects(value: unknown): Array<Record<string, unknown>> {
     : [];
 }
 
+function status(value: unknown): "draft" | "publish" | null {
+  const normalized = text(value).toLowerCase();
+  if (normalized === "draft" || normalized === "publish") return normalized;
+  return null;
+}
+
+function canonicalSegments(path: string): string[] {
+  return path
+    .split("/")
+    .map((segment) => segment.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+type GovernedParentResolution = {
+  parentId: number;
+  parentSlug: string;
+  parentStatus: "draft" | "publish";
+  targetSlug: string;
+  inventory: {
+    product: Array<Record<string, unknown>>;
+    state: Array<Record<string, unknown>>;
+  };
+};
+
+async function resolveGovernedParentResolution(input: {
+  reader: ReturnType<typeof createAuthenticatedWordPressReadAuthority>;
+  canonicalPath: string;
+  pageType: "state_service" | "city_service";
+}): Promise<GovernedParentResolution> {
+  const segments = canonicalSegments(input.canonicalPath);
+  if (segments.length < 2) {
+    throw new Error("WORDPRESS_CANONICAL_PATH_INVALID");
+  }
+
+  const productSlug = segments[0];
+  const targetSlug = segments[segments.length - 1];
+  const productRead = await input.reader.getJson({
+    path: "/pages",
+    query: new URLSearchParams({
+      slug: productSlug,
+      parent: "0",
+      context: "edit",
+      status: "publish,draft,pending,private,future",
+      per_page: "100",
+      _fields: "id,slug,parent,status,title",
+    }),
+  });
+  if (!productRead.ok) throw new Error("WORDPRESS_PRODUCT_PARENT_READ_FAILED");
+  const productMatches = pageObjects(productRead.body)
+    .filter((page) => text(page.slug).toLowerCase() === productSlug && Number(page.parent) === 0 && numeric(page.id));
+  if (productMatches.length !== 1) throw new Error("WORDPRESS_PRODUCT_PARENT_NOT_UNIQUE");
+  const productParentId = numeric(productMatches[0].id)!;
+  const productParentStatus = status(productMatches[0].status);
+  if (!productParentStatus) throw new Error("WORDPRESS_PRODUCT_PARENT_STATUS_INVALID");
+
+  if (input.pageType === "state_service") {
+    return {
+      parentId: productParentId,
+      parentSlug: productSlug,
+      parentStatus: productParentStatus,
+      targetSlug,
+      inventory: {
+        product: productMatches,
+        state: [],
+      },
+    };
+  }
+
+  if (segments.length < 3) {
+    throw new Error("WORDPRESS_CANONICAL_PATH_INVALID");
+  }
+  const stateSlug = segments[1];
+  const stateRead = await input.reader.getJson({
+    path: "/pages",
+    query: new URLSearchParams({
+      slug: stateSlug,
+      parent: String(productParentId),
+      context: "edit",
+      status: "publish,draft,pending,private,future",
+      per_page: "100",
+      _fields: "id,slug,parent,status,title",
+    }),
+  });
+  if (!stateRead.ok) throw new Error("WORDPRESS_STATE_PARENT_READ_FAILED");
+  const stateMatches = pageObjects(stateRead.body)
+    .filter((page) => text(page.slug).toLowerCase() === stateSlug && Number(page.parent) === productParentId && numeric(page.id));
+  if (stateMatches.length !== 1) throw new Error("WORDPRESS_STATE_PARENT_NOT_UNIQUE");
+  const stateParentId = numeric(stateMatches[0].id)!;
+  const stateParentStatus = status(stateMatches[0].status);
+  if (stateParentStatus !== "draft") throw new Error("WORDPRESS_STATE_PARENT_STATUS_INVALID");
+
+  return {
+    parentId: stateParentId,
+    parentSlug: stateSlug,
+    parentStatus: stateParentStatus,
+    targetSlug,
+    inventory: {
+      product: productMatches,
+      state: stateMatches,
+    },
+  };
+}
+
 async function resolveCandidate(input: {
   campaignId: string;
   organizationId: string;
@@ -147,14 +250,9 @@ async function resolveCandidate(input: {
   const credential = resolveWordPressCredentialReference(credentialReference);
   if (!apiBaseUrl || !credentialReference || !credential) throw new Error("WORDPRESS_AUTHORITY_UNAVAILABLE");
   const reader = createAuthenticatedWordPressReadAuthority({ configuration: { apiBaseUrl, username: credential.username, applicationPassword: credential.applicationPassword, timeoutMs: 30_000 } });
-  const productSlug = job.slug.split("/").filter(Boolean)[0];
-  const targetSlug = job.slug.split("/").filter(Boolean).at(-1)!;
-  const productRead = await reader.getJson({ path: "/pages", query: new URLSearchParams({ slug: productSlug, parent: "0", context: "edit", status: "publish,draft,pending,private,future", per_page: "100", _fields: "id,slug,parent,status,title" }) });
-  if (!productRead.ok) throw new Error("WORDPRESS_PRODUCT_PARENT_READ_FAILED");
-  const productMatches = pageObjects(productRead.body).filter((page) => text(page.slug) === productSlug && Number(page.parent) === 0 && numeric(page.id));
-  if (productMatches.length !== 1) throw new Error("WORDPRESS_PRODUCT_PARENT_NOT_UNIQUE");
-  const parentId = numeric(productMatches[0].id)!;
-  if (parentId !== 20114 || text(productMatches[0].status) !== "draft") throw new Error("WORDPRESS_PRODUCT_PARENT_IDENTITY_CHANGED");
+  const parent = await resolveGovernedParentResolution({ reader, canonicalPath: job.slug, pageType: campaign.pageType });
+  const targetSlug = parent.targetSlug;
+  const parentId = parent.parentId;
   const targetRead = await reader.getJson({ path: "/pages", query: new URLSearchParams({ slug: targetSlug, parent: String(parentId), context: "edit", status: "publish,draft,pending,private,future", per_page: "100", _fields: "id,slug,parent,status,title" }) });
   if (!targetRead.ok) throw new Error("WORDPRESS_TARGET_READ_FAILED");
   const targetObjects = pageObjects(targetRead.body);
@@ -196,11 +294,11 @@ async function resolveCandidate(input: {
     qaFingerprint: fingerprintGlwAuthority(qaEvidence),
     localizationPolicyFingerprint: GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_FINGERPRINT,
     wordpressReadAuthorityFingerprint: fingerprintGlwAuthority(wordpressAuthorityText),
-    wordpressInventoryFingerprint: fingerprintGlwAuthority({ parent: productMatches, target: targetObjects }),
+    wordpressInventoryFingerprint: fingerprintGlwAuthority({ parent: parent.inventory, target: targetObjects }),
     canonicalPath: job.slug,
     parentId: String(parentId),
-    parentSlug: productSlug,
-    parentStatus: "draft",
+    parentSlug: parent.parentSlug,
+    parentStatus: parent.parentStatus,
     exactRuntime: process.env.GIT_COMMIT?.trim().toLowerCase() ?? "",
   };
   return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact, canonicalizationReceipt, claims, qa, qaEvidence, generationAuthority, liveContext };
