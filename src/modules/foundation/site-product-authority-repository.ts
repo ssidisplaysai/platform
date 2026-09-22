@@ -169,6 +169,43 @@ function authorityOriginPriority(candidate: SiteProductServiceAuthority): number
   return 2;
 }
 
+function sameClaims(left: readonly string[], right: readonly string[]): boolean {
+  if (left.length !== right.length) return false;
+  const leftSorted = [...left].sort();
+  const rightSorted = [...right].sort();
+  return leftSorted.every((value, index) => value === rightSorted[index]);
+}
+
+function isMateriallyCompatible(left: SiteProductServiceAuthority, right: SiteProductServiceAuthority): boolean {
+  if (left.slug !== right.slug) return false;
+  if ((left.canonicalProductId ?? null) !== (right.canonicalProductId ?? null)) return false;
+  if ((left.canonicalProductSlug ?? null) !== (right.canonicalProductSlug ?? null)) return false;
+  if (!sameClaims(left.protectedClaimBlockers, right.protectedClaimBlockers)) return false;
+  return true;
+}
+
+function carryForwardDecision(input: {
+  derived: SiteProductServiceAuthority;
+  persisted: SiteProductServiceAuthority;
+}): SiteProductServiceAuthority {
+  return {
+    ...input.derived,
+    decision: input.persisted.decision,
+    authorityBasis: input.persisted.authorityBasis,
+    ownerAttestation: input.persisted.ownerAttestation,
+    sourceIds: [...new Set(input.persisted.sourceIds)],
+    revision: input.persisted.revision,
+    createdAt: input.persisted.createdAt,
+    updatedAt: input.persisted.updatedAt,
+    decidedBy: input.persisted.decidedBy,
+    decidedAt: input.persisted.decidedAt,
+    limitations: input.persisted.limitations,
+    description: input.persisted.description || input.derived.description,
+    protectedClaimBlockers: [...input.persisted.protectedClaimBlockers],
+    canonicalSpecifications: input.persisted.canonicalSpecifications ? [...input.persisted.canonicalSpecifications] : input.derived.canonicalSpecifications,
+  };
+}
+
 function canonicalJoinCandidates(input: { organizationId: string; siteId: string; strategy: SiteStrategyProposal }): SiteProductServiceAuthority[] {
   const timestamp = input.strategy.createdAt;
   const candidates: SiteProductServiceAuthority[] = [];
@@ -268,7 +305,31 @@ export function getSiteAuthorityWorkspace(input: { organizationId: string; siteI
   const persisted = loaded.state.authorities.filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId);
   const derived = deriveAuthorityCandidates(input);
   const byId = new Map(persisted.map((item) => [item.authorityId, item]));
-  const candidates = derived.map((item) => byId.get(item.authorityId) ?? item);
+  const bySlug = new Map<string, SiteProductServiceAuthority[]>();
+  for (const candidate of persisted) {
+    const key = candidate.slug || slug(candidate.displayName);
+    const records = bySlug.get(key) ?? [];
+    records.push(candidate);
+    bySlug.set(key, records);
+  }
+
+  const candidates = derived.map((item) => {
+    const exact = byId.get(item.authorityId);
+    if (exact) return exact;
+
+    const sameIdentity = (bySlug.get(item.slug) ?? [])
+      .filter((candidate) => isMateriallyCompatible(item, candidate))
+      .sort((left, right) => {
+        const leftDecided = left.decision === "PENDING" ? 0 : 1;
+        const rightDecided = right.decision === "PENDING" ? 0 : 1;
+        if (leftDecided !== rightDecided) return rightDecided - leftDecided;
+        return authorityOriginPriority(right) - authorityOriginPriority(left);
+      });
+
+    const decided = sameIdentity.find((candidate) => candidate.decision !== "PENDING");
+    if (!decided) return item;
+    return carryForwardDecision({ derived: item, persisted: decided });
+  });
   const existing = new Set(candidates.map((item) => item.authorityId));
 
   for (const record of persisted) {

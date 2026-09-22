@@ -8,7 +8,7 @@ const site = {
   integrations: { wordpressApiBaseUrl: "https://example.com/wp-json/wp/v2", wordpressCredentialReference: "credential-reference", workflowReference: null }, onboarding: { status: "connected", wordpressConnectionVerifiedAt: "2026-09-11T00:00:00.000Z" },
 } as SiteConfiguration;
 const opportunity = { opportunityId: "o1", ownerDecision: "APPROVED", capabilityState: "VERIFIED", capabilityEvidenceIds: [], capabilityAuthorityRevisions: [{ revision: 1, decision: "VERIFIED", attestation: "Owner confirms this current capability.", evidenceIds: [], evidenceRelevance: [], authorityBasis: "OWNER_ATTESTATION" }] } as SiteOpportunity;
-const intelligence = { intelligenceState: "INTELLIGENCE_APPROVED", strategyState: "STRATEGY_APPROVED", creativeState: "CREATIVE_APPROVED", opportunities: [opportunity], strategyRevisions: [{ revision: 8, status: "APPROVED" }], creativeRevisions: [{ revision: 1, status: "APPROVED" }] } as SiteIntelligenceWorkspace;
+const intelligence = { intelligenceState: "INTELLIGENCE_APPROVED", strategyState: "STRATEGY_APPROVED", creativeState: "CREATIVE_APPROVED", opportunities: [opportunity], strategyRevisions: [{ revision: 8, status: "APPROVED" }], creativeRevisions: [{ revision: 1, status: "APPROVED", strategyRevision: 8 }] } as SiteIntelligenceWorkspace;
 const candidate = { authorityId: "a1", decision: "APPROVED", authorityBasis: "OWNER_ATTESTED", sourceIds: [], protectedClaimBlockers: [], revision: 1 } as SiteProductServiceAuthority;
 const reference = { sourceId: "s1", approvalState: "REFERENCE_ONLY", authority: "REFERENCE_ONLY", sourceRole: "CREATIVE_REFERENCE", publishable: false } as SiteSource;
 
@@ -63,6 +63,61 @@ describe("site generation readiness", () => {
     expect(result.counts).toMatchObject({ productAuthorityProposed: 2, productAuthorityDecisions: 2, generationEligibleProducts: 1 });
     const pendingMarket = { ...intelligence, opportunities: [{ ...opportunity, ownerDecision: "PENDING" }] } as SiteIntelligenceWorkspace;
     expect(evaluateGenerationReadiness({ site, intelligence: pendingMarket, candidates: [candidate], sources: [] }).readyToCertify).toBe(false);
+  });
+
+  test("creative readiness fails closed when approved creative is bound to an older strategy revision", () => {
+    const strategy2Creative2 = evaluateGenerationReadiness({
+      site,
+      intelligence: {
+        ...intelligence,
+        strategyRevisions: [{ revision: 2, status: "APPROVED" }],
+        creativeRevisions: [{ revision: 4, status: "APPROVED", strategyRevision: 2 }],
+      } as SiteIntelligenceWorkspace,
+      candidates: [candidate],
+      sources: [],
+    });
+    expect(strategy2Creative2.readyToCertify).toBe(true);
+    expect(strategy2Creative2.checks.find((item) => item.key === "creative_direction")?.passed).toBe(true);
+
+    const strategy3Creative2 = evaluateGenerationReadiness({
+      site,
+      intelligence: {
+        ...intelligence,
+        strategyRevisions: [{ revision: 3, status: "APPROVED" }],
+        creativeRevisions: [{ revision: 4, status: "APPROVED", strategyRevision: 2 }],
+      } as SiteIntelligenceWorkspace,
+      candidates: [candidate],
+      sources: [],
+    });
+    expect(strategy3Creative2.readyToCertify).toBe(false);
+    const staleCreative = strategy3Creative2.checks.find((item) => item.key === "creative_direction");
+    expect(staleCreative?.passed).toBe(false);
+    expect(staleCreative?.detail).toContain("bound to strategy revision 2");
+
+    const strategy3Creative3 = evaluateGenerationReadiness({
+      site,
+      intelligence: {
+        ...intelligence,
+        strategyRevisions: [{ revision: 3, status: "APPROVED" }],
+        creativeRevisions: [{ revision: 5, status: "APPROVED", strategyRevision: 3 }],
+      } as SiteIntelligenceWorkspace,
+      candidates: [candidate],
+      sources: [],
+    });
+    expect(strategy3Creative3.readyToCertify).toBe(true);
+    expect(strategy3Creative3.checks.find((item) => item.key === "creative_direction")?.passed).toBe(true);
+  });
+
+  test("sources of truth reports product authority dependency when protected claims are already bounded", () => {
+    const blocked = evaluateGenerationReadiness({
+      site,
+      intelligence,
+      candidates: [{ ...candidate, decision: "PENDING" } as SiteProductServiceAuthority],
+      sources: [],
+    });
+    const sources = blocked.checks.find((item) => item.key === "sources_of_truth");
+    expect(sources?.passed).toBe(false);
+    expect(sources?.detail).toContain("Product / Service Authority decisions");
   });
 
   test("canonical registry candidates remain blocked until explicitly approved in product authority", () => {

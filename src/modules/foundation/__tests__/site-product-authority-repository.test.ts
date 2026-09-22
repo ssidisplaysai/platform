@@ -209,6 +209,191 @@ describe("site product/service authority repository", () => {
     expect(workspace.candidates.some((item) => item.displayName === "Fan Cooled Projector Enclosures" && item.provenance?.kind === "SOURCE")).toBe(false);
   });
 
+  test("carries forward an equivalent approved source decision when a newer strategy derives the same offering identity", async () => {
+    jest.doMock("../product-repository", () => ({ listProducts: () => [] }));
+    const repository = await import("../site-product-authority-repository");
+    const strategy2 = strategy({ revision: 2, productServiceFamilies: [] });
+    const source = repository.addOwnerKnowledgeSource({
+      ...scope,
+      label: "Projector authority",
+      statement: "Projector Enclosure",
+      sourceRole: "PRODUCT_SERVICE_AUTHORITY",
+      actor: "owner",
+    });
+    const proposed = repository.proposeAuthorityCandidatesFromSources({ ...scope, strategy: strategy2, actor: "owner", sourceIds: [source.sourceId] });
+    const projector = proposed.find((item) => item.slug === "projector-enclosure");
+    expect(projector).toBeDefined();
+
+    repository.decideAuthorityCandidate({
+      ...scope,
+      strategy: strategy2,
+      authorityId: projector!.authorityId,
+      type: projector!.type,
+      displayName: projector!.displayName,
+      description: projector!.description,
+      limitations: "",
+      decision: "APPROVED",
+      ownerAttestation: "Owner confirms this offering.",
+      sourceIds: [source.sourceId],
+      actor: "owner",
+    });
+
+    const strategy3 = strategy({ revision: 3, productServiceFamilies: ["Projector Enclosure"] });
+    const workspace = repository.getSiteAuthorityWorkspace({ ...scope, strategy: strategy3 });
+    const projectorCandidates = workspace.candidates.filter((item) => item.slug === "projector-enclosure");
+    expect(projectorCandidates).toHaveLength(1);
+    expect(projectorCandidates[0]).toMatchObject({ decision: "APPROVED", sourceIds: [source.sourceId] });
+  });
+
+  test("does not silently override a rejected decision when a newer strategy derives the same offering identity", async () => {
+    jest.doMock("../product-repository", () => ({ listProducts: () => [] }));
+    const repository = await import("../site-product-authority-repository");
+    const strategy2 = strategy({ revision: 2, productServiceFamilies: [] });
+    const source = repository.addOwnerKnowledgeSource({
+      ...scope,
+      label: "Projector authority",
+      statement: "Projector Enclosure",
+      sourceRole: "PRODUCT_SERVICE_AUTHORITY",
+      actor: "owner",
+    });
+    const proposed = repository.proposeAuthorityCandidatesFromSources({ ...scope, strategy: strategy2, actor: "owner", sourceIds: [source.sourceId] });
+    const projector = proposed.find((item) => item.slug === "projector-enclosure");
+    expect(projector).toBeDefined();
+
+    repository.decideAuthorityCandidate({
+      ...scope,
+      strategy: strategy2,
+      authorityId: projector!.authorityId,
+      type: projector!.type,
+      displayName: projector!.displayName,
+      description: projector!.description,
+      limitations: "",
+      decision: "REJECTED",
+      ownerAttestation: "",
+      sourceIds: [],
+      actor: "owner",
+    });
+
+    const strategy3 = strategy({ revision: 3, productServiceFamilies: ["Projector Enclosure"] });
+    const workspace = repository.getSiteAuthorityWorkspace({ ...scope, strategy: strategy3 });
+    const projectorCandidates = workspace.candidates.filter((item) => item.slug === "projector-enclosure");
+    expect(projectorCandidates).toHaveLength(1);
+    expect(projectorCandidates[0].decision).toBe("REJECTED");
+  });
+
+  test("keeps canonical authority precedence and avoids duplicate pending candidates for equivalent strategy identity", async () => {
+    const canonicalScope = { organizationId: "ssi", siteId: "site-ssi-projectorenclosure", actor: "owner" };
+    jest.doMock("../product-repository", () => ({
+      listProducts: () => [
+        mockCanonicalProduct({
+          productId: "prod-ssi-projector-enclosure",
+          organizationId: "ssi",
+          siteId: "site-ssi-projectorenclosure",
+          productName: "Projector Enclosure",
+          slug: "projector-enclosure",
+        }),
+      ],
+    }));
+    const repository = await import("../site-product-authority-repository");
+    const strategyProposal = strategy({ revision: 3, productServiceFamilies: ["Projector Enclosure"] });
+    const pendingWorkspace = repository.getSiteAuthorityWorkspace({ ...canonicalScope, strategy: strategyProposal });
+    const canonical = pendingWorkspace.candidates.find((item) => item.slug === "projector-enclosure");
+    expect(canonical).toBeDefined();
+
+    repository.decideAuthorityCandidate({
+      ...canonicalScope,
+      strategy: strategyProposal,
+      authorityId: canonical!.authorityId,
+      type: canonical!.type,
+      displayName: canonical!.displayName,
+      description: canonical!.description,
+      limitations: "",
+      decision: "APPROVED",
+      ownerAttestation: "Owner confirms this canonical product is offered.",
+      sourceIds: [],
+      actor: "owner",
+    });
+
+    const approvedWorkspace = repository.getSiteAuthorityWorkspace({ ...canonicalScope, strategy: strategyProposal });
+    const projectorCandidates = approvedWorkspace.candidates.filter((item) => item.slug === "projector-enclosure");
+    expect(projectorCandidates).toHaveLength(1);
+    expect(projectorCandidates[0]).toMatchObject({
+      decision: "APPROVED",
+      provenance: { kind: "CANONICAL_PRODUCT_REGISTRY", referenceId: "prod-ssi-projector-enclosure" },
+    });
+  });
+
+  test("keeps materially different new strategy offerings pending while carrying forward equivalent decided offerings", async () => {
+    jest.doMock("../product-repository", () => ({ listProducts: () => [] }));
+    const repository = await import("../site-product-authority-repository");
+    const strategy2 = strategy({ revision: 2, productServiceFamilies: [] });
+    const source = repository.addOwnerKnowledgeSource({
+      ...scope,
+      label: "Projector authority",
+      statement: "Projector Enclosure",
+      sourceRole: "PRODUCT_SERVICE_AUTHORITY",
+      actor: "owner",
+    });
+    const proposed = repository.proposeAuthorityCandidatesFromSources({ ...scope, strategy: strategy2, actor: "owner", sourceIds: [source.sourceId] });
+    const projector = proposed.find((item) => item.slug === "projector-enclosure");
+    expect(projector).toBeDefined();
+
+    repository.decideAuthorityCandidate({
+      ...scope,
+      strategy: strategy2,
+      authorityId: projector!.authorityId,
+      type: projector!.type,
+      displayName: projector!.displayName,
+      description: projector!.description,
+      limitations: "",
+      decision: "APPROVED",
+      ownerAttestation: "Owner confirms this offering.",
+      sourceIds: [source.sourceId],
+      actor: "owner",
+    });
+
+    const strategy3 = strategy({ revision: 3, productServiceFamilies: ["Projector Enclosure", "Projector Enclosure XL"] });
+    const workspace = repository.getSiteAuthorityWorkspace({ ...scope, strategy: strategy3 });
+    expect(workspace.candidates.find((item) => item.slug === "projector-enclosure")?.decision).toBe("APPROVED");
+    expect(workspace.candidates.find((item) => item.slug === "projector-enclosure-xl")?.decision).toBe("PENDING");
+  });
+
+  test("does not carry decisions across organization or site boundaries", async () => {
+    jest.doMock("../product-repository", () => ({ listProducts: () => [] }));
+    const repository = await import("../site-product-authority-repository");
+    const strategy2 = strategy({ revision: 2, productServiceFamilies: [] });
+    const source = repository.addOwnerKnowledgeSource({
+      ...scope,
+      label: "Projector authority",
+      statement: "Projector Enclosure",
+      sourceRole: "PRODUCT_SERVICE_AUTHORITY",
+      actor: "owner",
+    });
+    const proposed = repository.proposeAuthorityCandidatesFromSources({ ...scope, strategy: strategy2, actor: "owner", sourceIds: [source.sourceId] });
+    const projector = proposed.find((item) => item.slug === "projector-enclosure");
+    expect(projector).toBeDefined();
+
+    repository.decideAuthorityCandidate({
+      ...scope,
+      strategy: strategy2,
+      authorityId: projector!.authorityId,
+      type: projector!.type,
+      displayName: projector!.displayName,
+      description: projector!.description,
+      limitations: "",
+      decision: "APPROVED",
+      ownerAttestation: "Owner confirms this offering.",
+      sourceIds: [source.sourceId],
+      actor: "owner",
+    });
+
+    const otherSiteScope = { organizationId: scope.organizationId, siteId: "site-other", actor: "owner" };
+    const otherSiteStrategy = strategy({ revision: 3, productServiceFamilies: ["Projector Enclosure"] });
+    const workspace = repository.getSiteAuthorityWorkspace({ ...otherSiteScope, strategy: otherSiteStrategy });
+    const projectorCandidate = workspace.candidates.find((item) => item.slug === "projector-enclosure");
+    expect(projectorCandidate?.decision).toBe("PENDING");
+  });
+
   test("derives conservative proposed candidates without persisting or auto-approving", async () => {
     const repository = await import("../site-product-authority-repository");
     const workspace = repository.getSiteAuthorityWorkspace({ ...scope, strategy: strategy() });
