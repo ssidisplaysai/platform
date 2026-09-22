@@ -3,9 +3,11 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 
 import { deepClone, loadPersistedState, savePersistedState } from "./foundation-persistence";
+import { listProducts } from "./product-repository";
 import { isUnsafePublicAddress } from "./public-network-address";
 import { evaluateProductAuthorityCompletion } from "./site-product-authority-completion";
 import type { SiteStrategyProposal } from "./site-intelligence";
+import type { ProductConfiguration, ProductSiteAssignment, ProductSpecification, ProductVisibilityState } from "./types";
 
 export type SiteSourceKind = "URL" | "UPLOAD" | "OWNER_KNOWLEDGE";
 export type SiteSourceRole = "BUSINESS_FACTS" | "PRODUCT_SERVICE_AUTHORITY" | "TECHNICAL_SPECIFICATION" | "CREATIVE_REFERENCE" | "OTHER_REFERENCE";
@@ -53,6 +55,19 @@ export type SiteProductServiceAuthority = {
   description: string;
   limitations: string | null;
   decision: AuthorityDecision;
+  provenance?: {
+    kind: "STRATEGY" | "SOURCE" | "CANONICAL_PRODUCT_REGISTRY";
+    referenceId: string;
+  };
+  canonicalProductId?: string | null;
+  canonicalProductSlug?: string | null;
+  canonicalSiteAssignment?: {
+    siteId: string;
+    enabledForSite: boolean;
+    visibility: ProductVisibilityState;
+    publicationStatus: string;
+  } | null;
+  canonicalSpecifications?: ProductSpecification[];
   authorityBasis: "NONE" | "OWNER_ATTESTED" | "OWNER_ATTESTED_AND_EVIDENCE";
   ownerAttestation: string | null;
   sourceIds: string[];
@@ -72,6 +87,8 @@ type State = {
 
 const NAMESPACE = "site-product-authority-repository";
 const MAX_SOURCE_PROPOSALS = 12;
+const ELIGIBLE_PRODUCT_VISIBILITY = new Set<ProductVisibilityState>(["site_visible", "public_candidate"]);
+const ELIGIBLE_CATALOG_STATUS = new Set(["ready", "published"]);
 
 function now() {
   return new Date().toISOString();
@@ -116,9 +133,88 @@ function protectedClaims(value: string): string[] {
   return rules.filter(([pattern]) => pattern.test(value)).map(([, reason]) => reason);
 }
 
-export { evaluateProductAuthorityCompletion };
+function canonicalAuthorityId(siteId: string, productId: string): string {
+  return `site-authority-canonical-${siteId}-${productId}`;
+}
 
-export function deriveAuthorityCandidates(input: { organizationId: string; siteId: string; strategy: SiteStrategyProposal }): SiteProductServiceAuthority[] {
+function canonicalCandidateSlug(product: ProductConfiguration, assignment: ProductSiteAssignment): string {
+  return slug(assignment.siteSpecificSlug || product.slug || product.displayName || product.productName);
+}
+
+function canonicalCandidateDisplayName(product: ProductConfiguration, assignment: ProductSiteAssignment): string {
+  return assignment.siteSpecificDisplayName?.trim() || product.displayName?.trim() || product.productName.trim();
+}
+
+function canonicalProductEligibleForSite(input: { organizationId: string; siteId: string; product: ProductConfiguration }): ProductSiteAssignment | null {
+  const { product } = input;
+  if (product.organizationId !== input.organizationId) return null;
+  if (product.lifecycleState !== "active") return null;
+  if (!ELIGIBLE_CATALOG_STATUS.has(product.catalogStatus)) return null;
+  if (!product.enabled) return null;
+  if (!ELIGIBLE_PRODUCT_VISIBILITY.has(product.visibility)) return null;
+  const assignment = product.siteAssignments.find((item) => item.siteId === input.siteId) ?? null;
+  if (!assignment) return null;
+  if (!assignment.enabledForSite) return null;
+  if (assignment.publicationStatus !== "ready") return null;
+  if (!ELIGIBLE_PRODUCT_VISIBILITY.has(assignment.visibility)) return null;
+  return assignment;
+}
+
+function authorityOriginPriority(candidate: SiteProductServiceAuthority): number {
+  const kind = candidate.provenance?.kind;
+  if (kind === "CANONICAL_PRODUCT_REGISTRY") return 3;
+  if (kind === "STRATEGY") return 2;
+  if (kind === "SOURCE") return 1;
+  if (candidate.authorityId.startsWith("site-authority-source-")) return 1;
+  return 2;
+}
+
+function canonicalJoinCandidates(input: { organizationId: string; siteId: string; strategy: SiteStrategyProposal }): SiteProductServiceAuthority[] {
+  const timestamp = input.strategy.createdAt;
+  const candidates: SiteProductServiceAuthority[] = [];
+  for (const product of listProducts()) {
+    const assignment = canonicalProductEligibleForSite({ organizationId: input.organizationId, siteId: input.siteId, product });
+    if (!assignment) continue;
+    const displayName = canonicalCandidateDisplayName(product, assignment);
+    const productSlug = canonicalCandidateSlug(product, assignment);
+    candidates.push({
+      authorityId: canonicalAuthorityId(input.siteId, product.productId),
+      organizationId: input.organizationId,
+      siteId: input.siteId,
+      strategyRevision: input.strategy.revision,
+      strategyFamily: `Canonical product: ${displayName}`,
+      type: "PRODUCT",
+      canonicalName: productSlug,
+      displayName,
+      slug: productSlug,
+      description: product.shortDescription?.trim() || product.fullDescription?.trim() || `Canonical product assigned to ${assignment.siteId}.`,
+      limitations: null,
+      decision: "PENDING",
+      provenance: { kind: "CANONICAL_PRODUCT_REGISTRY", referenceId: product.productId },
+      canonicalProductId: product.productId,
+      canonicalProductSlug: product.slug,
+      canonicalSiteAssignment: {
+        siteId: assignment.siteId,
+        enabledForSite: assignment.enabledForSite,
+        visibility: assignment.visibility,
+        publicationStatus: assignment.publicationStatus,
+      },
+      canonicalSpecifications: [...product.specifications],
+      authorityBasis: "NONE",
+      ownerAttestation: null,
+      sourceIds: [],
+      protectedClaimBlockers: protectedClaims(`${displayName} ${product.shortDescription ?? ""} ${product.fullDescription ?? ""}`),
+      revision: 0,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      decidedBy: null,
+      decidedAt: null,
+    });
+  }
+  return candidates;
+}
+
+function strategyCandidates(input: { organizationId: string; siteId: string; strategy: SiteStrategyProposal }): SiteProductServiceAuthority[] {
   const bySlug = new Map<string, string>();
   for (const family of input.strategy.productServiceFamilies) {
     const key = slug(family);
@@ -138,6 +234,11 @@ export function deriveAuthorityCandidates(input: { organizationId: string; siteI
     description: `Proposed from approved strategy revision ${input.strategy.revision}.`,
     limitations: null,
     decision: "PENDING",
+    provenance: { kind: "STRATEGY", referenceId: `strategy-${input.strategy.revision}` },
+    canonicalProductId: null,
+    canonicalProductSlug: null,
+    canonicalSiteAssignment: null,
+    canonicalSpecifications: [],
     authorityBasis: "NONE",
     ownerAttestation: null,
     sourceIds: [],
@@ -148,6 +249,17 @@ export function deriveAuthorityCandidates(input: { organizationId: string; siteI
     decidedBy: null,
     decidedAt: null,
   }));
+}
+
+export { evaluateProductAuthorityCompletion };
+
+export function deriveAuthorityCandidates(input: { organizationId: string; siteId: string; strategy: SiteStrategyProposal }): SiteProductServiceAuthority[] {
+  const bySlug = new Map<string, SiteProductServiceAuthority>();
+  for (const candidate of [...strategyCandidates(input), ...canonicalJoinCandidates(input)]) {
+    const existing = bySlug.get(candidate.slug);
+    if (!existing || authorityOriginPriority(candidate) > authorityOriginPriority(existing)) bySlug.set(candidate.slug, candidate);
+  }
+  return [...bySlug.values()];
 }
 
 export function getSiteAuthorityWorkspace(input: { organizationId: string; siteId: string; strategy: SiteStrategyProposal }) {
@@ -163,13 +275,21 @@ export function getSiteAuthorityWorkspace(input: { organizationId: string; siteI
     if (!existing.has(record.authorityId)) candidates.push(record);
   }
 
+  const deduped = new Map<string, SiteProductServiceAuthority>();
+  for (const candidate of candidates) {
+    const key = candidate.slug || slug(candidate.displayName);
+    const current = deduped.get(key);
+    if (!current || authorityOriginPriority(candidate) > authorityOriginPriority(current)) deduped.set(key, candidate);
+  }
+  const visibleCandidates = [...deduped.values()];
+
   return deepClone({
     sources,
-    candidates,
+    candidates: visibleCandidates,
     progress: {
-      proposed: candidates.length,
-      approved: candidates.filter((item) => item.decision === "APPROVED" || item.decision === "QUALIFIED").length,
-      needReview: candidates.filter((item) => item.decision === "PENDING").length,
+      proposed: visibleCandidates.length,
+      approved: visibleCandidates.filter((item) => item.decision === "APPROVED" || item.decision === "QUALIFIED").length,
+      needReview: visibleCandidates.filter((item) => item.decision === "PENDING").length,
     },
   });
 }
@@ -484,6 +604,11 @@ export function proposeAuthorityCandidatesFromSources(input: {
       description: candidate.description,
       limitations: null,
       decision: "PENDING",
+      provenance: { kind: "SOURCE", referenceId: [...candidate.sourceIds][0] ?? authorityId },
+      canonicalProductId: null,
+      canonicalProductSlug: null,
+      canonicalSiteAssignment: null,
+      canonicalSpecifications: [],
       authorityBasis: "NONE",
       ownerAttestation: null,
       sourceIds: [...candidate.sourceIds],

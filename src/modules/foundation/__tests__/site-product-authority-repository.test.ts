@@ -2,14 +2,212 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { SiteStrategyProposal } from "../site-intelligence";
+import type { ProductConfiguration } from "../types";
 
 const scope = { organizationId: "rj-metal", siteId: "site-rj", actor: "owner" };
-function strategy(): SiteStrategyProposal { return { revision: 8, positioning: "Position", primaryAudience: "Commercial buyers", secondaryAudiences: [], valueProposition: "Value", majorVerticals: [], productServiceFamilies: ["Stainless Countertops", "Stainless Countertop", "Design-Build Fabrication", "Commercial Worktables And Prep Tables"], informationArchitecture: [], proposedSitemap: [], homepageGoals: [], conversionPaths: [], ctaHierarchy: [], trustProofRequirements: [], geographicStrategy: "Regional", proposedProductAuthority: [], status: "APPROVED", reason: "Approved", createdBy: "owner", createdAt: "2026-09-11T00:00:00.000Z", decidedBy: "owner", decidedAt: "2026-09-11T00:01:00.000Z" }; }
+function strategy(overrides: Partial<SiteStrategyProposal> = {}): SiteStrategyProposal {
+  return {
+    revision: 8,
+    positioning: "Position",
+    primaryAudience: "Commercial buyers",
+    secondaryAudiences: [],
+    valueProposition: "Value",
+    majorVerticals: [],
+    productServiceFamilies: ["Stainless Countertops", "Stainless Countertop", "Design-Build Fabrication", "Commercial Worktables And Prep Tables"],
+    informationArchitecture: [],
+    proposedSitemap: [],
+    homepageGoals: [],
+    conversionPaths: [],
+    ctaHierarchy: [],
+    trustProofRequirements: [],
+    geographicStrategy: "Regional",
+    proposedProductAuthority: [],
+    status: "APPROVED",
+    reason: "Approved",
+    createdBy: "owner",
+    createdAt: "2026-09-11T00:00:00.000Z",
+    decidedBy: "owner",
+    decidedAt: "2026-09-11T00:01:00.000Z",
+    ...overrides,
+  };
+}
+
+function mockCanonicalProduct(input: {
+  productId: string;
+  organizationId: string;
+  siteId: string;
+  enabled?: boolean;
+  lifecycleState?: ProductConfiguration["lifecycleState"];
+  catalogStatus?: ProductConfiguration["catalogStatus"];
+  visibility?: ProductConfiguration["visibility"];
+  assignmentEnabled?: boolean;
+  assignmentVisibility?: ProductConfiguration["visibility"];
+  assignmentPublicationStatus?: ProductConfiguration["siteAssignments"][number]["publicationStatus"];
+  productName?: string;
+  slug?: string;
+  specifications?: ProductConfiguration["specifications"];
+}): ProductConfiguration {
+  const productName = input.productName ?? "Fan Cooled Projector Enclosures";
+  const slug = input.slug ?? "fan-cooled-projector-enclosures";
+  return {
+    productId: input.productId,
+    organizationId: input.organizationId,
+    productName,
+    displayName: productName,
+    slug,
+    sku: `SKU-${input.productId}`,
+    modelNumber: null,
+    shortDescription: "Canonical product short description.",
+    fullDescription: "Canonical product full description.",
+    productType: "projector_enclosure",
+    productFamily: "projector-enclosures",
+    categoryIds: ["cat-1"],
+    manufacturerId: null,
+    brandReference: null,
+    lifecycleState: input.lifecycleState ?? "active",
+    catalogStatus: input.catalogStatus ?? "ready",
+    enabled: input.enabled ?? true,
+    visibility: input.visibility ?? "public_candidate",
+    featured: false,
+    primarySiteId: input.siteId,
+    assignedSiteIds: [input.siteId],
+    siteAssignments: [{
+      siteId: input.siteId,
+      enabledForSite: input.assignmentEnabled ?? true,
+      siteSpecificSlug: slug,
+      siteSpecificDisplayName: productName,
+      siteSpecificShortDescription: null,
+      visibility: input.assignmentVisibility ?? "public_candidate",
+      featured: false,
+      sortOrder: 0,
+      categoryIds: ["cat-1"],
+      defaultContentType: "product_update",
+      publicationStatus: input.assignmentPublicationStatus ?? "ready",
+      seoProfileReference: null,
+      promptProfileReference: null,
+      imageProfileReference: null,
+      pricingDisplayMode: "hidden",
+      lastReadinessEvaluation: null,
+      lastPublicationReference: null,
+    }],
+    media: { primaryImageReference: null, galleryImageReferences: [], videoReferences: [] },
+    documents: { technicalDrawingReferences: [], specSheetReferences: [], brochureReferences: [], manualReferences: [], installationGuideReferences: [], warrantyDocumentReferences: [] },
+    specifications: input.specifications ?? [{ specificationId: "spec-cooling", specificationGroup: "Cooling", key: "cooling_method", displayLabel: "Cooling Method", rawValue: "Built-In Fan Cooling", normalizedValue: "Fan Cooled", unit: null, sortOrder: 1, sourceReference: null, evidenceReference: null, confidence: 1, visibility: "public" }],
+    seoProfileReference: null,
+    promptProfileReference: null,
+    businessGenomeObjectReference: null,
+    sourceEvidenceReference: null,
+    authorityProvenance: null,
+    createdAt: "2026-09-11T00:00:00.000Z",
+    updatedAt: "2026-09-11T00:00:00.000Z",
+    publishedAt: null,
+    notes: null,
+  };
+}
 
 describe("site product/service authority repository", () => {
   const old = process.env.GCP_FOUNDATION_PERSISTENCE_DIR; let directory: string;
-  beforeEach(() => { jest.resetModules(); directory = fs.mkdtempSync(path.join(os.tmpdir(), "site-product-authority-")); process.env.GCP_FOUNDATION_PERSISTENCE_DIR = directory; });
+  beforeEach(() => { jest.resetModules(); jest.dontMock("../product-repository"); directory = fs.mkdtempSync(path.join(os.tmpdir(), "site-product-authority-")); process.env.GCP_FOUNDATION_PERSISTENCE_DIR = directory; });
   afterEach(() => { process.env.GCP_FOUNDATION_PERSISTENCE_DIR = old; fs.rmSync(directory, { recursive: true, force: true }); });
+
+  test("joins eligible canonical products as pending candidates with product identity and specifications", async () => {
+    const canonicalScope = { organizationId: "ssi", siteId: "site-ssi-projectorenclosure", actor: "owner" };
+    jest.doMock("../product-repository", () => ({
+      listProducts: () => [
+        mockCanonicalProduct({ productId: "prod-ssi-fan-cooled-projector-enclosures", organizationId: "ssi", siteId: "site-ssi-projectorenclosure" }),
+      ],
+    }));
+    const repository = await import("../site-product-authority-repository");
+    const workspace = repository.getSiteAuthorityWorkspace({ ...canonicalScope, strategy: strategy({ productServiceFamilies: [] }) });
+    expect(workspace.candidates).toHaveLength(1);
+    expect(workspace.candidates[0]).toMatchObject({
+      decision: "PENDING",
+      provenance: { kind: "CANONICAL_PRODUCT_REGISTRY", referenceId: "prod-ssi-fan-cooled-projector-enclosures" },
+      canonicalProductId: "prod-ssi-fan-cooled-projector-enclosures",
+      canonicalProductSlug: "fan-cooled-projector-enclosures",
+      canonicalSiteAssignment: {
+        siteId: "site-ssi-projectorenclosure",
+        enabledForSite: true,
+        visibility: "public_candidate",
+        publicationStatus: "ready",
+      },
+    });
+    expect(workspace.candidates[0].canonicalSpecifications).toEqual(expect.arrayContaining([expect.objectContaining({ displayLabel: "Cooling Method", rawValue: "Built-In Fan Cooling" })]));
+    expect(repository.listGenerationAuthority(canonicalScope)).toEqual([]);
+  });
+
+  test("canonical candidates require explicit owner approval and are never auto-approved", async () => {
+    const canonicalScope = { organizationId: "ssi", siteId: "site-ssi-projectorenclosure", actor: "owner" };
+    jest.doMock("../product-repository", () => ({
+      listProducts: () => [
+        mockCanonicalProduct({ productId: "prod-ssi-fan-cooled-projector-enclosures", organizationId: "ssi", siteId: "site-ssi-projectorenclosure" }),
+      ],
+    }));
+    const repository = await import("../site-product-authority-repository");
+    const workspace = repository.getSiteAuthorityWorkspace({ ...canonicalScope, strategy: strategy({ productServiceFamilies: [] }) });
+    const candidate = workspace.candidates[0];
+    expect(candidate.decision).toBe("PENDING");
+    expect(repository.listGenerationAuthority(canonicalScope)).toEqual([]);
+    const approved = repository.decideAuthorityCandidate({
+      ...canonicalScope,
+      strategy: strategy({ productServiceFamilies: [] }),
+      authorityId: candidate.authorityId,
+      type: "PRODUCT",
+      displayName: candidate.displayName,
+      description: candidate.description,
+      limitations: "",
+      decision: "APPROVED",
+      ownerAttestation: "Owner confirms this canonical product is currently offered.",
+      sourceIds: [],
+      actor: "owner",
+    });
+    expect(approved.canonicalProductId).toBe("prod-ssi-fan-cooled-projector-enclosures");
+    expect(repository.listGenerationAuthority(canonicalScope)).toEqual(expect.arrayContaining([expect.objectContaining({ authorityId: candidate.authorityId })]));
+  });
+
+  test("canonical eligibility filters and source dedupe preserve governance boundaries", async () => {
+    const canonicalScope = { organizationId: "ssi", siteId: "site-ssi-projectorenclosure", actor: "owner" };
+    jest.doMock("../product-repository", () => ({
+      listProducts: () => [
+        mockCanonicalProduct({ productId: "prod-eligible", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", productName: "Fan Cooled Projector Enclosures", slug: "fan-cooled-projector-enclosures" }),
+        mockCanonicalProduct({ productId: "prod-other-site", organizationId: "ssi", siteId: "site-elsewhere" }),
+        mockCanonicalProduct({ productId: "prod-disabled", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", enabled: false }),
+        mockCanonicalProduct({ productId: "prod-not-ready", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", catalogStatus: "incomplete" }),
+        mockCanonicalProduct({ productId: "prod-assignment-disabled", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", assignmentEnabled: false }),
+        mockCanonicalProduct({ productId: "prod-assignment-not-ready", organizationId: "ssi", siteId: "site-ssi-projectorenclosure", assignmentPublicationStatus: "not_ready" }),
+        mockCanonicalProduct({ productId: "prod-other-org", organizationId: "other-org", siteId: "site-ssi-projectorenclosure" }),
+      ],
+    }));
+    const repository = await import("../site-product-authority-repository");
+    const strategyProposal = strategy({ productServiceFamilies: [] });
+
+    let workspace = repository.getSiteAuthorityWorkspace({ ...canonicalScope, strategy: strategyProposal });
+    expect(workspace.candidates.map((item) => item.canonicalProductId)).toEqual(["prod-eligible"]);
+
+    const sameIdentitySource = repository.addOwnerKnowledgeSource({
+      ...canonicalScope,
+      label: "Home",
+      statement: "Fan Cooled Projector Enclosures",
+      sourceRole: "PRODUCT_SERVICE_AUTHORITY",
+      actor: "owner",
+    });
+    expect(() => repository.proposeAuthorityCandidatesFromSources({ ...canonicalScope, strategy: strategyProposal, actor: "owner", sourceIds: [sameIdentitySource.sourceId] })).toThrow("SOURCE_CANDIDATE_PROPOSAL_INSUFFICIENT_EVIDENCE");
+
+    const unrelatedSource = repository.addOwnerKnowledgeSource({
+      ...canonicalScope,
+      label: "Secondary offer",
+      statement: "Outdoor Projection Consulting",
+      sourceRole: "PRODUCT_SERVICE_AUTHORITY",
+      actor: "owner",
+    });
+    const proposed = repository.proposeAuthorityCandidatesFromSources({ ...canonicalScope, strategy: strategyProposal, actor: "owner", sourceIds: [unrelatedSource.sourceId] });
+    expect(proposed).toEqual(expect.arrayContaining([expect.objectContaining({ decision: "PENDING", provenance: expect.objectContaining({ kind: "SOURCE" }) })]));
+
+    workspace = repository.getSiteAuthorityWorkspace({ ...canonicalScope, strategy: strategyProposal });
+    expect(workspace.candidates.some((item) => item.canonicalProductId === "prod-eligible")).toBe(true);
+    expect(workspace.candidates.some((item) => item.provenance?.kind === "SOURCE" && item.displayName === "Outdoor Projection Consulting")).toBe(true);
+    expect(workspace.candidates.some((item) => item.displayName === "Fan Cooled Projector Enclosures" && item.provenance?.kind === "SOURCE")).toBe(false);
+  });
 
   test("derives conservative proposed candidates without persisting or auto-approving", async () => {
     const repository = await import("../site-product-authority-repository");

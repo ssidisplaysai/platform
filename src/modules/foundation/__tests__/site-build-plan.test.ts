@@ -27,6 +27,39 @@ describe("bounded Site Build plan synthesis", () => {
     expect(() => synthesizeSiteBuildPlan({ ...base, candidates: [{ ...approved, protectedClaimBlockers: ["Proof required"] }] })).toThrow("APPROVED_PRODUCT_SERVICE_AUTHORITY_REQUIRED");
   });
 
+  test("still consumes approved Product / Service Authority only when canonical candidates are pending", () => {
+    const pendingCanonical = {
+      ...approved,
+      authorityId: "site-authority-canonical-site-1-prod-1",
+      displayName: "Fan Cooled Projector Enclosures",
+      decision: "PENDING",
+      provenance: { kind: "CANONICAL_PRODUCT_REGISTRY", referenceId: "prod-1" },
+    } as SiteProductServiceAuthority;
+    const sourceApproved = {
+      ...approved,
+      authorityId: "source-approved-1",
+      displayName: "Projector Enclosure",
+      slug: "projector-enclosure",
+      description: "Commercial buyers approved projector enclosure offering.",
+      decision: "APPROVED",
+      provenance: { kind: "SOURCE", referenceId: "source-1" },
+    } as SiteProductServiceAuthority;
+    const plan = synthesizeSiteBuildPlan({
+      buildSessionId: "build-approved-only",
+      site: { siteId: "site-1", organizationId: "org-1", displayName: "Site" } as SiteConfiguration,
+      intelligence: { opportunities: [opportunity], strategyRevisions: [strategy], creativeRevisions: [creative] } as SiteIntelligenceWorkspace,
+      strategy: strategy as never,
+      creative: creative as never,
+      candidates: [pendingCanonical, sourceApproved],
+      sources: [],
+      authoritySnapshot: snapshot,
+      revision: 1,
+      actor: "owner",
+    });
+    const offeringNames = plan.pages.filter((item) => item.pageType === "OFFERING").map((item) => item.name);
+    expect(offeringNames).toEqual(["Projector Enclosure"]);
+  });
+
   test("fails closed when strategy-derived positioning is unsupported by approved product/capability authority", () => {
     const unsupportedStrategy = {
       ...strategy,

@@ -13,7 +13,7 @@ describe("site Product / Service Authority UI contract", () => {
   });
 
   test("supports editable classifications, authority decisions, source links, and completion", () => {
-    for (const text of ["Product", "Service", "Product family", "Service family", "Display name", "Concise description", "Limitations, if any", "Supporting site sources", "Preview image evidence", "Evidence preview", "YES - APPROVE FOR SITE", "YES, WITH LIMITATIONS", "NOT YET", "DO NOT OFFER", "CONTINUE TO SITE BUILD / GENERATION READINESS"]) expect(workspace).toContain(text);
+    for (const text of ["Product", "Service", "Product family", "Service family", "Display name", "Concise description", "Limitations, if any", "Supporting site sources", "Preview image evidence", "Evidence preview", "Canonical Product Registry provenance", "Product ID:", "Site assignment:", "No canonical structured specifications are attached.", "YES - APPROVE FOR SITE", "YES, WITH LIMITATIONS", "NOT YET", "DO NOT OFFER", "CONTINUE TO SITE BUILD / GENERATION READINESS"]) expect(workspace).toContain(text);
     expect(workspace).toContain('action: "DECIDE_CANDIDATE"');
     expect(workspace).toContain('action: "PROPOSE_CANDIDATES_FROM_SOURCES"');
     expect(route).toContain("getSiteAuthorityWorkspace");

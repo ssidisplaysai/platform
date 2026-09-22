@@ -65,6 +65,24 @@ describe("site generation readiness", () => {
     expect(evaluateGenerationReadiness({ site, intelligence: pendingMarket, candidates: [candidate], sources: [] }).readyToCertify).toBe(false);
   });
 
+  test("canonical registry candidates remain blocked until explicitly approved in product authority", () => {
+    const canonicalPending = {
+      ...candidate,
+      authorityId: "site-authority-canonical-site-rj-prod-1",
+      decision: "PENDING",
+      provenance: { kind: "CANONICAL_PRODUCT_REGISTRY", referenceId: "prod-1" },
+    } as SiteProductServiceAuthority;
+    const blocked = evaluateGenerationReadiness({ site, intelligence, candidates: [canonicalPending], sources: [] });
+    expect(blocked.readyToCertify).toBe(false);
+    const approved = evaluateGenerationReadiness({
+      site,
+      intelligence,
+      candidates: [{ ...canonicalPending, decision: "APPROVED", authorityBasis: "OWNER_ATTESTED" }],
+      sources: [],
+    });
+    expect(approved.readyToCertify).toBe(true);
+  });
+
   test("a reference-only source cannot become factual or publishable even if malformed input claims otherwise", () => {
     const malformedReference = { ...reference, approvalState: "OWNER_APPROVED", publishable: true } as unknown as SiteSource;
     const result = evaluateGenerationReadiness({ site, intelligence, candidates: [candidate], sources: [malformedReference] });

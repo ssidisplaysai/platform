@@ -417,6 +417,28 @@ function CandidateCard({
         <span className="text-xs font-semibold text-amber-300">{candidate.decision}</span>
       </div>
 
+      {candidate.provenance?.kind === "CANONICAL_PRODUCT_REGISTRY" ? (
+        <div className="mt-3 rounded border border-emerald-800/60 bg-emerald-950/20 p-3 text-xs text-emerald-100">
+          <p className="font-semibold">Canonical Product Registry provenance</p>
+          <p className="mt-1">Product ID: {candidate.canonicalProductId ?? candidate.provenance.referenceId}</p>
+          {candidate.canonicalProductSlug ? <p>Canonical slug: {candidate.canonicalProductSlug}</p> : null}
+          {candidate.canonicalSiteAssignment ? (
+            <p>
+              Site assignment: {candidate.canonicalSiteAssignment.siteId} | enabled={String(candidate.canonicalSiteAssignment.enabledForSite)} | visibility={candidate.canonicalSiteAssignment.visibility} | publication={candidate.canonicalSiteAssignment.publicationStatus}
+            </p>
+          ) : null}
+          {candidate.canonicalSpecifications?.length ? (
+            <ul className="mt-2 list-disc pl-4 text-zinc-200">
+              {candidate.canonicalSpecifications.map((spec) => (
+                <li key={spec.specificationId}>{spec.displayLabel}: {spec.rawValue}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-zinc-300">No canonical structured specifications are attached.</p>
+          )}
+        </div>
+      ) : null}
+
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="text-xs text-zinc-400">
           Display name
