@@ -59,6 +59,26 @@ export type SiteBuildWordPressDraft = {
 };
 export type SiteBuildWordPressContentUpdate = { buildSessionId: string; pageRevisionId: string; wordpressObjectId: string; wordpressUrl: string; wordpressStatus: "draft" | "publish"; updatedAt: string };
 
+export type SiteSystemContinuationEvent = {
+  eventId: string;
+  organizationId: string;
+  siteId: string;
+  stage: string;
+  action: string;
+  priorRevision: number | null;
+  newRevision: number | null;
+  reason: string;
+  materialDiff: {
+    material: boolean;
+    changedFields: string[];
+    summary: string;
+  };
+  authorityFingerprint: GenerationAuthoritySnapshot;
+  ownerReviewRequired: boolean;
+  actor: string;
+  occurredAt: string;
+};
+
 type State = {
   certifications: SiteGenerationReadinessCertification[];
   buildSessions: SiteBuildSession[];
@@ -68,13 +88,14 @@ type State = {
   wordpressDrafts?: SiteBuildWordPressDraft[];
   siteAssemblies?: SiteAssemblyProposal[];
   wordpressContentUpdates?: SiteBuildWordPressContentUpdate[];
+  continuationEvents?: SiteSystemContinuationEvent[];
 };
 
 const NAMESPACE = "site-generation-readiness-repository";
 const seed = (): State => ({ certifications: [], buildSessions: [] });
 function load() {
   const loaded = loadPersistedState<State>({ namespace: NAMESPACE, seedFactory: seed });
-  return { ...loaded, state: { ...loaded.state, buildPlans: loaded.state.buildPlans ?? [], buildPlanChangeRequests: loaded.state.buildPlanChangeRequests ?? [], draftSets: loaded.state.draftSets ?? [], wordpressDrafts: loaded.state.wordpressDrafts ?? [], siteAssemblies: loaded.state.siteAssemblies ?? [], wordpressContentUpdates: loaded.state.wordpressContentUpdates ?? [] } };
+  return { ...loaded, state: { ...loaded.state, buildPlans: loaded.state.buildPlans ?? [], buildPlanChangeRequests: loaded.state.buildPlanChangeRequests ?? [], draftSets: loaded.state.draftSets ?? [], wordpressDrafts: loaded.state.wordpressDrafts ?? [], siteAssemblies: loaded.state.siteAssemblies ?? [], wordpressContentUpdates: loaded.state.wordpressContentUpdates ?? [], continuationEvents: loaded.state.continuationEvents ?? [] } };
 }
 function escapeHtml(value: string): string { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;"); }
 
@@ -241,4 +262,21 @@ export function replaceSiteAssemblyPageRevision(input: { organizationId: string;
 export function recordSiteBuildWordPressContentUpdate(input: SiteBuildWordPressContentUpdate): SiteBuildWordPressContentUpdate {
   const loaded = load(); const existing = loaded.state.wordpressContentUpdates.find((item) => item.buildSessionId === input.buildSessionId && item.pageRevisionId === input.pageRevisionId);
   if (existing) return deepClone(existing); loaded.state.wordpressContentUpdates.push(input); savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision }); return deepClone(input);
+}
+
+export function recordSystemContinuationEvent(input: Omit<SiteSystemContinuationEvent, "eventId" | "occurredAt">): SiteSystemContinuationEvent {
+  const loaded = load();
+  const event: SiteSystemContinuationEvent = {
+    eventId: `site-system-continuation-${randomUUID()}`,
+    occurredAt: new Date().toISOString(),
+    ...input,
+  };
+  loaded.state.continuationEvents.push(event);
+  savePersistedState({ namespace: NAMESPACE, state: loaded.state, expectedRevision: loaded.revision });
+  return deepClone(event);
+}
+
+export function listSystemContinuationEvents(input: { organizationId: string; siteId: string }): SiteSystemContinuationEvent[] {
+  return deepClone(load().state.continuationEvents
+    .filter((item) => item.organizationId === input.organizationId && item.siteId === input.siteId));
 }

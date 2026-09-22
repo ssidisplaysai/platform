@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authorizeRequest, hasOrganizationScope, isRecordInScope, resolveRequestScope } from "@/modules/foundation/api-auth";
+import { continueSiteBuild } from "@/modules/foundation/site-build-continuation";
 import { startSiteBuild } from "@/modules/foundation/site-generation-readiness-repository";
 import { getSiteGenerationReadiness } from "@/modules/foundation/site-generation-readiness-service";
 import { approveAllGeneratedPages, approveAllReadySiteDesigns, approveBuildDrafts, approveBuildPlan, assembleHomeVisualCanary, assembleRemainingSiteVisuals, authorizeSitePublication, authorizeSitePublicationPolicy, confirmSitePublicationReadiness, createBuildWordPressDrafts, decideGeneratedPage, decideHomeVisualAssembly, decidePageImageCandidate, decideSiteNavigation, decideSiteVisualDesign, generateBuildDrafts, generateBuildPlan, generateFullSiteAssembly, generatePageImageCandidate, getSiteBuildWorkspace, reassembleSiteNavigation, reassembleSiteVisualDesign, regenerateGeneratedPage, rejectBuildPlan, reviseBuildPlan, startSiteNavigationReview, updateBuildWordPressDraftContent } from "@/modules/foundation/site-build-service";
@@ -23,7 +24,10 @@ export async function POST(request: NextRequest, context: Context) {
   const body = await request.json().catch(() => null) as { confirm?: string; certificationId?: string; instructions?: string; reason?: string; pageId?: string; slotId?: string; candidateId?: string; visualAssemblyId?: string; navigationReviewId?: string; executionPlanId?: string } | null;
   const confirm = body?.confirm ?? "";
   try {
-    if (confirm === "START_SITE_BUILD") {
+    let continuation: Awaited<ReturnType<typeof continueSiteBuild>> | null = null;
+    if (confirm === "CONTINUE_SITE_BUILD_AUTOMATIC") {
+      continuation = await continueSiteBuild(site);
+    } else if (confirm === "START_SITE_BUILD") {
       const result = getSiteGenerationReadiness(site);
       if (result.certification.status !== "CURRENT" || !result.certification.certification || body?.certificationId !== result.certification.certification.certificationId) return NextResponse.json({ error: "Current Generation Readiness certification is required." }, { status: 409 });
       startSiteBuild({ organizationId: site.organizationId, siteId: site.siteId, actor: "site-owner", certification: result.certification.certification });
@@ -68,6 +72,6 @@ export async function POST(request: NextRequest, context: Context) {
       await executeSitePublication(site);
     }
     else return NextResponse.json({ error: "Explicit supported Site Build action is required." }, { status: 400 });
-    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT" || confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL" || confirm === "ASSEMBLE_REMAINING_VISUALS" || confirm === "EXECUTE_APPROVED_PUBLICATION", publicationMutation: confirm === "EXECUTE_APPROVED_PUBLICATION", siteEnabledMutation: confirm === "EXECUTE_APPROVED_PUBLICATION" });
+    return NextResponse.json({ workspace: getSiteBuildWorkspace(site), continuation, wordpressMutation: confirm === "CREATE_WORDPRESS_DRAFTS" || confirm === "UPDATE_WORDPRESS_DRAFT_CONTENT" || confirm === "ASSEMBLE_HOME_VISUAL" || confirm === "REASSEMBLE_HOME_VISUAL" || confirm === "ASSEMBLE_REMAINING_VISUALS" || confirm === "EXECUTE_APPROVED_PUBLICATION" || confirm === "CONTINUE_SITE_BUILD_AUTOMATIC", publicationMutation: confirm === "EXECUTE_APPROVED_PUBLICATION", siteEnabledMutation: confirm === "EXECUTE_APPROVED_PUBLICATION" });
   } catch (cause) { return NextResponse.json({ error: cause instanceof Error ? cause.message : "SITE_BUILD_ACTION_FAILED" }, { status: 409 }); }
 }
