@@ -6,8 +6,8 @@ import type { SiteConfiguration } from "../types";
 
 const snapshot = { strategyRevision: 8, creativeRevision: 1, marketFingerprint: "market", capabilityFingerprint: "capability", productServiceFingerprint: "product", sourcesFingerprint: "sources", generationPolicyVersion: "site-draft-generation-v1" };
 const opportunity = { opportunityId: "o1", name: "Worktables", ownerDecision: "APPROVED", capabilityState: "VERIFIED", capabilityEvidenceIds: [], capabilityAuthorityRevisions: [{ decision: "VERIFIED", attestation: "Owner confirms.", evidenceIds: [], evidenceRelevance: [], authorityBasis: "OWNER_ATTESTATION", revision: 1 }] };
-const strategy = { revision: 8, status: "APPROVED", primaryAudience: "Commercial buyers", majorVerticals: ["Foodservice", "Unsupported"], informationArchitecture: ["Home", "Capabilities", "About", "Request a Quote", "Projects"], homepageGoals: ["Explain the approved offer"], conversionPaths: ["Quote intake"], synthesisContext: { semanticClassifications: [{ opportunityId: "o1", marketVerticals: ["Foodservice"] }, { opportunityId: "pending", marketVerticals: ["Unsupported"] }] } };
-const creative = { revision: 1, status: "APPROVED" };
+const strategy = { revision: 8, status: "APPROVED", primaryAudience: "Commercial buyers", secondaryAudiences: ["Facilities teams"], majorVerticals: ["Foodservice", "Unsupported"], informationArchitecture: ["Home", "Capabilities", "About", "Request a Quote", "Projects"], proposedSitemap: ["/", "/capabilities", "/request-a-quote"], homepageGoals: ["Explain the approved offer"], conversionPaths: ["Qualified quote intake"], ctaHierarchy: ["Request a Quote"], trustProofRequirements: ["Use approved factual grounding only"], valueProposition: "Guide buyers to qualified quote conversations.", synthesisContext: { semanticClassifications: [{ opportunityId: "o1", marketVerticals: ["Foodservice"] }, { opportunityId: "pending", marketVerticals: ["Unsupported"] }] } };
+const creative = { revision: 1, status: "APPROVED", ctaTreatment: "Guide qualified buyers to request a quote and discuss project scope.", trustProofPresentation: "Use approved factual grounding in conversion guidance.", homepageBlueprint: ["Hero", "Capabilities", "Quote CTA"] };
 const approved = { authorityId: "a1", displayName: "Commercial Worktables", slug: "commercial-worktables", description: "Owner-confirmed worktable offering.", decision: "APPROVED", authorityBasis: "OWNER_ATTESTED", protectedClaimBlockers: [], sourceIds: [] } as SiteProductServiceAuthority;
 
 describe("bounded Site Build plan synthesis", () => {
@@ -95,6 +95,116 @@ describe("bounded Site Build plan synthesis", () => {
       strategy: unsupportedStrategy as never,
       creative: creative as never,
       candidates: [candidate],
+      sources: [],
+      authoritySnapshot: snapshot,
+      revision: 1,
+      actor: "owner",
+    })).toThrow(/BUILD_PLAN_AUTHORITY_COMPATIBILITY_FAILED/);
+  });
+
+  test("accepts approved product-family, capability, and conversion intent material when mapped to relevant authority classes", () => {
+    const compatibleStrategy = {
+      ...strategy,
+      primaryAudience: "Facilities/project teams evaluating projector-enclosure solutions for indoor and outdoor installations",
+      homepageGoals: [
+        "Explain the currently approved projector-enclosure product families and their intended use contexts.",
+        "Present approved protection, cooling, noise-control, security, specialty-format, and application capabilities only where current authority supports them.",
+        "Guide buyers from product and application evaluation into a qualified quote or project discussion using approved factual grounding.",
+      ],
+    };
+    const compatibleCreative = {
+      ...creative,
+      ctaTreatment: "Guide visitors to evaluate approved options and request a qualified quote conversation.",
+      trustProofPresentation: "Use approved factual grounding in quote and project discussions.",
+    };
+    const compatibleOpportunity = {
+      opportunityId: "o-projector",
+      name: "Projector enclosure protection and noise control",
+      category: "Projection enclosure systems",
+      buyer: "Facilities and project teams",
+      problemUseCase: "Protect projectors with cooling, security, weather resistance, and noise control in indoor and outdoor environments.",
+      demandSignal: "Integrator and venue demand for protected projection systems",
+      ownerDecision: "APPROVED",
+      capabilityState: "VERIFIED",
+      capabilityEvidenceIds: [],
+      capabilityAuthorityRevisions: [{ decision: "VERIFIED", attestation: "Owner confirms projector enclosure protection, cooling, noise control, and security capabilities.", evidenceIds: [], evidenceRelevance: [], authorityBasis: "OWNER_ATTESTATION", revision: 1 }],
+    };
+    const compatibleOffering = {
+      ...approved,
+      authorityId: "offer-projector-enclosure",
+      displayName: "Projector Enclosure Families",
+      slug: "projector-enclosure-families",
+      description: "Approved product families covering weather protection, cooling, security, noise control, and specialty application formats.",
+    } as SiteProductServiceAuthority;
+
+    const plan = synthesizeSiteBuildPlan({
+      buildSessionId: "build-compatible-authority",
+      site: { siteId: "site-1", organizationId: "org-1", displayName: "Site" } as SiteConfiguration,
+      intelligence: { opportunities: [compatibleOpportunity], strategyRevisions: [compatibleStrategy], creativeRevisions: [compatibleCreative] } as SiteIntelligenceWorkspace,
+      strategy: compatibleStrategy as never,
+      creative: compatibleCreative as never,
+      candidates: [compatibleOffering],
+      sources: [],
+      authoritySnapshot: snapshot,
+      revision: 1,
+      actor: "owner",
+    });
+
+    expect(plan.status).toBe("PROPOSED");
+    expect(plan.pages.some((item) => item.pageType === "OFFERING" && item.name === "Projector Enclosure Families")).toBe(true);
+  });
+
+  test("fails closed for unsupported net-new product claims", () => {
+    const unsupportedProductStrategy = {
+      ...strategy,
+      homepageGoals: ["Explain our approved marine welding fleet retrofit product families."],
+      primaryAudience: "Marine retrofit procurement teams",
+    };
+    const workspace = {
+      opportunities: [opportunity],
+      strategyRevisions: [unsupportedProductStrategy],
+      creativeRevisions: [creative],
+    } as SiteIntelligenceWorkspace;
+
+    expect(() => synthesizeSiteBuildPlan({
+      buildSessionId: "build-unsupported-product",
+      site: { siteId: "site-1", organizationId: "org-1", displayName: "Site" } as SiteConfiguration,
+      intelligence: workspace,
+      strategy: unsupportedProductStrategy as never,
+      creative: creative as never,
+      candidates: [approved],
+      sources: [],
+      authoritySnapshot: snapshot,
+      revision: 1,
+      actor: "owner",
+    })).toThrow(/BUILD_PLAN_AUTHORITY_COMPATIBILITY_FAILED/);
+  });
+
+  test("fails closed for unsupported net-new capability and geography expansion", () => {
+    const unsupportedCapabilityStrategy = {
+      ...strategy,
+      homepageGoals: ["Present approved cryogenic pipeline welding and offshore platform certification capabilities across Europe."],
+      primaryAudience: "European offshore energy operators",
+    };
+    const workspace = {
+      opportunities: [{
+        ...opportunity,
+        name: "Commercial stainless worktables",
+        category: "Foodservice equipment",
+        buyer: "Foodservice buyers",
+        problemUseCase: "Organize prep areas",
+      }],
+      strategyRevisions: [unsupportedCapabilityStrategy],
+      creativeRevisions: [creative],
+    } as SiteIntelligenceWorkspace;
+
+    expect(() => synthesizeSiteBuildPlan({
+      buildSessionId: "build-unsupported-capability-geo",
+      site: { siteId: "site-1", organizationId: "org-1", displayName: "Site" } as SiteConfiguration,
+      intelligence: workspace,
+      strategy: unsupportedCapabilityStrategy as never,
+      creative: creative as never,
+      candidates: [approved],
       sources: [],
       authoritySnapshot: snapshot,
       revision: 1,
