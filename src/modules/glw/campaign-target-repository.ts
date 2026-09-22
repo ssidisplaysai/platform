@@ -485,6 +485,92 @@ export function reconcileGlwReferenceTargetQueuedForProduction(input: {
   return deepClone(updated);
 }
 
+export function bindGlwQueuedReferenceTargetToRunningJob(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug?: string | null;
+  jobId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+
+  if (!current) {
+    throw new Error("REFERENCE_TARGET_NOT_FOUND");
+  }
+  if (current.status !== "queued") {
+    throw new Error("REFERENCE_TARGET_NOT_QUEUED");
+  }
+  if (current.jobId) {
+    throw new Error("REFERENCE_TARGET_ALREADY_HAS_JOB");
+  }
+  if (current.wordpressObjectId) {
+    throw new Error("REFERENCE_TARGET_WORDPRESS_IDENTITY_CONFLICT");
+  }
+  if (current.leaseId || current.leasedAt || current.leaseExpiresAt) {
+    throw new Error("REFERENCE_TARGET_ACTIVE_LEASE_CONFLICT");
+  }
+
+  const timestamp = new Date().toISOString();
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "running",
+    jobId: input.jobId,
+    lastError: null,
+    attemptCount: Math.max(current.attemptCount, 1),
+    updatedAt: timestamp,
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
+export function adoptGlwQueuedReferenceTargetContentReadyJob(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug?: string | null;
+  jobId: string;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+
+  if (!current) {
+    throw new Error("REFERENCE_TARGET_NOT_FOUND");
+  }
+  if (current.status !== "queued") {
+    throw new Error("REFERENCE_TARGET_NOT_QUEUED");
+  }
+  if (current.jobId) {
+    throw new Error("REFERENCE_TARGET_ALREADY_HAS_JOB");
+  }
+  if (current.wordpressObjectId) {
+    throw new Error("REFERENCE_TARGET_WORDPRESS_IDENTITY_CONFLICT");
+  }
+  if (current.leaseId || current.leasedAt || current.leaseExpiresAt) {
+    throw new Error("REFERENCE_TARGET_ACTIVE_LEASE_CONFLICT");
+  }
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "content_ready",
+    jobId: input.jobId,
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: null,
+    attemptCount: Math.max(current.attemptCount, 1),
+    updatedAt: new Date().toISOString(),
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
 export type GlwCampaignTargetQueueSummary = {
   total: number;
   prepared: number;

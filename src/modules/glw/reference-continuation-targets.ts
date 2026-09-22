@@ -2,10 +2,14 @@ import "server-only";
 
 import { listGlwCertifiedStateCampaignTargets } from "@/modules/glw/campaign-certified-state-targets";
 import {
+  adoptGlwQueuedReferenceTargetContentReadyJob,
+  bindGlwQueuedReferenceTargetToRunningJob,
   initializeGlwCampaignTargets,
   initializeGlwCityCampaignTargets,
   listGlwCampaignTargets,
+  markGlwCampaignTargetFailed,
   previewGlwCampaignTargets,
+  reconcileGlwCampaignTargetContentReady,
   reconcileGlwReferenceTargetContentReadyForContinuation,
   reconcileGlwReferenceTargetQueuedForProduction,
 } from "@/modules/glw/campaign-target-repository";
@@ -48,6 +52,22 @@ function findExactTarget(input: {
 
 function isReferenceJobContinuableFromReferenceComplete(status: string): boolean {
   return status === "CONTENT_READY" || status === "FAILED";
+}
+
+type ReferenceExecutionProjection = {
+  jobId: string;
+  status: string;
+  externalExecutionId: string | null;
+  wordpressObjectId: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+};
+
+function isRecoverableInFlightReferenceStatus(status: string): boolean {
+  return status === "QUEUED"
+    || status === "DISPATCHED"
+    || status === "DISCOVERING_EXECUTION"
+    || status === "RUNNING";
 }
 
 export function ensureDraftCampaignContinuationTarget(input: {
@@ -151,6 +171,97 @@ export function ensureDraftCampaignContinuationTarget(input: {
   });
 
   return Boolean(finalTarget && finalTarget.jobId === input.referenceJobId);
+}
+
+export function reconcileReferenceTargetExecutionProjection(input: {
+  campaign: GlwCampaign;
+  stateCode: string;
+  citySlug?: string | null;
+  execution: ReferenceExecutionProjection;
+}): boolean {
+  const target = findExactTarget({
+    campaignId: input.campaign.campaignId,
+    stateCode: input.stateCode,
+    citySlug: input.citySlug,
+  });
+
+  if (!target) {
+    return false;
+  }
+
+  const executionJobId = input.execution.jobId.trim();
+  if (!executionJobId) {
+    return false;
+  }
+
+  if (
+    target.status === "queued"
+    && !target.jobId
+    && !target.wordpressObjectId
+    && !target.leaseId
+  ) {
+    if (isRecoverableInFlightReferenceStatus(input.execution.status)) {
+      bindGlwQueuedReferenceTargetToRunningJob({
+        campaignId: input.campaign.campaignId,
+        stateCode: input.stateCode,
+        citySlug: input.citySlug,
+        jobId: executionJobId,
+      });
+      return true;
+    }
+
+    if (input.execution.status === "CONTENT_READY" && !input.execution.wordpressObjectId) {
+      adoptGlwQueuedReferenceTargetContentReadyJob({
+        campaignId: input.campaign.campaignId,
+        stateCode: input.stateCode,
+        citySlug: input.citySlug,
+        jobId: executionJobId,
+      });
+      return true;
+    }
+
+    if (input.execution.status === "FAILED") {
+      markGlwCampaignTargetFailed({
+        campaignId: input.campaign.campaignId,
+        stateCode: input.stateCode,
+        citySlug: input.citySlug,
+        jobId: executionJobId,
+        error: input.execution.errorCode ?? input.execution.errorMessage ?? "REFERENCE_GENERATION_FAILED",
+      });
+      return true;
+    }
+  }
+
+  if (target.status === "running" && target.jobId === executionJobId) {
+    if (
+      input.execution.status === "CONTENT_READY"
+      && !target.wordpressObjectId
+      && input.execution.externalExecutionId
+    ) {
+      reconcileGlwCampaignTargetContentReady({
+        campaignId: input.campaign.campaignId,
+        targetId: target.targetId,
+        stateCode: input.stateCode,
+        citySlug: input.citySlug,
+        jobId: executionJobId,
+        externalExecutionId: input.execution.externalExecutionId,
+      });
+      return true;
+    }
+
+    if (input.execution.status === "FAILED") {
+      markGlwCampaignTargetFailed({
+        campaignId: input.campaign.campaignId,
+        stateCode: input.stateCode,
+        citySlug: input.citySlug,
+        jobId: executionJobId,
+        error: input.execution.errorCode ?? input.execution.errorMessage ?? "REFERENCE_GENERATION_FAILED",
+      });
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export function promoteDrainedActiveReferenceTargetForProduction(input: {

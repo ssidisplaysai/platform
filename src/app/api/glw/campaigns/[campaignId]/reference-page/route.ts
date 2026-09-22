@@ -24,6 +24,7 @@ import { evaluateCampaignProductMediaReadiness } from "@/modules/glw/campaign-me
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { createGlwCampaignStateTargetId } from "@/modules/glw/campaign-target-repository";
 import { ensureDraftCampaignContinuationTarget } from "@/modules/glw/reference-continuation-targets";
+import { reconcileReferenceTargetExecutionProjection } from "@/modules/glw/reference-continuation-targets";
 import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchReferenceFailure, recordGlwCampaignLaunchReferenceReviewRequired, recordGlwCampaignLaunchReferenceStarted } from "@/modules/glw/campaign-launch-authority";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -363,6 +364,20 @@ export async function GET(request: NextRequest, context: Context) {
     } | null;
     if (recovered?.job) job = recovered.job;
 
+    reconcileReferenceTargetExecutionProjection({
+      campaign,
+      stateCode: target.state.code,
+      citySlug: target.citySlug,
+      execution: {
+        jobId: job.jobId,
+        status: job.status,
+        externalExecutionId: job.externalExecutionId,
+        wordpressObjectId: job.wordpressObjectId,
+        errorCode: job.errorCode,
+        errorMessage: job.errorMessage,
+      },
+    });
+
     return NextResponse.json(
       {
         state: target.state,
@@ -386,6 +401,20 @@ export async function GET(request: NextRequest, context: Context) {
       { status: recoveryResponse.ok ? 200 : recoveryResponse.status },
     );
   }
+
+  reconcileReferenceTargetExecutionProjection({
+    campaign,
+    stateCode: target.state.code,
+    citySlug: target.citySlug,
+    execution: {
+      jobId: job.jobId,
+      status: job.status,
+      externalExecutionId: job.externalExecutionId,
+      wordpressObjectId: job.wordpressObjectId,
+      errorCode: job.errorCode,
+      errorMessage: job.errorMessage,
+    },
+  });
 
   return NextResponse.json({
     state: target.state,
@@ -868,6 +897,21 @@ export async function POST(request: NextRequest, context: Context) {
   );
 
   const launchJob = (payload as { job?: { jobId?: string; status?: string; errorMessage?: string | null } }).job;
+  if (launchJob?.jobId && launchJob.status) {
+    reconcileReferenceTargetExecutionProjection({
+      campaign,
+      stateCode: target.state.code,
+      citySlug: target.citySlug,
+      execution: {
+        jobId: launchJob.jobId,
+        status: launchJob.status,
+        externalExecutionId: (launchJob as { externalExecutionId?: string | null }).externalExecutionId ?? null,
+        wordpressObjectId: (launchJob as { wordpressObjectId?: string | null }).wordpressObjectId ?? null,
+        errorCode: (launchJob as { errorCode?: string | null }).errorCode ?? null,
+        errorMessage: launchJob.errorMessage ?? null,
+      },
+    });
+  }
   if (launchJob?.status === "COMPLETE" && launchJob.jobId) {
     recordGlwCampaignLaunchReferenceReviewRequired(campaign.campaignId, launchJob.jobId);
   } else if (launchJob?.status === "FAILED") {

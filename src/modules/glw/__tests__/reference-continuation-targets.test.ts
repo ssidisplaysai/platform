@@ -7,11 +7,13 @@ import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import {
   ensureDraftCampaignContinuationTarget,
   promoteDrainedActiveReferenceTargetForProduction,
+  reconcileReferenceTargetExecutionProjection,
 } from "@/modules/glw/reference-continuation-targets";
 import {
   initializeGlwCityCampaignTargets,
   initializeGlwCampaignTargets,
   listGlwCampaignTargets,
+  reconcileGlwReferenceTargetQueuedForProduction,
 } from "@/modules/glw/campaign-target-repository";
 
 const stateCodes = [
@@ -253,5 +255,86 @@ describe("reference continuation target initialization", () => {
     const referenceTarget = targets.find((target) => target.stateCode === "TX" && target.citySlug === null);
     expect(referenceTarget?.jobId).toBe("job-failed-continuable");
     expect(referenceTarget?.status).toBe("content_ready");
+  });
+
+  test("adopts queued city reference target to existing fresh CONTENT_READY job without redispatch", () => {
+    const campaign = activeSingleCityReferenceCampaign();
+    initializeGlwCityCampaignTargets({
+      campaignId: campaign.campaignId,
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      productId: campaign.productId,
+      cityTargets: campaign.cityTargets ?? [],
+      referenceTarget: { stateCode: "TX", citySlug: "austin" },
+      referenceJobId: null,
+      referenceWordpressObjectId: null,
+    });
+    reconcileGlwReferenceTargetQueuedForProduction({
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "austin",
+    });
+
+    const before = listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin");
+    expect(before?.status).toBe("queued");
+    expect(before?.jobId).toBeNull();
+
+    const changed = reconcileReferenceTargetExecutionProjection({
+      campaign,
+      stateCode: "TX",
+      citySlug: "austin",
+      execution: {
+        jobId: "fresh-job-austin",
+        status: "CONTENT_READY",
+        externalExecutionId: "764950",
+        wordpressObjectId: null,
+        errorCode: null,
+        errorMessage: null,
+      },
+    });
+
+    const after = listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin");
+    expect(changed).toBe(true);
+    expect(after?.status).toBe("content_ready");
+    expect(after?.jobId).toBe("fresh-job-austin");
+    expect(after?.wordpressObjectId).toBeNull();
+  });
+
+  test("binds queued city reference target to RUNNING job when dispatch is accepted", () => {
+    const campaign = activeSingleCityReferenceCampaign();
+    initializeGlwCityCampaignTargets({
+      campaignId: campaign.campaignId,
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      productId: campaign.productId,
+      cityTargets: campaign.cityTargets ?? [],
+      referenceTarget: { stateCode: "TX", citySlug: "austin" },
+      referenceJobId: null,
+      referenceWordpressObjectId: null,
+    });
+    reconcileGlwReferenceTargetQueuedForProduction({
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "austin",
+    });
+
+    const changed = reconcileReferenceTargetExecutionProjection({
+      campaign,
+      stateCode: "TX",
+      citySlug: "austin",
+      execution: {
+        jobId: "fresh-job-running",
+        status: "RUNNING",
+        externalExecutionId: "764950",
+        wordpressObjectId: null,
+        errorCode: null,
+        errorMessage: null,
+      },
+    });
+
+    const after = listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin");
+    expect(changed).toBe(true);
+    expect(after?.status).toBe("running");
+    expect(after?.jobId).toBe("fresh-job-running");
   });
 });
