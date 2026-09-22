@@ -46,11 +46,15 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
   const currentHomeVisualAssembly = records.currentAssembly ? currentVisualAssemblies.find((item) => item.pageId === records.currentAssembly?.pages.find((page) => page.pageRole === "HOME")?.pageId) ?? null : null;
   const currentVisualAssembly = currentHomeVisualAssembly;
   const pageReview = summarizeSitePageReview(records.currentAssembly, imageCandidates);
-  const stale = generation.certification.status !== "CURRENT" || Boolean(records.currentPlan && !isSiteBuildSnapshotCurrent(records.currentPlan.authoritySnapshot, generation.readiness.snapshot)) || Boolean(records.draftSet && !isSiteBuildSnapshotCurrent(records.draftSet.authoritySnapshot, generation.readiness.snapshot));
-  const stage: SiteBuildStage = resolveSiteBuildStage({ sessionStarted: Boolean(session), stale, planStatus: records.currentPlan?.status ?? null, draftStatus: records.draftSet?.status ?? null, expectedDraftCount: records.draftSet?.drafts.length ?? 0, wordpressDraftCount: records.wordpressDrafts.length, assemblyPresent: Boolean(records.currentAssembly), pageReviewComplete: pageReview.complete, generatedPageCount: pageReview.generatedPageCount, wordpressContentUpdateCount: records.wordpressContentUpdates.length });
+  const certificationCurrent = generation.certification.status === "CURRENT";
+  const planSnapshotCurrent = !records.currentPlan || isSiteBuildSnapshotCurrent(records.currentPlan.authoritySnapshot, generation.readiness.snapshot);
+  const draftSnapshotCurrent = !records.draftSet || isSiteBuildSnapshotCurrent(records.draftSet.authoritySnapshot, generation.readiness.snapshot);
+  const stale = !certificationCurrent || !planSnapshotCurrent || !draftSnapshotCurrent;
+  const stage: SiteBuildStage = resolveSiteBuildStage({ sessionStarted: Boolean(session), certificationCurrent, planSnapshotCurrent, draftSnapshotCurrent, planStatus: records.currentPlan?.status ?? null, draftStatus: records.draftSet?.status ?? null, expectedDraftCount: records.draftSet?.drafts.length ?? 0, wordpressDraftCount: records.wordpressDrafts.length, assemblyPresent: Boolean(records.currentAssembly), pageReviewComplete: pageReview.complete, generatedPageCount: pageReview.generatedPageCount, wordpressContentUpdateCount: records.wordpressContentUpdates.length });
   const next = {
     BUILD_NOT_STARTED: { action: "START_SITE_BUILD", label: "START SITE BUILD", detail: "Start one durable bounded build session." },
     BUILD_PLAN: { action: "GENERATE_BUILD_PLAN", label: "GENERATE BUILD PLAN", detail: "Create a proposal from current approved authority. This does not approve pages or contact WordPress." },
+    BUILD_PLAN_STALE: { action: "GENERATE_BUILD_PLAN", label: "REGENERATE BUILD PLAN", detail: "Current Generation Readiness is certified, but the existing plan was created from an earlier authority snapshot. Regenerate a new plan revision from the current certified authority." },
     BUILD_PLAN_REVIEW: { action: "APPROVE_BUILD_PLAN", label: "APPROVE BUILD PLAN", detail: "Approve the proposed site structure before any page drafts are generated." },
     DRAFT_GENERATION: { action: "GENERATE_SITE_DRAFTS", label: "GENERATE SITE DRAFTS", detail: "Generate local review drafts from the approved plan. WordPress is not contacted." },
     DRAFT_REVIEW: { action: "APPROVE_SITE_DRAFTS", label: "APPROVE SITE DRAFTS", detail: "Approve the local drafts before any WordPress draft is created." },
@@ -70,7 +74,7 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
     PUBLICATION_EXECUTING: { action: "RESUME_PUBLICATION_EXECUTION", label: "RESUME PUBLICATION EXECUTION", detail: "Resume only incomplete or failed publication operations from durable receipts." },
     PUBLICATION_VERIFICATION: { action: "VERIFY_PUBLICATION", label: "VERIFY PUBLICATION", detail: "Authenticate the complete WordPress and Genesis launch state before marking publication complete." },
     COMPLETE: { action: "REVIEW_WORDPRESS_DRAFTS", label: "REVIEW WORDPRESS DRAFTS", detail: "Review the created drafts in WordPress. Publication remains a separate gate." },
-    AUTHORITY_REVIEW_REQUIRED: { action: "REVIEW_GENERATION_READINESS", label: "REVIEW GENERATION READINESS", detail: "Material upstream authority changed. Recertify before continuing this build." },
+    AUTHORITY_REVIEW_REQUIRED: { action: "REVIEW_GENERATION_READINESS", label: "REVIEW GENERATION READINESS", detail: "Generation Readiness is no longer current. Re-certify before continuing this build." },
   }[stage];
   const remainingPageIds = records.currentAssembly?.pages.filter((page) => page.pageRole !== "HOME").map((page) => page.pageId) ?? []; const remainingVisualAssemblies = currentVisualAssemblies.filter((item) => remainingPageIds.includes(item.pageId)); const remainingVisualSummary = { expected: remainingPageIds.length, assembled: remainingVisualAssemblies.length, readyForOwnerReview: remainingVisualAssemblies.filter((item) => item.status === "READY_FOR_OWNER_REVIEW").length, approved: remainingVisualAssemblies.filter((item) => item.status === "APPROVED").length, blocked: remainingPageIds.length - remainingVisualAssemblies.length + remainingVisualAssemblies.filter((item) => item.status === "REVISION_REQUESTED").length };
   const visualContinuation = resolveSiteBuildVisualContinuation({ baseStage: stage, homeStatus: currentHomeVisualAssembly?.status ?? null, remaining: remainingVisualSummary });
@@ -79,7 +83,7 @@ export function getSiteBuildWorkspace(site: SiteConfiguration) {
   const visualNext = downstreamStage ? nextForStage(downstreamStage) : visualContinuation ? { action: visualContinuation.action, label: visualContinuation.label, detail: visualContinuation.detail } : next;
   const nextRoute = visualStage === "NAVIGATION_REVIEW" ? `/sites/${site.siteId}/build/navigation` : visualStage === "WORDPRESS_MENU_SYNC" ? `/sites/${site.siteId}/build/navigation-sync` : visualStage === "PUBLICATION_READINESS" ? `/sites/${site.siteId}/build/publication-readiness` : visualStage === "PUBLICATION_AUTHORIZATION" ? `/sites/${site.siteId}/build/publication-authorization` : ["PUBLICATION_EXECUTION_REVIEW", "PUBLICATION_EXECUTING", "PUBLICATION_VERIFICATION", "COMPLETE"].includes(visualStage) ? `/sites/${site.siteId}/build/publication-execution` : visualContinuation ? `/sites/${site.siteId}/build/${visualContinuation.path}` : visualStage === "WORDPRESS_DRAFT_REVIEW" ? `/sites/${site.siteId}/build/wordpress-review` : `/sites/${site.siteId}/build`;
   const scopedNextRoute = `${nextRoute}?organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`;
-  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, imageCandidates, visualAssemblies, currentVisualAssemblies, currentVisualAssembly, currentHomeVisualAssembly, remainingVisualAssemblies, remainingVisualSummary, navigationReviews, currentNavigationReview, publicationExecutionPlans, currentPublicationExecutionPlan, pageReview, stale, stage: visualStage, next: { ...visualNext, route: scopedNextRoute }, publication: { state: site.publishingStatus, enabled: site.enabled } };
+  return { site: { organizationId: site.organizationId, siteId: site.siteId, displayName: site.displayName }, generation, session, ...records, imageCandidates, visualAssemblies, currentVisualAssemblies, currentVisualAssembly, currentHomeVisualAssembly, remainingVisualAssemblies, remainingVisualSummary, navigationReviews, currentNavigationReview, publicationExecutionPlans, currentPublicationExecutionPlan, pageReview, stale, staleDetails: { certificationCurrent, planSnapshotCurrent, draftSnapshotCurrent }, stage: visualStage, next: { ...visualNext, route: scopedNextRoute }, publication: { state: site.publishingStatus, enabled: site.enabled } };
 }
 
 function nextForStage(stage: "NAVIGATION_REVIEW" | "WORDPRESS_MENU_SYNC" | "PUBLICATION_READINESS" | "PUBLICATION_AUTHORIZATION" | "PUBLICATION_EXECUTION_REVIEW" | "PUBLICATION_EXECUTING" | "PUBLICATION_VERIFICATION" | "COMPLETE") {
@@ -122,7 +126,7 @@ export function decideHomeVisualAssembly(site: SiteConfiguration, actor: string,
 
 function planningContext(site: SiteConfiguration) {
   const workspace = getSiteBuildWorkspace(site);
-  if (!workspace.session || workspace.stale) throw new Error("CURRENT_BUILD_AUTHORITY_REQUIRED");
+  if (!workspace.session || !workspace.staleDetails.certificationCurrent) throw new Error("CURRENT_BUILD_AUTHORITY_REQUIRED");
   const intelligence = getSiteIntelligenceWorkspace(site.siteId);
   const strategy = intelligence?.strategyRevisions.at(-1);
   const creative = intelligence?.creativeRevisions.at(-1);
@@ -132,7 +136,7 @@ function planningContext(site: SiteConfiguration) {
 
 export function generateBuildPlan(site: SiteConfiguration, actor: string) {
   const context = planningContext(site);
-  if (context.workspace.currentPlan?.status === "PROPOSED") return context.workspace.currentPlan;
+  if (context.workspace.currentPlan?.status === "PROPOSED" && context.workspace.staleDetails.planSnapshotCurrent) return context.workspace.currentPlan;
   const proposal = synthesizeSiteBuildPlan({ buildSessionId: context.workspace.session.buildSessionId, site, intelligence: context.intelligence, strategy: context.strategy, creative: context.creative, candidates: context.workspace.generation.authority.candidates, sources: context.workspace.generation.authority.sources, authoritySnapshot: context.workspace.generation.readiness.snapshot, revision: (context.workspace.currentPlan?.revision ?? 0) + 1, actor });
   return saveBuildPlanProposal(proposal);
 }

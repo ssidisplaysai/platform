@@ -1,4 +1,4 @@
-export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "PAGE_GENERATION" | "PAGE_REVIEW" | "WORDPRESS_CONTENT_UPDATE" | "WORDPRESS_DRAFT_REVIEW" | "HOME_DESIGN_REVIEW" | "SITE_VISUAL_REVIEW" | "SITE_QA" | "NAVIGATION_REVIEW" | "WORDPRESS_MENU_SYNC" | "PUBLICATION_READINESS" | "PUBLICATION_AUTHORIZATION" | "PUBLICATION_EXECUTION_REVIEW" | "PUBLICATION_EXECUTING" | "PUBLICATION_VERIFICATION" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
+export type SiteBuildStage = "BUILD_NOT_STARTED" | "BUILD_PLAN" | "BUILD_PLAN_STALE" | "BUILD_PLAN_REVIEW" | "DRAFT_GENERATION" | "DRAFT_REVIEW" | "WORDPRESS_DRAFTS" | "PAGE_GENERATION" | "PAGE_REVIEW" | "WORDPRESS_CONTENT_UPDATE" | "WORDPRESS_DRAFT_REVIEW" | "HOME_DESIGN_REVIEW" | "SITE_VISUAL_REVIEW" | "SITE_QA" | "NAVIGATION_REVIEW" | "WORDPRESS_MENU_SYNC" | "PUBLICATION_READINESS" | "PUBLICATION_AUTHORIZATION" | "PUBLICATION_EXECUTION_REVIEW" | "PUBLICATION_EXECUTING" | "PUBLICATION_VERIFICATION" | "COMPLETE" | "AUTHORITY_REVIEW_REQUIRED";
 
 export type SiteBuildVisualContinuation = {
   stage: "HOME_DESIGN_REVIEW" | "SITE_VISUAL_REVIEW" | "SITE_QA";
@@ -23,7 +23,9 @@ export function resolveSiteBuildVisualContinuation(input: {
 
 export function resolveSiteBuildStage(input: {
   sessionStarted: boolean;
-  stale: boolean;
+  certificationCurrent: boolean;
+  planSnapshotCurrent: boolean;
+  draftSnapshotCurrent: boolean;
   planStatus: "PROPOSED" | "APPROVED" | "REJECTED" | "REVISION_REQUESTED" | null;
   draftStatus: "GENERATED" | "APPROVED" | null;
   expectedDraftCount: number;
@@ -34,7 +36,9 @@ export function resolveSiteBuildStage(input: {
   wordpressContentUpdateCount: number;
 }): SiteBuildStage {
   if (!input.sessionStarted) return "BUILD_NOT_STARTED";
-  if (input.stale) return "AUTHORITY_REVIEW_REQUIRED";
+  if (!input.certificationCurrent) return "AUTHORITY_REVIEW_REQUIRED";
+  if (!input.planSnapshotCurrent) return "BUILD_PLAN_STALE";
+  if (!input.draftSnapshotCurrent) return "DRAFT_GENERATION";
   if (!input.planStatus || input.planStatus === "REJECTED") return "BUILD_PLAN";
   if (input.planStatus === "PROPOSED") return "BUILD_PLAN_REVIEW";
   if (input.planStatus !== "APPROVED" || !input.draftStatus) return "DRAFT_GENERATION";

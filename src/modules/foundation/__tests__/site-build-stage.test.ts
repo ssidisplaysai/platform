@@ -1,8 +1,16 @@
 import { resolveSiteBuildStage, resolveSiteBuildVisualContinuation } from "../site-build-stage";
 
-const completeReview = { sessionStarted: true, stale: false, planStatus: "APPROVED" as const, draftStatus: "APPROVED" as const, expectedDraftCount: 2, wordpressDraftCount: 2, assemblyPresent: true, pageReviewComplete: true, generatedPageCount: 2, wordpressContentUpdateCount: 0 };
+const completeReview = { sessionStarted: true, certificationCurrent: true, planSnapshotCurrent: true, draftSnapshotCurrent: true, planStatus: "APPROVED" as const, draftStatus: "APPROVED" as const, expectedDraftCount: 2, wordpressDraftCount: 2, assemblyPresent: true, pageReviewComplete: true, generatedPageCount: 2, wordpressContentUpdateCount: 0 };
 
 describe("Site Build stage transition", () => {
+  test("routes stale certification to generation readiness review", () => {
+    expect(resolveSiteBuildStage({ ...completeReview, certificationCurrent: false })).toBe("AUTHORITY_REVIEW_REQUIRED");
+  });
+
+  test("routes current certification with stale plan snapshot to explicit build plan regeneration", () => {
+    expect(resolveSiteBuildStage({ ...completeReview, planSnapshotCurrent: false })).toBe("BUILD_PLAN_STALE");
+  });
+
   test("keeps incomplete page or image review in owner review", () => {
     expect(resolveSiteBuildStage({ ...completeReview, pageReviewComplete: false })).toBe("PAGE_REVIEW");
   });
