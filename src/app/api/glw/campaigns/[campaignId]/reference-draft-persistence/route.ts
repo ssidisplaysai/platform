@@ -79,10 +79,35 @@ async function resolveCandidate(input: {
   const rawClaims = evaluateGlwReferenceClaimAuthority({ artifact: rawArtifact, authority: zeroAuthorityContext });
   const canonicalization = canonicalizeGlwZeroAuthorityClaims({ rawArtifact, authoritativeFactReferenceIds: [], findings: rawClaims.findings });
   if (!canonicalization.ok || !canonicalization.canonicalizedArtifact) throw new Error("ZERO_AUTHORITY_CANONICALIZATION_BLOCKED");
-  if (canonicalization.receipt.receiptId !== input.canonicalizationReceiptId || canonicalization.receipt.canonicalizedArtifactSha256 !== input.canonicalizedArtifactSha256) throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
+  const recomputedCanonicalizationCertified = canonicalization.receipt.receiptId === input.canonicalizationReceiptId
+    && canonicalization.receipt.canonicalizedArtifactSha256 === input.canonicalizedArtifactSha256;
+  const persistedCanonicalizedArtifact = job.canonicalizedGeneratedDraft;
+  const persistedCanonicalizationReceipt = job.canonicalizationReceipt;
+  const persistedCanonicalizedArtifactSha256 = persistedCanonicalizedArtifact
+    ? sha256(persistedCanonicalizedArtifact.contentHtml)
+    : null;
+  const persistedCanonicalizationCertified = Boolean(
+    persistedCanonicalizedArtifact
+    && persistedCanonicalizationReceipt
+    && persistedCanonicalizationReceipt.receiptId === input.canonicalizationReceiptId
+    && persistedCanonicalizationReceipt.rawArtifactSha256 === rawArtifactSha256
+    && persistedCanonicalizedArtifactSha256
+    && persistedCanonicalizationReceipt.canonicalizedArtifactSha256 === persistedCanonicalizedArtifactSha256
+    && persistedCanonicalizationReceipt.canonicalizedArtifactSha256 === input.canonicalizedArtifactSha256,
+  );
+  if (!recomputedCanonicalizationCertified && !persistedCanonicalizationCertified) {
+    throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
+  }
+
+  const certifiedCanonicalizedArtifact = persistedCanonicalizationCertified
+    ? persistedCanonicalizedArtifact!
+    : canonicalization.canonicalizedArtifact;
+  const certifiedCanonicalizationReceipt = persistedCanonicalizationCertified
+    ? persistedCanonicalizationReceipt!
+    : canonicalization.receipt;
 
   const claimsParity = canonicalizeAndRevalidateGlwZeroAuthorityClaims({
-    artifact: canonicalization.canonicalizedArtifact,
+    artifact: certifiedCanonicalizedArtifact,
     authority: zeroAuthorityContext,
     fallbackPolicy: "OUTDOOR_SPHERE_STATE_SERVICE",
   });
@@ -127,8 +152,8 @@ async function resolveCandidate(input: {
     generationJobId: job.jobId,
     n8nExecutionId: job.externalExecutionId,
     rawArtifactSha256,
-    canonicalizedArtifactSha256: canonicalization.receipt.canonicalizedArtifactSha256,
-    canonicalizationReceiptId: canonicalization.receipt.receiptId,
+    canonicalizedArtifactSha256: certifiedCanonicalizationReceipt.canonicalizedArtifactSha256,
+    canonicalizationReceiptId: certifiedCanonicalizationReceipt.receiptId,
     canonicalizationPolicyVersion: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_VERSION,
     canonicalizationPolicyFingerprint: GLW_ZERO_AUTHORITY_CLAIM_CANONICALIZATION_FINGERPRINT,
     generatorContractFingerprint: GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_FINGERPRINT,
@@ -145,10 +170,11 @@ async function resolveCandidate(input: {
   };
   const canonicalizedArtifact = claimsParity.artifact;
   const canonicalizedArtifactSha256 = sha256(canonicalizedArtifact.contentHtml);
-  if (canonicalization.receipt.canonicalizedArtifactSha256 !== canonicalizedArtifactSha256) {
+  const claimsParityCanonicalizedArtifactSha256 = claimsParity.canonicalizationReceipt?.canonicalizedArtifactSha256;
+  if ((claimsParityCanonicalizedArtifactSha256 ?? certifiedCanonicalizationReceipt.canonicalizedArtifactSha256) !== canonicalizedArtifactSha256) {
     throw new Error("CANONICALIZED_ARTIFACT_NOT_CERTIFIED");
   }
-  return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact, canonicalizationReceipt: claimsParity.canonicalizationReceipt ?? canonicalization.receipt, claims, qa, qaEvidence, generationAuthority, liveContext };
+  return { campaign, site, state, job, reader, parentId, targetSlug, rawArtifact, canonicalizedArtifact, canonicalizationReceipt: claimsParity.canonicalizationReceipt ?? certifiedCanonicalizationReceipt, claims, qa, qaEvidence, generationAuthority, liveContext };
 }
 
 export async function GET(request: NextRequest, context: Context) {
