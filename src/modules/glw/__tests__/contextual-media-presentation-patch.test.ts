@@ -2,7 +2,7 @@ import { load } from "cheerio";
 import { patchContextualPresentationMedia, resolveContextualPresentationSlots } from "../contextual-media-presentation-patch";
 
 const html = `<main class="saw-page"><section data-reference-section="HERO"><img src="product"><h1>Product in State</h1></section><section data-reference-section="PRODUCT_IDENTITY"><img src="context"><p>Copy stays byte-identical.</p></section><section data-reference-section="APPLICATIONS"><div class="saw-application-stage"><img src="application"></div></section><section data-reference-section="CTA"><p>CTA copy stays.</p></section></main>`;
-const articleHtml = `<h1>Outdoor Digital Sphere in Florida</h1><figure class="wp-block-image"><img src="legacy"></figure><p>Planning content.</p>`;
+const articleHtml = `<h1>Outdoor Digital Sphere in Florida</h1><figure class="wp-block-image"><img src="legacy"></figure><p>Planning content.</p><h2>One</h2><p>A</p><h2>Two</h2><p>B</p><h2>Three</h2><p>C</p><h2>Four</h2><p>D</p><h2>Five</h2><p>E</p>`;
 const richSphereHtml = `<article class="glw-sphere-page"><section class="glw-sphere-hero" data-genesis-hero="true" data-media-role="CONTEXTUAL_IN_USE" style="background-image:linear-gradient(90deg,rgba(7,17,25,.94),rgba(7,17,25,.66)),url('https://example.test/legacy.jpg');background-size:cover;background-position:center;"><h1>Outdoor Digital Sphere in Georgia</h1><a href="/contact">Request a Quote</a></section><section class="glw-product-authority"><h2>Product Authority</h2><p>Keep product authority unchanged.</p></section><section class="glw-guide"><h2>Guide</h2><p>Keep guide body unchanged.</p></section></article>`;
 const replacement = (slot: "HERO_EXPERIENCE" | "POST_HERO_CONTEXTUAL" | "APPLICATION_STAGE" | "CTA_ATMOSPHERE", role: string, mediaRole: "CONTEXTUAL_IN_USE" | "APPLICATION_EXPERIENCE" | "LOCAL_CONTEXTUAL_ATMOSPHERE", id: number) => ({ slot, role, mediaRole, mediaId: id, url: `https://example.test/${id}.jpg`, assetSha256: String(id).repeat(64).slice(0, 64), altText: `${role} conceptual media` });
 
@@ -68,6 +68,58 @@ describe("contextual presentation media patch", () => {
     expect(patched("h1").first().text()).toBe("Outdoor Digital Sphere in Florida");
   });
 
+  test("supports bounded four-slot enrichment on long-form article markup", () => {
+    const resolved = resolveContextualPresentationSlots(articleHtml, [
+      replacement("HERO_EXPERIENCE", "HERO", "LOCAL_CONTEXTUAL_ATMOSPHERE", 31),
+      replacement("POST_HERO_CONTEXTUAL", "POST", "CONTEXTUAL_IN_USE", 32),
+      replacement("APPLICATION_STAGE", "APPLICATION", "APPLICATION_EXPERIENCE", 33),
+      replacement("CTA_ATMOSPHERE", "CTA", "LOCAL_CONTEXTUAL_ATMOSPHERE", 34),
+    ]);
+
+    expect(resolved.map((slot) => slot.actualSection)).toEqual([
+      "ARTICLE_HERO",
+      "ARTICLE_BODY",
+      "ARTICLE_APPLICATION_STAGE",
+      "ARTICLE_CTA",
+    ]);
+
+    const $ = load(patchContextualPresentationMedia(articleHtml, [
+      replacement("HERO_EXPERIENCE", "HERO", "LOCAL_CONTEXTUAL_ATMOSPHERE", 31),
+      replacement("POST_HERO_CONTEXTUAL", "POST", "CONTEXTUAL_IN_USE", 32),
+      replacement("APPLICATION_STAGE", "APPLICATION", "APPLICATION_EXPERIENCE", 33),
+      replacement("CTA_ATMOSPHERE", "CTA", "LOCAL_CONTEXTUAL_ATMOSPHERE", 34),
+    ]), null, false);
+
+    expect($("h1 + figure.saw-generated-application-media img").attr("src")).toBe("https://example.test/31.jpg");
+    expect($("figure.wp-block-image img").attr("src")).toBe("https://example.test/32.jpg");
+    expect($("h2:nth-of-type(4) + figure.saw-generated-application-media img").attr("src")).toBe("https://example.test/33.jpg");
+    expect($("h2:last-of-type + figure.saw-generated-application-media img").attr("src")).toBe("https://example.test/34.jpg");
+  });
+
+  test("supports multi-slot enrichment when long-form article starts with no images", () => {
+    const noImageArticle = "<h1>Fan Cooled Projector Enclosures in Austin</h1><p>Intro.</p><h2>One</h2><p>A</p><h2>Two</h2><p>B</p><h2>Three</h2><p>C</p><h2>Four</h2><p>D</p><h2>Five</h2><p>E</p>";
+    const resolved = resolveContextualPresentationSlots(noImageArticle, [
+      replacement("HERO_EXPERIENCE", "HERO", "LOCAL_CONTEXTUAL_ATMOSPHERE", 41),
+      replacement("POST_HERO_CONTEXTUAL", "POST", "CONTEXTUAL_IN_USE", 42),
+      replacement("APPLICATION_STAGE", "APPLICATION", "APPLICATION_EXPERIENCE", 43),
+      replacement("CTA_ATMOSPHERE", "CTA", "LOCAL_CONTEXTUAL_ATMOSPHERE", 44),
+    ]);
+
+    expect(resolved.map((slot) => slot.placement)).toEqual(["MOUNT_IMAGE", "MOUNT_IMAGE", "MOUNT_IMAGE", "MOUNT_IMAGE"]);
+
+    const $ = load(patchContextualPresentationMedia(noImageArticle, [
+      replacement("HERO_EXPERIENCE", "HERO", "LOCAL_CONTEXTUAL_ATMOSPHERE", 41),
+      replacement("POST_HERO_CONTEXTUAL", "POST", "CONTEXTUAL_IN_USE", 42),
+      replacement("APPLICATION_STAGE", "APPLICATION", "APPLICATION_EXPERIENCE", 43),
+      replacement("CTA_ATMOSPHERE", "CTA", "LOCAL_CONTEXTUAL_ATMOSPHERE", 44),
+    ]), null, false);
+
+    expect($("h1 + figure.saw-generated-application-media img").attr("src")).toBe("https://example.test/41.jpg");
+    expect($("h2:first-of-type + figure.saw-generated-application-media img").attr("src")).toBe("https://example.test/42.jpg");
+    expect($("h2:nth-of-type(4) + figure.saw-generated-application-media img").attr("src")).toBe("https://example.test/43.jpg");
+    expect($("h2:last-of-type + figure.saw-generated-application-media img").attr("src")).toBe("https://example.test/44.jpg");
+  });
+
   test("accepts strict rich outdoor sphere presentation root with zero img", () => {
     expect(load(richSphereHtml, null, false)("article.glw-sphere-page img")).toHaveLength(0);
     const resolved = resolveContextualPresentationSlots(richSphereHtml, [replacement("HERO_EXPERIENCE", "CONTEXTUAL_IN_USE", "CONTEXTUAL_IN_USE", 19)]);
@@ -108,8 +160,9 @@ describe("contextual presentation media patch", () => {
     expect(() => resolveContextualPresentationSlots(malformed, [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 11)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
   });
 
-  test("does not allow SAW-only slots on long-form article markup", () => {
-    expect(() => resolveContextualPresentationSlots(articleHtml, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 12)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_SLOT_MISSING:APPLICATION_STAGE");
+  test("fails closed when long-form article lacks enough heading structure for application-stage slot", () => {
+    const minimalArticle = "<h1>Outdoor Digital Sphere in Florida</h1><figure><img src=\"legacy\"></figure><p>Planning content.</p>";
+    expect(() => resolveContextualPresentationSlots(minimalArticle, [replacement("APPLICATION_STAGE", "EVENT", "APPLICATION_EXPERIENCE", 12)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_SLOT_MISSING:APPLICATION_STAGE");
   });
 
   test("uses format semantics rather than FL-specific logic", () => {

@@ -10,6 +10,7 @@ export type GlwReferenceStateSelection = {
   organizationId: string;
   siteId: string;
   stateCode: string;
+  citySlug?: string | null;
   selectedBy: string;
   selectedAt: string;
 };

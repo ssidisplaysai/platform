@@ -89,9 +89,11 @@ describe("Outdoor reference state UI reconciliation", () => {
     const page = readFileSync(join(process.cwd(), "src/app/glw/campaigns/[campaignId]/page.tsx"), "utf8").replace(/\s/g, "");
     const ui = readFileSync(join(process.cwd(), "src/modules/glw/GlwCampaignKnowledgePack.tsx"), "utf8").replace(/\s/g, "");
     expect(route).toContain('stateCode:durableSelection?.stateCode??request.nextUrl.searchParams.get("stateCode")??""');
+    expect(route).toContain('citySlug:request.nextUrl.searchParams.get("citySlug")??durableSelection?.citySlug');
+    expect(route).toContain("citySlug:target.citySlug");
     expect(route).toContain("findEvidenceBoundLegacyReferenceJob");
     expect(page).toContain("initialReferenceState={referenceStateSelection?.stateCode}");
-    for (const marker of ["ReferenceState:", "ReferenceGenerationRetry", "FailedState:Illinois(IL)", "FailedJobID:", "FailedArtifactSHA-256:", "RunRetryPreflight", "AuthorizeOneRetry"])
+    for (const marker of ["ReferenceState:", "ReferenceCity", "ReferenceGenerationRetry", "FailedState:Illinois(IL)", "FailedJobID:", "FailedArtifactSHA-256:", "RunRetryPreflight", "AuthorizeOneRetry", "referenceCitySlug"])
       expect(ui).toContain(marker);
     expect(ui).toContain("!ownerPreflightReceiptId");
     expect(ui).toContain("existingOperationBlocksGeneration");

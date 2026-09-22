@@ -344,6 +344,20 @@ useEffect(() => {
 
         setLiveSites(sites);
 
+        const params = new URLSearchParams(window.location.search);
+        const requestedOrganizationId = params.get("organizationId");
+        const requestedSiteId = params.get("siteId");
+        const requestedSite = requestedOrganizationId === selectedOrganizationId && requestedSiteId
+          ? sites.find((site) => site.id === requestedSiteId) ?? null
+          : null;
+
+        if (requestedSite) {
+          setSelectedSiteId(requestedSite.id);
+          localStorage.setItem(SITE_STORAGE_KEY, requestedSite.id);
+          setSiteSelectionMessage(null);
+          return;
+        }
+
         const currentSite = sites.find(
           (site) => site.id === selectedSiteId,
         );
@@ -359,11 +373,24 @@ useEffect(() => {
           setSelectedSiteId(firstSite.id);
           localStorage.setItem(SITE_STORAGE_KEY, firstSite.id);
           setSiteSelectionMessage(null);
+
+          if (requestedOrganizationId === selectedOrganizationId) {
+            params.set("organizationId", selectedOrganizationId);
+            params.set("siteId", firstSite.id);
+            window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+          }
+
           return;
         }
 
         setSelectedSiteId("");
         localStorage.removeItem(SITE_STORAGE_KEY);
+
+        if (requestedOrganizationId === selectedOrganizationId && requestedSiteId) {
+          params.delete("siteId");
+          window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+        }
+
         setSiteSelectionMessage(
           "No sites are currently available for the selected organization.",
         );

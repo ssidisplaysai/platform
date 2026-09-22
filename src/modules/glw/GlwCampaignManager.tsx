@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { operatorMutationHeaders } from "@/modules/foundation/operator-session-client";
 import type { GlwCampaign } from "./campaign-types";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
@@ -82,9 +82,11 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
   const [selectedCityIdentities, setSelectedCityIdentities] = useState<readonly string[]>([]);
   const [citiesByStateScope, setCitiesByStateScope] = useState<GlwCityScopeMode>("ALL_SUPPORTED");
   const [campaigns, setCampaigns] = useState<readonly GlwCampaign[]>(initialCampaigns);
+  const [operatorSummaries, setOperatorSummaries] = useState<readonly GlwCampaignListOperatorSummary[]>(initialOperatorSummaries);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [syncingProducts, setSyncingProducts] = useState(false);
+  const workspaceRef = useRef(`${organizationId}::${initialSiteId}`);
 
   const stateOptions = useMemo(() => GLW_CAMPAIGN_US_STATES.map((state) => ({
     code: state.code,
@@ -195,6 +197,35 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
     sessionStorage.setItem(draftKey(organizationId), JSON.stringify(snapshot));
     return snapshot;
   }
+
+  useEffect(() => {
+    const nextInitialSiteId = siteId ?? sites[0]?.siteId ?? "";
+    const nextWorkspace = `${organizationId}::${nextInitialSiteId}`;
+    if (workspaceRef.current === nextWorkspace) {
+      return;
+    }
+
+    workspaceRef.current = nextWorkspace;
+    const fallbackSiteId = sites.some((site) => site.siteId === nextInitialSiteId)
+      ? nextInitialSiteId
+      : (sites[0]?.siteId ?? "");
+
+    setSelectedSiteId(fallbackSiteId);
+    setLocalProducts(products);
+    setCampaigns(initialCampaigns);
+    setOperatorSummaries(initialOperatorSummaries);
+    setProductId("");
+    setName("");
+    setPagesPerDay(10);
+    setPublicationPolicy("publish_after_gates");
+    setGeographyMode("ALL_STATES");
+    setStateSearch("");
+    setCitySearch("");
+    setSelectedStateCodes([]);
+    setSelectedCityIdentities([]);
+    setCitiesByStateScope("ALL_SUPPORTED");
+    setMessage(null);
+  }, [organizationId, siteId, sites, products, initialCampaigns, initialOperatorSummaries]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -394,7 +425,7 @@ export function GlwCampaignManager({ organizationId, siteId, sites, products, in
         <h2 className="text-lg font-semibold text-white">Existing Campaigns</h2>
         <p className="mt-1 text-sm text-zinc-400">Review current campaigns and open their control surfaces.</p>
         <div className="mt-4">
-        {campaigns.length === 0 ? <p className="text-sm text-zinc-400">No campaigns configured yet.</p> : <GlwCampaignOperationsList summaries={initialOperatorSummaries} />}
+        {campaigns.length === 0 ? <p className="text-sm text-zinc-400">No campaigns configured yet.</p> : <GlwCampaignOperationsList summaries={operatorSummaries} />}
         </div>
       </div>
     </section>

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -62,19 +63,25 @@ export function updateGlwCampaignInstructions(input: {
 }): GlwCampaignKnowledgePack {
   load();
   const existing = store.get(input.campaignId);
+  const instructions = input.instructions.trim();
+  const revision = (existing?.revision ?? 0) + 1;
+  const approvedAt = new Date().toISOString();
+  const approvedInstructionSha256 = createHash("sha256").update(instructions).digest("hex");
   const pack: GlwCampaignKnowledgePack = {
     campaignId: input.campaignId,
     organizationId: input.organizationId,
     siteId: input.siteId,
-    instructions: input.instructions.trim(),
+    instructions,
     references: existing?.references ?? [],
-    revision: (existing?.revision ?? 0) + 1,
+    revision,
     status: "ready",
     parentCampaignId: input.parentCampaignId ?? existing?.parentCampaignId ?? null,
     authorityReferences: input.authorityReferences ?? existing?.authorityReferences ?? [],
     ownerApprovalRequired: input.ownerApprovalRequired ?? existing?.ownerApprovalRequired ?? false,
-    approvedAt: existing?.approvedAt ?? null,
-    updatedAt: new Date().toISOString(),
+    approvedAt,
+    approvedInstructionRevision: revision,
+    approvedInstructionSha256,
+    updatedAt: approvedAt,
   };
   store.set(input.campaignId, pack);
   persist();
@@ -125,6 +132,14 @@ export function addGlwCampaignReference(input: {
     siteId: input.siteId,
     instructions: existing?.instructions ?? "",
     references: [...(existing?.references ?? []), reference],
+    revision: existing?.revision,
+    status: existing?.status,
+    parentCampaignId: existing?.parentCampaignId ?? null,
+    authorityReferences: existing?.authorityReferences ?? [],
+    ownerApprovalRequired: existing?.ownerApprovalRequired ?? false,
+    approvedAt: existing?.approvedAt ?? null,
+    approvedInstructionRevision: existing?.approvedInstructionRevision ?? null,
+    approvedInstructionSha256: existing?.approvedInstructionSha256 ?? null,
     updatedAt: timestamp,
   });
   persist();

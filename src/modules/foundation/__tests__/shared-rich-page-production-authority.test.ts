@@ -3,6 +3,7 @@ import { join } from "node:path";
 import {
   evaluateNextGlwStateProductionUnblock,
   evaluateSharedRichPageInheritance,
+  nativeTitlePolicyMatches,
   NEXT_GLW_STATE_SITE_SPECIFIC_RECHECK,
   resolveSharedRichPageProductionProfile,
   richPageHostIntegrationCss,
@@ -79,5 +80,31 @@ describe("shared rich-page production authority", () => {
     expect(indiana).toContain("INDIANA_RICH_PAGE_PROFILE");
     expect(snapshot).toContain("richPageHostIntegrationCss(PROFILE)");
     expect(Object.values(SHARED_RICH_PAGE_AUTHORITY_MANIFEST).filter((binding) => binding.state === "SHARED").length).toBeGreaterThanOrEqual(20);
+  });
+
+  test("enforces native-title suppression according to profile host policy", () => {
+    const ssiProfile = resolveSharedRichPageProductionProfile({
+      organizationId: "ssi",
+      siteId: "site-ssi-projectorenclosure",
+      productId: "prod-ssi-fan-cooled-projector-enclosures",
+      pageType: "LOCATION_SERVICE",
+    });
+    const glwProfile = resolveSharedRichPageProductionProfile({
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      pageType: "LOCATION_SERVICE",
+    });
+
+    expect(ssiProfile?.host.suppressNativeTitle).toBe(false);
+    expect(glwProfile?.host.suppressNativeTitle).toBe(true);
+
+    expect(nativeTitlePolicyMatches(ssiProfile!.host, "yes")).toBe(false);
+    expect(nativeTitlePolicyMatches(ssiProfile!.host, "")).toBe(true);
+    expect(nativeTitlePolicyMatches(ssiProfile!.host, undefined)).toBe(true);
+
+    expect(nativeTitlePolicyMatches(glwProfile!.host, "yes")).toBe(true);
+    expect(nativeTitlePolicyMatches(glwProfile!.host, "no")).toBe(false);
+    expect(nativeTitlePolicyMatches(glwProfile!.host, null)).toBe(false);
   });
 });

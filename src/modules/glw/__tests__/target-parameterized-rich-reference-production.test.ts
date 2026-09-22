@@ -20,12 +20,59 @@ jest.mock("../campaign-repository", () => ({
     failedTargetCount: 0,
     createdAt: "2026-09-14T00:00:00.000Z",
     updatedAt: "2026-09-14T00:00:00.000Z",
+  }, {
+    campaignId: "campaign-city",
+    organizationId: "led-display-warehouse",
+    siteId: "site-led-display-warehouse-production",
+    productId: "prod-outdoor-digital-sphere",
+    name: "City Outdoor Sphere",
+    pageType: "city_service",
+    stateCodes: ["TX"],
+    cityTargets: [{ stateCode: "TX", citySlug: "austin", cityName: "Austin" }],
+    pagesPerDay: 1,
+    publicationPolicy: "draft_only",
+    imageRequired: true,
+    status: "draft",
+    completedTargetCount: 0,
+    failedTargetCount: 0,
+    createdAt: "2026-09-14T00:00:00.000Z",
+    updatedAt: "2026-09-14T00:00:00.000Z",
   }],
 }));
 
 jest.mock("../campaign-target-repository", () => {
   const actual = jest.requireActual("../campaign-target-repository");
-  return { ...actual, listGlwCampaignTargets: () => [] };
+  return {
+    ...actual,
+    listGlwCampaignTargets: (campaignId: string) => campaignId === "campaign-city"
+      ? [{
+        targetId: "target-campaign-city-tx-austin",
+        campaignId: "campaign-city",
+        organizationId: "led-display-warehouse",
+        siteId: "site-led-display-warehouse-production",
+        productId: "prod-outdoor-digital-sphere",
+        pageType: "city_service",
+        stateCode: "TX",
+        citySlug: "austin",
+        cityName: "Austin",
+        applicationPath: "outdoor-digital-sphere/texas/austin",
+        canonicalPath: "outdoor-digital-sphere/texas/austin",
+        canonicalParentId: "301",
+        publicationPolicy: "draft_only",
+        status: "draft_ready",
+        jobId: null,
+        wordpressObjectId: "13138",
+        attemptCount: 1,
+        lastError: null,
+        leaseId: null,
+        leasedAt: null,
+        leaseExpiresAt: null,
+        dispatchDate: null,
+        createdAt: "2026-09-14T00:00:00.000Z",
+        updatedAt: "2026-09-14T00:00:00.000Z",
+      }]
+      : [],
+  };
 });
 
 jest.mock("../reference-state-selection-repository", () => ({
@@ -78,6 +125,15 @@ function wordpressAuthority(): AuthenticatedWordPressReadAuthority {
   return { getJson: jest.fn(async () => ({ ok: true as const, body: bodies.shift(), pagination: { total: null, totalPages: null } })) };
 }
 
+function cityWordpressAuthority(): AuthenticatedWordPressReadAuthority {
+  const bodies = [
+    [{ id: 20114, slug: "outdoor-digital-sphere", parent: 0, status: "publish" }],
+    [{ id: 301, slug: "texas", parent: 20114, status: "publish" }],
+    [{ id: 13138, slug: "austin", parent: 301, status: "draft" }],
+  ];
+  return { getJson: jest.fn(async () => ({ ok: true as const, body: bodies.shift(), pagination: { total: null, totalPages: null } })) };
+}
+
 describe("target-parameterized rich-reference production", () => {
   test("resolves Alaska as the next state and proves Boundary A without creating artifacts", async () => {
     const result = await resolveTargetParameterizedRichReferenceProduction({ campaignId: "campaign-outdoor", wordpressReadAuthority: wordpressAuthority() });
@@ -105,6 +161,41 @@ describe("target-parameterized rich-reference production", () => {
     expect(result.target).toMatchObject({ stateCode: "IN", stateName: "Indiana", status: "reference_complete" });
     expect(result.hostPolicy.suppressNativeTitle).toBe(true);
     expect(result.targetRequiresNewCode).toBe(false);
+  });
+
+  test("supports city_service durable targets with the same governed authority checks", async () => {
+    const result = await resolveTargetParameterizedRichReferenceProduction({
+      campaignId: "campaign-city",
+      targetId: "target-campaign-city-tx-austin",
+      wordpressReadAuthority: cityWordpressAuthority(),
+    });
+
+    expect(result).toMatchObject({
+      targetSource: "DURABLE_TARGET",
+      target: {
+        targetId: "target-campaign-city-tx-austin",
+        stateCode: "TX",
+        stateName: "Texas",
+        status: "draft_ready",
+      },
+      identity: {
+        canonicalSlug: "austin",
+        canonicalPath: "/outdoor-digital-sphere/texas/austin/",
+        wordpressParentId: "301",
+        wordpressObjectId: "13138",
+      },
+      authority: {
+        campaignResolved: true,
+        siteResolved: true,
+        productResolved: true,
+        parentResolved: true,
+        mediaResolved: true,
+        claimResolved: true,
+        hostIntegrationProfileResolved: true,
+      },
+      draftProductionReady: true,
+      publicationProductionReady: true,
+    });
   });
 
   test("keeps target literals out of the reusable orchestration path and publication fail-closed", () => {

@@ -81,8 +81,11 @@ export async function runTargetRichReferenceProductionOperation(input: {
   const brandCertification = {
     contract: produced.presentation.contract,
     LEDDisplayWarehouseBrandDistinctiveness: produced.presentation.ok ? "PASS" as const : "FAIL" as const,
-    CommercialStainlessPresentationLeakage: produced.presentation.checks.commercialStainlessPresentationLeakage,
+    CommercialStainlessPresentationLeakage: "commercialStainlessPresentationLeakage" in produced.presentation.checks
+      ? produced.presentation.checks.commercialStainlessPresentationLeakage
+      : null,
     structuralChecks: produced.presentation.checks,
+    blockers: produced.presentation.blockers,
   };
   return { version: TARGET_RICH_REFERENCE_PRODUCTION_OPERATION_VERSION, targetId: input.target.targetId, artifact: produced, wordpress: stored, certification: { ...certification, brand: brandCertification }, ownerReview, ownerDecision: "PENDING" as const, wordpressMutation: true, publicationMutation: false as const, generationAttempted: false as const, n8nExecutionCreated: false as const, imageGenerationAttempted: false as const };
 }

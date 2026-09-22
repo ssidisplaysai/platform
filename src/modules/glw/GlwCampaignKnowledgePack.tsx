@@ -8,6 +8,7 @@ import type { GlwCampaignKnowledgePack } from "./campaign-reference-types";
 import { OutdoorSphereMediaAuthorityPanel } from "./OutdoorSphereMediaAuthorityPanel";
 import { projectGlwClaimDisposition } from "./reference-claim-disposition";
 import { GLW_REFERENCE_GENERATION_CLAIM_CONTRACT_VERSION } from "./reference-generation-claim-contract-version";
+import { listReferenceCityOptions, resolveDeterministicReferenceCitySlug } from "./reference-city-selection";
 
 type ReferenceJob = Record<string, unknown> & {
   jobId?: string;
@@ -56,6 +57,7 @@ type ReferenceResult = Record<string, unknown> & {
   approved?: boolean;
   error?: string;
   recoveryError?: string | null;
+  city?: { name: string; slug: string } | null;
   wordpressAuthority?: WordPressAuthorityStatus;
   workflow?: ReferenceWorkflowProjection;
   relatedReference?: {
@@ -64,7 +66,7 @@ type ReferenceResult = Record<string, unknown> & {
     job: ReferenceJob;
     workflow: ReferenceWorkflowProjection;
   } | null;
-  selectedReferenceState?: { stateCode: string; selectedAt: string } | null;
+  selectedReferenceState?: { stateCode: string; citySlug?: string | null; selectedAt: string } | null;
   generationAuthority?: ReferenceAuthorityBinding | null;
   retryContract?: { referenceState: "IN"; ownerAuthorizationRequired: true; executable: false } | null;
   durableOperation?: { operationType: "REFERENCE_GENERATION_INITIAL" | "REFERENCE_GENERATION_RETRY"; failedJobId: string | null; failedArtifactSha256: string | null };
@@ -177,6 +179,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   const [message, setMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [referenceState, setReferenceState] = useState(initialReferenceState ?? campaign.stateCodes[0] ?? "");
+  const [referenceCitySlug, setReferenceCitySlug] = useState<string | null>(null);
   const [generatingReference, setGeneratingReference] = useState(false);
   const [recoveringReference, setRecoveringReference] = useState(false);
   const [continuingReference, setContinuingReference] = useState(false);
@@ -224,7 +227,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
 
     try {
       const response = await fetch(
-        `${referenceEndpoint}?stateCode=${encodeURIComponent(referenceState)}${refresh ? "&refresh=true" : ""}`,
+        `${referenceEndpoint}?stateCode=${encodeURIComponent(referenceState)}${campaign.pageType === "city_service" && selectedReferenceCitySlug ? `&citySlug=${encodeURIComponent(selectedReferenceCitySlug)}` : ""}${refresh ? "&refresh=true" : ""}`,
         {
           headers,
           cache: "no-store",
@@ -236,6 +239,12 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
       if (payload.selectedReferenceState?.stateCode && payload.selectedReferenceState.stateCode !== referenceState) {
         projectedReferenceState.current = payload.selectedReferenceState.stateCode;
         setReferenceState(payload.selectedReferenceState.stateCode);
+      }
+      if (campaign.pageType === "city_service") {
+        const nextCitySlug = payload.selectedReferenceState?.citySlug ?? payload.city?.slug ?? null;
+        if (nextCitySlug && nextCitySlug !== referenceCitySlug) {
+          setReferenceCitySlug(nextCitySlug);
+        }
       }
 
       if (!response.ok) {
@@ -251,6 +260,10 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           siteId: campaign.siteId,
           referenceState: payload.selectedReferenceState?.stateCode ?? referenceState,
         });
+        const authorityCitySlug = payload.selectedReferenceState?.citySlug ?? payload.city?.slug ?? referenceCitySlug;
+        if (campaign.pageType === "city_service" && authorityCitySlug) {
+          authorityParams.set("referenceCitySlug", authorityCitySlug);
+        }
         if (projectedWorkflow.state === "REFERENCE_RETRY_READY" && projectedWorkflow.operationId && projectedWorkflow.artifactSha256) {
           authorityParams.set("failedJobId", projectedWorkflow.operationId);
           authorityParams.set("failedArtifactSha256", projectedWorkflow.artifactSha256);
@@ -290,7 +303,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
     }
     void load();
     void recoverReferencePage(false);
-  }, [campaign.campaignId, referenceState]);
+  }, [campaign.campaignId, referenceState, referenceCitySlug]);
 
   async function approveInstructions() {
     setMessage(null);
@@ -311,6 +324,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
     };
 
     setPack(payload.knowledgePack);
+    setInstructions(payload.knowledgePack.instructions ?? "");
     setMessage("Campaign instructions approved and saved.");
   }
 
@@ -383,6 +397,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
         }),
         body: JSON.stringify({
           stateCode: referenceState,
+          citySlug: campaign.pageType === "city_service" ? selectedReferenceCitySlug : null,
           referenceAuthorityBinding: referenceResult?.generationAuthority,
           ownerGrantId,
           preflightReceiptId: ownerPreflightReceiptId,
@@ -426,6 +441,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           organizationId,
           siteId: campaign.siteId,
           referenceState,
+          referenceCitySlug: campaign.pageType === "city_service" ? selectedReferenceCitySlug : null,
           failedJobId: retryOperation ? referenceWorkflow?.operationId : null,
           failedArtifactSha256: retryOperation ? referenceWorkflow?.artifactSha256 : null,
         }),
@@ -457,6 +473,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           organizationId,
           siteId: campaign.siteId,
           referenceState,
+          referenceCitySlug: campaign.pageType === "city_service" ? selectedReferenceCitySlug : null,
           failedJobId: retryOperation ? referenceWorkflow?.operationId : null,
           failedArtifactSha256: retryOperation ? referenceWorkflow?.artifactSha256 : null,
           preflightReceiptId: ownerPreflightReceiptId,
@@ -475,19 +492,22 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
     }
   }
 
-  async function persistReferenceState(stateCode: string) {
+  async function persistReferenceState(stateCode: string, citySlug?: string | null) {
     setMessage(null);
     const response = await fetch(referenceEndpoint, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ stateCode }),
+      body: JSON.stringify({ stateCode, citySlug: campaign.pageType === "city_service" ? citySlug ?? null : null }),
     });
     const payload = await response.json() as ReferenceResult;
     if (!response.ok) {
       setMessage(payload.error ?? "Unable to persist the reference state.");
       return;
     }
-    setReferenceState(stateCode);
+    const nextState = payload.selectedReferenceState?.stateCode ?? stateCode;
+    const nextCity = payload.selectedReferenceState?.citySlug ?? citySlug ?? null;
+    setReferenceState(nextState);
+    setReferenceCitySlug(nextCity);
     setReferenceResult(null);
     setContinuationAttemptedJobId(null);
   }
@@ -505,6 +525,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
         }),
         body: JSON.stringify({
           stateCode: referenceState,
+          citySlug: campaign.pageType === "city_service" ? selectedReferenceCitySlug : null,
           jobId,
         }),
       });
@@ -585,6 +606,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
         }),
         body: JSON.stringify({
           stateCode: referenceState,
+          citySlug: campaign.pageType === "city_service" ? selectedReferenceCitySlug : null,
           action: "continue",
           jobId,
         }),
@@ -608,12 +630,28 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   }
 
   const referenceCount = pack?.references.length ?? 0;
-  const instructionsApproved = Boolean(pack?.instructions.trim()) && pack?.instructions === instructions;
+  const instructionsApproved = Boolean(pack?.approvedAt) && pack?.instructions === instructions;
   const stateOptions = campaign.stateCodes.map((code) => ({
     code,
     label: GLW_CAMPAIGN_US_STATES.find((state) => state.code === code)?.name ?? code,
   }));
+  const cityOptions = campaign.pageType === "city_service"
+    ? listReferenceCityOptions({ campaign, stateCode: referenceState })
+    : [];
+  const resolvedReferenceCitySlug = campaign.pageType === "city_service"
+    ? resolveDeterministicReferenceCitySlug({ campaign, stateCode: referenceState, preferredCitySlug: referenceCitySlug })
+    : null;
+  const selectedReferenceCitySlug = campaign.pageType === "city_service" ? (resolvedReferenceCitySlug ?? null) : null;
+  const selectedCity = selectedReferenceCitySlug
+    ? cityOptions.find((option) => option.citySlug === selectedReferenceCitySlug) ?? null
+    : null;
   const selectedStateLabel = stateOptions.find((state) => state.code === referenceState)?.label ?? referenceState;
+
+  useEffect(() => {
+    if (campaign.pageType !== "city_service") return;
+    if (selectedReferenceCitySlug === referenceCitySlug) return;
+    setReferenceCitySlug(selectedReferenceCitySlug);
+  }, [campaign.pageType, referenceCitySlug, selectedReferenceCitySlug]);
 
   const job = referenceResult?.job ?? null;
   const jobStatus = String(job?.status ?? "");
@@ -857,7 +895,11 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
             <select
               value={referenceState}
               onChange={(e) => {
-                void persistReferenceState(e.target.value);
+                const nextState = e.target.value;
+                const nextCity = campaign.pageType === "city_service"
+                  ? resolveDeterministicReferenceCitySlug({ campaign, stateCode: nextState, preferredCitySlug: null })
+                  : null;
+                void persistReferenceState(nextState, nextCity);
               }}
               className="mt-2 h-10 min-w-48 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white"
             >
@@ -869,14 +911,34 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
             </select>
           </label>
 
+          {campaign.pageType === "city_service" ? (
+            <label className="text-xs text-zinc-300">
+              Reference City
+              <select
+                value={selectedReferenceCitySlug ?? ""}
+                onChange={(e) => {
+                  void persistReferenceState(referenceState, e.target.value || null);
+                }}
+                className="mt-2 h-10 min-w-56 rounded-lg border border-zinc-700 bg-zinc-950 px-3 text-white"
+              >
+                {cityOptions.map((cityOption) => (
+                  <option key={`${cityOption.stateCode}:${cityOption.citySlug}`} value={cityOption.citySlug}>
+                    {cityOption.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
           <div className="text-xs text-zinc-300">
             <p>Reference State: <strong className="text-white">{selectedStateLabel} ({referenceState})</strong></p>
+            {campaign.pageType === "city_service" && selectedCity ? <p className="mt-1">Reference City: <strong className="text-white">{selectedCity.cityName} ({selectedCity.citySlug})</strong></p> : null}
             <p className="mt-1 text-zinc-500">The exact selection is persisted before authorization.</p>
           </div>
 
           <button
             type="button"
-            disabled={!instructionsApproved || generationBusy || existingOperationBlocksGeneration || !wordpressAuthorityReady || !campaign.stateCodes.includes(referenceState)}
+            disabled={!instructionsApproved || generationBusy || existingOperationBlocksGeneration || !wordpressAuthorityReady || !campaign.stateCodes.includes(referenceState) || (campaign.pageType === "city_service" && !selectedReferenceCitySlug)}
             onClick={generateReferencePage}
             className="h-10 rounded-lg bg-red-600 px-4 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -888,6 +950,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
           <p className="font-semibold text-white">Owner Action Authority</p>
           <p className="mt-1 text-zinc-300">Campaign: {campaign.name}</p>
           <p className="text-zinc-300">State: {selectedStateLabel} ({referenceState})</p>
+          {campaign.pageType === "city_service" ? <p className="text-zinc-300">City: {selectedCity ? `${selectedCity.cityName} (${selectedCity.citySlug})` : "UNSELECTED"}</p> : null}
           <p className="text-zinc-300">Operation: {retryOperation ? "Reference Generation Retry" : "Initial Reference Generation"}</p>
           {retryOperation && referenceWorkflow?.operationId ? <p className="text-zinc-300">Failed job: {referenceWorkflow.operationId}</p> : null}
           <p className="text-zinc-300">Authorization: {ownerGrantReady ? "AUTHORIZED" : terminalQaBlocked ? "BLOCKED_BY_QA" : sameJobRecoveryRequired ? "CONSUMED_FOR_EXISTING_JOB" : "REQUIRES_OWNER_AUTHORIZATION"}</p>

@@ -63,6 +63,54 @@ describe("Outdoor Digital Sphere product media authority", () => {
     await expect(intake({ bytes: Buffer.from("not-an-image") })).rejects.toThrow();
   });
 
+  test("allows intake for SSI projector enclosure scope while keeping unsupported tuples denied", async () => {
+    const repository = await import("../product-media-authority");
+    const ssiPending = await repository.intakeProductMedia({
+      organizationId: "ssi",
+      siteId: "site-ssi-projectorenclosure",
+      productId: "prod-ssi-fan-cooled-projector-enclosures",
+      originalFilename: "ssi-projector.jpg",
+      mimeType: "image/jpeg",
+      bytes: Buffer.concat([image, Buffer.from("ssi")]),
+      sourceType: "OWNER_SUPPLIED",
+      sourceDescription: "Owner supplied SSI product image.",
+      provenance: "owner-upload:ssi",
+      authorityClass: "PRODUCT_AUTHORITY",
+      usageScopes: ["PRODUCT_AUTHORITY"],
+      depictsActualProduct: true,
+      heroEligible: true,
+      altTextAuthority: "SSI projector enclosure product",
+      captionAuthority: "",
+      now: new Date("2030-01-01"),
+    });
+
+    expect(ssiPending).toMatchObject({
+      organizationId: "ssi",
+      siteId: "site-ssi-projectorenclosure",
+      productId: "prod-ssi-fan-cooled-projector-enclosures",
+      ownerApproval: "PENDING_OWNER_APPROVAL",
+    });
+
+    await expect(repository.intakeProductMedia({
+      organizationId: "ssi",
+      siteId: "site-ssi-projectorenclosure",
+      productId: "prod-ssi-unsupported",
+      originalFilename: "ssi-unsupported.jpg",
+      mimeType: "image/jpeg",
+      bytes: Buffer.concat([image, Buffer.from("ssi-unsupported")]),
+      sourceType: "OWNER_SUPPLIED",
+      sourceDescription: "Unsupported product tuple.",
+      provenance: "owner-upload:ssi-unsupported",
+      authorityClass: "PRODUCT_AUTHORITY",
+      usageScopes: ["PRODUCT_AUTHORITY"],
+      depictsActualProduct: true,
+      heroEligible: true,
+      altTextAuthority: "Unsupported",
+      captionAuthority: "",
+      now: new Date("2030-01-01"),
+    })).rejects.toThrow("PRODUCT_MEDIA_SCOPE_DENIED");
+  });
+
   test("requires explicit scope confirmation, keeps local atmosphere separate, and makes approval final", async () => {
     const repository = await import("../product-media-authority");
     const pending = await intake({ usageScopes: ["PRODUCT_AUTHORITY", "LOCAL_CONTEXTUAL_ATMOSPHERE"] });

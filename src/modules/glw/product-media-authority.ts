@@ -13,6 +13,9 @@ export const GLW_PRODUCT_MEDIA_AUTHORITY_VERSION = "GLW_PRODUCT_MEDIA_AUTHORITY_
 export const OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID = "prod-outdoor-digital-sphere" as const;
 export const OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID = "led-display-warehouse" as const;
 export const OUTDOOR_DIGITAL_SPHERE_SITE_ID = "site-led-display-warehouse-production" as const;
+export const SSI_PROJECTOR_ENCLOSURE_PRODUCT_ID = "prod-ssi-fan-cooled-projector-enclosures" as const;
+export const SSI_PROJECTOR_ENCLOSURE_ORGANIZATION_ID = "ssi" as const;
+export const SSI_PROJECTOR_ENCLOSURE_SITE_ID = "site-ssi-projectorenclosure" as const;
 export const PRODUCT_MEDIA_MAX_BYTES = 12 * 1024 * 1024;
 export const EXPLICIT_PRODUCT_MEDIA_APPROVAL_VERSION = "EXPLICIT_OWNER_CONFIRMATION_V1" as const;
 export const PRODUCT_MEDIA_HERO_AUTHORITY_VERSION = "PRODUCT_MEDIA_HERO_OWNER_AUTHORITY_V1" as const;
@@ -200,10 +203,14 @@ function normalizedRecord(record: ProductMediaAuthorityRecord): ProductMediaAuth
   };
 }
 
-function assertOutdoorScope(input: { organizationId: string; siteId: string; productId: string }): void {
-  if (input.organizationId !== OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID
-    || input.siteId !== OUTDOOR_DIGITAL_SPHERE_SITE_ID
-    || input.productId !== OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID) {
+const SUPPORTED_PRODUCT_MEDIA_SCOPES = new Set<string>([
+  `${OUTDOOR_DIGITAL_SPHERE_ORGANIZATION_ID}::${OUTDOOR_DIGITAL_SPHERE_SITE_ID}::${OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID}`,
+  `${SSI_PROJECTOR_ENCLOSURE_ORGANIZATION_ID}::${SSI_PROJECTOR_ENCLOSURE_SITE_ID}::${SSI_PROJECTOR_ENCLOSURE_PRODUCT_ID}`,
+]);
+
+function assertSupportedProductMediaScope(input: { organizationId: string; siteId: string; productId: string }): void {
+  const scopeKey = `${input.organizationId}::${input.siteId}::${input.productId}`;
+  if (!SUPPORTED_PRODUCT_MEDIA_SCOPES.has(scopeKey)) {
     throw new Error("PRODUCT_MEDIA_SCOPE_DENIED");
   }
 }
@@ -236,7 +243,7 @@ export async function intakeProductMedia(input: {
   captionAuthority: string;
   now?: Date;
 }): Promise<ProductMediaAuthorityRecord> {
-  assertOutdoorScope(input);
+  assertSupportedProductMediaScope(input);
   if (!(["image/jpeg", "image/png", "image/webp"] as const).includes(input.mimeType as ProductMediaAuthorityRecord["mimeType"])) throw new Error("PRODUCT_MEDIA_MIME_TYPE_INVALID");
   if (input.bytes.length === 0 || input.bytes.length > PRODUCT_MEDIA_MAX_BYTES) throw new Error("PRODUCT_MEDIA_SIZE_INVALID");
   required(input.originalFilename, "PRODUCT_MEDIA_FILENAME_REQUIRED");
@@ -319,7 +326,7 @@ export function reviewProductMedia(input: {
   sessionId: string;
   now?: Date;
 }): ProductMediaAuthorityRecord {
-  assertOutdoorScope(input);
+  assertSupportedProductMediaScope(input);
   required(input.principalId, "PRODUCT_MEDIA_OWNER_PRINCIPAL_REQUIRED");
   required(input.sessionId, "PRODUCT_MEDIA_OWNER_SESSION_REQUIRED");
   required(input.altTextAuthority, "PRODUCT_MEDIA_ALT_TEXT_REQUIRED");
@@ -404,7 +411,7 @@ function heroContext(input: {
   principalSessionId: string;
   replacementConfirmed: boolean;
 }, state: State): ProductMediaHeroContext {
-  assertOutdoorScope(input);
+  assertSupportedProductMediaScope(input);
   required(input.principalId, "PRODUCT_MEDIA_HERO_PRINCIPAL_REQUIRED");
   required(input.principalSessionId, "PRODUCT_MEDIA_HERO_SESSION_REQUIRED");
   if (!/^[0-9a-f]{40}$/.test(input.exactRuntime)) throw new Error("PRODUCT_MEDIA_HERO_RUNTIME_INVALID");
@@ -489,7 +496,7 @@ export function correctApprovedProductMediaUsageScope(input: {
   principalId: string;
   now?: Date;
 }): { records: readonly ProductMediaAuthorityRecord[]; audits: readonly ProductMediaScopeCorrectionAudit[]; mutated: boolean } {
-  assertOutdoorScope(input);
+  assertSupportedProductMediaScope(input);
   required(input.principalId, "PRODUCT_MEDIA_SCOPE_CORRECTION_PRINCIPAL_REQUIRED");
   const reason = required(input.reason, "PRODUCT_MEDIA_SCOPE_CORRECTION_REASON_REQUIRED");
   const loaded = load();
@@ -549,7 +556,7 @@ export function reconcileLegacyProductMediaApprovals(input: {
   principalId: string;
   now?: Date;
 }): { records: readonly ProductMediaAuthorityRecord[]; audits: readonly ProductMediaLegacyReconciliationAudit[]; mutated: boolean } {
-  assertOutdoorScope(input);
+  assertSupportedProductMediaScope(input);
   required(input.principalId, "PRODUCT_MEDIA_RECONCILIATION_PRINCIPAL_REQUIRED");
   const loaded = load();
   const audits = loaded.state.legacyReconciliationAudits ?? [];
@@ -614,7 +621,7 @@ export function reconcileLegacyProductMediaApprovals(input: {
 }
 
 export function listProductMediaAuthority(input: { organizationId: string; siteId: string; productId: string }): readonly ProductMediaAuthorityRecord[] {
-  assertOutdoorScope(input);
+  assertSupportedProductMediaScope(input);
   return deepClone(load().state.records.filter((record) => record.organizationId === input.organizationId
     && record.siteId === input.siteId
     && record.productId === input.productId).map(normalizedRecord));

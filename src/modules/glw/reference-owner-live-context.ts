@@ -16,6 +16,7 @@ export async function resolveGlwReferenceOwnerLiveContext(input: {
   siteId: string;
   campaignId: string;
   referenceState: string;
+  referenceCitySlug?: string | null;
   operationType: GlwReferenceOwnerOperationType;
   failedJobId?: string | null;
   failedArtifactSha256?: string | null;
@@ -28,6 +29,15 @@ export async function resolveGlwReferenceOwnerLiveContext(input: {
   if (!campaign) throw new Error("CAMPAIGN_NOT_FOUND");
   if (campaign.status !== "draft") throw new Error("CAMPAIGN_STATUS_INVALID");
   if (!campaign.stateCodes.includes(input.referenceState)) throw new Error("REFERENCE_STATE_NOT_IN_CAMPAIGN");
+  if (campaign.pageType === "city_service") {
+    const citySlug = (input.referenceCitySlug ?? "").trim().toLowerCase();
+    if (!citySlug) throw new Error("REFERENCE_CITY_REQUIRED");
+    const cityMatch = (campaign.cityTargets ?? []).some((target) =>
+      target.stateCode === input.referenceState
+      && target.citySlug.trim().toLowerCase() === citySlug,
+    );
+    if (!cityMatch) throw new Error("REFERENCE_CITY_NOT_IN_CAMPAIGN");
+  }
   const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
   const site = getSiteById(campaign.siteId);
   if (!pack || !site) throw new Error("REFERENCE_AUTHORITY_UNAVAILABLE");

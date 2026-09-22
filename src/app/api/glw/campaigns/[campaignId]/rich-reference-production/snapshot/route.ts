@@ -3,7 +3,7 @@ import { load } from "cheerio";
 import { NextRequest, NextResponse } from "next/server";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import { verifyGovernedSnapshotPath } from "@/modules/foundation/governed-render-capture-orchestrator";
-import { resolveSharedRichPageProductionProfile, richPageHostIntegrationCss } from "@/modules/foundation/shared-rich-page-production-authority";
+import { nativeTitlePolicyMatches, resolveSharedRichPageProductionProfile, richPageHostIntegrationCss } from "@/modules/foundation/shared-rich-page-production-authority";
 import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { resolveTargetParameterizedRichReferenceProduction } from "@/modules/glw/target-parameterized-rich-reference-production";
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ cam
     const settings = meta._elementor_page_settings && typeof meta._elementor_page_settings === "object" && !Array.isArray(meta._elementor_page_settings) ? meta._elementor_page_settings as Record<string, unknown> : {};
     const raw = text(content.raw);
     const rendered = text(content.rendered) || raw;
-    if (String(page.id ?? "") !== wordpressObjectId || text(page.status) !== "draft" || text(page.slug) !== readiness.identity.canonicalSlug || String(page.parent ?? "") !== readiness.identity.wordpressParentId || sha256(raw) !== expectedContentSha || settings.hide_title !== "yes") return new NextResponse("Draft identity stale", { status: 409 });
+    if (String(page.id ?? "") !== wordpressObjectId || text(page.status) !== "draft" || text(page.slug) !== readiness.identity.canonicalSlug || String(page.parent ?? "") !== readiness.identity.wordpressParentId || sha256(raw) !== expectedContentSha || !nativeTitlePolicyMatches(profile.host, settings.hide_title)) return new NextResponse("Draft identity stale", { status: 409 });
 
     const origin = new URL(`https://${site.domain.replace(/^www\./, "")}`).origin;
     const shellResponse = await fetch(`${origin}/`, { cache: "no-store", signal: AbortSignal.timeout(30_000) });

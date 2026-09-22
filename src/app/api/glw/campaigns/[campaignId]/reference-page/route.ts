@@ -33,6 +33,10 @@ import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperatio
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
 import { resolveTargetParameterizedRichReferenceProduction } from "@/modules/glw/target-parameterized-rich-reference-production";
+import {
+  resolveDeterministicReferenceCitySlug,
+  resolveReferenceCityFromCampaign,
+} from "@/modules/glw/reference-city-selection";
 
 type Context = { params: Promise<{ campaignId: string }> };
 
@@ -100,14 +104,6 @@ function isContinuableReferenceJob(job: {
     ]).has(job.errorCode);
 }
 
-function normalizeCitySlug(value?: string | null): string {
-  return (value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 function resolveReferenceTarget(input: {
   campaign: GlwCampaign;
   stateCode: string;
@@ -126,16 +122,20 @@ function resolveReferenceTarget(input: {
   }
 
   if (input.campaign.pageType === "city_service") {
-    const citySlug = normalizeCitySlug(input.citySlug);
+    const citySlug = resolveDeterministicReferenceCitySlug({
+      campaign: input.campaign,
+      stateCode,
+      preferredCitySlug: input.citySlug,
+    });
     if (!citySlug) {
-      throw new Error("City campaign reference requires citySlug.");
+      throw new Error("Select a city included in this campaign.");
     }
 
-    const city = input.campaign.cityTargets?.find(
-      (candidate) =>
-        candidate.stateCode === stateCode
-        && normalizeCitySlug(candidate.citySlug) === citySlug,
-    );
+    const city = resolveReferenceCityFromCampaign({
+      campaign: input.campaign,
+      stateCode,
+      citySlug,
+    });
     if (!city) {
       throw new Error("Select a city included in this campaign.");
     }
@@ -191,18 +191,37 @@ export async function GET(request: NextRequest, context: Context) {
   }
 
   let target;
-  const durableSelection = getGlwReferenceStateSelection(campaign.campaignId);
+  let durableSelection = getGlwReferenceStateSelection(campaign.campaignId);
   try {
     target = resolveReferenceTarget({
       campaign,
       stateCode: durableSelection?.stateCode ?? request.nextUrl.searchParams.get("stateCode") ?? "",
-      citySlug: request.nextUrl.searchParams.get("citySlug"),
+      citySlug: request.nextUrl.searchParams.get("citySlug") ?? durableSelection?.citySlug,
     });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Invalid campaign target." },
       { status: 400 },
     );
+  }
+
+  if (
+    campaign.pageType === "city_service"
+    && (
+      !durableSelection
+      || durableSelection.stateCode !== target.state.code
+      || durableSelection.citySlug !== target.citySlug
+    )
+  ) {
+    durableSelection = saveGlwReferenceStateSelection({
+      campaignId,
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      stateCode: target.state.code,
+      citySlug: target.citySlug,
+      selectedBy: durableSelection?.selectedBy ?? "SYSTEM_REFERENCE_TARGET_RECONCILIATION",
+      selectedAt: new Date().toISOString(),
+    });
   }
 
   const siteRecord = getSiteById(campaign.siteId);
@@ -399,10 +418,10 @@ export async function PUT(request: NextRequest, context: Context) {
   const { campaignId } = await context.params;
   const campaign = listGlwCampaigns().find((candidate) => candidate.campaignId === campaignId && candidate.organizationId === scope.organizationId) ?? null;
   if (!campaign || (scope.siteId && scope.siteId !== campaign.siteId)) return NextResponse.json({ error: "Campaign not found." }, { status: 404 });
-  const body = await request.json().catch(() => null) as { stateCode?: string } | null;
+  const body = await request.json().catch(() => null) as { stateCode?: string; citySlug?: string } | null;
   let target;
   try {
-    target = resolveReferenceTarget({ campaign, stateCode: body?.stateCode ?? "" });
+    target = resolveReferenceTarget({ campaign, stateCode: body?.stateCode ?? "", citySlug: body?.citySlug });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid campaign target." }, { status: 400 });
   }
@@ -411,6 +430,7 @@ export async function PUT(request: NextRequest, context: Context) {
     organizationId: campaign.organizationId,
     siteId: campaign.siteId,
     stateCode: target.state.code,
+    citySlug: target.citySlug,
     selectedBy: auth.roles.join(","),
     selectedAt: new Date().toISOString(),
   });
@@ -668,6 +688,7 @@ export async function POST(request: NextRequest, context: Context) {
         siteId: campaign.siteId,
         campaignId: campaign.campaignId,
         referenceState: target.state.code,
+        referenceCitySlug: target.citySlug,
         operationType: body!.ownerOperationType!,
         failedJobId: body!.failedJobId,
         failedArtifactSha256: body!.failedArtifactSha256,
@@ -739,6 +760,16 @@ export async function POST(request: NextRequest, context: Context) {
   form.referenceOwnerOperationType = ownerClaim.operationType;
   form.referenceOwnerFailedJobId = ownerClaim.failedJobId;
   form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
+
+  saveGlwReferenceStateSelection({
+    campaignId,
+    organizationId: campaign.organizationId,
+    siteId: campaign.siteId,
+    stateCode: target.state.code,
+    citySlug: target.citySlug,
+    selectedBy: auth.roles.join(","),
+    selectedAt: new Date().toISOString(),
+  });
 
   let generationBody: Record<string, unknown> = { form };
   if (failedDispatchRecovery) {

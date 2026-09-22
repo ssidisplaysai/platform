@@ -1479,6 +1479,7 @@ export async function POST(request: NextRequest) {
         siteId: campaign.siteId,
         campaignId: campaign.campaignId,
         referenceState: preview.request.stateCode,
+        referenceCitySlug: preview.request.citySlug,
         operationType: preview.request.referenceOwnerOperationType,
         failedJobId: preview.request.referenceOwnerFailedJobId,
         failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,

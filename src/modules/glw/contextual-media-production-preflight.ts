@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
 import { createAuthenticatedWordPressReadAuthority } from "@/modules/foundation/authenticated-wordpress-read-authority";
 import type { SitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
 import { getProductById } from "@/modules/foundation/product-repository";
@@ -13,6 +14,7 @@ import { resolveGenesisImageProviderConfiguration } from "./generated-image-serv
 import { resolveTargetParameterizedRichReferenceProduction } from "./target-parameterized-rich-reference-production";
 
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
+const sha256 = (value: string) => createHash("sha256").update(value.trim()).digest("hex");
 
 export async function resolveContextualMediaProductionAuthority(input: { campaignId: string; targetId: string; visualPlan: readonly ContextualVisualPlanItem[] }) {
   const readiness = await resolveTargetParameterizedRichReferenceProduction({ campaignId: input.campaignId, targetId: input.targetId });
@@ -33,11 +35,11 @@ export async function resolveContextualMediaProductionAuthority(input: { campaig
   const contentHtml = text(contentValue.raw) || text(contentValue.rendered);
   if (String(page.id ?? "") !== readiness.identity.wordpressObjectId || text(page.status) !== "draft" || text(page.slug) !== readiness.identity.canonicalSlug || String(page.parent ?? "") !== readiness.identity.wordpressParentId || !contentHtml) throw new Error("CONTEXTUAL_MEDIA_DRAFT_IDENTITY_MISMATCH");
   const presentationSlots = resolveContextualPresentationSlots(contentHtml, input.visualPlan);
-  return { readiness, site, product, productAuthority, provider, presentationSlots };
+  return { readiness, site, product, productAuthority, provider, presentationSlots, expectedStoredSha256: sha256(contentHtml) };
 }
 
 export async function preflightContextualMediaProduction(input: { campaignId: string; targetId: string; visualPlan: readonly ContextualVisualPlanItem[]; actor: string }) {
-  const { readiness, productAuthority, provider, presentationSlots } = await resolveContextualMediaProductionAuthority(input);
+  const { readiness, productAuthority, provider, presentationSlots, expectedStoredSha256 } = await resolveContextualMediaProductionAuthority(input);
   const result = await runContextualMediaProductionAdapter({ mode: "DRY_RUN", identity: { organizationId: readiness.identity.organizationId, siteId: readiness.identity.siteId, campaignId: readiness.target.campaignId, targetId: readiness.target.targetId, productId: readiness.identity.productId, wordpressObjectId: readiness.identity.wordpressObjectId, pageRevisionId: readiness.authority.candidateArtifactIdentity }, visualPlan: input.visualPlan, productAuthority, providerReady: provider.configured, actor: input.actor, dependencies: inertContextualMediaDependencies() });
-  return { result, presentationSlots, provider: { provider: provider.provider, model: provider.model, configured: provider.configured, monetaryCostTelemetryAvailable: provider.monetaryCostTelemetryAvailable }, target: readiness.target, identity: readiness.identity, productAuthority: { mediaAuthorityId: productAuthority.approval.candidateId, protected: true as const }, siteResolved: true as const, productResolved: true as const };
+  return { result, presentationSlots, expectedStoredSha256, provider: { provider: provider.provider, model: provider.model, configured: provider.configured, monetaryCostTelemetryAvailable: provider.monetaryCostTelemetryAvailable }, target: readiness.target, identity: readiness.identity, productAuthority: { mediaAuthorityId: productAuthority.approval.candidateId, protected: true as const }, siteResolved: true as const, productResolved: true as const };
 }

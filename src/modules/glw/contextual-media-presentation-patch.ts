@@ -34,14 +34,25 @@ const sawCandidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextu
 };
 
 const articleCandidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualPresentationSlot, "role" | "requestedSlot">[]> = {
-  HERO_EXPERIENCE: [],
+  HERO_EXPERIENCE: [
+    { actualSection: "ARTICLE_HERO", selector: "h1:first-of-type", placement: "MOUNT_IMAGE" },
+  ],
   POST_HERO_CONTEXTUAL: [
     { actualSection: "ARTICLE_BODY", selector: "h1 + figure img:first-of-type", placement: "IMAGE" },
     { actualSection: "ARTICLE_BODY", selector: "figure img:first-of-type", placement: "IMAGE" },
     { actualSection: "ARTICLE_BODY", selector: "img:first-of-type", placement: "IMAGE" },
+    { actualSection: "ARTICLE_BODY", selector: "h2:first-of-type", placement: "MOUNT_IMAGE" },
+    { actualSection: "ARTICLE_BODY", selector: "h1:first-of-type", placement: "MOUNT_IMAGE" },
   ],
-  APPLICATION_STAGE: [],
-  CTA_ATMOSPHERE: [],
+  APPLICATION_STAGE: [
+    { actualSection: "ARTICLE_APPLICATION_STAGE", selector: "h2:nth-of-type(4)", placement: "MOUNT_IMAGE" },
+    { actualSection: "ARTICLE_APPLICATION_STAGE", selector: "h2:nth-of-type(3)", placement: "MOUNT_IMAGE" },
+    { actualSection: "ARTICLE_APPLICATION_STAGE", selector: "h2:nth-of-type(5)", placement: "MOUNT_IMAGE" },
+    { actualSection: "ARTICLE_APPLICATION_STAGE", selector: "h2:first-of-type", placement: "MOUNT_IMAGE" },
+  ],
+  CTA_ATMOSPHERE: [
+    { actualSection: "ARTICLE_CTA", selector: "h2:last-of-type", placement: "MOUNT_IMAGE" },
+  ],
 };
 
 const richOutdoorSphereCandidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualPresentationSlot, "role" | "requestedSlot">[]> = {
@@ -91,10 +102,9 @@ function resolvePresentationRoot(contentHtml: string) {
   if (sectionMarkers.length > 0) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
 
   const h1 = $("h1");
-  const images = $("figure img, img");
   const mains = $("main");
   const articles = $("article");
-  if (h1.length !== 1 || images.length < 1 || mains.length > 1 || articles.length > 1) {
+  if (h1.length !== 1 || mains.length > 1 || articles.length > 1) {
     throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
   }
 
@@ -112,16 +122,18 @@ function candidatesFor(profile: PresentationProfile, slot: ContextualVisualSlot)
 export function resolveContextualPresentationSlots(contentHtml: string, requests: readonly Pick<ContextualPresentationReplacement, "role" | "slot">[]): readonly ResolvedContextualPresentationSlot[] {
   const { root, profile } = resolvePresentationRoot(contentHtml);
   const usedSections = new Set<unknown>();
+  const usedTargets = new Set<unknown>();
   return requests.map((request) => {
     const slotCandidates = candidatesFor(profile, request.slot);
     for (const candidate of slotCandidates) {
       const targets = root.find(candidate.selector);
       const section = targets.first().closest("[data-reference-section]");
-      if (targets.length !== 1) continue;
+      if (targets.length !== 1 || usedTargets.has(targets[0])) continue;
       if (profile === "SAW_REFERENCE") {
         if (section.length !== 1 || usedSections.has(section[0])) continue;
         usedSections.add(section[0]);
       }
+      usedTargets.add(targets[0]);
       return { role: request.role, requestedSlot: request.slot, ...candidate };
     }
     throw new Error(`CONTEXTUAL_MEDIA_PRESENTATION_SLOT_MISSING:${request.slot}`);
@@ -131,10 +143,14 @@ export function resolveContextualPresentationSlots(contentHtml: string, requests
 export function patchContextualPresentationMedia(contentHtml: string, replacements: readonly ContextualPresentationReplacement[]): string {
   const { $, root } = resolvePresentationRoot(contentHtml);
   const resolved = resolveContextualPresentationSlots(contentHtml, replacements);
+  const resolvedTargets = resolved.map((placement) => {
+    const target = root.find(placement.selector).first();
+    if (target.length !== 1) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_SLOT_TARGET_INVALID");
+    return { placement, target };
+  });
   for (let index = 0; index < replacements.length; index += 1) {
-    const replacement = replacements[index]; const placement = resolved[index];
+    const replacement = replacements[index]; const { placement, target } = resolvedTargets[index];
     if (!/^https:\/\//i.test(replacement.url) || !Number.isSafeInteger(replacement.mediaId) || replacement.mediaId < 1 || !/^[a-f0-9]{64}$/.test(replacement.assetSha256)) throw new Error("CONTEXTUAL_MEDIA_PRESENTATION_REPLACEMENT_INVALID");
-    const target = root.find(placement.selector);
     if (placement.placement === "BACKGROUND") {
       const currentStyle = target.attr("style") ?? "";
       target
@@ -153,7 +169,12 @@ export function patchContextualPresentationMedia(contentHtml: string, replacemen
         target.attr("data-generated-contextual-media", "true");
         continue;
       }
-      target.prepend($("<figure>").addClass("saw-generated-application-media").attr("data-contextual-role", replacement.role).append($("<img>").attr("src", replacement.url).attr("alt", replacement.altText).attr("style", "display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;").attr("data-media-id", String(replacement.mediaId)).attr("data-media-role", replacement.mediaRole).attr("data-contextual-role", replacement.role).attr("data-generated-asset-sha", replacement.assetSha256)));
+      const figure = $("<figure>").addClass("saw-generated-application-media").attr("data-contextual-role", replacement.role).append($("<img>").attr("src", replacement.url).attr("alt", replacement.altText).attr("style", "display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;").attr("data-media-id", String(replacement.mediaId)).attr("data-media-role", replacement.mediaRole).attr("data-contextual-role", replacement.role).attr("data-generated-asset-sha", replacement.assetSha256));
+      if (target.is("h1,h2,h3,h4,h5,h6")) {
+        target.after(figure);
+      } else {
+        target.prepend(figure);
+      }
       target.attr("data-generated-contextual-media", "true");
       continue;
     }

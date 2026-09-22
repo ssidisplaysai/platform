@@ -134,21 +134,31 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
 }): Promise<TargetParameterizedRichReferenceReadiness> {
   const campaign = listGlwCampaigns().find((candidate) => candidate.campaignId === input.campaignId) ?? null;
   if (!campaign) throw new Error("RICH_REFERENCE_CAMPAIGN_NOT_FOUND");
-  if (campaign.pageType !== "state_service") throw new Error("RICH_REFERENCE_STATE_CAMPAIGN_REQUIRED");
-  const selection = getGlwReferenceStateSelection(campaign.campaignId);
-  if (!selection || !campaign.stateCodes.includes(selection.stateCode)) throw new Error("RICH_REFERENCE_STATE_SELECTION_REQUIRED");
-
   const durableTargets = listGlwCampaignTargets(campaign.campaignId);
-  const targets = durableTargets.length > 0 ? durableTargets : previewGlwCampaignTargets({
-    campaignId: campaign.campaignId,
-    organizationId: campaign.organizationId,
-    siteId: campaign.siteId,
-    productId: campaign.productId,
-    stateCodes: campaign.stateCodes,
-    referenceStateCode: selection.stateCode,
-  });
+  const targets = campaign.pageType === "state_service"
+    ? (() => {
+      const selection = getGlwReferenceStateSelection(campaign.campaignId);
+      if (!selection || !campaign.stateCodes.includes(selection.stateCode)) throw new Error("RICH_REFERENCE_STATE_SELECTION_REQUIRED");
+      return durableTargets.length > 0 ? durableTargets : previewGlwCampaignTargets({
+        campaignId: campaign.campaignId,
+        organizationId: campaign.organizationId,
+        siteId: campaign.siteId,
+        productId: campaign.productId,
+        stateCodes: campaign.stateCodes,
+        referenceStateCode: selection.stateCode,
+      });
+    })()
+    : campaign.pageType === "city_service"
+      ? (() => {
+        if (durableTargets.length === 0) throw new Error("RICH_REFERENCE_CITY_TARGET_REQUIRED");
+        return durableTargets;
+      })()
+      : (() => {
+        throw new Error("RICH_REFERENCE_STATE_CAMPAIGN_REQUIRED");
+      })();
   const target = selectNextEligibleRichReferenceTarget({ targets, targetId: input.targetId });
   const state = getGlwState(target.stateCode);
+  if (campaign.pageType === "city_service" && !target.citySlug) throw new Error("RICH_REFERENCE_CITY_TARGET_REQUIRED");
   const site = getSiteById(campaign.siteId);
   const product = getProductById(campaign.productId);
   const pack = getGlwCampaignKnowledgePack(campaign.campaignId);
@@ -157,7 +167,7 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
     throw new Error("RICH_REFERENCE_TARGET_SCOPE_MISMATCH");
   }
 
-  const generation = buildGlwCampaignProductionGenerationForm({ campaign, stateCode: state.code });
+  const generation = buildGlwCampaignProductionGenerationForm({ campaign, stateCode: state.code, citySlug: target.citySlug ?? null });
   const generationSite = adaptSiteForGeneration(site);
   const generationProduct = adaptProductForGeneration(product, site.siteId);
   const preview = buildLocalGlwGenerationPreview({ form: generation.form, sites: [generationSite], products: [generationProduct] });
@@ -166,7 +176,7 @@ export async function resolveTargetParameterizedRichReferenceProduction(input: {
   const reader = input.wordpressReadAuthority ?? await wordpressAuthority(site.siteId);
   const jobs = await glwPageExecutionRepository.list();
   const targetPreflight: GlwTargetPreflightResult = await readGlwTargetPreflight({ request: preview.request, wordpressReadAuthority: reader, localExecutions: jobs });
-  const mutation = resolveGlwTargetMutationAvailability(targetPreflight, "state_service");
+  const mutation = resolveGlwTargetMutationAvailability(targetPreflight, preview.request.pageType);
   if (!targetPreflight.canonicalParentId || (!mutation.createAvailable && !mutation.updateAvailable)) throw new Error("RICH_REFERENCE_DRAFT_TARGET_UNAVAILABLE");
 
   const mediaRecords = listProductMediaAuthority({ organizationId: campaign.organizationId, siteId: campaign.siteId, productId: campaign.productId });

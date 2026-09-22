@@ -19,6 +19,7 @@ export async function GET(request: NextRequest, context: Context) {
   const organizationId = request.nextUrl.searchParams.get("organizationId");
   const siteId = request.nextUrl.searchParams.get("siteId");
   const referenceState = request.nextUrl.searchParams.get("referenceState");
+  const referenceCitySlug = request.nextUrl.searchParams.get("referenceCitySlug");
   if (principal.ok && operationType && organizationId && siteId && referenceState) {
     const { campaignId } = await context.params;
     try {
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest, context: Context) {
         siteId,
         campaignId,
         referenceState,
+        referenceCitySlug,
         failedJobId: request.nextUrl.searchParams.get("failedJobId"),
         failedArtifactSha256: request.nextUrl.searchParams.get("failedArtifactSha256"),
       });
@@ -58,6 +60,7 @@ export async function POST(request: NextRequest, context: Context) {
     organizationId?: string;
     siteId?: string;
     referenceState?: string;
+    referenceCitySlug?: string;
     failedJobId?: string | null;
     failedArtifactSha256?: string | null;
     preflightReceiptId?: string;
@@ -71,6 +74,7 @@ export async function POST(request: NextRequest, context: Context) {
       siteId: body.siteId,
       campaignId,
       referenceState: body.referenceState,
+      referenceCitySlug: body.referenceCitySlug,
       operationType: body.operationType,
       failedJobId: body.failedJobId,
       failedArtifactSha256: body.failedArtifactSha256,

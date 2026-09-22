@@ -49,6 +49,11 @@ export function resolvePersistenceRoot(): string {
     return fromEnv;
   }
 
+  const fromSessionEnv = process.env.GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR?.trim();
+  if (fromSessionEnv && fromSessionEnv.length > 0) {
+    return fromSessionEnv;
+  }
+
   if (process.env.NODE_ENV === "test") {
     const workerId = process.env.JEST_WORKER_ID ?? "0";
     return join(process.cwd(), `${DEFAULT_PERSISTENCE_DIR}-test-${workerId}`);

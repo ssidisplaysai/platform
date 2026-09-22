@@ -6,12 +6,17 @@ import type { SharedRichPageProductionProfile } from "@/modules/foundation/share
 import type { SitePageMediaAssignment } from "@/modules/foundation/site-page-media-assignment";
 import type { GlwGeneratedDraftArtifact } from "./page-execution";
 import { applyLedDisplayWarehousePresentationAuthority, LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT, type LedDisplayWarehousePresentationEvaluation } from "./led-display-warehouse-presentation-authority";
+import { applyProjectorEnclosurePresentationAuthority, PROJECTOR_ENCLOSURE_PRESENTATION_CONTRACT, type ProjectorEnclosurePresentationEvaluation } from "./projector-enclosure-presentation-authority";
 import { evaluateGlwReferenceClaimAuthority } from "./reference-claim-authority";
 import { evaluateGlwReferenceOwnerReviewReadiness } from "./reference-owner-review-readiness";
 import { evaluateGlwStateLocalizationContamination } from "./state-localization-contamination";
 import { canonicalizeGlwZeroAuthorityClaims } from "./zero-authority-claim-canonicalization";
 
 export const TARGET_RICH_REFERENCE_ARTIFACT_PRODUCER_VERSION = "GENESIS_TARGET_RICH_REFERENCE_ARTIFACT_PRODUCER_V1" as const;
+
+export type SitePresentationEvaluation =
+  | LedDisplayWarehousePresentationEvaluation
+  | ProjectorEnclosurePresentationEvaluation;
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -36,11 +41,17 @@ export function produceTargetRichReferenceArtifact(input: {
   artifactSha: string;
   semanticArtifactSha: string;
   deterministicCanonicalizationUsed: boolean;
-  presentation: LedDisplayWarehousePresentationEvaluation;
+  presentation: SitePresentationEvaluation;
   qa: { unsupportedFactualClaims: number; geographicEvidenceEscapes: number; comparisonAuthorityEscapes: number; buyerQuestionPremiseEscapes: number; unexpectedStateContamination: number; internalGovernanceLanguage: number; customerFacingCopyQuality: "PASS" };
 } {
   if (input.profile.selector.productId !== input.product.productId || input.profile.selector.pageType !== "LOCATION_SERVICE" || !input.profile.host.suppressNativeTitle) throw new Error("TARGET_RICH_REFERENCE_HOST_PROFILE_MISMATCH");
-  if (input.profile.presentation?.authority !== LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT || input.profile.presentation.family !== "LED_AV_EXPERIENTIAL") throw new Error("TARGET_RICH_REFERENCE_PRESENTATION_PROFILE_MISMATCH");
+  const presentationAuthority = input.profile.presentation?.authority;
+  if (!presentationAuthority) throw new Error("TARGET_RICH_REFERENCE_PRESENTATION_PROFILE_MISMATCH");
+  if (
+    (presentationAuthority === LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT && input.profile.presentation?.family !== "LED_AV_EXPERIENTIAL")
+    || (presentationAuthority === PROJECTOR_ENCLOSURE_PRESENTATION_CONTRACT && input.profile.presentation?.family !== "PROJECTOR_ENCLOSURE_COMMERCIAL_AV")
+    || (presentationAuthority !== LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT && presentationAuthority !== PROJECTOR_ENCLOSURE_PRESENTATION_CONTRACT)
+  ) throw new Error("TARGET_RICH_REFERENCE_PRESENTATION_PROFILE_MISMATCH");
   const rawClaims = evaluateGlwReferenceClaimAuthority({ artifact: input.semanticArtifact, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
   const canonicalization = canonicalizeGlwZeroAuthorityClaims({ rawArtifact: input.semanticArtifact, authoritativeFactReferenceIds: [], findings: rawClaims.findings });
   if (!canonicalization.ok || !canonicalization.canonicalizedArtifact) throw new Error("TARGET_RICH_REFERENCE_CANONICALIZATION_BLOCKED");
@@ -69,7 +80,9 @@ export function produceTargetRichReferenceArtifact(input: {
 
   const application = assignments.get("APPLICATION_EXPERIENCE");
   if (!application || application.asset.type !== "APPROVED_EXISTING") throw new Error("TARGET_RICH_REFERENCE_APPLICATION_EXPERIENCE_MEDIA_REQUIRED");
-  const presented = applyLedDisplayWarehousePresentationAuthority($.html());
+  const presented = presentationAuthority === LED_DISPLAY_WAREHOUSE_PRESENTATION_CONTRACT
+    ? applyLedDisplayWarehousePresentationAuthority($.html())
+    : applyProjectorEnclosurePresentationAuthority($.html());
   const contentHtml = presented.contentHtml;
   const artifact: GlwGeneratedDraftArtifact = {
     title: `${input.product.productName} in ${input.target.stateName}`,

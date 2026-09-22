@@ -42,5 +42,7 @@ export type GlwCampaignKnowledgePack = {
   }[];
   ownerApprovalRequired?: boolean;
   approvedAt?: string | null;
+  approvedInstructionRevision?: number | null;
+  approvedInstructionSha256?: string | null;
   updatedAt: string;
 };
