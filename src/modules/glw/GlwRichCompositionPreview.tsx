@@ -32,6 +32,7 @@ const defaultPreviewCopy: ProductPreviewCopy = {
 
 export function GlwRichCompositionPreview({ preview, compact = false }: { preview: Preview; compact?: boolean }) {
   const heroStyle = preview.contextualImageUrl ? { backgroundImage: `linear-gradient(90deg,rgba(12,18,20,.94),rgba(12,18,20,.62)),url("${preview.contextualImageUrl.replaceAll('"', "%22")}")` } : undefined;
+  const projectorEnclosurePresentationBound = /data-site-presentation-authority\s*=\s*["']PROJECTOR_ENCLOSURE_PRESENTATION_V1["']/i.test(preview.bodyHtml);
   const copy = previewCopyByProductId[preview.productId] ?? defaultPreviewCopy;
   return <article className="overflow-hidden bg-[#f4f3ef] text-[#172022]" data-preview-authority="NON_MUTATING" data-composition-profile="LOCATION_SERVICE">
     <div className="flex min-h-11 items-center justify-between gap-4 bg-[#b42318] px-5 py-3 text-xs font-bold uppercase text-white sm:px-8">
@@ -49,7 +50,7 @@ export function GlwRichCompositionPreview({ preview, compact = false }: { previe
       {preview.productImageUrl ? <figure className="border border-[#d7d4cc] bg-[#eef0ed] p-4"><img src={preview.productImageUrl} alt={preview.productAltText ?? copy.fallbackAltText} className="aspect-[20/9] h-auto w-full object-contain" /><figcaption className="mt-3 text-xs text-[#66706f]">Owner-approved canonical product media</figcaption></figure> : <div className="border border-red-300 bg-red-50 p-5 text-sm font-semibold text-red-900">Required product authority media unresolved. Owner review is blocked.</div>}
     </section>
     <section className={`bg-[#f4f3ef] px-5 py-12 sm:px-8 ${compact ? "" : "lg:px-[8vw] lg:py-20"}`}>
-      <div className="mx-auto max-w-[1120px] columns-1 gap-12 [&_a]:font-bold [&_a]:text-[#a61b13] [&_dd]:mb-4 [&_dt]:font-bold [&_h2]:mb-4 [&_h2]:mt-10 [&_h2]:break-after-avoid [&_h2]:text-2xl [&_h2]:font-black [&_h2]:leading-tight [&_h3]:mb-3 [&_h3]:mt-7 [&_h3]:font-bold [&_li]:mb-2 [&_p]:mb-5 [&_p]:max-w-[72ch] [&_p]:leading-7 [&_table]:w-full [&_table]:table-fixed [&_td]:break-words [&_td]:border [&_td]:border-[#d7d4cc] [&_td]:p-2 [&_th]:break-words [&_th]:border [&_th]:border-[#d7d4cc] [&_th]:p-2 max-lg:[&_table]:text-xs lg:columns-2" dangerouslySetInnerHTML={{ __html: preview.bodyHtml }} />
+      <div className={`mx-auto max-w-[1120px] columns-1 gap-12 [&_a]:font-bold [&_a]:text-[#a61b13] [&_dd]:mb-4 [&_dt]:font-bold [&_h2]:mb-4 [&_h2]:mt-10 [&_h2]:break-after-avoid [&_h2]:text-2xl [&_h2]:font-black [&_h2]:leading-tight [&_h3]:mb-3 [&_h3]:mt-7 [&_h3]:font-bold [&_li]:mb-2 [&_p]:mb-5 [&_p]:max-w-[72ch] [&_p]:leading-7 [&_table]:w-full [&_table]:table-fixed [&_td]:break-words [&_td]:border [&_td]:border-[#d7d4cc] [&_td]:p-2 [&_th]:break-words [&_th]:border [&_th]:border-[#d7d4cc] [&_th]:p-2 max-lg:[&_table]:text-xs ${projectorEnclosurePresentationBound ? "lg:columns-1" : "lg:columns-2"}`} dangerouslySetInnerHTML={{ __html: preview.bodyHtml }} />
     </section>
     <footer className="border-t border-[#d7d4cc] bg-[#172022] px-5 py-8 text-xs text-white/65 sm:px-8"><p>Composition preview only. No WordPress update, publication, campaign transition, or dispatch is performed.</p></footer>
   </article>;

@@ -39,10 +39,10 @@ type ClaimRule = {
 
 const RULES: readonly ClaimRule[] = [
   { claimClass: "MARKET_ADOPTION", pattern: /(?:\btrends?\b|\badoption\b|\bgrowth\b|increasing use|\bpopularity\b|market movement|industry direction|regional demand|(?:venues?|businesses?|organizations?).{0,80}(?:continue to adopt|increasingly adopt|growing demand|adoption))/gi },
-  { claimClass: "CLIMATE", pattern: /(?:climate|temperature swings?|extreme temperatures?|hot summers?|snowy winters?|local lighting conditions|weather conditions?|snow removal|humidity|precipitation|\bwind\b|\bsnow\b|\bheat\b)/gi },
-  { claimClass: "PRODUCT_CAPABILITY", pattern: /(?:outdoor readability|readable outdoors?|support interactivity|interactive content|broad visibility|requires? sensors?|input devices?|networking support|control systems?|moving images?|dynamic media|flexible programming|content programming|all-direction audience viewing)/gi },
+  { claimClass: "CLIMATE", pattern: /(?:climate|temperature swings?|extreme temperatures?|hot summers?|snowy winters?|local lighting conditions|weather conditions?|snow removal|humidity|precipitation|\bwind\b|\bsnow\b|\bheat\b|texas temperature|thermal management|overheating)/gi },
+  { claimClass: "PRODUCT_CAPABILITY", pattern: /(?:outdoor readability|readable outdoors?|support interactivity|interactive content|broad visibility|requires? sensors?|input devices?|networking support|control systems?|moving images?|dynamic media|flexible programming|content programming|all-direction audience viewing|active cooling benefits?|mounting adaptability|service access (?:assumptions?|benefits?)|maintenance benefits?|security benefits?)/gi },
   { claimClass: "PRODUCT_SPECIFICATION", pattern: /(?:technical specifications?|performance ratings?|product specifications?|anti-glare|dimming|color[- ]temperature|360(?:°|-degree)|panoramic|multidirectional|curved mounting|custom site adaptation|seamless rounded)/gi },
-  { claimClass: "DURABILITY", pattern: /(?:weatherproof construction|weatherproof|withstand moisture|uv exposure|durability ratings?)/gi },
+  { claimClass: "DURABILITY", pattern: /(?:weatherproof construction|weatherproof|withstand moisture|uv exposure|durability ratings?|equipment longevity|extended lifespan|long[- ]term protection)/gi },
   { claimClass: "INGRESS_PROTECTION", pattern: /(?:ingress protection|\bingress\b|\bIP\d{2}\b)/gi },
   { claimClass: "BRIGHTNESS", pattern: /(?:brightness ratings?|\bnits?\b|high-brightness)/gi },
   { claimClass: "INTERACTIVITY", pattern: /(?:motion sensors?|mobile apps?|social feeds?|interactive)/gi },

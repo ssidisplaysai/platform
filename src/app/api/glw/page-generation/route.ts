@@ -56,6 +56,11 @@ import type { ContextualGenerationReceipt } from "@/modules/glw/contextual-media
 import { buildOutdoorSphereGeneratedContextualPrompt, requiresGeneratedContextualMediaForOutdoorSphere } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
 import { applyProjectorEnclosureHouseMappingCanary } from "@/modules/glw/projectorenclosure-house-mapping-canary";
 import {
+  assembleProjectorEnclosureRichReference,
+  buildProjectorEnclosureVisualPlan,
+  SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID,
+} from "@/modules/glw/projector-enclosure-rich-assembly";
+import {
   adaptProductForGeneration,
   adaptSiteForGeneration,
   buildLocalGlwGenerationPreview,
@@ -162,6 +167,16 @@ function parseAbsoluteHttpUrl(value: string | null | undefined): URL | null {
   } catch {
     return null;
   }
+}
+
+function shouldUseProjectorEnclosureRichAssembly(input: {
+  organizationId: string;
+  siteId: string;
+  productId: string;
+}): boolean {
+  return input.organizationId === "ssi"
+    && input.siteId === "site-ssi-projectorenclosure"
+    && input.productId === SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID;
 }
 
 function resolveStrictProductAuthorityMediaUrl(input: {
@@ -438,8 +453,60 @@ async function finalizeContentReadyExecution(input: {
       request: input.request,
     });
 
+  const richVisualPlan = shouldUseProjectorEnclosureRichAssembly({
+    organizationId: input.request.organizationId,
+    siteId: input.request.siteId,
+    productId: input.request.productId,
+  })
+    ? buildProjectorEnclosureVisualPlan({
+        productId: input.request.productId,
+        pageType: input.request.pageType,
+      })
+    : null;
+
+  const resolvedProductAuthorityMedia = productRecord.media.primaryImageReference
+    ? resolveApprovedProductAuthorityMedia({
+        organizationId: input.request.organizationId,
+        siteId: input.request.siteId,
+        productId: input.request.productId,
+        authorityReference: productRecord.media.primaryImageReference,
+      })
+    : null;
+
+  const productAuthorityMediaUrl = resolveStrictProductAuthorityMediaUrl({
+    authority: resolvedProductAuthorityMedia,
+    siteRecord: input.siteRecord,
+  });
+
+  const selectedProductVisualUrl = parseAbsoluteHttpUrl(productAuthority.selectedMedia?.url)?.toString()
+    ?? productAuthorityMediaUrl;
+  const selectedOutdoorVisualUrl = parseAbsoluteHttpUrl(productAuthority.selectedMedia?.url)?.toString()
+    ?? productAuthorityMediaUrl;
+  const selectedIndoorVisualUrl = parseAbsoluteHttpUrl(
+    productAuthority.selectedMedia?.url && productAuthority.selectedMedia.url !== selectedOutdoorVisualUrl
+      ? productAuthority.selectedMedia.url
+      : null,
+  )?.toString() ?? null;
+
+  const postRepairArtifact = richVisualPlan
+    && selectedProductVisualUrl
+    && selectedOutdoorVisualUrl
+    && productAuthority.canonicalProduct?.url
+    ? assembleProjectorEnclosureRichReference({
+        artifact: campaignReferenceRepair.artifact,
+        productTopic: input.request.productTopic,
+        stateName: input.request.stateName,
+        cityName: input.request.cityName,
+        visualPlan: richVisualPlan,
+        productImageUrl: selectedProductVisualUrl,
+        outdoorVisualUrl: selectedOutdoorVisualUrl,
+        indoorVisualUrl: selectedIndoorVisualUrl,
+        canonicalProductHref: productAuthority.canonicalProduct.url,
+      })
+    : campaignReferenceRepair.artifact;
+
   let enrichment = prepareGeneratedContentForSite({
-    artifact: campaignReferenceRepair.artifact,
+    artifact: postRepairArtifact,
     request: input.request,
     siteRecord: input.siteRecord,
     keywordOwners,
