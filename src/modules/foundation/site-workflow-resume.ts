@@ -2,6 +2,7 @@ import type { SiteConfiguration } from "./types";
 import type { SiteIntelligenceWorkspace } from "./site-intelligence";
 import type { SiteProductServiceAuthority } from "./site-product-authority-repository";
 import { isCapabilityReviewComplete, selectDistinctCapabilityOpportunities } from "./site-capability-transition";
+import type { ThreeGateOwnerActionProjection } from "./site-build-continuation";
 
 export type WorkflowStageStatus = "COMPLETE" | "APPROVED" | "IN_PROGRESS" | "READY_FOR_REVIEW" | "NOT_STARTED" | "BLOCKED" | "DISABLED";
 export type SiteWorkflowStage = { key: "connection" | "intelligence" | "capability" | "strategy" | "creative" | "product_authority" | "generation_readiness" | "site_build" | "publication"; label: string; status: WorkflowStageStatus; detail: string };
@@ -14,7 +15,7 @@ function scoped(path: string, site: SiteConfiguration): string {
   return `${path}${join}organizationId=${encodeURIComponent(site.organizationId)}&siteId=${encodeURIComponent(site.siteId)}`;
 }
 
-export function resolveSiteWorkflowResume(input: { site: SiteConfiguration; intelligence: SiteIntelligenceWorkspace | null; productAuthority: ProductAuthorityProgress; generationReadiness: { readyToCertify: boolean; certified: boolean; stale: boolean; blockers: string[] }; siteBuildStarted?: boolean; siteBuildStage?: string; siteBuildNext?: { action: string; label: string; detail: string; route: string } }): SiteWorkflowResume {
+export function resolveSiteWorkflowResume(input: { site: SiteConfiguration; intelligence: SiteIntelligenceWorkspace | null; productAuthority: ProductAuthorityProgress; generationReadiness: { readyToCertify: boolean; certified: boolean; stale: boolean; blockers: string[] }; siteBuildStarted?: boolean; siteBuildStage?: string; siteBuildNext?: { action: string; label: string; detail: string; route: string }; continuationProjection?: ThreeGateOwnerActionProjection }): SiteWorkflowResume {
   const { site, intelligence, productAuthority, generationReadiness } = input;
   const connectionComplete = site.onboarding?.status === "connected" || site.onboarding?.status === "certified";
   const intelligenceComplete = intelligence?.intelligenceState === "INTELLIGENCE_APPROVED";
@@ -49,8 +50,26 @@ export function resolveSiteWorkflowResume(input: { site: SiteConfiguration; inte
   else if (!strategyApproved) primaryAction = { key: "REVIEW_STRATEGY", title: "Strategy Review", description: strategyReady ? "Review and explicitly decide the current strategy revision." : "Generate the strategy proposal from finalized authority.", label: strategyReady ? "REVIEW STRATEGY" : "CONTINUE SITE STRATEGY", href: `${scoped(`/sites/${site.siteId}/intelligence`, site)}#strategy-review` };
   else if (!creativeApproved) primaryAction = { key: "CONTINUE_CREATIVE_DIRECTION", title: "Creative Direction", description: creativeReady ? "Review and explicitly decide the current Creative Direction revision." : "Generate Creative Direction from approved strategy and references.", label: creativeReady ? "REVIEW CREATIVE DIRECTION" : "CONTINUE CREATIVE DIRECTION", href: `${scoped(`/sites/${site.siteId}/intelligence`, site)}#creative-direction` };
   else if (!productComplete) primaryAction = { key: "CONTINUE_PRODUCT_SERVICE_AUTHORITY", title: "Product / Service Authority", description: productAuthority.remaining ? `Confirm ${productAuthority.remaining} remaining offerings and establish the sources Genesis may trust.` : productAuthority.approved === 0 ? "Approve at least one offering before Genesis can prepare generation grounding." : "Resolve protected fact requirements before generation.", label: "CONTINUE PRODUCT / SERVICE AUTHORITY", href: scoped(`/products/new?source=manual`, site) };
+  else if (!generationReadiness.certified && input.continuationProjection?.ownerActionState === "READY_TO_CONTINUE") {
+    primaryAction = {
+      key: "CONTINUE_SITE_BUILD",
+      title: "Site Build",
+      description: "Genesis will automatically complete safe internal steps and stop only when your decision is required.",
+      label: input.siteBuildStarted ? "CONTINUE BUILD" : "BUILD SITE",
+      href: scoped(`/sites/${site.siteId}/build`, site),
+    };
+  }
+  else if (!generationReadiness.certified && input.continuationProjection?.ownerActionState === "OWNER_ACTION_REQUIRED" && input.continuationProjection.routeHint === "CREATIVE_REVIEW") {
+    primaryAction = {
+      key: "CONTINUE_CREATIVE_DIRECTION",
+      title: "Creative Direction",
+      description: input.continuationProjection.detail,
+      label: "REVIEW CREATIVE DIRECTION",
+      href: `${scoped(`/sites/${site.siteId}/intelligence`, site)}#creative-direction`,
+    };
+  }
   else if (!generationReadiness.certified) primaryAction = { key: "CONTINUE_GENERATION_READINESS", title: "Generation Readiness", description: generationReadiness.stale ? "Material authority changed. Review and recertify the current draft-generation snapshot." : "Complete final checks and explicitly certify safe draft generation. Publication is not required.", label: "CONTINUE TO GENERATION READINESS", href: scoped(`/sites/${site.siteId}/generation-readiness`, site) };
-  else if (input.siteBuildStarted && input.siteBuildNext?.action === "REVIEW_REMAINING_DESIGNS") primaryAction = { key: "REVIEW_REMAINING_DESIGNS", title: "Site Visual Review", description: input.siteBuildNext.detail, label: "REVIEW REQUIRED", href: input.siteBuildNext.route };
+  else if (input.siteBuildStarted && input.siteBuildNext?.action === "REVIEW_REMAINING_DESIGNS") primaryAction = { key: "REVIEW_REMAINING_DESIGNS", title: "Site Visual Review", description: input.siteBuildNext.detail, label: input.siteBuildNext.label, href: input.siteBuildNext.route };
   else if (input.siteBuildStarted && input.siteBuildNext?.action === "REVIEW_SITE_QA") primaryAction = { key: "REVIEW_SITE_QA", title: "Site QA", description: input.siteBuildNext.detail, label: input.siteBuildNext.label, href: input.siteBuildNext.route };
   else if (input.siteBuildStarted && input.siteBuildNext?.action === "REVIEW_NAVIGATION") primaryAction = { key: "REVIEW_NAVIGATION", title: "Navigation Review", description: input.siteBuildNext.detail, label: input.siteBuildNext.label, href: input.siteBuildNext.route };
   else if (input.siteBuildStarted && input.siteBuildNext?.action === "REVIEW_PUBLICATION_READINESS") primaryAction = { key: "REVIEW_PUBLICATION_READINESS", title: "Publication Readiness", description: input.siteBuildNext.detail, label: input.siteBuildNext.label, href: input.siteBuildNext.route };
@@ -59,7 +78,17 @@ export function resolveSiteWorkflowResume(input: { site: SiteConfiguration; inte
   else if (input.siteBuildStarted && input.siteBuildNext?.action === "RESUME_PUBLICATION_EXECUTION") primaryAction = { key: "RESUME_PUBLICATION_EXECUTION", title: "Publication Execution", description: input.siteBuildNext.detail, label: input.siteBuildNext.label, href: input.siteBuildNext.route };
   else if (input.siteBuildStarted && input.siteBuildNext?.action === "VERIFY_PUBLICATION") primaryAction = { key: "VERIFY_PUBLICATION", title: "Publication Verification", description: input.siteBuildNext.detail, label: input.siteBuildNext.label, href: input.siteBuildNext.route };
   else if (input.siteBuildStarted && input.siteBuildNext?.action === "REVIEW_COMPLETED_SITE") primaryAction = { key: "REVIEW_COMPLETED_SITE", title: "Completed Site", description: input.siteBuildNext.detail, label: input.siteBuildNext.label, href: input.siteBuildNext.route };
-  else primaryAction = { key: "CONTINUE_SITE_BUILD", title: "Site Build", description: "Genesis will automatically complete safe internal steps and stop only when your decision is required.", label: input.siteBuildStarted ? "CONTINUE BUILD" : "BUILD SITE", href: scoped(`/sites/${site.siteId}/build`, site) };
+  else primaryAction = {
+    key: "CONTINUE_SITE_BUILD",
+    title: "Site Build",
+    description: input.siteBuildStage === "WORDPRESS_CONTENT_UPDATE"
+      ? "Continue the build flow to apply approved page updates to the exact existing WordPress drafts."
+      : input.siteBuildStage === "WORDPRESS_DRAFT_REVIEW"
+        ? "Continue the build flow through WordPress draft review and site QA before publication gates."
+        : "Genesis will automatically complete safe internal steps and stop only when your decision is required.",
+    label: input.siteBuildStarted ? "CONTINUE BUILD" : "BUILD SITE",
+    href: scoped(`/sites/${site.siteId}/build`, site),
+  };
 
   const blockers = [...productAuthority.protectedBlockers, ...(productComplete ? generationBlockers : productAuthority.remaining ? [`${productAuthority.remaining} product/service decisions still required.`] : productAuthority.approved === 0 ? ["At least one product or service must be approved for this site."] : [])];
   return { stages, primaryAction, blockers, productAuthority };

@@ -77,6 +77,49 @@ describe("Site Detail workflow resume resolver", () => {
     expect(result.blockers).toEqual([]);
   });
 
+  test("stale creative lineage with complete authority projects owner action as CONTINUE BUILD", () => {
+    const result = resolveSiteWorkflowResume({
+      site: site(),
+      intelligence: intelligence(),
+      productAuthority: authority({ approved: 4, remaining: 0 }),
+      generationReadiness: { readyToCertify: false, certified: false, stale: true, blockers: ["Creative Direction revision 4 is bound to strategy revision 2; create and approve a Creative Direction revision for strategy revision 3."] },
+      siteBuildStarted: true,
+      siteBuildStage: "AUTHORITY_REVIEW_REQUIRED",
+      continuationProjection: {
+        ownerActionState: "READY_TO_CONTINUE",
+        detail: "Genesis can continue deterministically.",
+        primaryActionLabel: "CONTINUE BUILD",
+        routeHint: "BUILD",
+      },
+    });
+    expect(result.primaryAction).toMatchObject({
+      key: "CONTINUE_SITE_BUILD",
+      title: "Site Build",
+      label: "CONTINUE BUILD",
+      href: expect.stringContaining("/build?"),
+    });
+  });
+
+  test("material creative change requires creative review action", () => {
+    const result = resolveSiteWorkflowResume({
+      site: site(),
+      intelligence: intelligence(),
+      productAuthority: authority({ approved: 4, remaining: 0 }),
+      generationReadiness: { readyToCertify: false, certified: false, stale: true, blockers: ["Creative lineage stale"] },
+      continuationProjection: {
+        ownerActionState: "OWNER_ACTION_REQUIRED",
+        detail: "Material creative differences in overallDirection.",
+        primaryActionLabel: "REVIEW REQUIRED",
+        routeHint: "CREATIVE_REVIEW",
+      },
+    });
+    expect(result.primaryAction).toMatchObject({
+      key: "CONTINUE_CREATIVE_DIRECTION",
+      label: "REVIEW CREATIVE DIRECTION",
+      href: expect.stringContaining("#creative-direction"),
+    });
+  });
+
   test("all-rejected Product Authority remains incomplete until one offering is approved", () => {
     const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 0, remaining: 0 }), generationReadiness: blockedReadiness });
     expect(result.primaryAction.key).toBe("CONTINUE_PRODUCT_SERVICE_AUTHORITY");
@@ -113,13 +156,13 @@ describe("Site Detail workflow resume resolver", () => {
     const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true } });
     expect(result.stages.find((stage) => stage.key === "generation_readiness")?.status).toBe("COMPLETE");
     expect(result.primaryAction.key).toBe("CONTINUE_SITE_BUILD");
-    expect(result.primaryAction).toMatchObject({ label: "START SITE BUILD", href: expect.stringContaining("/build?") });
+    expect(result.primaryAction).toMatchObject({ label: "BUILD SITE", href: expect.stringContaining("/build?") });
     expect(result.stages.find((stage) => stage.key === "site_build")?.status).toBe("NOT_STARTED");
   });
 
   test("an update-ready build resumes through CONTINUE SITE BUILD without publication", () => {
     const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true, siteBuildStage: "WORDPRESS_CONTENT_UPDATE" });
-    expect(result.primaryAction).toMatchObject({ key: "CONTINUE_SITE_BUILD", label: "CONTINUE SITE BUILD", href: expect.stringContaining("/build?") });
+    expect(result.primaryAction).toMatchObject({ key: "CONTINUE_SITE_BUILD", label: "CONTINUE BUILD", href: expect.stringContaining("/build?") });
     expect(result.primaryAction.description).toContain("exact existing WordPress drafts");
     expect(result.stages.find((stage) => stage.key === "site_build")?.detail).toContain("Page review is complete");
     expect(result.stages.find((stage) => stage.key === "publication")?.status).toBe("DISABLED");
@@ -127,7 +170,7 @@ describe("Site Detail workflow resume resolver", () => {
 
   test("a synchronized build resumes into WordPress draft review and QA", () => {
     const result = resolveSiteWorkflowResume({ site: site(), intelligence: intelligence(), productAuthority: authority({ approved: 4, remaining: 0 }), generationReadiness: { ...readyToCertify, certified: true }, siteBuildStarted: true, siteBuildStage: "WORDPRESS_DRAFT_REVIEW" });
-    expect(result.primaryAction).toMatchObject({ key: "CONTINUE_SITE_BUILD", label: "CONTINUE SITE BUILD" });
+    expect(result.primaryAction).toMatchObject({ key: "CONTINUE_SITE_BUILD", label: "CONTINUE BUILD" });
     expect(result.primaryAction.description).toContain("draft review and site QA");
     expect(result.stages.find((stage) => stage.key === "site_build")?.detail).toContain("content synchronization is complete");
   });

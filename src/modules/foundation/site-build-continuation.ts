@@ -53,6 +53,20 @@ export type ContinuationResult = {
   ownerReviewRequired: boolean;
 };
 
+export type ThreeGateOwnerActionState =
+  | "READY_TO_CONTINUE"
+  | "OWNER_ACTION_REQUIRED"
+  | "PAGE_REVIEW_REQUIRED"
+  | "PUBLICATION_BOUNDARY"
+  | "BUILD_IN_PROGRESS";
+
+export type ThreeGateOwnerActionProjection = {
+  ownerActionState: ThreeGateOwnerActionState;
+  detail: string;
+  primaryActionLabel: "BUILD SITE" | "CONTINUE BUILD" | "REVIEW REQUIRED";
+  routeHint: "BUILD" | "CREATIVE_REVIEW" | "GENERATION_READINESS" | "PAGE_REVIEW" | "PUBLICATION";
+};
+
 export type MaterialDiff = {
   material: boolean;
   changedFields: string[];
@@ -168,6 +182,120 @@ function stop(result: Omit<ContinuationResult, "ownerInterruptionQuestion">): Co
   return {
     ...result,
     ownerInterruptionQuestion: ownerInterruptionQuestion(result.detail),
+  };
+}
+
+export function projectThreeGateOwnerAction(site: SiteConfiguration): ThreeGateOwnerActionProjection {
+  const generation = getSiteGenerationReadiness(site);
+  const intelligence = getSiteIntelligenceWorkspace(site.siteId);
+  const strategy = intelligence?.strategyRevisions.at(-1) ?? null;
+  const creative = intelligence?.creativeRevisions.at(-1) ?? null;
+  const workspace = getSiteBuildWorkspace(site);
+  const productAuthorityCheck = generation.readiness.checks.find((check) => check.key === "product_service_authority");
+  const strategyCheck = generation.readiness.checks.find((check) => check.key === "strategy");
+
+  if (!productAuthorityCheck?.passed) {
+    return {
+      ownerActionState: "OWNER_ACTION_REQUIRED",
+      detail: productAuthorityCheck?.detail ?? "Product/service authority must be completed.",
+      primaryActionLabel: "REVIEW REQUIRED",
+      routeHint: "GENERATION_READINESS",
+    };
+  }
+
+  if (!strategyCheck?.passed || !strategy || strategy.status !== "APPROVED") {
+    return {
+      ownerActionState: "OWNER_ACTION_REQUIRED",
+      detail: strategyCheck?.detail ?? "Strategy approval is required.",
+      primaryActionLabel: "REVIEW REQUIRED",
+      routeHint: "CREATIVE_REVIEW",
+    };
+  }
+
+  const creativeLineageCurrent = Boolean(creative && creative.status === "APPROVED" && creative.strategyRevision === strategy.revision);
+  if (!creativeLineageCurrent) {
+    if (!intelligence) {
+      return {
+        ownerActionState: "OWNER_ACTION_REQUIRED",
+        detail: "Site intelligence workspace is unavailable.",
+        primaryActionLabel: "REVIEW REQUIRED",
+        routeHint: "CREATIVE_REVIEW",
+      };
+    }
+    const synthesized = synthesizeCreativeDirection(intelligence);
+    const priorApproved = [...(intelligence.creativeRevisions ?? [])]
+      .filter((item) => item.status === "APPROVED")
+      .at(-1) ?? null;
+    const diff = compareCreativeDirectionMateriality(priorApproved, {
+      ...synthesized,
+      revision: (intelligence.creativeRevisions.at(-1)?.revision ?? 0) + 1,
+      status: "PROPOSED",
+      createdBy: SYSTEM_ACTOR,
+      createdAt: new Date().toISOString(),
+      decidedBy: null,
+      decidedAt: null,
+    });
+    if (diff.material) {
+      return {
+        ownerActionState: "OWNER_ACTION_REQUIRED",
+        detail: diff.summary,
+        primaryActionLabel: "REVIEW REQUIRED",
+        routeHint: "CREATIVE_REVIEW",
+      };
+    }
+  }
+
+  if (!generation.readiness.readyToCertify) {
+    const unresolvedReadinessCheck = generation.readiness.checks.find((check) => !check.passed && check.key !== "creative_direction");
+    if (unresolvedReadinessCheck) {
+      return {
+        ownerActionState: "OWNER_ACTION_REQUIRED",
+        detail: unresolvedReadinessCheck.detail || generation.readiness.blockers[0] || "Generation readiness has unresolved blockers.",
+        primaryActionLabel: "REVIEW REQUIRED",
+        routeHint: "GENERATION_READINESS",
+      };
+    }
+  }
+
+  if (
+    workspace.stage === "PAGE_REVIEW"
+    || workspace.stage === "WORDPRESS_CONTENT_UPDATE"
+    || workspace.stage === "WORDPRESS_DRAFT_REVIEW"
+    || workspace.stage === "HOME_DESIGN_REVIEW"
+    || workspace.stage === "SITE_VISUAL_REVIEW"
+    || workspace.stage === "SITE_QA"
+  ) {
+    return {
+      ownerActionState: "PAGE_REVIEW_REQUIRED",
+      detail: "Draft output is ready for owner review.",
+      primaryActionLabel: "REVIEW REQUIRED",
+      routeHint: "PAGE_REVIEW",
+    };
+  }
+
+  if (
+    workspace.stage === "PUBLICATION_READINESS"
+    || workspace.stage === "PUBLICATION_AUTHORIZATION"
+    || workspace.stage === "PUBLICATION_EXECUTION_REVIEW"
+    || workspace.stage === "PUBLICATION_EXECUTING"
+    || workspace.stage === "PUBLICATION_VERIFICATION"
+    || workspace.stage === "COMPLETE"
+    || workspace.stage === "WORDPRESS_MENU_SYNC"
+    || workspace.stage === "NAVIGATION_REVIEW"
+  ) {
+    return {
+      ownerActionState: "PUBLICATION_BOUNDARY",
+      detail: "Explicit owner publication boundaries apply.",
+      primaryActionLabel: "REVIEW REQUIRED",
+      routeHint: "PUBLICATION",
+    };
+  }
+
+  return {
+    ownerActionState: "READY_TO_CONTINUE",
+    detail: "Genesis can deterministically continue from approved authority without new owner judgment.",
+    primaryActionLabel: workspace.session ? "CONTINUE BUILD" : "BUILD SITE",
+    routeHint: "BUILD",
   };
 }
 
