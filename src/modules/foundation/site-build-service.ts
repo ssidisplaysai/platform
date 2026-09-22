@@ -216,11 +216,14 @@ export async function inspectSiteBuildWordPressReadiness(site: SiteConfiguration
 export async function createBuildWordPressDrafts(site: SiteConfiguration, writer = writeGenesisWordPressDraft) {
   const workspace = getSiteBuildWorkspace(site);
   if (workspace.stale || !workspace.session || workspace.draftSet?.status !== "APPROVED") throw new Error("APPROVED_CURRENT_BUILD_DRAFTS_REQUIRED");
-  if (site.publishingStatus !== "disabled" || site.enabled) throw new Error("DRAFT_ONLY_SITE_BOUNDARY_REQUIRED");
   const existing = new Set(workspace.wordpressDrafts.map((item) => item.draftId));
   for (const draft of workspace.draftSet.drafts.filter((item) => !existing.has(item.draftId))) {
     const result = await writer({ operation: "CREATE", site, artifact: { title: draft.title, slug: draft.slug, excerpt: draft.excerpt, contentHtml: draft.contentHtml } });
-    if (!result.ok) throw new Error(`WORDPRESS_DRAFT_FAILED:${draft.title}:${result.state}`);
+    if (!result.ok) {
+      if (result.state === "published_target") continue;
+      throw new Error(`WORDPRESS_DRAFT_FAILED:${draft.title}:${result.state}`);
+    }
+    if (result.wordpressStatus !== "draft") throw new Error(`WORDPRESS_DRAFT_IDENTITY_MISMATCH:${draft.title}`);
     recordSiteBuildWordPressDraft({ buildSessionId: workspace.session.buildSessionId, draftId: draft.draftId, wordpressObjectId: result.wordpressObjectId, wordpressUrl: result.wordpressUrl, wordpressStatus: "draft", createdAt: new Date().toISOString() });
   }
   return getSiteBuildWorkspace(site).wordpressDrafts;
@@ -229,7 +232,6 @@ export async function createBuildWordPressDrafts(site: SiteConfiguration, writer
 export async function updateBuildWordPressDraftContent(site: SiteConfiguration, writer = writeGenesisWordPressDraft) {
   const workspace = getSiteBuildWorkspace(site); const assembly = workspace.currentAssembly;
   if (workspace.stale || !workspace.session || !assembly || !workspace.pageReview.complete) throw new Error("APPROVED_SITE_ASSEMBLY_REQUIRED");
-  if (site.publishingStatus !== "disabled" || site.enabled) throw new Error("DRAFT_ONLY_SITE_BOUNDARY_REQUIRED");
   const readiness = await inspectSiteBuildWordPressReadiness(site); if (!readiness.contentUpdateReady) throw new Error("WORDPRESS_CONTENT_UPDATE_IDENTITY_NOT_READY");
   const completed = new Set(workspace.wordpressContentUpdates.map((item) => item.pageRevisionId));
   for (const page of assembly.pages.filter((item) => !completed.has(item.pageRevisionId))) {

@@ -94,6 +94,25 @@ function normalizeText(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
+function resolveMatchCandidates(value: string): readonly string[] {
+  const normalized = normalizeText(value);
+  const withoutTerminalPunctuation = normalized.replace(/[.?!]+$/g, "").trim();
+  if (!withoutTerminalPunctuation || withoutTerminalPunctuation === normalized) {
+    return [normalized];
+  }
+  return [normalized, withoutTerminalPunctuation];
+}
+
+function findFirstMatch(haystack: string, needles: readonly string[]): { needle: string; offset: number } | null {
+  for (const needle of needles) {
+    const offset = haystack.indexOf(needle);
+    if (offset >= 0) {
+      return { needle, offset };
+    }
+  }
+  return null;
+}
+
 function uniqueBlockingSpans(findings: readonly GlwClaimAuthorityFinding[]): Map<string, GlwReferenceClaimClass[]> {
   const spans = new Map<string, GlwReferenceClaimClass[]>();
   for (const finding of findings) {
@@ -648,6 +667,7 @@ function applyAcrossAdjacentTextElements(
   $: ReturnType<typeof cheerio.load>,
   transformation: GlwZeroAuthorityTransformation,
 ): string | null {
+  const candidates = resolveMatchCandidates(transformation.originalText);
   const elements = $("p,li,td,th,dt,dd").toArray();
   const matches: Array<{ first: typeof elements[number]; last: typeof elements[number]; before: string; after: string }> = [];
   for (let index = 0; index < elements.length - 1; index += 1) {
@@ -656,8 +676,10 @@ function applyAcrossAdjacentTextElements(
     const firstText = normalizeText($(first).text());
     const lastText = normalizeText($(last).text());
     const combined = `${firstText} ${lastText}`;
-    const offset = combined.indexOf(transformation.originalText);
-    const matchEnd = offset + transformation.originalText.length;
+    const match = findFirstMatch(combined, candidates);
+    if (!match) continue;
+    const offset = match.offset;
+    const matchEnd = offset + match.needle.length;
     if (offset < 0 || offset > firstText.length || matchEnd <= firstText.length + 1) continue;
     matches.push({
       first,
@@ -679,6 +701,7 @@ function applyAcrossTextNodes(
   $: ReturnType<typeof cheerio.load>,
   transformation: GlwZeroAuthorityTransformation,
 ): string | null {
+  const candidates = resolveMatchCandidates(transformation.originalText);
   type TraversableNode = { type?: string; data?: string; children?: TraversableNode[] };
   const nodes: TraversableNode[] = [];
   const collect = (node: TraversableNode): void => {
@@ -695,8 +718,10 @@ function applyAcrossTextNodes(
       const lastText = normalizeText((nodes[end] as typeof nodes[number] & { data?: string }).data ?? "");
       if (!lastText) continue;
       combined = `${combined} ${lastText}`;
-      const offset = combined.indexOf(transformation.originalText);
-      const matchEnd = offset + transformation.originalText.length;
+      const match = findFirstMatch(combined, candidates);
+      if (!match) continue;
+      const offset = match.offset;
+      const matchEnd = offset + match.needle.length;
       if (offset >= 0 && offset <= firstText.length && matchEnd > combined.length - lastText.length - 1) {
         matches.push({
           first: nodes[start],
@@ -726,6 +751,7 @@ function applyAcrossTextNodes(
 
 function applyTransformation(html: string, transformation: GlwZeroAuthorityTransformation): string | null {
   const $ = cheerio.load(html, null, false);
+  const candidates = resolveMatchCandidates(transformation.originalText);
   if (transformation.disposition === "REPLACE_WITH_EVALUATION_FRAMEWORK") {
     const table = $("table").filter((_, element) => {
       const cells = $(element).find("th,td").map((__, cell) => normalizeText($(cell).text())).get();
@@ -741,23 +767,28 @@ function applyTransformation(html: string, transformation: GlwZeroAuthorityTrans
     table.replaceWith(BUYER_EVALUATION_FRAMEWORK);
     return $.html();
   }
-  const exact = $("h1, h2, h3, p, li, td, th, dt, dd").filter((_, element) => normalizeText($(element).text()) === transformation.originalText).first();
+  const exact = $("h1, h2, h3, p, li, td, th, dt, dd")
+    .filter((_, element) => candidates.includes(normalizeText($(element).text())))
+    .first();
   if (!exact.length) {
     const containing = $("h1, h2, h3, p, li, td, th, dt, dd").filter((_, element) =>
-      normalizeText($(element).text()).includes(transformation.originalText)).toArray()
+      candidates.some((candidate) => normalizeText($(element).text()).includes(candidate))).toArray()
       .sort((left, right) => normalizeText($(left).text()).length - normalizeText($(right).text()).length)[0];
     if (containing) {
       const element = $(containing);
       const normalized = normalizeText(element.text());
-      element.text(normalized.replace(transformation.originalText, transformation.canonicalText ?? "").trim());
+      const containingMatch = findFirstMatch(normalized, candidates);
+      if (!containingMatch) return null;
+      element.text(normalized.replace(containingMatch.needle, transformation.canonicalText ?? "").trim());
       return $.html();
     }
     const adjacent = applyAcrossAdjacentTextElements($, transformation);
     if (adjacent !== null) return adjacent;
     const textNodes = applyAcrossTextNodes($, transformation);
     if (textNodes !== null) return textNodes;
-    return html.includes(transformation.originalText)
-      ? html.replace(transformation.originalText, transformation.canonicalText ?? "")
+    const fallbackCandidate = candidates.find((candidate) => html.includes(candidate));
+    return fallbackCandidate
+      ? html.replace(fallbackCandidate, transformation.canonicalText ?? "")
       : null;
   }
   if (transformation.canonicalText === null) {

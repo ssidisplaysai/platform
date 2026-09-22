@@ -440,6 +440,37 @@ describe("GLW zero-authority deterministic claim canonicalization", () => {
     expect(result.canonicalizedArtifact?.contentHtml).toContain("Preserve this separate question.");
   });
 
+  test("canonicalizes a multi-item buyer checklist claim even when the classified text includes terminal punctuation not present in HTML list nodes", () => {
+    const blockedClaim = "List all projector models, sizes, and any accessories needing enclosure Map out the physical space and note potential obstacles or mounting challenges Determine the primary risks (impact, dust, moderate heat) to be managed by enclosure selection Ask about paint/finish options if aesthetic blending is important Review warranty and maintenance recommendations directly with ProjectorEnclosure.com Document maintenance plans, including how often access will be required for bulb or filter replacement .";
+    const html = [
+      "<h2>Buyer Checklist</h2>",
+      "<ul>",
+      "  <li>List all projector models, sizes, and any accessories needing enclosure</li>",
+      "  <li>Map out the physical space and note potential obstacles or mounting challenges</li>",
+      "  <li>Determine the primary risks (impact, dust, moderate heat) to be managed by enclosure selection</li>",
+      "  <li>Ask about paint/finish options if aesthetic blending is important</li>",
+      "  <li>Review warranty and maintenance recommendations directly with ProjectorEnclosure.com</li>",
+      "  <li>Document maintenance plans, including how often access will be required for bulb or filter replacement</li>",
+      "</ul>",
+    ].join("");
+
+    const result = canonicalize(html, [
+      finding("CLIMATE", blockedClaim),
+      finding("WARRANTY", blockedClaim),
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(result.receipt.blockedClaims).toEqual([]);
+    expect(result.receipt.transformations).toContainEqual(expect.objectContaining({
+      ruleId: "CLIMATE_ASSERTION_TO_BUYER_QUESTION",
+      safeToTransform: true,
+    }));
+    expect(result.canonicalizedArtifact?.contentHtml).not.toContain("Review warranty and maintenance recommendations directly with ProjectorEnclosure.com");
+    expect(result.canonicalizedArtifact?.contentHtml).toContain("What environmental conditions should the project team ask the selected supplier and qualified professionals to evaluate for the proposed installation?");
+    const qa = evaluateGlwReferenceClaimAuthority({ artifact: result.canonicalizedArtifact!, authority: { references: [], authoritativeFactReferenceIds: [], supportedClaimMappings: [] } });
+    expect(qa.ok).toBe(true);
+  });
+
   test("removes nonessential unsupported market and cost content", () => {
     const pricing = "Engage Early: Begin supplier conversations as early as possible to clarify feasibility, timelines, and costs.";
     const heading = "Future Evaluation: Trends and Concepts in Digital Sphere Use";

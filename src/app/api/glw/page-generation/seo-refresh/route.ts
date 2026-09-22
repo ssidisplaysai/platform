@@ -10,6 +10,7 @@ import { getSiteById } from "@/modules/foundation/site-repository";
 import { resolveWordPressCredentialReference } from "@/modules/foundation/wordpress-credential-resolver";
 import { writeGenesisWordPressDraft } from "@/modules/foundation/wordpress-draft-writer";
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
+import { cleanupCanonicalizedStructure } from "@/modules/glw/canonicalized-structure-cleanup";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
 import { listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { evaluateGlwGeneratedContentQa } from "@/modules/glw/generated-content-qa";
@@ -224,6 +225,7 @@ export async function POST(request: NextRequest) {
     }
 
     let baseHtml = job.generatedDraft.contentHtml;
+    const themePrimaryFeaturedImage = siteRecord.domain === "projectorenclosure.com";
     let heroPreserved = /class=["'][^"']*page-hero-image/i.test(baseHtml);
     let heroRebuiltFromFeaturedMedia = false;
 
@@ -260,7 +262,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Current WordPress object is no longer the exact authorized draft." }, { status: 409 });
       }
 
-      if (!heroPreserved) {
+      if (!heroPreserved && !themePrimaryFeaturedImage) {
         const currentWordPressHtml = page.content?.raw ?? "";
         const existingHero = extractHeroFigure(currentWordPressHtml);
         if (existingHero) {
@@ -314,7 +316,18 @@ export async function POST(request: NextRequest) {
 
     const maintenanceArtifact = {
       ...enrichment.artifact,
-      contentHtml: maintenanceHtml,
+      contentHtml: cleanupCanonicalizedStructure({
+        html: maintenanceHtml,
+        siteDomain: siteRecord.domain,
+      }).html,
+    };
+
+    const cleanupOnlyArtifact = {
+      ...job.generatedDraft,
+      contentHtml: cleanupCanonicalizedStructure({
+        html: baseHtml,
+        siteDomain: siteRecord.domain,
+      }).html,
     };
 
     const qa = evaluateGlwGeneratedContentQa({
@@ -326,8 +339,23 @@ export async function POST(request: NextRequest) {
       allowLegacyMojibake: true,
     });
 
-    if (!qa.ok) {
-      return NextResponse.json({ error: "SEO-enriched artifact failed GLW content QA.", qa }, { status: 409 });
+    const cleanupOnlyQa = evaluateGlwGeneratedContentQa({
+      artifact: cleanupOnlyArtifact,
+      request: preview.request,
+      siteDomain: siteRecord.domain,
+      minimumWordCount: LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT,
+      additionalAllowedDomains: enrichment.approvedExternalDomains,
+      allowLegacyMojibake: true,
+    });
+
+    const artifactToWrite = qa.ok ? maintenanceArtifact : (cleanupOnlyQa.ok ? cleanupOnlyArtifact : null);
+    const qaToPersist = qa.ok ? qa : (cleanupOnlyQa.ok ? cleanupOnlyQa : qa);
+    if (!artifactToWrite) {
+      return NextResponse.json({
+        error: "SEO-enriched artifact failed GLW content QA.",
+        qa,
+        cleanupOnlyQa,
+      }, { status: 409 });
     }
 
     const hierarchy = await resolveGlwWordPressTargetHierarchy({ request: preview.request, site: siteRecord });
@@ -348,10 +376,10 @@ export async function POST(request: NextRequest) {
       site: siteRecord,
       wordpressObjectId: job.wordpressObjectId,
       artifact: {
-        title: maintenanceArtifact.title,
-        contentHtml: maintenanceArtifact.contentHtml,
-        slug: maintenanceArtifact.slug,
-        excerpt: maintenanceArtifact.excerpt,
+        title: artifactToWrite.title,
+        contentHtml: artifactToWrite.contentHtml,
+        slug: artifactToWrite.slug,
+        excerpt: artifactToWrite.excerpt,
         parentId: hierarchy.parentId,
         seo: enrichment.metadata,
       },
@@ -362,11 +390,11 @@ export async function POST(request: NextRequest) {
     }
 
     await glwPageExecutionRepository.update(job.jobId, {
-      generatedDraft: maintenanceArtifact,
+      generatedDraft: artifactToWrite,
       qaStatus: "COMPLETE",
-      qaChecks: qa.checks,
+      qaChecks: qaToPersist.checks,
       qaFailureReasons: {},
-      wordCount: qa.wordCount,
+      wordCount: qaToPersist.wordCount,
       updatedAt: new Date().toISOString(),
     });
 
@@ -381,8 +409,9 @@ export async function POST(request: NextRequest) {
       approvedExternalDomains: enrichment.approvedExternalDomains,
       qaStatus: "COMPLETE",
       maintenanceMinimumWordCount: LEGACY_MAINTENANCE_MINIMUM_WORD_COUNT,
+      maintenancePath: qa.ok ? "seo_enriched" : "cleanup_only_fallback",
       featuredImagePreserved: job.featuredImagePresent,
-      heroImagePreservedInBody: heroPreserved,
+      heroImagePreservedInBody: themePrimaryFeaturedImage ? false : heroPreserved,
       heroImageRebuiltFromFeaturedMedia: heroRebuiltFromFeaturedMedia,
       imageGenerationPerformed: false,
       publicationPerformed: false,

@@ -7,6 +7,7 @@ import {
   listGlwCampaignTargets,
   previewGlwCampaignTargets,
   reconcileGlwReferenceTargetContentReadyForContinuation,
+  reconcileGlwReferenceTargetQueuedForProduction,
 } from "@/modules/glw/campaign-target-repository";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 
@@ -143,4 +144,48 @@ export function ensureDraftCampaignContinuationTarget(input: {
   });
 
   return Boolean(finalTarget && finalTarget.jobId === input.referenceJobId);
+}
+
+export function promoteDrainedActiveReferenceTargetForProduction(input: {
+  campaign: GlwCampaign;
+}): boolean {
+  if (input.campaign.status !== "active") {
+    return false;
+  }
+
+  const targets = listGlwCampaignTargets(input.campaign.campaignId);
+  if (targets.length === 0) {
+    return false;
+  }
+
+  const inFlightExists = targets.some((target) =>
+    target.status === "queued"
+    || target.status === "running"
+    || target.status === "content_ready"
+    || target.status === "draft_ready",
+  );
+  if (inFlightExists) {
+    return false;
+  }
+
+  const promotable = targets.filter((target) =>
+    target.status === "reference_complete"
+    && !target.jobId
+    && !target.wordpressObjectId
+    && !target.leaseId
+    && !target.leasedAt
+    && !target.leaseExpiresAt,
+  );
+
+  if (promotable.length !== 1) {
+    return false;
+  }
+
+  const candidate = promotable[0];
+  reconcileGlwReferenceTargetQueuedForProduction({
+    campaignId: input.campaign.campaignId,
+    stateCode: candidate.stateCode,
+    citySlug: candidate.citySlug,
+  });
+  return true;
 }

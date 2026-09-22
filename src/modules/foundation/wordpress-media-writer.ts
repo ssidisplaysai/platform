@@ -144,6 +144,7 @@ export async function attachGenesisWordPressExistingFeaturedImage(input: {
   wordpressMediaId: number;
   expectedMediaUrl: string;
   altText: string;
+  insertInlineHero?: boolean;
 }): Promise<GenesisWordPressMediaWriteResult> {
   const configuredApiBaseUrl = input.site.integrations.wordpressApiBaseUrl;
   const credentialReference = input.site.integrations.wordpressCredentialReference;
@@ -186,7 +187,9 @@ export async function attachGenesisWordPressExistingFeaturedImage(input: {
     if (expectedMediaHost !== destinationHost) {
       return { ok: false, state: "invalid_target", message: "Existing media did not belong to the destination WordPress site." };
     }
-    const content = insertHeroImage(input.contentHtml.trim(), input.expectedMediaUrl, input.altText.trim() || media.alt_text || "Product image");
+    const content = input.insertInlineHero === false
+      ? input.contentHtml.trim()
+      : insertHeroImage(input.contentHtml.trim(), input.expectedMediaUrl, input.altText.trim() || media.alt_text || "Product image");
     const attachResponse = await fetch(`${apiBaseUrl}/pages/${pageId}`, {
       method: "POST",
       headers: { Accept: "application/json", Authorization: authorization, "Content-Type": "application/json" },
@@ -218,6 +221,7 @@ export async function attachGenesisWordPressFeaturedImage(input: {
   title: string;
   altText: string;
   description: string;
+  insertInlineHero?: boolean;
   mediaUrlToken?: string;
 }): Promise<GenesisWordPressMediaWriteResult> {
   const configuredApiBaseUrl = input.site.integrations.wordpressApiBaseUrl;
@@ -342,7 +346,11 @@ export async function attachGenesisWordPressFeaturedImage(input: {
     return { ok: false, state: "metadata_failed", message: `WordPress media metadata update failed with HTTP ${metadataResponse.status}.` };
   }
 
-  const content = input.mediaUrlToken && input.contentHtml.includes(input.mediaUrlToken) ? input.contentHtml.replaceAll(input.mediaUrlToken, mediaUrl) : insertHeroImage(input.contentHtml.trim(), mediaUrl, input.altText.trim());
+  const content = input.mediaUrlToken && input.contentHtml.includes(input.mediaUrlToken)
+    ? input.contentHtml.replaceAll(input.mediaUrlToken, mediaUrl)
+    : (input.insertInlineHero === false
+      ? input.contentHtml.trim()
+      : insertHeroImage(input.contentHtml.trim(), mediaUrl, input.altText.trim()));
   let attachResponse: Response;
   try {
     attachResponse = await fetch(`${apiBaseUrl}/pages/${pageId}`, {

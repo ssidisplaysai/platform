@@ -39,6 +39,7 @@ import {
   saveExactTargetDispatchPreflight,
 } from "@/modules/glw/exact-target-dispatch-authority";
 import { readGlwTargetPreflight, resolveGlwTargetMutationAvailability } from "@/modules/glw/target-preflight";
+import { promoteDrainedActiveReferenceTargetForProduction } from "@/modules/glw/reference-continuation-targets";
 
 const MAX_CONCURRENT_EXECUTION = 1;
 const EXACT_RELEASE_PATTERN = /^[0-9a-f]{40}$/;
@@ -188,6 +189,8 @@ export async function GET(
     );
   }
 
+  promoteDrainedActiveReferenceTargetForProduction({ campaign });
+
   let dispatchDate: string;
 
   try {
@@ -333,6 +336,8 @@ export async function POST(
       { status: 409 },
     );
   }
+
+  promoteDrainedActiveReferenceTargetForProduction({ campaign });
 
   const body = await request.json().catch(() => null) as {
     confirm?: string;

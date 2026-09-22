@@ -447,6 +447,44 @@ export function reconcileGlwReferenceTargetContentReadyForContinuation(input: {
   return deepClone(updated);
 }
 
+export function reconcileGlwReferenceTargetQueuedForProduction(input: {
+  campaignId: string;
+  stateCode: string;
+  citySlug?: string | null;
+}): GlwCampaignTarget {
+  loadState();
+
+  const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
+  const current = targetStore.get(targetKey);
+
+  if (!current) {
+    throw new Error("REFERENCE_TARGET_NOT_FOUND");
+  }
+  if (current.status !== "reference_complete") {
+    throw new Error("REFERENCE_TARGET_NOT_REFERENCE_COMPLETE");
+  }
+  if (current.jobId) {
+    throw new Error("REFERENCE_TARGET_ALREADY_HAS_JOB");
+  }
+  if (current.wordpressObjectId) {
+    throw new Error("REFERENCE_TARGET_WORDPRESS_IDENTITY_CONFLICT");
+  }
+  if (current.leaseId || current.leasedAt || current.leaseExpiresAt) {
+    throw new Error("REFERENCE_TARGET_ACTIVE_LEASE_CONFLICT");
+  }
+
+  const updated: GlwCampaignTarget = {
+    ...current,
+    status: "queued",
+    lastError: null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  targetStore.set(targetKey, updated);
+  persistState();
+  return deepClone(updated);
+}
+
 export type GlwCampaignTargetQueueSummary = {
   total: number;
   prepared: number;

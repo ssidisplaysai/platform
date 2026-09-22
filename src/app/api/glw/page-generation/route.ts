@@ -1,3 +1,4 @@
+import { cleanupCanonicalizedStructure } from "@/modules/glw/canonicalized-structure-cleanup";
 import { createHash } from "node:crypto";
 import { load } from "cheerio";
 import { NextRequest, NextResponse } from "next/server";
@@ -492,11 +493,15 @@ async function finalizeContentReadyExecution(input: {
     html: enrichment.artifact.contentHtml,
     authority: productAuthority,
   });
+  const structuralCleanup = cleanupCanonicalizedStructure({
+    html: renderedAuthority.html,
+    siteDomain: input.siteRecord.domain,
+  });
   enrichment = {
     ...enrichment,
     artifact: {
       ...enrichment.artifact,
-      contentHtml: renderedAuthority.html,
+      contentHtml: structuralCleanup.html,
     },
   };
 
@@ -548,6 +553,16 @@ async function finalizeContentReadyExecution(input: {
       siteRecord: input.siteRecord,
       keywordOwners,
     });
+    enrichment = {
+      ...enrichment,
+      artifact: {
+        ...enrichment.artifact,
+        contentHtml: cleanupCanonicalizedStructure({
+          html: enrichment.artifact.contentHtml,
+          siteDomain: input.siteRecord.domain,
+        }).html,
+      },
+    };
 
     qa = evaluateGlwGeneratedContentQa({
       artifact: enrichment.artifact,
@@ -580,6 +595,16 @@ async function finalizeContentReadyExecution(input: {
     enrichment = {
       ...enrichment,
       artifact: claimParity.artifact,
+    };
+    enrichment = {
+      ...enrichment,
+      artifact: {
+        ...enrichment.artifact,
+        contentHtml: cleanupCanonicalizedStructure({
+          html: enrichment.artifact.contentHtml,
+          siteDomain: input.siteRecord.domain,
+        }).html,
+      },
     };
     qa = evaluateGlwGeneratedContentQa({
       artifact: enrichment.artifact,
@@ -927,6 +952,7 @@ async function finalizeContentReadyExecution(input: {
       wordpressMediaId: productAuthority.selectedMedia.wordpressMediaId,
       expectedMediaUrl: productAuthority.selectedMedia.url,
       altText: productAuthority.selectedMedia.altText,
+      insertInlineHero: !themePrimaryFeaturedImage,
     });
   } else {
     const strictPrompt = strictGeneratedContextualRequired
@@ -961,6 +987,7 @@ async function finalizeContentReadyExecution(input: {
       title: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
       altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
       description: `Commercial hero image for ${input.request.productTopic}${location ? ` in ${location}` : ""} on ${input.siteRecord.displayName}.`,
+      insertInlineHero: !themePrimaryFeaturedImage,
     });
   }
 

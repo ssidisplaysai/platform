@@ -52,9 +52,23 @@ describe("Site Build WordPress runtime boundary", () => {
     expect(receipts.map((item) => item.draftId)).toEqual(["page-home-draft", "page-capabilities-draft"]);
   });
 
-  test("WordPress creation requires disabled site and publication", async () => {
-    await expect(createBuildWordPressDrafts({ ...site, enabled: true } as never, jest.fn())).rejects.toThrow("DRAFT_ONLY_SITE_BOUNDARY_REQUIRED");
-    await expect(createBuildWordPressDrafts({ ...site, publishingStatus: "ready" } as never, jest.fn())).rejects.toThrow("DRAFT_ONLY_SITE_BOUNDARY_REQUIRED");
+  test("WordPress draft creation is allowed on enabled ready sites and remains draft-only", async () => {
+    const enabledReadySite = { ...site, enabled: true, publishingStatus: "ready" };
+    const writer = jest.fn().mockResolvedValueOnce({ ok: true, operation: "CREATE", wordpressObjectId: "101", wordpressUrl: "https://example.test/?page_id=101", wordpressStatus: "draft", seoMetadataAttempted: false, seoMetadataAccepted: false }).mockResolvedValueOnce({ ok: true, operation: "CREATE", wordpressObjectId: "102", wordpressUrl: "https://example.test/?page_id=102", wordpressStatus: "draft", seoMetadataAttempted: false, seoMetadataAccepted: false });
+    await expect(createBuildWordPressDrafts(enabledReadySite as never, writer)).resolves.toHaveLength(2);
+    expect(writer).toHaveBeenCalledTimes(2);
+  });
+
+  test("WordPress creation fails closed if write returns non-draft status", async () => {
+    const writer = jest.fn().mockResolvedValue({ ok: true, operation: "CREATE", wordpressObjectId: "101", wordpressUrl: "https://example.test/?page_id=101", wordpressStatus: "publish", seoMetadataAttempted: false, seoMetadataAccepted: false });
+    await expect(createBuildWordPressDrafts({ ...site, enabled: true, publishingStatus: "ready" } as never, writer)).rejects.toThrow("WORDPRESS_DRAFT_IDENTITY_MISMATCH:home");
+  });
+
+  test("WordPress creation skips published targets and continues with remaining drafts", async () => {
+    const writer = jest.fn().mockResolvedValueOnce({ ok: false, state: "published_target", message: "already published" }).mockResolvedValueOnce({ ok: true, operation: "CREATE", wordpressObjectId: "102", wordpressUrl: "https://example.test/?page_id=102", wordpressStatus: "draft", seoMetadataAttempted: false, seoMetadataAccepted: false });
+    await expect(createBuildWordPressDrafts({ ...site, enabled: true, publishingStatus: "ready" } as never, writer)).resolves.toHaveLength(1);
+    expect(writer).toHaveBeenCalledTimes(2);
+    expect(receipts.map((item) => item.draftId)).toEqual(["page-capabilities-draft"]);
   });
 
   test("content updates use exact existing draft IDs and resume after partial failure", async () => {

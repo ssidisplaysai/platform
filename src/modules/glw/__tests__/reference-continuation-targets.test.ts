@@ -4,8 +4,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
-import { ensureDraftCampaignContinuationTarget } from "@/modules/glw/reference-continuation-targets";
 import {
+  ensureDraftCampaignContinuationTarget,
+  promoteDrainedActiveReferenceTargetForProduction,
+} from "@/modules/glw/reference-continuation-targets";
+import {
+  initializeGlwCityCampaignTargets,
   initializeGlwCampaignTargets,
   listGlwCampaignTargets,
 } from "@/modules/glw/campaign-target-repository";
@@ -29,6 +33,53 @@ function draftCampaign(): GlwCampaign {
     publicationPolicy: "publish_after_gates",
     imageRequired: true,
     status: "draft",
+    completedTargetCount: 0,
+    failedTargetCount: 0,
+    createdAt: "2026-09-20T00:00:00.000Z",
+    updatedAt: "2026-09-20T00:00:00.000Z",
+  };
+}
+
+function activeCityCampaign(): GlwCampaign {
+  return {
+    campaignId: "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-texas-cities",
+    organizationId: "ssi",
+    siteId: "site-ssi-projectorenclosure",
+    productId: "prod-ssi-fan-cooled-projector-enclosures",
+    name: "Fan Cooled Projector Enclosures Texas Cities",
+    pageType: "city_service",
+    stateCodes: ["TX"],
+    cityTargets: [
+      { stateCode: "TX", citySlug: "austin", cityName: "Austin" },
+      { stateCode: "TX", citySlug: "dallas", cityName: "Dallas" },
+    ],
+    pagesPerDay: 10,
+    publicationPolicy: "draft_only",
+    imageRequired: true,
+    status: "active",
+    completedTargetCount: 0,
+    failedTargetCount: 0,
+    createdAt: "2026-09-20T00:00:00.000Z",
+    updatedAt: "2026-09-20T00:00:00.000Z",
+  };
+}
+
+function activeSingleCityReferenceCampaign(): GlwCampaign {
+  return {
+    campaignId: "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-austin-only",
+    organizationId: "ssi",
+    siteId: "site-ssi-projectorenclosure",
+    productId: "prod-ssi-fan-cooled-projector-enclosures",
+    name: "Fan Cooled Projector Enclosures Austin",
+    pageType: "city_service",
+    stateCodes: ["TX"],
+    cityTargets: [
+      { stateCode: "TX", citySlug: "austin", cityName: "Austin" },
+    ],
+    pagesPerDay: 10,
+    publicationPolicy: "draft_only",
+    imageRequired: true,
+    status: "active",
     completedTargetCount: 0,
     failedTargetCount: 0,
     createdAt: "2026-09-20T00:00:00.000Z",
@@ -144,5 +195,45 @@ describe("reference continuation target initialization", () => {
 
     expect(reused).toHaveLength(30);
     expect(reused.some((target) => target.stateCode === "TX" && target.jobId === "job-1")).toBe(true);
+  });
+
+  test("promotes drained active reference_complete target without job into queued production", () => {
+    const campaign = activeSingleCityReferenceCampaign();
+    initializeGlwCityCampaignTargets({
+      campaignId: campaign.campaignId,
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      productId: campaign.productId,
+      cityTargets: campaign.cityTargets ?? [],
+      referenceTarget: { stateCode: "TX", citySlug: "austin" },
+      referenceJobId: null,
+      referenceWordpressObjectId: null,
+    });
+
+    expect(listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin")?.status).toBe("reference_complete");
+
+    const promoted = promoteDrainedActiveReferenceTargetForProduction({ campaign });
+    expect(promoted).toBe(true);
+
+    const after = listGlwCampaignTargets(campaign.campaignId);
+    expect(after.find((target) => target.citySlug === "austin")?.status).toBe("queued");
+  });
+
+  test("does not promote reference_complete target when reference already has a job", () => {
+    const campaign = activeCityCampaign();
+    initializeGlwCityCampaignTargets({
+      campaignId: campaign.campaignId,
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      productId: campaign.productId,
+      cityTargets: campaign.cityTargets ?? [],
+      referenceTarget: { stateCode: "TX", citySlug: "austin" },
+      referenceJobId: "job-existing-reference",
+      referenceWordpressObjectId: null,
+    });
+
+    const promoted = promoteDrainedActiveReferenceTargetForProduction({ campaign });
+    expect(promoted).toBe(false);
+    expect(listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin")?.status).toBe("reference_complete");
   });
 });
