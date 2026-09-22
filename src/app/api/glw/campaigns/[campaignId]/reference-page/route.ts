@@ -29,7 +29,13 @@ import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
 import { listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID, type ProductMediaReadiness } from "@/modules/glw/product-media-authority";
-import { findEvidenceBoundLegacyReferenceJob, projectGlwDurableReferenceOperation, projectGlwReferenceRetryReadiness, projectGlwReferenceWorkflow } from "@/modules/glw/reference-workflow-state";
+import {
+  findEvidenceBoundLegacyReferenceJob,
+  projectGlwDurableReferenceOperation,
+  projectGlwReferenceRetryReadiness,
+  projectGlwReferenceWorkflow,
+  selectMostRecentActiveReferenceExecution,
+} from "@/modules/glw/reference-workflow-state";
 import { getGlwN8nMcpConfigurationStatus } from "@/modules/glw/n8n-mcp-adapter";
 import { GLW_STATE_LOCALIZATION_CONTAMINATION_POLICY_VERSION } from "@/modules/glw/state-localization-contamination";
 import { resolveTargetParameterizedRichReferenceProduction } from "@/modules/glw/target-parameterized-rich-reference-production";
@@ -256,20 +262,18 @@ export async function GET(request: NextRequest, context: Context) {
   );
 
   const records = await glwPageExecutionRepository.list();
-  const candidates = records
-    .filter(
-      (record) =>
-        executionMatchesReference({
-          campaign,
-          record,
-          stateName: target.state.name,
-          cityName: target.cityName,
-          slug: targetForm.slug,
-        }),
-    )
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const candidates = records.filter(
+    (record) =>
+      executionMatchesReference({
+        campaign,
+        record,
+        stateName: target.state.name,
+        cityName: target.cityName,
+        slug: targetForm.slug,
+      }),
+  );
 
-  let job = candidates[0] ?? null;
+  let job = selectMostRecentActiveReferenceExecution(candidates);
   const legacyJob = job
     ? null
     : findEvidenceBoundLegacyReferenceJob({

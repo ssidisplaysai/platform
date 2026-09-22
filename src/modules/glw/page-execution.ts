@@ -107,12 +107,20 @@ export type GlwPageExecutionRecord = {
 };
 
 const GLW_DUPLICATE_QUARANTINE_DISPOSITION = "QUARANTINED_SUPERSEDED_DUPLICATE";
+export const GLW_REFERENCE_EXECUTION_RETIRED_DISPOSITION = "REFERENCE_EXECUTION_RETIRED";
 
 export function isGlwExecutionQuarantined(record: GlwPageExecutionRecord): boolean {
   if (record.disposition === GLW_DUPLICATE_QUARANTINE_DISPOSITION) return true;
   const checks = record.qaChecks;
   if (!checks || typeof checks !== "object" || Array.isArray(checks)) return false;
   return Boolean((checks as Record<string, unknown>).executionDuplicateQuarantine);
+}
+
+export function isGlwReferenceExecutionRetiredForProjection(record: GlwPageExecutionRecord): boolean {
+  if (record.disposition === GLW_REFERENCE_EXECUTION_RETIRED_DISPOSITION) return true;
+  const checks = record.qaChecks;
+  if (!checks || typeof checks !== "object" || Array.isArray(checks)) return false;
+  return Boolean((checks as Record<string, unknown>).referenceExecutionRetirement);
 }
 
 type GlwExecutionRetryHistoryEntry = {

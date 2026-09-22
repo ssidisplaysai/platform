@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 import type { GlwCampaign } from "./campaign-types";
-import type { GlwPageExecutionRecord } from "./page-execution";
+import {
+  isGlwExecutionQuarantined,
+  isGlwReferenceExecutionRetiredForProjection,
+  type GlwPageExecutionRecord,
+} from "./page-execution";
 import { GLW_CAMPAIGN_US_STATES } from "./campaign-geography";
 
 export type GlwReferenceWorkflowState =
@@ -92,6 +96,16 @@ function qaFailures(job: GlwPageExecutionRecord): GlwReferenceWorkflowProjection
 
 function stateCodeForName(name: string | null): string | null {
   return GLW_CAMPAIGN_US_STATES.find((state) => state.name === name)?.code ?? null;
+}
+
+export function isActiveReferenceProjectionExecution(record: GlwPageExecutionRecord): boolean {
+  return !isGlwExecutionQuarantined(record) && !isGlwReferenceExecutionRetiredForProjection(record);
+}
+
+export function selectMostRecentActiveReferenceExecution(records: readonly GlwPageExecutionRecord[]): GlwPageExecutionRecord | null {
+  return records
+    .filter((record) => isActiveReferenceProjectionExecution(record))
+    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
 }
 
 export function projectGlwReferenceWorkflow(job: GlwPageExecutionRecord | null): GlwReferenceWorkflowProjection {
@@ -204,7 +218,8 @@ export function findEvidenceBoundLegacyReferenceJob(input: {
         && Boolean(stateCode && input.campaign.stateCodes.includes(stateCode))
         && new Date(record.createdAt).getTime() >= createdAt;
     })
-    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
+      .filter((record) => isActiveReferenceProjectionExecution(record))
+      .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null;
 }
 
 export function projectGlwDurableReferenceOperation(input: {
@@ -226,6 +241,7 @@ export function projectGlwDurableReferenceOperation(input: {
           && record.siteId === input.campaign.siteId
           && record.productId === input.campaign.productId
           && record.status === "FAILED"
+          && isActiveReferenceProjectionExecution(record)
           && Boolean(record.generatedDraft?.contentHtml),
         )
         .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())[0] ?? null
