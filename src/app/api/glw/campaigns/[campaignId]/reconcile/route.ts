@@ -12,6 +12,7 @@ import {
   markGlwCampaignTargetFailed,
   markGlwFailedCampaignTargetDraftReady,
   reconcileGlwCampaignTargetContentReady,
+  reconcileGlwReferenceTargetContentReadyForContinuation,
   releaseExpiredGlwCampaignTargetLeases,
   requeueGlwCampaignTargetAfterPreExecutionFailure,
   reconcileGlwContentReadyTargetDraft,
@@ -898,6 +899,15 @@ export async function POST(
       && isExactRecoverableZeroAuthorityFailure(selectedJob);
     const selectedIsRecoverableContentFailure = selected.status === "content_ready"
       && isExactRecoverableGeneratedContentFailure(selectedJob);
+    const selectedIsRecoverableReferenceCompleteTarget = selected.status === "reference_complete"
+      && !selectedTargetWordPressObjectId
+      && selected.jobId === expectedJobId
+      && (selectedJob.externalExecutionId ?? "") === expectedExecutionId
+      && (
+        selectedJob.status === "CONTENT_READY"
+        || isExactRecoverableGeneratedContentFailure(selectedJob)
+        || isExactRecoverableZeroAuthorityFailure(selectedJob)
+      );
     const selectedIsRecoverableCanonicalIdentityFailedTarget = isExactRecoverableCanonicalIdentityFailure({
       target: selected,
       job: selectedJob,
@@ -998,7 +1008,12 @@ export async function POST(
     if (selected.status === "running" && selectedJob.status === "FAILED" && !selectedIsRecoverableFailedTarget) {
       return NextResponse.json({ error: "Selected running target has a failed job that is not recoverable for exact continuation." }, { status: 409 });
     }
-    if (selected.status !== "failed" && selected.status !== "content_ready" && selected.status !== "running") {
+    if (
+      selected.status !== "failed"
+      && selected.status !== "content_ready"
+      && selected.status !== "running"
+      && !selectedIsRecoverableReferenceCompleteTarget
+    ) {
       return NextResponse.json({ error: "Selected target is not in a continuable content-ready state." }, { status: 409 });
     }
     if (selectedJob.wordpressStatus === "publish") {
@@ -1039,6 +1054,20 @@ export async function POST(
     }
 
     let selectedReconcilableTarget = selected;
+
+    if (selectedIsRecoverableReferenceCompleteTarget) {
+      try {
+        selectedReconcilableTarget = reconcileGlwReferenceTargetContentReadyForContinuation({
+          campaignId,
+          stateCode: selected.stateCode,
+          citySlug: selected.citySlug,
+          expectedJobId: selected.jobId,
+        });
+      } catch {
+        return NextResponse.json({ error: "Selected reference-complete target could not be reconciled for exact continuation." }, { status: 409 });
+      }
+    }
+
     if (selected.status === "running" && selectedJob.status === "CONTENT_READY") {
       try {
         const updated = reconcileGlwCampaignTargetContentReady({

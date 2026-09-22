@@ -46,6 +46,10 @@ function findExactTarget(input: {
   ) ?? null;
 }
 
+function isReferenceJobContinuableFromReferenceComplete(status: string): boolean {
+  return status === "CONTENT_READY" || status === "FAILED";
+}
+
 export function ensureDraftCampaignContinuationTarget(input: {
   campaign: GlwCampaign;
   targetStateCode: string;
@@ -128,7 +132,10 @@ export function ensureDraftCampaignContinuationTarget(input: {
     return false;
   }
 
-  if (input.referenceJobStatus === "CONTENT_READY" && target.status === "reference_complete") {
+  if (
+    isReferenceJobContinuableFromReferenceComplete(input.referenceJobStatus)
+    && target.status === "reference_complete"
+  ) {
     reconcileGlwReferenceTargetContentReadyForContinuation({
       campaignId: input.campaign.campaignId,
       stateCode: input.targetStateCode,

@@ -17,6 +17,7 @@ jest.mock("@/modules/glw/campaign-target-repository", () => ({
   markGlwCampaignTargetFailed: jest.fn(),
   markGlwFailedCampaignTargetDraftReady: jest.fn(),
   reconcileGlwCampaignTargetContentReady: jest.fn(),
+  reconcileGlwReferenceTargetContentReadyForContinuation: jest.fn(),
   releaseExpiredGlwCampaignTargetLeases: jest.fn(() => 0),
   requeueGlwCampaignTargetAfterPreExecutionFailure: jest.fn(),
   reconcileGlwContentReadyTargetDraft: jest.fn(),
@@ -66,6 +67,7 @@ import {
   markGlwCampaignTargetFailed,
   markGlwFailedCampaignTargetDraftReady,
   reconcileGlwCampaignTargetContentReady,
+  reconcileGlwReferenceTargetContentReadyForContinuation,
   reconcileGlwContentReadyTargetDraft,
 } from "@/modules/glw/campaign-target-repository";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
@@ -294,6 +296,31 @@ describe("campaign reconcile exact content-ready continuation route", () => {
         leaseId,
         externalExecutionId,
       },
+    }));
+
+    (reconcileGlwReferenceTargetContentReadyForContinuation as jest.Mock).mockImplementation(({ stateCode, citySlug, expectedJobId }) => ({
+      targetId: gaTargetId,
+      campaignId,
+      organizationId: "led-display-warehouse",
+      siteId: "site-led-display-warehouse-production",
+      productId: "prod-outdoor-digital-sphere",
+      stateCode,
+      citySlug,
+      cityName: null,
+      status: "content_ready",
+      jobId: expectedJobId,
+      wordpressObjectId: null,
+      attemptCount: 1,
+      lastError: null,
+      leaseId: null,
+      leaseExpiresAt: null,
+      leasedAt: null,
+      dispatchDate: null,
+      createdAt: "2026-09-20T00:00:00.000Z",
+      updatedAt: "2026-09-20T00:00:00.000Z",
+      canonicalPath: null,
+      applicationPath: null,
+      canonicalParentId: null,
     }));
 
     (resolveGlwCampaignJobReconciliationDecision as jest.Mock).mockImplementation((job: { status: string; wordpressObjectId?: string | null; wordpressStatus?: string | null }) => {
@@ -2038,6 +2065,13 @@ describe("campaign reconcile exact content-ready continuation route", () => {
     expect(source).toContain("job.errorCode?.startsWith(\"CONTENT_REPAIR_\") === true");
     expect(source).toContain("selected.status === \"content_ready\" && selectedJob.status === \"FAILED\"");
     expect(source).toContain("&& !selectedIsRecoverableContentFailure");
+  });
+
+  test("source contract reconciles exact recoverable reference_complete targets before continuation", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reconcile/route.ts"), "utf8");
+    expect(source).toContain("selected.status === \"reference_complete\"");
+    expect(source).toContain("selectedIsRecoverableReferenceCompleteTarget");
+    expect(source).toContain("reconcileGlwReferenceTargetContentReadyForContinuation");
   });
 
   test("exact content_ready OUTDOOR_SPHERE recoverable partial draft continues and updates the same draft object", async () => {

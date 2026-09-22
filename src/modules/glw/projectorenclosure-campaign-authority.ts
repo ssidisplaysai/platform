@@ -5,6 +5,8 @@ export const PE_FAN_COOLED_STARTER_REFERENCE = { stateCode: "CA", citySlug: "ana
 export const PE_FAN_COOLED_STARTER_TARGETS = [PE_FAN_COOLED_STARTER_REFERENCE, { stateCode: "CA", citySlug: "santa-ana", cityName: "Santa Ana" }] as const;
 export const PE_FAN_COOLED_EXPANDED_CAMPAIGN_ID = "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-california-expanded-cities";
 export const PE_FAN_COOLED_EXPANDED_REFERENCE = { stateCode: "CA", citySlug: "los-angeles", cityName: "Los Angeles" } as const;
+export const PE_FAN_COOLED_TEXAS_CAMPAIGN_ID = "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-texas-cities";
+export const PE_FAN_COOLED_TEXAS_EXPANDED_CAMPAIGN_ID = "campaign-ssi-site-ssi-projectorenclosure-fan-cooled-projector-enclosures-texas-expanded-cities";
 export const PE_FAN_COOLED_EXPANDED_TARGETS = [
   PE_FAN_COOLED_EXPANDED_REFERENCE,
   { stateCode: "CA", citySlug: "san-diego", cityName: "San Diego" },
@@ -31,10 +33,18 @@ export function isPeFanCooledStarterCampaignRequest(input: { campaignId?: string
 }
 
 export function isPeFanCooledCampaignRequest(input: { campaignId?: string | null; siteId: string; productId: string; pageType: string; stateCode: string; citySlug?: string | null }): boolean {
+  const normalizedCitySlug = (input.citySlug ?? "").trim().toLowerCase();
   const targets = input.campaignId === PE_FAN_COOLED_STARTER_CAMPAIGN_ID
     ? PE_FAN_COOLED_STARTER_TARGETS
     : input.campaignId === PE_FAN_COOLED_EXPANDED_CAMPAIGN_ID
       ? PE_FAN_COOLED_EXPANDED_TARGETS
       : [];
-  return input.siteId === "site-ssi-projectorenclosure" && input.productId === "prod-ssi-fan-cooled-projector-enclosures" && input.pageType === "city_service" && input.stateCode === "CA" && targets.some((target) => target.citySlug === input.citySlug);
+  const californiaCampaignMatch = input.stateCode === "CA" && targets.some((target) => target.citySlug === input.citySlug);
+  const texasCampaignMatch = (input.campaignId === PE_FAN_COOLED_TEXAS_CAMPAIGN_ID || input.campaignId === PE_FAN_COOLED_TEXAS_EXPANDED_CAMPAIGN_ID)
+    && input.stateCode === "TX"
+    && normalizedCitySlug.length > 0;
+  return input.siteId === "site-ssi-projectorenclosure"
+    && input.productId === "prod-ssi-fan-cooled-projector-enclosures"
+    && input.pageType === "city_service"
+    && (californiaCampaignMatch || texasCampaignMatch);
 }

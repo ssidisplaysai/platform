@@ -1,4 +1,4 @@
-import { buildPeFanCooledExpandedCampaignInput, buildPeFanCooledStarterCampaignInput, isPeFanCooledCampaignRequest, isPeFanCooledStarterCampaignRequest, PE_FAN_COOLED_EXPANDED_CAMPAIGN_ID, PE_FAN_COOLED_EXPANDED_TARGETS, PE_FAN_COOLED_STARTER_CAMPAIGN_ID, PE_FAN_COOLED_STARTER_TARGETS } from "../projectorenclosure-campaign-authority";
+import { buildPeFanCooledExpandedCampaignInput, buildPeFanCooledStarterCampaignInput, isPeFanCooledCampaignRequest, isPeFanCooledStarterCampaignRequest, PE_FAN_COOLED_EXPANDED_CAMPAIGN_ID, PE_FAN_COOLED_EXPANDED_TARGETS, PE_FAN_COOLED_STARTER_CAMPAIGN_ID, PE_FAN_COOLED_STARTER_TARGETS, PE_FAN_COOLED_TEXAS_CAMPAIGN_ID, PE_FAN_COOLED_TEXAS_EXPANDED_CAMPAIGN_ID } from "../projectorenclosure-campaign-authority";
 
 describe("PE Fan Cooled starter campaign authority", () => {
   test("defines an exact two-city draft-only CA starter cohort", () => {
@@ -28,5 +28,13 @@ describe("PE Fan Cooled expanded campaign authority", () => {
     expect(isPeFanCooledCampaignRequest({ ...base, campaignId: PE_FAN_COOLED_EXPANDED_CAMPAIGN_ID, citySlug: "anaheim" })).toBe(false);
     expect(isPeFanCooledCampaignRequest({ ...base, campaignId: PE_FAN_COOLED_STARTER_CAMPAIGN_ID, citySlug: "los-angeles" })).toBe(false);
     expect(isPeFanCooledCampaignRequest({ ...base, campaignId: PE_FAN_COOLED_EXPANDED_CAMPAIGN_ID, citySlug: "irvine" })).toBe(false);
+  });
+
+  test("matches Texas campaign lineage for city targets", () => {
+    const base = { siteId: "site-ssi-projectorenclosure", productId: "prod-ssi-fan-cooled-projector-enclosures", pageType: "city_service", stateCode: "TX" };
+    expect(isPeFanCooledCampaignRequest({ ...base, campaignId: PE_FAN_COOLED_TEXAS_CAMPAIGN_ID, citySlug: "arlington" })).toBe(true);
+    expect(isPeFanCooledCampaignRequest({ ...base, campaignId: PE_FAN_COOLED_TEXAS_EXPANDED_CAMPAIGN_ID, citySlug: "arlington" })).toBe(true);
+    expect(isPeFanCooledCampaignRequest({ ...base, campaignId: PE_FAN_COOLED_TEXAS_CAMPAIGN_ID, citySlug: "" })).toBe(false);
+    expect(isPeFanCooledCampaignRequest({ ...base, campaignId: PE_FAN_COOLED_EXPANDED_CAMPAIGN_ID, citySlug: "arlington" })).toBe(false);
   });
 });

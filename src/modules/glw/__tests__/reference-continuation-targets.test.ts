@@ -236,4 +236,22 @@ describe("reference continuation target initialization", () => {
     expect(promoted).toBe(false);
     expect(listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin")?.status).toBe("reference_complete");
   });
+
+  test("reconciles reference_complete target to content_ready for recoverable failed continuation", () => {
+    const campaign = draftCampaign();
+
+    expect(ensureDraftCampaignContinuationTarget({
+      campaign,
+      targetStateCode: "TX",
+      targetCitySlug: null,
+      referenceJobId: "job-failed-continuable",
+      referenceJobStatus: "FAILED",
+      referenceWordpressObjectId: null,
+    })).toBe(true);
+
+    const targets = listGlwCampaignTargets(campaign.campaignId);
+    const referenceTarget = targets.find((target) => target.stateCode === "TX" && target.citySlug === null);
+    expect(referenceTarget?.jobId).toBe("job-failed-continuable");
+    expect(referenceTarget?.status).toBe("content_ready");
+  });
 });
