@@ -20,6 +20,14 @@ describe("site product/service authority repository", () => {
     expect(repository.listGenerationAuthority(scope)).toEqual([]);
   });
 
+  test("completion invariant requires proposed and approved offerings plus no remaining review", async () => {
+    const repository = await import("../site-product-authority-repository");
+    expect(repository.evaluateProductAuthorityCompletion({ candidateCount: 0, approvedCount: 0, needReview: 0, protectedBlockers: 0 })).toBe(false);
+    expect(repository.evaluateProductAuthorityCompletion({ candidateCount: 1, approvedCount: 0, needReview: 1, protectedBlockers: 0 })).toBe(false);
+    expect(repository.evaluateProductAuthorityCompletion({ candidateCount: 1, approvedCount: 1, needReview: 0, protectedBlockers: 1 })).toBe(false);
+    expect(repository.evaluateProductAuthorityCompletion({ candidateCount: 1, approvedCount: 1, needReview: 0, protectedBlockers: 0 })).toBe(true);
+  });
+
   test("normalizes safe URLs and blocks local/private literals and DNS resolution", async () => {
     const repository = await import("../site-product-authority-repository");
     expect(repository.normalizeSiteSourceUrl("https://Example.com/path/#fragment")).toBe("https://example.com/path");
@@ -32,6 +40,45 @@ describe("site product/service authority repository", () => {
     const source = repository.addUrlSource({ ...scope, siteDomain: "rocklinmetal.com", url: "https://rocklinmetal.com/fabrication/", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "Fabrication", actor: "owner" });
     expect(source).toMatchObject({ firstParty: true, authority: "EVIDENCE_SOURCE", approvalState: "OWNER_APPROVED", retrievalState: "NOT_RETRIEVED", publishable: false });
     expect(repository.listGenerationAuthority(scope)).toEqual([]);
+  });
+
+  test("explicit source proposal creates pending candidates with provenance and never auto-approves", async () => {
+    const repository = await import("../site-product-authority-repository");
+    const strategyProposal = strategy();
+    const source = repository.addUrlSource({ ...scope, siteDomain: "projectorenclosure.com", url: "https://projectorenclosure.com/fan-cooled-projector-enclosures/", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "Fan-Cooled Projector Enclosures", actor: "owner" });
+
+    const proposed = repository.proposeAuthorityCandidatesFromSources({ organizationId: scope.organizationId, siteId: scope.siteId, strategy: strategyProposal, actor: "owner" });
+    expect(proposed.length).toBeGreaterThan(0);
+    expect(proposed[0]).toMatchObject({ decision: "PENDING", sourceIds: expect.arrayContaining([source.sourceId]) });
+
+    const workspace = repository.getSiteAuthorityWorkspace({ organizationId: scope.organizationId, siteId: scope.siteId, strategy: strategyProposal });
+    const sourceDerived = workspace.candidates.filter((candidate) => candidate.authorityId.startsWith(`site-authority-source-${scope.siteId}-`));
+    expect(sourceDerived.length).toBeGreaterThan(0);
+    expect(sourceDerived.every((candidate) => candidate.decision === "PENDING")).toBe(true);
+    expect(repository.listGenerationAuthority(scope)).toEqual([]);
+  });
+
+  test("source proposals are deduplicated and fail closed when no bounded candidate can be extracted", async () => {
+    const repository = await import("../site-product-authority-repository");
+    const strategyProposal = strategy();
+    const source = repository.addOwnerKnowledgeSource({ ...scope, label: "Authorized offering", statement: "Fan-Cooled Projector Enclosures", sourceRole: "PRODUCT_SERVICE_AUTHORITY", actor: "owner" });
+
+    const first = repository.proposeAuthorityCandidatesFromSources({ organizationId: scope.organizationId, siteId: scope.siteId, strategy: strategyProposal, actor: "owner", sourceIds: [source.sourceId] });
+    expect(first.length).toBeGreaterThan(0);
+    expect(() => repository.proposeAuthorityCandidatesFromSources({ organizationId: scope.organizationId, siteId: scope.siteId, strategy: strategyProposal, actor: "owner", sourceIds: [source.sourceId] })).toThrow("SOURCE_CANDIDATE_PROPOSAL_INSUFFICIENT_EVIDENCE");
+
+    const noisy = repository.addUrlSource({ ...scope, siteDomain: "projectorenclosure.com", url: "https://projectorenclosure.com/home/", sourceRole: "PRODUCT_SERVICE_AUTHORITY", label: "Home", actor: "owner" });
+    expect(() => repository.proposeAuthorityCandidatesFromSources({ organizationId: scope.organizationId, siteId: scope.siteId, strategy: strategyProposal, actor: "owner", sourceIds: [noisy.sourceId] })).toThrow("SOURCE_CANDIDATE_PROPOSAL_INSUFFICIENT_EVIDENCE");
+  });
+
+  test("source proposal rejects cross-site and cross-organization source scope", async () => {
+    const repository = await import("../site-product-authority-repository");
+    const strategyProposal = strategy();
+    const sameOrgOtherSite = repository.addOwnerKnowledgeSource({ organizationId: scope.organizationId, siteId: "site-other", label: "Other site", statement: "Outdoor digital displays", sourceRole: "PRODUCT_SERVICE_AUTHORITY", actor: "owner" });
+    const otherOrg = repository.addOwnerKnowledgeSource({ organizationId: "other-org", siteId: scope.siteId, label: "Other org", statement: "Outdoor digital displays", sourceRole: "PRODUCT_SERVICE_AUTHORITY", actor: "owner" });
+
+    expect(() => repository.proposeAuthorityCandidatesFromSources({ organizationId: scope.organizationId, siteId: scope.siteId, strategy: strategyProposal, actor: "owner", sourceIds: [sameOrgOtherSite.sourceId] })).toThrow("SOURCE_CANDIDATE_PROPOSAL_INSUFFICIENT_EVIDENCE");
+    expect(() => repository.proposeAuthorityCandidatesFromSources({ organizationId: scope.organizationId, siteId: scope.siteId, strategy: strategyProposal, actor: "owner", sourceIds: [otherOrg.sourceId] })).toThrow("SOURCE_CANDIDATE_PROPOSAL_INSUFFICIENT_EVIDENCE");
   });
 
   test("uploads and owner knowledge preserve provenance while protected owner claims fail closed", async () => {

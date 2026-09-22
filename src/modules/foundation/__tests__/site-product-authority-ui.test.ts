@@ -9,12 +9,13 @@ describe("site Product / Service Authority UI contract", () => {
   test("replaces the API placeholder with a scoped owner workflow", () => {
     expect(page).toContain("SiteProductAuthorityWorkspace");
     expect(page).not.toContain("Use POST /api/products");
-    for (const text of ["Product / Service Authority", "Site Sources of Truth", "Product / Service Candidates", "+ ADD URL", "+ UPLOAD SOURCE", "+ ADD OWNER KNOWLEDGE"]) expect(workspace).toContain(text);
+    for (const text of ["Product / Service Authority", "Site Sources of Truth", "Product / Service Candidates", "+ ADD URL", "+ UPLOAD SOURCE", "+ ADD OWNER KNOWLEDGE", "PROPOSE OFFERINGS FROM SOURCES", "NO OFFERINGS PROPOSED"]) expect(workspace).toContain(text);
   });
 
   test("supports editable classifications, authority decisions, source links, and completion", () => {
-    for (const text of ["Product", "Service", "Product family", "Service family", "Display name", "Concise description", "Limitations, if any", "Supporting site sources", "YES — APPROVE FOR SITE", "YES, WITH LIMITATIONS", "NOT YET", "DO NOT OFFER", "CONTINUE TO SITE BUILD / GENERATION READINESS"]) expect(workspace).toContain(text);
+    for (const text of ["Product", "Service", "Product family", "Service family", "Display name", "Concise description", "Limitations, if any", "Supporting site sources", "YES - APPROVE FOR SITE", "YES, WITH LIMITATIONS", "NOT YET", "DO NOT OFFER", "CONTINUE TO SITE BUILD / GENERATION READINESS"]) expect(workspace).toContain(text);
     expect(workspace).toContain('action: "DECIDE_CANDIDATE"');
+    expect(workspace).toContain('action: "PROPOSE_CANDIDATES_FROM_SOURCES"');
     expect(route).toContain("getSiteAuthorityWorkspace");
     expect(route).not.toContain("createProduct");
   });
