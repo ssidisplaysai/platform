@@ -139,4 +139,52 @@ describe("site intelligence API boundary", () => {
     expect(creativeBody.workspace.creativeRevisions).toHaveLength(1);
     expect(creativeBody.workspace.creativeRevisions[0]).toMatchObject({ revision: 1, strategyRevision: 1, status: "PROPOSED", decidedBy: null, decidedAt: null });
   });
+
+  test("material creative handoff exposes projected candidate and approves updated creative for current strategy", async () => {
+    const repository = await import("../site-intelligence-repository");
+    let workspace = repository.ensureSiteIntelligenceWorkspace({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", publicBrandIdentity: "LED Display Warehouse", actor: "owner" });
+    workspace = repository.startSiteIntelligence({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", providerReference: "test" });
+    workspace = repository.recordSiteOpportunity({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test", evidence: [{ evidenceId: "e1", sourceReference: "https://example.com", sourceType: "WEB", observedClaim: "Observed", retrievedAt: "2026-09-10T00:00:00.000Z", entity: null, confidence: 0.7, strength: "MODERATE", authority: "OBSERVATION" }], opportunity: { opportunityId: "o1", name: "Opportunity", category: "market", buyer: "buyer", problemUseCase: "use", commercialValue: "UNKNOWN", demandSignal: "signal", competitionLevel: "UNKNOWN", organizationFit: "UNKNOWN", evidenceStrength: "MODERATE", confidence: 0.7, geographicScope: "unknown", nationalRolloutPotential: false, recurringReplacementPotential: false, seoContentOpportunity: "candidate", rationale: "reason", competitorEntities: [], evidenceIds: ["e1"], capabilityState: "OWNER_VALIDATION_REQUIRED", capabilityEvidenceIds: [], capabilityNotes: null, recommendation: "review", ownerDecision: "APPROVED", decidedBy: "owner", decidedAt: "2026-09-10T00:01:00.000Z" } });
+    workspace = repository.approveSiteIntelligence({ organizationId: "led-display-warehouse", siteId: "site-led-display-warehouse-production", expectedRevision: workspace.revision, actor: "owner", reason: "test" });
+
+    const route = await import("@/app/api/sites/[siteId]/intelligence/route");
+    const proposedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "GENERATE_STRATEGY", expectedRevision: workspace.revision, actor: "site-owner" }), context);
+    const proposedStrategyBody = await proposedStrategy.json();
+    const approvedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "DECIDE_STRATEGY", expectedRevision: proposedStrategyBody.workspace.revision, decision: "APPROVED", actor: "site-owner" }), context);
+    const approvedStrategyBody = await approvedStrategy.json();
+    const proposedCreative = await route.POST(request("POST", "led-display-warehouse", { action: "GENERATE_CREATIVE_DIRECTION", expectedRevision: approvedStrategyBody.workspace.revision, ownerInstruction: "Keep it industrial and premium.", actor: "site-owner" }), context);
+    const proposedCreativeBody = await proposedCreative.json();
+    const approvedCreative = await route.POST(request("POST", "led-display-warehouse", { action: "DECIDE_CREATIVE", expectedRevision: proposedCreativeBody.workspace.revision, decision: "APPROVED", actor: "site-owner" }), context);
+    const approvedCreativeBody = await approvedCreative.json();
+
+    const reopenedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "REOPEN_STRATEGY", expectedRevision: approvedCreativeBody.workspace.revision, actor: "site-owner", reason: "Owner reopened for updated review." }), context);
+    const reopenedBody = await reopenedStrategy.json();
+    const revisedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "GENERATE_REVISED_STRATEGY", expectedRevision: reopenedBody.workspace.revision, actor: "site-owner", revisionInstructions: "Update market positioning for revised priorities." }), context);
+    const revisedBody = await revisedStrategy.json();
+    const reapprovedStrategy = await route.POST(request("POST", "led-display-warehouse", { action: "DECIDE_STRATEGY", expectedRevision: revisedBody.workspace.revision, decision: "APPROVED", actor: "site-owner" }), context);
+    const reapprovedBody = await reapprovedStrategy.json();
+    const latestStrategyRevision = reapprovedBody.workspace.strategyRevisions.at(-1)?.revision;
+    expect(reapprovedBody.workspace.strategyRevisions.at(-1)).toMatchObject({ status: "APPROVED" });
+    expect(reapprovedBody.workspace.creativeRevisions.at(-1)).toMatchObject({ revision: 1, status: "APPROVED", strategyRevision: 1 });
+
+    const handoff = await route.GET(request("GET", "led-display-warehouse"), context);
+    const handoffBody = await handoff.json();
+    expect(handoff.status).toBe(200);
+    expect(handoffBody.creativeReviewHandoff).toMatchObject({
+      lineageStale: true,
+      materialDiffEvaluated: true,
+      requiresOwnerReview: true,
+      currentApprovedRevision: 1,
+      currentApprovedStrategyRevision: 1,
+      proposedStrategyRevision: latestStrategyRevision,
+    });
+    expect(handoffBody.creativeReviewHandoff.proposedCandidate).toBeTruthy();
+    expect(handoffBody.creativeReviewHandoff.materialDiff).toBeTruthy();
+
+    const approveUpdated = await route.POST(request("POST", "led-display-warehouse", { action: "APPROVE_UPDATED_CREATIVE", expectedRevision: reapprovedBody.workspace.revision, actor: "site-owner" }), context);
+    const approvedUpdatedBody = await approveUpdated.json();
+    expect(approveUpdated.status).toBe(200);
+    expect(approvedUpdatedBody.workspace.creativeRevisions.at(-1)).toMatchObject({ status: "APPROVED", strategyRevision: latestStrategyRevision });
+    expect(approvedUpdatedBody.workspace.creativeState).toBe("CREATIVE_APPROVED");
+  });
 });

@@ -123,10 +123,12 @@ describe("site intelligence UI contract", () => {
   });
 
   test("creative revisions and approval expose explicit next stages", () => {
-    for (const text of ["What should Genesis change?", "GENERATE REVISED CREATIVE DIRECTION", "Creative Direction approved", "CONTINUE TO PRODUCT / SERVICE AUTHORITY", "Site generation remains disabled until bounded product onboarding is complete."]) expect(creativeWorkflow).toContain(text);
+    for (const text of ["What should Genesis change?", "GENERATE REVISED CREATIVE DIRECTION", "Creative Direction approved", "CONTINUE TO PRODUCT / SERVICE AUTHORITY", "Site generation remains disabled until bounded product onboarding is complete.", "Material Creative Review Required", "REVIEW CREATIVE DIRECTION", "Material changed sections", "APPROVE UPDATED CREATIVE"]) expect(creativeWorkflow).toContain(text);
     expect(creativeWorkflow).toContain('generate("GENERATE_REVISED_CREATIVE_DIRECTION")');
     expect(creativeWorkflow).toContain("/products/new?organizationId=");
     expect(creativeWorkflow).toContain('action: "DECIDE_CREATIVE"');
+    expect(creativeWorkflow).toContain('action: "APPROVE_UPDATED_CREATIVE"');
+    expect(creativeWorkflow).toContain('action: "REQUEST_UPDATED_CREATIVE_CHANGES"');
   });
 
   test("workspace exposes real multiple-file upload with conservative classification", () => {

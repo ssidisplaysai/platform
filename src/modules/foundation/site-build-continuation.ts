@@ -1,5 +1,7 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+
 import { synthesizeCreativeDirection } from "./site-creative-direction-synthesizer";
 import {
   certifyGenerationReadiness,
@@ -11,6 +13,7 @@ import {
   addCreativeProposal,
   decideCreativeProposal,
   getSiteIntelligenceWorkspace,
+  refreshApprovedCreativeProposal,
 } from "./site-intelligence-repository";
 import type { CreativeDirectionProposal } from "./site-intelligence";
 import type { SiteBuildPlanProposal } from "./site-build-plan";
@@ -71,6 +74,19 @@ export type MaterialDiff = {
   material: boolean;
   changedFields: string[];
   summary: string;
+};
+
+export type CreativeReviewHandoffProjection = {
+  lineageStale: boolean;
+  materialDiffEvaluated: boolean;
+  requiresOwnerReview: boolean;
+  detail: string;
+  materialDiff: MaterialDiff | null;
+  proposedCandidate: CreativeDirectionProposal | null;
+  proposedCandidateFingerprint: string | null;
+  currentApprovedRevision: number | null;
+  currentApprovedStrategyRevision: number | null;
+  proposedStrategyRevision: number | null;
 };
 
 function normalize(value: string): string {
@@ -178,6 +194,129 @@ function ownerInterruptionQuestion(detail: string): string {
   return `What new decision does the owner need to make that Genesis cannot derive from already-approved authority? ${detail}`;
 }
 
+function projectedCreativeFingerprint(candidate: CreativeDirectionProposal): string {
+  return createHash("sha256").update(JSON.stringify({
+    strategyRevision: candidate.strategyRevision,
+    overallDirection: candidate.overallDirection,
+    brandInterpretation: candidate.brandInterpretation,
+    colorDirection: candidate.colorDirection,
+    typographyDirection: candidate.typographyDirection,
+    spacingLayoutDirection: candidate.spacingLayoutDirection,
+    photographyStyle: candidate.photographyStyle,
+    generatedImageStyle: candidate.generatedImageStyle,
+    heroTreatment: candidate.heroTreatment,
+    ctaTreatment: candidate.ctaTreatment,
+    trustProofPresentation: candidate.trustProofPresentation,
+    productPresentation: candidate.productPresentation,
+    verticalPresentation: candidate.verticalPresentation,
+    mobileConsiderations: candidate.mobileConsiderations,
+    visualDos: candidate.visualDos,
+    visualDonts: candidate.visualDonts,
+    homepageBlueprint: candidate.homepageBlueprint,
+    imagePlan: candidate.imagePlan,
+    reason: candidate.reason,
+  })).digest("hex");
+}
+
+export function projectCreativeReviewHandoff(site: SiteConfiguration): CreativeReviewHandoffProjection {
+  const intelligence = getSiteIntelligenceWorkspace(site.siteId);
+  const strategy = intelligence?.strategyRevisions.at(-1) ?? null;
+  const currentApproved = [...(intelligence?.creativeRevisions ?? [])].filter((item) => item.status === "APPROVED").at(-1) ?? null;
+  const creative = intelligence?.creativeRevisions.at(-1) ?? null;
+  const lineageStale = Boolean(strategy && creative && creative.status === "APPROVED" && creative.strategyRevision !== strategy.revision);
+
+  if (!lineageStale || !intelligence || !strategy || strategy.status !== "APPROVED") {
+    return {
+      lineageStale,
+      materialDiffEvaluated: false,
+      requiresOwnerReview: false,
+      detail: "No stale creative lineage requiring owner review projection.",
+      materialDiff: null,
+      proposedCandidate: null,
+      proposedCandidateFingerprint: null,
+      currentApprovedRevision: currentApproved?.revision ?? null,
+      currentApprovedStrategyRevision: currentApproved?.strategyRevision ?? null,
+      proposedStrategyRevision: strategy?.revision ?? null,
+    };
+  }
+
+  const synthesized = synthesizeCreativeDirection(intelligence);
+  const projectedCandidate: CreativeDirectionProposal = {
+    ...synthesized,
+    revision: (intelligence.creativeRevisions.at(-1)?.revision ?? 0) + 1,
+    status: "PROPOSED",
+    createdBy: SYSTEM_ACTOR,
+    createdAt: "PROJECTED_CANDIDATE",
+    decidedBy: null,
+    decidedAt: null,
+  };
+  const diff = compareCreativeDirectionMateriality(currentApproved, projectedCandidate);
+  return {
+    lineageStale: true,
+    materialDiffEvaluated: true,
+    requiresOwnerReview: diff.material,
+    detail: diff.summary,
+    materialDiff: diff,
+    proposedCandidate: projectedCandidate,
+    proposedCandidateFingerprint: projectedCreativeFingerprint(projectedCandidate),
+    currentApprovedRevision: currentApproved?.revision ?? null,
+    currentApprovedStrategyRevision: currentApproved?.strategyRevision ?? null,
+    proposedStrategyRevision: strategy.revision,
+  };
+}
+
+export function ensurePersistedProjectedCreativeCandidate(input: {
+  site: SiteConfiguration;
+  actor: string;
+  reason: string;
+}): { projection: CreativeReviewHandoffProjection; workspaceRevision: number; proposalRevision: number } {
+  const projection = projectCreativeReviewHandoff(input.site);
+  if (!projection.lineageStale || !projection.materialDiffEvaluated || !projection.proposedCandidate) {
+    throw new Error("CREATIVE_REVIEW_NOT_REQUIRED");
+  }
+
+  const current = getSiteIntelligenceWorkspace(input.site.siteId);
+  if (!current) throw new Error("SITE_INTELLIGENCE_NOT_FOUND");
+  const latest = current.creativeRevisions.at(-1);
+
+  if (latest?.status === "PROPOSED" && latest.strategyRevision === projection.proposedStrategyRevision) {
+    return { projection, workspaceRevision: current.revision, proposalRevision: latest.revision };
+  }
+
+  const create = latest?.status === "APPROVED" ? refreshApprovedCreativeProposal : addCreativeProposal;
+  const refreshed = create({
+    siteId: input.site.siteId,
+    organizationId: input.site.organizationId,
+    expectedRevision: current.revision,
+    actor: input.actor,
+    reason: input.reason,
+    proposal: {
+      strategyRevision: projection.proposedCandidate.strategyRevision,
+      overallDirection: projection.proposedCandidate.overallDirection,
+      brandInterpretation: projection.proposedCandidate.brandInterpretation,
+      colorDirection: projection.proposedCandidate.colorDirection,
+      typographyDirection: projection.proposedCandidate.typographyDirection,
+      spacingLayoutDirection: projection.proposedCandidate.spacingLayoutDirection,
+      photographyStyle: projection.proposedCandidate.photographyStyle,
+      generatedImageStyle: projection.proposedCandidate.generatedImageStyle,
+      heroTreatment: projection.proposedCandidate.heroTreatment,
+      ctaTreatment: projection.proposedCandidate.ctaTreatment,
+      trustProofPresentation: projection.proposedCandidate.trustProofPresentation,
+      productPresentation: projection.proposedCandidate.productPresentation,
+      verticalPresentation: projection.proposedCandidate.verticalPresentation,
+      mobileConsiderations: projection.proposedCandidate.mobileConsiderations,
+      visualDos: projection.proposedCandidate.visualDos,
+      visualDonts: projection.proposedCandidate.visualDonts,
+      homepageBlueprint: projection.proposedCandidate.homepageBlueprint,
+      imagePlan: projection.proposedCandidate.imagePlan,
+      reason: projection.proposedCandidate.reason,
+    },
+  });
+  const proposed = refreshed.creativeRevisions.at(-1);
+  if (!proposed || proposed.status !== "PROPOSED") throw new Error("CREATIVE_PROPOSAL_NOT_PERSISTED");
+  return { projection, workspaceRevision: refreshed.revision, proposalRevision: proposed.revision };
+}
+
 function stop(result: Omit<ContinuationResult, "ownerInterruptionQuestion">): ContinuationResult {
   return {
     ...result,
@@ -214,31 +353,11 @@ export function projectThreeGateOwnerAction(site: SiteConfiguration): ThreeGateO
 
   const creativeLineageCurrent = Boolean(creative && creative.status === "APPROVED" && creative.strategyRevision === strategy.revision);
   if (!creativeLineageCurrent) {
-    if (!intelligence) {
+    const handoff = projectCreativeReviewHandoff(site);
+    if (handoff.requiresOwnerReview) {
       return {
         ownerActionState: "OWNER_ACTION_REQUIRED",
-        detail: "Site intelligence workspace is unavailable.",
-        primaryActionLabel: "REVIEW REQUIRED",
-        routeHint: "CREATIVE_REVIEW",
-      };
-    }
-    const synthesized = synthesizeCreativeDirection(intelligence);
-    const priorApproved = [...(intelligence.creativeRevisions ?? [])]
-      .filter((item) => item.status === "APPROVED")
-      .at(-1) ?? null;
-    const diff = compareCreativeDirectionMateriality(priorApproved, {
-      ...synthesized,
-      revision: (intelligence.creativeRevisions.at(-1)?.revision ?? 0) + 1,
-      status: "PROPOSED",
-      createdBy: SYSTEM_ACTOR,
-      createdAt: new Date().toISOString(),
-      decidedBy: null,
-      decidedAt: null,
-    });
-    if (diff.material) {
-      return {
-        ownerActionState: "OWNER_ACTION_REQUIRED",
-        detail: diff.summary,
+        detail: handoff.detail,
         primaryActionLabel: "REVIEW REQUIRED",
         routeHint: "CREATIVE_REVIEW",
       };
@@ -337,37 +456,38 @@ export async function continueSiteBuild(site: SiteConfiguration): Promise<Contin
         });
       }
 
-      const synthesized = synthesizeCreativeDirection(intelligence);
-      const proposedWorkspace = addCreativeProposal({
-        siteId: site.siteId,
-        organizationId: site.organizationId,
-        expectedRevision: intelligence.revision,
-        actor: SYSTEM_ACTOR,
-        reason: "System continuation rebased Creative Direction against current approved Strategy lineage.",
-        proposal: synthesized,
-      });
-      const proposed = proposedWorkspace.creativeRevisions.at(-1);
-      const priorApproved = [...proposedWorkspace.creativeRevisions]
-        .filter((item) => item.status === "APPROVED")
-        .at(-1) ?? null;
-      if (!proposed) {
+      const handoff = projectCreativeReviewHandoff(site);
+      if (!handoff.materialDiffEvaluated || !handoff.materialDiff || !handoff.proposedCandidate) {
         return stop({
           stopReason: "HARD_SAFETY_STOP",
           stage: getSiteBuildWorkspace(site).stage,
-          detail: "Creative synthesis did not produce a proposal.",
+          detail: "Creative synthesis did not produce a reviewable candidate.",
           ownerReviewRequired: true,
         });
       }
 
-      const diff = compareCreativeDirectionMateriality(priorApproved, proposed);
+      const diff = handoff.materialDiff;
       const ownerReviewRequired = diff.material;
+
+      let proposalRevision: number | null = null;
+      let workspaceRevision: number | null = null;
+      if (ownerReviewRequired) {
+        const persisted = ensurePersistedProjectedCreativeCandidate({
+          site,
+          actor: SYSTEM_ACTOR,
+          reason: "System continuation persisted material Creative Direction review candidate.",
+        });
+        proposalRevision = persisted.proposalRevision;
+        workspaceRevision = persisted.workspaceRevision;
+      }
+
       recordSystemContinuationEvent({
         organizationId: site.organizationId,
         siteId: site.siteId,
         stage: "creative_direction",
         action: ownerReviewRequired ? "REVIEW_REQUIRED" : "CARRY_FORWARD_APPROVAL",
-        priorRevision: priorApproved?.revision ?? null,
-        newRevision: proposed.revision,
+        priorRevision: handoff.currentApprovedRevision,
+        newRevision: ownerReviewRequired ? proposalRevision : handoff.currentApprovedRevision,
         reason: ownerReviewRequired
           ? "Creative changed materially after strategy lineage rebase."
           : "Creative is materially equivalent after lineage rebase.",
@@ -386,10 +506,16 @@ export async function continueSiteBuild(site: SiteConfiguration): Promise<Contin
         });
       }
 
+      const persisted = ensurePersistedProjectedCreativeCandidate({
+        site,
+        actor: SYSTEM_ACTOR,
+        reason: "System continuation persisted equivalent Creative Direction lineage refresh.",
+      });
+
       decideCreativeProposal({
         siteId: site.siteId,
         organizationId: site.organizationId,
-        expectedRevision: proposedWorkspace.revision,
+        expectedRevision: persisted.workspaceRevision,
         actor: SYSTEM_ACTOR,
         reason: "System continuation carried forward equivalent Creative Direction approval.",
         decision: "APPROVED",

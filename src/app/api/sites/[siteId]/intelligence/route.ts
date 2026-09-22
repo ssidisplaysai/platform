@@ -34,6 +34,7 @@ import {
 import { synthesizeInitialSiteStrategy } from "@/modules/foundation/site-strategy-synthesizer";
 import { synthesizeCreativeDirection } from "@/modules/foundation/site-creative-direction-synthesizer";
 import { resolvePostCapabilityTransition, selectDistinctCapabilityOpportunities } from "@/modules/foundation/site-capability-transition";
+import { continueSiteBuild, ensurePersistedProjectedCreativeCandidate, projectCreativeReviewHandoff } from "@/modules/foundation/site-build-continuation";
 import type { CreativeInput, SiteAssetClassification } from "@/modules/foundation/site-intelligence";
 
 type Context = { params: Promise<{ siteId: string }> };
@@ -60,9 +61,11 @@ export async function GET(request: NextRequest, context: Context) {
   const site = await scopedSite(request, context);
   if (!site) return NextResponse.json({ error: "Site not found" }, { status: 404 });
   const workspace = getSiteIntelligenceWorkspace(site.siteId);
+  const creativeReviewHandoff = projectCreativeReviewHandoff(site);
   return NextResponse.json({
     site: { siteId: site.siteId, organizationId: site.organizationId, displayName: site.displayName, publicationPolicy: site.publicationPolicy, enabled: site.enabled },
     workspace,
+    creativeReviewHandoff,
     capabilityEvidenceOptions: workspace ? listCapabilityEvidenceOptions({ organizationId: site.organizationId, siteId: site.siteId }) : [],
     strategyReadiness: workspace ? getStrategyReadiness(workspace) : { ready: false, blockers: ["Complete and approve Site Intelligence review."], approvedOpportunityCount: 0, verifiedCapabilityCount: 0, qualifiedCapabilityCount: 0 },
     startBoundary: "START_SITE_INTELLIGENCE",
@@ -217,10 +220,48 @@ export async function POST(request: NextRequest, context: Context) {
       case "DECIDE_CREATIVE":
         workspace = decideCreativeProposal({ ...common, decision: body.decision as never });
         break;
+      case "APPROVE_UPDATED_CREATIVE": {
+        const persisted = ensurePersistedProjectedCreativeCandidate({
+          site,
+          actor: common.actor,
+          reason: "Owner approved the projected Creative Direction update for the current approved Strategy.",
+        });
+        workspace = decideCreativeProposal({
+          ...common,
+          expectedRevision: persisted.workspaceRevision,
+          decision: "APPROVED",
+          reason: "Owner approved the projected Creative Direction update.",
+        });
+        await continueSiteBuild(site);
+        break;
+      }
+      case "REQUEST_UPDATED_CREATIVE_CHANGES": {
+        const revisionInstructions = String(body.revisionInstructions ?? "").trim();
+        if (!revisionInstructions) throw new Error("CREATIVE_REVISION_INSTRUCTIONS_REQUIRED");
+        const persisted = ensurePersistedProjectedCreativeCandidate({
+          site,
+          actor: common.actor,
+          reason: "Owner requested changes on projected Creative Direction update.",
+        });
+        const reviewRequested = decideCreativeProposal({
+          ...common,
+          expectedRevision: persisted.workspaceRevision,
+          decision: "REVISION_REQUESTED",
+          reason: `Owner requested projected Creative Direction changes: ${revisionInstructions}`,
+        });
+        const proposal = synthesizeCreativeDirection({ ...reviewRequested, opportunities: selectDistinctCapabilityOpportunities(reviewRequested.opportunities) }, revisionInstructions);
+        workspace = addCreativeProposal({
+          ...common,
+          expectedRevision: reviewRequested.revision,
+          proposal,
+          reason: `Owner requested a revised projected Creative Direction proposal: ${revisionInstructions}`,
+        });
+        break;
+      }
       default:
         return NextResponse.json({ error: "Unsupported intelligence action." }, { status: 400 });
     }
-    return NextResponse.json({ workspace, capabilityEvidenceOptions: listCapabilityEvidenceOptions({ organizationId: site.organizationId, siteId: site.siteId }) });
+    return NextResponse.json({ workspace, creativeReviewHandoff: projectCreativeReviewHandoff(site), capabilityEvidenceOptions: listCapabilityEvidenceOptions({ organizationId: site.organizationId, siteId: site.siteId }) });
   } catch (error) {
     return errorResponse(error);
   }

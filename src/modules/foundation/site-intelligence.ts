@@ -259,6 +259,25 @@ export type CreativeDirectionProposal = {
   decidedAt: string | null;
 };
 
+export type CreativeMaterialDiff = {
+  material: boolean;
+  changedFields: string[];
+  summary: string;
+};
+
+export type CreativeReviewHandoff = {
+  lineageStale: boolean;
+  materialDiffEvaluated: boolean;
+  requiresOwnerReview: boolean;
+  detail: string;
+  materialDiff: CreativeMaterialDiff | null;
+  proposedCandidate: CreativeDirectionProposal | null;
+  proposedCandidateFingerprint: string | null;
+  currentApprovedRevision: number | null;
+  currentApprovedStrategyRevision: number | null;
+  proposedStrategyRevision: number | null;
+};
+
 export type SiteStrategyAuditEvent = {
   eventId: string;
   action: string;

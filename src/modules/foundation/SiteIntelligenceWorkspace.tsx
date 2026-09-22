@@ -9,6 +9,7 @@ import type {
   CapabilityEvidenceState,
   CapabilityEvidenceOption,
   CreativeDirectionProposal,
+  CreativeReviewHandoff,
   SiteAssetClassification,
   OpportunityDecision,
   SiteIntelligenceWorkspace as Workspace,
@@ -43,15 +44,17 @@ export function SiteIntelligenceWorkspace(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [providerConfigured, setProviderConfigured] = useState(false);
   const [capabilityEvidenceOptions, setCapabilityEvidenceOptions] = useState<CapabilityEvidenceOption[]>([]);
+  const [creativeReviewHandoff, setCreativeReviewHandoff] = useState<CreativeReviewHandoff | null>(null);
 
   async function loadWorkspaceSnapshot() {
     const response = await fetch(`/api/sites/${encodeURIComponent(props.siteId)}/intelligence`, {
       headers: headers(props.organizationId, props.siteId),
       cache: "no-store",
     });
-    const payload = await response.json() as { workspace?: Workspace; provider?: { configured: boolean }; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
+    const payload = await response.json() as { workspace?: Workspace; creativeReviewHandoff?: CreativeReviewHandoff; provider?: { configured: boolean }; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
     if (!response.ok) throw new Error(payload.error ?? "Unable to load site intelligence.");
     setWorkspace(payload.workspace ?? null);
+    setCreativeReviewHandoff(payload.creativeReviewHandoff ?? null);
     setProviderConfigured(Boolean(payload.provider?.configured));
     setCapabilityEvidenceOptions(payload.capabilityEvidenceOptions ?? []);
     return payload.workspace ?? null;
@@ -76,9 +79,10 @@ export function SiteIntelligenceWorkspace(props: Props) {
           headers: headers(props.organizationId, props.siteId),
           body: JSON.stringify({ ...body, expectedRevision, actor: "site-owner" }),
         });
-        const payload = await response.json() as { workspace?: Workspace; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
+        const payload = await response.json() as { workspace?: Workspace; creativeReviewHandoff?: CreativeReviewHandoff; capabilityEvidenceOptions?: CapabilityEvidenceOption[]; error?: string };
         if (response.ok && payload.workspace) {
           setWorkspace(payload.workspace);
+          setCreativeReviewHandoff(payload.creativeReviewHandoff ?? null);
           if (payload.capabilityEvidenceOptions) setCapabilityEvidenceOptions(payload.capabilityEvidenceOptions);
           return payload.workspace;
         }
@@ -134,7 +138,7 @@ export function SiteIntelligenceWorkspace(props: Props) {
           {workspace.intelligenceState === "INTELLIGENCE_READY_FOR_REVIEW" ? <button type="button" disabled={busy || !workspace.opportunities.some((opportunity) => opportunity.ownerDecision === "APPROVED")} onClick={() => action({ action: "APPROVE_INTELLIGENCE", reason: "Owner approved reviewed site intelligence." })} className="bg-red-600 px-4 py-3 text-sm font-semibold text-white disabled:opacity-40">APPROVE INTELLIGENCE</button> : null}
           <div id="strategy-review" tabIndex={-1} className="scroll-mt-4 focus:outline focus:outline-2 focus:outline-offset-4 focus:outline-red-500"><StrategyPanel key={`strategy-${workspace.strategyRevisions.at(-1)?.revision ?? 0}`} workspace={workspace} busy={busy} onAction={action} /></div>
           <SiteIntelligenceReferenceLibrary organizationId={props.organizationId} siteId={props.siteId} workspace={workspace} busy={busy} onAction={action} onWorkspace={setWorkspace} />
-          <div id="creative-direction" tabIndex={-1} className="scroll-mt-4 focus:outline focus:outline-2 focus:outline-offset-4 focus:outline-red-500"><SiteCreativeDirectionWorkflow workspace={workspace} busy={busy} onAction={action} /></div>
+          <div id="creative-direction" tabIndex={-1} className="scroll-mt-4 focus:outline focus:outline-2 focus:outline-offset-4 focus:outline-red-500"><SiteCreativeDirectionWorkflow workspace={workspace} creativeReviewHandoff={creativeReviewHandoff} busy={busy} onAction={action} /></div>
           <section className="border border-zinc-800 p-5">
             <h2 className="font-semibold text-white">Product authority boundary</h2>
             <p className="mt-2 text-sm text-zinc-400">Product onboarding remains separate. Intelligence and creative approval never create products, campaigns, WordPress pages, or publishable assets.</p>

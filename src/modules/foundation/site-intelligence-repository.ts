@@ -344,6 +344,19 @@ export function addCreativeProposal(input: { siteId: string; organizationId: str
   }});
 }
 
+export function refreshApprovedCreativeProposal(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; proposal: Omit<CreativeDirectionProposal, "revision" | "status" | "createdBy" | "createdAt" | "decidedBy" | "decidedAt"> }) {
+  return update({ ...input, action: "CREATIVE_REFRESH_PROPOSED", mutate(workspace) {
+    const strategy = workspace.strategyRevisions.at(-1);
+    if (!strategy || strategy.status !== "APPROVED" || strategy.revision !== input.proposal.strategyRevision || workspace.strategyState !== "STRATEGY_APPROVED") {
+      throw new Error("APPROVED_STRATEGY_REQUIRED");
+    }
+    const approved = workspace.creativeRevisions.at(-1);
+    if (!approved || approved.status !== "APPROVED" || workspace.creativeState !== "CREATIVE_APPROVED") throw new Error("APPROVED_CREATIVE_REQUIRED");
+    workspace.creativeRevisions.push({ ...input.proposal, revision: approved.revision + 1, status: "PROPOSED", createdBy: input.actor, createdAt: now(), decidedBy: null, decidedAt: null });
+    workspace.creativeState = "CREATIVE_READY_FOR_REVIEW";
+  }});
+}
+
 export function decideCreativeProposal(input: { siteId: string; organizationId: string; expectedRevision: number; actor: string; reason: string; decision: "APPROVED" | "REVISION_REQUESTED" | "REJECTED" }) {
   return update({ ...input, action: `CREATIVE_${input.decision}`, mutate(workspace) {
     if (!["APPROVED", "REVISION_REQUESTED", "REJECTED"].includes(input.decision)) throw new Error("CREATIVE_DECISION_INVALID");
