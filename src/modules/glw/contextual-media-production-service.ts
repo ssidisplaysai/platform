@@ -41,17 +41,7 @@ export async function executeContextualMediaProduction(input: { campaignId: stri
   const dependencies = createContextualMediaProductionDependencies({
     site, siteName: site.displayName, productName: product.productName,
     patchPresentation: async ({ replacements }) => {
-      let contentHtml = patchContextualPresentationMedia(before.contentHtml, replacements);
-      if (projectorEnclosureScope) {
-        contentHtml = applyScopedThemeTitleSuppression({
-          contentHtml,
-          wordpressObjectId: identity.wordpressObjectId,
-        }).contentHtml;
-        contentHtml = applyScopedThemeFeaturedMediaSuppression({
-          contentHtml,
-          wordpressObjectId: identity.wordpressObjectId,
-        }).contentHtml;
-      }
+      const contentHtml = patchContextualPresentationMedia(before.contentHtml, replacements);
       const write = await writeGenesisWordPressDraft({ operation: "UPDATE", site, wordpressObjectId: identity.wordpressObjectId, artifact: { title: before.title, contentHtml, slug: readiness.identity.canonicalPath, excerpt: before.excerpt || null, parentId: before.parentId, seo: null } });
       if (!write.ok) throw new Error(`CONTEXTUAL_MEDIA_DRAFT_PATCH_FAILED:${write.state}`);
       const after = await read();
@@ -140,7 +130,17 @@ export async function executeDraftReadyGeneratedContextualMediaRepair(input: {
     siteName: site.displayName,
     productName: product.productName,
     patchPresentation: async ({ replacements }) => {
-      const contentHtml = patchContextualPresentationMedia(before.contentHtml, replacements);
+      let contentHtml = patchContextualPresentationMedia(before.contentHtml, replacements);
+      if (projectorEnclosureScope) {
+        contentHtml = applyScopedThemeTitleSuppression({
+          contentHtml,
+          wordpressObjectId: identity.wordpressObjectId,
+        }).contentHtml;
+        contentHtml = applyScopedThemeFeaturedMediaSuppression({
+          contentHtml,
+          wordpressObjectId: identity.wordpressObjectId,
+        }).contentHtml;
+      }
       const write = await writeGenesisWordPressDraft({ operation: "UPDATE", site, wordpressObjectId: identity.wordpressObjectId, artifact: { title: before.title, contentHtml, slug: readiness.identity.canonicalPath, excerpt: before.excerpt || null, parentId: before.parentId, seo: null } });
       if (!write.ok) throw new Error(`CONTEXTUAL_MEDIA_DRAFT_PATCH_FAILED:${write.state}`);
       const after = await read();
