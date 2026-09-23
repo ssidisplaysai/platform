@@ -193,6 +193,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   const [ownerGrantId, setOwnerGrantId] = useState<string | null>(null);
   const [ownerAuthorityBusy, setOwnerAuthorityBusy] = useState(false);
   const projectedReferenceState = useRef<string | null>(null);
+  const referenceRequestSequence = useRef(0);
 
   const headers = {
     "x-gcp-roles": "platform_admin",
@@ -223,11 +224,14 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   }
 
   async function recoverReferencePage(refresh: boolean) {
+    const requestSequence = ++referenceRequestSequence.current;
+    const requestedReferenceState = referenceState;
+    const requestedReferenceCitySlug = selectedReferenceCitySlug;
     setRecoveringReference(true);
 
     try {
       const response = await fetch(
-        `${referenceEndpoint}?stateCode=${encodeURIComponent(referenceState)}${campaign.pageType === "city_service" && selectedReferenceCitySlug ? `&citySlug=${encodeURIComponent(selectedReferenceCitySlug)}` : ""}${refresh ? "&refresh=true" : ""}`,
+        `${referenceEndpoint}?stateCode=${encodeURIComponent(requestedReferenceState)}${campaign.pageType === "city_service" && requestedReferenceCitySlug ? `&citySlug=${encodeURIComponent(requestedReferenceCitySlug)}` : ""}${refresh ? "&refresh=true" : ""}`,
         {
           headers,
           cache: "no-store",
@@ -235,6 +239,9 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
       );
 
       const payload = await response.json() as ReferenceResult;
+      if (requestSequence !== referenceRequestSequence.current) {
+        return;
+      }
       setWordpressAuthority(payload.wordpressAuthority ?? null);
       if (payload.selectedReferenceState?.stateCode && payload.selectedReferenceState.stateCode !== referenceState) {
         projectedReferenceState.current = payload.selectedReferenceState.stateCode;
@@ -493,23 +500,39 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   }
 
   async function persistReferenceState(stateCode: string, citySlug?: string | null) {
+    const requestSequence = ++referenceRequestSequence.current;
+    const previousState = referenceState;
+    const previousCity = referenceCitySlug;
+    const requestedCity = campaign.pageType === "city_service" ? citySlug ?? null : null;
+
     setMessage(null);
+    setReferenceState(stateCode);
+    setReferenceCitySlug(requestedCity);
+    setReferenceResult(null);
+    setContinuationAttemptedJobId(null);
+
     const response = await fetch(referenceEndpoint, {
       method: "PUT",
       headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ stateCode, citySlug: campaign.pageType === "city_service" ? citySlug ?? null : null }),
+      body: JSON.stringify({ stateCode, citySlug: requestedCity }),
     });
     const payload = await response.json() as ReferenceResult;
+
+    if (requestSequence !== referenceRequestSequence.current) {
+      return;
+    }
+
     if (!response.ok) {
+      setReferenceState(previousState);
+      setReferenceCitySlug(previousCity);
       setMessage(payload.error ?? "Unable to persist the reference state.");
       return;
     }
+
     const nextState = payload.selectedReferenceState?.stateCode ?? stateCode;
-    const nextCity = payload.selectedReferenceState?.citySlug ?? citySlug ?? null;
+    const nextCity = payload.selectedReferenceState?.citySlug ?? requestedCity;
     setReferenceState(nextState);
     setReferenceCitySlug(nextCity);
-    setReferenceResult(null);
-    setContinuationAttemptedJobId(null);
   }
 
   async function approveReferencePage(jobId: string) {
@@ -661,15 +684,6 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
     if (!jobId) return;
 
     if (
-      jobStatus === "CONTENT_READY"
-      && !continuingReference
-      && continuationAttemptedJobId !== jobId
-    ) {
-      void continueReferencePage(jobId);
-      return;
-    }
-
-    if (
       jobStatus === "QUEUED"
       || jobStatus === "DISPATCHED"
       || jobStatus === "DISCOVERING_EXECUTION"
@@ -685,8 +699,6 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   }, [
     jobId,
     jobStatus,
-    continuingReference,
-    continuationAttemptedJobId,
   ]);
 
   const generatedDraft = job?.generatedDraft ?? null;
@@ -989,6 +1001,16 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
               <p className="mt-1 text-zinc-500">Last update: {new Date(referenceWorkflow.lastUpdatedAt).toLocaleString()}</p>
             ) : null}
             <p className="mt-1 text-zinc-400">Safe owner action: {referenceWorkflow.safeOwnerAction.replaceAll("_", " ")}</p>
+            {referenceWorkflow.state === "REFERENCE_RECOVERY_REQUIRED" && jobId ? (
+              <button
+                type="button"
+                disabled={continuingReference}
+                onClick={() => void continueReferencePage(jobId)}
+                className="mt-3 border border-red-600 px-3 py-2 font-semibold text-red-200 disabled:opacity-40"
+              >
+                {continuingReference ? "Continuing Existing Reference..." : "Continue Existing Reference"}
+              </button>
+            ) : null}
             {referenceWorkflow.artifactSha256 ? (
               <p className="mt-1 break-all font-mono text-zinc-500">Artifact: {referenceWorkflow.artifactSha256}</p>
             ) : null}
