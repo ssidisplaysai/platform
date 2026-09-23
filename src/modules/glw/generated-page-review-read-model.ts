@@ -35,6 +35,7 @@ import { SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE } from "./san-antonio-actua
 import { getSanAntonioDurableHeadingContrastState } from "./san-antonio-durable-heading-contrast-update-service";
 import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-page-projection";
 import { requiresGeneratedContextualMediaForOutdoorSphere } from "./outdoor-sphere-contextual-media-policy";
+import { requiresGeneratedContextualMediaForProjectorEnclosure } from "./projector-enclosure-contextual-media-policy";
 
 export type ReviewSignal = "PASS" | "WARNING" | "BLOCKED" | "NOT_EVALUATED";
 export type ReviewIssue = { category: "CONTENT" | "SEO" | "IMAGE" | "WORDPRESS" | "POLICY"; severity: "WARNING" | "BLOCKED"; what: string; effect: string; safeNextStep: string };
@@ -83,7 +84,7 @@ export type GeneratedPageReviewModel = {
           organizationId: string;
           siteId: string;
           operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA";
-          label: "Generate Contextual Image" | "Replace Legacy Contextual Image";
+          label: "Generate Contextual Image" | "Replace Legacy Contextual Image" | "Reconcile Featured Contextual Image" | "Build Contextual Visual Set";
           identity: {
             campaignId: string;
             targetId: string;
@@ -187,6 +188,12 @@ export function deriveGeneratedPageReviewModel(input: {
     siteId: input.campaign.siteId,
     productId: input.campaign.productId,
   });
+  const projectorEnclosureContextualRequired = requiresGeneratedContextualMediaForProjectorEnclosure({
+    organizationId: input.campaign.organizationId,
+    siteId: input.campaign.siteId,
+    productId: input.campaign.productId,
+  });
+  const draftReadyContextualRepairRequired = strictGeneratedContextualRequired || projectorEnclosureContextualRequired;
   const generatedContextualAssignment = (input.mediaAssignments ?? []).find((assignment) =>
     assignment.pageRevisionId === pageRevisionIdentity
     && assignment.buildSessionId === `contextual-media:${input.target.targetId}`
@@ -325,7 +332,7 @@ export function deriveGeneratedPageReviewModel(input: {
     && visualQa.decisionState === "CURRENT"
     && visualQa.decision?.decision === "APPROVED"
     && input.campaign.publicationPolicy !== "draft_only";
-  const generatedContextualRepairEligible = strictGeneratedContextualRequired
+  const generatedContextualRepairEligible = draftReadyContextualRepairRequired
     && input.target.status === "draft_ready"
     && wordpressStatus === "draft"
     && Boolean(wordpressObjectId)
@@ -446,7 +453,13 @@ export function deriveGeneratedPageReviewModel(input: {
         organizationId: input.campaign.organizationId,
         siteId: input.campaign.siteId,
         operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA",
-        label: strictGeneratedContextualRequired && contextualReady ? "Reconcile Featured Contextual Image" : mediaId ? "Replace Legacy Contextual Image" : "Generate Contextual Image",
+        label: projectorEnclosureContextualRequired
+          ? "Build Contextual Visual Set"
+          : strictGeneratedContextualRequired && contextualReady
+            ? "Reconcile Featured Contextual Image"
+            : mediaId
+              ? "Replace Legacy Contextual Image"
+              : "Generate Contextual Image",
         identity: {
           campaignId: input.campaign.campaignId,
           targetId: input.target.targetId,
