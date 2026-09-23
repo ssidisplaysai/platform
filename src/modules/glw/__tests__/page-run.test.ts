@@ -102,6 +102,24 @@ describe("GLW authoritative PageRun lifecycle", () => {
     ).rejects.toThrow("Target already has an active PageRun");
   });
 
+  test("resolves the authoritative run by generation job identity", async () => {
+    const repository = createInMemoryGlwPageRunRepository();
+    let run = createGlwPageRun({ runId: "run-job-lookup", identity });
+    run = advanceGlwPageRun(run, {
+      to: "DISPATCHED",
+      generationJobId: "job-lookup",
+      externalExecutionId: "700099",
+    });
+    await repository.create(run);
+
+    await expect(repository.getByGenerationJobId("job-lookup")).resolves.toMatchObject({
+      runId: "run-job-lookup",
+      targetId: identity.targetId,
+      generationJobId: "job-lookup",
+    });
+    await expect(repository.getByGenerationJobId("missing-job")).resolves.toBeNull();
+  });
+
   test("discard and regenerate atomically abandons the old run and points at one replacement", async () => {
     const repository = createInMemoryGlwPageRunRepository();
     await repository.create(createGlwPageRun({ runId: "run-1", identity }));
