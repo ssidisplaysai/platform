@@ -310,7 +310,7 @@ describe("reference continuation target initialization", () => {
       cityTargets: campaign.cityTargets ?? [],
       referenceTarget: { stateCode: "TX", citySlug: "austin" },
       referenceJobId: "job-complete-austin",
-      referenceWordpressObjectId: "13167",
+      referenceWordpressObjectId: null,
     });
 
     expect(ensureDraftCampaignContinuationTarget({
@@ -319,12 +319,12 @@ describe("reference continuation target initialization", () => {
       targetCitySlug: "austin",
       referenceJobId: "job-complete-austin",
       referenceJobStatus: "CONTENT_READY",
-      referenceWordpressObjectId: "13167",
+      referenceWordpressObjectId: null,
     })).toBe(true);
 
     const before = listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin");
     expect(before?.status).toBe("content_ready");
-    expect(before?.wordpressObjectId).toBe("13167");
+    expect(before?.wordpressObjectId).toBeNull();
 
     const changed = reconcileReferenceTargetExecutionProjection({
       campaign,
