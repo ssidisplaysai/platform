@@ -13,6 +13,8 @@ import { createContextualMediaProductionDependencies } from "./contextual-media-
 import { patchContextualPresentationMedia } from "./contextual-media-presentation-patch";
 import { resolveContextualMediaProductionAuthority } from "./contextual-media-production-preflight";
 import { buildOutdoorSphereGeneratedContextualPrompt, requiresGeneratedContextualMediaForOutdoorSphere } from "./outdoor-sphere-contextual-media-policy";
+import { buildProjectorEnclosureGeneratedContextualPlan, requiresGeneratedContextualMediaForProjectorEnclosure } from "./projector-enclosure-contextual-media-policy";
+import { applyScopedThemeFeaturedMediaSuppression, applyScopedThemeTitleSuppression } from "./scoped-theme-title-suppression";
 
 const sha256 = (value: string) => createHash("sha256").update(value.trim()).digest("hex");
 const text = (value: unknown) => typeof value === "string" ? value.trim() : "";
@@ -39,7 +41,17 @@ export async function executeContextualMediaProduction(input: { campaignId: stri
   const dependencies = createContextualMediaProductionDependencies({
     site, siteName: site.displayName, productName: product.productName,
     patchPresentation: async ({ replacements }) => {
-      const contentHtml = patchContextualPresentationMedia(before.contentHtml, replacements);
+      let contentHtml = patchContextualPresentationMedia(before.contentHtml, replacements);
+      if (projectorEnclosureScope) {
+        contentHtml = applyScopedThemeTitleSuppression({
+          contentHtml,
+          wordpressObjectId: identity.wordpressObjectId,
+        }).contentHtml;
+        contentHtml = applyScopedThemeFeaturedMediaSuppression({
+          contentHtml,
+          wordpressObjectId: identity.wordpressObjectId,
+        }).contentHtml;
+      }
       const write = await writeGenesisWordPressDraft({ operation: "UPDATE", site, wordpressObjectId: identity.wordpressObjectId, artifact: { title: before.title, contentHtml, slug: readiness.identity.canonicalPath, excerpt: before.excerpt || null, parentId: before.parentId, seo: null } });
       if (!write.ok) throw new Error(`CONTEXTUAL_MEDIA_DRAFT_PATCH_FAILED:${write.state}`);
       const after = await read();
@@ -60,7 +72,21 @@ export async function executeContextualMediaProduction(input: { campaignId: stri
   return { result, presentationSlots, storedShaBefore: input.expectedStoredSha256, storedShaAfter: result.storedSha256, ownerDecision: "PENDING" as const, publicationPerformed: false as const };
 }
 
-function draftReadyContextualRepairPlan(input: { stateName: string; cityName?: string | null }): readonly ContextualVisualPlanItem[] {
+function draftReadyContextualRepairPlan(input: {
+  organizationId: string;
+  siteId: string;
+  campaignId: string;
+  productId: string;
+  stateName: string;
+  cityName?: string | null;
+}): readonly ContextualVisualPlanItem[] {
+  if (requiresGeneratedContextualMediaForProjectorEnclosure(input)) {
+    return buildProjectorEnclosureGeneratedContextualPlan({
+      stateName: input.stateName,
+      cityName: input.cityName,
+    });
+  }
+
   const location = [input.cityName?.trim() || "", input.stateName.trim()].filter(Boolean).join(", ");
   return [{
     role: "CONTEXTUAL_IN_USE",
@@ -74,19 +100,31 @@ function draftReadyContextualRepairPlan(input: { stateName: string; cityName?: s
 }
 
 export async function executeDraftReadyGeneratedContextualMediaRepair(input: {
+  organizationId: string;
+  siteId: string;
   campaignId: string;
   targetId: string;
+  productId: string;
   stateName: string;
   cityName?: string | null;
   expectedStoredSha256: string;
   actor: string;
 }) {
   if (!/^[a-f0-9]{64}$/.test(input.expectedStoredSha256)) throw new Error("CONTEXTUAL_MEDIA_EXPECTED_STORED_SHA_REQUIRED");
-  const visualPlan = draftReadyContextualRepairPlan({ stateName: input.stateName, cityName: input.cityName });
+  const visualPlan = draftReadyContextualRepairPlan({
+    organizationId: input.organizationId,
+    siteId: input.siteId,
+    campaignId: input.campaignId,
+    productId: input.productId,
+    stateName: input.stateName,
+    cityName: input.cityName,
+  });
   const { readiness, site, product, productAuthority, provider, presentationSlots } = await resolveContextualMediaProductionAuthority({ campaignId: input.campaignId, targetId: input.targetId, visualPlan });
   const identity = { organizationId: readiness.identity.organizationId, siteId: readiness.identity.siteId, campaignId: readiness.target.campaignId, targetId: readiness.target.targetId, productId: readiness.identity.productId, wordpressObjectId: readiness.identity.wordpressObjectId, pageRevisionId: readiness.authority.candidateArtifactIdentity };
-  const strictScope = requiresGeneratedContextualMediaForOutdoorSphere({ campaignId: identity.campaignId, organizationId: identity.organizationId, siteId: identity.siteId, productId: identity.productId });
-  if (!strictScope) throw new Error("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
+  const outdoorSphereScope = requiresGeneratedContextualMediaForOutdoorSphere({ campaignId: identity.campaignId, organizationId: identity.organizationId, siteId: identity.siteId, productId: identity.productId });
+  const projectorEnclosureScope = requiresGeneratedContextualMediaForProjectorEnclosure({ organizationId: identity.organizationId, siteId: identity.siteId, productId: identity.productId });
+  if (!outdoorSphereScope && !projectorEnclosureScope) throw new Error("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
+  if (input.organizationId !== identity.organizationId || input.siteId !== identity.siteId || input.productId !== identity.productId) throw new Error("CONTEXTUAL_MEDIA_EXACT_TARGET_REQUIRED");
   const jobId = readiness.authority.candidateArtifactIdentity?.split(":")[1] ?? "";
   const job = jobId ? await glwPageExecutionRepository.getById(jobId) : null;
   if (!job || job.organizationId !== identity.organizationId || job.siteId !== identity.siteId || job.productId !== identity.productId) throw new Error("CONTEXTUAL_MEDIA_JOB_AUTHORITY_REQUIRED");
