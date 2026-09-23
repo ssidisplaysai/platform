@@ -55,7 +55,7 @@ import {
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
 import { glwPageRunRepository } from "@/modules/glw/page-run-repository";
 import { isGlwPageRunTerminal } from "@/modules/glw/page-run";
-import { assertGlwPageRunMatchesGenerationRequest, synchronizeGlwPageRunWithExecution } from "@/modules/glw/page-run-coordinator";
+import { assertGlwPageRunMatchesGenerationRequest, isRecoverableGlwPageRunFinalizationFailure, recoverGlwPageRunForFinalization, synchronizeGlwPageRunWithExecution } from "@/modules/glw/page-run-coordinator";
 import type { ContextualGenerationReceipt } from "@/modules/glw/contextual-media-production-adapter";
 import { buildOutdoorSphereGeneratedContextualPrompt, requiresGeneratedContextualMediaForOutdoorSphere } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
 import { applyProjectorEnclosureHouseMappingCanary } from "@/modules/glw/projectorenclosure-house-mapping-canary";
@@ -1795,7 +1795,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Continuation request does not match the exact persisted GLW target." }, { status: 409 });
     }
 
-    if (preview.request.campaignId) {
+    if (pageRunId) {
+      if (!pageRun) {
+        return NextResponse.json({
+          error: "The supplied PageRun does not exist.",
+          code: "PAGE_RUN_NOT_FOUND",
+        }, { status: 409 });
+      }
+      if (expectedTargetId && pageRun.targetId !== expectedTargetId) {
+        return NextResponse.json({
+          error: "Continuation targetId does not match the authoritative PageRun.",
+          code: "PAGE_RUN_CONTINUATION_TARGET_MISMATCH",
+        }, { status: 409 });
+      }
+      if (
+        pageRun.generationJobId !== currentJob.jobId
+        || pageRun.externalExecutionId !== currentJob.externalExecutionId
+      ) {
+        return NextResponse.json({
+          error: "Continuation job/execution does not match the authoritative PageRun.",
+          code: "PAGE_RUN_CONTINUATION_IDENTITY_MISMATCH",
+        }, { status: 409 });
+      }
+
+      if (pageRun.status === "FAILED") {
+        if (!isRecoverableGlwPageRunFinalizationFailure({ run: pageRun, job: currentJob })) {
+          return NextResponse.json({
+            error: "Failed PageRun is not eligible for exact finalization recovery.",
+            code: "PAGE_RUN_CONTINUATION_NOT_RECOVERABLE",
+            pageRun,
+            job: currentJob,
+          }, { status: 409 });
+        }
+
+        pageRun = await recoverGlwPageRunForFinalization({
+          runId: pageRun.runId,
+          job: currentJob,
+        });
+      }
+    } else if (preview.request.campaignId) {
       const targets = listGlwCampaignTargets(preview.request.campaignId);
       const targetLookup = resolveExactContinuationCampaignTarget({
         targets,
@@ -1906,9 +1944,17 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
+    if (pageRunId) {
+      pageRun = await synchronizeGlwPageRunWithExecution({
+        runId: pageRunId,
+        job: finalized,
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       job: finalized,
+      pageRun,
       publicationPerformed: false,
     });
   }
@@ -2034,12 +2080,24 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (pageRunId) {
       const currentRun = await glwPageRunRepository.getById(pageRunId);
-      if (currentRun && !isGlwPageRunTerminal(currentRun.status)) {
+      const boundJob = currentRun?.generationJobId
+        ? await glwPageExecutionRepository.getById(currentRun.generationJobId)
+        : null;
+      const recoverablePostDraftFailure =
+        currentRun?.status === "GENERATED"
+        && boundJob?.status === "CONTENT_READY"
+        && boundJob.qaStatus === "PASSED"
+        && boundJob.wordpressStatus === "draft"
+        && Boolean(boundJob.wordpressObjectId);
+
+      if (currentRun && !isGlwPageRunTerminal(currentRun.status) && !recoverablePostDraftFailure) {
         pageRun = await glwPageRunRepository.transition(pageRunId, currentRun.status, {
           to: "FAILED",
           code: "PAGE_RUN_EXECUTION_EXCEPTION",
           message: error instanceof Error ? error.message : "PageRun execution failed.",
         });
+      } else if (recoverablePostDraftFailure) {
+        pageRun = currentRun;
       }
     }
 
