@@ -276,6 +276,23 @@ export function deriveGeneratedPageReviewModel(input: {
   const contextualReady = strictGeneratedContextualRequired
     ? Boolean(strictGeneratedReceiptValid || preCaptureContextualReady)
     : currentContextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered) || Boolean(input.job.featuredImagePresent && mediaId);
+  const projectorGeneratedVisualRoles = [
+    "CONTEXTUAL_IN_USE",
+    "OUTDOOR_MAPPING_EXPERIENCE",
+    "OUTDOOR_THEATER_HOSPITALITY",
+    "OUTDOOR_COMMERCIAL_EVENT",
+  ] as const;
+  const projectorGeneratedVisualSetReady = projectorEnclosureContextualRequired
+    && projectorGeneratedVisualRoles.every((role) =>
+      (input.mediaAssignments ?? []).some((assignment) =>
+        assignment.pageRevisionId === pageRevisionIdentity
+        && assignment.buildSessionId === `contextual-media:${input.target.targetId}`
+        && assignment.role === role
+        && assignment.asset.type === "GENERATED"
+        && Boolean(assignment.wordpressReceipt?.mediaId)
+        && Boolean(assignment.wordpressReceipt?.url),
+      ),
+    );
   const strictGeneratedContextualDisplay = strictGeneratedContextualRequired
     && contextualReady
     && selectedGeneratedContextualAssignment
@@ -337,7 +354,9 @@ export function deriveGeneratedPageReviewModel(input: {
     && wordpressStatus === "draft"
     && Boolean(wordpressObjectId)
     && Boolean(input.job.externalExecutionId)
-    && (!contextualReady || (Boolean(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId) && String(input.wordpressDraft?.featured_media ?? "") !== String(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId ?? "")));
+    && (projectorEnclosureContextualRequired
+      ? !projectorGeneratedVisualSetReady
+      : (!contextualReady || (Boolean(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId) && String(input.wordpressDraft?.featured_media ?? "") !== String(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId ?? ""))));
   const media = [
     productMediaResolved ? { slotId: "product-authority", role: "PRODUCT_AUTHORITY" as const, requirement: "REQUIRED" as const, assignmentId: productAssignment.assignmentId, readiness: "READY" as const, provenance: `${productAssignment.asset.authorityReference}:APPROVED_PRODUCT_REUSE` } : mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
     localBundle?.media.find((item) => item.role === "CONTEXTUAL_IN_USE") ? { slotId: "contextual-in-use", role: "CONTEXTUAL_IN_USE" as const, requirement: "DESIRED" as const, assignmentId: localBundle.media.find((item) => item.role === "CONTEXTUAL_IN_USE")!.mediaId, readiness: "READY" as const, provenance: "LOCALIZED_COMPOSITION_EVIDENCE" } : mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
