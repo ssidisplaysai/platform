@@ -216,25 +216,6 @@ export async function GET(request: NextRequest, context: Context) {
     );
   }
 
-  if (
-    campaign.pageType === "city_service"
-    && (
-      !durableSelection
-      || durableSelection.stateCode !== target.state.code
-      || durableSelection.citySlug !== target.citySlug
-    )
-  ) {
-    durableSelection = saveGlwReferenceStateSelection({
-      campaignId,
-      organizationId: campaign.organizationId,
-      siteId: campaign.siteId,
-      stateCode: target.state.code,
-      citySlug: target.citySlug,
-      selectedBy: durableSelection?.selectedBy ?? "SYSTEM_REFERENCE_TARGET_RECONCILIATION",
-      selectedAt: new Date().toISOString(),
-    });
-  }
-
   const siteRecord = getSiteById(campaign.siteId);
   const productRecord = getProductById(campaign.productId);
   if (!siteRecord || !productRecord) {
