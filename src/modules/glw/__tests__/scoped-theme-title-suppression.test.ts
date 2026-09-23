@@ -1,4 +1,4 @@
-import { applyScopedThemeTitleSuppression } from "../scoped-theme-title-suppression";
+import { applyScopedThemeFeaturedMediaSuppression, applyScopedThemeTitleSuppression } from "../scoped-theme-title-suppression";
 
 describe("scoped theme title suppression", () => {
   const html = [
@@ -20,6 +20,19 @@ describe("scoped theme title suppression", () => {
     expect(result.mutated).toBe(true);
     expect(result.contentHtml).toContain("body.page-id-20163 .page-title.the-title,body.page-id-20163 .page-header .entry-title,body.page-id-20163 .entry-header .entry-title{display:none!important}");
     expect(result.contentHtml).not.toContain(".post-media.single-image{display:none!important}");
+    expect((result.contentHtml.match(/<h1\b/gi) ?? []).length).toBe(1);
+  });
+
+  test("injects page-scoped native featured media suppression without hiding generated content images", () => {
+    const result = applyScopedThemeFeaturedMediaSuppression({
+      contentHtml: html,
+      wordpressObjectId: "13167",
+    });
+
+    expect(result.mutated).toBe(true);
+    expect(result.contentHtml).toContain("body.page-id-13167 .featured-image.page-header-image-single");
+    expect(result.contentHtml).toContain("body.page-id-13167 .inside-article > .post-image");
+    expect(result.contentHtml).not.toContain(".saw img{display:none");
     expect((result.contentHtml.match(/<h1\b/gi) ?? []).length).toBe(1);
   });
 

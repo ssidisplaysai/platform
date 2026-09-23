@@ -11,6 +11,7 @@ describe("draft-ready generated contextual media repair contract", () => {
     expect(route).toContain("REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA");
     expect(route).toContain("buildGeneratedPageReviewModel");
     expect(route).toContain("requiresGeneratedContextualMediaForOutdoorSphere");
+    expect(route).toContain("requiresGeneratedContextualMediaForProjectorEnclosure");
     expect(route).toContain("Draft-ready contextual repair identity mismatch");
   });
 
@@ -23,6 +24,8 @@ describe("draft-ready generated contextual media repair contract", () => {
     expect(service).toContain("draftReadyContextualRepairPlan");
     expect(service).toContain("slot: \"HERO_EXPERIENCE\"");
     expect(service).toContain("buildOutdoorSphereGeneratedContextualPrompt");
+    expect(service).toContain("buildProjectorEnclosureGeneratedContextualPlan");
+    expect(service).toContain("applyScopedThemeFeaturedMediaSuppression");
     expect(service).toContain("SKIPPED_DRAFT_READY_REPAIR");
     expect(service).toContain("visualCertificationPerformed: false");
   });
@@ -39,6 +42,7 @@ describe("draft-ready generated contextual media repair contract", () => {
 
     expect(readModel).toContain("generatedContextualRepairEligible");
     expect(readModel).toContain("generatedContextualRepair");
+    expect(readModel).toContain("Build Contextual Visual Set");
     expect(workspace).toContain("GlwGeneratedContextualMediaRepairAction");
   });
 });

@@ -25,6 +25,8 @@ import { listGlwCampaigns } from "./campaign-repository";
 import { listAllGlwCampaignTargets } from "./campaign-target-repository";
 import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
 import { glwPageExecutionRepository } from "./page-execution-repository";
+import { glwPageRunRepository } from "./page-run-repository";
+import type { GlwPageRunRecord } from "./page-run";
 import { getSanAntonioStagingState, SAN_ANTONIO_STAGING_JOB_ID, type SanAntonioStagingReceipt, type SanAntonioStoredAuthorityCertification } from "./san-antonio-wordpress-staging-authority";
 import { getSanAntonioNativeRepairState } from "./san-antonio-native-wordpress-render-repair-service";
 import { getSanAntonioHeroContrastState } from "./san-antonio-hero-contrast-repair-service";
@@ -35,6 +37,7 @@ import { SAN_ANTONIO_ACTUAL_NATIVE_CONTRAST_EVIDENCE } from "./san-antonio-actua
 import { getSanAntonioDurableHeadingContrastState } from "./san-antonio-durable-heading-contrast-update-service";
 import { projectAuthoritativeGeneratedPage } from "./authoritative-generated-page-projection";
 import { requiresGeneratedContextualMediaForOutdoorSphere } from "./outdoor-sphere-contextual-media-policy";
+import { requiresGeneratedContextualMediaForProjectorEnclosure } from "./projector-enclosure-contextual-media-policy";
 
 export type ReviewSignal = "PASS" | "WARNING" | "BLOCKED" | "NOT_EVALUATED";
 export type ReviewIssue = { category: "CONTENT" | "SEO" | "IMAGE" | "WORDPRESS" | "POLICY"; severity: "WARNING" | "BLOCKED"; what: string; effect: string; safeNextStep: string };
@@ -83,7 +86,7 @@ export type GeneratedPageReviewModel = {
           organizationId: string;
           siteId: string;
           operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA";
-          label: "Generate Contextual Image" | "Replace Legacy Contextual Image";
+          label: "Generate Contextual Image" | "Replace Legacy Contextual Image" | "Reconcile Featured Contextual Image" | "Build Contextual Visual Set";
           identity: {
             campaignId: string;
             targetId: string;
@@ -187,6 +190,13 @@ export function deriveGeneratedPageReviewModel(input: {
     siteId: input.campaign.siteId,
     productId: input.campaign.productId,
   });
+  const projectorEnclosureContextualRequired = requiresGeneratedContextualMediaForProjectorEnclosure({
+    organizationId: input.campaign.organizationId,
+    siteId: input.campaign.siteId,
+    productId: input.campaign.productId,
+  });
+  const draftReadyContextualRepairRequired = strictGeneratedContextualRequired || projectorEnclosureContextualRequired;
+  const generatedContextualDisplayRequired = draftReadyContextualRepairRequired;
   const generatedContextualAssignment = (input.mediaAssignments ?? []).find((assignment) =>
     assignment.pageRevisionId === pageRevisionIdentity
     && assignment.buildSessionId === `contextual-media:${input.target.targetId}`
@@ -266,10 +276,28 @@ export function deriveGeneratedPageReviewModel(input: {
     jobUpdatedAt: input.job.updatedAt,
   });
   const preCaptureContextualReady = Boolean(preCaptureContextualAssignment);
-  const contextualReady = strictGeneratedContextualRequired
+  const contextualReady = generatedContextualDisplayRequired
     ? Boolean(strictGeneratedReceiptValid || preCaptureContextualReady)
     : currentContextualMedia.some((media) => media.semanticRole === "CONTEXTUAL_IN_USE" && media.rendered) || Boolean(input.job.featuredImagePresent && mediaId);
-  const strictGeneratedContextualDisplay = strictGeneratedContextualRequired
+  const projectorGeneratedVisualRequirements = [
+    { slotId: "HERO_EXPERIENCE", role: "CONTEXTUAL_IN_USE" },
+    { slotId: "POST_HERO_CONTEXTUAL", role: "APPLICATION_EXPERIENCE" },
+    { slotId: "APPLICATION_STAGE", role: "APPLICATION_EXPERIENCE" },
+    { slotId: "CTA_ATMOSPHERE", role: "LOCAL_CONTEXTUAL_ATMOSPHERE" },
+  ] as const;
+  const projectorGeneratedVisualSetReady = projectorEnclosureContextualRequired
+    && projectorGeneratedVisualRequirements.every((requirement) =>
+      (input.mediaAssignments ?? []).some((assignment) =>
+        assignment.pageRevisionId === pageRevisionIdentity
+        && assignment.buildSessionId === `contextual-media:${input.target.targetId}`
+        && assignment.slotId === requirement.slotId
+        && assignment.role === requirement.role
+        && assignment.asset.type === "GENERATED"
+        && Boolean(assignment.wordpressReceipt?.mediaId)
+        && Boolean(assignment.wordpressReceipt?.url),
+      ),
+    );
+  const strictGeneratedContextualDisplay = generatedContextualDisplayRequired
     && contextualReady
     && selectedGeneratedContextualAssignment
     && selectedGeneratedContextualAssignment.wordpressReceipt;
@@ -325,15 +353,21 @@ export function deriveGeneratedPageReviewModel(input: {
     && visualQa.decisionState === "CURRENT"
     && visualQa.decision?.decision === "APPROVED"
     && input.campaign.publicationPolicy !== "draft_only";
-  const generatedContextualRepairEligible = strictGeneratedContextualRequired
+  const generatedContextualRepairEligible = draftReadyContextualRepairRequired
     && input.target.status === "draft_ready"
     && wordpressStatus === "draft"
     && Boolean(wordpressObjectId)
     && Boolean(input.job.externalExecutionId)
-    && (!contextualReady || (Boolean(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId) && String(input.wordpressDraft?.featured_media ?? "") !== String(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId ?? "")));
+    && (projectorEnclosureContextualRequired
+      ? !projectorGeneratedVisualSetReady
+      : (!contextualReady || (Boolean(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId) && String(input.wordpressDraft?.featured_media ?? "") !== String(selectedGeneratedContextualAssignment?.wordpressReceipt?.mediaId ?? ""))));
   const media = [
     productMediaResolved ? { slotId: "product-authority", role: "PRODUCT_AUTHORITY" as const, requirement: "REQUIRED" as const, assignmentId: productAssignment.assignmentId, readiness: "READY" as const, provenance: `${productAssignment.asset.authorityReference}:APPROVED_PRODUCT_REUSE` } : mediaExpectationFromAssignments({ role: "PRODUCT_AUTHORITY", requirement: "REQUIRED", slotId: "product-authority", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, authorityAvailable: Boolean(input.productAuthorityReference) }),
-    localBundle?.media.find((item) => item.role === "CONTEXTUAL_IN_USE") ? { slotId: "contextual-in-use", role: "CONTEXTUAL_IN_USE" as const, requirement: "DESIRED" as const, assignmentId: localBundle.media.find((item) => item.role === "CONTEXTUAL_IN_USE")!.mediaId, readiness: "READY" as const, provenance: "LOCALIZED_COMPOSITION_EVIDENCE" } : mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
+    localBundle?.media.find((item) => item.role === "CONTEXTUAL_IN_USE")
+      ? { slotId: "contextual-in-use", role: "CONTEXTUAL_IN_USE" as const, requirement: "DESIRED" as const, assignmentId: localBundle.media.find((item) => item.role === "CONTEXTUAL_IN_USE")!.mediaId, readiness: "READY" as const, provenance: "LOCALIZED_COMPOSITION_EVIDENCE" }
+      : strictGeneratedReceiptValid && selectedGeneratedContextualAssignment
+        ? { slotId: "contextual-in-use", role: "CONTEXTUAL_IN_USE" as const, requirement: "DESIRED" as const, assignmentId: selectedGeneratedContextualAssignment.assignmentId, readiness: "READY" as const, provenance: `GENERATED:${selectedGeneratedContextualAssignment.asset.type === "GENERATED" ? selectedGeneratedContextualAssignment.asset.provider : "UNKNOWN"}:PRODUCT_TRUTH_GROUNDED` }
+        : mediaExpectationFromAssignments({ role: "CONTEXTUAL_IN_USE", requirement: "DESIRED", slotId: "contextual-in-use", assignments: input.mediaAssignments ?? [], pageRevisionIdentity, legacy: contextualReady && mediaId ? { mediaId, provenance: "LEGACY_FEATURED" } : null }),
   ];
   const compositionPlan = createRichPageCompositionPlan({ planId: `composition-plan-${input.job.jobId}-${input.job.updatedAt}`, identity: { organizationId: input.job.organizationId, siteId: input.job.siteId, pageId: input.target.targetId, pageRevisionIdentity, canonicalPath: input.target.canonicalPath ?? input.job.slug, jobId: input.job.jobId, wordpressObjectId }, pageType: input.target.pageType ?? input.campaign.pageType, cta: cta ? { label: cta, destination: [...links].reverse().find((link) => link.label === cta)?.url ?? "" } : null, media, decisionSource: "Owner-approved Commercial Stainless evidence adapted through site-neutral Rich Page Composition V1.", evidenceReferences: ["visual-certification-424e2ea8-7efe-4e74-94aa-1d48c9fbbf4e", "visual-certification-11ccbc70-307e-4084-8d3a-7546dcf6bf5a"] });
   const localizedCaptures = input.localThemeVisualCertification?.captures.map((capture) => ({ ...capture, viewportClass: capture.viewport === "MOBILE_375" ? "MOBILE" as const : "DESKTOP" as const, screenshotArtifact: capture.screenshotArtifact, source: { origin: "LOCALIZED_PREVIEW", pathname: `/glw/pages/${input.job.jobId}/composition-preview-v2` }, renderer: { engine: input.localThemeVisualCertification!.rendererVersion, version: null, userAgent: null } }));
@@ -350,7 +384,7 @@ export function deriveGeneratedPageReviewModel(input: {
       productAuthority: { state: exactProductAssignment ? "ASSIGNED" : productMediaResolved ? "RESOLVED_APPROVED" : "NOT_WIRED", imageUrl: productAssignment?.asset.type === "APPROVED_EXISTING" ? productAssignment.asset.url : null, authority: exactProductAssignment ? "Owner-approved canonical product media assigned to this exact page revision." : productMediaResolved ? "Owner-approved canonical product media resolved by exact product and authority identity for non-mutating review." : input.productAuthoritySource ?? "Approved product authority exists outside this legacy page assignment.", provenance: productAssignment?.asset.type === "APPROVED_EXISTING" ? `${productAssignment.asset.authorityReference} · ${productAssignment.asset.sha256}` : input.productAuthorityReference ?? "No target-level PRODUCT_AUTHORITY assignment is exposed.", altText: productAssignment?.metadata.altText ?? null, wordpressMediaId: productAssignment?.asset.type === "APPROVED_EXISTING" && productAssignment.asset.wordpressMediaId ? String(productAssignment.asset.wordpressMediaId) : null, renderedInCurrentWordPress: false },
       contextualInUse: {
         state: contextualReady
-          ? strictGeneratedContextualRequired
+          ? generatedContextualDisplayRequired
             ? (strictGeneratedReceiptValid ? "GENERATED_CONTEXTUAL" : "ASSIGNED_FEATURED")
             : "LEGACY_FEATURED"
           : "MISSING",
@@ -359,7 +393,7 @@ export function deriveGeneratedPageReviewModel(input: {
           : preCaptureContextualAssignment?.asset.type === "APPROVED_EXISTING"
             ? preCaptureContextualAssignment.asset.url
           : text(input.wordpressMedia?.source_url) || null,
-        authority: strictGeneratedContextualRequired
+        authority: generatedContextualDisplayRequired
           ? (strictGeneratedReceiptValid
             ? (usedContextualCarryForward
               ? "Generated contextual assignment and receipt carried forward from prior revision under current rendered PASS evidence"
@@ -372,7 +406,7 @@ export function deriveGeneratedPageReviewModel(input: {
             : mediaAuthority
               ? `${text(mediaAuthority.selectedProvenance) || "Legacy execution media"}`
               : "Legacy execution evidence"),
-        provenance: strictGeneratedContextualRequired
+        provenance: generatedContextualDisplayRequired
           ? (strictGeneratedReceiptValid && generatedContextualReceipt
             ? (usedContextualCarryForward
               ? `Generated receipt ${generatedContextualReceipt.generationId}; WordPress media #${generatedContextualReceipt.wordpressMediaId ?? "unknown"}; prior assignment accepted via current rendered PASS evidence.`
@@ -399,7 +433,7 @@ export function deriveGeneratedPageReviewModel(input: {
           : preCaptureContextualAssignment?.assignmentId
             ? preCaptureContextualAssignment.assignmentId
           : generatedContextualEvidence?.assignmentId ?? null,
-        grounding: strictGeneratedContextualRequired
+        grounding: generatedContextualDisplayRequired
           ? (strictGeneratedReceiptValid
             ? (usedContextualCarryForward
               ? "Generated contextual media is product-truth grounded and identity-matched to current rendered PASS evidence and featured media."
@@ -413,7 +447,7 @@ export function deriveGeneratedPageReviewModel(input: {
               ? "Legacy exact-product match recorded; PRODUCT_TRUTH role was not persisted."
               : "PRODUCT_TRUTH grounding not persisted."),
       },
-      contractState: currentContextualMedia.length ? "MULTI_ROLE_IMAGE_STATE" : "LEGACY_IMAGE_STATE",
+      contractState: projectorGeneratedVisualSetReady || currentContextualMedia.length ? "MULTI_ROLE_IMAGE_STATE" : "LEGACY_IMAGE_STATE",
     },
     evidence: [
       { source: input.productName, status: productAuthority?.exactProductMatch === true ? "VERIFIED" : "AVAILABLE", usedFor: "Product identity and canonical product reference" },
@@ -446,7 +480,13 @@ export function deriveGeneratedPageReviewModel(input: {
         organizationId: input.campaign.organizationId,
         siteId: input.campaign.siteId,
         operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA",
-        label: strictGeneratedContextualRequired && contextualReady ? "Reconcile Featured Contextual Image" : mediaId ? "Replace Legacy Contextual Image" : "Generate Contextual Image",
+        label: projectorEnclosureContextualRequired
+          ? "Build Contextual Visual Set"
+          : strictGeneratedContextualRequired && contextualReady
+            ? "Reconcile Featured Contextual Image"
+            : mediaId
+              ? "Replace Legacy Contextual Image"
+              : "Generate Contextual Image",
         identity: {
           campaignId: input.campaign.campaignId,
           targetId: input.target.targetId,
@@ -493,14 +533,57 @@ export function deriveGeneratedPageVisualQaReview(input: { certification: Render
   };
 }
 
+function projectReviewTargetFromPageRun(target: GlwCampaignTarget, run: GlwPageRunRecord): GlwCampaignTarget {
+  const status: GlwCampaignTarget["status"] =
+    run.status === "CREATED" || run.status === "DISPATCHED" || run.status === "RUNNING"
+      ? "running"
+      : run.status === "GENERATED" || run.status === "QA_PASSED"
+        ? "content_ready"
+        : run.status === "WORDPRESS_DRAFT" || run.status === "APPROVED"
+          ? "draft_ready"
+          : run.status === "PUBLISHED"
+            ? "published"
+            : run.status === "FAILED"
+              ? "failed"
+              : target.status;
+
+  return {
+    ...target,
+    status,
+    jobId: run.generationJobId ?? target.jobId,
+    wordpressObjectId: run.wordpressObjectId ?? target.wordpressObjectId,
+    canonicalPath: run.canonicalPath || target.canonicalPath,
+    lastError: run.failure?.message ?? target.lastError,
+    updatedAt: run.updatedAt,
+  };
+}
+
 export async function buildGeneratedPageReviewModel(input: { jobId: string; organizationId?: string | null; siteId?: string | null }): Promise<GeneratedPageReviewModel | null> {
   const job = await glwPageExecutionRepository.getById(input.jobId);
   if (!job || (input.organizationId && job.organizationId !== input.organizationId) || (input.siteId && job.siteId !== input.siteId)) return null;
-  const storedTarget = listAllGlwCampaignTargets().find((entry) => entry.jobId === job.jobId && entry.organizationId === job.organizationId && entry.siteId === job.siteId) ?? null;
+
+  const pageRun = await glwPageRunRepository.getByGenerationJobId(job.jobId);
+  const allTargets = listAllGlwCampaignTargets();
+  const storedTarget = allTargets.find((entry) =>
+    entry.jobId === job.jobId
+    && entry.organizationId === job.organizationId
+    && entry.siteId === job.siteId,
+  ) ?? (pageRun
+    ? allTargets.find((entry) =>
+        entry.targetId === pageRun.targetId
+        && entry.organizationId === pageRun.organizationId
+        && entry.siteId === pageRun.siteId,
+      ) ?? null
+    : null);
+
   if (!storedTarget) return null;
+
+  const pageRunProjectedTarget = pageRun
+    ? projectReviewTargetFromPageRun(storedTarget, pageRun)
+    : storedTarget;
   const certifications = listRenderedVisualCertifications({ organizationId: job.organizationId, siteId: job.siteId });
   const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
-  const projection = projectAuthoritativeGeneratedPage({ target: storedTarget, job, certifications, ownerDecisions });
+  const projection = projectAuthoritativeGeneratedPage({ target: pageRunProjectedTarget, job, certifications, ownerDecisions });
   const target = projection.target;
   const campaign = listGlwCampaigns().find((entry) => entry.campaignId === target.campaignId) ?? null;
   const site = getSiteById(job.siteId);

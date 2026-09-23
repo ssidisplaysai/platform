@@ -23,6 +23,7 @@ import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-ser
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { resolveFinalizationArtifactSource } from "@/modules/glw/finalization-artifact-source";
+import { shouldInsertGlwInlineHero } from "@/modules/glw/featured-image-placement";
 import { evaluateGlwReferenceClaimAuthority, type GlwClaimAuthorityFinding, type GlwReferenceClaimClass } from "@/modules/glw/reference-claim-authority";
 import {
   canonicalizeAndRevalidateGlwZeroAuthorityClaims,
@@ -52,12 +53,16 @@ import {
   type GlwPageExecutionRecord,
 } from "@/modules/glw/page-execution";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { glwPageRunRepository } from "@/modules/glw/page-run-repository";
+import { isGlwPageRunTerminal } from "@/modules/glw/page-run";
+import { assertGlwPageRunMatchesGenerationRequest, isRecoverableGlwPageRunFinalizationFailure, recoverGlwPageRunForFinalization, synchronizeGlwPageRunWithExecution } from "@/modules/glw/page-run-coordinator";
 import type { ContextualGenerationReceipt } from "@/modules/glw/contextual-media-production-adapter";
 import { buildOutdoorSphereGeneratedContextualPrompt, requiresGeneratedContextualMediaForOutdoorSphere } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
 import { applyProjectorEnclosureHouseMappingCanary } from "@/modules/glw/projectorenclosure-house-mapping-canary";
 import {
   assembleProjectorEnclosureRichReference,
   buildProjectorEnclosureVisualPlan,
+  resolveProjectorEnclosureRichQaMinimumWordCount,
   SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID,
 } from "@/modules/glw/projector-enclosure-rich-assembly";
 import {
@@ -573,11 +578,18 @@ async function finalizeContentReadyExecution(input: {
     },
   };
 
+  const qaMinimumWordCount =
+    resolveProjectorEnclosureRichQaMinimumWordCount({
+      productId: input.request.productId,
+      pageType: input.request.pageType,
+      contentHtml: enrichment.artifact.contentHtml,
+    }) ?? GLW_GENERATION_MINIMUM_WORD_COUNT;
+
   let qa = evaluateGlwGeneratedContentQa({
     artifact: enrichment.artifact,
     request: input.request,
     siteDomain: input.siteRecord.domain,
-    minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+    minimumWordCount: qaMinimumWordCount,
     additionalAllowedDomains: enrichment.approvedExternalDomains,
     requiredCanonicalProductLink: productAuthority.canonicalProduct
       ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
@@ -589,13 +601,13 @@ async function finalizeContentReadyExecution(input: {
     !qa.ok
     && recoverableQaFailure
     && input.request.pageType === "state_service"
-    && qa.wordCount < GLW_GENERATION_MINIMUM_WORD_COUNT;
+    && qa.wordCount < qaMinimumWordCount;
 
   if (eligibleForBoundedRepair) {
     const repair = await repairGlwStateContentToMinimum({
       artifact: enrichment.artifact,
       request: input.request,
-      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      minimumWordCount: qaMinimumWordCount,
       currentWordCount: qa.wordCount,
     });
 
@@ -636,7 +648,7 @@ async function finalizeContentReadyExecution(input: {
       artifact: enrichment.artifact,
       request: input.request,
       siteDomain: input.siteRecord.domain,
-      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      minimumWordCount: qaMinimumWordCount,
       additionalAllowedDomains: enrichment.approvedExternalDomains,
       requiredCanonicalProductLink: productAuthority.canonicalProduct
         ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
@@ -678,7 +690,7 @@ async function finalizeContentReadyExecution(input: {
       artifact: enrichment.artifact,
       request: input.request,
       siteDomain: input.siteRecord.domain,
-      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      minimumWordCount: qaMinimumWordCount,
       additionalAllowedDomains: enrichment.approvedExternalDomains,
       requiredCanonicalProductLink: productAuthority.canonicalProduct
         ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
@@ -1020,7 +1032,7 @@ async function finalizeContentReadyExecution(input: {
       wordpressMediaId: productAuthority.selectedMedia.wordpressMediaId,
       expectedMediaUrl: productAuthority.selectedMedia.url,
       altText: productAuthority.selectedMedia.altText,
-      insertInlineHero: !themePrimaryFeaturedImage,
+      insertInlineHero: shouldInsertGlwInlineHero(finalizedArtifact.contentHtml),
     });
   } else {
     const strictPrompt = strictGeneratedContextualRequired
@@ -1055,7 +1067,7 @@ async function finalizeContentReadyExecution(input: {
       title: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
       altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
       description: `Commercial hero image for ${input.request.productTopic}${location ? ` in ${location}` : ""} on ${input.siteRecord.displayName}.`,
-      insertInlineHero: !themePrimaryFeaturedImage,
+      insertInlineHero: shouldInsertGlwInlineHero(finalizedArtifact.contentHtml),
     });
   }
 
@@ -1521,6 +1533,7 @@ export async function POST(request: NextRequest) {
     supersededByJobId?: string;
     quarantineRequestId?: string;
     quarantineReason?: string;
+    pageRunId?: string;
   } | null;
 
   if (!body?.form) {
@@ -1628,6 +1641,54 @@ export async function POST(request: NextRequest) {
     preview.request.additionalInstructions?.startsWith("CAMPAIGN REFERENCE PAGE")
     || (identityBoundReferenceCampaign && preview.request.campaignId === identityBoundReferenceCampaign.campaignId),
   );
+
+  const pageRunId = body.pageRunId?.trim() ?? "";
+  let pageRun = pageRunId ? await glwPageRunRepository.getById(pageRunId) : null;
+
+  if (isCampaignReferenceRequest && action === "generate" && !pageRunId) {
+    return NextResponse.json({
+      error: "Fresh campaign reference generation requires one authoritative PageRun.",
+      code: "PAGE_RUN_REQUIRED",
+      generationJobCreated: false,
+      publicationPerformed: false,
+    }, { status: 409 });
+  }
+
+  if (pageRunId) {
+    if (!pageRun) {
+      return NextResponse.json({
+        error: "The supplied PageRun does not exist.",
+        code: "PAGE_RUN_NOT_FOUND",
+        generationJobCreated: false,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
+
+    const activePageRun = await glwPageRunRepository.getActiveByTarget(pageRun.targetId);
+    if (!activePageRun || activePageRun.runId !== pageRun.runId) {
+      return NextResponse.json({
+        error: "The supplied PageRun is not the active run for this target.",
+        code: "PAGE_RUN_NOT_ACTIVE",
+        generationJobCreated: false,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
+
+    try {
+      assertGlwPageRunMatchesGenerationRequest({
+        run: pageRun,
+        request: preview.request,
+      });
+    } catch (error) {
+      return NextResponse.json({
+        error: error instanceof Error ? error.message : "PageRun generation identity is invalid.",
+        code: "PAGE_RUN_IDENTITY_MISMATCH",
+        generationJobCreated: false,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
+  }
+
   if (isCampaignReferenceRequest) {
     const campaign = identityBoundReferenceCampaign ?? listGlwCampaigns().find((candidate) =>
       candidate.campaignId === preview.request.campaignId
@@ -1638,50 +1699,55 @@ export async function POST(request: NextRequest) {
     if (!campaign || !pack) {
       return NextResponse.json({ error: "Current campaign generation authority is unavailable.", code: "REFERENCE_AUTHORITY_UNAVAILABLE", generationJobCreated: false }, { status: 409 });
     }
-    const currentAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: preview.request.stateCode });
-    if (!generationAuthorityBindingsMatch(currentAuthority, preview.request.referenceAuthorityBinding)) {
-      return NextResponse.json({ error: "Campaign generation authority fingerprints are stale.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
-    }
-    if (!preview.request.referenceOwnerAuthorityClaimId || !preview.request.referenceOwnerOperationType) {
-      return NextResponse.json({ error: "A consumed single-use reference owner claim is required.", code: "REFERENCE_OWNER_CLAIM_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
-    }
-    try {
-      const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
-        organizationId: campaign.organizationId,
-        siteId: campaign.siteId,
-        campaignId: campaign.campaignId,
-        referenceState: preview.request.stateCode,
-        referenceCitySlug: preview.request.citySlug,
-        operationType: preview.request.referenceOwnerOperationType,
-        failedJobId: preview.request.referenceOwnerFailedJobId,
-        failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,
-      });
-      if (action === "recover_failed_dispatch" || action === "finalize_recovered_dispatch" || action === "retry_failed_execution") {
-        const recoveryJobId = body.jobId?.trim() ?? "";
-        const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
-        if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
-        const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
-        if (action === "recover_failed_dispatch") {
-          validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
-        } else if (action === "retry_failed_execution") {
-          const expectedFailedExecutionId = body.executionId?.trim() ?? "";
-          validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry({
-            claimId: preview.request.referenceOwnerAuthorityClaimId,
-            expectedFailedExecutionId,
-            job: recoveryJob,
-            liveContext: recoveryContext,
-          });
-        } else {
-          validateGlwReferenceOwnerClaimForRecoveredContent({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
-        }
-      } else {
-        consumeGlwReferenceOwnerClaimForDispatch({
-          claimId: preview.request.referenceOwnerAuthorityClaimId,
-          liveContext: liveOwnerContext,
-        });
+
+    const exactPageRunContinuation = action === "continue" && Boolean(pageRunId);
+
+    if (!exactPageRunContinuation) {
+      const currentAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: preview.request.stateCode });
+      if (!generationAuthorityBindingsMatch(currentAuthority, preview.request.referenceAuthorityBinding)) {
+        return NextResponse.json({ error: "Campaign generation authority fingerprints are stale.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
       }
-    } catch (error) {
-      return NextResponse.json({ error: "Reference owner claim failed closed at the dispatch boundary.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_CLAIM_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+      if (!preview.request.referenceOwnerAuthorityClaimId || !preview.request.referenceOwnerOperationType) {
+        return NextResponse.json({ error: "A consumed single-use reference owner claim is required.", code: "REFERENCE_OWNER_CLAIM_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+      }
+      try {
+        const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
+          organizationId: campaign.organizationId,
+          siteId: campaign.siteId,
+          campaignId: campaign.campaignId,
+          referenceState: preview.request.stateCode,
+          referenceCitySlug: preview.request.citySlug,
+          operationType: preview.request.referenceOwnerOperationType,
+          failedJobId: preview.request.referenceOwnerFailedJobId,
+          failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,
+        });
+        if (action === "recover_failed_dispatch" || action === "finalize_recovered_dispatch" || action === "retry_failed_execution") {
+          const recoveryJobId = body.jobId?.trim() ?? "";
+          const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
+          if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
+          const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
+          if (action === "recover_failed_dispatch") {
+            validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
+          } else if (action === "retry_failed_execution") {
+            const expectedFailedExecutionId = body.executionId?.trim() ?? "";
+            validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry({
+              claimId: preview.request.referenceOwnerAuthorityClaimId,
+              expectedFailedExecutionId,
+              job: recoveryJob,
+              liveContext: recoveryContext,
+            });
+          } else {
+            validateGlwReferenceOwnerClaimForRecoveredContent({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
+          }
+        } else {
+          consumeGlwReferenceOwnerClaimForDispatch({
+            claimId: preview.request.referenceOwnerAuthorityClaimId,
+            liveContext: liveOwnerContext,
+          });
+        }
+      } catch (error) {
+        return NextResponse.json({ error: "Reference owner claim failed closed at the dispatch boundary.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_CLAIM_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+      }
     }
   }
 
@@ -1734,7 +1800,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Continuation request does not match the exact persisted GLW target." }, { status: 409 });
     }
 
-    if (preview.request.campaignId) {
+    if (pageRunId) {
+      if (!pageRun) {
+        return NextResponse.json({
+          error: "The supplied PageRun does not exist.",
+          code: "PAGE_RUN_NOT_FOUND",
+        }, { status: 409 });
+      }
+      if (expectedTargetId && pageRun.targetId !== expectedTargetId) {
+        return NextResponse.json({
+          error: "Continuation targetId does not match the authoritative PageRun.",
+          code: "PAGE_RUN_CONTINUATION_TARGET_MISMATCH",
+        }, { status: 409 });
+      }
+      if (
+        pageRun.generationJobId !== currentJob.jobId
+        || pageRun.externalExecutionId !== currentJob.externalExecutionId
+      ) {
+        return NextResponse.json({
+          error: "Continuation job/execution does not match the authoritative PageRun.",
+          code: "PAGE_RUN_CONTINUATION_IDENTITY_MISMATCH",
+        }, { status: 409 });
+      }
+
+      if (pageRun.status === "FAILED") {
+        if (!isRecoverableGlwPageRunFinalizationFailure({ run: pageRun, job: currentJob })) {
+          return NextResponse.json({
+            error: "Failed PageRun is not eligible for exact finalization recovery.",
+            code: "PAGE_RUN_CONTINUATION_NOT_RECOVERABLE",
+            pageRun,
+            job: currentJob,
+          }, { status: 409 });
+        }
+
+        pageRun = await recoverGlwPageRunForFinalization({
+          runId: pageRun.runId,
+          job: currentJob,
+        });
+      }
+    } else if (preview.request.campaignId) {
       const targets = listGlwCampaignTargets(preview.request.campaignId);
       const targetLookup = resolveExactContinuationCampaignTarget({
         targets,
@@ -1845,9 +1949,17 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
+    if (pageRunId) {
+      pageRun = await synchronizeGlwPageRunWithExecution({
+        runId: pageRunId,
+        job: finalized,
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       job: finalized,
+      pageRun,
       publicationPerformed: false,
     });
   }
@@ -1918,18 +2030,88 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const job = await service.execute(preview.request);
+    let job = await service.execute(preview.request);
+
+    if (pageRunId) {
+      pageRun = await synchronizeGlwPageRunWithExecution({
+        runId: pageRunId,
+        job,
+      });
+
+      if (
+        job.status === "DISPATCHED"
+        || job.status === "DISCOVERING_EXECUTION"
+        || job.status === "RUNNING"
+      ) {
+        job = await recoverExecution(job);
+        pageRun = await synchronizeGlwPageRunWithExecution({
+          runId: pageRunId,
+          job,
+        });
+      }
+
+      if (
+        job.status === "DISPATCHED"
+        || job.status === "DISCOVERING_EXECUTION"
+        || job.status === "RUNNING"
+      ) {
+        job = await recoverExecution(job);
+        pageRun = await synchronizeGlwPageRunWithExecution({
+          runId: pageRunId,
+          job,
+        });
+      }
+
+      if (job.status === "CONTENT_READY") {
+        job = await finalizeContentReadyExecution({
+          job,
+          request: preview.request,
+          siteRecord: preview.siteRecord,
+          continuationTargetId: pageRun.targetId,
+        });
+        pageRun = await synchronizeGlwPageRunWithExecution({
+          runId: pageRunId,
+          job,
+        });
+      }
+    }
+
     return NextResponse.json({
-      ok: true,
+      ok: pageRunId ? job.status === "COMPLETE" : true,
       job,
+      pageRun,
       publicationPerformed: false,
     });
   } catch (error) {
+    if (pageRunId) {
+      const currentRun = await glwPageRunRepository.getById(pageRunId);
+      const boundJob = currentRun?.generationJobId
+        ? await glwPageExecutionRepository.getById(currentRun.generationJobId)
+        : null;
+      const recoverablePostDraftFailure =
+        currentRun?.status === "GENERATED"
+        && boundJob?.status === "CONTENT_READY"
+        && boundJob.qaStatus === "PASSED"
+        && boundJob.wordpressStatus === "draft"
+        && Boolean(boundJob.wordpressObjectId);
+
+      if (currentRun && !isGlwPageRunTerminal(currentRun.status) && !recoverablePostDraftFailure) {
+        pageRun = await glwPageRunRepository.transition(pageRunId, currentRun.status, {
+          to: "FAILED",
+          code: "PAGE_RUN_EXECUTION_EXCEPTION",
+          message: error instanceof Error ? error.message : "PageRun execution failed.",
+        });
+      } else if (recoverablePostDraftFailure) {
+        pageRun = currentRun;
+      }
+    }
+
     if (error instanceof GlwDraftOnlyExecutionError) {
       return NextResponse.json(
         {
           error: error.message,
           code: "DRAFT_ONLY_EXECUTION_REJECTED",
+          pageRun,
           publicationPerformed: false,
         },
         { status: 403 },
@@ -1942,6 +2124,8 @@ export async function POST(request: NextRequest) {
           error instanceof Error
             ? error.message
             : "GLW generation dispatch failed.",
+        code: pageRunId ? "PAGE_RUN_EXECUTION_EXCEPTION" : undefined,
+        pageRun,
         publicationPerformed: false,
       },
       { status: 500 },

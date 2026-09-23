@@ -5,6 +5,7 @@ import { resolveGlwTrustedOperatorPrincipal } from "@/modules/glw/trusted-operat
 import { buildGeneratedPageReviewModel } from "@/modules/glw/generated-page-review-read-model";
 import { executeDraftReadyGeneratedContextualMediaRepair } from "@/modules/glw/contextual-media-production-service";
 import { requiresGeneratedContextualMediaForOutdoorSphere } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
+import { requiresGeneratedContextualMediaForProjectorEnclosure } from "@/modules/glw/projector-enclosure-contextual-media-policy";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -74,6 +75,10 @@ export async function POST(request: NextRequest, context: Context) {
     organizationId: scope.organizationId,
     siteId: scope.siteId,
     productId: job.productId,
+  }) || requiresGeneratedContextualMediaForProjectorEnclosure({
+    organizationId: scope.organizationId,
+    siteId: scope.siteId,
+    productId: job.productId,
   });
   if (!strictScope || model.identity.lifecycleState !== "draft_ready" || model.wordpress.status !== "draft" || !model.wordpress.objectId) {
     return NextResponse.json({ error: "Exact draft-ready contextual repair scope required." }, { status: 409 });
@@ -100,14 +105,18 @@ export async function POST(request: NextRequest, context: Context) {
     || body.expectedWordpressObjectId !== expectedIdentity.wordpressObjectId
     || body.expectedProductId !== expectedIdentity.productId
     || body.expectedPageRevisionId !== expectedIdentity.pageRevisionId
+    || body.expectedStoredSha256 !== expectedIdentity.expectedStoredSha256
   ) {
     return NextResponse.json({ error: "Draft-ready contextual repair identity mismatch." }, { status: 409 });
   }
 
   try {
     const repaired = await executeDraftReadyGeneratedContextualMediaRepair({
+      organizationId: scope.organizationId,
+      siteId: scope.siteId,
       campaignId: expectedIdentity.campaignId,
       targetId: expectedIdentity.targetId,
+      productId: expectedIdentity.productId,
       stateName: job.state,
       cityName: job.city,
       expectedStoredSha256: expectedIdentity.expectedStoredSha256,

@@ -84,6 +84,17 @@ describe("Outdoor reference state UI reconciliation", () => {
     });
   });
 
+  test("reference GET is read-only and cannot overwrite the persisted city selection", () => {
+    const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8");
+    const getStart = route.indexOf("export async function GET");
+    const putStart = route.indexOf("export async function PUT");
+    const getSource = route.slice(getStart, putStart);
+
+    expect(getStart).toBeGreaterThanOrEqual(0);
+    expect(putStart).toBeGreaterThan(getStart);
+    expect(getSource).not.toContain("saveGlwReferenceStateSelection({");
+  });
+
   test("route and UI prefer durable state and require fresh preflight", () => {
     const route = readFileSync(join(process.cwd(), "src/app/api/glw/campaigns/[campaignId]/reference-page/route.ts"), "utf8").replace(/\s/g, "");
     const page = readFileSync(join(process.cwd(), "src/app/glw/campaigns/[campaignId]/page.tsx"), "utf8").replace(/\s/g, "");
