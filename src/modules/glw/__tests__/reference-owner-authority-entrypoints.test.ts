@@ -30,6 +30,15 @@ describe("GLW reference owner authority entry points", () => {
     expect(generationRoute).toContain("validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry");
   });
 
+  test("exact PageRun continuation is separated from generation dispatch authority", () => {
+    expect(campaignRoute).toContain('const exactPageRunContinuation = body?.action === "continue";');
+    expect(campaignRoute).toContain("!exactPageRunContinuation && !generationAuthorityBindingsMatch");
+    expect(campaignRoute).toContain("!terminalExecutionRetry && !exactPageRunContinuation");
+    expect(generationRoute).toContain('const exactPageRunContinuation = action === "continue" && Boolean(pageRunId);');
+    expect(generationRoute).toContain("if (!exactPageRunContinuation) {");
+    expect(generationRoute).toContain("Continuation job/execution does not match the authoritative PageRun.");
+  });
+
   test("issuance route resolves trusted principal before accepting action data", () => {
     expect(authorityRoute.indexOf("resolveGlwTrustedOperatorPrincipal(request)")).toBeLessThan(authorityRoute.indexOf("await request.json()"));
     expect(authorityRoute).toContain("callerSuppliedRoleHeadersAuthorize: false");
