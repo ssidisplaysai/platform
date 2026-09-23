@@ -300,6 +300,52 @@ describe("reference continuation target initialization", () => {
     expect(after?.wordpressObjectId).toBeNull();
   });
 
+  test("projects completed existing WordPress draft to draft_ready without a new job", () => {
+    const campaign = activeSingleCityReferenceCampaign();
+    initializeGlwCityCampaignTargets({
+      campaignId: campaign.campaignId,
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      productId: campaign.productId,
+      cityTargets: campaign.cityTargets ?? [],
+      referenceTarget: { stateCode: "TX", citySlug: "austin" },
+      referenceJobId: "job-complete-austin",
+      referenceWordpressObjectId: null,
+    });
+
+    expect(ensureDraftCampaignContinuationTarget({
+      campaign,
+      targetStateCode: "TX",
+      targetCitySlug: "austin",
+      referenceJobId: "job-complete-austin",
+      referenceJobStatus: "CONTENT_READY",
+      referenceWordpressObjectId: null,
+    })).toBe(true);
+
+    const before = listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin");
+    expect(before?.status).toBe("content_ready");
+
+    const changed = reconcileReferenceTargetExecutionProjection({
+      campaign,
+      stateCode: "TX",
+      citySlug: "austin",
+      execution: {
+        jobId: "job-complete-austin",
+        status: "COMPLETE",
+        externalExecutionId: "764956",
+        wordpressObjectId: "13167",
+        errorCode: null,
+        errorMessage: null,
+      },
+    });
+
+    const after = listGlwCampaignTargets(campaign.campaignId).find((target) => target.citySlug === "austin");
+    expect(changed).toBe(true);
+    expect(after?.status).toBe("draft_ready");
+    expect(after?.jobId).toBe("job-complete-austin");
+    expect(after?.wordpressObjectId).toBe("13167");
+  });
+
   test("binds queued city reference target to RUNNING job when dispatch is accepted", () => {
     const campaign = activeSingleCityReferenceCampaign();
     initializeGlwCityCampaignTargets({
