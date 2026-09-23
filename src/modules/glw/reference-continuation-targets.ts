@@ -10,6 +10,7 @@ import {
   markGlwCampaignTargetFailed,
   previewGlwCampaignTargets,
   reconcileGlwCampaignTargetContentReady,
+  reconcileGlwContentReadyTargetDraft,
   reconcileGlwReferenceTargetContentReadyForContinuation,
   reconcileGlwReferenceTargetQueuedForProduction,
 } from "@/modules/glw/campaign-target-repository";
@@ -230,6 +231,30 @@ export function reconcileReferenceTargetExecutionProjection(input: {
       });
       return true;
     }
+  }
+
+  if (
+    target.status === "content_ready"
+    && target.jobId === executionJobId
+    && input.execution.status === "COMPLETE"
+    && input.execution.wordpressObjectId
+  ) {
+    if (
+      target.wordpressObjectId
+      && target.wordpressObjectId !== input.execution.wordpressObjectId
+    ) {
+      return false;
+    }
+
+    reconcileGlwContentReadyTargetDraft({
+      campaignId: input.campaign.campaignId,
+      stateCode: input.stateCode,
+      citySlug: input.citySlug,
+      targetId: target.targetId,
+      jobId: executionJobId,
+      wordpressObjectId: input.execution.wordpressObjectId,
+    });
+    return true;
   }
 
   if (target.status === "running" && target.jobId === executionJobId) {
