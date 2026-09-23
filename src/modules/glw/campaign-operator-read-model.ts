@@ -69,7 +69,7 @@ function targetIdentity(target: GlwCampaignTarget): string {
   return target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode;
 }
 
-function projectTargetFromActivePageRun(
+export function projectTargetFromActivePageRun(
   target: GlwCampaignTarget,
   run: GlwPageRunRecord | null,
 ): GlwCampaignTarget {
