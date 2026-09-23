@@ -9,6 +9,8 @@ import type { GlwReferenceImageCandidate } from "./campaign-reference-image-cand
 import { listGlwCampaigns } from "./campaign-repository";
 import { listGlwCampaignTargets } from "./campaign-target-repository";
 import { glwPageExecutionRepository } from "./page-execution-repository";
+import { glwPageRunRepository } from "./page-run-repository";
+import type { GlwPageRunRecord } from "./page-run";
 import { listGlwCampaignActivationGrants } from "./campaign-activation-authorization";
 import { resolveGlwCampaignActivationReleaseCapability } from "./campaign-release-capability";
 import { getGlwN8nMcpConfigurationStatus } from "./n8n-mcp-adapter";
@@ -65,6 +67,40 @@ export type GlwCampaignOperatorReadModel = {
 
 function targetIdentity(target: GlwCampaignTarget): string {
   return target.cityName ? `${target.cityName}, ${target.stateCode}` : target.stateCode;
+}
+
+function projectTargetFromActivePageRun(
+  target: GlwCampaignTarget,
+  run: GlwPageRunRecord | null,
+): GlwCampaignTarget {
+  if (!run) return target;
+
+  const status: GlwCampaignTarget["status"] =
+    run.status === "CREATED"
+      ? "running"
+      : run.status === "DISPATCHED" || run.status === "RUNNING"
+        ? "running"
+        : run.status === "GENERATED" || run.status === "QA_PASSED"
+          ? "content_ready"
+          : run.status === "WORDPRESS_DRAFT" || run.status === "APPROVED"
+            ? "draft_ready"
+            : run.status === "PUBLISHED"
+              ? "published"
+              : run.status === "FAILED"
+                ? "failed"
+                : "queued";
+
+  return {
+    ...target,
+    status,
+    jobId: run.generationJobId,
+    wordpressObjectId: run.wordpressObjectId,
+    leaseId: null,
+    leasedAt: null,
+    leaseExpiresAt: null,
+    lastError: run.failure?.message ?? null,
+    updatedAt: run.updatedAt,
+  };
 }
 
 function latestTimestamp(target: GlwCampaignTarget, job: GlwPageExecutionRecord | null): string {
@@ -293,13 +329,32 @@ export async function buildGlwCampaignOperatorReadModel(campaignId: string): Pro
   const campaign = listGlwCampaigns().find((entry) => entry.campaignId === campaignId) ?? null;
   if (!campaign) return null;
   const targets = listGlwCampaignTargets(campaignId);
+  const activeRuns = await Promise.all(
+    targets.map((target) => glwPageRunRepository.getActiveByTarget(target.targetId)),
+  );
+  const activeRunByTargetId = new Map(
+    activeRuns
+      .filter((run): run is GlwPageRunRecord => Boolean(run))
+      .map((run) => [run.targetId, run]),
+  );
+  const pageRunProjectedTargets = targets.map((target) =>
+    projectTargetFromActivePageRun(
+      target,
+      activeRunByTargetId.get(target.targetId) ?? null,
+    ),
+  );
+
   const allJobs = await glwPageExecutionRepository.list();
-  const targetJobIds = new Set(targets.map((target) => target.jobId).filter((jobId): jobId is string => Boolean(jobId)));
+  const targetJobIds = new Set(
+    pageRunProjectedTargets
+      .map((target) => target.jobId)
+      .filter((jobId): jobId is string => Boolean(jobId)),
+  );
   const jobs = allJobs.filter((job) => targetJobIds.has(job.jobId));
   const jobMap = new Map(jobs.map((job) => [job.jobId, job]));
   const certifications = listRenderedVisualCertifications({ organizationId: campaign.organizationId, siteId: campaign.siteId });
   const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
-  const projectedTargets = targets.map((target) => {
+  const projectedTargets = pageRunProjectedTargets.map((target) => {
     const job = target.jobId ? jobMap.get(target.jobId) : null;
     return job ? projectAuthoritativeGeneratedPage({ target, job, certifications, ownerDecisions }).target : target;
   });
