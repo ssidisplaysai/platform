@@ -25,6 +25,8 @@ import { listGlwCampaigns } from "./campaign-repository";
 import { listAllGlwCampaignTargets } from "./campaign-target-repository";
 import { getGlwCampaignKnowledgePack } from "./campaign-reference-repository";
 import { glwPageExecutionRepository } from "./page-execution-repository";
+import { glwPageRunRepository } from "./page-run-repository";
+import type { GlwPageRunRecord } from "./page-run";
 import { getSanAntonioStagingState, SAN_ANTONIO_STAGING_JOB_ID, type SanAntonioStagingReceipt, type SanAntonioStoredAuthorityCertification } from "./san-antonio-wordpress-staging-authority";
 import { getSanAntonioNativeRepairState } from "./san-antonio-native-wordpress-render-repair-service";
 import { getSanAntonioHeroContrastState } from "./san-antonio-hero-contrast-repair-service";
@@ -525,14 +527,57 @@ export function deriveGeneratedPageVisualQaReview(input: { certification: Render
   };
 }
 
+function projectReviewTargetFromPageRun(target: GlwCampaignTarget, run: GlwPageRunRecord): GlwCampaignTarget {
+  const status: GlwCampaignTarget["status"] =
+    run.status === "CREATED" || run.status === "DISPATCHED" || run.status === "RUNNING"
+      ? "running"
+      : run.status === "GENERATED" || run.status === "QA_PASSED"
+        ? "content_ready"
+        : run.status === "WORDPRESS_DRAFT" || run.status === "APPROVED"
+          ? "draft_ready"
+          : run.status === "PUBLISHED"
+            ? "published"
+            : run.status === "FAILED"
+              ? "failed"
+              : target.status;
+
+  return {
+    ...target,
+    status,
+    jobId: run.generationJobId ?? target.jobId,
+    wordpressObjectId: run.wordpressObjectId ?? target.wordpressObjectId,
+    canonicalPath: run.canonicalPath || target.canonicalPath,
+    lastError: run.failure?.message ?? target.lastError,
+    updatedAt: run.updatedAt,
+  };
+}
+
 export async function buildGeneratedPageReviewModel(input: { jobId: string; organizationId?: string | null; siteId?: string | null }): Promise<GeneratedPageReviewModel | null> {
   const job = await glwPageExecutionRepository.getById(input.jobId);
   if (!job || (input.organizationId && job.organizationId !== input.organizationId) || (input.siteId && job.siteId !== input.siteId)) return null;
-  const storedTarget = listAllGlwCampaignTargets().find((entry) => entry.jobId === job.jobId && entry.organizationId === job.organizationId && entry.siteId === job.siteId) ?? null;
+
+  const pageRun = await glwPageRunRepository.getByGenerationJobId(job.jobId);
+  const allTargets = listAllGlwCampaignTargets();
+  const storedTarget = allTargets.find((entry) =>
+    entry.jobId === job.jobId
+    && entry.organizationId === job.organizationId
+    && entry.siteId === job.siteId,
+  ) ?? (pageRun
+    ? allTargets.find((entry) =>
+        entry.targetId === pageRun.targetId
+        && entry.organizationId === pageRun.organizationId
+        && entry.siteId === pageRun.siteId,
+      ) ?? null
+    : null);
+
   if (!storedTarget) return null;
+
+  const pageRunProjectedTarget = pageRun
+    ? projectReviewTargetFromPageRun(storedTarget, pageRun)
+    : storedTarget;
   const certifications = listRenderedVisualCertifications({ organizationId: job.organizationId, siteId: job.siteId });
   const ownerDecisions = certifications.flatMap((certification) => listRenderedVisualOwnerDecisions(certification.certificationId));
-  const projection = projectAuthoritativeGeneratedPage({ target: storedTarget, job, certifications, ownerDecisions });
+  const projection = projectAuthoritativeGeneratedPage({ target: pageRunProjectedTarget, job, certifications, ownerDecisions });
   const target = projection.target;
   const campaign = listGlwCampaigns().find((entry) => entry.campaignId === target.campaignId) ?? null;
   const site = getSiteById(job.siteId);
