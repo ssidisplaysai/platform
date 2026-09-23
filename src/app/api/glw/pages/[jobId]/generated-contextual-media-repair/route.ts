@@ -105,6 +105,7 @@ export async function POST(request: NextRequest, context: Context) {
     || body.expectedWordpressObjectId !== expectedIdentity.wordpressObjectId
     || body.expectedProductId !== expectedIdentity.productId
     || body.expectedPageRevisionId !== expectedIdentity.pageRevisionId
+    || body.expectedStoredSha256 !== expectedIdentity.expectedStoredSha256
   ) {
     return NextResponse.json({ error: "Draft-ready contextual repair identity mismatch." }, { status: 409 });
   }
