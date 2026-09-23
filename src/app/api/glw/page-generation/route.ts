@@ -52,6 +52,9 @@ import {
   type GlwPageExecutionRecord,
 } from "@/modules/glw/page-execution";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { glwPageRunRepository } from "@/modules/glw/page-run-repository";
+import { isGlwPageRunTerminal } from "@/modules/glw/page-run";
+import { assertGlwPageRunMatchesGenerationRequest, synchronizeGlwPageRunWithExecution } from "@/modules/glw/page-run-coordinator";
 import type { ContextualGenerationReceipt } from "@/modules/glw/contextual-media-production-adapter";
 import { buildOutdoorSphereGeneratedContextualPrompt, requiresGeneratedContextualMediaForOutdoorSphere } from "@/modules/glw/outdoor-sphere-contextual-media-policy";
 import { applyProjectorEnclosureHouseMappingCanary } from "@/modules/glw/projectorenclosure-house-mapping-canary";
@@ -1521,6 +1524,7 @@ export async function POST(request: NextRequest) {
     supersededByJobId?: string;
     quarantineRequestId?: string;
     quarantineReason?: string;
+    pageRunId?: string;
   } | null;
 
   if (!body?.form) {
@@ -1628,6 +1632,45 @@ export async function POST(request: NextRequest) {
     preview.request.additionalInstructions?.startsWith("CAMPAIGN REFERENCE PAGE")
     || (identityBoundReferenceCampaign && preview.request.campaignId === identityBoundReferenceCampaign.campaignId),
   );
+
+  const pageRunId = body.pageRunId?.trim() ?? "";
+  let pageRun = pageRunId ? await glwPageRunRepository.getById(pageRunId) : null;
+
+  if (isCampaignReferenceRequest && action === "generate") {
+    if (!pageRunId || !pageRun) {
+      return NextResponse.json({
+        error: "Fresh campaign reference generation requires one authoritative PageRun.",
+        code: "PAGE_RUN_REQUIRED",
+        generationJobCreated: false,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
+
+    const activePageRun = await glwPageRunRepository.getActiveByTarget(pageRun.targetId);
+    if (!activePageRun || activePageRun.runId !== pageRun.runId) {
+      return NextResponse.json({
+        error: "The supplied PageRun is not the active run for this target.",
+        code: "PAGE_RUN_NOT_ACTIVE",
+        generationJobCreated: false,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
+
+    try {
+      assertGlwPageRunMatchesGenerationRequest({
+        run: pageRun,
+        request: preview.request,
+      });
+    } catch (error) {
+      return NextResponse.json({
+        error: error instanceof Error ? error.message : "PageRun generation identity is invalid.",
+        code: "PAGE_RUN_IDENTITY_MISMATCH",
+        generationJobCreated: false,
+        publicationPerformed: false,
+      }, { status: 409 });
+    }
+  }
+
   if (isCampaignReferenceRequest) {
     const campaign = identityBoundReferenceCampaign ?? listGlwCampaigns().find((candidate) =>
       candidate.campaignId === preview.request.campaignId
@@ -1918,18 +1961,76 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const job = await service.execute(preview.request);
+    let job = await service.execute(preview.request);
+
+    if (pageRunId) {
+      pageRun = await synchronizeGlwPageRunWithExecution({
+        runId: pageRunId,
+        job,
+      });
+
+      if (
+        job.status === "DISPATCHED"
+        || job.status === "DISCOVERING_EXECUTION"
+        || job.status === "RUNNING"
+      ) {
+        job = await recoverExecution(job);
+        pageRun = await synchronizeGlwPageRunWithExecution({
+          runId: pageRunId,
+          job,
+        });
+      }
+
+      if (
+        job.status === "DISPATCHED"
+        || job.status === "DISCOVERING_EXECUTION"
+        || job.status === "RUNNING"
+      ) {
+        job = await recoverExecution(job);
+        pageRun = await synchronizeGlwPageRunWithExecution({
+          runId: pageRunId,
+          job,
+        });
+      }
+
+      if (job.status === "CONTENT_READY") {
+        job = await finalizeContentReadyExecution({
+          job,
+          request: preview.request,
+          siteRecord: preview.siteRecord,
+          continuationTargetId: pageRun.targetId,
+        });
+        pageRun = await synchronizeGlwPageRunWithExecution({
+          runId: pageRunId,
+          job,
+        });
+      }
+    }
+
     return NextResponse.json({
-      ok: true,
+      ok: pageRunId ? job.status === "COMPLETE" : true,
       job,
+      pageRun,
       publicationPerformed: false,
     });
   } catch (error) {
+    if (pageRunId) {
+      const currentRun = await glwPageRunRepository.getById(pageRunId);
+      if (currentRun && !isGlwPageRunTerminal(currentRun.status)) {
+        pageRun = await glwPageRunRepository.transition(pageRunId, currentRun.status, {
+          to: "FAILED",
+          code: "PAGE_RUN_EXECUTION_EXCEPTION",
+          message: error instanceof Error ? error.message : "PageRun execution failed.",
+        });
+      }
+    }
+
     if (error instanceof GlwDraftOnlyExecutionError) {
       return NextResponse.json(
         {
           error: error.message,
           code: "DRAFT_ONLY_EXECUTION_REJECTED",
+          pageRun,
           publicationPerformed: false,
         },
         { status: 403 },
@@ -1942,6 +2043,8 @@ export async function POST(request: NextRequest) {
           error instanceof Error
             ? error.message
             : "GLW generation dispatch failed.",
+        code: pageRunId ? "PAGE_RUN_EXECUTION_EXCEPTION" : undefined,
+        pageRun,
         publicationPerformed: false,
       },
       { status: 500 },
