@@ -6,6 +6,18 @@ const PAGE_TITLE_SELECTORS = [
   ".entry-header .entry-title",
 ] as const;
 
+const FEATURED_MEDIA_SELECTORS = [
+  ".featured-image.page-header-image-single",
+  ".page-header-image-single",
+  ".entry-header + .featured-image",
+  ".entry-header + .post-thumbnail",
+  ".inside-article > .featured-image",
+  ".inside-article > .post-image",
+  "article > .post-thumbnail",
+  "article > .featured-image",
+  ".single-featured-image-header",
+] as const;
+
 function normalizeWordPressObjectId(value: string): string {
   const normalized = value.trim();
   if (!/^[1-9]\d*$/.test(normalized)) {
@@ -64,6 +76,44 @@ export function applyScopedThemeTitleSuppression(input: {
   const afterH1 = h1Count(updated);
   if (afterH1 !== 1 || !updated.includes(rule)) {
     throw new Error("SCOPED_THEME_TITLE_SUPPRESSION_TRANSFORM_FAILED");
+  }
+
+  return {
+    contentHtml: updated,
+    scopedRule: rule,
+    mutated: true as const,
+    alreadySuppressed: false as const,
+  };
+}
+
+
+export function applyScopedThemeFeaturedMediaSuppression(input: {
+  contentHtml: string;
+  wordpressObjectId: string;
+}) {
+  const source = input.contentHtml.trim();
+  const wordpressObjectId = normalizeWordPressObjectId(input.wordpressObjectId);
+  const rule = `${FEATURED_MEDIA_SELECTORS`
+    .map((selector) => `body.page-id-${wordpressObjectId} ${selector}`)
+    .join(",")}{display:none!important}`;
+  const beforeH1 = h1Count(source);
+  if (beforeH1 !== 1) {
+    throw new Error("SCOPED_THEME_FEATURED_MEDIA_SUPPRESSION_H1_CONTRACT_FAILED");
+  }
+
+  const alreadySuppressed = source.includes(rule);
+  if (alreadySuppressed) {
+    return {
+      contentHtml: source,
+      scopedRule: rule,
+      mutated: false as const,
+      alreadySuppressed: true as const,
+    };
+  }
+
+  const updated = injectRuleIntoFirstStyle(source, rule);
+  if (h1Count(updated) !== 1 || !updated.includes(rule)) {
+    throw new Error("SCOPED_THEME_FEATURED_MEDIA_SUPPRESSION_TRANSFORM_FAILED");
   }
 
   return {
