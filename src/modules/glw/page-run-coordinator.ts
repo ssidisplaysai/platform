@@ -51,6 +51,51 @@ function failureMessage(job: GlwPageExecutionRecord): string {
   return job.errorMessage?.trim() || "The page execution failed.";
 }
 
+export function isRecoverableGlwPageRunFinalizationFailure(input: {
+  run: GlwPageRunRecord;
+  job: GlwPageExecutionRecord;
+}): boolean {
+  const { run, job } = input;
+  return run.status === "FAILED"
+    && run.failure?.code === "PAGE_RUN_EXECUTION_EXCEPTION"
+    && Boolean(run.generatedDraft)
+    && Boolean(run.generationJobId)
+    && run.generationJobId === job.jobId
+    && Boolean(run.externalExecutionId)
+    && run.externalExecutionId === job.externalExecutionId
+    && job.status === "CONTENT_READY"
+    && job.qaStatus === "PASSED"
+    && Boolean(job.generatedDraft)
+    && job.wordpressStatus === "draft"
+    && Boolean(job.wordpressObjectId);
+}
+
+export async function recoverGlwPageRunForFinalization(input: {
+  runId: string;
+  job: GlwPageExecutionRecord;
+  repository?: GlwPageRunRepository;
+}): Promise<GlwPageRunRecord> {
+  const repository = input.repository ?? glwPageRunRepository;
+  const run = await repository.getById(input.runId);
+
+  if (!run) {
+    throw new GlwPageRunIdentityError(`Unknown PageRun: ${input.runId}`);
+  }
+
+  if (!isRecoverableGlwPageRunFinalizationFailure({ run, job: input.job })) {
+    throw new GlwPageRunIdentityError(
+      "PageRun is not eligible for exact post-draft finalization recovery.",
+    );
+  }
+
+  return repository.transition(run.runId, "FAILED", {
+    to: "GENERATED",
+    generationJobId: input.job.jobId,
+    externalExecutionId: input.job.externalExecutionId!,
+    generatedDraft: input.job.generatedDraft!,
+  });
+}
+
 export async function synchronizeGlwPageRunWithExecution(input: {
   runId: string;
   job: GlwPageExecutionRecord;
