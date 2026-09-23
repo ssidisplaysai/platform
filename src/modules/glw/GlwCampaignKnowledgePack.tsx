@@ -169,7 +169,7 @@ type OwnerAuthorityCapability = {
   } | null;
 };
 
-export function GlwCampaignKnowledgePack({ campaign, organizationId, initialReferenceState }: { campaign: GlwCampaign; organizationId: string; initialReferenceState?: string | null }) {
+export function GlwCampaignKnowledgePack({ campaign, organizationId, initialReferenceState, initialReferenceCitySlug }: { campaign: GlwCampaign; organizationId: string; initialReferenceState?: string | null; initialReferenceCitySlug?: string | null }) {
   const [pack, setPack] = useState<GlwCampaignKnowledgePack | null>(null);
   const [instructions, setInstructions] = useState("");
   const [provenance, setProvenance] = useState<string | null>(null);
@@ -179,7 +179,7 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
   const [message, setMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [referenceState, setReferenceState] = useState(initialReferenceState ?? campaign.stateCodes[0] ?? "");
-  const [referenceCitySlug, setReferenceCitySlug] = useState<string | null>(null);
+  const [referenceCitySlug, setReferenceCitySlug] = useState<string | null>(initialReferenceCitySlug ?? null);
   const [generatingReference, setGeneratingReference] = useState(false);
   const [recoveringReference, setRecoveringReference] = useState(false);
   const [continuingReference, setContinuingReference] = useState(false);
@@ -243,15 +243,14 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
         return;
       }
       setWordpressAuthority(payload.wordpressAuthority ?? null);
-      if (payload.selectedReferenceState?.stateCode && payload.selectedReferenceState.stateCode !== referenceState) {
-        projectedReferenceState.current = payload.selectedReferenceState.stateCode;
-        setReferenceState(payload.selectedReferenceState.stateCode);
-      }
-      if (campaign.pageType === "city_service") {
-        const nextCitySlug = payload.selectedReferenceState?.citySlug ?? payload.city?.slug ?? null;
-        if (nextCitySlug && nextCitySlug !== referenceCitySlug) {
-          setReferenceCitySlug(nextCitySlug);
-        }
+      const responseStateCode = payload.state?.code ?? requestedReferenceState;
+      const responseCitySlug = payload.city?.slug ?? requestedReferenceCitySlug ?? null;
+      const responseMatchesRequestedTarget =
+        responseStateCode === requestedReferenceState
+        && (campaign.pageType !== "city_service" || responseCitySlug === requestedReferenceCitySlug);
+
+      if (!responseMatchesRequestedTarget) {
+        return;
       }
 
       if (!response.ok) {
