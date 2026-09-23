@@ -35,6 +35,6 @@ describe("ProjectorEnclosure contextual media V2 policy", () => {
     ]);
     expect(new Set(plan.map((item) => item.slot)).size).toBe(4);
     expect(plan.every((item) => /not a real customer installation|generated planning visualization/i.test(`${item.prompt} ${item.altText}`))).toBe(true);
-    expect(plan.every((item) => /no readable text|No readable text/i.test(item.prompt))).toBe(true);
+    expect(plan.every((item) => /(?:do not show|no) readable text/i.test(item.prompt))).toBe(true);
   });
 });
