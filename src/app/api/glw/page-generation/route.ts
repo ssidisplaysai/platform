@@ -1636,11 +1636,20 @@ export async function POST(request: NextRequest) {
   const pageRunId = body.pageRunId?.trim() ?? "";
   let pageRun = pageRunId ? await glwPageRunRepository.getById(pageRunId) : null;
 
-  if (isCampaignReferenceRequest && action === "generate") {
-    if (!pageRunId || !pageRun) {
+  if (isCampaignReferenceRequest && action === "generate" && !pageRunId) {
+    return NextResponse.json({
+      error: "Fresh campaign reference generation requires one authoritative PageRun.",
+      code: "PAGE_RUN_REQUIRED",
+      generationJobCreated: false,
+      publicationPerformed: false,
+    }, { status: 409 });
+  }
+
+  if (pageRunId) {
+    if (!pageRun) {
       return NextResponse.json({
-        error: "Fresh campaign reference generation requires one authoritative PageRun.",
-        code: "PAGE_RUN_REQUIRED",
+        error: "The supplied PageRun does not exist.",
+        code: "PAGE_RUN_NOT_FOUND",
         generationJobCreated: false,
         publicationPerformed: false,
       }, { status: 409 });
