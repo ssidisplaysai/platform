@@ -69,10 +69,10 @@ function findTarget(input: {
 }
 
 function assertRetireableTarget(target: GlwCampaignTarget): void {
-  if (target.status !== "queued") throw new Error("REFERENCE_RETIRE_TARGET_STATUS_INVALID");
   if (target.jobId !== null) throw new Error("REFERENCE_RETIRE_TARGET_JOB_BINDING_PRESENT");
   if (target.wordpressObjectId !== null) throw new Error("REFERENCE_RETIRE_TARGET_WORDPRESS_BINDING_PRESENT");
   if (target.leaseId || target.leasedAt || target.leaseExpiresAt) throw new Error("REFERENCE_RETIRE_TARGET_ACTIVE_LEASE_FORBIDDEN");
+  if (target.status !== "queued") throw new Error("REFERENCE_RETIRE_TARGET_STATUS_INVALID");
 }
 
 export async function retireGlwReferenceExecutionForProjection(input: RetireGlwReferenceExecutionInput): Promise<RetireGlwReferenceExecutionResult> {
@@ -116,7 +116,7 @@ export async function retireGlwReferenceExecutionForProjection(input: RetireGlwR
     throw new Error("REFERENCE_RETIRE_QUARANTINED_EXECUTION_FORBIDDEN");
   }
 
-  if (job.status !== "FAILED") {
+  if (job.status !== "FAILED" && job.status !== "CONTENT_READY") {
     throw new Error("REFERENCE_RETIRE_JOB_STATUS_INVALID");
   }
 

@@ -5,7 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createGlwCampaign, listGlwCampaigns } from "../campaign-repository";
-import { initializeGlwCityCampaignTargets, listGlwCampaignTargets } from "../campaign-target-repository";
+import {
+  abandonGlwUnfinishedTargetAndRequeue,
+  initializeGlwCityCampaignTargets,
+  leaseGlwCampaignTargets,
+  listGlwCampaignTargets,
+} from "../campaign-target-repository";
 import { glwPageExecutionRepository } from "../page-execution-repository";
 import {
   GLW_REFERENCE_EXECUTION_RETIRED_DISPOSITION,
@@ -127,6 +132,35 @@ function seedReferenceBoundCampaign() {
     cityTargets: created.campaign.cityTargets ?? [],
     referenceTarget: { stateCode: "TX", citySlug: "arlington" },
     referenceJobId: "bound-job",
+    referenceWordpressObjectId: null,
+  });
+
+  return created.campaign;
+}
+
+function seedReferenceUnqueuedCampaign() {
+  const created = createGlwCampaign({
+    organizationId: SCOPE.organizationId,
+    siteId: SCOPE.siteId,
+    productId: SCOPE.productId,
+    name: `${CAMPAIGN_NAME} Unqueued`,
+    pageType: "city_service",
+    stateCodes: ["TX"],
+    cityTargets: [{ stateCode: "TX", citySlug: "arlington", cityName: "Arlington" }],
+    pagesPerDay: 10,
+    publicationPolicy: "draft_only",
+    imageRequired: true,
+  });
+  if (!created.campaign) throw new Error(`campaign create failed: ${created.errors.join(";")}`);
+
+  initializeGlwCityCampaignTargets({
+    campaignId: created.campaign.campaignId,
+    organizationId: created.campaign.organizationId,
+    siteId: created.campaign.siteId,
+    productId: created.campaign.productId,
+    cityTargets: created.campaign.cityTargets ?? [],
+    referenceTarget: { stateCode: "TX", citySlug: "arlington" },
+    referenceJobId: null,
     referenceWordpressObjectId: null,
   });
 
@@ -264,6 +298,157 @@ describe("reference execution retirement", () => {
     expect(second.alreadyRetired).toBe(true);
   });
 
+  test("retires CONTENT_READY execution after governed target reset and preserves audit", async () => {
+    const campaign = seedReferenceBoundCampaign();
+    const oldJob = execution("bound-job", {
+      status: "CONTENT_READY",
+      disposition: "CONTENT_READY",
+      errorCode: null,
+      errorMessage: null,
+      qaStatus: null,
+      qaFailureReasons: null,
+      completedAt: null,
+    });
+    await glwPageExecutionRepository.create(oldJob);
+
+    const [beforeReset] = listGlwCampaignTargets(campaign.campaignId);
+    expect(beforeReset.status).toBe("reference_complete");
+    expect(beforeReset.jobId).toBe("bound-job");
+
+    const reset = abandonGlwUnfinishedTargetAndRequeue({
+      campaignId: campaign.campaignId,
+      targetId: beforeReset.targetId,
+      stateCode: "TX",
+      citySlug: "arlington",
+      expectedStatus: "reference_complete",
+      expectedJobId: "bound-job",
+      expectedWordpressObjectId: null,
+    });
+    expect(reset.status).toBe("queued");
+    expect(reset.jobId).toBeNull();
+    expect(reset.wordpressObjectId).toBeNull();
+
+    const result = await retireGlwReferenceExecutionForProjection({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "arlington",
+      expectedJobId: oldJob.jobId,
+      expectedExecutionId: "764948",
+      expectedCanonicalPath: CANONICAL_PATH,
+      principalId: "operator",
+      reason: "Owner-abandoned content-ready execution after governed reset.",
+    });
+
+    expect(result.operationType).toBe(GLW_REFERENCE_EXECUTION_RETIRE_OPERATION);
+    expect(result.alreadyRetired).toBe(false);
+
+    const stored = await glwPageExecutionRepository.getById(oldJob.jobId);
+    expect(stored).not.toBeNull();
+    expect(stored?.status).toBe("CONTENT_READY");
+    expect(stored?.generatedDraft).not.toBeNull();
+    expect(stored?.externalExecutionId).toBe("764948");
+    expect(stored?.disposition).toBe(GLW_REFERENCE_EXECUTION_RETIRED_DISPOSITION);
+    expect(isGlwReferenceExecutionRetiredForProjection(stored!)).toBe(true);
+
+    const selected = selectMostRecentActiveReferenceExecution([stored!]);
+    expect(selected).toBeNull();
+  });
+
+  test("rejects CONTENT_READY retirement when target still points to job", async () => {
+    const campaign = seedReferenceBoundCampaign();
+    await glwPageExecutionRepository.create(execution("bound-job", {
+      status: "CONTENT_READY",
+      disposition: "CONTENT_READY",
+      errorCode: null,
+      errorMessage: null,
+      qaStatus: null,
+      qaFailureReasons: null,
+      completedAt: null,
+    }));
+
+    await expect(retireGlwReferenceExecutionForProjection({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "arlington",
+      expectedJobId: "bound-job",
+      expectedExecutionId: "764948",
+      expectedCanonicalPath: CANONICAL_PATH,
+      principalId: "operator",
+      reason: "target still bound",
+    })).rejects.toThrow("REFERENCE_RETIRE_TARGET_JOB_BINDING_PRESENT");
+  });
+
+  test("rejects CONTENT_READY retirement when target is not queued", async () => {
+    const campaign = seedReferenceUnqueuedCampaign();
+    await glwPageExecutionRepository.create(execution("job-content-ready", {
+      status: "CONTENT_READY",
+      disposition: "CONTENT_READY",
+      errorCode: null,
+      errorMessage: null,
+      qaStatus: null,
+      qaFailureReasons: null,
+      completedAt: null,
+      externalExecutionId: "764949",
+    }));
+
+    const [target] = listGlwCampaignTargets(campaign.campaignId);
+    expect(target.status).toBe("reference_complete");
+
+    await expect(retireGlwReferenceExecutionForProjection({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "arlington",
+      expectedJobId: "job-content-ready",
+      expectedExecutionId: "764949",
+      expectedCanonicalPath: CANONICAL_PATH,
+      principalId: "operator",
+      reason: "not queued target",
+    })).rejects.toThrow("REFERENCE_RETIRE_TARGET_STATUS_INVALID");
+  });
+
+  test("rejects CONTENT_READY retirement when target has active lease", async () => {
+    const campaign = seedCampaignAndTargets();
+    await glwPageExecutionRepository.create(execution("job-content-ready", {
+      status: "CONTENT_READY",
+      disposition: "CONTENT_READY",
+      errorCode: null,
+      errorMessage: null,
+      qaStatus: null,
+      qaFailureReasons: null,
+      completedAt: null,
+      externalExecutionId: "764949",
+    }));
+
+    const leased = leaseGlwCampaignTargets({
+      campaignId: campaign.campaignId,
+      pagesPerDay: 10,
+      dispatchDate: "2026-09-22",
+      leaseId: "lease-1",
+      maxTargets: 1,
+    });
+    expect(leased).toHaveLength(1);
+    expect(leased[0]?.leaseId).toBe("lease-1");
+
+    await expect(retireGlwReferenceExecutionForProjection({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "arlington",
+      expectedJobId: "job-content-ready",
+      expectedExecutionId: "764949",
+      expectedCanonicalPath: CANONICAL_PATH,
+      principalId: "operator",
+      reason: "lease active",
+    })).rejects.toThrow("REFERENCE_RETIRE_TARGET_ACTIVE_LEASE_FORBIDDEN");
+  });
+
   test("rejects running execution", async () => {
     const campaign = seedCampaignAndTargets();
     await glwPageExecutionRepository.create(execution("job-running", { status: "RUNNING", errorCode: null, errorMessage: null }));
@@ -279,6 +464,28 @@ describe("reference execution retirement", () => {
       expectedCanonicalPath: CANONICAL_PATH,
       principalId: "operator",
       reason: "block running",
+    })).rejects.toThrow("REFERENCE_RETIRE_JOB_STATUS_INVALID");
+  });
+
+  test("rejects dispatched execution", async () => {
+    const campaign = seedCampaignAndTargets();
+    await glwPageExecutionRepository.create(execution("job-dispatched", {
+      status: "DISPATCHED",
+      errorCode: null,
+      errorMessage: null,
+    }));
+
+    await expect(retireGlwReferenceExecutionForProjection({
+      organizationId: campaign.organizationId,
+      siteId: campaign.siteId,
+      campaignId: campaign.campaignId,
+      stateCode: "TX",
+      citySlug: "arlington",
+      expectedJobId: "job-dispatched",
+      expectedExecutionId: "764948",
+      expectedCanonicalPath: CANONICAL_PATH,
+      principalId: "operator",
+      reason: "block dispatched",
     })).rejects.toThrow("REFERENCE_RETIRE_JOB_STATUS_INVALID");
   });
 
@@ -351,6 +558,6 @@ describe("reference execution retirement", () => {
       expectedCanonicalPath: CANONICAL_PATH,
       principalId: "operator",
       reason: "target precondition check",
-    })).rejects.toThrow("REFERENCE_RETIRE_TARGET_STATUS_INVALID");
+    })).rejects.toThrow("REFERENCE_RETIRE_TARGET_JOB_BINDING_PRESENT");
   });
 });
