@@ -61,6 +61,7 @@ import { applyProjectorEnclosureHouseMappingCanary } from "@/modules/glw/project
 import {
   assembleProjectorEnclosureRichReference,
   buildProjectorEnclosureVisualPlan,
+  resolveProjectorEnclosureRichQaMinimumWordCount,
   SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID,
 } from "@/modules/glw/projector-enclosure-rich-assembly";
 import {
@@ -576,11 +577,18 @@ async function finalizeContentReadyExecution(input: {
     },
   };
 
+  const qaMinimumWordCount =
+    resolveProjectorEnclosureRichQaMinimumWordCount({
+      productId: input.request.productId,
+      pageType: input.request.pageType,
+      contentHtml: enrichment.artifact.contentHtml,
+    }) ?? GLW_GENERATION_MINIMUM_WORD_COUNT;
+
   let qa = evaluateGlwGeneratedContentQa({
     artifact: enrichment.artifact,
     request: input.request,
     siteDomain: input.siteRecord.domain,
-    minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+    minimumWordCount: qaMinimumWordCount,
     additionalAllowedDomains: enrichment.approvedExternalDomains,
     requiredCanonicalProductLink: productAuthority.canonicalProduct
       ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
@@ -592,13 +600,13 @@ async function finalizeContentReadyExecution(input: {
     !qa.ok
     && recoverableQaFailure
     && input.request.pageType === "state_service"
-    && qa.wordCount < GLW_GENERATION_MINIMUM_WORD_COUNT;
+    && qa.wordCount < qaMinimumWordCount;
 
   if (eligibleForBoundedRepair) {
     const repair = await repairGlwStateContentToMinimum({
       artifact: enrichment.artifact,
       request: input.request,
-      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      minimumWordCount: qaMinimumWordCount,
       currentWordCount: qa.wordCount,
     });
 
@@ -639,7 +647,7 @@ async function finalizeContentReadyExecution(input: {
       artifact: enrichment.artifact,
       request: input.request,
       siteDomain: input.siteRecord.domain,
-      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      minimumWordCount: qaMinimumWordCount,
       additionalAllowedDomains: enrichment.approvedExternalDomains,
       requiredCanonicalProductLink: productAuthority.canonicalProduct
         ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
@@ -681,7 +689,7 @@ async function finalizeContentReadyExecution(input: {
       artifact: enrichment.artifact,
       request: input.request,
       siteDomain: input.siteRecord.domain,
-      minimumWordCount: GLW_GENERATION_MINIMUM_WORD_COUNT,
+      minimumWordCount: qaMinimumWordCount,
       additionalAllowedDomains: enrichment.approvedExternalDomains,
       requiredCanonicalProductLink: productAuthority.canonicalProduct
         ? { url: productAuthority.canonicalProduct.url, anchorText: productAuthority.canonicalProduct.anchorText }
