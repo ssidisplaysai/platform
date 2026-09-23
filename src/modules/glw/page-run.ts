@@ -98,7 +98,7 @@ const ALLOWED_TRANSITIONS: Readonly<Record<GlwPageRunStatus, readonly GlwPageRun
   WORDPRESS_DRAFT: ["APPROVED", "FAILED"],
   APPROVED: ["PUBLISHED", "FAILED"],
   PUBLISHED: [],
-  FAILED: [],
+  FAILED: ["GENERATED"],
   ABANDONED: [],
 };
 
