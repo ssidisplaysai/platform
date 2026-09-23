@@ -4,6 +4,7 @@ import {
   type GlwPageRunIdentity,
 } from "../page-run";
 import type { GlwPageExecutionRecord } from "../page-execution";
+import type { GlwGenerationRequest } from "../page-generation";
 import {
   assertGlwPageRunMatchesGenerationRequest,
   synchronizeGlwPageRunWithExecution,
@@ -132,42 +133,37 @@ describe("GLW PageRun coordinator", () => {
 
   test("validates immutable generation target identity", () => {
     const run = createGlwPageRun({ runId: "run-1", identity });
+    const request = {
+      organizationId: identity.organizationId,
+      siteId: identity.siteId,
+      siteName: "ProjectorEnclosure.com",
+      siteDomain: "projectorenclosure.com",
+      siteCanonicalUrl: "https://projectorenclosure.com",
+      wordpressApiBaseUrl: "https://projectorenclosure.com/wp-json/wp/v2",
+      productId: identity.productId,
+      productTopic: "Fan Cooled Projector Enclosures",
+      pageType: "city_service",
+      stateCode: "TX",
+      stateName: "Texas",
+      citySlug: "arlington",
+      cityName: "Arlington",
+      slug: identity.canonicalPath,
+      canonicalPath: identity.canonicalPath,
+      title: "Fan Cooled Projector Enclosures in Arlington",
+      seoTitle: "Fan Cooled Projector Enclosures in Arlington | SSI",
+      metaDescription: "Draft",
+      publicationIntent: "draft",
+      plannedOperation: "CREATE_CITY",
+      wordpressObjectId: null,
+      additionalInstructions: "",
+      imageDirection: "",
+      campaignId: identity.campaignId,
+      externalExecutionAllowed: false,
+    } as GlwGenerationRequest;
+
     expect(() => assertGlwPageRunMatchesGenerationRequest({
       run,
-      request: {
-        organizationId: identity.organizationId,
-        siteId: identity.siteId,
-        siteName: "ProjectorEnclosure.com",
-        siteDomain: "projectorenclosure.com",
-        siteCanonicalUrl: "https://projectorenclosure.com",
-        wordpressApiBaseUrl: "https://projectorenclosure.com/wp-json/wp/v2",
-        productId: identity.productId,
-        productTopic: "Fan Cooled Projector Enclosures",
-        pageType: "city_service",
-        stateCode: "TX",
-        stateName: "Texas",
-        citySlug: "arlington",
-        cityName: "Arlington",
-        slug: identity.canonicalPath,
-        canonicalPath: identity.canonicalPath,
-        title: "Fan Cooled Projector Enclosures in Arlington",
-        seoTitle: "Fan Cooled Projector Enclosures in Arlington | SSI",
-        metaDescription: "Draft",
-        publicationIntent: "draft",
-        plannedOperation: "CREATE_CITY",
-        wordpressObjectId: null,
-        additionalInstructions: "",
-        imageDirection: "",
-        referenceGenerationClaimContract: null,
-        referenceGenerationAuthority: null,
-        referenceAuthorityBinding: null,
-        referenceOwnerAuthorityClaimId: null,
-        referenceOwnerOperationType: null,
-        referenceOwnerFailedJobId: null,
-        referenceOwnerFailedArtifactSha256: null,
-        projectorEnclosureSeoAuthority: null,
-        campaignId: identity.campaignId,
-      },
+      request,
     })).not.toThrow();
   });
 });
