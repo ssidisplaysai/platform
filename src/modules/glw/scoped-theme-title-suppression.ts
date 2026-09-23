@@ -93,9 +93,9 @@ export function applyScopedThemeFeaturedMediaSuppression(input: {
 }) {
   const source = input.contentHtml.trim();
   const wordpressObjectId = normalizeWordPressObjectId(input.wordpressObjectId);
-  const rule = `${FEATURED_MEDIA_SELECTORS`
-    .map((selector) => `body.page-id-${wordpressObjectId} ${selector}`)
-    .join(",")}{display:none!important}`;
+  const rule = FEATURED_MEDIA_SELECTORS
+    .map((selector) => "body.page-id-" + wordpressObjectId + " " + selector)
+    .join(",") + "{display:none!important}";
   const beforeH1 = h1Count(source);
   if (beforeH1 !== 1) {
     throw new Error("SCOPED_THEME_FEATURED_MEDIA_SUPPRESSION_H1_CONTRACT_FAILED");
