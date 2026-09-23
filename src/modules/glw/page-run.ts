@@ -295,6 +295,7 @@ export function advanceGlwPageRun(
 export type GlwPageRunRepository = {
   create(record: GlwPageRunRecord): Promise<GlwPageRunRecord>;
   getById(runId: string): Promise<GlwPageRunRecord | null>;
+  getByGenerationJobId(jobId: string): Promise<GlwPageRunRecord | null>;
   getActiveByTarget(targetId: string): Promise<GlwPageRunRecord | null>;
   listByCampaign(campaignId: string): Promise<readonly GlwPageRunRecord[]>;
   transition(
@@ -345,6 +346,14 @@ export function createInMemoryGlwPageRunRepository(
     },
     async getById(runId) {
       const record = runs.get(runId);
+      return record ? structuredClone(record) : null;
+    },
+    async getByGenerationJobId(jobId) {
+      const normalizedJobId = jobId.trim();
+      if (!normalizedJobId) return null;
+      const record = Array.from(runs.values())
+        .filter((candidate) => candidate.generationJobId === normalizedJobId)
+        .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null;
       return record ? structuredClone(record) : null;
     },
     async getActiveByTarget(targetId) {
