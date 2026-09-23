@@ -52,6 +52,7 @@ type ReferenceApproval = {
 };
 
 type ReferenceResult = Record<string, unknown> & {
+  state?: { code: string; name?: string };
   job?: ReferenceJob | null;
   approval?: ReferenceApproval | null;
   approved?: boolean;
@@ -298,7 +299,9 @@ export function GlwCampaignKnowledgePack({ campaign, organizationId, initialRefe
       }
       setReferenceResult(payload);
     } finally {
-      setRecoveringReference(false);
+      if (requestSequence === referenceRequestSequence.current) {
+        setRecoveringReference(false);
+      }
     }
   }
 
