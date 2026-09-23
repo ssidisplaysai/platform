@@ -1699,50 +1699,55 @@ export async function POST(request: NextRequest) {
     if (!campaign || !pack) {
       return NextResponse.json({ error: "Current campaign generation authority is unavailable.", code: "REFERENCE_AUTHORITY_UNAVAILABLE", generationJobCreated: false }, { status: 409 });
     }
-    const currentAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: preview.request.stateCode });
-    if (!generationAuthorityBindingsMatch(currentAuthority, preview.request.referenceAuthorityBinding)) {
-      return NextResponse.json({ error: "Campaign generation authority fingerprints are stale.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
-    }
-    if (!preview.request.referenceOwnerAuthorityClaimId || !preview.request.referenceOwnerOperationType) {
-      return NextResponse.json({ error: "A consumed single-use reference owner claim is required.", code: "REFERENCE_OWNER_CLAIM_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
-    }
-    try {
-      const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
-        organizationId: campaign.organizationId,
-        siteId: campaign.siteId,
-        campaignId: campaign.campaignId,
-        referenceState: preview.request.stateCode,
-        referenceCitySlug: preview.request.citySlug,
-        operationType: preview.request.referenceOwnerOperationType,
-        failedJobId: preview.request.referenceOwnerFailedJobId,
-        failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,
-      });
-      if (action === "recover_failed_dispatch" || action === "finalize_recovered_dispatch" || action === "retry_failed_execution") {
-        const recoveryJobId = body.jobId?.trim() ?? "";
-        const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
-        if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
-        const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
-        if (action === "recover_failed_dispatch") {
-          validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
-        } else if (action === "retry_failed_execution") {
-          const expectedFailedExecutionId = body.executionId?.trim() ?? "";
-          validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry({
-            claimId: preview.request.referenceOwnerAuthorityClaimId,
-            expectedFailedExecutionId,
-            job: recoveryJob,
-            liveContext: recoveryContext,
-          });
-        } else {
-          validateGlwReferenceOwnerClaimForRecoveredContent({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
-        }
-      } else {
-        consumeGlwReferenceOwnerClaimForDispatch({
-          claimId: preview.request.referenceOwnerAuthorityClaimId,
-          liveContext: liveOwnerContext,
-        });
+
+    const exactPageRunContinuation = action === "continue" && Boolean(pageRunId);
+
+    if (!exactPageRunContinuation) {
+      const currentAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: preview.request.stateCode });
+      if (!generationAuthorityBindingsMatch(currentAuthority, preview.request.referenceAuthorityBinding)) {
+        return NextResponse.json({ error: "Campaign generation authority fingerprints are stale.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
       }
-    } catch (error) {
-      return NextResponse.json({ error: "Reference owner claim failed closed at the dispatch boundary.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_CLAIM_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+      if (!preview.request.referenceOwnerAuthorityClaimId || !preview.request.referenceOwnerOperationType) {
+        return NextResponse.json({ error: "A consumed single-use reference owner claim is required.", code: "REFERENCE_OWNER_CLAIM_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+      }
+      try {
+        const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
+          organizationId: campaign.organizationId,
+          siteId: campaign.siteId,
+          campaignId: campaign.campaignId,
+          referenceState: preview.request.stateCode,
+          referenceCitySlug: preview.request.citySlug,
+          operationType: preview.request.referenceOwnerOperationType,
+          failedJobId: preview.request.referenceOwnerFailedJobId,
+          failedArtifactSha256: preview.request.referenceOwnerFailedArtifactSha256,
+        });
+        if (action === "recover_failed_dispatch" || action === "finalize_recovered_dispatch" || action === "retry_failed_execution") {
+          const recoveryJobId = body.jobId?.trim() ?? "";
+          const recoveryJob = recoveryJobId ? await glwPageExecutionRepository.getById(recoveryJobId) : null;
+          if (!recoveryJob) return NextResponse.json({ error: "Exact failed job is required for recovery.", code: "RECOVERY_JOB_REQUIRED", generationJobCreated: false }, { status: 409 });
+          const { exactRuntime: _currentRuntime, ...recoveryContext } = liveOwnerContext;
+          if (action === "recover_failed_dispatch") {
+            validateGlwReferenceOwnerClaimForFailedDispatchRecovery({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
+          } else if (action === "retry_failed_execution") {
+            const expectedFailedExecutionId = body.executionId?.trim() ?? "";
+            validateGlwReferenceOwnerClaimForTerminalFailedExecutionRetry({
+              claimId: preview.request.referenceOwnerAuthorityClaimId,
+              expectedFailedExecutionId,
+              job: recoveryJob,
+              liveContext: recoveryContext,
+            });
+          } else {
+            validateGlwReferenceOwnerClaimForRecoveredContent({ claimId: preview.request.referenceOwnerAuthorityClaimId, job: recoveryJob, liveContext: recoveryContext });
+          }
+        } else {
+          consumeGlwReferenceOwnerClaimForDispatch({
+            claimId: preview.request.referenceOwnerAuthorityClaimId,
+            liveContext: liveOwnerContext,
+          });
+        }
+      } catch (error) {
+        return NextResponse.json({ error: "Reference owner claim failed closed at the dispatch boundary.", code: error instanceof GlwReferenceOwnerAuthorityError ? error.code : "REFERENCE_OWNER_CLAIM_INVALID", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
+      }
     }
   }
 
