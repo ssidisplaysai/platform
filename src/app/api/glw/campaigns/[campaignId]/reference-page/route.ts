@@ -911,16 +911,39 @@ export async function POST(request: NextRequest, context: Context) {
     }
 
     const activeRun = await glwPageRunRepository.getActiveByTarget(exactTarget.targetId);
-    if (activeRun && !isGlwPageRunTerminal(activeRun.status)) {
-      return NextResponse.json(
-        {
-          error: "This target already has an active PageRun.",
-          code: "PAGE_RUN_ALREADY_ACTIVE",
-          pageRun: activeRun,
-          generationJobCreated: false,
-        },
-        { status: 409 },
-      );
+    if (activeRun) {
+      const activeRunJob = activeRun.generationJobId
+        ? await glwPageExecutionRepository.getById(activeRun.generationJobId)
+        : null;
+      const existingDraftOwnedByRun =
+        activeRunJob?.wordpressStatus === "draft"
+        && Boolean(activeRunJob.wordpressObjectId)
+        && activeRunJob.jobId === activeRun.generationJobId;
+
+      if (existingDraftOwnedByRun) {
+        return NextResponse.json(
+          {
+            error: "This target already has a WordPress draft owned by its PageRun. Continue the existing run instead of generating a replacement.",
+            code: "PAGE_RUN_CONTINUATION_REQUIRED",
+            pageRun: activeRun,
+            job: activeRunJob,
+            generationJobCreated: false,
+          },
+          { status: 409 },
+        );
+      }
+
+      if (!isGlwPageRunTerminal(activeRun.status)) {
+        return NextResponse.json(
+          {
+            error: "This target already has an active PageRun.",
+            code: "PAGE_RUN_ALREADY_ACTIVE",
+            pageRun: activeRun,
+            generationJobCreated: false,
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const createdRun = createGlwPageRun({
@@ -986,22 +1009,57 @@ export async function POST(request: NextRequest, context: Context) {
       );
     }
 
-    const targetReady = ensureDraftCampaignContinuationTarget({
-      campaign,
-      targetStateCode: target.state.code,
-      targetCitySlug: target.citySlug,
-      referenceJobId: existing.jobId,
-      referenceJobStatus: existing.status,
-      referenceWordpressObjectId: existing.wordpressObjectId,
-    });
-    if (!targetReady) {
-      return NextResponse.json(
-        { error: "Exact campaign target was not found for continuation." },
-        { status: 409 },
-      );
-    }
+    const exactTarget = listGlwCampaignTargets(campaign.campaignId).find(
+      (candidate) =>
+        candidate.stateCode === target.state.code
+        && (candidate.citySlug ?? null) === (target.citySlug ?? null),
+    ) ?? null;
+    const pageRun = exactTarget
+      ? await glwPageRunRepository.getActiveByTarget(exactTarget.targetId)
+      : null;
 
-    generationBody = { action: "continue", jobId, form };
+    if (pageRun) {
+      if (
+        pageRun.generationJobId !== existing.jobId
+        || pageRun.externalExecutionId !== existing.externalExecutionId
+      ) {
+        return NextResponse.json(
+          {
+            error: "Active PageRun does not match the exact continuation job and execution.",
+            code: "PAGE_RUN_CONTINUATION_IDENTITY_MISMATCH",
+            pageRun,
+            job: existing,
+          },
+          { status: 409 },
+        );
+      }
+
+      generationBody = {
+        action: "continue",
+        jobId,
+        targetId: exactTarget!.targetId,
+        executionId: existing.externalExecutionId,
+        pageRunId: pageRun.runId,
+        form,
+      };
+    } else {
+      const targetReady = ensureDraftCampaignContinuationTarget({
+        campaign,
+        targetStateCode: target.state.code,
+        targetCitySlug: target.citySlug,
+        referenceJobId: existing.jobId,
+        referenceJobStatus: existing.status,
+        referenceWordpressObjectId: existing.wordpressObjectId,
+      });
+      if (!targetReady) {
+        return NextResponse.json(
+          { error: "Exact campaign target was not found for continuation." },
+          { status: 409 },
+        );
+      }
+
+      generationBody = { action: "continue", jobId, form };
+    }
   }
 
   const generationResponse = await fetch(
