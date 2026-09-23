@@ -648,10 +648,31 @@ export async function PATCH(request: NextRequest, context: Context) {
   });
   recordGlwCampaignLaunchReferenceApproved(campaign.campaignId, job.jobId);
 
+  const exactCampaignTarget = listGlwCampaignTargets(campaign.campaignId).find(
+    (candidate) =>
+      candidate.stateCode === target.state.code
+      && (candidate.citySlug ?? null) === (target.citySlug ?? null),
+  ) ?? null;
+  let pageRun = exactCampaignTarget
+    ? await glwPageRunRepository.getActiveByTarget(exactCampaignTarget.targetId)
+    : null;
+
+  if (
+    pageRun
+    && pageRun.status === "WORDPRESS_DRAFT"
+    && pageRun.generationJobId === job.jobId
+    && pageRun.wordpressObjectId === job.wordpressObjectId
+  ) {
+    pageRun = await glwPageRunRepository.transition(pageRun.runId, "WORDPRESS_DRAFT", {
+      to: "APPROVED",
+    });
+  }
+
   return NextResponse.json({
     state: target.state,
     city: target.cityName ? { name: target.cityName, slug: target.citySlug } : null,
     job,
+    pageRun,
     approval,
     approved: true,
   });
