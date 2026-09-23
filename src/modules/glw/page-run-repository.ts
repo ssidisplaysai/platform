@@ -100,6 +100,16 @@ export const glwPageRunRepository: GlwPageRunRepository = {
     return record ? deepClone(record) : null;
   },
 
+  async getByGenerationJobId(jobId) {
+    reloadState();
+    const normalizedJobId = jobId.trim();
+    if (!normalizedJobId) return null;
+    const record = Array.from(runStore.values())
+      .filter((candidate) => candidate.generationJobId === normalizedJobId)
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null;
+    return record ? deepClone(record) : null;
+  },
+
   async getActiveByTarget(targetId) {
     reloadState();
     const runId = activeRunIdByTargetId.get(targetId);
