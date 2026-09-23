@@ -773,15 +773,16 @@ export async function POST(request: NextRequest, context: Context) {
     );
   }
   const generationAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: target.state.code });
-  if (!generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
+  const exactPageRunContinuation = body?.action === "continue";
+  if (!exactPageRunContinuation && !generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
     return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
   }
   const failedDispatchRecovery = body?.action === "recover_failed_dispatch" || body?.action === "finalize_recovered_dispatch";
   const terminalExecutionRetry = body?.action === "retry_failed_execution";
-  if (!failedDispatchRecovery && !terminalExecutionRetry && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
+  if (!failedDispatchRecovery && !terminalExecutionRetry && !exactPageRunContinuation && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
     return NextResponse.json({ error: "An exact single-use owner grant and matching preflight receipt are required.", code: "REFERENCE_OWNER_AUTHORITY_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
   }
-  let ownerClaim: { claimId: string; operationType: GlwReferenceOwnerOperationType; failedJobId: string | null; failedArtifactSha256: string | null };
+  let ownerClaim: { claimId: string; operationType: GlwReferenceOwnerOperationType; failedJobId: string | null; failedArtifactSha256: string | null } | null = null;
   if (failedDispatchRecovery || terminalExecutionRetry) {
     const requiresRetryEvidence = failedDispatchRecovery;
     if (!body?.jobId || !body.recoveryClaimId || !body.ownerOperationType || (requiresRetryEvidence && (!body.failedJobId || !body.failedArtifactSha256))) {
@@ -796,7 +797,7 @@ export async function POST(request: NextRequest, context: Context) {
       failedJobId: body.failedJobId ?? null,
       failedArtifactSha256: body.failedArtifactSha256 ?? null,
     };
-  } else {
+  } else if (!exactPageRunContinuation) {
     try {
       const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
         organizationId: campaign.organizationId,
@@ -871,10 +872,12 @@ export async function POST(request: NextRequest, context: Context) {
   };
   form.campaignId = campaign.campaignId;
   form.referenceAuthorityBinding = generationAuthority;
-  form.referenceOwnerAuthorityClaimId = ownerClaim.claimId;
-  form.referenceOwnerOperationType = ownerClaim.operationType;
-  form.referenceOwnerFailedJobId = ownerClaim.failedJobId;
-  form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
+  if (ownerClaim) {
+    form.referenceOwnerAuthorityClaimId = ownerClaim.claimId;
+    form.referenceOwnerOperationType = ownerClaim.operationType;
+    form.referenceOwnerFailedJobId = ownerClaim.failedJobId;
+    form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
+  }
 
   saveGlwReferenceStateSelection({
     campaignId,
