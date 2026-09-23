@@ -7,6 +7,8 @@ import type { GlwPageExecutionRecord } from "../page-execution";
 import type { GlwGenerationRequest } from "../page-generation";
 import {
   assertGlwPageRunMatchesGenerationRequest,
+  isRecoverableGlwPageRunFinalizationFailure,
+  recoverGlwPageRunForFinalization,
   synchronizeGlwPageRunWithExecution,
 } from "../page-run-coordinator";
 
@@ -129,6 +131,77 @@ describe("GLW PageRun coordinator", () => {
       job: job({ externalExecutionId: "765000" }),
       repository,
     })).rejects.toThrow("external execution identity");
+  });
+
+  test("recovers the exact failed PageRun when the same job already owns a WordPress draft", async () => {
+    const repository = createInMemoryGlwPageRunRepository();
+    await repository.create(createGlwPageRun({ runId: "run-1", identity }));
+
+    await synchronizeGlwPageRunWithExecution({
+      runId: "run-1",
+      job: job(),
+      repository,
+    });
+
+    await repository.transition("run-1", "GENERATED", {
+      to: "FAILED",
+      code: "PAGE_RUN_EXECUTION_EXCEPTION",
+      message: "themePrimaryFeaturedImage is not defined",
+    });
+
+    const draftJob = job({
+      qaStatus: "PASSED",
+      wordpressObjectId: "13167",
+      wordpressUrl: "https://example.test/?page_id=13167",
+      wordpressStatus: "draft",
+    });
+    const failedRun = await repository.getById("run-1");
+
+    expect(isRecoverableGlwPageRunFinalizationFailure({
+      run: failedRun!,
+      job: draftJob,
+    })).toBe(true);
+
+    const recovered = await recoverGlwPageRunForFinalization({
+      runId: "run-1",
+      job: draftJob,
+      repository,
+    });
+
+    expect(recovered).toMatchObject({
+      status: "GENERATED",
+      generationJobId: "job-1",
+      externalExecutionId: "764999",
+      failure: null,
+      wordpressObjectId: null,
+    });
+  });
+
+  test("does not reopen unrelated terminal PageRun failures", async () => {
+    const repository = createInMemoryGlwPageRunRepository();
+    await repository.create(createGlwPageRun({ runId: "run-1", identity }));
+
+    await synchronizeGlwPageRunWithExecution({
+      runId: "run-1",
+      job: job(),
+      repository,
+    });
+
+    await repository.transition("run-1", "GENERATED", {
+      to: "FAILED",
+      code: "GENERATED_CONTENT_QA_FAILED",
+      message: "QA failed.",
+    });
+
+    await expect(recoverGlwPageRunForFinalization({
+      runId: "run-1",
+      job: job({
+        qaStatus: "PASSED",
+        wordpressObjectId: "13167",
+        wordpressStatus: "draft",
+      }),
+      repository,
+    })).rejects.toThrow("not eligible");
   });
 
   test("validates immutable generation target identity", () => {
