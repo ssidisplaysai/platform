@@ -39,6 +39,15 @@ describe("GLW reference owner authority entry points", () => {
     expect(generationRoute).toContain("Continuation job/execution does not match the authoritative PageRun.");
   });
 
+  test("existing WordPress draft continuation is forwarded as an exact update", () => {
+    expect(campaignRoute).toContain('if (existing.wordpressStatus === "draft" && existing.wordpressObjectId)');
+    expect(campaignRoute).toContain('form.plannedOperation = campaign.pageType === "city_service"');
+    expect(campaignRoute).toContain('"UPDATE_CITY"');
+    expect(campaignRoute).toContain('"UPDATE_STATE"');
+    expect(campaignRoute).toContain('"UPDATE_GENERAL"');
+    expect(campaignRoute).toContain("form.wordpressObjectId = existing.wordpressObjectId;");
+  });
+
   test("issuance route resolves trusted principal before accepting action data", () => {
     expect(authorityRoute.indexOf("resolveGlwTrustedOperatorPrincipal(request)")).toBeLessThan(authorityRoute.indexOf("await request.json()"));
     expect(authorityRoute).toContain("callerSuppliedRoleHeadersAuthorize: false");
