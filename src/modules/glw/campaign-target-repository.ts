@@ -1077,15 +1077,8 @@ export function reconcileGlwContentReadyTargetDraft(input: {
   loadState();
   const targetKey = key(input.campaignId, input.stateCode, input.citySlug);
   const current = targetStore.get(targetKey);
-  if (
-    !current
-    || current.targetId !== input.targetId
-    || current.status !== "content_ready"
-    || current.jobId !== input.jobId
-    || (current.wordpressObjectId && current.wordpressObjectId !== input.wordpressObjectId)
-    || current.leaseId
-  ) {
-    throw new Error("Content-ready staging reconciliation requires the exact target, existing job, and matching WordPress draft identity.");
+  if (!current || current.targetId !== input.targetId || current.status !== "content_ready" || current.jobId !== input.jobId || current.wordpressObjectId || current.leaseId) {
+    throw new Error("Content-ready staging reconciliation requires the exact unbound target and existing job.");
   }
   const canonicalIdentity = resolveDraftCanonicalIdentity({ current, canonicalIdentity: input.canonicalIdentity });
   const updated: GlwCampaignTarget = {
