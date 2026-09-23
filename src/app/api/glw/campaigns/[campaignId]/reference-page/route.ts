@@ -1035,7 +1035,7 @@ export async function POST(request: NextRequest, context: Context) {
       });
     }
   }
-  if (launchJob?.jobId && launchJob.status) {
+  if (!pageRunId && launchJob?.jobId && launchJob.status) {
     reconcileReferenceTargetExecutionProjection({
       campaign,
       stateCode: target.state.code,
