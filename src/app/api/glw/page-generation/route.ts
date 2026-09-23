@@ -23,6 +23,7 @@ import { repairGlwStateContentToMinimum } from "@/modules/glw/content-repair-ser
 import { repairGlwCampaignReferenceCityArtifact } from "@/modules/glw/campaign-reference-content-repair";
 import { getGlwCampaignKnowledgePack } from "@/modules/glw/campaign-reference-repository";
 import { resolveFinalizationArtifactSource } from "@/modules/glw/finalization-artifact-source";
+import { shouldInsertGlwInlineHero } from "@/modules/glw/featured-image-placement";
 import { evaluateGlwReferenceClaimAuthority, type GlwClaimAuthorityFinding, type GlwReferenceClaimClass } from "@/modules/glw/reference-claim-authority";
 import {
   canonicalizeAndRevalidateGlwZeroAuthorityClaims,
@@ -1031,7 +1032,7 @@ async function finalizeContentReadyExecution(input: {
       wordpressMediaId: productAuthority.selectedMedia.wordpressMediaId,
       expectedMediaUrl: productAuthority.selectedMedia.url,
       altText: productAuthority.selectedMedia.altText,
-      insertInlineHero: !themePrimaryFeaturedImage,
+      insertInlineHero: shouldInsertGlwInlineHero(finalizedArtifact.contentHtml),
     });
   } else {
     const strictPrompt = strictGeneratedContextualRequired
@@ -1066,7 +1067,7 @@ async function finalizeContentReadyExecution(input: {
       title: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
       altText: `${input.request.productTopic}${location ? ` in ${location}` : ""}`,
       description: `Commercial hero image for ${input.request.productTopic}${location ? ` in ${location}` : ""} on ${input.siteRecord.displayName}.`,
-      insertInlineHero: !themePrimaryFeaturedImage,
+      insertInlineHero: shouldInsertGlwInlineHero(finalizedArtifact.contentHtml),
     });
   }
 
