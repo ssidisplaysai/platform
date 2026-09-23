@@ -993,6 +993,15 @@ export async function POST(request: NextRequest, context: Context) {
       );
     }
 
+    if (existing.wordpressStatus === "draft" && existing.wordpressObjectId) {
+      form.plannedOperation = campaign.pageType === "city_service"
+        ? "UPDATE_CITY"
+        : campaign.pageType === "state_service"
+          ? "UPDATE_STATE"
+          : "UPDATE_GENERAL";
+      form.wordpressObjectId = existing.wordpressObjectId;
+    }
+
     const exactTarget = listGlwCampaignTargets(campaign.campaignId).find(
       (candidate) =>
         candidate.stateCode === target.state.code
