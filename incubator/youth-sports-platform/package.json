@@ -1,0 +1,1 @@
+{"name":"youth-sports-platform","private":true,"version":"0.1.0","workspaces":["apps/*","packages/*"],"scripts":{"dev":"npm run dev -w @sports/web","dev:api":"npm run dev -w @sports/api","build":"npm run build -w @sports/domain && npm run build -w @sports/api && npm run build -w @sports/web","typecheck":"npm run typecheck -ws --if-present"},"engines":{"node":">=22"}}
