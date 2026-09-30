@@ -1,0 +1,1 @@
+import type {MetadataRoute} from "next";export default function manifest():MetadataRoute.Manifest{return{name:"Sports Connect Alpha",short_name:"Sports Connect",description:"Youth sports schedules, teams, games and places.",start_url:"/",display:"standalone",background_color:"#08101d",theme_color:"#0b1220",icons:[]}}
