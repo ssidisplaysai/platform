@@ -31,27 +31,27 @@ describe("Share-to-Grow ledger core", () => {
   test("allocates Daniel direct sale 50/50", () => {
     const result = allocateByRule(money(3700), direct5050);
     expect(result.map((x) => [x.beneficiaryId, x.amount.minor])).toEqual([
-      ["stoner", 1850n],
-      ["daniel", 1850n],
+      ["stoner", 185BigInt(0)],
+      ["daniel", 185BigInt(0)],
     ]);
   });
 
   test("allocates recruited creator sale 50/35/15", () => {
     const result = allocateByRule(money(3700), creatorSplit);
     expect(result.map((x) => [x.beneficiaryId, x.amount.minor])).toEqual([
-      ["stoner", 1850n],
-      ["creator-001", 1295n],
-      ["daniel", 555n],
+      ["stoner", 185BigInt(0)],
+      ["creator-001", BigInt(1295)],
+      ["daniel", BigInt(555)],
     ]);
   });
 
   test("assigns rounding residual deterministically and reconciles exactly", () => {
     const result = allocateByRule(money(1), direct5050);
     expect(result.map((x) => [x.beneficiaryId, x.amount.minor])).toEqual([
-      ["stoner", 1n],
-      ["daniel", 0n],
+      ["stoner", BigInt(1)],
+      ["daniel", BigInt(0)],
     ]);
-    expect(result.reduce((sum, x) => sum + x.amount.minor, 0n)).toBe(1n);
+    expect(result.reduce((sum, x) => sum + x.amount.minor, BigInt(0))).toBe(BigInt(1));
   });
 
   test("reversal is append-only and restores beneficiary balance", () => {
@@ -68,9 +68,9 @@ describe("Share-to-Grow ledger core", () => {
     ledger.reverse("entry-1", "entry-2", "refund-1:daniel", "2026-10-06T00:00:00Z");
 
     expect(ledger.entries()).toHaveLength(2);
-    expect(ledger.balanceMinor("daniel")).toBe(0n);
-    expect(ledger.entries()[0].amount.minor).toBe(1850n);
-    expect(ledger.entries()[1].amount.minor).toBe(-1850n);
+    expect(ledger.balanceMinor("daniel")).toBe(BigInt(0));
+    expect(ledger.entries()[0].amount.minor).toBe(185BigInt(0));
+    expect(ledger.entries()[1].amount.minor).toBe(-185BigInt(0));
   });
 
   test("idempotency key prevents duplicate economic effect", () => {
@@ -94,6 +94,6 @@ describe("Share-to-Grow ledger core", () => {
 
     expect(replay).toBe(first);
     expect(ledger.entries()).toHaveLength(1);
-    expect(ledger.balanceMinor("stoner")).toBe(1850n);
+    expect(ledger.balanceMinor("stoner")).toBe(185BigInt(0));
   });
 });
