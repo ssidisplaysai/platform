@@ -58,7 +58,7 @@ export function allocateByRule(
   let allocated = BigInt(0);
   const allocations = rule.beneficiaries.map((beneficiary) => {
     const amountMinor =
-      (distributableProfit.minor * BigInt(beneficiary.basisPoints)) / 10_00BigInt(0);
+      (distributableProfit.minor * BigInt(beneficiary.basisPoints)) / BigInt(10_000);
     allocated += amountMinor;
     return {
       beneficiaryId: beneficiary.beneficiaryId,
