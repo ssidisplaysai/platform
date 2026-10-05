@@ -2,7 +2,7 @@
 
 ## Status
 
-PROPOSED FOR ACCEPTANCE
+ACCEPTED
 
 ## Date
 
@@ -269,5 +269,6 @@ Before production activation, the implementation must prove at least the twenty 
 
 ---
 
-**Decision state:** Proposed for acceptance  
-**Implementation begins only after this ADR is accepted through repository governance.**
+**Decision state:** Accepted  
+**Approval:** Approved by project owner on 2026-10-05.  
+**Implementation authority:** Granted for the scoped implementation sequence defined in this ADR.
