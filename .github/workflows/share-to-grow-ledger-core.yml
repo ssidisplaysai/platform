@@ -1,0 +1,31 @@
+name: Share-to-Grow Ledger Core
+
+on:
+  pull_request:
+    paths:
+      - "src/modules/share-to-grow/**"
+      - ".github/workflows/share-to-grow-ledger-core.yml"
+  workflow_dispatch:
+
+jobs:
+  ledger-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Share-to-Grow ledger tests
+        run: npx jest src/modules/share-to-grow/__tests__/ledger-core.test.ts --runInBand
+
+      - name: Lint Share-to-Grow module
+        run: npx eslint "src/modules/share-to-grow/**/*.ts" --max-warnings=0
