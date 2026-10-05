@@ -31,15 +31,15 @@ describe("Share-to-Grow ledger core", () => {
   test("allocates Daniel direct sale 50/50", () => {
     const result = allocateByRule(money(3700), direct5050);
     expect(result.map((x) => [x.beneficiaryId, x.amount.minor])).toEqual([
-      ["stoner", 185BigInt(0)],
-      ["daniel", 185BigInt(0)],
+      ["stoner", BigInt(1850)],
+      ["daniel", BigInt(1850)],
     ]);
   });
 
   test("allocates recruited creator sale 50/35/15", () => {
     const result = allocateByRule(money(3700), creatorSplit);
     expect(result.map((x) => [x.beneficiaryId, x.amount.minor])).toEqual([
-      ["stoner", 185BigInt(0)],
+      ["stoner", BigInt(1850)],
       ["creator-001", BigInt(1295)],
       ["daniel", BigInt(555)],
     ]);
@@ -69,8 +69,8 @@ describe("Share-to-Grow ledger core", () => {
 
     expect(ledger.entries()).toHaveLength(2);
     expect(ledger.balanceMinor("daniel")).toBe(BigInt(0));
-    expect(ledger.entries()[0].amount.minor).toBe(185BigInt(0));
-    expect(ledger.entries()[1].amount.minor).toBe(-185BigInt(0));
+    expect(ledger.entries()[0].amount.minor).toBe(BigInt(1850));
+    expect(ledger.entries()[1].amount.minor).toBe(BigInt(-1850));
   });
 
   test("idempotency key prevents duplicate economic effect", () => {
@@ -94,6 +94,6 @@ describe("Share-to-Grow ledger core", () => {
 
     expect(replay).toBe(first);
     expect(ledger.entries()).toHaveLength(1);
-    expect(ledger.balanceMinor("stoner")).toBe(185BigInt(0));
+    expect(ledger.balanceMinor("stoner")).toBe(BigInt(1850));
   });
 });
