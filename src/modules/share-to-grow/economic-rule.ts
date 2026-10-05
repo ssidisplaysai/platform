@@ -55,10 +55,10 @@ export function allocateByRule(
 ): readonly EconomicAllocation[] {
   validateRuleVersion(rule);
 
-  let allocated = 0n;
+  let allocated = BigInt(0);
   const allocations = rule.beneficiaries.map((beneficiary) => {
     const amountMinor =
-      (distributableProfit.minor * BigInt(beneficiary.basisPoints)) / 10_000n;
+      (distributableProfit.minor * BigInt(beneficiary.basisPoints)) / 10_00BigInt(0);
     allocated += amountMinor;
     return {
       beneficiaryId: beneficiary.beneficiaryId,
@@ -77,7 +77,7 @@ export function allocateByRule(
     amount: money(current.amount.minor + residual, distributableProfit.currency),
   };
 
-  const reconciled = allocations.reduce((sum, item) => sum + item.amount.minor, 0n);
+  const reconciled = allocations.reduce((sum, item) => sum + item.amount.minor, BigInt(0));
   if (reconciled !== distributableProfit.minor) {
     throw new Error("ALLOCATION_RECONCILIATION_FAILED");
   }
