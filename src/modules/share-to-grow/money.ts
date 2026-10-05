@@ -21,7 +21,7 @@ export function assertSameCurrency(values: readonly Money[]): CurrencyCode {
 
 export function addMoney(values: readonly Money[]): Money {
   const currency = assertSameCurrency(values);
-  return money(values.reduce((sum, value) => sum + value.minor, 0n), currency);
+  return money(values.reduce((sum, value) => sum + value.minor, BigInt(0)), currency);
 }
 
 export function negateMoney(value: Money): Money {
