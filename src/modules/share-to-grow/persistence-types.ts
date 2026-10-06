@@ -1,5 +1,7 @@
 import type { EconomicRuleVersion } from "./economic-rule";
 import type { LedgerEntry } from "./ledger";
+import type { AttributionDecision } from "./attribution";
+import type { PayoutEntitlement } from "./payout";
 
 export interface CollaborationParticipantRecord {
   readonly participantId: string;
@@ -56,12 +58,37 @@ export interface SourceEventReceiptRecord {
   readonly receivedAt: string;
 }
 
+export interface ProcessedCommerceLineRecord {
+  readonly lineKey: string;
+  readonly sourceEventId: string;
+  readonly organizationId: string;
+  readonly attribution: AttributionDecision;
+  readonly ruleVersionId: string;
+  readonly ledgerEntryIds: readonly string[];
+  readonly processedAt: string;
+}
+
+export interface PersistedPayoutEntitlement {
+  readonly entitlementId: string;
+  readonly beneficiaryId: string;
+  readonly currency: string;
+  readonly ledgerEntryId: string;
+  readonly amountMinor: string;
+  readonly state: PayoutEntitlement["state"];
+  readonly earnedAt: string;
+  readonly clearsAt: string;
+  readonly statementId?: string;
+  readonly paidReference?: string;
+}
+
 export interface ShareToGrowRepositoryState {
   readonly participants: CollaborationParticipantRecord[];
   readonly trackingIdentities: TrackingIdentityReferenceRecord[];
   readonly ruleVersions: PersistedEconomicRuleVersion[];
   readonly ledgerEntries: PersistedLedgerEntry[];
   readonly sourceEventReceipts: SourceEventReceiptRecord[];
+  readonly processedCommerceLines: ProcessedCommerceLineRecord[];
+  readonly payoutEntitlements: PersistedPayoutEntitlement[];
 }
 
 export function serializeRuleVersion(

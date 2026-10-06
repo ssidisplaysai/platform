@@ -4,6 +4,7 @@ import { normalizeCommerceOrder } from "../commerce";
 import { allocateCommerceLine, type ProcessedCommerceLine } from "../allocation-pipeline";
 import { AppendOnlyLedger } from "../ledger";
 import { createPendingEntitlement, type PayoutEntitlement } from "../payout";
+import { persistProcessedCommerceLine } from "../durable-processing";
 import {
   acceptWooCommerceWebhook,
   type WooCommerceWebhookEnvelope,
@@ -87,14 +88,23 @@ export function processWooCommerceOrder(
     }),
   );
 
-  const pendingEntitlements = processedLines.flatMap((processed) =>
-    processed.ledgerEntries.map((entry) =>
+  const pendingEntitlements = processedLines.flatMap((processed) => {
+    const entitlements = processed.ledgerEntries.map((entry) =>
       createPendingEntitlement({
         ledgerEntry: entry,
         policy: STONER_GYM_REFERENCE.payoutPolicy,
       }),
-    ),
-  );
+    );
+    persistProcessedCommerceLine({
+      sourceEventId: input.webhook.sourceEventId,
+      organizationId: input.order.organizationId,
+      processedAt: input.order.convertedAt,
+      processedLine: processed,
+      attribution,
+      entitlements,
+    });
+    return entitlements;
+  });
 
   return Object.freeze({
     replay: false,
