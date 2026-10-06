@@ -1,8 +1,5 @@
 import { createHmac, createHash, timingSafeEqual } from "node:crypto";
-import {
-  recordSourceEventReceipt,
-  type,
-} from "../share-to-grow-repository";
+import { recordSourceEventReceipt } from "../share-to-grow-repository";
 
 export type WooCommerceEventType =
   | "order.created"
