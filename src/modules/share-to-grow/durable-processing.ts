@@ -1,10 +1,7 @@
 import type { AttributionDecision } from "./attribution";
 import type { ProcessedCommerceLine } from "./allocation-pipeline";
 import type { PayoutEntitlement } from "./payout";
-import {
-  commitProcessedCommerceLine,
-  type,
-} from "./share-to-grow-repository";
+import { commitProcessedCommerceLine } from "./share-to-grow-repository";
 import type { PersistedPayoutEntitlement, ProcessedCommerceLineRecord } from "./persistence-types";
 
 function persistEntitlement(entitlement: PayoutEntitlement): PersistedPayoutEntitlement {
