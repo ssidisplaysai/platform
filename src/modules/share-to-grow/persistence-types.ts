@@ -48,11 +48,20 @@ export interface PersistedLedgerEntry {
   readonly postedAt: string;
 }
 
+export interface SourceEventReceiptRecord {
+  readonly sourceEventId: string;
+  readonly source: string;
+  readonly eventType: string;
+  readonly payloadHash: string;
+  readonly receivedAt: string;
+}
+
 export interface ShareToGrowRepositoryState {
   readonly participants: CollaborationParticipantRecord[];
   readonly trackingIdentities: TrackingIdentityReferenceRecord[];
   readonly ruleVersions: PersistedEconomicRuleVersion[];
   readonly ledgerEntries: PersistedLedgerEntry[];
+  readonly sourceEventReceipts: SourceEventReceiptRecord[];
 }
 
 export function serializeRuleVersion(
