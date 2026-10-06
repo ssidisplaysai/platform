@@ -27,6 +27,7 @@ export interface CommerceOrderInput {
 export interface NormalizedCommerceLine {
   readonly lineKey: string;
   readonly channel: string;
+  readonly organizationId: string;
   readonly externalOrderId: string;
   readonly externalLineId: string;
   readonly productId: string;
@@ -52,8 +53,14 @@ function requireNonNegative(value: bigint, field: string): void {
 }
 
 export function normalizeCommerceOrder(input: CommerceOrderInput): readonly NormalizedCommerceLine[] {
-  if (!input.channel.trim() || !input.externalOrderId.trim() || !input.currency.trim()) {
+  if (!input.channel.trim() || !input.externalOrderId.trim() || !input.organizationId.trim()) {
     throw new Error("INVALID_COMMERCE_ORDER_IDENTITY");
+  }
+  if (!/^[A-Z]{3}$/.test(input.currency)) {
+    throw new Error("INVALID_COMMERCE_CURRENCY");
+  }
+  if (!Number.isFinite(Date.parse(input.convertedAt))) {
+    throw new Error("INVALID_COMMERCE_TIMESTAMP");
   }
 
   const seenLineIds = new Set<string>();
@@ -81,10 +88,14 @@ export function normalizeCommerceOrder(input: CommerceOrderInput): readonly Norm
       line.refundMinor +
       COST_KINDS.reduce((sum, kind) => sum + (totals.get(kind) ?? BigInt(0)), BigInt(0));
     const dmpMinor = line.grossMerchandiseMinor - deductions;
+    if (dmpMinor < BigInt(0)) {
+      throw new Error("NEGATIVE_DISTRIBUTABLE_MERCHANDISE_PROFIT");
+    }
 
     return Object.freeze({
       lineKey: `${input.channel}:${input.externalOrderId}:${line.externalLineId}`,
       channel: input.channel,
+      organizationId: input.organizationId,
       externalOrderId: input.externalOrderId,
       externalLineId: line.externalLineId,
       productId: line.productId,
