@@ -12,6 +12,8 @@ import {
   serializeRuleVersion,
   type CollaborationParticipantRecord,
   type PersistedLedgerEntry,
+  type PersistedPayoutEntitlement,
+  type ProcessedCommerceLineRecord,
   type ShareToGrowRepositoryState,
   type SourceEventReceiptRecord,
   type TrackingIdentityReferenceRecord,
@@ -26,6 +28,8 @@ function createSeedState(): ShareToGrowRepositoryState {
     ruleVersions: [],
     ledgerEntries: [],
     sourceEventReceipts: [],
+    processedCommerceLines: [],
+    payoutEntitlements: [],
   };
 }
 
@@ -209,4 +213,65 @@ export function recordSourceEventReceipt(
   };
   persistCurrentState(nextState);
   return { receipt: deepClone(receipt), replay: false };
+}
+
+export function listProcessedCommerceLines(): readonly ProcessedCommerceLineRecord[] {
+  return state.processedCommerceLines.map((record) => deepClone(record));
+}
+
+export function listPersistedPayoutEntitlements(): readonly PersistedPayoutEntitlement[] {
+  return state.payoutEntitlements.map((record) => deepClone(record));
+}
+
+export function persistProcessedCommerceLine(input: {
+  record: ProcessedCommerceLineRecord;
+  ledgerEntries: readonly LedgerEntry[];
+  payoutEntitlements: readonly PersistedPayoutEntitlement[];
+}): { record: ProcessedCommerceLineRecord; replay: boolean } {
+  const existing = state.processedCommerceLines.find(
+    (candidate) => candidate.lineKey === input.record.lineKey,
+  );
+  if (existing) {
+    if (
+      existing.sourceEventId !== input.record.sourceEventId ||
+      existing.ruleVersionId !== input.record.ruleVersionId
+    ) {
+      throw new Error("PROCESSED_COMMERCE_LINE_COLLISION");
+    }
+    return { record: deepClone(existing), replay: true };
+  }
+
+  const nextLedger = [...state.ledgerEntries];
+  for (const entry of input.ledgerEntries) {
+    const persisted = serializeLedgerEntry(entry);
+    const byKey = nextLedger.find(
+      (candidate) => candidate.idempotencyKey === persisted.idempotencyKey,
+    );
+    if (byKey) continue;
+    if (nextLedger.some((candidate) => candidate.id === persisted.id)) {
+      throw new Error("LEDGER_ENTRY_ID_EXISTS");
+    }
+    nextLedger.push(persisted);
+  }
+
+  const nextEntitlements = [...state.payoutEntitlements];
+  for (const entitlement of input.payoutEntitlements) {
+    const existingEntitlement = nextEntitlements.find(
+      (candidate) => candidate.entitlementId === entitlement.entitlementId,
+    );
+    if (existingEntitlement) continue;
+    nextEntitlements.push(deepClone(entitlement));
+  }
+
+  const nextState: ShareToGrowRepositoryState = {
+    ...state,
+    ledgerEntries: nextLedger,
+    payoutEntitlements: nextEntitlements,
+    processedCommerceLines: [
+      ...state.processedCommerceLines,
+      deepClone(input.record),
+    ],
+  };
+  persistCurrentState(nextState);
+  return { record: deepClone(input.record), replay: false };
 }
