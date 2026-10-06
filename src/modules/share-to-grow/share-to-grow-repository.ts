@@ -13,6 +13,7 @@ import {
   type CollaborationParticipantRecord,
   type PersistedLedgerEntry,
   type ShareToGrowRepositoryState,
+  type SourceEventReceiptRecord,
   type TrackingIdentityReferenceRecord,
 } from "./persistence-types";
 
@@ -24,6 +25,7 @@ function createSeedState(): ShareToGrowRepositoryState {
     trackingIdentities: [],
     ruleVersions: [],
     ledgerEntries: [],
+    sourceEventReceipts: [],
   };
 }
 
@@ -177,4 +179,34 @@ export function postPersistedLedgerEntry(entry: LedgerEntry): PersistedLedgerEnt
   };
   persistCurrentState(nextState);
   return deepClone(persisted);
+}
+
+
+export function listSourceEventReceipts(): readonly SourceEventReceiptRecord[] {
+  return state.sourceEventReceipts.map((receipt) => deepClone(receipt));
+}
+
+export function recordSourceEventReceipt(
+  receipt: SourceEventReceiptRecord,
+): { receipt: SourceEventReceiptRecord; replay: boolean } {
+  const existing = state.sourceEventReceipts.find(
+    (candidate) => candidate.sourceEventId === receipt.sourceEventId,
+  );
+  if (existing) {
+    if (
+      existing.source !== receipt.source ||
+      existing.eventType !== receipt.eventType ||
+      existing.payloadHash !== receipt.payloadHash
+    ) {
+      throw new Error("SOURCE_EVENT_ID_COLLISION");
+    }
+    return { receipt: deepClone(existing), replay: true };
+  }
+
+  const nextState: ShareToGrowRepositoryState = {
+    ...state,
+    sourceEventReceipts: [...state.sourceEventReceipts, deepClone(receipt)],
+  };
+  persistCurrentState(nextState);
+  return { receipt: deepClone(receipt), replay: false };
 }
