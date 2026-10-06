@@ -25,7 +25,7 @@ jobs:
         run: npm ci
 
       - name: Run Share-to-Grow ledger tests
-        run: npx jest src/modules/share-to-grow/__tests__/ledger-core.test.ts --runInBand
+        run: npx jest src/modules/share-to-grow/__tests__ --runInBand
 
       - name: Lint Share-to-Grow module
         run: npx eslint "src/modules/share-to-grow/**/*.ts" --max-warnings=0
