@@ -4,7 +4,13 @@
         "action":  "secretsmanager:CreateSecret",
         "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/woocommerce-webhook-secret-AbCdEf",
         "context":  {
-
+                        "aws:RequestTag/Environment":  "staging",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
                     }
     },
     {
@@ -12,7 +18,13 @@
         "action":  "secretsmanager:CreateSecret",
         "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/other-AbCdEf",
         "context":  {
-
+                        "aws:RequestTag/Environment":  "production",
+                        "aws:TagKeys":  [
+                                            "Environment"
+                                        ]
+                    },
+        "contextTypes":  {
+                        "aws:TagKeys":  "stringList"
                     }
     },
     {

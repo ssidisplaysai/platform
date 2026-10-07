@@ -53,9 +53,9 @@ function contextFromArgs(args) {
   for (let index = 0; index < args.length; index += 1) {
     if (args[index] !== "--context-entries") continue;
     const entry = JSON.parse(args[index + 1]);
-    context[entry.ContextKeyName] = entry.ContextKeyValues.length === 1
-      ? entry.ContextKeyValues[0]
-      : entry.ContextKeyValues;
+    context[entry.ContextKeyName] = entry.ContextKeyType.endsWith("List")
+      ? entry.ContextKeyValues
+      : entry.ContextKeyValues[0];
     contextTypes[entry.ContextKeyName] = entry.ContextKeyType;
   }
   return { context, contextTypes };
@@ -301,7 +301,10 @@ function createMockAws(options = {}) {
       if (options.customAllowDenied && matched.expect === "allow") decision = "implicitDeny";
       if (options.customDenyAllowed && matched.expect === "deny") decision = "allowed";
       if (options.customExplicitDenied && matched.requireExplicitDeny) decision = "implicitDeny";
-      if (options.missingSimulationContext) {
+      if (
+        options.missingSimulationContext &&
+        (!options.missingSimulationResource || resource === options.missingSimulationResource)
+      ) {
         return {
           EvaluationResults: [{
             EvalActionName: action,
@@ -416,6 +419,13 @@ test("all conditioned policy statements matched by simulation cases have complet
       }
     }
   }
+  const secretCreateCases = cases.filter((item) => item.action === "secretsmanager:CreateSecret");
+  assert.equal(secretCreateCases.length, 2);
+  for (const item of secretCreateCases) {
+    assert.ok(Object.hasOwn(item.context, "aws:RequestTag/Environment"));
+    assert.deepEqual(item.context["aws:TagKeys"], ["Environment"]);
+    assert.equal(item.contextTypes["aws:TagKeys"], "stringList");
+  }
 });
 
 test("IAM context entries encode scalar, ARN, and list values using AWS CLI JSON syntax", () => {
@@ -446,6 +456,55 @@ test("missing IAM simulation context reports action, resource, and keys then fai
     result.output,
     /SIMULATION_MISSING_CONTEXT action=secretsmanager:CreateSecret resource=arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis\/staging\/woocommerce-webhook-secret-AbCdEf keys=aws:RequestTag\/Environment,iam:PassedToService/,
   );
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=FAIL/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("staging and production CreateSecret cases use complete, distinct request-tag context", async () => {
+  const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
+  const staging = cases.find((item) =>
+    item.action === "secretsmanager:CreateSecret" && item.resource.includes("genesis/staging/")
+  );
+  const production = cases.find((item) =>
+    item.action === "secretsmanager:CreateSecret" && item.resource.includes("genesis/production/")
+  );
+  assert.ok(staging);
+  assert.ok(production);
+  assert.equal(staging.expect, "allow");
+  assert.equal(staging.context["aws:RequestTag/Environment"], "staging");
+  assert.deepEqual(staging.context["aws:TagKeys"], ["Environment"]);
+  assert.equal(staging.contextTypes["aws:TagKeys"], "stringList");
+  assert.equal(production.expect, "deny");
+  assert.equal(production.requireExplicitDeny, undefined);
+  assert.equal(production.context["aws:RequestTag/Environment"], "production");
+  assert.deepEqual(production.context["aws:TagKeys"], ["Environment"]);
+  assert.equal(production.contextTypes["aws:TagKeys"], "stringList");
+
+  const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam/02-staging-compute-network-auth.json"), "utf8"));
+  const secretStatement = policy.Statement.find((statement) => statement.Sid === "SecretsStagingWebhook");
+  assert.ok(secretStatement.Action.includes("secretsmanager:CreateSecret"));
+  assert.equal(
+    secretStatement.Resource,
+    "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/woocommerce-webhook-secret-*",
+  );
+  assert.doesNotMatch(secretStatement.Resource, /production/);
+  assert.equal(secretStatement.Condition, undefined);
+
+  const result = await executeGate();
+  assert.ifError(result.error);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=39 mismatches=0/);
+});
+
+test("missing production CreateSecret context remains visible and fails closed", async () => {
+  const resource = "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/other-AbCdEf";
+  const result = await executeGate({
+    missingSimulationContext: ["aws:RequestTag/Environment", "aws:TagKeys"],
+    missingSimulationResource: resource,
+  });
+  assert.ok(result.error);
+  assert.ok(result.output.includes(
+    `SIMULATION_MISSING_CONTEXT action=secretsmanager:CreateSecret resource=${resource} keys=aws:RequestTag/Environment,aws:TagKeys`,
+  ));
   assert.match(result.output, /CUSTOM_POLICY_SIMULATION=FAIL/);
   assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
 });
@@ -820,4 +879,6 @@ test("provision.sh uses the plan snapshot and verifies stability immediately bef
   assert.ok(doneLog < completion);
   assert.doesNotMatch(script, /genesis-production-web:38/);
   assert.doesNotMatch(script, /report_plan_extras\s*\|\|\s*true/);
+  assert.match(script, /PLAN_GATE_PREFLIGHT_OUTPUT="\$\(node "\$HERE\/plan-gate\.mjs" --preflight 2>&1\)"/);
+  assert.match(script, /printf '%s\\n' "\$PLAN_GATE_PREFLIGHT_OUTPUT" >&2\s+exit "\$PLAN_GATE_PREFLIGHT_STATUS"/);
 });

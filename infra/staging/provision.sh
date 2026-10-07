@@ -26,8 +26,13 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALLOWLIST="$HERE/runtime-env-allowlist.json"
 PROD_TASKDEF_REF=""
 if [ "$MODE" = "plan" ]; then
-  PLAN_GATE_PREFLIGHT_OUTPUT="$(node "$HERE/plan-gate.mjs" --preflight)"
-  printf '%s\n' "$PLAN_GATE_PREFLIGHT_OUTPUT"
+  if PLAN_GATE_PREFLIGHT_OUTPUT="$(node "$HERE/plan-gate.mjs" --preflight 2>&1)"; then
+    printf '%s\n' "$PLAN_GATE_PREFLIGHT_OUTPUT"
+  else
+    PLAN_GATE_PREFLIGHT_STATUS=$?
+    printf '%s\n' "$PLAN_GATE_PREFLIGHT_OUTPUT" >&2
+    exit "$PLAN_GATE_PREFLIGHT_STATUS"
+  fi
   PROD_TASKDEF_REF="$(printf '%s\n' "$PLAN_GATE_PREFLIGHT_OUTPUT" | sed -n 's/^PRODUCTION_TASK_DEFINITION_SNAPSHOT=//p')"
   [ -n "$PROD_TASKDEF_REF" ] || { echo "Plan gate did not provide a production task-definition snapshot" >&2; exit 1; }
   [[ "$PROD_TASKDEF_REF" =~ ^arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:[0-9]+$ ]] || {
