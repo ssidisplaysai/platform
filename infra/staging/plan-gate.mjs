@@ -242,9 +242,82 @@ function caseSignature(testCase) {
     testCase.action,
     testCase.resource,
     testCase.expect,
+    testCase.verificationMode ?? "",
     contextSignature(testCase.context),
     contextSignature(testCase.contextTypes),
   ]);
+}
+
+export function validateElbCreateRuleTagAuthorization(policyDocuments, simulationCases) {
+  const specialCases = simulationCases.filter((testCase) =>
+    testCase.verificationMode === "aws-dependent-action-static"
+  );
+  assert(specialCases.length === 1, "Expected exactly one AWS-dependent ELB tag-on-create case");
+  const tagCase = specialCases[0];
+  assert(
+    tagCase.action === "elasticloadbalancing:AddTags" &&
+    tagCase.expect === "allow" &&
+    tagCase.context?.["elasticloadbalancing:CreateAction"] === "CreateRule" &&
+    tagCase.context?.["aws:RequestTag/Environment"] === "staging" &&
+    /^arn:aws:elasticloadbalancing:[^:]+:\d+:listener-rule\/app\/[^/]+\/[^/]+\/[^/]+\/rule-[^/]+$/.test(tagCase.resource),
+    "AWS-dependent case is not the reviewed staging AddTags during CreateRule case",
+  );
+  assert(
+    simulationCases.every((testCase) =>
+      testCase === tagCase || testCase.verificationMode === undefined
+    ),
+    "Unknown simulation verification mode",
+  );
+
+  const allowStatements = policyDocuments.flatMap((document) => document.Statement ?? [])
+    .filter((statement) =>
+      statement.Effect === "Allow" &&
+      (Array.isArray(statement.Action) ? statement.Action : [statement.Action])
+        .includes("elasticloadbalancing:AddTags")
+    );
+  assert(allowStatements.length === 1, "Expected one reviewed allow statement for ELB AddTags");
+  const addTags = allowStatements[0];
+  const conditions = addTags.Condition?.StringEquals;
+  assert(
+    (Array.isArray(addTags.Action) ? addTags.Action : [addTags.Action]).length === 1 &&
+    addTags.Resource === "*" &&
+    conditions?.["elasticloadbalancing:CreateAction"] === "CreateRule" &&
+    conditions?.["aws:RequestTag/Environment"] === "staging" &&
+    Object.keys(conditions).length === 2 &&
+    Object.keys(addTags.Condition).length === 1,
+    "ELB AddTags policy must use Resource * with exact CreateRule and staging-tag conditions",
+  );
+
+  const listenerArn = tagCase.resource
+    .replace(":listener-rule/", ":listener/")
+    .replace(/\/rule-[^/]+$/, "");
+  const createRuleCase = simulationCases.find((testCase) =>
+    testCase.action === "elasticloadbalancing:CreateRule" &&
+    testCase.resource === listenerArn &&
+    testCase.expect === "allow" &&
+    testCase.context?.["aws:RequestTag/Environment"] === "staging"
+  );
+  assert(createRuleCase, "ELB AddTags dependent authorization has no matching staging CreateRule simulation");
+
+  const addTagsCases = simulationCases.filter((testCase) =>
+    testCase.action === "elasticloadbalancing:AddTags" &&
+    testCase.resource === tagCase.resource
+  );
+  const noCreateActionDeny = addTagsCases.find((testCase) =>
+    testCase !== tagCase &&
+    testCase.expect === "deny" &&
+    testCase.context?.["elasticloadbalancing:CreateAction"] === "None" &&
+    testCase.context?.["aws:RequestTag/Environment"] === "staging"
+  );
+  const productionTagDeny = addTagsCases.find((testCase) =>
+    testCase !== tagCase &&
+    testCase.expect === "deny" &&
+    testCase.context?.["elasticloadbalancing:CreateAction"] === "CreateRule" &&
+    testCase.context?.["aws:RequestTag/Environment"] === "production"
+  );
+  assert(noCreateActionDeny, "Missing standalone ELB AddTags deny simulation");
+  assert(productionTagDeny, "Missing production-tagged ELB AddTags deny simulation");
+  return { tagCase, createRuleCase, noCreateActionDeny, productionTagDeny };
 }
 
 function simulationResult(response, testCase, apiName, report) {
@@ -683,6 +756,7 @@ export async function runPlanGate({
     assert(!caseSet.has(signature), `Duplicate simulation case: ${testCase.action} on ${testCase.resource}`);
     caseSet.add(signature);
   }
+  const elbTagAuthorization = validateElbCreateRuleTagAuthorization(policyDocuments, simulationCases);
   assert(simulationCases.some((testCase) =>
     testCase.action === "iam:PassRole" &&
     testCase.resource === productionTaskRoleArn &&
@@ -691,8 +765,10 @@ export async function runPlanGate({
   ), "Simulation cases are missing the explicit production-task-role PassRole deny");
 
   let customMismatchCount = 0;
+  const customDecisions = new Map();
   try {
     for (const testCase of simulationCases) {
+      if (testCase === elbTagAuthorization.tagCase) continue;
       const effectiveContext = effectiveSimulationContext(testCase, conditionKeys);
       const contextKeys = Object.keys(effectiveContext.context).sort();
       report(`SIMULATION_CONTEXT action=${testCase.action} resource=${testCase.resource} keys=${contextKeys.join(",")}`);
@@ -711,6 +787,7 @@ export async function runPlanGate({
       ];
       const response = await call("iam", "simulate-custom-policy", args);
       const result = simulationResult(response, testCase, "SimulateCustomPolicy", report);
+      customDecisions.set(testCase, result.EvalDecision);
       const matches = testCase.expect === "allow"
         ? result.EvalDecision === "allowed"
         : testCase.requireExplicitDeny
@@ -725,12 +802,29 @@ export async function runPlanGate({
     report(`CUSTOM_POLICY_SIMULATION=FAIL reason=${error.message}`);
     throw error;
   }
-  report(`CUSTOM_POLICY_SIMULATION=${customMismatchCount === 0 ? "PASS" : "FAIL"} cases=${simulationCases.length} mismatches=${customMismatchCount}`);
+  if (customMismatchCount > 0) {
+    report(`CUSTOM_POLICY_SIMULATION=FAIL cases=${simulationCases.length} mismatches=${customMismatchCount}`);
+  }
   assert(customMismatchCount === 0, `Custom policy simulation has ${customMismatchCount} mismatches`);
+  assert(
+    customDecisions.get(elbTagAuthorization.createRuleCase) === "allowed",
+    "ELB CreateRule staging simulation did not allow the tag-on-create operation",
+  );
+  for (const negativeCase of [elbTagAuthorization.noCreateActionDeny, elbTagAuthorization.productionTagDeny]) {
+    assert(
+      ["explicitDeny", "implicitDeny"].includes(customDecisions.get(negativeCase)),
+      "ELB AddTags negative simulation did not remain denied",
+    );
+  }
+  // ELB AddTags with elasticloadbalancing:CreateAction is dependent authorization evaluated by ELB during CreateRule with tags; standalone IAM simulation does not reproduce the complete service create operation.
+  report("ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS");
+  report(`CUSTOM_POLICY_SIMULATION=PASS cases=${simulationCases.length} mismatches=0`);
 
   let principalMismatchCount = 0;
   try {
-    for (const testCase of simulationCases.filter((candidate) => candidate.expect === "allow")) {
+    for (const testCase of simulationCases.filter((candidate) =>
+      candidate.expect === "allow" && candidate.verificationMode !== "aws-dependent-action-static"
+    )) {
       const effectiveContext = effectiveSimulationContext(testCase, conditionKeys);
       const response = await call("iam", "simulate-principal-policy", [
         "--policy-source-arn", DEPLOY_ROLE_ARN,

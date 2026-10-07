@@ -284,6 +284,7 @@
         "expect":  "allow",
         "action":  "elasticloadbalancing:AddTags",
         "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "verificationMode":  "aws-dependent-action-static",
         "context":  {
                         "aws:RequestTag/Environment":  "staging",
                         "elasticloadbalancing:CreateAction":  "CreateRule"

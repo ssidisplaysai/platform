@@ -10,6 +10,7 @@ import {
   policyConditionKeys,
   runPlanGate,
   SIMULATION_CONTEXT_TYPES,
+  validateElbCreateRuleTagAuthorization,
 } from "../plan-gate.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "../../..");
@@ -307,6 +308,8 @@ function createMockAws(options = {}) {
       let decision = matched.expect === "allow"
         ? "allowed"
         : matched.requireExplicitDeny ? "explicitDeny" : "implicitDeny";
+      if (matched.verificationMode === "aws-dependent-action-static") decision = "implicitDeny";
+      if (options.customAllowDeniedAction === action && matched.expect === "allow") decision = "implicitDeny";
       if (options.customAllowDenied && matched.expect === "allow") decision = "implicitDeny";
       if (options.customDenyAllowed && matched.expect === "deny") decision = "allowed";
       if (options.customExplicitDenied && matched.requireExplicitDeny) decision = "implicitDeny";
@@ -386,6 +389,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
   assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
+  assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
   assert.ok(result.output.endsWith("GENESIS_STAGING_PLAN_GATE=PASS"));
@@ -410,8 +414,15 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
   const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
-  assert.equal(customSimulationCalls.length, 43);
-  assert.equal(principalSimulationCalls.length, cases.filter((item) => item.expect === "allow").length);
+  assert.equal(customSimulationCalls.length, 42);
+  assert.equal(principalSimulationCalls.length, cases.filter((item) =>
+    item.expect === "allow" && item.verificationMode !== "aws-dependent-action-static"
+  ).length);
+  assert.ok(!customSimulationCalls.some(({ args }) =>
+    option(args, "--action-names") === "elasticloadbalancing:AddTags" &&
+    contextFromArgs(args).context["elasticloadbalancing:CreateAction"] === "CreateRule" &&
+    contextFromArgs(args).context["aws:RequestTag/Environment"] === "staging"
+  ));
   for (const { args } of simulationCalls) {
     const { context } = contextFromArgs(args);
     assert.ok(Object.keys(DEFAULT_SIMULATION_CONTEXT).every((key) => Object.hasOwn(context, key)));
@@ -842,6 +853,11 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
   assert.equal(addTags.Resource, "*");
   assert.equal(addTags.Condition.StringEquals["elasticloadbalancing:CreateAction"], "CreateRule");
   assert.equal(addTags.Condition.StringEquals["aws:RequestTag/Environment"], "staging");
+  assert.equal(
+    cases.find((candidate) => candidate.action === "elasticloadbalancing:AddTags" && candidate.expect === "allow")
+      .verificationMode,
+    "aws-dependent-action-static",
+  );
   const allowRuleArn = find("elasticloadbalancing:AddTags", "listener-rule/", "allow", (context) =>
     context["elasticloadbalancing:CreateAction"] === "CreateRule" &&
     context["aws:RequestTag/Environment"] === "staging"
@@ -859,6 +875,51 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
   const result = await executeGate();
   assert.ifError(result.error);
   assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
+  assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
+  const createRuleCall = result.calls.find(({ service, operation, args }) =>
+    service === "iam" &&
+    operation === "simulate-custom-policy" &&
+    option(args, "--action-names") === "elasticloadbalancing:CreateRule"
+  );
+  assert.ok(createRuleCall, "Staging CreateRule must still be simulated directly");
+});
+
+test("ELB dependent tag authorization requires exact policy shape and negative cases", async () => {
+  const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
+  const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam/02-staging-compute-network-auth.json"), "utf8"));
+  const reviewed = [policy];
+  const validation = validateElbCreateRuleTagAuthorization(reviewed, cases);
+  assert.equal(validation.createRuleCase.expect, "allow");
+  assert.equal(validation.tagCase.expect, "allow");
+  assert.equal(validation.noCreateActionDeny.expect, "deny");
+  assert.equal(validation.productionTagDeny.expect, "deny");
+
+  const missingCreateAction = structuredClone(policy);
+  delete missingCreateAction.Statement.find((statement) => statement.Sid === "ElbRuleTagOnCreate")
+    .Condition.StringEquals["elasticloadbalancing:CreateAction"];
+  assert.throws(
+    () => validateElbCreateRuleTagAuthorization([missingCreateAction], cases),
+    /exact CreateRule and staging-tag conditions/,
+  );
+
+  const missingStagingTag = structuredClone(policy);
+  delete missingStagingTag.Statement.find((statement) => statement.Sid === "ElbRuleTagOnCreate")
+    .Condition.StringEquals["aws:RequestTag/Environment"];
+  assert.throws(
+    () => validateElbCreateRuleTagAuthorization([missingStagingTag], cases),
+    /exact CreateRule and staging-tag conditions/,
+  );
+
+  const broadStandaloneAddTags = structuredClone(policy);
+  broadStandaloneAddTags.Statement.push({
+    Effect: "Allow",
+    Action: ["elasticloadbalancing:AddTags"],
+    Resource: "*",
+  });
+  assert.throws(
+    () => validateElbCreateRuleTagAuthorization([broadStandaloneAddTags], cases),
+    /Expected one reviewed allow statement for ELB AddTags/,
+  );
 });
 
 test("production guardrail deny simulations remain explicit and context-complete", async () => {
@@ -1028,6 +1089,7 @@ test("an expected explicit deny reported as implicit fails", async () => {
   const result = await executeGate({ customExplicitDenied: true });
   assert.ok(result.error);
   assert.match(result.output, /CUSTOM_POLICY_SIMULATION=FAIL/);
+  assert.doesNotMatch(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
 });
 
@@ -1051,7 +1113,16 @@ test("one expected allow denied fails the custom policy gate", async () => {
   const result = await executeGate({ customAllowDenied: true });
   assert.ok(result.error);
   assert.match(result.output, /CUSTOM_POLICY_SIMULATION=FAIL/);
+  assert.doesNotMatch(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("implicit deny for any other allow-intent action still fails", async () => {
+  const result = await executeGate({ customAllowDeniedAction: "elasticloadbalancing:CreateRule" });
+  assert.ok(result.error);
+  assert.match(result.output, /CUSTOM_POLICY_MISMATCH action=elasticloadbalancing:CreateRule/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=FAIL/);
+  assert.doesNotMatch(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
 });
 
 test("one expected deny allowed fails the custom policy gate", async () => {
