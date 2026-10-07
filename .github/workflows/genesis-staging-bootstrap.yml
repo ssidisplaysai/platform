@@ -187,6 +187,9 @@ jobs:
           GenesisStagingDeploy-04-production-guardrails-deny|infra/staging/iam/04-production-guardrails-deny.json
           POLICIES
 
+      - name: Inspect live staging runtime health
+        run: node infra/staging/inspect-runtime.mjs
+
       - name: Run the read-only staging plan
         run: |
           set -euo pipefail
