@@ -280,14 +280,6 @@ export function persistProcessedCommerceLine(input: {
   return { record: deepClone(input.record), replay: false };
 }
 
-export function listProcessedCommerceLines(): readonly ProcessedCommerceLineRecord[] {
-  return state.processedCommerceLines.map((record) => deepClone(record));
-}
-
-export function listPersistedPayoutEntitlements(): readonly PersistedPayoutEntitlement[] {
-  return state.payoutEntitlements.map((record) => deepClone(record));
-}
-
 export function commitProcessedCommerceLine(input: {
   readonly record: ProcessedCommerceLineRecord;
   readonly ledgerEntries: readonly LedgerEntry[];
