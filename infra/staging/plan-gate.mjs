@@ -15,7 +15,7 @@ const PRODUCTION_ECR_REPOSITORY = "genesis-production-runtime";
 const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-task-role`;
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
-const SIMULATION_CASE_COUNT = 32;
+const SIMULATION_CASE_COUNT = 39;
 const PROPOSED_POLICY_FILES = [
   "01-read-only-production-inspection.json",
   "02-staging-compute-network-auth.json",
@@ -136,10 +136,26 @@ function redactPolicy(value) {
   return value;
 }
 
-function contextArguments(context = {}) {
+export function contextArguments(context = {}, contextTypes = {}) {
   const args = [];
+  assert(
+    Object.keys(contextTypes).every((key) => Object.hasOwn(context, key)),
+    "IAM simulation context types contain a key without a context value",
+  );
   for (const [key, value] of Object.entries(context)) {
-    args.push("--context-entries", `ContextKeyName=${key},ContextKeyValues=${value},ContextKeyType=string`);
+    const values = Array.isArray(value) ? value : [value];
+    const type = contextTypes[key] ?? (Array.isArray(value) ? "stringList" : "string");
+    assert(
+      ["string", "stringList", "numeric", "numericList", "boolean", "booleanList", "ip", "ipList", "binary", "binaryList", "arn", "arnList", "date", "dateList"].includes(type),
+      `Unsupported IAM simulation context type for ${key}: ${type}`,
+    );
+    assert(values.length > 0 && values.every((item) => ["string", "number", "boolean"].includes(typeof item)),
+      `Invalid IAM simulation context values for ${key}`);
+    args.push("--context-entries", JSON.stringify({
+      ContextKeyName: key,
+      ContextKeyValues: values.map(String),
+      ContextKeyType: type,
+    }));
   }
   return args;
 }
@@ -154,10 +170,11 @@ function caseSignature(testCase) {
     testCase.resource,
     testCase.expect,
     contextSignature(testCase.context),
+    contextSignature(testCase.contextTypes),
   ]);
 }
 
-function simulationResult(response, testCase, apiName) {
+function simulationResult(response, testCase, apiName, report) {
   const results = requiredArray(response?.EvaluationResults, `${apiName} ${testCase.action}`);
   assert(results.length === 1, `${apiName} ${testCase.action} returned ${results.length} results; expected exactly one`);
   const result = asObject(results[0], `${apiName} result`);
@@ -167,7 +184,14 @@ function simulationResult(response, testCase, apiName) {
     ["allowed", "explicitDeny", "implicitDeny"].includes(result.EvalDecision),
     `${apiName} returned ambiguous decision ${String(result.EvalDecision)}`,
   );
-  assert(!result.MissingContextValues?.length, `${apiName} returned unresolved context values`);
+  const missingContextValues = result.MissingContextValues ?? [];
+  if (missingContextValues.length) {
+    const keys = missingContextValues.map((value) => (
+      typeof value === "string" ? value : value.ContextKeyName ?? JSON.stringify(value)
+    ));
+    report(`SIMULATION_MISSING_CONTEXT action=${testCase.action} resource=${testCase.resource} keys=${keys.join(",")}`);
+    throw new Error(`${apiName} returned unresolved context values for ${testCase.action} on ${testCase.resource}`);
+  }
   return result;
 }
 
@@ -599,10 +623,10 @@ export async function runPlanGate({
         ...policyDocuments.map((document) => JSON.stringify(document)),
         "--action-names", testCase.action,
         "--resource-arns", testCase.resource,
-        ...contextArguments(testCase.context),
+        ...contextArguments(testCase.context, testCase.contextTypes),
       ];
       const response = await call("iam", "simulate-custom-policy", args);
-      const result = simulationResult(response, testCase, "SimulateCustomPolicy");
+      const result = simulationResult(response, testCase, "SimulateCustomPolicy", report);
       const matches = testCase.expect === "allow"
         ? result.EvalDecision === "allowed"
         : testCase.requireExplicitDeny
@@ -627,9 +651,9 @@ export async function runPlanGate({
         "--policy-source-arn", DEPLOY_ROLE_ARN,
         "--action-names", testCase.action,
         "--resource-arns", testCase.resource,
-        ...contextArguments(testCase.context),
+        ...contextArguments(testCase.context, testCase.contextTypes),
       ]);
-      const result = simulationResult(response, testCase, "SimulatePrincipalPolicy");
+      const result = simulationResult(response, testCase, "SimulatePrincipalPolicy", report);
       report(`PRINCIPAL_POLICY_RESULT action=${testCase.action} resource=${testCase.resource} decision=${result.EvalDecision}`);
       if (result.EvalDecision !== "allowed") {
         principalMismatchCount += 1;

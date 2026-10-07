@@ -53,7 +53,7 @@
         "action":  "elasticfilesystem:CreateFileSystem",
         "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
         "context":  {
-
+                        "aws:RequestTag/Environment":  "production"
                     }
     },
     {
@@ -69,7 +69,7 @@
         "action":  "elasticfilesystem:CreateAccessPoint",
         "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
         "context":  {
-
+                        "aws:RequestTag/Environment":  "production"
                     }
     },
     {
@@ -85,7 +85,7 @@
         "action":  "ec2:CreateSecurityGroup",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
         "context":  {
-
+                        "aws:RequestTag/Environment":  "production"
                     }
     },
     {
@@ -160,7 +160,7 @@
         "action":  "iam:PassRole",
         "resource":  "arn:aws:iam::452630323448:role/genesis-staging-task-role",
         "context":  {
-
+                        "iam:PassedToService":  "lambda.amazonaws.com"
                     }
     },
     {
@@ -237,7 +237,7 @@
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
         "requireExplicitDeny": true,
         "context":  {
-                        "aws:ResourceTag/Environment":  "staging"
+                        "aws:ResourceTag/Environment":  "production"
                     }
     },
     {
@@ -253,7 +253,68 @@
         "action":  "ec2:AuthorizeSecurityGroupIngress",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
         "context":  {
-
+                        "aws:ResourceTag/Environment":  "development"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:CreateTags",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "ec2:CreateAction":  "CreateSecurityGroup"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticloadbalancing:AddTags",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticloadbalancing:CreateAction":  "CreateRule"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticloadbalancing:ModifyRule",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "context":  {
+                        "aws:ResourceTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:TagResource",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:CreateMountTarget",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:ResourceTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:CreateServiceLinkedRole",
+        "resource":  "arn:aws:iam::452630323448:role/aws-service-role/elasticfilesystem.amazonaws.com/AWSServiceRoleForAmazonElasticFileSystem",
+        "context":  {
+                        "iam:AWSServiceName":  "elasticfilesystem.amazonaws.com"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "iam:AttachRolePolicy",
+        "resource":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "context":  {
+                        "iam:PolicyARN":  "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+                    },
+        "contextTypes":  {
+                        "iam:PolicyARN":  "arn"
                     }
     },
     {
