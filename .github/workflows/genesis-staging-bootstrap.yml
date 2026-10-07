@@ -83,26 +83,30 @@ jobs:
           jq -e '
             [.AttachedPolicies[].PolicyArn] as $attached
             | [
-                "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
-                "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
-                "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
-                "arn:aws:iam::aws:policy/AmazonS3FullAccess",
-                "arn:aws:iam::aws:policy/CloudWatchFullAccessV2",
                 "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
                 "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
                 "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
                 "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny"
               ] as $expected
+            | [
+                "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
+                "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
+                "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
+                "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+                "arn:aws:iam::aws:policy/CloudWatchFullAccessV2"
+              ] as $broad
             | (($attached | sort) == ($expected | sort))
-              and (($attached | length) == 9)
+              and (($attached | length) == 4)
+              and (all($broad[]; . as $policy | ($attached | index($policy)) == null))
           ' attached-policies.json >/dev/null || {
-            echo "ADMIN_BOOTSTRAP_REQUIRED: expected exactly the five broad and four GenesisStagingDeploy managed policies attached to $role_name." >&2
+            echo "SCOPED_POLICY_SET_REQUIRED: expected exactly the four GenesisStagingDeploy managed policies, with no broad AWS-managed or unexpected policies attached to $role_name." >&2
             jq -r '.AttachedPolicies[].PolicyArn' attached-policies.json >&2
             exit 1
           }
 
-          echo "ATTACHED_MANAGED_POLICY_COUNT=9"
+          echo "ATTACHED_MANAGED_POLICY_COUNT=4"
           echo "IAM_INLINE_POLICY_COUNT=0"
+          echo "SCOPED_POLICY_SET=PASS"
 
       - name: Verify all four managed policy documents match the repository
         run: |
