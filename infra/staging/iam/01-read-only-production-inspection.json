@@ -32,6 +32,20 @@
       "Resource": "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON"
     },
     {
+      "Sid": "IamManagedPolicyReadOnlyInspection",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion"
+      ],
+      "Resource": [
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+        "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny"
+      ]
+    },
+    {
       "Sid": "IamReadOnlyInspection",
       "Effect": "Allow",
       "Action": [

@@ -946,6 +946,175 @@ test("production guardrail deny simulations remain explicit and context-complete
   }
 });
 
+test("Policy 01 grants managed-policy reads only for the four Genesis policies", async () => {
+  const policy = parseJson(await readFile(
+    join(repoRoot, "infra/staging/iam/01-read-only-production-inspection.json"),
+    "utf8",
+  ));
+  const guardrails = parseJson(await readFile(
+    join(repoRoot, "infra/staging/iam/04-production-guardrails-deny.json"),
+    "utf8",
+  ));
+  const expectedResources = [
+    "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+    "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+    "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+    "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+  ];
+  const readActions = ["iam:GetPolicy", "iam:GetPolicyVersion"];
+  const statement = policy.Statement.find((item) => item.Sid === "IamManagedPolicyReadOnlyInspection");
+
+  assert.ok(statement);
+  assert.equal(statement.Effect, "Allow");
+  assert.deepEqual(statement.Action, readActions);
+  assert.deepEqual(statement.Resource, expectedResources);
+  assert.ok(!statement.Resource.includes("*"));
+
+  const allows = (action, resource) => policy.Statement.some((candidate) =>
+    candidate.Effect === "Allow" &&
+    asArray(candidate.Action).some((pattern) => matchesPattern(pattern, action)) &&
+    asArray(candidate.Resource).some((pattern) => matchesPattern(pattern, resource))
+  );
+  for (const action of readActions) {
+    for (const resource of expectedResources) {
+      assert.equal(allows(action, resource), true, `${action} must allow ${resource}`);
+    }
+    assert.equal(
+      allows(action, "arn:aws:iam::452630323448:policy/UnrelatedAccountPolicy"),
+      false,
+      `${action} must not allow arbitrary account policies`,
+    );
+    assert.equal(
+      allows(action, "arn:aws:iam::aws:policy/ReadOnlyAccess"),
+      false,
+      `${action} must not allow AWS-managed policies`,
+    );
+  }
+
+  const iamActions = policy.Statement.flatMap((item) => asArray(item.Action))
+    .filter((action) => action.toLowerCase().startsWith("iam:"));
+  const prohibitedMutation = iamActions.filter((action) =>
+    /^iam:(?:Create|Set|Delete|Attach|Detach|Put|Update|Add|Remove)/i.test(action)
+  );
+  assert.deepEqual(prohibitedMutation, []);
+  for (const action of [
+    "iam:CreatePolicyVersion",
+    "iam:SetDefaultPolicyVersion",
+    "iam:DeletePolicyVersion",
+    "iam:AttachRolePolicy",
+    "iam:DetachRolePolicy",
+    "iam:PutRolePolicy",
+    "iam:UpdateAssumeRolePolicy",
+    "iam:CreatePolicy",
+    "iam:DeletePolicy",
+  ]) {
+    assert.ok(!iamActions.includes(action), `${action} must not be granted`);
+  }
+
+  const preservedStatements = policy.Statement
+    .filter((item) => item.Sid !== "IamManagedPolicyReadOnlyInspection")
+    .map(({ Sid, Effect, Action, Resource, NotResource, Condition }) => ({
+      Sid, Effect, Action, Resource, NotResource, Condition,
+    }));
+  assert.deepEqual(preservedStatements, [
+    {
+      Sid: "ReadOnlyProductionInspection",
+      Effect: "Allow",
+      Action: [
+        "ecs:DescribeServices",
+        "ecs:DescribeTaskDefinition",
+        "cloudtrail:LookupEvents",
+        "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "elasticloadbalancing:DescribeListeners",
+        "elasticloadbalancing:DescribeRules",
+        "elasticloadbalancing:DescribeListenerCertificates",
+        "elasticloadbalancing:DescribeTargetHealth",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeNetworkInterfaces",
+        "sts:GetCallerIdentity",
+      ],
+      Resource: "*",
+      NotResource: undefined,
+      Condition: undefined,
+    },
+    {
+      Sid: "CognitoReadOnlyExistingPool",
+      Effect: "Allow",
+      Action: [
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:DescribeUserPoolClient",
+        "cognito-idp:ListUserPoolClients",
+      ],
+      Resource: "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON",
+      NotResource: undefined,
+      Condition: undefined,
+    },
+    {
+      Sid: "IamReadOnlyInspection",
+      Effect: "Allow",
+      Action: [
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:GetRolePolicy",
+      ],
+      Resource: [
+        "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q",
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskExecutionRole9B42490-R0neRrBR8s7H",
+        "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+      ],
+      NotResource: undefined,
+      Condition: undefined,
+    },
+    {
+      Sid: "SimulateOwnPermissions",
+      Effect: "Allow",
+      Action: ["iam:SimulatePrincipalPolicy"],
+      Resource: "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+      NotResource: undefined,
+      Condition: undefined,
+    },
+    {
+      Sid: "SimulateProposedPoliciesNoResourceSupport",
+      Effect: "Allow",
+      Action: ["iam:SimulateCustomPolicy"],
+      Resource: "*",
+      NotResource: undefined,
+      Condition: undefined,
+    },
+    {
+      Sid: "ProductionImageProvenanceReadOnly",
+      Effect: "Allow",
+      Action: ["ecr:DescribeImages", "ecr:DescribeRepositories"],
+      Resource: "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime",
+      NotResource: undefined,
+      Condition: undefined,
+    },
+  ]);
+
+  for (const action of readActions) {
+    for (const resource of expectedResources) {
+      const matchingDeny = guardrails.Statement.some((candidate) => {
+        if (
+          candidate.Effect !== "Deny" ||
+          !asArray(candidate.Action).some((pattern) => matchesPattern(pattern, action))
+        ) {
+          return false;
+        }
+        if (candidate.Resource) {
+          return asArray(candidate.Resource).some((pattern) => matchesPattern(pattern, resource));
+        }
+        return !asArray(candidate.NotResource).some((pattern) => matchesPattern(pattern, resource));
+      });
+      assert.equal(matchingDeny, false, `Policy 04 must not deny ${action} on ${resource}`);
+    }
+  }
+});
+
 for (const revision of [38, 39, 40, 1042]) {
   test(`current production revision ${revision} passes when reviewed invariants hold`, async () => {
     const result = await executeGate({ productionRevision: revision });
