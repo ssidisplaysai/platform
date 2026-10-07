@@ -385,7 +385,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=39 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
   assert.ok(result.output.endsWith("GENESIS_STAGING_PLAN_GATE=PASS"));
@@ -410,7 +410,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
   const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
-  assert.equal(customSimulationCalls.length, 39);
+  assert.equal(customSimulationCalls.length, 43);
   assert.equal(principalSimulationCalls.length, cases.filter((item) => item.expect === "allow").length);
   for (const { args } of simulationCalls) {
     const { context } = contextFromArgs(args);
@@ -443,6 +443,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
     "aws:RequestTag/Environment",
     "aws:ResourceTag/Environment",
     "ec2:CreateAction",
+    "elasticfilesystem:CreateAction",
     "elasticloadbalancing:CreateAction",
     "iam:AWSServiceName",
     "iam:PassedToService",
@@ -487,7 +488,7 @@ test("all conditioned policy statements matched by simulation cases have complet
     "03-staging-data-iam.json",
     "04-production-guardrails-deny.json",
   ];
-  assert.equal(cases.length, 39);
+  assert.equal(cases.length, 43);
   const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
@@ -514,6 +515,7 @@ test("all conditioned policy statements matched by simulation cases have complet
       "aws:RequestTag/Environment": "string",
       "aws:ResourceTag/Environment": "string",
       "ec2:CreateAction": "string",
+      "elasticfilesystem:CreateAction": "string",
       "elasticloadbalancing:CreateAction": "string",
       "iam:AWSServiceName": "string",
       "iam:PassedToService": "string",
@@ -562,6 +564,7 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
   assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PolicyARN"].type, "string");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:AWSServiceName"].value, "invalid.amazonaws.com");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["ec2:CreateAction"].value, "None");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["elasticfilesystem:CreateAction"].value, "None");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["elasticloadbalancing:CreateAction"].value, "None");
 
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
@@ -706,7 +709,7 @@ test("staging and production CreateSecret cases use complete, distinct request-t
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=39 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
 });
 
 test("missing production CreateSecret context remains visible and fails closed", async () => {
@@ -757,6 +760,105 @@ test("required IAM simulation contexts preserve PassRole, tagging, and service-l
   assert.equal(elbTag.context["elasticloadbalancing:CreateAction"], "CreateRule");
   assert.equal(find("ec2:AuthorizeSecurityGroupIngress", "sg-0123456789abcdef0", "allow").context["aws:ResourceTag/Environment"], "staging");
   assert.ok(cases.filter((item) => item.expect === "deny").every((item) => item.context && typeof item.context === "object"));
+});
+
+test("EFS and ELB tag-on-create policies use AWS resource and CreateAction semantics", async () => {
+  const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
+  const efs = parseJson(await readFile(join(repoRoot, "infra/staging/iam/03-staging-data-iam.json"), "utf8"));
+  const elb = parseJson(await readFile(join(repoRoot, "infra/staging/iam/02-staging-compute-network-auth.json"), "utf8"));
+  const statement = (policy, sid) => {
+    const result = policy.Statement.find((candidate) => candidate.Sid === sid);
+    assert.ok(result, `Missing statement ${sid}`);
+    return result;
+  };
+  const find = (action, resourcePart, expect, contextPredicate = () => true) => {
+    const result = cases.find((candidate) =>
+      candidate.action === action &&
+      candidate.resource.includes(resourcePart) &&
+      candidate.expect === expect &&
+      contextPredicate(candidate.context)
+    );
+    assert.ok(result, `Missing ${expect} case for ${action} ${resourcePart}`);
+    return result;
+  };
+
+  // CreateFileSystem has no IAM resource type, so AWS requires Resource "*".
+  const createFileSystem = statement(efs, "EfsCreateStagingFileSystem");
+  assert.deepEqual(createFileSystem.Action, ["elasticfilesystem:CreateFileSystem"]);
+  assert.equal(createFileSystem.Resource, "*");
+  assert.equal(createFileSystem.Condition.StringEquals["aws:RequestTag/Environment"], "staging");
+  const createFsAllow = find("elasticfilesystem:CreateFileSystem", "*", "allow");
+  const createFsDeny = cases.find((candidate) =>
+    candidate.action === "elasticfilesystem:CreateFileSystem" &&
+    candidate.resource === "*" &&
+    candidate.expect === "deny" &&
+    candidate.context["aws:RequestTag/Environment"] === "production"
+  );
+  assert.ok(createFsDeny);
+  assert.equal(createFsAllow.context["aws:RequestTag/Environment"], "staging");
+
+  const createAccessPoint = statement(efs, "EfsCreateStagingAccessPoint");
+  assert.deepEqual(createAccessPoint.Action, ["elasticfilesystem:CreateAccessPoint"]);
+  assert.equal(createAccessPoint.Resource, "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/*");
+  assert.notEqual(createAccessPoint.Resource, "*");
+  assert.equal(find("elasticfilesystem:CreateAccessPoint", "file-system/", "allow").context["aws:RequestTag/Environment"], "staging");
+
+  const tagEfsOnCreate = statement(efs, "EfsTagStagingResourcesOnCreate");
+  assert.deepEqual(tagEfsOnCreate.Resource, [
+    "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/*",
+    "arn:aws:elasticfilesystem:us-west-2:452630323448:access-point/*",
+  ]);
+  assert.deepEqual(tagEfsOnCreate.Condition.StringEquals["elasticfilesystem:CreateAction"], [
+    "CreateFileSystem",
+    "CreateAccessPoint",
+  ]);
+  assert.equal(tagEfsOnCreate.Condition.StringEquals["aws:RequestTag/Environment"], "staging");
+  assert.equal(find(
+    "elasticfilesystem:TagResource",
+    "file-system/",
+    "allow",
+    (context) => context["elasticfilesystem:CreateAction"] === "CreateFileSystem",
+  ).context["aws:RequestTag/Environment"], "staging");
+  assert.equal(find(
+    "elasticfilesystem:TagResource",
+    "access-point/",
+    "allow",
+    (context) => context["elasticfilesystem:CreateAction"] === "CreateAccessPoint",
+  ).context["aws:RequestTag/Environment"], "staging");
+  assert.ok(find(
+    "elasticfilesystem:TagResource",
+    "file-system/",
+    "deny",
+    (context) => context["elasticfilesystem:CreateAction"] === "None",
+  ));
+  assert.ok(efs.Statement.filter((candidate) =>
+    candidate.Action?.some((action) => action.startsWith("elasticfilesystem:")) &&
+    !["EfsCreateStagingFileSystem", "EfsDescribe"].includes(candidate.Sid)
+  ).every((candidate) => candidate.Resource !== "*"));
+
+  // AWS's ELB tag-on-create pattern uses Resource "*" and CreateAction to deny standalone AddTags.
+  const addTags = statement(elb, "ElbRuleTagOnCreate");
+  assert.deepEqual(addTags.Action, ["elasticloadbalancing:AddTags"]);
+  assert.equal(addTags.Resource, "*");
+  assert.equal(addTags.Condition.StringEquals["elasticloadbalancing:CreateAction"], "CreateRule");
+  assert.equal(addTags.Condition.StringEquals["aws:RequestTag/Environment"], "staging");
+  const allowRuleArn = find("elasticloadbalancing:AddTags", "listener-rule/", "allow", (context) =>
+    context["elasticloadbalancing:CreateAction"] === "CreateRule" &&
+    context["aws:RequestTag/Environment"] === "staging"
+  );
+  assert.match(allowRuleArn.resource, /:listener-rule\/app\/[^/]+\/[^/]+\/[^/]+\/rule-[^/]+$/);
+  assert.ok(find("elasticloadbalancing:AddTags", "listener-rule/", "deny", (context) =>
+    context["elasticloadbalancing:CreateAction"] === "None" &&
+    context["aws:RequestTag/Environment"] === "staging"
+  ));
+  assert.ok(find("elasticloadbalancing:AddTags", "listener-rule/", "deny", (context) =>
+    context["elasticloadbalancing:CreateAction"] === "CreateRule" &&
+    context["aws:RequestTag/Environment"] === "production"
+  ));
+
+  const result = await executeGate();
+  assert.ifError(result.error);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
 });
 
 test("production guardrail deny simulations remain explicit and context-complete", async () => {

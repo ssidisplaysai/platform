@@ -55,7 +55,7 @@
     {
         "expect":  "allow",
         "action":  "elasticfilesystem:CreateFileSystem",
-        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "resource":  "*",
         "context":  {
                         "aws:RequestTag/Environment":  "staging"
                     }
@@ -63,7 +63,7 @@
     {
         "expect":  "deny",
         "action":  "elasticfilesystem:CreateFileSystem",
-        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "resource":  "*",
         "context":  {
                         "aws:RequestTag/Environment":  "production"
                     }
@@ -290,6 +290,24 @@
                     }
     },
     {
+        "expect":  "deny",
+        "action":  "elasticloadbalancing:AddTags",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticloadbalancing:CreateAction":  "None"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticloadbalancing:AddTags",
+        "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
+                        "elasticloadbalancing:CreateAction":  "CreateRule"
+                    }
+    },
+    {
         "expect":  "allow",
         "action":  "elasticloadbalancing:ModifyRule",
         "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/rule-0123456789abcdef",
@@ -302,7 +320,26 @@
         "action":  "elasticfilesystem:TagResource",
         "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
         "context":  {
-                        "aws:RequestTag/Environment":  "staging"
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticfilesystem:CreateAction":  "CreateFileSystem"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "elasticfilesystem:TagResource",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:access-point/fsap-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticfilesystem:CreateAction":  "CreateAccessPoint"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "elasticfilesystem:TagResource",
+        "resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/fs-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "elasticfilesystem:CreateAction":  "None"
                     }
     },
     {

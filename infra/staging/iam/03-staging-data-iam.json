@@ -65,13 +65,44 @@
       "Sid": "EfsCreateStagingFileSystem",
       "Effect": "Allow",
       "Action": [
-        "elasticfilesystem:CreateFileSystem",
-        "elasticfilesystem:CreateAccessPoint",
-        "elasticfilesystem:TagResource"
+        "elasticfilesystem:CreateFileSystem"
       ],
-      "Resource": "arn:aws:elasticfilesystem:us-west-2:452630323448:*/*",
+      "Resource": "*",
       "Condition": {
         "StringEquals": {
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "EfsCreateStagingAccessPoint",
+      "Effect": "Allow",
+      "Action": [
+        "elasticfilesystem:CreateAccessPoint"
+      ],
+      "Resource": "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "EfsTagStagingResourcesOnCreate",
+      "Effect": "Allow",
+      "Action": [
+        "elasticfilesystem:TagResource"
+      ],
+      "Resource": [
+        "arn:aws:elasticfilesystem:us-west-2:452630323448:file-system/*",
+        "arn:aws:elasticfilesystem:us-west-2:452630323448:access-point/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "elasticfilesystem:CreateAction": [
+            "CreateFileSystem",
+            "CreateAccessPoint"
+          ],
           "aws:RequestTag/Environment": "staging"
         }
       }

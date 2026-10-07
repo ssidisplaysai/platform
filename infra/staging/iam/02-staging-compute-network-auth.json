@@ -129,7 +129,7 @@
       "Action": [
         "elasticloadbalancing:AddTags"
       ],
-      "Resource": "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/*",
+      "Resource": "*",
       "Condition": {
         "StringEquals": {
           "elasticloadbalancing:CreateAction": "CreateRule",

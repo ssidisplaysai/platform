@@ -15,7 +15,7 @@ const PRODUCTION_ECR_REPOSITORY = "genesis-production-runtime";
 const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-task-role`;
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
-const SIMULATION_CASE_COUNT = 39;
+const SIMULATION_CASE_COUNT = 43;
 export const SIMULATION_CONTEXT_TYPES = Object.freeze([
   "string",
   "stringList",
@@ -36,6 +36,7 @@ export const DEFAULT_SIMULATION_CONTEXT = Object.freeze({
   "iam:PassedToService": Object.freeze({ value: "invalid.amazonaws.com", type: "string" }),
   "iam:PolicyARN": Object.freeze({ value: "arn:aws:iam::aws:policy/ReadOnlyAccess", type: "string" }),
   "iam:AWSServiceName": Object.freeze({ value: "invalid.amazonaws.com", type: "string" }),
+  "elasticfilesystem:CreateAction": Object.freeze({ value: "None", type: "string" }),
   "ec2:CreateAction": Object.freeze({ value: "None", type: "string" }),
   "elasticloadbalancing:CreateAction": Object.freeze({ value: "None", type: "string" }),
 });
