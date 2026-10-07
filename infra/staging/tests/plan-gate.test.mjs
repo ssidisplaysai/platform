@@ -56,13 +56,18 @@ function option(args, name) {
 function contextFromArgs(args) {
   const context = {};
   const contextTypes = {};
-  for (let index = 0; index < args.length; index += 1) {
-    if (args[index] !== "--context-entries") continue;
-    const entry = JSON.parse(args[index + 1]);
-    context[entry.ContextKeyName] = entry.ContextKeyType.endsWith("List")
-      ? entry.ContextKeyValues
-      : entry.ContextKeyValues[0];
-    contextTypes[entry.ContextKeyName] = entry.ContextKeyType;
+  const optionCount = args.filter((argument) => argument === "--context-entries").length;
+  assert.ok(optionCount <= 1, "context entries must use at most one list option");
+  const index = args.indexOf("--context-entries");
+  if (index >= 0) {
+    const entries = JSON.parse(args[index + 1]);
+    assert.ok(Array.isArray(entries), "--context-entries must contain one JSON list");
+    for (const entry of entries) {
+      context[entry.ContextKeyName] = entry.ContextKeyType.endsWith("List")
+        ? entry.ContextKeyValues
+        : entry.ContextKeyValues[0];
+      contextTypes[entry.ContextKeyName] = entry.ContextKeyType;
+    }
   }
   return { context, contextTypes };
 }
@@ -410,6 +415,67 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
     const { context } = contextFromArgs(args);
     assert.ok(Object.keys(DEFAULT_SIMULATION_CONTEXT).every((key) => Object.hasOwn(context, key)));
   }
+  const stagingCreateSecretCall = customSimulationCalls.find(({ args }) =>
+    option(args, "--action-names") === "secretsmanager:CreateSecret" &&
+    option(args, "--resource-arns").includes("genesis/staging/")
+  );
+  const productionCreateSecretCall = customSimulationCalls.find(({ args }) =>
+    option(args, "--action-names") === "secretsmanager:CreateSecret" &&
+    option(args, "--resource-arns").includes("genesis/production/")
+  );
+  assert.ok(stagingCreateSecretCall);
+  assert.ok(productionCreateSecretCall);
+  for (const call of [stagingCreateSecretCall, productionCreateSecretCall]) {
+    assert.equal(call.args.filter((argument) => argument === "--context-entries").length, 1);
+    assert.ok(Array.isArray(JSON.parse(option(call.args, "--context-entries"))));
+  }
+  const productionEntries = JSON.parse(option(productionCreateSecretCall.args, "--context-entries"));
+  const productionContext = Object.fromEntries(productionEntries.map((entry) => [
+    entry.ContextKeyName,
+    entry.ContextKeyType.endsWith("List") ? entry.ContextKeyValues : entry.ContextKeyValues[0],
+  ]));
+  const productionContextTypes = Object.fromEntries(productionEntries.map((entry) => [
+    entry.ContextKeyName,
+    entry.ContextKeyType,
+  ]));
+  assert.deepEqual(Object.keys(DEFAULT_SIMULATION_CONTEXT).sort(), [
+    "aws:RequestTag/Environment",
+    "aws:ResourceTag/Environment",
+    "ec2:CreateAction",
+    "elasticloadbalancing:CreateAction",
+    "iam:AWSServiceName",
+    "iam:PassedToService",
+    "iam:PolicyARN",
+  ].sort());
+  assert.equal(productionContext["aws:RequestTag/Environment"], "production");
+  assert.equal(productionContext["aws:ResourceTag/Environment"], "nonstaging");
+  assert.equal(productionContext["iam:PassedToService"], "invalid.amazonaws.com");
+  assert.equal(productionContext["iam:PolicyARN"], "arn:aws:iam::aws:policy/ReadOnlyAccess");
+  assert.equal(productionContext["iam:AWSServiceName"], "invalid.amazonaws.com");
+  assert.equal(productionContext["ec2:CreateAction"], "None");
+  assert.equal(productionContext["elasticloadbalancing:CreateAction"], "None");
+  assert.equal(productionContext["aws:TagKeys"][0], "Environment");
+  assert.equal(productionContextTypes["aws:TagKeys"], "stringList");
+  assert.equal(productionContextTypes["iam:PolicyARN"], "arn");
+
+  const stagingSecretPrincipalCall = principalSimulationCalls.find(({ args }) =>
+    option(args, "--action-names") === "secretsmanager:CreateSecret" &&
+    option(args, "--resource-arns").includes("genesis/staging/")
+  );
+  assert.ok(stagingSecretPrincipalCall);
+  assert.equal(stagingSecretPrincipalCall.args.filter((argument) => argument === "--context-entries").length, 1);
+  const stagingEntries = JSON.parse(option(stagingSecretPrincipalCall.args, "--context-entries"));
+  assert.deepEqual(
+    stagingEntries.map((entry) => entry.ContextKeyName).sort(),
+    [...Object.keys(DEFAULT_SIMULATION_CONTEXT), "aws:TagKeys"].sort(),
+  );
+  assert.equal(
+    stagingEntries.find((entry) => entry.ContextKeyName === "aws:RequestTag/Environment").ContextKeyValues[0],
+    "staging",
+  );
+  assert.equal(stagingEntries.find((entry) => entry.ContextKeyName === "iam:PolicyARN").ContextKeyType, "arn");
+  assert.match(result.output, /SIMULATION_CONTEXT action=secretsmanager:CreateSecret resource=.*genesis\/production\/other-AbCdEf keys=/);
+  assert.match(result.output, /SIMULATION_CONTEXT_VALUES .*aws:RequestTag\/Environment="production"/);
 });
 
 test("all conditioned policy statements matched by simulation cases have complete context keys", async () => {
@@ -511,16 +577,16 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
   );
 });
 
-test("IAM context entries encode scalar, ARN, and list values using AWS CLI JSON syntax", () => {
+test("IAM context entries use one AWS CLI JSON list with scalar, ARN, and list types", () => {
   const args = contextArguments({
     "aws:RequestTag/Environment": "staging",
     "iam:PolicyARN": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     "aws:TagKeys": ["Environment", "Owner"],
   }, { "iam:PolicyARN": "arn" });
-  const entries = [];
-  for (let index = 0; index < args.length; index += 1) {
-    if (args[index] === "--context-entries") entries.push(JSON.parse(args[index + 1]));
-  }
+  assert.equal(args.filter((argument) => argument === "--context-entries").length, 1);
+  assert.equal(args.length, 2);
+  const entries = JSON.parse(option(args, "--context-entries"));
+  assert.ok(Array.isArray(entries));
   assert.deepEqual(entries, [
     { ContextKeyName: "aws:RequestTag/Environment", ContextKeyValues: ["staging"], ContextKeyType: "string" },
     {
@@ -530,6 +596,31 @@ test("IAM context entries encode scalar, ARN, and list values using AWS CLI JSON
     },
     { ContextKeyName: "aws:TagKeys", ContextKeyValues: ["Environment", "Owner"], ContextKeyType: "stringList" },
   ]);
+  assert.deepEqual(contextFromArgs(args), {
+    context: {
+      "aws:RequestTag/Environment": "staging",
+      "iam:PolicyARN": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+      "aws:TagKeys": ["Environment", "Owner"],
+    },
+    contextTypes: {
+      "aws:RequestTag/Environment": "string",
+      "iam:PolicyARN": "arn",
+      "aws:TagKeys": "stringList",
+    },
+  });
+  assert.throws(() => contextFromArgs([...args, ...args]), /at most one list option/);
+  assert.throws(() => contextFromArgs(["--context-entries", "not-json"]), SyntaxError);
+});
+
+test("verify workflow checks out the requested staging ref and prints safe provenance", async () => {
+  const workflow = await readFile(join(repoRoot, ".github/workflows/genesis-staging-bootstrap.yml"), "utf8");
+  assert.match(workflow, /default:\s*infra\/genesis-staging-runtime-v1/);
+  assert.match(workflow, /uses:\s*actions\/checkout@v4[\s\S]*?with:\s*\n\s+ref:\s*\$\{\{\s*inputs\.ref\s*\}\}/);
+  assert.match(workflow, /STAGING_EXECUTION_GIT_SHA=\$staging_sha/);
+  assert.match(workflow, /STAGING_EXECUTION_GIT_BRANCH=\$staging_branch/);
+  assert.match(workflow, /STAGING_EXPECTED_REF=infra\/genesis-staging-runtime-v1/);
+  assert.match(workflow, /git log -1 --format='%H %s'/);
+  assert.doesNotMatch(workflow, /git remote -v/);
 });
 
 test("missing IAM simulation context reports action, resource, and keys then fails closed", async () => {

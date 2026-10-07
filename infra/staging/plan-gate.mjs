@@ -25,6 +25,16 @@ export const DEFAULT_SIMULATION_CONTEXT = Object.freeze({
   "ec2:CreateAction": Object.freeze({ value: "None", type: "string" }),
   "elasticloadbalancing:CreateAction": Object.freeze({ value: "None", type: "string" }),
 });
+const SAFE_SIMULATION_DIAGNOSTIC_KEYS = new Set([
+  "aws:RequestTag/Environment",
+  "aws:ResourceTag/Environment",
+  "aws:TagKeys",
+  "iam:PassedToService",
+  "iam:PolicyARN",
+  "iam:AWSServiceName",
+  "ec2:CreateAction",
+  "elasticloadbalancing:CreateAction",
+]);
 const PROPOSED_POLICY_FILES = [
   "01-read-only-production-inspection.json",
   "02-staging-compute-network-auth.json",
@@ -146,12 +156,11 @@ function redactPolicy(value) {
 }
 
 export function contextArguments(context = {}, contextTypes = {}) {
-  const args = [];
   assert(
     Object.keys(contextTypes).every((key) => Object.hasOwn(context, key)),
     "IAM simulation context types contain a key without a context value",
   );
-  for (const [key, value] of Object.entries(context)) {
+  const entries = Object.entries(context).map(([key, value]) => {
     const values = Array.isArray(value) ? value : [value];
     const type = contextTypes[key] ?? (Array.isArray(value) ? "stringList" : "string");
     assert(
@@ -160,13 +169,13 @@ export function contextArguments(context = {}, contextTypes = {}) {
     );
     assert(values.length > 0 && values.every((item) => ["string", "number", "boolean"].includes(typeof item)),
       `Invalid IAM simulation context values for ${key}`);
-    args.push("--context-entries", JSON.stringify({
+    return {
       ContextKeyName: key,
       ContextKeyValues: values.map(String),
       ContextKeyType: type,
-    }));
-  }
-  return args;
+    };
+  });
+  return entries.length ? ["--context-entries", JSON.stringify(entries)] : [];
 }
 
 export function policyConditionKeys(policyDocuments) {
@@ -670,6 +679,14 @@ export async function runPlanGate({
   try {
     for (const testCase of simulationCases) {
       const effectiveContext = effectiveSimulationContext(testCase, conditionKeys);
+      const contextKeys = Object.keys(effectiveContext.context).sort();
+      report(`SIMULATION_CONTEXT action=${testCase.action} resource=${testCase.resource} keys=${contextKeys.join(",")}`);
+      report(`SIMULATION_CONTEXT_TYPES ${Object.entries(effectiveContext.contextTypes)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, type]) => `${key}:${type}`).join(",")}`);
+      report(`SIMULATION_CONTEXT_VALUES ${contextKeys
+        .filter((key) => SAFE_SIMULATION_DIAGNOSTIC_KEYS.has(key))
+        .map((key) => `${key}=${JSON.stringify(effectiveContext.context[key])}`).join(",")}`);
       const args = [
         "--policy-input-list",
         ...policyDocuments.map((document) => JSON.stringify(document)),

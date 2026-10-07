@@ -38,6 +38,19 @@ jobs:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
 
+      - name: Report staging checkout provenance
+        run: |
+          set -euo pipefail
+          staging_sha="$(git rev-parse HEAD)"
+          staging_branch="$(git branch --show-current)"
+          if [[ -z "$staging_branch" ]]; then
+            staging_branch="detached"
+          fi
+          echo "STAGING_EXECUTION_GIT_SHA=$staging_sha"
+          echo "STAGING_EXECUTION_GIT_BRANCH=$staging_branch"
+          echo "STAGING_EXPECTED_REF=infra/genesis-staging-runtime-v1"
+          git log -1 --format='%H %s'
+
       - name: Configure GitHub OIDC credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
