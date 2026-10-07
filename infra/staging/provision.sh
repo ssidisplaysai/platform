@@ -341,14 +341,29 @@ mutate aws iam put-role-policy --role-name "$EXEC_ROLE_NAME" --policy-name stagi
 # ---- EFS (staging-only persistence bridge) ----------------------------------
 EFS_ID="$(lookup_efs_id)"
 ensure_sg() {
-  local name="$1" desc="$2" id
+  local name="$1" desc="$2" id create_status created=0
   id="$(lookup_sg_id "$name")"
   if [ -z "$id" ]; then
     if [ "$MODE" = "plan" ]; then log "WOULD CREATE security group $name in $VPC_ID"; return 0; fi
-    id="$(aws ec2 create-security-group --group-name "$name" --description "$desc" --vpc-id "$VPC_ID" \
-      --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$name},{Key=Environment,Value=staging}]" --query GroupId --output text)"
+    if id="$(aws ec2 create-security-group --group-name "$name" --description "$desc" --vpc-id "$VPC_ID" \
+      --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$name},{Key=Environment,Value=staging}]" --query GroupId --output text)"; then
+      created=1
+    else
+      create_status=$?
+      echo "STAGING_SECURITY_GROUP_CREATE=FAIL" >&2
+      return "$create_status"
+    fi
   else
     log "security group $name exists ($id)"
+  fi
+  if [[ ! "$id" =~ ^sg-[[:xdigit:]]{8,17}$ ]]; then
+    if [ "$created" -eq 1 ]; then
+      echo "STAGING_SECURITY_GROUP_CREATE=FAIL" >&2
+    else
+      echo "STAGING_SECURITY_GROUP_ID=FAIL" >&2
+    fi
+    echo "Invalid security-group ID returned for $name: ${id:-<empty>}" >&2
+    return 1
   fi
   echo "$id"
 }

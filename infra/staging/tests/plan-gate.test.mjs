@@ -388,7 +388,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=52 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
@@ -414,7 +414,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
   const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
-  assert.equal(customSimulationCalls.length, 42);
+  assert.equal(customSimulationCalls.length, 51);
   assert.equal(principalSimulationCalls.length, cases.filter((item) =>
     item.expect === "allow" && item.verificationMode !== "aws-dependent-action-static"
   ).length);
@@ -499,7 +499,7 @@ test("all conditioned policy statements matched by simulation cases have complet
     "03-staging-data-iam.json",
     "04-production-guardrails-deny.json",
   ];
-  assert.equal(cases.length, 43);
+  assert.equal(cases.length, 52);
   const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
@@ -720,7 +720,7 @@ test("staging and production CreateSecret cases use complete, distinct request-t
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=52 mismatches=0/);
 });
 
 test("missing production CreateSecret context remains visible and fails closed", async () => {
@@ -843,7 +843,7 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
     (context) => context["elasticfilesystem:CreateAction"] === "None",
   ));
   assert.ok(efs.Statement.filter((candidate) =>
-    candidate.Action?.some((action) => action.startsWith("elasticfilesystem:")) &&
+    asArray(candidate.Action).some((action) => action.startsWith("elasticfilesystem:")) &&
     !["EfsCreateStagingFileSystem", "EfsDescribe"].includes(candidate.Sid)
   ).every((candidate) => candidate.Resource !== "*"));
 
@@ -874,7 +874,7 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=43 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=52 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   const createRuleCall = result.calls.find(({ service, operation, args }) =>
     service === "iam" &&
@@ -882,6 +882,112 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
     option(args, "--action-names") === "elasticloadbalancing:CreateRule"
   );
   assert.ok(createRuleCall, "Staging CreateRule must still be simulated directly");
+});
+
+test("EC2 CreateSecurityGroup requires approved VPC and staging-tagged group authorization", async () => {
+  const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
+  const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam/03-staging-data-iam.json"), "utf8"));
+  const createStatements = policy.Statement.filter((item) =>
+    asArray(item.Action).includes("ec2:CreateSecurityGroup")
+  );
+  const vpcArn = "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-05035503df7e142d6";
+  const unapprovedVpcArn = "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-0123456789abcdef0";
+  const groupArn = "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0";
+  const vpcStatement = createStatements.find((item) => item.Resource === vpcArn);
+  const groupStatement = createStatements.find((item) =>
+    item.Resource === "arn:aws:ec2:us-west-2:452630323448:security-group/*"
+  );
+  assert.equal(createStatements.length, 2);
+  assert.ok(vpcStatement);
+  assert.equal(vpcStatement.Sid, "Ec2CreateSecurityGroupsInApprovedVpc");
+  assert.equal(vpcStatement.Condition, undefined);
+  assert.ok(groupStatement);
+  assert.deepEqual(groupStatement.Condition, {
+    StringEquals: { "aws:RequestTag/Environment": "staging" },
+  });
+  assert.ok(createStatements.every((item) => item.Resource !== "*"));
+
+  const createCase = (resource, component, expect, environment) => cases.find((item) =>
+    item.action === "ec2:CreateSecurityGroup" &&
+    item.resource === resource &&
+    item.authorizationComponent === component &&
+    item.expect === expect &&
+    item.context["aws:RequestTag/Environment"] === environment
+  );
+  const approvedVpc = createCase(vpcArn, "vpc", "allow", "staging");
+  const wrongVpc = createCase(unapprovedVpcArn, "vpc", "deny", "staging");
+  const stagingGroup = createCase(groupArn, "security-group", "allow", "staging");
+  const productionTaggedGroup = createCase(groupArn, "security-group", "deny", "production");
+  assert.ok(approvedVpc, "approved VPC authorization must be simulated");
+  assert.ok(wrongVpc, "unapproved VPC authorization must be denied");
+  assert.ok(stagingGroup, "staging tag on the created SG must be allowed");
+  assert.ok(productionTaggedGroup, "production tag on the created SG must be denied");
+
+  // CreateSecurityGroup authorization for a non-default VPC requires both resource checks.
+  assert.equal(approvedVpc.expect === "allow" && stagingGroup.expect === "allow", true);
+  assert.equal(approvedVpc.expect === "allow" && productionTaggedGroup.expect === "allow", false);
+  assert.equal(wrongVpc.expect === "allow" && stagingGroup.expect === "allow", false);
+
+  const createTags = policy.Statement.find((item) => asArray(item.Action).includes("ec2:CreateTags"));
+  assert.ok(createTags);
+  assert.equal(createTags.Resource, "arn:aws:ec2:us-west-2:452630323448:security-group/*");
+  assert.deepEqual(createTags.Condition, {
+    StringEquals: {
+      "ec2:CreateAction": "CreateSecurityGroup",
+      "aws:RequestTag/Environment": "staging",
+    },
+  });
+  assert.ok(cases.some((item) =>
+    item.action === "ec2:CreateTags" &&
+    item.resource === groupArn &&
+    item.expect === "allow" &&
+    item.context["ec2:CreateAction"] === "CreateSecurityGroup" &&
+    item.context["aws:RequestTag/Environment"] === "staging"
+  ));
+  assert.ok(cases.some((item) =>
+    item.action === "ec2:CreateTags" &&
+    item.resource === groupArn &&
+    item.expect === "deny" &&
+    item.context["ec2:CreateAction"] === "None" &&
+    item.context["aws:RequestTag/Environment"] === "staging"
+  ));
+  assert.ok(cases.some((item) =>
+    item.action === "ec2:CreateTags" &&
+    item.resource === groupArn &&
+    item.expect === "deny" &&
+    item.context["ec2:CreateAction"] === "CreateSecurityGroup" &&
+    item.context["aws:RequestTag/Environment"] === "production"
+  ));
+  assert.ok(!policy.Statement.some((item) =>
+    asArray(item.Action).some((action) =>
+      action.toLowerCase() === "ec2:createsecuritygroup" && item.Resource === "*"
+    )
+  ));
+
+  const guardrails = parseJson(await readFile(
+    join(repoRoot, "infra/staging/iam/04-production-guardrails-deny.json"),
+    "utf8",
+  ));
+  const productionGroupArn = "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be";
+  const productionDeny = guardrails.Statement.find((item) => item.Sid === "DenyProductionSecurityGroupMutation");
+  assert.ok(productionDeny);
+  assert.deepEqual(productionDeny.Action, [
+    "ec2:AuthorizeSecurityGroupIngress",
+    "ec2:AuthorizeSecurityGroupEgress",
+    "ec2:RevokeSecurityGroupIngress",
+    "ec2:RevokeSecurityGroupEgress",
+    "ec2:ModifySecurityGroupRules",
+    "ec2:DeleteSecurityGroup",
+  ]);
+  assert.ok(asArray(productionDeny.Resource).some((resource) => matchesPattern(resource, productionGroupArn)));
+  for (const action of productionDeny.Action) {
+    assert.ok(cases.some((item) =>
+      item.action === action &&
+      item.resource === productionGroupArn &&
+      item.expect === "deny" &&
+      item.requireExplicitDeny === true
+    ), `Missing explicit production SG deny simulation for ${action}`);
+  }
 });
 
 test("ELB dependent tag authorization requires exact policy shape and negative cases", async () => {

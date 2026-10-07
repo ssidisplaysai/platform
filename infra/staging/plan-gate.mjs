@@ -15,7 +15,7 @@ const PRODUCTION_ECR_REPOSITORY = "genesis-production-runtime";
 const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-task-role`;
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
-const SIMULATION_CASE_COUNT = 43;
+const SIMULATION_CASE_COUNT = 52;
 export const SIMULATION_CONTEXT_TYPES = Object.freeze([
   "string",
   "stringList",

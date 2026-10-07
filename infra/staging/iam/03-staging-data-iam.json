@@ -15,15 +15,16 @@
       "Resource": "*"
     },
     {
+      "Sid": "Ec2CreateSecurityGroupsInApprovedVpc",
+      "Effect": "Allow",
+      "Action": "ec2:CreateSecurityGroup",
+      "Resource": "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-05035503df7e142d6"
+    },
+    {
       "Sid": "Ec2CreateStagingSecurityGroups",
       "Effect": "Allow",
-      "Action": [
-        "ec2:CreateSecurityGroup"
-      ],
-      "Resource": [
-        "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-05035503df7e142d6",
-        "arn:aws:ec2:us-west-2:452630323448:security-group/*"
-      ],
+      "Action": "ec2:CreateSecurityGroup",
+      "Resource": "arn:aws:ec2:us-west-2:452630323448:security-group/*",
       "Condition": {
         "StringEquals": {
           "aws:RequestTag/Environment": "staging"

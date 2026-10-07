@@ -87,7 +87,26 @@
     {
         "expect":  "allow",
         "action":  "ec2:CreateSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-05035503df7e142d6",
+        "authorizationComponent":  "vpc",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:CreateSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-0123456789abcdef0",
+        "authorizationComponent":  "vpc",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging"
+                    }
+    },
+    {
+        "expect":  "allow",
+        "action":  "ec2:CreateSecurityGroup",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "authorizationComponent":  "security-group",
         "context":  {
                         "aws:RequestTag/Environment":  "staging"
                     }
@@ -96,6 +115,7 @@
         "expect":  "deny",
         "action":  "ec2:CreateSecurityGroup",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "authorizationComponent":  "security-group",
         "context":  {
                         "aws:RequestTag/Environment":  "production"
                     }
@@ -256,6 +276,51 @@
                     }
     },
     {
+        "expect":  "deny",
+        "action":  "ec2:AuthorizeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:RevokeSecurityGroupIngress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:RevokeSecurityGroupEgress",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:ModifySecurityGroupRules",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:DeleteSecurityGroup",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
+        "context":  {
+                        "aws:ResourceTag/Environment":  "production"
+                    }
+    },
+    {
         "expect":  "allow",
         "action":  "ec2:AuthorizeSecurityGroupIngress",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
@@ -277,6 +342,24 @@
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
         "context":  {
                         "aws:RequestTag/Environment":  "staging",
+                        "ec2:CreateAction":  "CreateSecurityGroup"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:CreateTags",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "staging",
+                        "ec2:CreateAction":  "None"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "ec2:CreateTags",
+        "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-0123456789abcdef0",
+        "context":  {
+                        "aws:RequestTag/Environment":  "production",
                         "ec2:CreateAction":  "CreateSecurityGroup"
                     }
     },
