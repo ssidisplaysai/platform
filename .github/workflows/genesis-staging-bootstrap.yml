@@ -1,0 +1,245 @@
+name: Genesis Staging IAM Bootstrap and Plan
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Staging branch to check out
+        required: false
+        type: string
+        default: infra/genesis-staging-runtime-v1
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: genesis-staging-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap-and-plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Restrict checkout to the approved staging ref
+        env:
+          STAGING_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          if [[ "$STAGING_REF" != "infra/genesis-staging-runtime-v1" ]]; then
+            echo "Refusing unapproved staging ref: $STAGING_REF" >&2
+            exit 1
+          fi
+
+      - name: Check out the requested staging ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Configure GitHub OIDC credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::452630323448:role/GenesisGitHubDeployRole
+          aws-region: us-west-2
+
+      - name: Verify account and role state
+        run: |
+          set -euo pipefail
+          expected_account="452630323448"
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          echo "AWS_ACCOUNT=$account_id"
+          if [[ "$account_id" != "$expected_account" ]]; then
+            echo "Expected AWS account $expected_account; refusing to continue." >&2
+            exit 1
+          fi
+
+          role_name="GenesisGitHubDeployRole"
+          aws iam get-role --role-name "$role_name" >/dev/null
+
+          aws iam list-role-policies --role-name "$role_name" --output json > inline-policies.json
+          inline_count="$(jq '.PolicyNames | length' inline-policies.json)"
+          if [[ "$inline_count" != "0" ]]; then
+            echo "Expected zero inline policies on $role_name; found $inline_count." >&2
+            jq -r '.PolicyNames[]' inline-policies.json >&2
+            exit 1
+          fi
+
+          aws iam list-attached-role-policies --role-name "$role_name" --output json > attached-before.json
+          jq -e '
+            [.AttachedPolicies[].PolicyArn] as $attached
+            | [
+                "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
+                "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
+                "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
+                "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+                "arn:aws:iam::aws:policy/CloudWatchFullAccessV2"
+              ] as $required
+            | ($required - $attached) as $missing
+            | [
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny"
+              ] as $staging
+            | ($attached - ($required + $staging)) as $unexpected
+            | if ($missing | length) == 0 and ($unexpected | length) == 0
+              then true
+              else error("Unexpected attached-policy state; missing broad policies: \($missing|join(", ")); unexpected policies: \($unexpected|join(", "))")
+              end
+          ' attached-before.json >/dev/null
+
+          echo "IAM_INLINE_POLICY_COUNT=$inline_count"
+          echo "All five required broad managed policies remain attached."
+
+      - name: Validate policy documents and create or safely reuse them
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          for path in sorted(Path("infra/staging/iam").glob("0[1-4]-*.json")):
+              document = json.loads(path.read_text(encoding="utf-8-sig"))
+              if document.get("Version") != "2012-10-17" or not isinstance(document.get("Statement"), list):
+                  raise SystemExit(f"Invalid IAM policy document: {path}")
+              print(f"VALID_IAM_POLICY={path}")
+          PY
+
+          while IFS='|' read -r policy_name policy_file; do
+            policy_arn="arn:aws:iam::452630323448:policy/$policy_name"
+            error_file="$(mktemp)"
+
+            if aws iam get-policy --policy-arn "$policy_arn" --output json > existing-policy.json 2>"$error_file"; then
+              default_version="$(jq -r '.Policy.DefaultVersionId' existing-policy.json)"
+              if [[ -z "$default_version" || "$default_version" == "null" ]]; then
+                cat "$error_file" >&2
+                echo "Existing policy has no default version: $policy_arn" >&2
+                exit 1
+              fi
+              aws iam get-policy-version \
+                --policy-arn "$policy_arn" \
+                --version-id "$default_version" \
+                --query PolicyVersion.Document \
+                --output json > existing-document.json
+
+              python3 - "$policy_file" existing-document.json <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          from urllib.parse import unquote
+
+          def load_document(path):
+              value = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+              if isinstance(value, str):
+                  value = json.loads(unquote(value))
+              return value
+
+          def canonical(value):
+              if isinstance(value, dict):
+                  return {key: canonical(value[key]) for key in sorted(value)}
+              if isinstance(value, list):
+                  items = [canonical(item) for item in value]
+                  return sorted(items, key=lambda item: json.dumps(item, sort_keys=True, separators=(",", ":")))
+              return value
+
+          expected = load_document(sys.argv[1])
+          existing = load_document(sys.argv[2])
+          if canonical(expected) != canonical(existing):
+              raise SystemExit("Existing managed policy differs from the repository policy; refusing to overwrite.")
+          PY
+              echo "POLICY_REUSED=$policy_name ARN=$policy_arn VERSION=$default_version"
+            else
+              if ! grep -q 'NoSuchEntity' "$error_file"; then
+                cat "$error_file" >&2
+                echo "Unable to inspect $policy_arn; refusing to create or overwrite it." >&2
+                exit 1
+              fi
+              aws iam create-policy \
+                --policy-name "$policy_name" \
+                --policy-document "file://$policy_file" \
+                --query Policy.Arn \
+                --output text > created-policy-arn.txt
+              created_arn="$(cat created-policy-arn.txt)"
+              if [[ "$created_arn" != "$policy_arn" ]]; then
+                echo "Unexpected created policy ARN: $created_arn" >&2
+                exit 1
+              fi
+              echo "POLICY_CREATED=$policy_name ARN=$policy_arn"
+            fi
+            rm -f "$error_file"
+          done <<'POLICIES'
+          GenesisStagingDeploy-01-read-only-production-inspection|infra/staging/iam/01-read-only-production-inspection.json
+          GenesisStagingDeploy-02-staging-compute-network-auth|infra/staging/iam/02-staging-compute-network-auth.json
+          GenesisStagingDeploy-03-staging-data-iam|infra/staging/iam/03-staging-data-iam.json
+          GenesisStagingDeploy-04-production-guardrails-deny|infra/staging/iam/04-production-guardrails-deny.json
+          POLICIES
+
+      - name: Attach only the four approved staging policies
+        run: |
+          set -euo pipefail
+          role_name="GenesisGitHubDeployRole"
+          while IFS= read -r policy_arn; do
+            aws iam list-attached-role-policies --role-name "$role_name" --output json > attached-current.json
+            if jq -e --arg arn "$policy_arn" '.AttachedPolicies | any(.PolicyArn == $arn)' attached-current.json >/dev/null; then
+              echo "POLICY_ALREADY_ATTACHED=$policy_arn"
+              continue
+            fi
+            aws iam attach-role-policy --role-name "$role_name" --policy-arn "$policy_arn"
+            echo "POLICY_ATTACHED=$policy_arn"
+          done <<'POLICIES'
+          arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection
+          arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth
+          arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam
+          arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny
+          POLICIES
+
+      - name: Verify exactly the five broad and four staging policies remain attached
+        run: |
+          set -euo pipefail
+          aws iam list-attached-role-policies \
+            --role-name GenesisGitHubDeployRole \
+            --output json > attached-after.json
+
+          jq -e '
+            [.AttachedPolicies[].PolicyArn] as $attached
+            | [
+                "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
+                "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
+                "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
+                "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+                "arn:aws:iam::aws:policy/CloudWatchFullAccessV2",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+                "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny"
+              ] as $expected
+            | (($attached | sort) == ($expected | sort))
+              and (($attached | length) == 9)
+          ' attached-after.json >/dev/null || {
+            echo "Attached managed policies differ from the exact expected set of nine." >&2
+            jq -r '.AttachedPolicies[].PolicyArn' attached-after.json >&2
+            exit 1
+          }
+
+          aws iam list-role-policies \
+            --role-name GenesisGitHubDeployRole \
+            --output json > inline-policies-after.json
+          jq -e '.PolicyNames | length == 0' inline-policies-after.json >/dev/null || {
+            echo "Inline policies appeared on GenesisGitHubDeployRole; stopping." >&2
+            jq -r '.PolicyNames[]' inline-policies-after.json >&2
+            exit 1
+          }
+
+          echo "ATTACHED_MANAGED_POLICY_COUNT=9"
+          echo "All five broad managed policies remain attached."
+          echo "IAM_INLINE_POLICY_COUNT=0"
+
+      - name: Run the read-only staging plan
+        run: |
+          set -euo pipefail
+          bash infra/staging/provision.sh plan 2>&1 | tee staging-plan.log
+          grep -Eq '^CUSTOM_POLICY_SIMULATION=PASS([[:space:]]|$)' staging-plan.log
+          grep -Fqx 'GENESIS_STAGING_PLAN_GATE=PASS' staging-plan.log
