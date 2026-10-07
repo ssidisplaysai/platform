@@ -9,7 +9,7 @@ on:
         type: choice
         options:
           - plan
-          - bootstrap-and-plan
+          - verify-and-plan
           - apply
           - deploy
         default: plan
@@ -19,7 +19,7 @@ on:
         type: string
         default: infra/genesis-staging-runtime-v1
       confirm:
-        description: Required exact phrase for bootstrap, apply, or deploy
+        description: Required exact phrase for IAM verification, apply, or deploy
         required: false
         type: string
         default: ""
@@ -48,9 +48,9 @@ jobs:
           case "$REQUESTED_ACTION" in
             plan)
               ;;
-            bootstrap-and-plan)
-              [[ "$CONFIRMATION" == "BOOTSTRAP-IAM" ]] || {
-                echo "bootstrap-and-plan requires confirm=BOOTSTRAP-IAM" >&2
+            verify-and-plan)
+              [[ "$CONFIRMATION" == "VERIFY-IAM" ]] || {
+                echo "verify-and-plan requires confirm=VERIFY-IAM" >&2
                 exit 1
               }
               ;;
@@ -83,9 +83,9 @@ jobs:
       mode: plan
       confirm: ""
 
-  bootstrap-and-plan:
+  verify-and-plan:
     needs: validate
-    if: ${{ inputs.action == 'bootstrap-and-plan' }}
+    if: ${{ inputs.action == 'verify-and-plan' }}
     permissions:
       contents: read
       id-token: write
