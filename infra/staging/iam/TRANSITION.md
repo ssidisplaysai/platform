@@ -1,47 +1,32 @@
-﻿# Deploy-role least-privilege transition (PROPOSED - DO NOT EXECUTE until approved)
+# Genesis staging IAM transition
 
-Current managed policies on `GenesisGitHubDeployRole` (read by the plan on 2026-10-07):
+## Administrator-owned IAM changes
 
-| Managed policy ARN | Needed for staging? |
-|---|---|
-| `arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess` | No - replaced by staging-scoped ECR in `02` |
-| `arn:aws:iam::aws:policy/AmazonECS_FullAccess` | No - replaced by staging-scoped ECS in `02` |
-| `arn:aws:iam::aws:policy/CloudWatchFullAccessV2` | No - replaced by staging log-group scope in `02` |
-| `arn:aws:iam::aws:policy/AmazonS3FullAccess` | No - staging workflow uses no S3 |
-| `arn:aws:iam::aws:policy/AmazonRDSFullAccess` | No - staging uses EFS, not RDS |
+`GenesisGitHubDeployRole` must not administer its own authorization. The role's current broad managed policies do not grant the complete permissions required to create customer-managed policies and attach them to the role. In addition, `04-production-guardrails-deny` explicitly denies role-policy mutation against `GenesisGitHubDeployRole`. GitHub Actions therefore verifies IAM state but never creates, updates, attaches, or detaches policies.
 
-All five should be removed once the replacements are verified. Inline policies could not be listed (`iam:ListRolePolicies` was denied); list them first and review them too.
+An AWS administrator must run `infra/staging/admin-bootstrap-iam.sh` manually from an authorized environment containing this repository. The helper is not invoked by GitHub Actions. It:
 
-## Preconditions
-1. Confirm nothing else relies on these broad permissions (other repositories' workflows, other pipelines). Check CloudTrail `AssumeRoleWithWebIdentity` events for `GenesisGitHubDeployRole` over the last 90 days. If anything else uses the role, give staging its own role instead of detaching.
-2. Record the current state for rollback: `aws iam list-attached-role-policies --role-name GenesisGitHubDeployRole` and `aws iam list-role-policies --role-name GenesisGitHubDeployRole`.
-3. The read-only plan now fails closed unless it reads the complete production/staging approval inputs, retrieves every deploy-role inline policy document, and passes both custom-policy and principal-policy simulations. It also checks role usage in `us-east-1` and `us-west-2`; only `ROLE_USAGE_CLEARANCE=PLATFORM_ONLY` clears the role for narrowing. `UNKNOWN` and `SHARED_ROLE` stop the gate. Plan mode invokes `infra/staging/plan-gate.mjs` before any provisioning code; that helper permits only its explicit describe/list/get/lookup/simulation AWS API allowlist.
+1. Verifies AWS account `452630323448`, reads `GenesisGitHubDeployRole`, requires zero inline policies, and confirms all five expected broad policies are attached.
+2. Creates or reuses only the four `GenesisStagingDeploy-*` policies. Existing default policy versions must semantically match the corresponding repository documents; mismatches or unreadable state fail without overwrite.
+3. Attaches policies `01`, `02`, and `03`, then attaches `04-production-guardrails-deny` last.
+4. After policy `04` is attached, performs only read-only verification and requires exactly the five broad plus four staging policies and zero inline policies.
 
-## Steps (run by an administrator, not by the deploy role)
-1. Create the four customer-managed policies (additive, no risk):
-   ```
-   for n in 01-read-only-production-inspection 02-staging-compute-network-auth 03-staging-data-iam 04-production-guardrails-deny; do
-     aws iam create-policy --policy-name "GenesisStagingDeploy-$n" --policy-document "file://infra/staging/iam/$n.json"
-   done
-   ```
-2. Attach them (the broad policies remain attached, so nothing can break yet):
-   ```
-   for n in ...; do aws iam attach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::452630323448:policy/GenesisStagingDeploy-$n; done
-   ```
-3. Verify. The broad policies would make `simulate-principal-policy` pass trivially, so verify the new policies **in isolation**: run the read-only plan, whose custom-policy simulation uses only the four proposed policies. Every case must match its expectation (allow cases allowed, production/deny cases denied, and cases marked `requireExplicitDeny` must be explicitly denied). The plan also runs `SimulatePrincipalPolicy` for each required staging allow case; all must be allowed. Both simulations must complete with zero mismatches.
-4. Only after step 3 has zero mismatches, role usage is `PLATFORM_ONLY`, and all inline policies and CloudTrail events have been reviewed, detach the broad policies, one at a time, re-running the plan after each:
-   ```
-   aws iam detach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
-   aws iam detach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::aws:policy/AmazonRDSFullAccess
-   aws iam detach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAccessV2
-   aws iam detach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess
-   aws iam detach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::aws:policy/AmazonECS_FullAccess
-   ```
-5. Re-run the plan with only the customer-managed policies attached. Apply is allowed only when the plan succeeds with no AccessDenied.
+The helper never detaches policies, changes an existing policy or version, applies infrastructure, deploys, or modifies Cognito, DNS, load balancers/listeners, or production resources.
 
-## Rollback
-Re-attach any detached AWS managed policy with `aws iam attach-role-policy` using the same ARN. Detach the customer-managed policies only if they are the cause of a failure.
+## GitHub verification and read-only plan
 
-## Notes
-- The deploy role cannot edit its own policies (`04` denies this); the transition must be performed by an administrator.
-- Policy `04` is a defense in depth that is only needed while broad policies are attached; after the transition it still blocks production mutation if a broad policy is ever re-attached.
+The reusable `.github/workflows/genesis-staging-bootstrap.yml` is named **Genesis Staging IAM Verify and Plan**. Despite its historical filename, it is strictly verification plus read-only planning. Through GitHub OIDC using `GenesisGitHubDeployRole`, it:
+
+- verifies the account and role;
+- requires zero inline policies;
+- requires exactly the five broad policies and four staging policies;
+- retrieves each staging policy's default version and compares its normalized JSON semantically with the repository file; and
+- runs `bash infra/staging/provision.sh plan`, requiring `CUSTOM_POLICY_SIMULATION=PASS` and `GENESIS_STAGING_PLAN_GATE=PASS`.
+
+Missing policy state reports `ADMIN_BOOTSTRAP_REQUIRED`; document differences or unreadable state fail. The workflow contains no IAM mutation calls.
+
+## Broad-policy transition
+
+The five broad policies remain attached through bootstrap and verification. Any eventual broad-policy removal is a separate, administrator-only action after review of a successful plan, simulation evidence, role-use evidence, and current inline-policy state. Policy `04` blocks self-modification, so GitHub Actions must never be used to remove those policies.
+
+This division of responsibility is safer than GitHub self-modifying its role: workflow code cannot escalate its permissions, lock itself out mid-run, or rewrite the authorization constraints governing later steps. No change to the existing GitHub OIDC trust policy is part of this design.
