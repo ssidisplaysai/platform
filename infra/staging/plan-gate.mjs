@@ -16,6 +16,15 @@ const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-t
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
 const SIMULATION_CASE_COUNT = 39;
+export const DEFAULT_SIMULATION_CONTEXT = Object.freeze({
+  "aws:RequestTag/Environment": Object.freeze({ value: "nonstaging", type: "string" }),
+  "aws:ResourceTag/Environment": Object.freeze({ value: "nonstaging", type: "string" }),
+  "iam:PassedToService": Object.freeze({ value: "invalid.amazonaws.com", type: "string" }),
+  "iam:PolicyARN": Object.freeze({ value: "arn:aws:iam::aws:policy/ReadOnlyAccess", type: "arn" }),
+  "iam:AWSServiceName": Object.freeze({ value: "invalid.amazonaws.com", type: "string" }),
+  "ec2:CreateAction": Object.freeze({ value: "None", type: "string" }),
+  "elasticloadbalancing:CreateAction": Object.freeze({ value: "None", type: "string" }),
+});
 const PROPOSED_POLICY_FILES = [
   "01-read-only-production-inspection.json",
   "02-staging-compute-network-auth.json",
@@ -158,6 +167,46 @@ export function contextArguments(context = {}, contextTypes = {}) {
     }));
   }
   return args;
+}
+
+export function policyConditionKeys(policyDocuments) {
+  return [...new Set(policyDocuments.flatMap((document) =>
+    (document.Statement ?? []).flatMap((statement) =>
+      Object.values(statement.Condition ?? {}).flatMap((operator) => Object.keys(operator ?? {}))
+    )
+  ))].sort();
+}
+
+export function effectiveSimulationContext(testCase, conditionKeys) {
+  const unreviewedKeys = conditionKeys.filter((key) => !Object.hasOwn(DEFAULT_SIMULATION_CONTEXT, key));
+  assert(
+    unreviewedKeys.length === 0,
+    `IAM policy condition keys have no reviewed simulation defaults: ${unreviewedKeys.join(",")}`,
+  );
+  const context = Object.fromEntries(
+    Object.entries(DEFAULT_SIMULATION_CONTEXT).map(([key, { value }]) => [key, value]),
+  );
+  const contextTypes = Object.fromEntries(
+    Object.entries(DEFAULT_SIMULATION_CONTEXT).map(([key, { type }]) => [key, type]),
+  );
+  Object.assign(context, testCase.context ?? {});
+  for (const [key, value] of Object.entries(testCase.context ?? {})) {
+    if (testCase.contextTypes && Object.hasOwn(testCase.contextTypes, key)) {
+      contextTypes[key] = testCase.contextTypes[key];
+    } else if (!Object.hasOwn(contextTypes, key)) {
+      contextTypes[key] = Array.isArray(value) ? "stringList" : "string";
+    }
+  }
+  if (testCase.contextTypes) {
+    for (const key of Object.keys(testCase.contextTypes)) {
+      assert(Object.hasOwn(context, key), `Simulation context type has no value for ${key}`);
+    }
+  }
+  for (const key of conditionKeys) {
+    assert(Object.hasOwn(context, key), `Effective simulation context is missing policy condition key ${key}`);
+    assert(Object.hasOwn(contextTypes, key), `Effective simulation context has no type for policy condition key ${key}`);
+  }
+  return { context, contextTypes };
 }
 
 function contextSignature(context = {}) {
@@ -586,6 +635,8 @@ export async function runPlanGate({
     assert(document.Version && Array.isArray(document.Statement), `${fileName} is not a valid IAM policy document`);
     policyDocuments.push(document);
   }
+  const conditionKeys = policyConditionKeys(policyDocuments);
+  effectiveSimulationContext({}, conditionKeys);
   assert(
     !policyAllowsProductionPassRole(policyDocuments, productionTaskRoleArn),
     `Production task role ${productionTaskRoleName} appears in an allowed staging iam:PassRole resource`,
@@ -618,12 +669,13 @@ export async function runPlanGate({
   let customMismatchCount = 0;
   try {
     for (const testCase of simulationCases) {
+      const effectiveContext = effectiveSimulationContext(testCase, conditionKeys);
       const args = [
         "--policy-input-list",
         ...policyDocuments.map((document) => JSON.stringify(document)),
         "--action-names", testCase.action,
         "--resource-arns", testCase.resource,
-        ...contextArguments(testCase.context, testCase.contextTypes),
+        ...contextArguments(effectiveContext.context, effectiveContext.contextTypes),
       ];
       const response = await call("iam", "simulate-custom-policy", args);
       const result = simulationResult(response, testCase, "SimulateCustomPolicy", report);
@@ -647,11 +699,12 @@ export async function runPlanGate({
   let principalMismatchCount = 0;
   try {
     for (const testCase of simulationCases.filter((candidate) => candidate.expect === "allow")) {
+      const effectiveContext = effectiveSimulationContext(testCase, conditionKeys);
       const response = await call("iam", "simulate-principal-policy", [
         "--policy-source-arn", DEPLOY_ROLE_ARN,
         "--action-names", testCase.action,
         "--resource-arns", testCase.resource,
-        ...contextArguments(testCase.context, testCase.contextTypes),
+        ...contextArguments(effectiveContext.context, effectiveContext.contextTypes),
       ]);
       const result = simulationResult(response, testCase, "SimulatePrincipalPolicy", report);
       report(`PRINCIPAL_POLICY_RESULT action=${testCase.action} resource=${testCase.resource} decision=${result.EvalDecision}`);

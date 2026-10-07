@@ -3,7 +3,13 @@ import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
-import { contextArguments, runPlanGate } from "../plan-gate.mjs";
+import {
+  contextArguments,
+  DEFAULT_SIMULATION_CONTEXT,
+  effectiveSimulationContext,
+  policyConditionKeys,
+  runPlanGate,
+} from "../plan-gate.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "../../..");
 const fixedNow = new Date("2026-10-07T14:00:00.000Z");
@@ -283,17 +289,14 @@ function createMockAws(options = {}) {
       const policyArray = args.slice(policiesIndex + 1, args.indexOf("--action-names")).map((policy) => JSON.parse(policy));
       const cases = parseJson(await readFile(resolve(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
       const { context, contextTypes } = contextFromArgs(args);
-      const matched = cases.find((candidate) =>
-        candidate.action === action &&
-        candidate.resource === resource &&
-        JSON.stringify(Object.entries(candidate.context ?? {}).sort()) === JSON.stringify(Object.entries(context).sort()) &&
-        JSON.stringify(Object.entries(contextTypes).sort()) === JSON.stringify(Object.entries(
-          Object.fromEntries(Object.entries(candidate.context ?? {}).map(([key, value]) => [
-            key,
-            candidate.contextTypes?.[key] ?? (Array.isArray(value) ? "stringList" : "string"),
-          ])),
-        ).sort())
-      );
+      const conditionKeys = policyConditionKeys(policyArray);
+      const matched = cases.find((candidate) => {
+        const effective = effectiveSimulationContext(candidate, conditionKeys);
+        return candidate.action === action &&
+          candidate.resource === resource &&
+          JSON.stringify(Object.entries(effective.context).sort()) === JSON.stringify(Object.entries(context).sort()) &&
+          JSON.stringify(Object.entries(effective.contextTypes).sort()) === JSON.stringify(Object.entries(contextTypes).sort());
+      });
       assert.ok(matched, `mock has no custom simulation case for ${action} ${resource}`);
       let decision = matched.expect === "allow"
         ? "allowed"
@@ -323,10 +326,13 @@ function createMockAws(options = {}) {
       const action = option(args, "--action-names");
       const resource = option(args, "--resource-arns");
       assert.equal(option(args, "--policy-source-arn"), deployRoleArn);
+      const { context } = contextFromArgs(args);
+      assert.ok(Object.keys(DEFAULT_SIMULATION_CONTEXT).every((key) => Object.hasOwn(context, key)));
       return { EvaluationResults: [{
         EvalActionName: action,
         EvalResourceName: resource,
         EvalDecision: options.principalDeniedAction === action ? "implicitDeny" : "allowed",
+        MissingContextValues: options.missingPrincipalSimulationContext,
       }] };
     }
     if (service === "cloudtrail" && operation === "lookup-events") {
@@ -392,6 +398,18 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
       "iam:simulate-principal-policy", "ecr:describe-images", "cloudtrail:lookup-events",
     ]).has(`${service}:${operation}`.toLowerCase())
   ));
+  const simulationCalls = result.calls.filter(({ service, operation }) =>
+    service === "iam" && ["simulate-custom-policy", "simulate-principal-policy"].includes(operation)
+  );
+  const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
+  const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
+  const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
+  assert.equal(customSimulationCalls.length, 39);
+  assert.equal(principalSimulationCalls.length, cases.filter((item) => item.expect === "allow").length);
+  for (const { args } of simulationCalls) {
+    const { context } = contextFromArgs(args);
+    assert.ok(Object.keys(DEFAULT_SIMULATION_CONTEXT).every((key) => Object.hasOwn(context, key)));
+  }
 });
 
 test("all conditioned policy statements matched by simulation cases have complete context keys", async () => {
@@ -403,8 +421,10 @@ test("all conditioned policy statements matched by simulation cases have complet
     "04-production-guardrails-deny.json",
   ];
   assert.equal(cases.length, 39);
+  const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
+    policies.push(policy);
     for (const statement of policy.Statement.filter((candidate) => candidate.Condition)) {
       const matchingCases = cases.filter((simulationCase) => statementMatchesCase(statement, simulationCase));
       assert.ok(matchingCases.length > 0, `${file}:${statement.Sid} has no simulation case`);
@@ -419,6 +439,25 @@ test("all conditioned policy statements matched by simulation cases have complet
       }
     }
   }
+  const policyKeys = policyConditionKeys(policies);
+  assert.deepEqual(policyKeys, Object.keys(DEFAULT_SIMULATION_CONTEXT).sort());
+  assert.deepEqual(
+    Object.fromEntries(policyKeys.map((key) => [key, DEFAULT_SIMULATION_CONTEXT[key].type])),
+    {
+      "aws:RequestTag/Environment": "string",
+      "aws:ResourceTag/Environment": "string",
+      "ec2:CreateAction": "string",
+      "elasticloadbalancing:CreateAction": "string",
+      "iam:AWSServiceName": "string",
+      "iam:PassedToService": "string",
+      "iam:PolicyARN": "arn",
+    },
+  );
+  for (const simulationCase of cases) {
+    const effective = effectiveSimulationContext(simulationCase, policyKeys);
+    assert.ok(policyKeys.every((key) => Object.hasOwn(effective.context, key)));
+    assert.ok(policyKeys.every((key) => Object.hasOwn(effective.contextTypes, key)));
+  }
   const secretCreateCases = cases.filter((item) => item.action === "secretsmanager:CreateSecret");
   assert.equal(secretCreateCases.length, 2);
   for (const item of secretCreateCases) {
@@ -426,6 +465,50 @@ test("all conditioned policy statements matched by simulation cases have complet
     assert.deepEqual(item.context["aws:TagKeys"], ["Environment"]);
     assert.equal(item.contextTypes["aws:TagKeys"], "stringList");
   }
+});
+
+test("neutral IAM context defaults are conservative, typed, and case overrides take precedence", async () => {
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["aws:RequestTag/Environment"].value, "nonstaging");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["aws:ResourceTag/Environment"].value, "nonstaging");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PassedToService"].value, "invalid.amazonaws.com");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PolicyARN"].value, "arn:aws:iam::aws:policy/ReadOnlyAccess");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PolicyARN"].type, "arn");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:AWSServiceName"].value, "invalid.amazonaws.com");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["ec2:CreateAction"].value, "None");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["elasticloadbalancing:CreateAction"].value, "None");
+
+  const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
+  const policies = await Promise.all([
+    "01-read-only-production-inspection.json",
+    "02-staging-compute-network-auth.json",
+    "03-staging-data-iam.json",
+    "04-production-guardrails-deny.json",
+  ].map(async (file) => parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"))));
+  const conditionKeys = policyConditionKeys(policies);
+  const passRole = cases.find((item) => item.action === "iam:PassRole" && item.expect === "allow");
+  const effectivePassRole = effectiveSimulationContext(passRole, conditionKeys);
+  assert.equal(effectivePassRole.context["iam:PassedToService"], "ecs-tasks.amazonaws.com");
+  assert.equal(effectivePassRole.context["aws:RequestTag/Environment"], "nonstaging");
+  assert.equal(effectivePassRole.contextTypes["iam:PolicyARN"], "arn");
+  const executionPolicy = cases.find((item) =>
+    item.action === "iam:AttachRolePolicy" && item.expect === "allow"
+  );
+  const effectiveExecutionPolicy = effectiveSimulationContext(executionPolicy, conditionKeys);
+  assert.equal(
+    effectiveExecutionPolicy.context["iam:PolicyARN"],
+    "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+  );
+  assert.equal(effectiveExecutionPolicy.contextTypes["iam:PolicyARN"], "arn");
+  const securityGroupTag = cases.find((item) =>
+    item.action === "ec2:CreateTags" && item.expect === "allow"
+  );
+  const effectiveSecurityGroupTag = effectiveSimulationContext(securityGroupTag, conditionKeys);
+  assert.equal(effectiveSecurityGroupTag.context["aws:RequestTag/Environment"], "staging");
+  assert.equal(effectiveSecurityGroupTag.context["ec2:CreateAction"], "CreateSecurityGroup");
+  assert.throws(
+    () => effectiveSimulationContext(passRole, [...conditionKeys, "iam:UnreviewedCondition"]),
+    /no reviewed simulation defaults: iam:UnreviewedCondition/,
+  );
 });
 
 test("IAM context entries encode scalar, ARN, and list values using AWS CLI JSON syntax", () => {
@@ -457,6 +540,17 @@ test("missing IAM simulation context reports action, resource, and keys then fai
     /SIMULATION_MISSING_CONTEXT action=secretsmanager:CreateSecret resource=arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis\/staging\/woocommerce-webhook-secret-AbCdEf keys=aws:RequestTag\/Environment,iam:PassedToService/,
   );
   assert.match(result.output, /CUSTOM_POLICY_SIMULATION=FAIL/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("missing principal-policy simulation context also reports details and fails closed", async () => {
+  const result = await executeGate({ missingPrincipalSimulationContext: ["iam:PolicyARN"] });
+  assert.ok(result.error);
+  assert.match(
+    result.output,
+    /SIMULATION_MISSING_CONTEXT action=secretsmanager:CreateSecret resource=arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis\/staging\/woocommerce-webhook-secret-AbCdEf keys=iam:PolicyARN/,
+  );
+  assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=FAIL/);
   assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
 });
 
@@ -524,6 +618,9 @@ test("required IAM simulation contexts preserve PassRole, tagging, and service-l
   const productionPassRole = find("iam:PassRole", "GenesisRuntimeStack-RuntimeTaskRole", "deny");
   assert.equal(productionPassRole.requireExplicitDeny, true);
   assert.equal(productionPassRole.context["iam:PassedToService"], "ecs-tasks.amazonaws.com");
+  const nonEcsPassRole = find("iam:PassRole", "genesis-staging-task-role", "deny");
+  assert.equal(nonEcsPassRole.context["iam:PassedToService"], "lambda.amazonaws.com");
+  assert.equal(nonEcsPassRole.requireExplicitDeny, undefined);
   const attachExecution = find("iam:AttachRolePolicy", "genesis-staging-execution-role", "allow");
   assert.equal(attachExecution.context["iam:PolicyARN"], "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy");
   assert.equal(attachExecution.contextTypes["iam:PolicyARN"], "arn");
