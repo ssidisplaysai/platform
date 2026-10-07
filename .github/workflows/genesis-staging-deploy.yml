@@ -83,19 +83,14 @@ jobs:
         run: |
           docker run --rm --entrypoint test genesis-staging-runtime:${{ github.sha }} -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
 
-      - name: Resolve staging infrastructure identifiers
-        run: bash infra/staging/provision.sh env >> "$GITHUB_ENV"
-
-      - name: Register task definition revision
+      - name: Register task definition revision (production config copied only through the reviewed allowlist)
         id: taskdef
         env:
           IMAGE_URI_WITH_DIGEST: ${{ steps.push.outputs.image }}
           GIT_COMMIT: ${{ github.sha }}
         run: |
-          for v in EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID TASK_ROLE_ARN EXECUTION_ROLE_ARN WEBHOOK_SECRET_ARN; do
-            [ -n "${!v}" ] || { echo "$v unresolved; run Genesis Staging Infrastructure (apply) first"; exit 1; }
-          done
-          envsubst '${IMAGE_URI_WITH_DIGEST} ${GIT_COMMIT} ${TASK_ROLE_ARN} ${EXECUTION_ROLE_ARN} ${WEBHOOK_SECRET_ARN} ${EFS_FILE_SYSTEM_ID} ${EFS_ACCESS_POINT_ID}' < infra/staging/task-definition.template.json > taskdef.json
+          bash infra/staging/provision.sh render-taskdef > taskdef.json
+          jq -e '.family=="genesis-staging-web" and (.containerDefinitions[0].logConfiguration.options["awslogs-group"]=="/genesis/staging/web")' taskdef.json
           ARN=$(aws ecs register-task-definition --cli-input-json file://taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text)
           echo "arn=$ARN" >> "$GITHUB_OUTPUT"
 

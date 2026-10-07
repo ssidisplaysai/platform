@@ -1,0 +1,38 @@
+{
+  "_comment": "Reviewed allowlist for runtime configuration copied from genesis-production-web:38. Fail closed: any production variable not listed under allow is NOT copied. Names only; no values live here.",
+  "overrides": [
+    "NODE_ENV",
+    "GENESIS_ENVIRONMENT",
+    "GENESIS_STONER_GYM_RECRUITED_CREATORS",
+    "GENESIS_WOOCOMMERCE_WEBHOOK_SECRET",
+    "GCP_FOUNDATION_PERSISTENCE_DIR",
+    "GIT_COMMIT",
+    "GENESIS_RUNTIME_SHA"
+  ],
+  "deny": [
+    "GENESIS_OPERATOR_SESSION_PERSISTENCE_DIR",
+    "GLW_RESEARCH_SIDECAR_SOURCE_SHA",
+    "GENESIS_PE_BRIDGE_TEMP_USERNAME",
+    "GENESIS_PE_BRIDGE_TEMP_APPLICATION_PASSWORD"
+  ],
+  "denyPatterns": [
+    "PASSWORD", "WORDPRESS", "^WP_", "DATABASE", "^DB_", "^PG", "POSTGRES", "PAYOUT", "STRIPE", "PAYPAL", "WEBHOOK", "PERSISTENCE", "^AWS_"
+  ],
+  "environment": {
+    "allow": [
+      "GENESIS_OPENAI_TEXT_MODEL",
+      "GENESIS_OPENAI_IMAGE_MODEL"
+    ],
+    "allowIfLoopbackValue": [
+      "GENESIS_RENDER_CAPTURE_INTERNAL_ORIGIN"
+    ]
+  },
+  "secrets": {
+    "allow": [],
+    "reviewRequired": [
+      "GENESIS_OPENAI_API_KEY",
+      "OPENAI_API_KEY",
+      "GENESIS_CREDENTIAL_MASTER_KEY"
+    ]
+  }
+}

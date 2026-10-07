@@ -28,7 +28,8 @@
         { "name": "GENESIS_ENVIRONMENT", "value": "staging" },
         { "name": "GENESIS_STONER_GYM_RECRUITED_CREATORS", "value": "jessica" },
         { "name": "GCP_FOUNDATION_PERSISTENCE_DIR", "value": "/mnt/genesis-persistence/foundation" },
-        { "name": "GIT_COMMIT", "value": "${GIT_COMMIT}" }
+        { "name": "GIT_COMMIT", "value": "${GIT_COMMIT}" },
+        { "name": "GENESIS_RUNTIME_SHA", "value": "${GIT_COMMIT}" }
       ],
       "mountPoints": [
         { "sourceVolume": "genesis-persistence", "containerPath": "/mnt/genesis-persistence", "readOnly": false }

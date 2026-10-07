@@ -5,12 +5,17 @@
 #   provision.sh apply     - creates/converges staging infrastructure (no ECS service)
 #   provision.sh service   - creates the genesis-staging-web ECS service (needs TASK_DEFINITION_ARN)
 #   provision.sh env       - prints resolved non-secret values as KEY=VALUE
+#   provision.sh render-taskdef - prints the staging task definition JSON (read-only; needs IMAGE_URI_WITH_DIGEST, GIT_COMMIT)
 #
 # Production resources are only ever READ (describe-*). Every mutating call is
 # on a staging-named resource. Secret values are never printed.
 set -euo pipefail
 
 MODE="${1:-plan}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ALLOWLIST="$HERE/runtime-env-allowlist.json"
+PROD_TASKDEF_REF="genesis-production-web:38"
+STAGING_SG_NAME="genesis-staging-web-sg"
 REGION="${AWS_REGION:-us-west-2}"
 export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
 
@@ -46,12 +51,22 @@ mutate() {
 # ---- read-only discovery -------------------------------------------------
 PROD_SVC_JSON="$(aws ecs describe-services --cluster "$CLUSTER" --services "$PROD_SERVICE" --query 'services[0]' --output json)"
 SUBNETS="$(echo "$PROD_SVC_JSON" | jq -r '.networkConfiguration.awsvpcConfiguration.subnets | join(",")')"
-TASK_SG="$(echo "$PROD_SVC_JSON" | jq -r '.networkConfiguration.awsvpcConfiguration.securityGroups[0]')"
+PROD_TASK_SG="$(echo "$PROD_SVC_JSON" | jq -r '.networkConfiguration.awsvpcConfiguration.securityGroups[0]')"
 PROD_TG_ARN="$(echo "$PROD_SVC_JSON" | jq -r '.loadBalancers[0].targetGroupArn')"
-PROD_TASKDEF="$(echo "$PROD_SVC_JSON" | jq -r '.taskDefinition')"
-TASK_ROLE_ARN="$(aws ecs describe-task-definition --task-definition "$PROD_TASKDEF" --query 'taskDefinition.taskRoleArn' --output text)"
+PROD_SERVICE_TASKDEF="$(echo "$PROD_SVC_JSON" | jq -r '.taskDefinition')"
+PROD_TD_JSON="$(aws ecs describe-task-definition --task-definition "$PROD_TASKDEF_REF" --query 'taskDefinition' --output json)"
+PROD_CONT="$(echo "$PROD_TD_JSON" | jq -c --arg n "$CONTAINER_NAME" '.containerDefinitions[] | select(.name==$n)')"
+[ -n "$PROD_CONT" ] || { echo "Container $CONTAINER_NAME not found in $PROD_TASKDEF_REF" >&2; exit 1; }
+TASK_ROLE_ARN="$(echo "$PROD_TD_JSON" | jq -r '.taskRoleArn')"
+PROD_EXEC_ROLE_ARN="$(echo "$PROD_TD_JSON" | jq -r '.executionRoleArn')"
 ALB_ARN="$(aws elbv2 describe-target-groups --target-group-arns "$PROD_TG_ARN" --query 'TargetGroups[0].LoadBalancerArns[0]' --output text)"
 LISTENER_ARN="$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" --query 'Listeners[?Port==`443`].ListenerArn | [0]' --output text)"
+PROD_SG_JSON="$(aws ec2 describe-security-groups --group-ids "$PROD_TASK_SG" --query 'SecurityGroups[0]' --output json)"
+# Ingress required by the runtime: container port 3000 from referenced security groups (the ALB). CIDR sources are reported but never mirrored.
+SG_INGRESS_FROM_SGS="$(echo "$PROD_SG_JSON" | jq -r '[.IpPermissions[] | select(.IpProtocol=="tcp" and .FromPort<=3000 and .ToPort>=3000) | .UserIdGroupPairs[].GroupId] | unique | .[]')"
+SG_INGRESS_SKIPPED="$(echo "$PROD_SG_JSON" | jq -c '[.IpPermissions[] | select((.IpProtocol=="tcp" and .FromPort<=3000 and .ToPort>=3000 and (.UserIdGroupPairs|length)>0)|not)] | map({protocol:.IpProtocol,from:.FromPort,to:.ToPort,cidrs:[.IpRanges[].CidrIp],sgs:[.UserIdGroupPairs[].GroupId]})')"
+PROD_EGRESS_SUMMARY="$(echo "$PROD_SG_JSON" | jq -c '[.IpPermissionsEgress[] | {protocol:.IpProtocol,from:.FromPort,to:.ToPort,cidrs:[.IpRanges[].CidrIp]}]')"
+[ -n "$SG_INGRESS_FROM_SGS" ] || { echo "No SG-sourced tcp/3000 ingress on $PROD_TASK_SG to mirror; refusing to guess." >&2; exit 1; }
 STAGING_TG_ARN="$(aws elbv2 describe-target-groups --names "$STAGING_TG_NAME" --query 'TargetGroups[0].TargetGroupArn' --output text)"
 ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 [ "$ACCOUNT_ID" = "452630323448" ] || { echo "Unexpected AWS account $ACCOUNT_ID" >&2; exit 1; }
@@ -71,6 +86,77 @@ lookup_secret_arn() {
   aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --query ARN --output text 2>/dev/null || true
 }
 
+lookup_sg_id() {
+  aws ec2 describe-security-groups --filters "Name=group-name,Values=$1" "Name=vpc-id,Values=$VPC_ID" --query 'SecurityGroups[0].GroupId' --output text | sed 's/^None$//'
+}
+STAGING_SG_ID="$(lookup_sg_id "$STAGING_SG_NAME")"
+
+# Names/ARNs only. Environment values are only evaluated for the loopback check and are never printed.
+CLASSIFIED="$(jq -nc --argjson c "$PROD_CONT" --slurpfile a "$ALLOWLIST" '
+  $a[0] as $al
+  | def denied($n): ($al.deny | index($n)) != null or any($al.denyPatterns[]; . as $p | $n | test($p));
+    def cls($n; $secret; $val):
+      if ($al.overrides | index($n)) then "overridden-by-staging"
+      elif denied($n) then "denied"
+      elif $secret then
+        (if ($al.secrets.allow | index($n)) then "copy"
+         elif ($al.secrets.reviewRequired | index($n)) then "excluded-review-required"
+         else "unclassified-excluded" end)
+      elif ($al.environment.allow | index($n)) then "copy"
+      elif ($al.environment.allowIfLoopbackValue | index($n)) then
+        (if ($val | test("^https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?(/|$)")) then "copy" else "excluded-non-loopback" end)
+      else "unclassified-excluded" end;
+    [ ($c.environment // [])[] | {name, kind:"environment", class: cls(.name; false; .value), value} ]
+  + [ ($c.secrets // [])[] | {name, kind:"secret", source:.valueFrom, class: cls(.name; true; "")} ]')"
+COPIED_SECRET_ARNS="$(echo "$CLASSIFIED" | jq -r '.[] | select(.kind=="secret" and .class=="copy" and (.source|startswith("arn:aws:secretsmanager:"))) | .source' | cut -d: -f1-7 | sort -u)"
+if echo "$CLASSIFIED" | jq -e 'any(.[]; .kind=="secret" and .class=="copy" and (.source|startswith("arn:aws:secretsmanager:")|not))' >/dev/null; then
+  echo "Allowlisted secret has a non-Secrets-Manager source; unsupported." >&2; exit 1
+fi
+
+render_taskdef() {
+  : "${IMAGE_URI_WITH_DIGEST:?}" "${GIT_COMMIT:?}"
+  EXECUTION_ROLE_ARN="$EXEC_ROLE_ARN"
+  WEBHOOK_SECRET_ARN="$(lookup_secret_arn)"
+  EFS_FILE_SYSTEM_ID="$(lookup_efs_id)"
+  EFS_ACCESS_POINT_ID="$(lookup_ap_id "$EFS_FILE_SYSTEM_ID")"
+  export TASK_ROLE_ARN EXECUTION_ROLE_ARN WEBHOOK_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID
+  for v in WEBHOOK_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID; do
+    [ -n "${!v}" ] || { echo "$v unresolved; run Genesis Staging Infrastructure (apply) first" >&2; exit 1; }
+  done
+  envsubst '${IMAGE_URI_WITH_DIGEST} ${GIT_COMMIT} ${TASK_ROLE_ARN} ${EXECUTION_ROLE_ARN} ${WEBHOOK_SECRET_ARN} ${EFS_FILE_SYSTEM_ID} ${EFS_ACCESS_POINT_ID}' \
+    < "$HERE/task-definition.template.json" \
+  | jq --argjson rows "$CLASSIFIED" '
+      (.containerDefinitions[0]) as $c
+      | ($c.environment | map(.name)) as $en | ($c.secrets | map(.name)) as $sn
+      | .containerDefinitions[0].environment += [ $rows[] | select(.kind=="environment" and .class=="copy" and (.name as $n | $en | index($n) | not)) | {name, value} ]
+      | .containerDefinitions[0].secrets += [ $rows[] | select(.kind=="secret" and .class=="copy" and (.name as $n | $sn | index($n) | not)) | {name, valueFrom:.source} ]'
+}
+
+report_plan() {
+  {
+    echo "=== Production reference (READ-ONLY): $PROD_TASKDEF_REF (service currently runs: $PROD_SERVICE_TASKDEF) ==="
+    echo "task role ARN:      $TASK_ROLE_ARN"
+    echo "execution role ARN: $PROD_EXEC_ROLE_ARN"
+    echo "production container keys: $(echo "$PROD_CONT" | jq -c 'keys')"
+    echo "--- production environment variable NAMES and staging disposition ---"
+    echo "$CLASSIFIED" | jq -r '.[] | select(.kind=="environment") | "  \(.name)\t\(.class)"'
+    echo "--- production secret variable NAMES, source ARNs and staging disposition ---"
+    echo "$CLASSIFIED" | jq -r '.[] | select(.kind=="secret") | "  \(.name)\t\(.source)\t\(.class)"'
+    echo "--- staging overrides (never inherited) ---"
+    jq -r '.overrides[] | "  " + .' "$ALLOWLIST"
+    echo "--- security groups ---"
+    echo "production task SG (read-only): $PROD_TASK_SG"
+    echo "production tcp/3000 SG sources to mirror: $(echo "$SG_INGRESS_FROM_SGS" | tr '\n' ' ')"
+    echo "production ingress NOT mirrored: $SG_INGRESS_SKIPPED"
+    echo "production egress (reference): $PROD_EGRESS_SUMMARY"
+    echo "staging task SG $STAGING_SG_NAME: ${STAGING_SG_ID:-<to be created>}"
+    for src in $SG_INGRESS_FROM_SGS; do echo "  ingress tcp/3000 from $src"; done
+    echo "  egress: all (default; required for ECR, Secrets Manager, CloudWatch Logs, EFS, outbound APIs)"
+    echo "staging EFS SG $EFS_SG_NAME: ingress tcp/2049 ONLY from $STAGING_SG_NAME (${STAGING_SG_ID:-<to be created>})"
+    echo "execution role $EXEC_ROLE_ARN may read: staging webhook secret$(echo "$COPIED_SECRET_ARNS" | sed 's/^/, /' | tr -d '\n')"
+  } >&2
+}
+if [ "$MODE" = "render-taskdef" ]; then render_taskdef; exit 0; fi
 if [ "$MODE" = "env" ]; then
   EFS_ID="$(lookup_efs_id)"
   cat <<EOF
@@ -79,19 +165,22 @@ EFS_ACCESS_POINT_ID=$(lookup_ap_id "$EFS_ID")
 TASK_ROLE_ARN=$TASK_ROLE_ARN
 EXECUTION_ROLE_ARN=$EXEC_ROLE_ARN
 WEBHOOK_SECRET_ARN=$(lookup_secret_arn)
+STAGING_SG_ID=$STAGING_SG_ID
 EOF
   exit 0
 fi
 
 if [ "$MODE" = "service" ]; then
   : "${TASK_DEFINITION_ARN:?TASK_DEFINITION_ARN is required}"
+  [ -n "$STAGING_SG_ID" ] || { echo "$STAGING_SG_NAME missing; run infrastructure apply first" >&2; exit 1; }
+  [ "$STAGING_SG_ID" != "$PROD_TASK_SG" ] || { echo "Refusing to use the production task SG" >&2; exit 1; }
   SVC_STATUS="$(aws ecs describe-services --cluster "$CLUSTER" --services "$STAGING_SERVICE" --query 'services[0].status' --output text 2>/dev/null || true)"
   if [ "$SVC_STATUS" = "ACTIVE" ]; then
     log "service $STAGING_SERVICE already active"
   else
     aws ecs create-service --cluster "$CLUSTER" --service-name "$STAGING_SERVICE" --task-definition "$TASK_DEFINITION_ARN" \
       --desired-count 1 --launch-type FARGATE --platform-version LATEST \
-      --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$TASK_SG],assignPublicIp=DISABLED}" \
+      --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$STAGING_SG_ID],assignPublicIp=DISABLED}" \
       --load-balancers "targetGroupArn=$STAGING_TG_ARN,containerName=$CONTAINER_NAME,containerPort=3000" \
       --health-check-grace-period-seconds 60 \
       --deployment-configuration "minimumHealthyPercent=0,maximumPercent=100,deploymentCircuitBreaker={enable=true,rollback=true}" \
@@ -99,6 +188,8 @@ if [ "$MODE" = "service" ]; then
   fi
   exit 0
 fi
+
+[ "$MODE" != "plan" ] || report_plan
 
 # ---- ECR -------------------------------------------------------------------
 if aws ecr describe-repositories --repository-names "$ECR_REPO" >/dev/null 2>&1; then
@@ -142,24 +233,40 @@ else
     --tags Key=Environment,Value=staging >/dev/null
 fi
 mutate aws iam attach-role-policy --role-name "$EXEC_ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-SECRET_POLICY="$(jq -nc --arg a "$SECRET_ARN" '{Version:"2012-10-17",Statement:[{Effect:"Allow",Action:["secretsmanager:GetSecretValue"],Resource:$a}]}')"
+SECRET_POLICY="$(jq -nc --arg a "$SECRET_ARN" --arg extra "$COPIED_SECRET_ARNS" '{Version:"2012-10-17",Statement:[{Effect:"Allow",Action:["secretsmanager:GetSecretValue"],Resource:([$a] + ($extra | split("\n") | map(select(length>0))))}]}')"
 mutate aws iam put-role-policy --role-name "$EXEC_ROLE_NAME" --policy-name staging-webhook-secret-read --policy-document "$SECRET_POLICY"
 
 # ---- EFS (staging-only persistence bridge) ----------------------------------
 EFS_ID="$(lookup_efs_id)"
-EFS_SG_ID="$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$EFS_SG_NAME" "Name=vpc-id,Values=$VPC_ID" --query 'SecurityGroups[0].GroupId' --output text | sed 's/^None$//')"
-if [ -z "$EFS_SG_ID" ]; then
-  if [ "$MODE" = "plan" ]; then
-    log "WOULD CREATE security group $EFS_SG_NAME (ingress tcp/2049 from $TASK_SG only)"
+ensure_sg() {
+  local name="$1" desc="$2" id
+  id="$(lookup_sg_id "$name")"
+  if [ -z "$id" ]; then
+    if [ "$MODE" = "plan" ]; then log "WOULD CREATE security group $name in $VPC_ID"; return 0; fi
+    id="$(aws ec2 create-security-group --group-name "$name" --description "$desc" --vpc-id "$VPC_ID" \
+      --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$name},{Key=Environment,Value=staging}]" --query GroupId --output text)"
   else
-    EFS_SG_ID="$(aws ec2 create-security-group --group-name "$EFS_SG_NAME" --description "Genesis staging EFS (NFS from staging tasks)" --vpc-id "$VPC_ID" \
-      --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value=$EFS_SG_NAME},{Key=Environment,Value=staging}]" --query GroupId --output text)"
-    aws ec2 authorize-security-group-ingress --group-id "$EFS_SG_ID" --protocol tcp --port 2049 --source-group "$TASK_SG" >/dev/null
+    log "security group $name exists ($id)"
   fi
-else
-  log "EFS security group $EFS_SG_ID exists"
-fi
+  echo "$id"
+}
+sg_has_ingress() { # group proto port source-group
+  aws ec2 describe-security-groups --group-ids "$1" --query "SecurityGroups[0].IpPermissions[?IpProtocol=='$2'&&FromPort==\`$3\`&&ToPort==\`$3\`].UserIdGroupPairs[].GroupId" --output text | tr '\t' '\n' | grep -qx "$4"
+}
 
+STAGING_SG_ID="$(ensure_sg "$STAGING_SG_NAME" "Genesis staging web tasks")"
+EFS_SG_ID="$(ensure_sg "$EFS_SG_NAME" "Genesis staging EFS (NFS from staging tasks only)")"
+if [ "$MODE" != "plan" ]; then
+  [ "$STAGING_SG_ID" != "$PROD_TASK_SG" ] || { echo "Refusing: staging SG resolved to production SG" >&2; exit 1; }
+  for src in $SG_INGRESS_FROM_SGS; do
+    sg_has_ingress "$STAGING_SG_ID" tcp 3000 "$src" || aws ec2 authorize-security-group-ingress --group-id "$STAGING_SG_ID" --protocol tcp --port 3000 --source-group "$src" >/dev/null
+  done
+  sg_has_ingress "$EFS_SG_ID" tcp 2049 "$STAGING_SG_ID" || aws ec2 authorize-security-group-ingress --group-id "$EFS_SG_ID" --protocol tcp --port 2049 --source-group "$STAGING_SG_ID" >/dev/null
+  # EFS SG is staging-owned: remove any NFS source other than the staging task SG.
+  for other in $(aws ec2 describe-security-groups --group-ids "$EFS_SG_ID" --query 'SecurityGroups[0].IpPermissions[?FromPort==`2049`].UserIdGroupPairs[].GroupId' --output text); do
+    [ "$other" = "$STAGING_SG_ID" ] || aws ec2 revoke-security-group-ingress --group-id "$EFS_SG_ID" --protocol tcp --port 2049 --source-group "$other" >/dev/null
+  done
+fi
 if [ -z "$EFS_ID" ]; then
   if [ "$MODE" = "plan" ]; then
     log "WOULD CREATE encrypted EFS $EFS_NAME (generalPurpose, bursting), mount targets in each task subnet AZ, access point $EFS_AP_PATH uid/gid 1000"
@@ -228,7 +335,7 @@ ensure_rule "$AUTH_RULE_PRIORITY" "$AUTH_CONDS" "$COGNITO_ACTIONS" "authenticate
 ensure_rule "$WEBHOOK_RULE_PRIORITY" "$WEBHOOK_CONDS" "$FORWARD_ONLY" "webhook exception"
 
 if [ "$MODE" = "plan" ]; then
-  log "service creation happens in the deploy workflow (needs an image digest): desired 1, FARGATE, awsvpc, subnets=$SUBNETS sg=$TASK_SG, no public IP, grace 60s, min 0/max 100"
+  log "service creation happens in the deploy workflow (needs an image digest): desired 1, FARGATE, awsvpc, subnets=$SUBNETS sg=${STAGING_SG_ID:-$STAGING_SG_NAME}, no public IP, grace 60s, min 0/max 100"
 fi
 
 log "done"
