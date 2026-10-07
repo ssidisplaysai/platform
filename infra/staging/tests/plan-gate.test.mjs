@@ -9,6 +9,7 @@ import {
   effectiveSimulationContext,
   policyConditionKeys,
   runPlanGate,
+  SIMULATION_CONTEXT_TYPES,
 } from "../plan-gate.mjs";
 
 const repoRoot = resolve(import.meta.dirname, "../../..");
@@ -456,7 +457,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.equal(productionContext["elasticloadbalancing:CreateAction"], "None");
   assert.equal(productionContext["aws:TagKeys"][0], "Environment");
   assert.equal(productionContextTypes["aws:TagKeys"], "stringList");
-  assert.equal(productionContextTypes["iam:PolicyARN"], "arn");
+  assert.equal(productionContextTypes["iam:PolicyARN"], "string");
 
   const stagingSecretPrincipalCall = principalSimulationCalls.find(({ args }) =>
     option(args, "--action-names") === "secretsmanager:CreateSecret" &&
@@ -473,7 +474,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
     stagingEntries.find((entry) => entry.ContextKeyName === "aws:RequestTag/Environment").ContextKeyValues[0],
     "staging",
   );
-  assert.equal(stagingEntries.find((entry) => entry.ContextKeyName === "iam:PolicyARN").ContextKeyType, "arn");
+  assert.equal(stagingEntries.find((entry) => entry.ContextKeyName === "iam:PolicyARN").ContextKeyType, "string");
   assert.match(result.output, /SIMULATION_CONTEXT action=secretsmanager:CreateSecret resource=.*genesis\/production\/other-AbCdEf keys=/);
   assert.match(result.output, /SIMULATION_CONTEXT_VALUES .*aws:RequestTag\/Environment="production"/);
 });
@@ -516,14 +517,34 @@ test("all conditioned policy statements matched by simulation cases have complet
       "elasticloadbalancing:CreateAction": "string",
       "iam:AWSServiceName": "string",
       "iam:PassedToService": "string",
-      "iam:PolicyARN": "arn",
+      "iam:PolicyARN": "string",
     },
   );
+  assert.deepEqual([...SIMULATION_CONTEXT_TYPES].sort(), [
+    "string",
+    "stringList",
+    "numeric",
+    "numericList",
+    "boolean",
+    "booleanList",
+    "ip",
+    "ipList",
+    "binary",
+    "binaryList",
+    "date",
+    "dateList",
+  ].sort());
   for (const simulationCase of cases) {
     const effective = effectiveSimulationContext(simulationCase, policyKeys);
     assert.ok(policyKeys.every((key) => Object.hasOwn(effective.context, key)));
     assert.ok(policyKeys.every((key) => Object.hasOwn(effective.contextTypes, key)));
+    assert.ok(Object.values(effective.contextTypes).every((type) => SIMULATION_CONTEXT_TYPES.includes(type)));
   }
+  assert.ok(cases.every((simulationCase) =>
+    Object.values(simulationCase.contextTypes ?? {}).every((type) => SIMULATION_CONTEXT_TYPES.includes(type))
+  ));
+  assert.ok(!SIMULATION_CONTEXT_TYPES.includes("arn"));
+  assert.ok(!SIMULATION_CONTEXT_TYPES.includes("arnList"));
   const secretCreateCases = cases.filter((item) => item.action === "secretsmanager:CreateSecret");
   assert.equal(secretCreateCases.length, 2);
   for (const item of secretCreateCases) {
@@ -538,7 +559,7 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
   assert.equal(DEFAULT_SIMULATION_CONTEXT["aws:ResourceTag/Environment"].value, "nonstaging");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PassedToService"].value, "invalid.amazonaws.com");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PolicyARN"].value, "arn:aws:iam::aws:policy/ReadOnlyAccess");
-  assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PolicyARN"].type, "arn");
+  assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:PolicyARN"].type, "string");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["iam:AWSServiceName"].value, "invalid.amazonaws.com");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["ec2:CreateAction"].value, "None");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["elasticloadbalancing:CreateAction"].value, "None");
@@ -555,7 +576,7 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
   const effectivePassRole = effectiveSimulationContext(passRole, conditionKeys);
   assert.equal(effectivePassRole.context["iam:PassedToService"], "ecs-tasks.amazonaws.com");
   assert.equal(effectivePassRole.context["aws:RequestTag/Environment"], "nonstaging");
-  assert.equal(effectivePassRole.contextTypes["iam:PolicyARN"], "arn");
+  assert.equal(effectivePassRole.contextTypes["iam:PolicyARN"], "string");
   const executionPolicy = cases.find((item) =>
     item.action === "iam:AttachRolePolicy" && item.expect === "allow"
   );
@@ -564,7 +585,7 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
     effectiveExecutionPolicy.context["iam:PolicyARN"],
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
   );
-  assert.equal(effectiveExecutionPolicy.contextTypes["iam:PolicyARN"], "arn");
+  assert.equal(effectiveExecutionPolicy.contextTypes["iam:PolicyARN"], "string");
   const securityGroupTag = cases.find((item) =>
     item.action === "ec2:CreateTags" && item.expect === "allow"
   );
@@ -577,12 +598,12 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
   );
 });
 
-test("IAM context entries use one AWS CLI JSON list with scalar, ARN, and list types", () => {
+test("IAM context entries use one AWS CLI JSON list with scalar, ARN-string, and list values", () => {
   const args = contextArguments({
     "aws:RequestTag/Environment": "staging",
     "iam:PolicyARN": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
     "aws:TagKeys": ["Environment", "Owner"],
-  }, { "iam:PolicyARN": "arn" });
+  }, { "iam:PolicyARN": "string" });
   assert.equal(args.filter((argument) => argument === "--context-entries").length, 1);
   assert.equal(args.length, 2);
   const entries = JSON.parse(option(args, "--context-entries"));
@@ -592,7 +613,7 @@ test("IAM context entries use one AWS CLI JSON list with scalar, ARN, and list t
     {
       ContextKeyName: "iam:PolicyARN",
       ContextKeyValues: ["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"],
-      ContextKeyType: "arn",
+      ContextKeyType: "string",
     },
     { ContextKeyName: "aws:TagKeys", ContextKeyValues: ["Environment", "Owner"], ContextKeyType: "stringList" },
   ]);
@@ -604,10 +625,18 @@ test("IAM context entries use one AWS CLI JSON list with scalar, ARN, and list t
     },
     contextTypes: {
       "aws:RequestTag/Environment": "string",
-      "iam:PolicyARN": "arn",
+      "iam:PolicyARN": "string",
       "aws:TagKeys": "stringList",
     },
   });
+  assert.throws(
+    () => contextArguments({ "iam:PolicyARN": "arn:aws:iam::aws:policy/ReadOnlyAccess" }, { "iam:PolicyARN": "arn" }),
+    /Unsupported IAM simulation context type for iam:PolicyARN: arn/,
+  );
+  assert.throws(
+    () => contextArguments({ "iam:PolicyARN": "arn:aws:iam::aws:policy/ReadOnlyAccess" }, { "iam:PolicyARN": "arnList" }),
+    /Unsupported IAM simulation context type for iam:PolicyARN: arnList/,
+  );
   assert.throws(() => contextFromArgs([...args, ...args]), /at most one list option/);
   assert.throws(() => contextFromArgs(["--context-entries", "not-json"]), SyntaxError);
 });
@@ -714,9 +743,9 @@ test("required IAM simulation contexts preserve PassRole, tagging, and service-l
   assert.equal(nonEcsPassRole.requireExplicitDeny, undefined);
   const attachExecution = find("iam:AttachRolePolicy", "genesis-staging-execution-role", "allow");
   assert.equal(attachExecution.context["iam:PolicyARN"], "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy");
-  assert.equal(attachExecution.contextTypes["iam:PolicyARN"], "arn");
+  assert.equal(attachExecution.contextTypes["iam:PolicyARN"], "string");
   const deniedAttach = find("iam:AttachRolePolicy", "genesis-staging-task-role", "deny");
-  assert.equal(deniedAttach.contextTypes["iam:PolicyARN"], "arn");
+  assert.equal(deniedAttach.contextTypes["iam:PolicyARN"], "string");
   assert.equal(find("iam:CreateServiceLinkedRole", "elasticfilesystem.amazonaws.com", "allow").context["iam:AWSServiceName"], "elasticfilesystem.amazonaws.com");
   assert.equal(find("ec2:CreateSecurityGroup", "security-group/", "allow").context["aws:RequestTag/Environment"], "staging");
   const sgTag = find("ec2:CreateTags", "security-group/", "allow");

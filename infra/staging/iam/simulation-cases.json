@@ -192,7 +192,7 @@
                         "iam:PolicyARN":  "arn:aws:iam::aws:policy/AdministratorAccess"
                     },
         "contextTypes":  {
-                        "iam:PolicyARN":  "arn"
+                        "iam:PolicyARN":  "string"
                     }
     },
     {
@@ -329,7 +329,7 @@
                         "iam:PolicyARN":  "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
                     },
         "contextTypes":  {
-                        "iam:PolicyARN":  "arn"
+                        "iam:PolicyARN":  "string"
                     }
     },
     {

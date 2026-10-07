@@ -16,11 +16,25 @@ const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-t
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
 const SIMULATION_CASE_COUNT = 39;
+export const SIMULATION_CONTEXT_TYPES = Object.freeze([
+  "string",
+  "stringList",
+  "numeric",
+  "numericList",
+  "boolean",
+  "booleanList",
+  "ip",
+  "ipList",
+  "binary",
+  "binaryList",
+  "date",
+  "dateList",
+]);
 export const DEFAULT_SIMULATION_CONTEXT = Object.freeze({
   "aws:RequestTag/Environment": Object.freeze({ value: "nonstaging", type: "string" }),
   "aws:ResourceTag/Environment": Object.freeze({ value: "nonstaging", type: "string" }),
   "iam:PassedToService": Object.freeze({ value: "invalid.amazonaws.com", type: "string" }),
-  "iam:PolicyARN": Object.freeze({ value: "arn:aws:iam::aws:policy/ReadOnlyAccess", type: "arn" }),
+  "iam:PolicyARN": Object.freeze({ value: "arn:aws:iam::aws:policy/ReadOnlyAccess", type: "string" }),
   "iam:AWSServiceName": Object.freeze({ value: "invalid.amazonaws.com", type: "string" }),
   "ec2:CreateAction": Object.freeze({ value: "None", type: "string" }),
   "elasticloadbalancing:CreateAction": Object.freeze({ value: "None", type: "string" }),
@@ -164,7 +178,7 @@ export function contextArguments(context = {}, contextTypes = {}) {
     const values = Array.isArray(value) ? value : [value];
     const type = contextTypes[key] ?? (Array.isArray(value) ? "stringList" : "string");
     assert(
-      ["string", "stringList", "numeric", "numericList", "boolean", "booleanList", "ip", "ipList", "binary", "binaryList", "arn", "arnList", "date", "dateList"].includes(type),
+      SIMULATION_CONTEXT_TYPES.includes(type),
       `Unsupported IAM simulation context type for ${key}: ${type}`,
     );
     assert(values.length > 0 && values.every((item) => ["string", "number", "boolean"].includes(typeof item)),
