@@ -15,6 +15,7 @@ All five should be removed once the replacements are verified. Inline policies c
 ## Preconditions
 1. Confirm nothing else relies on these broad permissions (other repositories' workflows, other pipelines). Check CloudTrail `AssumeRoleWithWebIdentity` events for `GenesisGitHubDeployRole` over the last 90 days. If anything else uses the role, give staging its own role instead of detaching.
 2. Record the current state for rollback: `aws iam list-attached-role-policies --role-name GenesisGitHubDeployRole` and `aws iam list-role-policies --role-name GenesisGitHubDeployRole`.
+3. The read-only plan now fails closed unless it reads the complete production/staging approval inputs, retrieves every deploy-role inline policy document, and passes both custom-policy and principal-policy simulations. It also checks role usage in `us-east-1` and `us-west-2`; only `ROLE_USAGE_CLEARANCE=PLATFORM_ONLY` clears the role for narrowing. `UNKNOWN` and `SHARED_ROLE` stop the gate. Plan mode invokes `infra/staging/plan-gate.mjs` before any provisioning code; that helper permits only its explicit describe/list/get/lookup/simulation AWS API allowlist.
 
 ## Steps (run by an administrator, not by the deploy role)
 1. Create the four customer-managed policies (additive, no risk):
@@ -27,8 +28,8 @@ All five should be removed once the replacements are verified. Inline policies c
    ```
    for n in ...; do aws iam attach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::452630323448:policy/GenesisStagingDeploy-$n; done
    ```
-3. Verify. The broad policies would make `simulate-principal-policy` pass trivially, so verify the new policies **in isolation**: run the read-only plan, whose "Simulation of proposed policies" section uses `iam:SimulateCustomPolicy` with only the four proposed policies. Every case must match its expectation (allow cases allowed, production/deny cases denied). Also run `aws iam simulate-principal-policy` for the full action list and confirm no `explicitDeny` for staging actions.
-4. Only after step 3 has zero mismatches, detach the broad policies, one at a time, re-running the plan after each:
+3. Verify. The broad policies would make `simulate-principal-policy` pass trivially, so verify the new policies **in isolation**: run the read-only plan, whose custom-policy simulation uses only the four proposed policies. Every case must match its expectation (allow cases allowed, production/deny cases denied, and cases marked `requireExplicitDeny` must be explicitly denied). The plan also runs `SimulatePrincipalPolicy` for each required staging allow case; all must be allowed. Both simulations must complete with zero mismatches.
+4. Only after step 3 has zero mismatches, role usage is `PLATFORM_ONLY`, and all inline policies and CloudTrail events have been reviewed, detach the broad policies, one at a time, re-running the plan after each:
    ```
    aws iam detach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
    aws iam detach-role-policy --role-name GenesisGitHubDeployRole --policy-arn arn:aws:iam::aws:policy/AmazonRDSFullAccess

@@ -7,6 +7,7 @@
       "Action": [
         "ecs:DescribeServices",
         "ecs:DescribeTaskDefinition",
+        "cloudtrail:LookupEvents",
         "elasticloadbalancing:DescribeTargetGroups",
         "elasticloadbalancing:DescribeLoadBalancers",
         "elasticloadbalancing:DescribeListeners",

@@ -19,6 +19,7 @@
         "expect":  "deny",
         "action":  "secretsmanager:GetSecretValue",
         "resource":  "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/openai-AbCdEf",
+        "requireExplicitDeny": true,
         "context":  {
 
                     }
@@ -107,6 +108,7 @@
         "expect":  "deny",
         "action":  "ecs:UpdateService",
         "resource":  "arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-production-web",
+        "requireExplicitDeny": true,
         "context":  {
 
                     }
@@ -123,6 +125,7 @@
         "expect":  "deny",
         "action":  "cognito-idp:UpdateUserPoolClient",
         "resource":  "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON",
+        "requireExplicitDeny": true,
         "context":  {
 
                     }
@@ -147,6 +150,7 @@
         "expect":  "deny",
         "action":  "iam:PassRole",
         "resource":  "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q",
+        "requireExplicitDeny": true,
         "context":  {
                         "iam:PassedToService":  "ecs-tasks.amazonaws.com"
                     }
@@ -171,6 +175,7 @@
         "expect":  "deny",
         "action":  "iam:AttachRolePolicy",
         "resource":  "arn:aws:iam::452630323448:role/genesis-staging-task-role",
+        "requireExplicitDeny": true,
         "context":  {
                         "iam:PolicyARN":  "arn:aws:iam::aws:policy/AdministratorAccess"
                     }
@@ -187,6 +192,7 @@
         "expect":  "deny",
         "action":  "elasticloadbalancing:ModifyTargetGroup",
         "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/some-production-tg/0123456789abcdef",
+        "requireExplicitDeny": true,
         "context":  {
 
                     }
@@ -195,6 +201,7 @@
         "expect":  "deny",
         "action":  "elasticloadbalancing:ModifyListener",
         "resource":  "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7",
+        "requireExplicitDeny": true,
         "context":  {
 
                     }
@@ -211,6 +218,7 @@
         "expect":  "deny",
         "action":  "ecr:PutImage",
         "resource":  "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime",
+        "requireExplicitDeny": true,
         "context":  {
 
                     }
@@ -227,6 +235,7 @@
         "expect":  "deny",
         "action":  "ec2:AuthorizeSecurityGroupIngress",
         "resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "requireExplicitDeny": true,
         "context":  {
                         "aws:ResourceTag/Environment":  "staging"
                     }
@@ -246,5 +255,13 @@
         "context":  {
 
                     }
+    },
+    {
+        "expect":  "allow",
+        "action":  "cloudtrail:LookupEvents",
+        "resource":  "*",
+        "context":  {
+
+                        }
     }
 ]
