@@ -178,6 +178,9 @@
         "requireExplicitDeny": true,
         "context":  {
                         "iam:PolicyARN":  "arn:aws:iam::aws:policy/AdministratorAccess"
+                    },
+        "contextTypes":  {
+                        "iam:PolicyARN":  "arn"
                     }
     },
     {

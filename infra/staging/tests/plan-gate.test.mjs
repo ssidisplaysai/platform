@@ -468,6 +468,8 @@ test("required IAM simulation contexts preserve PassRole, tagging, and service-l
   const attachExecution = find("iam:AttachRolePolicy", "genesis-staging-execution-role", "allow");
   assert.equal(attachExecution.context["iam:PolicyARN"], "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy");
   assert.equal(attachExecution.contextTypes["iam:PolicyARN"], "arn");
+  const deniedAttach = find("iam:AttachRolePolicy", "genesis-staging-task-role", "deny");
+  assert.equal(deniedAttach.contextTypes["iam:PolicyARN"], "arn");
   assert.equal(find("iam:CreateServiceLinkedRole", "elasticfilesystem.amazonaws.com", "allow").context["iam:AWSServiceName"], "elasticfilesystem.amazonaws.com");
   assert.equal(find("ec2:CreateSecurityGroup", "security-group/", "allow").context["aws:RequestTag/Environment"], "staging");
   const sgTag = find("ec2:CreateTags", "security-group/", "allow");
