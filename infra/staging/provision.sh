@@ -31,6 +31,7 @@ ECR_REPO="genesis-staging-runtime"
 LOG_GROUP="/genesis/staging/web"
 SECRET_NAME="genesis/staging/woocommerce-webhook-secret"
 EXEC_ROLE_NAME="genesis-staging-execution-role"
+TASK_ROLE_NAME="genesis-staging-task-role"
 EFS_NAME="genesis-staging-persistence"
 EFS_SG_NAME="genesis-staging-efs"
 EFS_AP_PATH="/genesis-staging-persistence"
@@ -41,7 +42,7 @@ WEBHOOK_RULE_PRIORITY=10
 AUTH_RULE_PRIORITY=11
 CONTAINER_NAME="GenesisWebRuntime"
 
-for v in "$ECR_REPO" "$LOG_GROUP" "$SECRET_NAME" "$EXEC_ROLE_NAME" "$EFS_NAME" "$STAGING_SERVICE" "$STAGING_TG_NAME"; do
+for v in "$ECR_REPO" "$LOG_GROUP" "$SECRET_NAME" "$EXEC_ROLE_NAME" "$TASK_ROLE_NAME" "$EFS_NAME" "$STAGING_SERVICE" "$STAGING_TG_NAME"; do
   case "$v" in *production*) echo "Refusing production-named target: $v" >&2; exit 1;; esac
 done
 
@@ -61,7 +62,7 @@ PROD_SERVICE_TASKDEF="$(echo "$PROD_SVC_JSON" | jq -r '.taskDefinition')"
 PROD_TD_JSON="$(aws ecs describe-task-definition --task-definition "$PROD_TASKDEF_REF" --query 'taskDefinition' --output json)"
 PROD_CONT="$(echo "$PROD_TD_JSON" | jq -c --arg n "$CONTAINER_NAME" '.containerDefinitions[] | select(.name==$n)')"
 [ -n "$PROD_CONT" ] || { echo "Container $CONTAINER_NAME not found in $PROD_TASKDEF_REF" >&2; exit 1; }
-TASK_ROLE_ARN="$(echo "$PROD_TD_JSON" | jq -r '.taskRoleArn')"
+PROD_TASK_ROLE_ARN="$(echo "$PROD_TD_JSON" | jq -r '.taskRoleArn')" # reference only; never attached to staging
 PROD_EXEC_ROLE_ARN="$(echo "$PROD_TD_JSON" | jq -r '.executionRoleArn')"
 ALB_ARN="$(aws elbv2 describe-target-groups --target-group-arns "$PROD_TG_ARN" --query 'TargetGroups[0].LoadBalancerArns[0]' --output text)"
 LISTENER_ARN="$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" --query 'Listeners[?Port==`443`].ListenerArn | [0]' --output text)"
@@ -77,6 +78,8 @@ ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
 [ "$(aws elbv2 describe-target-groups --target-group-arns "$STAGING_TG_ARN" --query 'TargetGroups[0].VpcId' --output text)" = "$VPC_ID" ] || { echo "Staging TG not in expected VPC" >&2; exit 1; }
 [ "$STAGING_TG_ARN" != "$PROD_TG_ARN" ] || { echo "Staging TG equals production TG" >&2; exit 1; }
 EXEC_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${EXEC_ROLE_NAME}"
+TASK_ROLE_ARN="arn:aws:iam::${ACCOUNT_ID}:role/${TASK_ROLE_NAME}"
+[ "$TASK_ROLE_ARN" != "$PROD_TASK_ROLE_ARN" ] || { echo "Staging task role equals the production task role" >&2; exit 1; }
 
 lookup_efs_id() {
   aws efs describe-file-systems --creation-token "$EFS_NAME" --query 'FileSystems[0].FileSystemId' --output text 2>/dev/null | sed 's/^None$//'
@@ -123,6 +126,7 @@ render_taskdef() {
   WEBHOOK_SECRET_ARN="$(lookup_secret_arn)"
   EFS_FILE_SYSTEM_ID="$(lookup_efs_id)"
   EFS_ACCESS_POINT_ID="$(lookup_ap_id "$EFS_FILE_SYSTEM_ID")"
+  for r in "$TASK_ROLE_NAME" "$EXEC_ROLE_NAME"; do aws iam get-role --role-name "$r" >/dev/null 2>&1 || { echo "role $r missing; run Genesis Staging Infrastructure (apply) first" >&2; exit 1; }; done
   export TASK_ROLE_ARN EXECUTION_ROLE_ARN WEBHOOK_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID
   for v in WEBHOOK_SECRET_ARN EFS_FILE_SYSTEM_ID EFS_ACCESS_POINT_ID; do
     [ -n "${!v}" ] || { echo "$v unresolved; run Genesis Staging Infrastructure (apply) first" >&2; exit 1; }
@@ -202,6 +206,72 @@ ensure_staging_cognito_client() {
 }
 STAGING_COG_CLIENT_ID="$(lookup_staging_cognito_client_id)"
 
+# ---- Production image provenance (READ-ONLY; prints ONLY image URI, GIT_COMMIT, GENESIS_RUNTIME_SHA) -----
+provenance_report() {
+  local repo_root image git_commit runtime_sha repo_name id_arg c tag_c tied=0 v n
+  repo_root="$(cd "$HERE/../.." && pwd)"
+  image="$(echo "$PROD_CONT" | jq -r '.image')"
+  git_commit="$(echo "$PROD_CONT" | jq -r '[(.environment // [])[] | select(.name=="GIT_COMMIT") | .value][0] // "<not set>"')"
+  runtime_sha="$(echo "$PROD_CONT" | jq -r '[(.environment // [])[] | select(.name=="GENESIS_RUNTIME_SHA") | .value][0] // "<not set>"')"
+  echo "=== Production image provenance (READ-ONLY; no other environment values are printed) ==="
+  echo "production image URI: $image"
+  echo "production GIT_COMMIT: $git_commit"
+  echo "production GENESIS_RUNTIME_SHA: $runtime_sha"
+  repo_name="$(echo "$image" | sed -E 's#^[^/]+/([^:@]+)([:@].*)?$#\1#')"
+  case "$image" in
+    *@sha256:*) id_arg="imageDigest=${image##*@}" ;;
+    *:*) id_arg="imageTag=${image##*:}" ;;
+    *) id_arg="" ;;
+  esac
+  if [ -n "$id_arg" ]; then
+    echo "production ECR image metadata (tags/digest/push time only): $(aws ecr describe-images --repository-name "$repo_name" --image-ids "$id_arg" --query 'imageDetails[0].{tags:imageTags,digest:imageDigest,pushedAt:imagePushedAt}' --output json 2>&1 | jq -c . 2>/dev/null || echo '<unavailable: ecr:DescribeImages on the production repository>')"
+  fi
+  echo "comparison against commits in ssidisplaysai/platform (full-history checkout of $(git -C "$repo_root" rev-parse --short HEAD 2>/dev/null || echo '?')):"
+  tag_c=""; case "$image" in *@*) ;; *:*) tag_c="${image##*:}" ;; esac
+  for c in "$git_commit" "$runtime_sha" "$tag_c"; do
+    echo "$c" | grep -Eq '^[0-9a-f]{7,40}$' || continue
+    if git -C "$repo_root" cat-file -e "${c}^{commit}" 2>/dev/null; then
+      tied=1
+      echo "  $c: FOUND in this repository; contained in: $(git -C "$repo_root" branch -r --contains "$c" 2>/dev/null | tr -d ' ' | tr '\n' ' ' | head -c 300)"
+    else
+      echo "  $c: NOT FOUND in this repository's history"
+    fi
+  done
+  if [ "$tied" = 1 ]; then
+    echo "  RESULT: the production image CAN be tied to ssidisplaysai/platform."
+  else
+    echo "  RESULT: the production image CANNOT be tied to ssidisplaysai/platform from the discovered values (no resolvable commit SHA)."
+  fi
+  echo "production-only variables: referenced by this repository's runtime sources (src/, package.json, Dockerfile)?"
+  for v in GENESIS_STATE_BACKEND GENESIS_RUNTIME_MODE GENESIS_OBJECT_STORE GENESIS_S3_ARTIFACT_BUCKET GENESIS_RDS_CA_CERT; do
+    n="$(grep -rIl -- "$v" "$repo_root/src" "$repo_root/package.json" "$repo_root/Dockerfile" 2>/dev/null | wc -l | tr -d ' ')"
+    if [ "$n" = 0 ]; then echo "  $v: not referenced by repository code -> legacy/external runtime concern; stays EXCLUDED"
+    else echo "  $v: referenced by $n file(s) -> requires review before any copy"; fi
+  done
+}
+
+# ---- Simulate the PROPOSED policies (iam:SimulateCustomPolicy; read-only, independent of what is attached) --------
+simulate_proposed() {
+  local dir="$HERE/iam" pols=() f n i act res exp dec k v ctx pass=0 fail=0 line
+  for f in "$dir"/0*.json; do pols+=("$(jq -c . "$f")"); done
+  n="$(jq length "$dir/simulation-cases.json")"
+  echo "=== Simulation of proposed policies (iam:SimulateCustomPolicy) ==="
+  for i in $(seq 0 $((n - 1))); do
+    act="$(jq -r ".[$i].action" "$dir/simulation-cases.json")"; res="$(jq -r ".[$i].resource" "$dir/simulation-cases.json")"; exp="$(jq -r ".[$i].expect" "$dir/simulation-cases.json")"
+    ctx=()
+    while IFS=$'\t' read -r k v; do
+      [ -z "$k" ] || ctx+=("ContextKeyName=$k,ContextKeyValues=$v,ContextKeyType=string")
+    done < <(jq -r ".[$i].context // {} | to_entries[] | [.key,.value] | @tsv" "$dir/simulation-cases.json")
+    if [ "${#ctx[@]}" -gt 0 ]; then
+      dec="$(aws iam simulate-custom-policy --policy-input-list "${pols[@]}" --action-names "$act" --resource-arns "$res" --context-entries "${ctx[@]}" --query 'EvaluationResults[0].EvalDecision' --output text 2>&1)" || { echo "  simulation unavailable (iam:SimulateCustomPolicy denied?): $(echo "$dec" | head -c 200)"; return 0; }
+    else
+      dec="$(aws iam simulate-custom-policy --policy-input-list "${pols[@]}" --action-names "$act" --resource-arns "$res" --query 'EvaluationResults[0].EvalDecision' --output text 2>&1)" || { echo "  simulation unavailable (iam:SimulateCustomPolicy denied?): $(echo "$dec" | head -c 200)"; return 0; }
+    fi
+    line="$act on ${res##*:} ctx=$(jq -c ".[$i].context" "$dir/simulation-cases.json") expected=$exp got=$dec"
+    if { [ "$exp" = allow ] && [ "$dec" = allowed ]; } || { [ "$exp" = deny ] && [ "$dec" != allowed ]; }; then pass=$((pass + 1)); else fail=$((fail + 1)); echo "  MISMATCH: $line"; fi
+  done
+  echo "  proposed-policy simulation: $pass matched expectations, $fail mismatched"
+}
 report_plan_extras() {
   local role_name="GenesisGitHubDeployRole" caller_arn pool_arn client_id pool_id
   {
@@ -234,7 +304,7 @@ report_plan_extras() {
     aws iam list-attached-role-policies --role-name "$role_name" --query 'AttachedPolicies[].PolicyArn' --output text 2>&1 | head -c 800
     echo
     echo "inline policies: $(aws iam list-role-policies --role-name "$role_name" --query 'PolicyNames' --output text 2>&1 | head -c 400)"
-    local actions="ecr:CreateRepository ecr:DescribeRepositories ecr:GetAuthorizationToken ecr:BatchCheckLayerAvailability ecr:InitiateLayerUpload ecr:UploadLayerPart ecr:CompleteLayerUpload ecr:PutImage ecr:DescribeImages logs:CreateLogGroup logs:PutRetentionPolicy logs:DescribeLogGroups secretsmanager:CreateSecret secretsmanager:DescribeSecret secretsmanager:GetRandomPassword iam:CreateRole iam:GetRole iam:AttachRolePolicy iam:PutRolePolicy iam:PassRole ec2:CreateSecurityGroup ec2:AuthorizeSecurityGroupIngress ec2:RevokeSecurityGroupIngress ec2:DescribeSecurityGroups ec2:DescribeSubnets ec2:CreateTags elasticfilesystem:CreateFileSystem elasticfilesystem:DescribeFileSystems elasticfilesystem:CreateMountTarget elasticfilesystem:DescribeMountTargets elasticfilesystem:CreateAccessPoint elasticfilesystem:DescribeAccessPoints elasticfilesystem:PutBackupPolicy elasticfilesystem:TagResource ecs:RegisterTaskDefinition ecs:DescribeTaskDefinition ecs:CreateService ecs:UpdateService ecs:DescribeServices elasticloadbalancing:DescribeRules elasticloadbalancing:DescribeListeners elasticloadbalancing:DescribeTargetGroups elasticloadbalancing:DescribeTargetHealth elasticloadbalancing:CreateRule elasticloadbalancing:ModifyRule elasticloadbalancing:ModifyTargetGroup cognito-idp:DescribeUserPoolClient cognito-idp:DescribeUserPool cognito-idp:ListUserPoolClients cognito-idp:CreateUserPoolClient elasticloadbalancing:DescribeListenerCertificates elasticloadbalancing:DescribeLoadBalancers elasticloadbalancing:AddTags iam:ListRolePolicies iam:GetRolePolicy iam:ListAttachedRolePolicies iam:SimulatePrincipalPolicy iam:TagRole"
+    local actions="ecr:CreateRepository ecr:DescribeRepositories ecr:GetAuthorizationToken ecr:BatchCheckLayerAvailability ecr:InitiateLayerUpload ecr:UploadLayerPart ecr:CompleteLayerUpload ecr:PutImage ecr:DescribeImages logs:CreateLogGroup logs:PutRetentionPolicy logs:DescribeLogGroups secretsmanager:CreateSecret secretsmanager:DescribeSecret secretsmanager:GetRandomPassword iam:CreateRole iam:GetRole iam:AttachRolePolicy iam:PutRolePolicy iam:PassRole ec2:CreateSecurityGroup ec2:AuthorizeSecurityGroupIngress ec2:RevokeSecurityGroupIngress ec2:DescribeSecurityGroups ec2:DescribeSubnets ec2:CreateTags elasticfilesystem:CreateFileSystem elasticfilesystem:DescribeFileSystems elasticfilesystem:CreateMountTarget elasticfilesystem:DescribeMountTargets elasticfilesystem:CreateAccessPoint elasticfilesystem:DescribeAccessPoints elasticfilesystem:PutBackupPolicy elasticfilesystem:TagResource ecs:RegisterTaskDefinition ecs:DescribeTaskDefinition ecs:CreateService ecs:UpdateService ecs:DescribeServices elasticloadbalancing:DescribeRules elasticloadbalancing:DescribeListeners elasticloadbalancing:DescribeTargetGroups elasticloadbalancing:DescribeTargetHealth elasticloadbalancing:CreateRule elasticloadbalancing:ModifyRule elasticloadbalancing:ModifyTargetGroup cognito-idp:DescribeUserPoolClient cognito-idp:DescribeUserPool cognito-idp:ListUserPoolClients cognito-idp:CreateUserPoolClient iam:SimulateCustomPolicy ecr:DescribeImages elasticloadbalancing:DescribeListenerCertificates elasticloadbalancing:DescribeLoadBalancers elasticloadbalancing:AddTags iam:ListRolePolicies iam:GetRolePolicy iam:ListAttachedRolePolicies iam:SimulatePrincipalPolicy iam:TagRole"
     echo "SimulatePrincipalPolicy of the deploy role for required actions (read-only API):"
     # shellcheck disable=SC2086
     aws iam simulate-principal-policy --policy-source-arn "arn:aws:iam::${ACCOUNT_ID}:role/${role_name}" --action-names $actions --query 'EvaluationResults[].{a:EvalActionName,d:EvalDecision}' --output json 2>&1 \
@@ -245,6 +315,8 @@ report_plan_extras() {
     echo "  flows/scopes/IdPs/token validity are mirrored from production client ${PROD_COG_CLIENT_ID:-?}"
     if [ -z "${STAGING_COG_CLIENT_ID:-}" ]; then staging_cognito_client_request 2>/dev/null | jq -c . || echo "  production client unreadable: settings cannot be shown (permissions)"; fi
     echo "  rule $AUTH_RULE_PRIORITY authenticate-cognito action will reference client: ${STAGING_COG_CLIENT_ID:-<new staging client id after create>} (never $PROD_COG_CLIENT_ID)"
+    provenance_report
+    simulate_proposed
     echo "=== DNS preflight (READ-ONLY) ==="
     dns_preflight
   } >&2
@@ -252,8 +324,10 @@ report_plan_extras() {
 report_plan() {
   {
     echo "=== Production reference (READ-ONLY): $PROD_TASKDEF_REF (service currently runs: $PROD_SERVICE_TASKDEF) ==="
-    echo "task role ARN:      $TASK_ROLE_ARN"
-    echo "execution role ARN: $PROD_EXEC_ROLE_ARN"
+    echo "production task role ARN (reference only, NOT used by staging):      $PROD_TASK_ROLE_ARN"
+    echo "production execution role ARN (reference only, NOT used by staging): $PROD_EXEC_ROLE_ARN"
+    echo "STAGING task role ARN:      $TASK_ROLE_ARN (no application AWS permissions; EFS access is network/SG based)"
+    echo "STAGING execution role ARN: $EXEC_ROLE_ARN"
     echo "production container keys: $(echo "$PROD_CONT" | jq -c 'keys')"
     echo "--- production environment variable NAMES and staging disposition ---"
     echo "$CLASSIFIED" | jq -r '.[] | select(.kind=="environment") | "  \(.name)\t\(.class)"'
@@ -348,6 +422,14 @@ if aws iam get-role --role-name "$EXEC_ROLE_NAME" >/dev/null 2>&1; then
 else
   mutate aws iam create-role --role-name "$EXEC_ROLE_NAME" --assume-role-policy-document "$TRUST" \
     --tags Key=Environment,Value=staging >/dev/null
+fi
+if aws iam get-role --role-name "$TASK_ROLE_NAME" >/dev/null 2>&1; then
+  log "role $TASK_ROLE_NAME exists"
+  ATT="$(aws iam list-attached-role-policies --role-name "$TASK_ROLE_NAME" --query "AttachedPolicies[].PolicyArn" --output text; aws iam list-role-policies --role-name "$TASK_ROLE_NAME" --query "PolicyNames" --output text)"
+  [ -z "$(echo "$ATT" | tr -d "[:space:]")" ] || { echo "$TASK_ROLE_NAME must carry no permissions for the Share-to-Grow proof but has: $ATT" >&2; exit 1; }
+else
+  mutate aws iam create-role --role-name "$TASK_ROLE_NAME" --assume-role-policy-document "$TRUST" \
+    --description "Genesis STAGING task role: intentionally no application AWS permissions" --tags Key=Environment,Value=staging >/dev/null
 fi
 mutate aws iam attach-role-policy --role-name "$EXEC_ROLE_NAME" --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 SECRET_POLICY="$(jq -nc --arg a "$SECRET_ARN" --arg extra "$COPIED_SECRET_ARNS" '{Version:"2012-10-17",Statement:[{Effect:"Allow",Action:["secretsmanager:GetSecretValue"],Resource:([$a] + ($extra | split("\n") | map(select(length>0))))}]}')"

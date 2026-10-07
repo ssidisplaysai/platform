@@ -17,7 +17,7 @@ No automated payouts are authorized.
 | Target group | existing `genesis-staging-web`; health check HTTP, traffic-port, `/api/health`, 200 |
 | Listener rules | on the existing HTTPS:443 listener (see below) |
 
-Reused read-only from production: cluster, VPC, subnets, task role, ALB and listener. The production task security group is only read, to derive which ingress to mirror.
+Reused read-only from production: cluster, VPC, subnets, ALB and listener. The production task role is NOT reused (see below). The production task security group is only read, to derive which ingress to mirror.
 
 ## Runtime configuration parity (reviewed allowlist)
 `infra/staging/runtime-env-allowlist.json` is the reviewed, fail-closed allowlist applied to `genesis-production-web:38`
@@ -77,3 +77,25 @@ for browser login on staging to complete. This changes Cognito configuration and
 
 ### Dispatcher
 `infra/staging/dispatcher/genesis-staging-dispatch.yml.proposed` is the manual dispatcher intended for `main` (inactive here). Allowed ref: `infra/genesis-staging-runtime-v1` only; `apply` needs `APPLY-STAGING`, `deploy` needs `DEPLOY-STAGING`. The infra and deploy workflows expose `workflow_call` plus `workflow_dispatch`. The temporary push trigger is removed.
+
+## Pre-apply corrections (v4)
+
+### Separate staging task role
+Staging runs as `genesis-staging-task-role` (trust `ecs-tasks.amazonaws.com`) with execution role `genesis-staging-execution-role`. The staging task role has **no policies**: the Share-to-Grow receiver only reads environment variables and writes JSON files; the repository has no AWS SDK dependency, and EFS access uses security groups plus the access point (`iam: DISABLED`), not the task role. `provision.sh apply` refuses to proceed if the role ever carries any attached or inline policy, and refuses if it equals the production task role. The production task role (`GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q`) is reference information only: `iam:PassRole` for it is removed and explicitly denied by `04-production-guardrails-deny.json`. Grant the staging task role permissions only if inspection proves the running application needs them.
+
+### Deploy-role transition
+See [infra/staging/iam/TRANSITION.md](../../infra/staging/iam/TRANSITION.md). Staging apply is not approved while the broad AWS managed policies remain attached.
+
+### Plan: provenance and policy simulation
+`plan` now prints only the production image URI, `GIT_COMMIT` and `GENESIS_RUNTIME_SHA` (plus ECR tags/digest/push time), compares any discovered commit with this repository's history (the workflow checks out full history), and reports whether each production-only variable (`GENESIS_STATE_BACKEND`, `GENESIS_RUNTIME_MODE`, `GENESIS_OBJECT_STORE`, `GENESIS_S3_ARTIFACT_BUCKET`, `GENESIS_RDS_CA_CERT`) is referenced by repository code. It also runs `iam:SimulateCustomPolicy` over the proposed policies in isolation with `infra/staging/iam/simulation-cases.json` (allow and deny expectations), which is not affected by whatever is currently attached.
+
+### Actions that cannot be resource-scoped
+| Action | Why |
+|---|---|
+| `ecr:GetAuthorizationToken`, `secretsmanager:GetRandomPassword`, `iam:SimulateCustomPolicy` | AWS does not support resource-level permissions |
+| `ecs:RegisterTaskDefinition`, `ecs:DeregisterTaskDefinition` | No resource-level support; task-definition ARNs are unknown before registration. Registering a new family or revision cannot alter `genesis-production-web` revisions, and `ecs:UpdateService` is limited to the staging service |
+| `ec2:Describe*`, `elasticloadbalancing:Describe*`, `logs:DescribeLogGroups`, `elasticfilesystem:Describe*` | List/describe actions have no usable resource scope |
+| `ec2:CreateNetworkInterface`, `ModifyNetworkInterfaceAttribute`, `DeleteNetworkInterface` | Needed for EFS mount-target creation; ENI IDs are unknown beforehand |
+| `ec2:CreateSecurityGroup` | The new group ID is unknown; scoped to the production VPC ARN plus a required `aws:RequestTag/Environment=staging`, so the `security-group/*` resource is a wildcard |
+| `elasticfilesystem:CreateFileSystem`, `CreateAccessPoint` | IDs are unknown before creation; scoped by required `aws:RequestTag/Environment=staging` instead |
+| `cognito-idp:CreateUserPoolClient` | Scoped to the existing user pool; AWS has no condition key for the client name, so the role could create other clients in that pool (update and delete are not granted and are explicitly denied) |

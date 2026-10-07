@@ -43,7 +43,8 @@
         "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
         "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q",
         "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskExecutionRole9B42490-R0neRrBR8s7H",
-        "arn:aws:iam::452630323448:role/genesis-staging-execution-role"
+        "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "arn:aws:iam::452630323448:role/genesis-staging-task-role"
       ]
     },
     {
@@ -53,6 +54,23 @@
         "iam:SimulatePrincipalPolicy"
       ],
       "Resource": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole"
+    },
+    {
+      "Sid": "SimulateProposedPoliciesNoResourceSupport",
+      "Effect": "Allow",
+      "Action": [
+        "iam:SimulateCustomPolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ProductionImageProvenanceReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:DescribeImages",
+        "ecr:DescribeRepositories"
+      ],
+      "Resource": "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime"
     }
   ]
 }

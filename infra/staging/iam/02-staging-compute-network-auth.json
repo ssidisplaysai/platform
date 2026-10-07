@@ -87,14 +87,14 @@
       "Resource": "arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-staging-web"
     },
     {
-      "Sid": "EcsPassRoleOnlyForTasks",
+      "Sid": "EcsPassRoleOnlyForStagingTaskRoles",
       "Effect": "Allow",
       "Action": [
         "iam:PassRole"
       ],
       "Resource": [
         "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
-        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q"
+        "arn:aws:iam::452630323448:role/genesis-staging-task-role"
       ],
       "Condition": {
         "StringEquals": {

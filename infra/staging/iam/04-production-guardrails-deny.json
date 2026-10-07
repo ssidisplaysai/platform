@@ -125,6 +125,23 @@
         "arn:aws:iam::452630323448:role/GenesisRuntimeStack-*",
         "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole"
       ]
+    },
+    {
+      "Sid": "DenyPassingProductionRoles",
+      "Effect": "Deny",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": "arn:aws:iam::452630323448:role/GenesisRuntimeStack-*"
+    },
+    {
+      "Sid": "DenyAnyPolicyOnStagingTaskRole",
+      "Effect": "Deny",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:PutRolePolicy"
+      ],
+      "Resource": "arn:aws:iam::452630323448:role/genesis-staging-task-role"
     }
   ]
 }
