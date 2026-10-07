@@ -1,6 +1,7 @@
 name: Genesis Staging Deploy
 
 on:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -29,6 +30,9 @@ jobs:
         with:
           ref: infra/genesis-staging-runtime-v1
 
+      - name: Record the checked-out commit (github.sha is the caller's when invoked via the dispatcher)
+        run: echo "GIT_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -51,7 +55,7 @@ jobs:
           test -f .next/server/app/api/health/route.js
 
       - name: Build Docker image
-        run: docker build --build-arg GIT_COMMIT=${{ github.sha }} -t genesis-staging-runtime:${{ github.sha }} .
+        run: docker build --build-arg GIT_COMMIT=${{ env.GIT_SHA }} -t genesis-staging-runtime:${{ env.GIT_SHA }} .
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -71,23 +75,23 @@ jobs:
         id: push
         run: |
           REPO_URI="${{ steps.ecr.outputs.registry }}/${ECR_REPOSITORY}"
-          if ! aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag=${{ github.sha }} >/dev/null 2>&1; then
-            docker tag genesis-staging-runtime:${{ github.sha }} "$REPO_URI:${{ github.sha }}"
-            docker push "$REPO_URI:${{ github.sha }}"
+          if ! aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag=${{ env.GIT_SHA }} >/dev/null 2>&1; then
+            docker tag genesis-staging-runtime:${{ env.GIT_SHA }} "$REPO_URI:${{ env.GIT_SHA }}"
+            docker push "$REPO_URI:${{ env.GIT_SHA }}"
           fi
-          DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag=${{ github.sha }} --query 'imageDetails[0].imageDigest' --output text)
+          DIGEST=$(aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag=${{ env.GIT_SHA }} --query 'imageDetails[0].imageDigest' --output text)
           case "$DIGEST" in sha256:*) ;; *) echo "bad digest: $DIGEST"; exit 1;; esac
           echo "image=$REPO_URI@$DIGEST" >> "$GITHUB_OUTPUT"
 
       - name: Prove pushed image contains webhook route
         run: |
-          docker run --rm --entrypoint test genesis-staging-runtime:${{ github.sha }} -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
+          docker run --rm --entrypoint test genesis-staging-runtime:${{ env.GIT_SHA }} -f .next/server/app/api/share-to-grow/woocommerce/webhook/route.js
 
       - name: Register task definition revision (production config copied only through the reviewed allowlist)
         id: taskdef
         env:
           IMAGE_URI_WITH_DIGEST: ${{ steps.push.outputs.image }}
-          GIT_COMMIT: ${{ github.sha }}
+          GIT_COMMIT: ${{ env.GIT_SHA }}
         run: |
           bash infra/staging/provision.sh render-taskdef > taskdef.json
           jq -e '.family=="genesis-staging-web" and (.containerDefinitions[0].logConfiguration.options["awslogs-group"]=="/genesis/staging/web")' taskdef.json

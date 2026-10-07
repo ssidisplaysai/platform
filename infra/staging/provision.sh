@@ -12,6 +12,7 @@
 set -euo pipefail
 
 MODE="${1:-plan}"
+case "$MODE" in plan|apply|service|env|render-taskdef) ;; *) echo "Unknown mode: $MODE" >&2; exit 2;; esac
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALLOWLIST="$HERE/runtime-env-allowlist.json"
 PROD_TASKDEF_REF="genesis-production-web:38"
@@ -33,6 +34,9 @@ EXEC_ROLE_NAME="genesis-staging-execution-role"
 EFS_NAME="genesis-staging-persistence"
 EFS_SG_NAME="genesis-staging-efs"
 EFS_AP_PATH="/genesis-staging-persistence"
+STAGING_COGNITO_CLIENT_NAME="genesis-staging-operators-client"
+STAGING_CALLBACK_URL="https://${STAGING_HOST}/oauth2/idpresponse"
+STAGING_LOGOUT_URL="https://${STAGING_HOST}/"
 WEBHOOK_RULE_PRIORITY=10
 AUTH_RULE_PRIORITY=11
 CONTAINER_NAME="GenesisWebRuntime"
@@ -132,6 +136,72 @@ render_taskdef() {
       | .containerDefinitions[0].secrets += [ $rows[] | select(.kind=="secret" and .class=="copy" and (.name as $n | $sn | index($n) | not)) | {name, valueFrom:.source} ]'
 }
 
+# ---- DNS preflight (read-only; never changes DNS) ---------------------------
+dns_preflight() {
+  local alb_dns alb_ips host_ips cname
+  alb_dns="$(aws elbv2 describe-load-balancers --load-balancer-arns "$ALB_ARN" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || true)"
+  echo "DNS preflight for $STAGING_HOST (expected target: existing Genesis ALB ${alb_dns:-<ALB DNS unreadable: elasticloadbalancing:DescribeLoadBalancers?>})"
+  host_ips="$(getent ahostsv4 "$STAGING_HOST" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' || true)"
+  cname="$(dig +short CNAME "$STAGING_HOST" 2>/dev/null | head -n1 || true)"
+  if [ -z "$host_ips" ]; then
+    echo "  RESULT: $STAGING_HOST does NOT resolve. Create a DNS record (CNAME/ALIAS) to ${alb_dns:-the Genesis ALB} before WooCommerce/Cognito can reach staging. DNS is not modified by this automation."
+    return 0
+  fi
+  echo "  resolves to: $host_ips${cname:+ (CNAME $cname)}"
+  if [ -n "$alb_dns" ] && [ "$alb_dns" != "None" ]; then
+    alb_ips="$(getent ahostsv4 "$alb_dns" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' ' || true)"
+    if [ -n "$alb_ips" ] && [ -n "$(comm -12 <(echo "$host_ips" | tr ' ' '\n' | sort -u) <(echo "$alb_ips" | tr ' ' '\n' | sort -u) | grep . | head -n1)" ]; then
+      echo "  RESULT: resolves to the Genesis ALB."
+    else
+      echo "  RESULT: resolves, but NOT to the Genesis ALB ($alb_dns -> ${alb_ips:-unresolved}). Verify the record target."
+    fi
+  fi
+}
+
+# ---- Staging Cognito client (separate from the production client) -----------
+PROD_COG_ACTION="$(aws elbv2 describe-listeners --listener-arns "$LISTENER_ARN" --output json \
+  | jq -c '[.Listeners[0].DefaultActions[] | select(.Type=="authenticate-cognito") | .AuthenticateCognitoConfig | del(.AuthenticationRequestExtraParams)] | .[0] // empty')"
+COG_POOL_ID="$(echo "${PROD_COG_ACTION:-null}" | jq -r '(.UserPoolArn // "") | split("/") | last // ""')"
+PROD_COG_CLIENT_ID="$(echo "${PROD_COG_ACTION:-null}" | jq -r '.UserPoolClientId // empty')"
+
+lookup_staging_cognito_client_id() {
+  aws cognito-idp list-user-pool-clients --user-pool-id "$COG_POOL_ID" --max-results 60 \
+    --query "UserPoolClients[?ClientName=='${STAGING_COGNITO_CLIENT_NAME}'].ClientId | [0]" --output text 2>/dev/null | sed 's/^None$//' || true
+}
+# Builds the create-user-pool-client request from the PRODUCTION client's flow/scope/IdP/token settings.
+# Only URLs, name and GenerateSecret differ. The production client is read, never modified.
+staging_cognito_client_request() {
+  aws cognito-idp describe-user-pool-client --user-pool-id "$COG_POOL_ID" --client-id "$PROD_COG_CLIENT_ID" --output json \
+    | jq -c --arg pool "$COG_POOL_ID" --arg name "$STAGING_COGNITO_CLIENT_NAME" --arg cb "$STAGING_CALLBACK_URL" --arg lo "$STAGING_LOGOUT_URL" '
+      .UserPoolClient | {
+        UserPoolId: $pool, ClientName: $name, GenerateSecret: true,
+        CallbackURLs: [$cb], LogoutURLs: [$lo], DefaultRedirectURI: $cb,
+        AllowedOAuthFlows, AllowedOAuthScopes, AllowedOAuthFlowsUserPoolClient,
+        SupportedIdentityProviders, ExplicitAuthFlows,
+        RefreshTokenValidity, AccessTokenValidity, IdTokenValidity, TokenValidityUnits,
+        PreventUserExistenceErrors, EnableTokenRevocation
+      } | with_entries(select(.value != null))'
+}
+# $1 = existing staging client id (empty when it must be created)
+ensure_staging_cognito_client() {
+  [ -n "$COG_POOL_ID" ] && [ -n "$PROD_COG_CLIENT_ID" ] || { echo "Cannot derive user pool/client from the listener Cognito action." >&2; exit 1; }
+  [ -z "${1:-}" ] || { log "Cognito client $STAGING_COGNITO_CLIENT_NAME exists (${1})"; return 0; }
+  local req
+  if ! req="$(staging_cognito_client_request 2>/dev/null)" || [ -z "$req" ]; then
+    if [ "$MODE" = "plan" ]; then log "production Cognito client unreadable (needs cognito-idp:DescribeUserPoolClient); staging client settings cannot be derived yet"; return 0; fi
+    echo "Cannot read production Cognito client settings to mirror; refusing to guess." >&2; exit 1
+  fi
+  if [ "$(echo "$req" | jq -r '((.AllowedOAuthFlows // []) | index("code")) != null')" != "true" ]; then
+    echo "Production client does not use the authorization code flow; ALB requires it. Refusing." >&2; exit 1
+  fi
+  if [ "$MODE" = "plan" ]; then
+    log "WOULD CREATE Cognito app client (request contains no secrets): $req"
+  else
+    aws cognito-idp create-user-pool-client --cli-input-json "$req" >/dev/null
+  fi
+}
+STAGING_COG_CLIENT_ID="$(lookup_staging_cognito_client_id)"
+
 report_plan_extras() {
   local role_name="GenesisGitHubDeployRole" caller_arn pool_arn client_id pool_id
   {
@@ -164,15 +234,19 @@ report_plan_extras() {
     aws iam list-attached-role-policies --role-name "$role_name" --query 'AttachedPolicies[].PolicyArn' --output text 2>&1 | head -c 800
     echo
     echo "inline policies: $(aws iam list-role-policies --role-name "$role_name" --query 'PolicyNames' --output text 2>&1 | head -c 400)"
-    local actions="ecr:CreateRepository ecr:DescribeRepositories ecr:GetAuthorizationToken ecr:BatchCheckLayerAvailability ecr:InitiateLayerUpload ecr:UploadLayerPart ecr:CompleteLayerUpload ecr:PutImage ecr:DescribeImages logs:CreateLogGroup logs:PutRetentionPolicy logs:DescribeLogGroups secretsmanager:CreateSecret secretsmanager:DescribeSecret secretsmanager:GetRandomPassword iam:CreateRole iam:GetRole iam:AttachRolePolicy iam:PutRolePolicy iam:PassRole ec2:CreateSecurityGroup ec2:AuthorizeSecurityGroupIngress ec2:RevokeSecurityGroupIngress ec2:DescribeSecurityGroups ec2:DescribeSubnets ec2:CreateTags elasticfilesystem:CreateFileSystem elasticfilesystem:DescribeFileSystems elasticfilesystem:CreateMountTarget elasticfilesystem:DescribeMountTargets elasticfilesystem:CreateAccessPoint elasticfilesystem:DescribeAccessPoints elasticfilesystem:PutBackupPolicy elasticfilesystem:TagResource ecs:RegisterTaskDefinition ecs:DescribeTaskDefinition ecs:CreateService ecs:UpdateService ecs:DescribeServices elasticloadbalancing:DescribeRules elasticloadbalancing:DescribeListeners elasticloadbalancing:DescribeTargetGroups elasticloadbalancing:DescribeTargetHealth elasticloadbalancing:CreateRule elasticloadbalancing:ModifyRule elasticloadbalancing:ModifyTargetGroup cognito-idp:DescribeUserPoolClient cognito-idp:DescribeUserPool"
+    local actions="ecr:CreateRepository ecr:DescribeRepositories ecr:GetAuthorizationToken ecr:BatchCheckLayerAvailability ecr:InitiateLayerUpload ecr:UploadLayerPart ecr:CompleteLayerUpload ecr:PutImage ecr:DescribeImages logs:CreateLogGroup logs:PutRetentionPolicy logs:DescribeLogGroups secretsmanager:CreateSecret secretsmanager:DescribeSecret secretsmanager:GetRandomPassword iam:CreateRole iam:GetRole iam:AttachRolePolicy iam:PutRolePolicy iam:PassRole ec2:CreateSecurityGroup ec2:AuthorizeSecurityGroupIngress ec2:RevokeSecurityGroupIngress ec2:DescribeSecurityGroups ec2:DescribeSubnets ec2:CreateTags elasticfilesystem:CreateFileSystem elasticfilesystem:DescribeFileSystems elasticfilesystem:CreateMountTarget elasticfilesystem:DescribeMountTargets elasticfilesystem:CreateAccessPoint elasticfilesystem:DescribeAccessPoints elasticfilesystem:PutBackupPolicy elasticfilesystem:TagResource ecs:RegisterTaskDefinition ecs:DescribeTaskDefinition ecs:CreateService ecs:UpdateService ecs:DescribeServices elasticloadbalancing:DescribeRules elasticloadbalancing:DescribeListeners elasticloadbalancing:DescribeTargetGroups elasticloadbalancing:DescribeTargetHealth elasticloadbalancing:CreateRule elasticloadbalancing:ModifyRule elasticloadbalancing:ModifyTargetGroup cognito-idp:DescribeUserPoolClient cognito-idp:DescribeUserPool cognito-idp:ListUserPoolClients cognito-idp:CreateUserPoolClient elasticloadbalancing:DescribeListenerCertificates elasticloadbalancing:DescribeLoadBalancers elasticloadbalancing:AddTags iam:ListRolePolicies iam:GetRolePolicy iam:ListAttachedRolePolicies iam:SimulatePrincipalPolicy iam:TagRole"
     echo "SimulatePrincipalPolicy of the deploy role for required actions (read-only API):"
     # shellcheck disable=SC2086
     aws iam simulate-principal-policy --policy-source-arn "arn:aws:iam::${ACCOUNT_ID}:role/${role_name}" --action-names $actions --query 'EvaluationResults[].{a:EvalActionName,d:EvalDecision}' --output json 2>&1 \
       | jq -r 'if type=="array" then (map(select(.d!="allowed")) | if length==0 then "  all required actions allowed" else .[] | "  NOT ALLOWED: \(.a) (\(.d))" end) else . end' 2>&1 || echo "  simulation unavailable (iam:SimulatePrincipalPolicy denied)"
-    echo "--- staging Cognito client that would be created (not created now) ---"
-    echo "  name: genesis-staging-operators-client; same pool ${pool_id:-?}; no client secret unless production client has one (ALB requires GenerateSecret=true)"
-    echo "  callback: https://staging.glwplatform.com/oauth2/idpresponse ; logout: https://staging.glwplatform.com/"
-    echo "  flows/scopes/IdPs/token validity: copy production values printed above"
+    echo "--- staging Cognito client (not created in plan) ---"
+    echo "  name=$STAGING_COGNITO_CLIENT_NAME pool=${COG_POOL_ID:-?} GenerateSecret=true (ALB requirement) callback=$STAGING_CALLBACK_URL logout=$STAGING_LOGOUT_URL"
+    echo "  existing staging client id: ${STAGING_COG_CLIENT_ID:-<none yet>}"
+    echo "  flows/scopes/IdPs/token validity are mirrored from production client ${PROD_COG_CLIENT_ID:-?}"
+    if [ -z "${STAGING_COG_CLIENT_ID:-}" ]; then staging_cognito_client_request 2>/dev/null | jq -c . || echo "  production client unreadable: settings cannot be shown (permissions)"; fi
+    echo "  rule $AUTH_RULE_PRIORITY authenticate-cognito action will reference client: ${STAGING_COG_CLIENT_ID:-<new staging client id after create>} (never $PROD_COG_CLIENT_ID)"
+    echo "=== DNS preflight (READ-ONLY) ==="
+    dns_preflight
   } >&2
 }
 report_plan() {
@@ -347,10 +421,17 @@ mutate aws elbv2 modify-target-group --target-group-arn "$STAGING_TG_ARN" \
 
 # ---- ALB listener rules (staging host only; default action untouched) -------
 RULES_JSON="$(aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --output json)"
-COGNITO_ACTIONS="$(aws elbv2 describe-listeners --listener-arns "$LISTENER_ARN" --output json \
-  | jq -c --arg tg "$STAGING_TG_ARN" '[.Listeners[0].DefaultActions[] | select(.Type=="authenticate-cognito") | .Order=1]
-      + [{Type:"forward",Order:2,TargetGroupArn:$tg}]')"
-if [ "$(echo "$COGNITO_ACTIONS" | jq 'map(select(.Type=="authenticate-cognito"))|length')" != "1" ]; then
+# ---- Staging Cognito client, then rule 11 referencing it ---------------------
+ensure_staging_cognito_client "$STAGING_COG_CLIENT_ID"
+[ "$MODE" = "plan" ] || STAGING_COG_CLIENT_ID="$(lookup_staging_cognito_client_id)"
+RULE_CLIENT_ID="${STAGING_COG_CLIENT_ID:-STAGING_CLIENT_ID_AFTER_CREATE}"
+if [ "$MODE" != "plan" ] && { [ -z "$STAGING_COG_CLIENT_ID" ] || [ "$STAGING_COG_CLIENT_ID" = "$PROD_COG_CLIENT_ID" ]; }; then
+  echo "Staging Cognito client missing or equal to the production client; refusing to build rule $AUTH_RULE_PRIORITY." >&2; exit 1
+fi
+COGNITO_ACTIONS="$(echo "$PROD_COG_ACTION" | jq -c --arg tg "$STAGING_TG_ARN" --arg cid "$RULE_CLIENT_ID" '
+  [{Type:"authenticate-cognito",Order:1,AuthenticateCognitoConfig:(. | .UserPoolClientId=$cid)}]
+  + [{Type:"forward",Order:2,TargetGroupArn:$tg}]')"
+if [ "$(echo "$COGNITO_ACTIONS" | jq 'map(select(.Type=="authenticate-cognito"))|length')" != "1" ] || [ -z "$PROD_COG_ACTION" ]; then
   echo "Listener default action has no Cognito authentication to mirror; refusing to create an unauthenticated staging rule." >&2
   exit 1
 fi
@@ -371,7 +452,7 @@ ensure_rule() {
     log "$label rule exists at priority $priority; converging"
     mutate aws elbv2 modify-rule --rule-arn "$existing" --conditions "$conds" --actions "$actions" >/dev/null
   else
-    mutate aws elbv2 create-rule --listener-arn "$LISTENER_ARN" --priority "$priority" --conditions "$conds" --actions "$actions" >/dev/null
+    mutate aws elbv2 create-rule --listener-arn "$LISTENER_ARN" --priority "$priority" --conditions "$conds" --actions "$actions" --tags Key=Environment,Value=staging >/dev/null
   fi
 }
 ensure_rule "$AUTH_RULE_PRIORITY" "$AUTH_CONDS" "$COGNITO_ACTIONS" "authenticated staging host"
@@ -380,5 +461,7 @@ ensure_rule "$WEBHOOK_RULE_PRIORITY" "$WEBHOOK_CONDS" "$FORWARD_ONLY" "webhook e
 if [ "$MODE" = "plan" ]; then
   log "service creation happens in the deploy workflow (needs an image digest): desired 1, FARGATE, awsvpc, subnets=$SUBNETS sg=${STAGING_SG_ID:-$STAGING_SG_NAME}, no public IP, grace 60s, min 0/max 100"
 fi
+
+if [ "$MODE" != "plan" ]; then dns_preflight >&2; fi
 
 log "done"

@@ -56,3 +56,24 @@ for browser login on staging to complete. This changes Cognito configuration and
 - Service: `aws ecs update-service --cluster genesis-production --service genesis-staging-web --task-definition genesis-staging-web:<previous>` or `--desired-count 0`.
 - Ingress: delete listener rules at priorities 10 and 11 (only staging-host rules).
 - Remaining staging resources can be deleted independently; EFS data is staging-only. Production is unaffected.
+
+## Pre-deployment hardening (v3)
+
+### Deploy-role policy (proposed, NOT applied)
+`infra/staging/iam/*.json` are four customer-managed policies (each < 6144 chars) to attach to `GenesisGitHubDeployRole`:
+`01` read-only production inspection, `02` staging compute/network/auth writes, `03` staging EC2/EFS/IAM writes, `04` explicit **Deny** guardrails for production.
+- Staging mutations are scoped by ARN (`genesis-staging-*`) or by the `Environment=staging` tag (SG rules, EFS, listener rules).
+- The role currently also has AWS full-access managed policies (ECR/ECS/S3/RDS/CloudWatch). Allow statements cannot narrow those; policy `04` (explicit Deny) is what blocks production mutation. Detaching the full-access managed policies once `01-03` are attached is the real least-privilege step.
+- Cognito IAM resources are the whole user pool, so a staging-only client scope is not expressible. `UpdateUserPoolClient`/`DeleteUserPoolClient` are therefore NOT granted (create-only) and are explicitly denied.
+- `ecs:RegisterTaskDefinition` only supports `*`; it cannot touch the production task definitions (new revisions of other families only), and `ecs:UpdateService` is limited to `genesis-staging-web`.
+- The `ec2:*NetworkInterface` actions are required by EFS mount-target creation and cannot be narrowed.
+- Not verified until attached and re-simulated by the plan.
+
+### Staging Cognito client
+`provision.sh apply` creates `genesis-staging-operators-client` in the existing pool, mirroring the production client's OAuth flow, scopes, IdPs and token validity (read-only). Differences: name, callback `https://staging.glwplatform.com/oauth2/idpresponse`, logout `https://staging.glwplatform.com/`, `GenerateSecret=true`. Apply refuses to guess if the production client is unreadable. Rule 11's `authenticate-cognito` action references the staging client ID; apply refuses if that equals the production client.
+
+### DNS preflight
+`plan` (and `apply`) report whether `staging.glwplatform.com` resolves and whether it points at the Genesis ALB. DNS is never modified.
+
+### Dispatcher
+`infra/staging/dispatcher/genesis-staging-dispatch.yml.proposed` is the manual dispatcher intended for `main` (inactive here). Allowed ref: `infra/genesis-staging-runtime-v1` only; `apply` needs `APPLY-STAGING`, `deploy` needs `DEPLOY-STAGING`. The infra and deploy workflows expose `workflow_call` plus `workflow_dispatch`. The temporary push trigger is removed.

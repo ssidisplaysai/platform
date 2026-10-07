@@ -1,0 +1,163 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EcrStagingRepository",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:TagResource",
+        "ecr:DescribeRepositories",
+        "ecr:DescribeImages",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:PutImage",
+        "ecr:PutImageScanningConfiguration"
+      ],
+      "Resource": "arn:aws:ecr:us-west-2:452630323448:repository/genesis-staging-runtime"
+    },
+    {
+      "Sid": "EcrLogin",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LogsStagingGroup",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:PutRetentionPolicy",
+        "logs:TagResource",
+        "logs:ListTagsForResource"
+      ],
+      "Resource": "arn:aws:logs:us-west-2:452630323448:log-group:/genesis/staging/web*"
+    },
+    {
+      "Sid": "LogsDescribe",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsStagingWebhook",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:TagResource"
+      ],
+      "Resource": "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/staging/woocommerce-webhook-secret-*"
+    },
+    {
+      "Sid": "SecretsRandomPassword",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetRandomPassword"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcsRegisterTaskDefinition",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:RegisterTaskDefinition",
+        "ecs:DeregisterTaskDefinition",
+        "ecs:TagResource"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EcsStagingServiceOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:CreateService",
+        "ecs:UpdateService",
+        "ecs:DeleteService",
+        "ecs:TagResource"
+      ],
+      "Resource": "arn:aws:ecs:us-west-2:452630323448:service/genesis-production/genesis-staging-web"
+    },
+    {
+      "Sid": "EcsPassRoleOnlyForTasks",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": "ecs-tasks.amazonaws.com"
+        }
+      }
+    },
+    {
+      "Sid": "ElbStagingTargetGroupHealthCheck",
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:ModifyTargetGroup"
+      ],
+      "Resource": "arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/genesis-staging-web/*"
+    },
+    {
+      "Sid": "ElbRuleCreateStagingTagged",
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:CreateRule"
+      ],
+      "Resource": "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "ElbRuleTagOnCreate",
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:AddTags"
+      ],
+      "Resource": "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/*",
+      "Condition": {
+        "StringEquals": {
+          "elasticloadbalancing:CreateAction": "CreateRule",
+          "aws:RequestTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "ElbRuleManageStagingTagged",
+      "Effect": "Allow",
+      "Action": [
+        "elasticloadbalancing:ModifyRule",
+        "elasticloadbalancing:DeleteRule"
+      ],
+      "Resource": "arn:aws:elasticloadbalancing:us-west-2:452630323448:listener-rule/app/Genesi-Runti-8hL31AGbz6rt/000f8789ed6774c4/b3b1e351dd74f9b7/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Environment": "staging"
+        }
+      }
+    },
+    {
+      "Sid": "CognitoCreateStagingClientOnly",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:CreateUserPoolClient"
+      ],
+      "Resource": "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON"
+    }
+  ]
+}

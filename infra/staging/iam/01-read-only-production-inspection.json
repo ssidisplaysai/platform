@@ -1,0 +1,58 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadOnlyProductionInspection",
+      "Effect": "Allow",
+      "Action": [
+        "ecs:DescribeServices",
+        "ecs:DescribeTaskDefinition",
+        "elasticloadbalancing:DescribeTargetGroups",
+        "elasticloadbalancing:DescribeLoadBalancers",
+        "elasticloadbalancing:DescribeListeners",
+        "elasticloadbalancing:DescribeRules",
+        "elasticloadbalancing:DescribeListenerCertificates",
+        "elasticloadbalancing:DescribeTargetHealth",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeNetworkInterfaces",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CognitoReadOnlyExistingPool",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:DescribeUserPoolClient",
+        "cognito-idp:ListUserPoolClients"
+      ],
+      "Resource": "arn:aws:cognito-idp:us-west-2:452630323448:userpool/us-west-2_3ACTeHTON"
+    },
+    {
+      "Sid": "IamReadOnlyInspection",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:GetRolePolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole",
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q",
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-RuntimeTaskExecutionRole9B42490-R0neRrBR8s7H",
+        "arn:aws:iam::452630323448:role/genesis-staging-execution-role"
+      ]
+    },
+    {
+      "Sid": "SimulateOwnPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "iam:SimulatePrincipalPolicy"
+      ],
+      "Resource": "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole"
+    }
+  ]
+}

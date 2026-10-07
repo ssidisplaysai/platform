@@ -1,0 +1,130 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyProductionEcsMutation",
+      "Effect": "Deny",
+      "Action": [
+        "ecs:UpdateService",
+        "ecs:DeleteService",
+        "ecs:UpdateServicePrimaryTaskSet",
+        "ecs:CreateTaskSet",
+        "ecs:DeleteTaskSet",
+        "ecs:UpdateTaskSet",
+        "ecs:StopTask",
+        "ecs:RunTask"
+      ],
+      "Resource": "arn:aws:ecs:us-west-2:452630323448:*/genesis-production/genesis-production-web*"
+    },
+    {
+      "Sid": "DenyProductionEcr",
+      "Effect": "Deny",
+      "Action": [
+        "ecr:PutImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload",
+        "ecr:BatchDeleteImage",
+        "ecr:DeleteRepository",
+        "ecr:SetRepositoryPolicy",
+        "ecr:DeleteRepositoryPolicy",
+        "ecr:PutLifecyclePolicy",
+        "ecr:PutImageTagMutability"
+      ],
+      "Resource": "arn:aws:ecr:us-west-2:452630323448:repository/genesis-production-runtime"
+    },
+    {
+      "Sid": "DenyProductionSecrets",
+      "Effect": "Deny",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:UpdateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:RestoreSecret",
+        "secretsmanager:RotateSecret",
+        "secretsmanager:PutResourcePolicy"
+      ],
+      "Resource": [
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/*",
+        "arn:aws:secretsmanager:us-west-2:452630323448:secret:GenesisFoundationStackGenes-*"
+      ]
+    },
+    {
+      "Sid": "DenyListenerAndLoadBalancerMutation",
+      "Effect": "Deny",
+      "Action": [
+        "elasticloadbalancing:ModifyListener",
+        "elasticloadbalancing:DeleteListener",
+        "elasticloadbalancing:CreateListener",
+        "elasticloadbalancing:ModifyLoadBalancerAttributes",
+        "elasticloadbalancing:DeleteLoadBalancer",
+        "elasticloadbalancing:SetSecurityGroups",
+        "elasticloadbalancing:SetSubnets",
+        "elasticloadbalancing:AddListenerCertificates",
+        "elasticloadbalancing:RemoveListenerCertificates"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyNonStagingTargetGroupMutation",
+      "Effect": "Deny",
+      "Action": [
+        "elasticloadbalancing:ModifyTargetGroup",
+        "elasticloadbalancing:ModifyTargetGroupAttributes",
+        "elasticloadbalancing:DeleteTargetGroup",
+        "elasticloadbalancing:RegisterTargets",
+        "elasticloadbalancing:DeregisterTargets"
+      ],
+      "NotResource": [
+        "arn:aws:elasticloadbalancing:us-west-2:452630323448:targetgroup/genesis-staging-web/*"
+      ]
+    },
+    {
+      "Sid": "DenyCognitoClientAndPoolMutation",
+      "Effect": "Deny",
+      "Action": [
+        "cognito-idp:UpdateUserPoolClient",
+        "cognito-idp:DeleteUserPoolClient",
+        "cognito-idp:UpdateUserPool",
+        "cognito-idp:DeleteUserPool",
+        "cognito-idp:SetUserPoolMfaConfig"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyProductionSecurityGroupMutation",
+      "Effect": "Deny",
+      "Action": [
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupEgress",
+        "ec2:ModifySecurityGroupRules",
+        "ec2:DeleteSecurityGroup"
+      ],
+      "Resource": [
+        "arn:aws:ec2:us-west-2:452630323448:security-group/sg-02f456f2dea97f1be",
+        "arn:aws:ec2:us-west-2:452630323448:security-group/sg-08117e5cf7cef2d09"
+      ]
+    },
+    {
+      "Sid": "DenyProductionAndSelfRoleMutation",
+      "Effect": "Deny",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:DeleteRole",
+        "iam:PutRolePermissionsBoundary",
+        "iam:UpdateRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::452630323448:role/GenesisRuntimeStack-*",
+        "arn:aws:iam::452630323448:role/GenesisGitHubDeployRole"
+      ]
+    }
+  ]
+}

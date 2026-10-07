@@ -1,0 +1,144 @@
+﻿{
+    "Version":  "2012-10-17",
+    "Statement":  [
+                      {
+                          "Sid":  "Ec2DescribeAndEniForEfs",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "ec2:DescribeVpcs",
+                                         "ec2:DescribeAvailabilityZones",
+                                         "ec2:DescribeNetworkInterfaces",
+                                         "ec2:CreateNetworkInterface",
+                                         "ec2:ModifyNetworkInterfaceAttribute",
+                                         "ec2:DeleteNetworkInterface"
+                                     ],
+                          "Resource":  "*"
+                      },
+                      {
+                          "Sid":  "Ec2CreateStagingSecurityGroups",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "ec2:CreateSecurityGroup"
+                                     ],
+                          "Resource":  [
+                                           "arn:aws:ec2:us-west-2:452630323448:vpc/vpc-05035503df7e142d6",
+                                           "arn:aws:ec2:us-west-2:452630323448:security-group/*"
+                                       ]
+                      },
+                      {
+                          "Sid":  "Ec2TagOnCreate",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "ec2:CreateTags"
+                                     ],
+                          "Resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/*",
+                          "Condition":  {
+                                            "StringEquals":  {
+                                                                 "ec2:CreateAction":  "CreateSecurityGroup",
+                                                                 "aws:RequestTag/Environment":  "staging"
+                                                             }
+                                        }
+                      },
+                      {
+                          "Sid":  "Ec2ManageStagingTaggedSgRules",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "ec2:AuthorizeSecurityGroupIngress",
+                                         "ec2:RevokeSecurityGroupIngress",
+                                         "ec2:AuthorizeSecurityGroupEgress",
+                                         "ec2:RevokeSecurityGroupEgress",
+                                         "ec2:DeleteSecurityGroup"
+                                     ],
+                          "Resource":  "arn:aws:ec2:us-west-2:452630323448:security-group/*",
+                          "Condition":  {
+                                            "StringEquals":  {
+                                                                 "aws:ResourceTag/Environment":  "staging"
+                                                             }
+                                        }
+                      },
+                      {
+                          "Sid":  "EfsCreateStagingFileSystem",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "elasticfilesystem:CreateFileSystem",
+                                         "elasticfilesystem:CreateAccessPoint",
+                                         "elasticfilesystem:TagResource"
+                                     ],
+                          "Resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:*/*",
+                          "Condition":  {
+                                            "StringEquals":  {
+                                                                 "aws:RequestTag/Environment":  "staging"
+                                                             }
+                                        }
+                      },
+                      {
+                          "Sid":  "EfsManageStagingTagged",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "elasticfilesystem:CreateMountTarget",
+                                         "elasticfilesystem:CreateAccessPoint",
+                                         "elasticfilesystem:PutBackupPolicy",
+                                         "elasticfilesystem:DeleteMountTarget",
+                                         "elasticfilesystem:DeleteAccessPoint"
+                                     ],
+                          "Resource":  "arn:aws:elasticfilesystem:us-west-2:452630323448:*/*",
+                          "Condition":  {
+                                            "StringEquals":  {
+                                                                 "aws:ResourceTag/Environment":  "staging"
+                                                             }
+                                        }
+                      },
+                      {
+                          "Sid":  "EfsDescribe",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "elasticfilesystem:DescribeFileSystems",
+                                         "elasticfilesystem:DescribeMountTargets",
+                                         "elasticfilesystem:DescribeAccessPoints",
+                                         "elasticfilesystem:DescribeBackupPolicy",
+                                         "elasticfilesystem:DescribeMountTargetSecurityGroups"
+                                     ],
+                          "Resource":  "*"
+                      },
+                      {
+                          "Sid":  "EfsServiceLinkedRole",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "iam:CreateServiceLinkedRole"
+                                     ],
+                          "Resource":  "arn:aws:iam::452630323448:role/aws-service-role/elasticfilesystem.amazonaws.com/*",
+                          "Condition":  {
+                                            "StringEquals":  {
+                                                                 "iam:AWSServiceName":  "elasticfilesystem.amazonaws.com"
+                                                             }
+                                        }
+                      },
+                      {
+                          "Sid":  "IamManageStagingExecutionRoleOnly",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "iam:CreateRole",
+                                         "iam:TagRole",
+                                         "iam:PutRolePolicy",
+                                         "iam:GetRole",
+                                         "iam:GetRolePolicy",
+                                         "iam:ListRolePolicies",
+                                         "iam:ListAttachedRolePolicies"
+                                     ],
+                          "Resource":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role"
+                      },
+                      {
+                          "Sid":  "IamAttachOnlyTaskExecutionManagedPolicy",
+                          "Effect":  "Allow",
+                          "Action":  [
+                                         "iam:AttachRolePolicy"
+                                     ],
+                          "Resource":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
+                          "Condition":  {
+                                            "ArnEquals":  {
+                                                              "iam:PolicyARN":  "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+                                                          }
+                                        }
+                      }
+                  ]
+}
