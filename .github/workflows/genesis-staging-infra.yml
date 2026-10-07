@@ -1,0 +1,45 @@
+name: Genesis Staging Infrastructure
+
+# One-time / converging staging provisioning. Never touches production resources
+# (production is read-only: describe-* calls). Default mode is a read-only plan.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "plan (read-only) or apply"
+        type: choice
+        options: [plan, apply]
+        default: plan
+      confirm:
+        description: "For apply, type APPLY-STAGING"
+        required: false
+        default: ""
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: genesis-staging-infra
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Require explicit confirmation for apply
+        if: inputs.mode == 'apply' && inputs.confirm != 'APPLY-STAGING'
+        run: echo "apply requires confirm=APPLY-STAGING" && exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: infra/genesis-staging-runtime-v1
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::452630323448:role/GenesisGitHubDeployRole
+          aws-region: us-west-2
+
+      - name: Provision (${{ inputs.mode }})
+        run: bash infra/staging/provision.sh "${{ inputs.mode }}"

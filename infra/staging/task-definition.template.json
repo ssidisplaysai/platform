@@ -7,6 +7,16 @@
   "runtimePlatform": { "cpuArchitecture": "X86_64", "operatingSystemFamily": "LINUX" },
   "taskRoleArn": "${TASK_ROLE_ARN}",
   "executionRoleArn": "${EXECUTION_ROLE_ARN}",
+  "volumes": [
+    {
+      "name": "genesis-persistence",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "${EFS_FILE_SYSTEM_ID}",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": { "accessPointId": "${EFS_ACCESS_POINT_ID}", "iam": "DISABLED" }
+      }
+    }
+  ],
   "containerDefinitions": [
     {
       "name": "GenesisWebRuntime",
@@ -17,7 +27,11 @@
         { "name": "NODE_ENV", "value": "production" },
         { "name": "GENESIS_ENVIRONMENT", "value": "staging" },
         { "name": "GENESIS_STONER_GYM_RECRUITED_CREATORS", "value": "jessica" },
+        { "name": "GCP_FOUNDATION_PERSISTENCE_DIR", "value": "/mnt/genesis-persistence/foundation" },
         { "name": "GIT_COMMIT", "value": "${GIT_COMMIT}" }
+      ],
+      "mountPoints": [
+        { "sourceVolume": "genesis-persistence", "containerPath": "/mnt/genesis-persistence", "readOnly": false }
       ],
       "secrets": [
         { "name": "GENESIS_WOOCOMMERCE_WEBHOOK_SECRET", "valueFrom": "${WEBHOOK_SECRET_ARN}" }
