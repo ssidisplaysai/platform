@@ -1,0 +1,115 @@
+name: Controlled Genesis Staging Dispatcher
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Select one explicitly approved staging operation
+        required: true
+        type: choice
+        options:
+          - plan
+          - bootstrap-and-plan
+          - apply
+          - deploy
+        default: plan
+      ref:
+        description: Staging source ref (must remain the approved staging branch)
+        required: true
+        type: string
+        default: infra/genesis-staging-runtime-v1
+      confirm:
+        description: Required exact phrase for bootstrap, apply, or deploy
+        required: false
+        type: string
+        default: ""
+
+permissions: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Validate action, ref, and confirmation
+        env:
+          REQUESTED_ACTION: ${{ inputs.action }}
+          REQUESTED_REF: ${{ inputs.ref }}
+          CONFIRMATION: ${{ inputs.confirm }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$REQUESTED_REF" != "infra/genesis-staging-runtime-v1" ]]; then
+            echo "Refusing unapproved staging ref: $REQUESTED_REF" >&2
+            exit 1
+          fi
+
+          case "$REQUESTED_ACTION" in
+            plan)
+              ;;
+            bootstrap-and-plan)
+              [[ "$CONFIRMATION" == "BOOTSTRAP-IAM" ]] || {
+                echo "bootstrap-and-plan requires confirm=BOOTSTRAP-IAM" >&2
+                exit 1
+              }
+              ;;
+            apply)
+              [[ "$CONFIRMATION" == "APPLY-STAGING" ]] || {
+                echo "apply requires confirm=APPLY-STAGING" >&2
+                exit 1
+              }
+              ;;
+            deploy)
+              [[ "$CONFIRMATION" == "DEPLOY-STAGING" ]] || {
+                echo "deploy requires confirm=DEPLOY-STAGING" >&2
+                exit 1
+              }
+              ;;
+            *)
+              echo "Refusing unapproved action: $REQUESTED_ACTION" >&2
+              exit 1
+              ;;
+          esac
+
+  plan:
+    needs: validate
+    if: ${{ inputs.action == 'plan' }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ssidisplaysai/platform/.github/workflows/genesis-staging-infra.yml@infra/genesis-staging-runtime-v1
+    with:
+      mode: plan
+      confirm: ""
+
+  bootstrap-and-plan:
+    needs: validate
+    if: ${{ inputs.action == 'bootstrap-and-plan' }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ssidisplaysai/platform/.github/workflows/genesis-staging-bootstrap.yml@infra/genesis-staging-runtime-v1
+    with:
+      ref: ${{ inputs.ref }}
+
+  apply:
+    needs: validate
+    if: ${{ inputs.action == 'apply' }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ssidisplaysai/platform/.github/workflows/genesis-staging-infra.yml@infra/genesis-staging-runtime-v1
+    with:
+      mode: apply
+      confirm: ${{ inputs.confirm }}
+
+  deploy:
+    needs: validate
+    if: ${{ inputs.action == 'deploy' }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ssidisplaysai/platform/.github/workflows/genesis-staging-deploy.yml@infra/genesis-staging-runtime-v1
+    with:
+      confirm: ${{ inputs.confirm }}
