@@ -54,6 +54,7 @@ function cloudTrailEvent(region, subject = "repo:ssidisplaysai/platform:ref:refs
 
 function createMockAws(options = {}) {
   const calls = [];
+  let productionServiceReads = 0;
   const mock = async (service, operation, args, region) => {
     calls.push({ service, operation, args, region });
     if (options.failCall?.(service, operation, args, region)) {
@@ -65,35 +66,86 @@ function createMockAws(options = {}) {
       return { Account: "452630323448", Arn: "arn:aws:sts::452630323448:assumed-role/GenesisGitHubDeployRole/session" };
     }
     if (service === "ecs" && operation === "describe-services") {
+      productionServiceReads += 1;
+      const initialRevision = options.productionRevision ?? 38;
+      const revision = options.changeDuringPlan && productionServiceReads > 1
+        ? options.changedProductionRevision ?? initialRevision + 1
+        : initialRevision;
+      const taskDefinitionArn = `arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:${revision}`;
+      const desiredCount = options.unhealthyService === "zero-desired" ? 0 : 1;
+      const runningCount = options.unhealthyService === "not-running" ? 0 : desiredCount;
+      const primaryTaskDefinition = options.primaryTaskDefinitionMismatch
+        ? `${taskDefinitionArn}-unexpected`
+        : taskDefinitionArn;
+      const primaryDeployment = {
+        status: "PRIMARY",
+        taskDefinition: primaryTaskDefinition,
+        desiredCount,
+        runningCount,
+        pendingCount: options.unhealthyService === "pending" ? 1 : 0,
+        rolloutState: options.rolloutIncomplete ? "IN_PROGRESS" : "COMPLETED",
+      };
       return {
         services: [{
-          status: "ACTIVE",
-          taskDefinition: "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:38",
+          serviceName: "genesis-production-web",
+          status: options.unhealthyService === "inactive" ? "DRAINING" : "ACTIVE",
+          taskDefinition: taskDefinitionArn,
+          desiredCount,
+          runningCount,
+          pendingCount: options.unhealthyService === "pending" ? 1 : 0,
+          deployments: options.multiplePrimary
+            ? [primaryDeployment, { ...primaryDeployment }]
+            : [primaryDeployment],
           networkConfiguration: { awsvpcConfiguration: { securityGroups: ["sg-production-task"] } },
           loadBalancers: [{ targetGroupArn: prodTargetGroupArn }],
         }],
-        failures: [],
+        failures: options.serviceFailures ? [{ reason: "mock failure" }] : [],
       };
     }
     if (service === "ecs" && operation === "describe-task-definition") {
+      const revision = options.productionRevision ?? 38;
+      const taskDefinitionArn = `arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:${revision}`;
+      const container = {
+        name: "GenesisWebRuntime",
+        essential: true,
+        image: `452630323448.dkr.ecr.us-west-2.amazonaws.com/${options.wrongImageRepository ?? "genesis-production-runtime"}:c8e3da0`,
+        portMappings: options.wrongPort
+          ? [{ containerPort: 3001, hostPort: 3001, protocol: "tcp" }]
+          : [{ containerPort: 3000, hostPort: 3000, protocol: "tcp" }],
+        mountPoints: options.unexpectedMount ? [{ sourceVolume: "unexpected", containerPath: "/unexpected" }] : [],
+        volumesFrom: [],
+        environment: [
+          { name: "NODE_ENV", value: "production" },
+          { name: "GENESIS_OPENAI_API_KEY", value: "never-print-this" },
+          ...(options.commitProvenance === "absent" ? [] : [
+            { name: "GIT_COMMIT", value: options.commitProvenance === "missing" ? "ffffffffffffffffffffffffffffffffffffffff" : "c8e3da0d7e0bd8e04509b9c4a59dc15c34602fbe" },
+            { name: "GENESIS_RUNTIME_SHA", value: options.commitProvenance === "missing" ? "ffffffffffffffffffffffffffffffffffffffff" : "c8e3da0d7e0bd8e04509b9c4a59dc15c34602fbe" },
+          ]),
+        ],
+        secrets: [{
+          name: "GENESIS_WOOCOMMERCE_WEBHOOK_SECRET",
+          valueFrom: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/webhook-AbCdEf",
+        }],
+      };
+      const containers = [container];
+      if (options.unexpectedContainer) containers.push({ name: "unexpected-container", image: "unexpected" });
       return {
         taskDefinition: {
-          taskRoleArn: prodRoleArn,
-          executionRoleArn: prodExecutionRoleArn,
-          containerDefinitions: [{
-            name: "GenesisWebRuntime",
-            image: "452630323448.dkr.ecr.us-west-2.amazonaws.com/genesis-production-runtime:c8e3da0",
-            environment: [
-              { name: "NODE_ENV", value: "production" },
-              { name: "GENESIS_OPENAI_API_KEY", value: "never-print-this" },
-              { name: "GIT_COMMIT", value: "c8e3da0d7e0bd8e04509b9c4a59dc15c34602fbe" },
-              { name: "GENESIS_RUNTIME_SHA", value: "c8e3da0d7e0bd8e04509b9c4a59dc15c34602fbe" },
-            ],
-            secrets: [{
-              name: "GENESIS_WOOCOMMERCE_WEBHOOK_SECRET",
-              valueFrom: "arn:aws:secretsmanager:us-west-2:452630323448:secret:genesis/production/webhook-AbCdEf",
-            }],
-          }],
+          taskDefinitionArn,
+          revision,
+          family: options.wrongFamily ? "unexpected-family" : "genesis-production-web",
+          status: "ACTIVE",
+          taskRoleArn: options.wrongTaskRole ? "arn:aws:iam::452630323448:role/unexpected-task-role" : prodRoleArn,
+          executionRoleArn: options.wrongExecutionRole ? "arn:aws:iam::452630323448:role/unexpected-execution-role" : prodExecutionRoleArn,
+          networkMode: options.wrongNetworkMode ? "bridge" : "awsvpc",
+          requiresCompatibilities: options.wrongCompatibility ? ["EC2"] : ["FARGATE"],
+          cpu: options.wrongCpu ? "1024" : "512",
+          memory: options.wrongMemory ? "2048" : "1024",
+          runtimePlatform: options.wrongRuntimePlatform
+            ? { operatingSystemFamily: "LINUX", cpuArchitecture: "ARM64" }
+            : { operatingSystemFamily: "LINUX", cpuArchitecture: "X86_64" },
+          containerDefinitions: containers,
+          volumes: options.unexpectedVolume ? [{ name: "unexpected" }] : [],
         },
       };
     }
@@ -192,7 +244,13 @@ function createMockAws(options = {}) {
       } };
     }
     if (service === "ecr" && operation === "describe-images") {
-      return { imageDetails: [{ imageDigest: "sha256:abcdef1234567890", imageTags: ["c8e3da0"] }] };
+      return {
+        imageDetails: [{
+          imageDigest: `sha256:${"a".repeat(64)}`,
+          imageTags: ["c8e3da0"],
+          imagePushedAt: fixedNow.toISOString(),
+        }],
+      };
     }
     if (service === "iam" && operation === "simulate-custom-policy") {
       if (options.incompleteCustomSimulation) return {};
@@ -264,11 +322,23 @@ async function executeGate(options = {}, root = repoRoot) {
 test("all required reads and zero simulation mismatches pass the plan gate", async () => {
   const result = await executeGate();
   assert.ifError(result.error);
+  assert.match(result.output, /PRODUCTION_TASK_DEFINITION_SNAPSHOT=arn:aws:ecs:us-west-2:452630323448:task-definition\/genesis-production-web:38/);
+  assert.match(result.output, /PRODUCTION_TASK_DEFINITION_REVISION=38/);
+  assert.match(result.output, /PRODUCTION_SERVICE_HEALTH=PASS/);
+  assert.match(result.output, /PRODUCTION_STRUCTURE_VALIDATION=PASS/);
+  assert.match(result.output, /PRODUCTION_IMAGE_URI=.*genesis-production-runtime:c8e3da0/);
+  assert.match(result.output, /PRODUCTION_IMAGE_DIGEST=sha256:a{64}/);
+  assert.match(result.output, /PRODUCTION_IMAGE_TAGS=\["c8e3da0"\]/);
+  assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
+  assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
+  assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
   assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=32 mismatches=0/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
   assert.ok(result.output.endsWith("GENESIS_STAGING_PLAN_GATE=PASS"));
   assert.doesNotMatch(result.output, /never-print-this/);
+  assert.match(result.output, /GENESIS_OPENAI_API_KEY.*unclassified-excluded/);
+  assert.match(result.output, /GENESIS_WOOCOMMERCE_WEBHOOK_SECRET.*overridden-by-staging/);
   assert.match(result.output, /InlineDeployPolicy/);
   assert.ok(result.calls.every(({ service, operation }) =>
     new Set([
@@ -281,6 +351,133 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
       "iam:simulate-principal-policy", "ecr:describe-images", "cloudtrail:lookup-events",
     ]).has(`${service}:${operation}`.toLowerCase())
   ));
+});
+
+for (const revision of [38, 39, 40, 1042]) {
+  test(`current production revision ${revision} passes when reviewed invariants hold`, async () => {
+    const result = await executeGate({ productionRevision: revision });
+    assert.ifError(result.error);
+    assert.match(result.output, new RegExp(`PRODUCTION_TASK_DEFINITION_REVISION=${revision}(?:\\n|$)`));
+    assert.match(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+  });
+}
+
+test("wrong production task role fails closed", async () => {
+  const result = await executeGate({ wrongTaskRole: true });
+  assert.ok(result.error);
+  assert.match(result.error.message, /task role differs from the reviewed architecture/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("wrong production execution role fails closed", async () => {
+  const result = await executeGate({ wrongExecutionRole: true });
+  assert.ok(result.error);
+  assert.match(result.error.message, /execution role differs from the reviewed architecture/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("wrong production image repository fails closed", async () => {
+  const result = await executeGate({ wrongImageRepository: "unexpected-runtime" });
+  assert.ok(result.error);
+  assert.match(result.error.message, /image repository must be genesis-production-runtime/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("wrong production CPU or memory fails closed", async (t) => {
+  for (const options of [{ wrongCpu: true }, { wrongMemory: true }]) {
+    await t.test(JSON.stringify(options), async () => {
+      const result = await executeGate(options);
+      assert.ok(result.error);
+      assert.match(result.error.message, /CPU must be 512|memory must be 1024/);
+      assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+    });
+  }
+});
+
+test("wrong production network mode fails closed", async () => {
+  const result = await executeGate({ wrongNetworkMode: true });
+  assert.ok(result.error);
+  assert.match(result.error.message, /network mode is not awsvpc/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("wrong production runtime platform fails closed", async () => {
+  const result = await executeGate({ wrongRuntimePlatform: true });
+  assert.ok(result.error);
+  assert.match(result.error.message, /runtime platform must be LINUX\/X86_64/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("unhealthy or ambiguous production service fails closed", async (t) => {
+  for (const [name, options, expected] of [
+    ["not running", { unhealthyService: "not-running" }, /runningCount does not match desiredCount/],
+    ["zero desired", { unhealthyService: "zero-desired" }, /desiredCount must be at least 1/],
+    ["pending task", { unhealthyService: "pending" }, /has pending tasks/],
+    ["inactive", { unhealthyService: "inactive" }, /missing or not ACTIVE/],
+    ["response failures", { serviceFailures: true }, /response includes failures/],
+    ["multiple primary deployments", { multiplePrimary: true }, /exactly one PRIMARY deployment/],
+    ["primary task definition mismatch", { primaryTaskDefinitionMismatch: true }, /PRIMARY task definition differs/],
+  ]) {
+    await t.test(name, async () => {
+      const result = await executeGate(options);
+      assert.ok(result.error);
+      assert.match(result.error.message, expected);
+      assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+    });
+  }
+});
+
+test("production rollout that is not completed fails closed", async () => {
+  const result = await executeGate({ rolloutIncomplete: true });
+  assert.ok(result.error);
+  assert.match(result.error.message, /PRIMARY rollout is not COMPLETED/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("production task definition change during plan fails with both snapshot ARNs", async () => {
+  const result = await executeGate({ productionRevision: 40, changeDuringPlan: true });
+  assert.ok(result.error);
+  assert.match(result.error.message, /PRODUCTION_CHANGED_DURING_PLAN/);
+  assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STARTING_ARN=.*:40/);
+  assert.match(result.output, /PRODUCTION_TASK_DEFINITION_ENDING_ARN=.*:41/);
+  assert.doesNotMatch(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
+  assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("missing repository commit provenance requires review without blocking infrastructure safety", async () => {
+  const result = await executeGate({ commitProvenance: "missing" });
+  assert.ifError(result.error);
+  assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=REPOSITORY_NOT_FOUND/);
+  assert.match(result.output, /PRODUCTION_PROVENANCE_REVIEW=REQUIRED/);
+  assert.doesNotMatch(result.output, /PRODUCTION_COMMIT_PROVENANCE=REPOSITORY_CONFIRMED/);
+  assert.match(result.output, /PRODUCTION_STRUCTURE_VALIDATION=PASS/);
+  assert.match(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("absent repository commit provenance is reported as ABSENT and requires review", async () => {
+  const result = await executeGate({ commitProvenance: "absent" });
+  assert.ifError(result.error);
+  assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=ABSENT/);
+  assert.match(result.output, /PRODUCTION_PROVENANCE_REVIEW=REQUIRED/);
+  assert.match(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+});
+
+test("unexpected production mount points, volumes, containers, and ports fail closed", async (t) => {
+  for (const [name, options, expected] of [
+    ["mount", { unexpectedMount: true }, /unapproved mount point/],
+    ["volume", { unexpectedVolume: true }, /unapproved volume/],
+    ["container", { unexpectedContainer: true }, /unexpected containers/],
+    ["port", { wrongPort: true }, /only TCP port 3000/],
+    ["family", { wrongFamily: true }, /family is unexpected/],
+    ["compatibility", { wrongCompatibility: true }, /compatibility must be exactly FARGATE/],
+  ]) {
+    await t.test(name, async () => {
+      const result = await executeGate(options);
+      assert.ok(result.error);
+      assert.match(result.error.message, expected);
+      assert.doesNotMatch(result.output, /GENESIS_STAGING_PLAN_GATE=PASS/);
+    });
+  }
 });
 
 test("staging task role with an inline policy fails closed", async () => {
@@ -453,15 +650,20 @@ test("only the allowlisted read-only AWS APIs are issued", async () => {
   ));
 });
 
-test("provision.sh gates plan before AWS discovery and prints PASS only at its end", async () => {
+test("provision.sh uses the plan snapshot and verifies stability immediately before PASS", async () => {
   const script = await readFile(join(repoRoot, "infra", "staging", "provision.sh"), "utf8");
   const planBranch = script.indexOf('if [ "$MODE" = "plan" ]; then');
   const preflight = script.indexOf('node "$HERE/plan-gate.mjs" --preflight');
   const firstAwsCall = script.indexOf('aws ecs describe-services');
+  const snapshotExtraction = script.indexOf("PRODUCTION_TASK_DEFINITION_SNAPSHOT=");
   const completion = script.lastIndexOf('echo "GENESIS_STAGING_PLAN_GATE=PASS"');
   const doneLog = script.lastIndexOf('log "done"');
+  const finalSnapshotCheck = script.lastIndexOf('node "$HERE/plan-gate.mjs" --verify-snapshot "$PROD_TASKDEF_REF"');
   assert.ok(planBranch >= 0 && planBranch < preflight);
   assert.ok(preflight < firstAwsCall);
+  assert.ok(snapshotExtraction > preflight && snapshotExtraction < firstAwsCall);
+  assert.ok(doneLog < finalSnapshotCheck && finalSnapshotCheck < completion);
   assert.ok(doneLog < completion);
+  assert.doesNotMatch(script, /genesis-production-web:38/);
   assert.doesNotMatch(script, /report_plan_extras\s*\|\|\s*true/);
 });

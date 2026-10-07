@@ -8,6 +8,10 @@ const ACCOUNT_ID = "452630323448";
 const REGION = "us-west-2";
 const DEPLOY_ROLE = "GenesisGitHubDeployRole";
 const DEPLOY_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/${DEPLOY_ROLE}`;
+const PRODUCTION_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/GenesisRuntimeStack-RuntimeTaskRoleCD4DE6A7-ekuyV7pdb88Q`;
+const PRODUCTION_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/GenesisRuntimeStack-RuntimeTaskExecutionRole9B42490-R0neRrBR8s7H`;
+const PRODUCTION_TASK_FAMILY = "genesis-production-web";
+const PRODUCTION_ECR_REPOSITORY = "genesis-production-runtime";
 const STAGING_TASK_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-task-role`;
 const STAGING_EXECUTION_ROLE_ARN = `arn:aws:iam::${ACCOUNT_ID}:role/genesis-staging-execution-role`;
 const STAGING_HOST = "staging.glwplatform.com";
@@ -58,6 +62,57 @@ function asObject(value, label) {
 function requiredArray(value, label) {
   assert(Array.isArray(value), `${label} response is missing its required array`);
   return value;
+}
+
+function productionRevision(taskDefinitionArn) {
+  const match = /^arn:aws:ecs:us-west-2:452630323448:task-definition\/genesis-production-web:(\d+)$/.exec(taskDefinitionArn ?? "");
+  assert(match, `Production task definition ARN is invalid: ${String(taskDefinitionArn)}`);
+  const revision = Number(match[1]);
+  assert(Number.isSafeInteger(revision) && revision > 0, `Production task definition revision is invalid: ${match[1]}`);
+  return revision;
+}
+
+function validateProductionService(response, label = "Production ECS service") {
+  const failures = requiredArray(response.failures, `${label} failures`);
+  assert(failures.length === 0, `${label} response includes failures`);
+  const services = requiredArray(response.services, label);
+  assert(services.length === 1, `${label} is missing or ambiguous`);
+  const service = asObject(services[0], label);
+  assert(service.serviceName === PRODUCTION_TASK_FAMILY, `${label} returned an unexpected service`);
+  assert(service.status === "ACTIVE", `${label} is missing or not ACTIVE`);
+  const taskDefinitionArn = service.taskDefinition;
+  productionRevision(taskDefinitionArn);
+  const deployments = requiredArray(service.deployments, `${label} deployments`);
+  const primaryDeployments = deployments.filter((deployment) => deployment.status === "PRIMARY");
+  assert(primaryDeployments.length === 1, `${label} must have exactly one PRIMARY deployment`);
+  const primary = primaryDeployments[0];
+  assert(primary.taskDefinition === taskDefinitionArn, `${label} PRIMARY task definition differs from the service task definition`);
+  assert(Number.isInteger(service.desiredCount) && service.desiredCount >= 1, `${label} desiredCount must be at least 1`);
+  assert(service.runningCount === service.desiredCount, `${label} runningCount does not match desiredCount`);
+  assert(service.pendingCount === 0, `${label} has pending tasks`);
+  assert(primary.desiredCount === service.desiredCount, `${label} PRIMARY desiredCount does not match the service`);
+  assert(primary.runningCount === primary.desiredCount, `${label} PRIMARY runningCount does not match desiredCount`);
+  assert(primary.pendingCount === 0, `${label} PRIMARY deployment has pending tasks`);
+  assert(primary.rolloutState === "COMPLETED", `${label} PRIMARY rollout is not COMPLETED`);
+  return { service, primary, taskDefinitionArn, revision: productionRevision(taskDefinitionArn) };
+}
+
+async function verifyProductionSnapshot({ call, snapshot, report }) {
+  productionRevision(snapshot);
+  const response = await call("ecs", "describe-services", [
+    "--cluster", "genesis-production", "--services", PRODUCTION_TASK_FAMILY,
+  ]);
+  const services = requiredArray(response.services, "Production ECS service");
+  assert(services.length === 1, "Production ECS service is unavailable or ambiguous at plan completion");
+  const endingService = asObject(services[0], "Production ECS service at plan completion");
+  const endingArn = endingService.taskDefinition;
+  if (endingArn !== snapshot) {
+    report(`PRODUCTION_TASK_DEFINITION_STARTING_ARN=${snapshot}`);
+    report(`PRODUCTION_TASK_DEFINITION_ENDING_ARN=${endingArn ?? "<unavailable>"}`);
+    throw new Error(`PRODUCTION_CHANGED_DURING_PLAN starting=${snapshot} ending=${endingArn ?? "<unavailable>"}`);
+  }
+  validateProductionService(response, "Production ECS service at plan completion");
+  report("PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS");
 }
 
 function lastArnComponent(value) {
@@ -284,30 +339,65 @@ export async function runPlanGate({
   const callerArn = identity.Arn;
 
   const serviceResponse = await call("ecs", "describe-services", [
-    "--cluster", "genesis-production", "--services", "genesis-production-web",
+    "--cluster", "genesis-production", "--services", PRODUCTION_TASK_FAMILY,
   ]);
-  const productionService = requiredArray(serviceResponse.services, "Production ECS service")[0];
-  assert(productionService?.status === "ACTIVE", "Production ECS service is missing or not ACTIVE");
-  assert(requiredArray(serviceResponse.failures, "Production ECS service failures").length === 0, "Production ECS service response includes failures");
-  const productionTaskDefinitionArn = productionService.taskDefinition;
+  const {
+    service: productionService,
+    taskDefinitionArn: productionTaskDefinitionArn,
+    revision: productionTaskDefinitionRevision,
+  } = validateProductionService(serviceResponse);
   const productionTaskGroup = requiredArray(productionService.networkConfiguration?.awsvpcConfiguration?.securityGroups, "Production task security groups")[0];
   const productionTargetGroupArn = requiredArray(productionService.loadBalancers, "Production service target groups")[0]?.targetGroupArn;
   assert(productionTaskDefinitionArn && productionTaskGroup && productionTargetGroupArn, "Production ECS service response is incomplete");
-  assert(
-    /\/genesis-production-web:38$/.test(productionTaskDefinitionArn),
-    `Production service task definition differs from the reviewed genesis-production-web:38 reference: ${productionTaskDefinitionArn}`,
-  );
+  report(`PRODUCTION_TASK_DEFINITION_SNAPSHOT=${productionTaskDefinitionArn}`);
+  report(`PRODUCTION_TASK_DEFINITION_REVISION=${productionTaskDefinitionRevision}`);
+  report("PRODUCTION_SERVICE_HEALTH=PASS");
 
   const taskDefinitionResponse = await call("ecs", "describe-task-definition", [
     "--task-definition", productionTaskDefinitionArn,
   ]);
   const taskDefinition = asObject(taskDefinitionResponse.taskDefinition, "Production task definition");
+  assert(taskDefinition.family === PRODUCTION_TASK_FAMILY, "Production task definition family is unexpected");
+  assert(taskDefinition.taskDefinitionArn === productionTaskDefinitionArn, "Described task definition does not match the production service snapshot");
+  assert(taskDefinition.revision === productionTaskDefinitionRevision, "Described task definition revision does not match the production service snapshot");
+  assert(taskDefinition.status === "ACTIVE", "Current production task definition is not ACTIVE");
+  assert(taskDefinition.taskRoleArn === PRODUCTION_TASK_ROLE_ARN, "Production task role differs from the reviewed architecture");
+  assert(taskDefinition.executionRoleArn === PRODUCTION_EXECUTION_ROLE_ARN, "Production execution role differs from the reviewed architecture");
   const productionTaskRoleArn = taskDefinition.taskRoleArn;
   const productionExecutionRoleArn = taskDefinition.executionRoleArn;
-  assert(productionTaskRoleArn && productionExecutionRoleArn, "Production task role or execution role is missing");
-  const container = requiredArray(taskDefinition.containerDefinitions, "Production task definition containers")
-    .find((candidate) => candidate.name === "GenesisWebRuntime");
+  assert(taskDefinition.networkMode === "awsvpc", "Production task network mode is not awsvpc");
+  assert(
+    Array.isArray(taskDefinition.requiresCompatibilities) &&
+    taskDefinition.requiresCompatibilities.length === 1 &&
+    taskDefinition.requiresCompatibilities[0] === "FARGATE",
+    "Production task compatibility must be exactly FARGATE",
+  );
+  assert(String(taskDefinition.cpu) === "512", "Production task CPU must be 512");
+  assert(String(taskDefinition.memory) === "1024", "Production task memory must be 1024");
+  assert(
+    taskDefinition.runtimePlatform?.operatingSystemFamily === "LINUX" &&
+    taskDefinition.runtimePlatform?.cpuArchitecture === "X86_64",
+    "Production task runtime platform must be LINUX/X86_64",
+  );
+  const containers = requiredArray(taskDefinition.containerDefinitions, "Production task definition containers");
+  assert(containers.length === 1, "Production task definition contains unexpected containers");
+  const container = containers.find((candidate) => candidate.name === "GenesisWebRuntime");
   assert(container?.image, "Production GenesisWebRuntime container or image is missing");
+  assert(container.essential === true, "Production GenesisWebRuntime must be essential");
+  const portMappings = requiredArray(container.portMappings ?? [], "Production runtime container port mappings");
+  assert(
+    portMappings.length === 1 &&
+    portMappings[0].containerPort === 3000 &&
+    (!portMappings[0].hostPort || portMappings[0].hostPort === 3000) &&
+    (!portMappings[0].protocol || portMappings[0].protocol.toLowerCase() === "tcp"),
+    "Production GenesisWebRuntime must expose only TCP port 3000",
+  );
+  assert(requiredArray(container.mountPoints ?? [], "Production runtime container mount points").length === 0,
+    "Production GenesisWebRuntime has an unapproved mount point");
+  assert(requiredArray(container.volumesFrom ?? [], "Production runtime container volumesFrom").length === 0,
+    "Production GenesisWebRuntime has an unapproved volumesFrom entry");
+  assert(requiredArray(taskDefinition.volumes ?? [], "Production task definition volumes").length === 0,
+    "Production task definition has an unapproved volume");
 
   const productionRoles = [productionTaskRoleArn, productionExecutionRoleArn];
   for (const arn of productionRoles) {
@@ -441,16 +531,29 @@ export async function runPlanGate({
     return { name, sourceArn: valueFrom, disposition: classifySecret(name, allowlist) };
   });
   const image = container.image;
-  const imageRepository = image.match(/^[^/]+\/([^:@]+)/)?.[1];
-  const imageDigest = image.match(/@(sha256:[a-fA-F0-9]+)$/)?.[1];
-  const imageTag = image.includes("@") ? "" : image.match(/:([^/:]+)$/)?.[1] ?? "";
-  assert(imageRepository && (imageDigest || imageTag), "Production image URI does not include a usable repository and tag/digest");
+  const imageMatch = /^452630323448\.dkr\.ecr\.us-west-2\.amazonaws\.com\/([^:@]+)(?::([^/@]+)|@(sha256:[a-fA-F0-9]{64}))$/.exec(image);
+  assert(imageMatch, "Production image URI must use the reviewed us-west-2 ECR registry and include a tag or digest");
+  const imageRepository = imageMatch[1];
+  const imageTag = imageMatch[2] ?? "";
+  const imageDigest = imageMatch[3] ?? "";
+  assert(imageRepository === PRODUCTION_ECR_REPOSITORY, `Production image repository must be ${PRODUCTION_ECR_REPOSITORY}`);
   const imageDetailsResponse = await call("ecr", "describe-images", [
     "--repository-name", imageRepository,
     "--image-ids", imageDigest ? `imageDigest=${imageDigest}` : `imageTag=${imageTag}`,
   ]);
   const imageDetails = requiredArray(imageDetailsResponse.imageDetails, "Production ECR image metadata");
-  assert(imageDetails.length === 1 && imageDetails[0].imageDigest, "Production ECR image metadata is incomplete");
+  assert(
+    imageDetails.length === 1 &&
+    /^sha256:[a-fA-F0-9]{64}$/.test(imageDetails[0].imageDigest ?? "") &&
+    (!imageDigest || imageDetails[0].imageDigest === imageDigest) &&
+    imageDetails[0].imagePushedAt,
+    "Production ECR image metadata is incomplete or does not match the image digest",
+  );
+  report("PRODUCTION_STRUCTURE_VALIDATION=PASS");
+  report(`PRODUCTION_IMAGE_URI=${image}`);
+  report(`PRODUCTION_IMAGE_DIGEST=${imageDetails[0].imageDigest}`);
+  report(`PRODUCTION_IMAGE_TAGS=${JSON.stringify(imageDetails[0].imageTags ?? [])}`);
+  report(`PRODUCTION_IMAGE_PUSHED_AT=${imageDetails[0].imagePushedAt}`);
 
   const productionTaskRoleName = lastArnComponent(productionTaskRoleArn);
   const policyDocuments = [];
@@ -599,18 +702,21 @@ export async function runPlanGate({
     targetHealth.push({ label, states: requiredArray(response.TargetHealthDescriptions, `${label} target health`) });
   }
 
-  const commit = container.environment?.find((item) => item.name === "GIT_COMMIT")?.value ?? "<not set>";
-  const runtimeSha = container.environment?.find((item) => item.name === "GENESIS_RUNTIME_SHA")?.value ?? "<not set>";
-  const provenanceValues = [...new Set([commit, runtimeSha, imageTag].filter((value) => value && value !== "<not set>"))];
-  const provenance = provenanceValues.map((value) => {
-    if (!/^[0-9a-f]{7,40}$/i.test(value)) return { value, result: "CANNOT be tied to repository (not a commit SHA)" };
+  const commit = container.environment?.find((item) => item.name === "GIT_COMMIT")?.value ?? "";
+  const runtimeSha = container.environment?.find((item) => item.name === "GENESIS_RUNTIME_SHA")?.value ?? "";
+  const commitValues = [...new Set([commit, runtimeSha].filter(Boolean))];
+  const repositoryConfirmed = commitValues.length > 0 && commitValues.every((value) => {
+    if (!/^[0-9a-f]{7,40}$/i.test(value)) return false;
     try {
       execFileSync("git", ["-C", repoRoot, "cat-file", "-e", `${value}^{commit}`], { stdio: "ignore" });
-      return { value, result: "CAN be tied to repository" };
+      return true;
     } catch {
-      return { value, result: "CANNOT be tied to repository" };
+      return false;
     }
   });
+  const commitProvenance = commitValues.length === 0
+    ? "ABSENT"
+    : repositoryConfirmed ? "REPOSITORY_CONFIRMED" : "REPOSITORY_NOT_FOUND";
 
   const dnsResult = await resolveDns(STAGING_HOST, loadBalancer.DNSName);
   const sharesAlbAddress = dnsResult.addresses.some((address) => dnsResult.albAddresses.includes(address));
@@ -622,12 +728,12 @@ export async function runPlanGate({
   };
 
   report(`AWS caller=${callerArn}`);
+  report(`PRODUCTION_COMMIT_PROVENANCE=${commitProvenance}`);
+  if (commitProvenance !== "REPOSITORY_CONFIRMED") report("PRODUCTION_PROVENANCE_REVIEW=REQUIRED");
   report(`Production environment names/disposition=${JSON.stringify(environmentRows)}`);
   report(`Production secret names/source ARNs/disposition=${JSON.stringify(secretRows)}`);
-  report(`Production image=${image} digest=${imageDetails[0].imageDigest} tags=${JSON.stringify(imageDetails[0].imageTags ?? [])}`);
-  report(`Production GIT_COMMIT=${commit}`);
-  report(`Production GENESIS_RUNTIME_SHA=${runtimeSha}`);
-  for (const item of provenance) report(`Provenance ${item.value}: ${item.result}`);
+  report(`Production GIT_COMMIT=${commit || "<absent>"}`);
+  report(`Production GENESIS_RUNTIME_SHA=${runtimeSha || "<absent>"}`);
   report(`Production Cognito client (ClientSecret excluded)=${JSON.stringify({
     ClientName: productionClient.ClientName,
     GenerateSecret: productionClient.GenerateSecret,
@@ -675,12 +781,30 @@ export async function runPlanGate({
     report(`DNS CNAME target required=${albDns || "<read from existing Genesis ALB>"}`);
   }
   report("Read-only approval inspection and policy simulations completed; no infrastructure has been applied.");
-  if (emitPass) report("GENESIS_STAGING_PLAN_GATE=PASS");
+  if (emitPass) {
+    await verifyProductionSnapshot({ call, snapshot: productionTaskDefinitionArn, report });
+    report("GENESIS_STAGING_PLAN_GATE=PASS");
+  }
   return { roleUsageClearance, simulationCases: simulationCases.length };
 }
 
 if (process.argv[1] && isAbsolute(process.argv[1]) && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))) {
-  runPlanGate({ emitPass: !process.argv.includes("--preflight") }).catch((error) => {
+  const snapshotIndex = process.argv.indexOf("--verify-snapshot");
+  const execution = snapshotIndex >= 0
+    ? verifyProductionSnapshot({
+      call: async (service, operation, args = [], region = REGION) => {
+        assert(READ_ONLY_APIS.has(`${service}:${operation}`.toLowerCase()), `Refusing non-read-only AWS call ${service} ${operation}`);
+        try {
+          return asObject(await defaultAws(service, operation, args, region), `${service} ${operation}`);
+        } catch (error) {
+          throw new Error(`Required read ${service} ${operation} failed: ${error.message}`);
+        }
+      },
+      snapshot: process.argv[snapshotIndex + 1],
+      report: (line) => console.log(line),
+    })
+    : runPlanGate({ emitPass: !process.argv.includes("--preflight") });
+  execution.catch((error) => {
     console.error(`PLAN_GATE_FAILURE=${error.message}`);
     process.exitCode = 1;
   });

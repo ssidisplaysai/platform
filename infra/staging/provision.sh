@@ -24,10 +24,17 @@ aws() {
 }
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALLOWLIST="$HERE/runtime-env-allowlist.json"
+PROD_TASKDEF_REF=""
 if [ "$MODE" = "plan" ]; then
-  node "$HERE/plan-gate.mjs" --preflight
+  PLAN_GATE_PREFLIGHT_OUTPUT="$(node "$HERE/plan-gate.mjs" --preflight)"
+  printf '%s\n' "$PLAN_GATE_PREFLIGHT_OUTPUT"
+  PROD_TASKDEF_REF="$(printf '%s\n' "$PLAN_GATE_PREFLIGHT_OUTPUT" | sed -n 's/^PRODUCTION_TASK_DEFINITION_SNAPSHOT=//p')"
+  [ -n "$PROD_TASKDEF_REF" ] || { echo "Plan gate did not provide a production task-definition snapshot" >&2; exit 1; }
+  [[ "$PROD_TASKDEF_REF" =~ ^arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:[0-9]+$ ]] || {
+    echo "Plan gate provided an invalid production task-definition snapshot" >&2
+    exit 1
+  }
 fi
-PROD_TASKDEF_REF="genesis-production-web:38"
 STAGING_SG_NAME="genesis-staging-web-sg"
 REGION="${AWS_REGION:-us-west-2}"
 export AWS_REGION="$REGION" AWS_DEFAULT_REGION="$REGION"
@@ -67,6 +74,10 @@ mutate() {
 
 # ---- read-only discovery -------------------------------------------------
 PROD_SVC_JSON="$(aws ecs describe-services --cluster "$CLUSTER" --services "$PROD_SERVICE" --query 'services[0]' --output json)"
+DISCOVERED_PROD_TASKDEF_REF="$(echo "$PROD_SVC_JSON" | jq -er '.taskDefinition | select(type=="string" and test("^arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:[0-9]+$"))')"
+if [ "$MODE" != "plan" ]; then
+  PROD_TASKDEF_REF="$DISCOVERED_PROD_TASKDEF_REF"
+fi
 SUBNETS="$(echo "$PROD_SVC_JSON" | jq -r '.networkConfiguration.awsvpcConfiguration.subnets | join(",")')"
 PROD_TASK_SG="$(echo "$PROD_SVC_JSON" | jq -r '.networkConfiguration.awsvpcConfiguration.securityGroups[0]')"
 PROD_TG_ARN="$(echo "$PROD_SVC_JSON" | jq -r '.loadBalancers[0].targetGroupArn')"
@@ -435,5 +446,6 @@ if [ "$MODE" != "plan" ]; then dns_preflight >&2; fi
 
 log "done"
 if [ "$MODE" = "plan" ]; then
+  node "$HERE/plan-gate.mjs" --verify-snapshot "$PROD_TASKDEF_REF"
   echo "GENESIS_STAGING_PLAN_GATE=PASS"
 fi

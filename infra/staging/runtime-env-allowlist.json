@@ -1,5 +1,5 @@
 {
-  "_comment": "Reviewed allowlist for runtime configuration copied from genesis-production-web:38. Fail closed: any production variable not listed under allow is NOT copied. Names only; no values live here.",
+  "_comment": "Reviewed allowlist for runtime configuration derived from the validated current genesis-production-web task definition. Fail closed: any production variable not listed under allow is NOT copied. Names only; no values live here.",
   "overrides": [
     "NODE_ENV",
     "GENESIS_ENVIRONMENT",

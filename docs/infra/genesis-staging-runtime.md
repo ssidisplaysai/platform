@@ -20,10 +20,14 @@ No automated payouts are authorized.
 Reused read-only from production: cluster, VPC, subnets, ALB and listener. The production task role is NOT reused (see below). The production task security group is only read, to derive which ingress to mirror.
 
 ## Runtime configuration parity (reviewed allowlist)
-`infra/staging/runtime-env-allowlist.json` is the reviewed, fail-closed allowlist applied to `genesis-production-web:38`
-(container `GenesisWebRuntime`). `provision.sh mode=plan` prints production variable NAMES, secret NAMES and source ARNs
-(never values), the task/execution role ARNs, and the disposition of each: `copy`, `overridden-by-staging`, `denied`,
+`infra/staging/runtime-env-allowlist.json` is the reviewed, fail-closed allowlist applied to the current
+`genesis-production-web` service task definition (container `GenesisWebRuntime`). `provision.sh mode=plan` captures its
+full ARN as a per-run snapshot, validates the reviewed task/runtime/network/image invariants, and confirms the service
+still uses that ARN immediately before reporting plan success. It prints production variable NAMES, secret NAMES and source ARNs
+(never secret values), the task/execution role ARNs, and the disposition of each: `copy`, `overridden-by-staging`, `denied`,
 `excluded-review-required`, `excluded-non-loopback` or `unclassified-excluded`. Only `copy` entries are carried into the staging task definition.
+Production commit provenance is reported separately; missing repository history requires review but does not by itself
+fail the infrastructure safety gate.
 - Always set by staging: `NODE_ENV`, `GENESIS_ENVIRONMENT=staging`, `GENESIS_STONER_GYM_RECRUITED_CREATORS=jessica`, `GENESIS_WOOCOMMERCE_WEBHOOK_SECRET` (staging secret), `GCP_FOUNDATION_PERSISTENCE_DIR`, `GIT_COMMIT`, `GENESIS_RUNTIME_SHA`, staging log group, digest-pinned staging image.
 - Denied: production persistence path, WordPress bridge credentials, anything matching password/WordPress/DB/payout/payment/webhook/AWS patterns.
 - Review-required secrets (not copied until a human moves them into `secrets.allow`): `GENESIS_OPENAI_API_KEY`, `OPENAI_API_KEY`, `GENESIS_CREDENTIAL_MASTER_KEY`. Share-to-Grow does not need them.
