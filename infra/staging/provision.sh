@@ -132,6 +132,49 @@ render_taskdef() {
       | .containerDefinitions[0].secrets += [ $rows[] | select(.kind=="secret" and .class=="copy" and (.name as $n | $sn | index($n) | not)) | {name, valueFrom:.source} ]'
 }
 
+report_plan_extras() {
+  local role_name="GenesisGitHubDeployRole" caller_arn pool_arn client_id pool_id
+  {
+    echo "=== Production ingress/auth/health (READ-ONLY) ==="
+    echo "listener: $LISTENER_ARN"
+    echo "listener default action types: $(aws elbv2 describe-listeners --listener-arns "$LISTENER_ARN" --query 'Listeners[0].DefaultActions[].Type' --output text)"
+    COG_CFG="$(aws elbv2 describe-listeners --listener-arns "$LISTENER_ARN" --output json | jq -c '[.Listeners[0].DefaultActions[] | select(.Type=="authenticate-cognito") | .AuthenticateCognitoConfig | del(.AuthenticationRequestExtraParams)]')"
+    echo "cognito action config (no secrets exist in this object): $COG_CFG"
+    pool_arn="$(echo "$COG_CFG" | jq -r '.[0].UserPoolArn // empty')"; client_id="$(echo "$COG_CFG" | jq -r '.[0].UserPoolClientId // empty')"
+    pool_id="${pool_arn##*/}"
+    if [ -n "$pool_id" ] && [ -n "$client_id" ]; then
+      echo "production user pool client settings (ClientSecret deliberately dropped):"
+      aws cognito-idp describe-user-pool-client --user-pool-id "$pool_id" --client-id "$client_id" --output json 2>&1 \
+        | jq -c '.UserPoolClient | del(.ClientSecret) | {ClientName,GenerateSecret:false,CallbackURLs,LogoutURLs,AllowedOAuthFlows,AllowedOAuthScopes,AllowedOAuthFlowsUserPoolClient,SupportedIdentityProviders,RefreshTokenValidity,AccessTokenValidity,IdTokenValidity,TokenValidityUnits,PreventUserExistenceErrors,EnableTokenRevocation}' 2>&1 || echo "  unavailable (missing cognito-idp:DescribeUserPoolClient?)"
+      echo "user pool domain: $(aws cognito-idp describe-user-pool --user-pool-id "$pool_id" --query 'UserPool.Domain' --output text 2>&1 | head -c 200)"
+    fi
+    echo "production target group health check: $(aws elbv2 describe-target-groups --target-group-arns "$PROD_TG_ARN" --query 'TargetGroups[0].{proto:HealthCheckProtocol,port:HealthCheckPort,path:HealthCheckPath,matcher:Matcher.HttpCode,interval:HealthCheckIntervalSeconds,timeout:HealthCheckTimeoutSeconds,healthy:HealthyThresholdCount,unhealthy:UnhealthyThresholdCount}' --output json | jq -c .)"
+    echo "staging target group health check (current): $(aws elbv2 describe-target-groups --target-group-arns "$STAGING_TG_ARN" --query 'TargetGroups[0].{proto:HealthCheckProtocol,port:HealthCheckPort,path:HealthCheckPath,matcher:Matcher.HttpCode,protocolVersion:ProtocolVersion,targetType:TargetType,vpc:VpcId}' --output json | jq -c .)"
+    echo "existing listener rules (priority/conditions/action types):"
+    aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --output json | jq -c '.Rules[] | {priority:.Priority, conditions:[.Conditions[]|{f:.Field,v:(.Values)}], actions:[.Actions[].Type]}'
+    echo "--- SNI certificates on listener ---"
+    aws elbv2 describe-listener-certificates --listener-arn "$LISTENER_ARN" --query 'Certificates[].CertificateArn' --output text 2>&1 | head -c 600
+    echo
+    echo "=== Deploy role inspection (READ-ONLY) ==="
+    caller_arn="$(aws sts get-caller-identity --query Arn --output text)"
+    echo "caller (assumed via OIDC): $caller_arn"
+    echo "trust policy of $role_name:"
+    aws iam get-role --role-name "$role_name" --query 'Role.AssumeRolePolicyDocument' --output json 2>&1 | jq -c . 2>&1 || echo "  unavailable (iam:GetRole denied)"
+    echo "attached managed policies:"
+    aws iam list-attached-role-policies --role-name "$role_name" --query 'AttachedPolicies[].PolicyArn' --output text 2>&1 | head -c 800
+    echo
+    echo "inline policies: $(aws iam list-role-policies --role-name "$role_name" --query 'PolicyNames' --output text 2>&1 | head -c 400)"
+    local actions="ecr:CreateRepository ecr:DescribeRepositories ecr:GetAuthorizationToken ecr:BatchCheckLayerAvailability ecr:InitiateLayerUpload ecr:UploadLayerPart ecr:CompleteLayerUpload ecr:PutImage ecr:DescribeImages logs:CreateLogGroup logs:PutRetentionPolicy logs:DescribeLogGroups secretsmanager:CreateSecret secretsmanager:DescribeSecret secretsmanager:GetRandomPassword iam:CreateRole iam:GetRole iam:AttachRolePolicy iam:PutRolePolicy iam:PassRole ec2:CreateSecurityGroup ec2:AuthorizeSecurityGroupIngress ec2:RevokeSecurityGroupIngress ec2:DescribeSecurityGroups ec2:DescribeSubnets ec2:CreateTags elasticfilesystem:CreateFileSystem elasticfilesystem:DescribeFileSystems elasticfilesystem:CreateMountTarget elasticfilesystem:DescribeMountTargets elasticfilesystem:CreateAccessPoint elasticfilesystem:DescribeAccessPoints elasticfilesystem:PutBackupPolicy elasticfilesystem:TagResource ecs:RegisterTaskDefinition ecs:DescribeTaskDefinition ecs:CreateService ecs:UpdateService ecs:DescribeServices elasticloadbalancing:DescribeRules elasticloadbalancing:DescribeListeners elasticloadbalancing:DescribeTargetGroups elasticloadbalancing:DescribeTargetHealth elasticloadbalancing:CreateRule elasticloadbalancing:ModifyRule elasticloadbalancing:ModifyTargetGroup cognito-idp:DescribeUserPoolClient cognito-idp:DescribeUserPool"
+    echo "SimulatePrincipalPolicy of the deploy role for required actions (read-only API):"
+    # shellcheck disable=SC2086
+    aws iam simulate-principal-policy --policy-source-arn "arn:aws:iam::${ACCOUNT_ID}:role/${role_name}" --action-names $actions --query 'EvaluationResults[].{a:EvalActionName,d:EvalDecision}' --output json 2>&1 \
+      | jq -r 'if type=="array" then (map(select(.d!="allowed")) | if length==0 then "  all required actions allowed" else .[] | "  NOT ALLOWED: \(.a) (\(.d))" end) else . end' 2>&1 || echo "  simulation unavailable (iam:SimulatePrincipalPolicy denied)"
+    echo "--- staging Cognito client that would be created (not created now) ---"
+    echo "  name: genesis-staging-operators-client; same pool ${pool_id:-?}; no client secret unless production client has one (ALB requires GenerateSecret=true)"
+    echo "  callback: https://staging.glwplatform.com/oauth2/idpresponse ; logout: https://staging.glwplatform.com/"
+    echo "  flows/scopes/IdPs/token validity: copy production values printed above"
+  } >&2
+}
 report_plan() {
   {
     echo "=== Production reference (READ-ONLY): $PROD_TASKDEF_REF (service currently runs: $PROD_SERVICE_TASKDEF) ==="
@@ -189,7 +232,7 @@ if [ "$MODE" = "service" ]; then
   exit 0
 fi
 
-[ "$MODE" != "plan" ] || report_plan
+if [ "$MODE" = "plan" ]; then report_plan; report_plan_extras || true; fi
 
 # ---- ECR -------------------------------------------------------------------
 if aws ecr describe-repositories --repository-names "$ECR_REPO" >/dev/null 2>&1; then
