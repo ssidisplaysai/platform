@@ -12,6 +12,7 @@ on:
           - verify-and-plan
           - apply
           - deploy
+          - inspect-production
         default: plan
       ref:
         description: Staging source ref (must remain the approved staging branch)
@@ -19,7 +20,7 @@ on:
         type: string
         default: infra/genesis-staging-runtime-v1
       confirm:
-        description: Required exact phrase for IAM verification, apply, or deploy
+        description: Required exact phrase for IAM verification, apply, deploy, or production inspection
         required: false
         type: string
         default: ""
@@ -63,6 +64,12 @@ jobs:
             deploy)
               [[ "$CONFIRMATION" == "DEPLOY-STAGING" ]] || {
                 echo "deploy requires confirm=DEPLOY-STAGING" >&2
+                exit 1
+              }
+              ;;
+            inspect-production)
+              [[ "$CONFIRMATION" == "INSPECT-PRODUCTION" ]] || {
+                echo "inspect-production requires confirm=INSPECT-PRODUCTION" >&2
                 exit 1
               }
               ;;
@@ -113,3 +120,11 @@ jobs:
     uses: ssidisplaysai/platform/.github/workflows/genesis-staging-deploy.yml@infra/genesis-staging-runtime-v1
     with:
       confirm: ${{ inputs.confirm }}
+
+  inspect-production:
+    needs: validate
+    if: ${{ inputs.action == 'inspect-production' }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: ssidisplaysai/platform/.github/workflows/genesis-production-taskdef-inspect.yml@infra/genesis-staging-runtime-v1
