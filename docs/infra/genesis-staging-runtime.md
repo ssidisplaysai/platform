@@ -49,6 +49,25 @@ The webhook is protected by Genesis HMAC (`x-wc-webhook-signature`): missing/inv
 All other staging paths (and non-POST to the webhook path) require Cognito.
 Recommendation (not implemented): attach a WAF web ACL with a rate-based rule scoped to that exact path.
 
+## Share-to-Grow WooCommerce audit (STAGING ONLY)
+`GET /api/share-to-grow/audit/woocommerce-order?orderId=<positive-integer>` reads the existing Share-to-Grow repository
+views and is available only when `GENESIS_ENVIRONMENT=staging`. It requires the ALB Cognito identity header and is routed
+by the existing authenticated staging-host rule (priority 11); it has no unauthenticated listener exception. An optional
+`receiptId=<exact-delivery-id>` selects one WooCommerce receipt. Unknown query parameters are rejected.
+
+The response is order-line scoped and excludes raw payloads, secrets, and unrelated records. It reports receipts,
+processed lines, allocations derived from the stored economic rule and ledger, ledger entries, pending/paid lifecycle
+state, and economic effect counts. It is read-only and does not expose arbitrary file access. The repository does not
+store product IDs, campaign IDs, WooCommerce order status, or an order ID on source receipts. Therefore those values
+are reported as unavailable; receipt-only association requires the caller to supply the exact receipt ID and is explicitly
+marked as caller-supplied. If unlinked WooCommerce receipts exist without a selected receipt ID, the result is
+`RECEIPT_ASSOCIATION_UNKNOWN`, not a clean-baseline claim. Repeated delivery attempts themselves are not persisted;
+the audit can verify that the canonical line still has one economic effect after a caller observes a replay response.
+
+`WOOCOMMERCE_ORDER_ELIGIBILITY_GATE=NOT_IMPLEMENTED`: the existing receiver does not enforce a paid/eligible order
+status before posting economics. This remains a production-certification blocker; the staging end-to-end proof must use
+a fresh paid staging order. No payout is initiated by the audit route.
+
 **Open item:** the Cognito app client must list `https://staging.glwplatform.com/oauth2/idpresponse` as a callback URL
 for browser login on staging to complete. This changes Cognito configuration and is deliberately not automated here.
 
