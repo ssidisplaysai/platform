@@ -1,0 +1,61 @@
+name: Genesis AWS Terraform
+
+on:
+  pull_request:
+    paths:
+      - "incubator/youth-sports-platform/infra/aws/**"
+      - ".github/workflows/genesis-aws-terraform.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "incubator/youth-sports-platform/infra/aws/**"
+      - ".github/workflows/genesis-aws-terraform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  AWS_REGION: us-east-2
+  TF_WORKING_DIR: incubator/youth-sports-platform/infra/aws
+
+jobs:
+  validate:
+    name: terraform-validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false
+      - run: terraform validate
+
+  plan:
+    name: terraform-plan-staging
+    if: github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.TF_WORKING_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::452630323448:role/GenesisGitHubDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+      - run: aws sts get-caller-identity
+      - run: terraform init -backend=false
+      - run: terraform plan -no-color -input=false -var="aws_region=${AWS_REGION}" -var="environment=staging"
