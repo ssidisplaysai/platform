@@ -19,7 +19,7 @@ export function GlwGeneratedContextualMediaRepairAction(props: {
   organizationId: string;
   siteId: string;
   operation: "REPAIR_DRAFT_READY_GENERATED_CONTEXTUAL_MEDIA";
-  label: "Generate Contextual Image" | "Replace Legacy Contextual Image";
+  label: "Generate Contextual Image" | "Replace Legacy Contextual Image" | "Reconcile Featured Contextual Image" | "Build Contextual Visual Set";
   identity: GeneratedContextualRepairIdentity;
 }) {
   const [running, setRunning] = useState(false);

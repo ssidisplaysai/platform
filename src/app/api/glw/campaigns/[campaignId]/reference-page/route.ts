@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { authorizeRequest, forwardOperatorMutationContext, hasOrganizationScope, resolveRequestScope } from "@/modules/foundation/api-auth";
 import { listIntegrationProfiles } from "@/modules/foundation/integration-profile-repository";
@@ -22,12 +23,15 @@ import { resolveGlwCampaignGenerationContext } from "@/modules/glw/campaign-gene
 import { GLW_CAMPAIGN_US_STATES } from "@/modules/glw/campaign-geography";
 import { evaluateCampaignProductMediaReadiness } from "@/modules/glw/campaign-media-policy";
 import { listGlwCampaigns } from "@/modules/glw/campaign-repository";
-import { createGlwCampaignStateTargetId } from "@/modules/glw/campaign-target-repository";
+import { createGlwCampaignStateTargetId, listGlwCampaignTargets } from "@/modules/glw/campaign-target-repository";
 import { ensureDraftCampaignContinuationTarget } from "@/modules/glw/reference-continuation-targets";
 import { reconcileReferenceTargetExecutionProjection } from "@/modules/glw/reference-continuation-targets";
 import { recordGlwCampaignLaunchReferenceApproved, recordGlwCampaignLaunchReferenceFailure, recordGlwCampaignLaunchReferenceReviewRequired, recordGlwCampaignLaunchReferenceStarted } from "@/modules/glw/campaign-launch-authority";
 import type { GlwCampaign } from "@/modules/glw/campaign-types";
 import { glwPageExecutionRepository } from "@/modules/glw/page-execution-repository";
+import { glwPageRunRepository } from "@/modules/glw/page-run-repository";
+import { createGlwPageRun, isGlwPageRunTerminal } from "@/modules/glw/page-run";
+import { synchronizeGlwPageRunWithExecution } from "@/modules/glw/page-run-coordinator";
 import { adaptProductForGeneration, adaptSiteForGeneration, createDefaultGlwGenerationInput } from "@/modules/glw/page-generation";
 import { listProductMediaAuthority, OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID, type ProductMediaReadiness } from "@/modules/glw/product-media-authority";
 import {
@@ -212,25 +216,6 @@ export async function GET(request: NextRequest, context: Context) {
     );
   }
 
-  if (
-    campaign.pageType === "city_service"
-    && (
-      !durableSelection
-      || durableSelection.stateCode !== target.state.code
-      || durableSelection.citySlug !== target.citySlug
-    )
-  ) {
-    durableSelection = saveGlwReferenceStateSelection({
-      campaignId,
-      organizationId: campaign.organizationId,
-      siteId: campaign.siteId,
-      stateCode: target.state.code,
-      citySlug: target.citySlug,
-      selectedBy: durableSelection?.selectedBy ?? "SYSTEM_REFERENCE_TARGET_RECONCILIATION",
-      selectedAt: new Date().toISOString(),
-    });
-  }
-
   const siteRecord = getSiteById(campaign.siteId);
   const productRecord = getProductById(campaign.productId);
   if (!siteRecord || !productRecord) {
@@ -263,19 +248,45 @@ export async function GET(request: NextRequest, context: Context) {
   );
 
   const records = await glwPageExecutionRepository.list();
-  const candidates = records.filter(
-    (record) =>
-      executionMatchesReference({
-        campaign,
-        record,
-        stateName: target.state.name,
-        cityName: target.cityName,
-        slug: targetForm.slug,
-      }),
-  );
+  const exactCampaignTarget = listGlwCampaignTargets(campaign.campaignId).find(
+    (candidate) =>
+      candidate.stateCode === target.state.code
+      && (candidate.citySlug ?? null) === (target.citySlug ?? null),
+  ) ?? null;
 
-  let job = selectMostRecentActiveReferenceExecution(candidates);
-  const legacyJob = job
+  let activePageRun = exactCampaignTarget
+    ? await glwPageRunRepository.getActiveByTarget(exactCampaignTarget.targetId)
+    : null;
+
+  let job = activePageRun?.generationJobId
+    ? await glwPageExecutionRepository.getById(activePageRun.generationJobId)
+    : null;
+
+  if (activePageRun && job) {
+    activePageRun = await synchronizeGlwPageRunWithExecution({
+      runId: activePageRun.runId,
+      job,
+    });
+  }
+
+  const candidates = activePageRun
+    ? []
+    : records.filter(
+        (record) =>
+          executionMatchesReference({
+            campaign,
+            record,
+            stateName: target.state.name,
+            cityName: target.cityName,
+            slug: targetForm.slug,
+          }),
+      );
+
+  if (!activePageRun) {
+    job = selectMostRecentActiveReferenceExecution(candidates);
+  }
+
+  const legacyJob = activePageRun || job
     ? null
     : findEvidenceBoundLegacyReferenceJob({
         campaign,
@@ -286,7 +297,9 @@ export async function GET(request: NextRequest, context: Context) {
   const targetParameterizedOrchestration = campaign.productId === OUTDOOR_DIGITAL_SPHERE_PRODUCT_ID
     ? await resolveTargetParameterizedRichReferenceProduction({ campaignId: campaign.campaignId, targetId: createGlwCampaignStateTargetId(campaign.campaignId, target.state.code) })
     : null;
-  const durableOperation = projectGlwDurableReferenceOperation({ campaign, campaigns: listGlwCampaigns(), records, selectedStateCode: target.state.code });
+  const durableOperation = activePageRun
+    ? null
+    : projectGlwDurableReferenceOperation({ campaign, campaigns: listGlwCampaigns(), records, selectedStateCode: target.state.code });
   const mcpConfiguration = getGlwN8nMcpConfigurationStatus();
   const exactRuntime = process.env.GIT_COMMIT?.trim().toLowerCase() ?? "";
   const retryContract = legacyJob && baseWorkflow.artifactSha256 && generationAuthority && /^[0-9a-f]{40}$/.test(exactRuntime)
@@ -329,6 +342,7 @@ export async function GET(request: NextRequest, context: Context) {
       recoveryError: null,
       wordpressAuthority,
       selectedReferenceState: durableSelection,
+      pageRun: activePageRun,
       generationAuthority,
       retryContract,
       workflow,
@@ -364,19 +378,26 @@ export async function GET(request: NextRequest, context: Context) {
     } | null;
     if (recovered?.job) job = recovered.job;
 
-    reconcileReferenceTargetExecutionProjection({
-      campaign,
-      stateCode: target.state.code,
-      citySlug: target.citySlug,
-      execution: {
-        jobId: job.jobId,
-        status: job.status,
-        externalExecutionId: job.externalExecutionId,
-        wordpressObjectId: job.wordpressObjectId,
-        errorCode: job.errorCode,
-        errorMessage: job.errorMessage,
-      },
-    });
+    if (activePageRun) {
+      activePageRun = await synchronizeGlwPageRunWithExecution({
+        runId: activePageRun.runId,
+        job,
+      });
+    } else {
+      reconcileReferenceTargetExecutionProjection({
+        campaign,
+        stateCode: target.state.code,
+        citySlug: target.citySlug,
+        execution: {
+          jobId: job.jobId,
+          status: job.status,
+          externalExecutionId: job.externalExecutionId,
+          wordpressObjectId: job.wordpressObjectId,
+          errorCode: job.errorCode,
+          errorMessage: job.errorMessage,
+        },
+      });
+    }
 
     return NextResponse.json(
       {
@@ -386,6 +407,7 @@ export async function GET(request: NextRequest, context: Context) {
         recoveryError: recovered?.recoveryError ?? null,
         wordpressAuthority,
         selectedReferenceState: durableSelection,
+        pageRun: activePageRun,
         generationAuthority,
         retryContract,
         workflow: projectGlwReferenceWorkflow(job),
@@ -402,19 +424,26 @@ export async function GET(request: NextRequest, context: Context) {
     );
   }
 
-  reconcileReferenceTargetExecutionProjection({
-    campaign,
-    stateCode: target.state.code,
-    citySlug: target.citySlug,
-    execution: {
-      jobId: job.jobId,
-      status: job.status,
-      externalExecutionId: job.externalExecutionId,
-      wordpressObjectId: job.wordpressObjectId,
-      errorCode: job.errorCode,
-      errorMessage: job.errorMessage,
-    },
-  });
+  if (activePageRun) {
+    activePageRun = await synchronizeGlwPageRunWithExecution({
+      runId: activePageRun.runId,
+      job,
+    });
+  } else {
+    reconcileReferenceTargetExecutionProjection({
+      campaign,
+      stateCode: target.state.code,
+      citySlug: target.citySlug,
+      execution: {
+        jobId: job.jobId,
+        status: job.status,
+        externalExecutionId: job.externalExecutionId,
+        wordpressObjectId: job.wordpressObjectId,
+        errorCode: job.errorCode,
+        errorMessage: job.errorMessage,
+      },
+    });
+  }
 
   return NextResponse.json({
     state: target.state,
@@ -429,6 +458,7 @@ export async function GET(request: NextRequest, context: Context) {
     recoveryError: null,
     wordpressAuthority,
     selectedReferenceState: durableSelection,
+    pageRun: activePageRun,
     generationAuthority,
     retryContract,
     workflow: projectGlwReferenceWorkflow(job),
@@ -599,10 +629,31 @@ export async function PATCH(request: NextRequest, context: Context) {
   });
   recordGlwCampaignLaunchReferenceApproved(campaign.campaignId, job.jobId);
 
+  const exactCampaignTarget = listGlwCampaignTargets(campaign.campaignId).find(
+    (candidate) =>
+      candidate.stateCode === target.state.code
+      && (candidate.citySlug ?? null) === (target.citySlug ?? null),
+  ) ?? null;
+  let pageRun = exactCampaignTarget
+    ? await glwPageRunRepository.getActiveByTarget(exactCampaignTarget.targetId)
+    : null;
+
+  if (
+    pageRun
+    && pageRun.status === "WORDPRESS_DRAFT"
+    && pageRun.generationJobId === job.jobId
+    && pageRun.wordpressObjectId === job.wordpressObjectId
+  ) {
+    pageRun = await glwPageRunRepository.transition(pageRun.runId, "WORDPRESS_DRAFT", {
+      to: "APPROVED",
+    });
+  }
+
   return NextResponse.json({
     state: target.state,
     city: target.cityName ? { name: target.cityName, slug: target.citySlug } : null,
     job,
+    pageRun,
     approval,
     approved: true,
   });
@@ -703,15 +754,16 @@ export async function POST(request: NextRequest, context: Context) {
     );
   }
   const generationAuthority = resolveGlwReferenceGenerationAuthority({ campaign, pack, stateCode: target.state.code });
-  if (!generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
+  const exactPageRunContinuation = body?.action === "continue";
+  if (!exactPageRunContinuation && !generationAuthorityBindingsMatch(generationAuthority, body?.referenceAuthorityBinding)) {
     return NextResponse.json({ error: "Campaign instructions, references, product authority, or QA policy changed. Review current fingerprints before authorization.", code: "REFERENCE_AUTHORITY_BINDING_STALE", generationJobCreated: false }, { status: 409 });
   }
   const failedDispatchRecovery = body?.action === "recover_failed_dispatch" || body?.action === "finalize_recovered_dispatch";
   const terminalExecutionRetry = body?.action === "retry_failed_execution";
-  if (!failedDispatchRecovery && !terminalExecutionRetry && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
+  if (!failedDispatchRecovery && !terminalExecutionRetry && !exactPageRunContinuation && (!body?.ownerGrantId || !body.preflightReceiptId || !body.ownerOperationType)) {
     return NextResponse.json({ error: "An exact single-use owner grant and matching preflight receipt are required.", code: "REFERENCE_OWNER_AUTHORITY_REQUIRED", generationJobCreated: false, downstreamSideEffectsPerformed: false }, { status: 409 });
   }
-  let ownerClaim: { claimId: string; operationType: GlwReferenceOwnerOperationType; failedJobId: string | null; failedArtifactSha256: string | null };
+  let ownerClaim: { claimId: string; operationType: GlwReferenceOwnerOperationType; failedJobId: string | null; failedArtifactSha256: string | null } | null = null;
   if (failedDispatchRecovery || terminalExecutionRetry) {
     const requiresRetryEvidence = failedDispatchRecovery;
     if (!body?.jobId || !body.recoveryClaimId || !body.ownerOperationType || (requiresRetryEvidence && (!body.failedJobId || !body.failedArtifactSha256))) {
@@ -726,7 +778,7 @@ export async function POST(request: NextRequest, context: Context) {
       failedJobId: body.failedJobId ?? null,
       failedArtifactSha256: body.failedArtifactSha256 ?? null,
     };
-  } else {
+  } else if (!exactPageRunContinuation) {
     try {
       const liveOwnerContext = await resolveGlwReferenceOwnerLiveContext({
         organizationId: campaign.organizationId,
@@ -801,10 +853,12 @@ export async function POST(request: NextRequest, context: Context) {
   };
   form.campaignId = campaign.campaignId;
   form.referenceAuthorityBinding = generationAuthority;
-  form.referenceOwnerAuthorityClaimId = ownerClaim.claimId;
-  form.referenceOwnerOperationType = ownerClaim.operationType;
-  form.referenceOwnerFailedJobId = ownerClaim.failedJobId;
-  form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
+  if (ownerClaim) {
+    form.referenceOwnerAuthorityClaimId = ownerClaim.claimId;
+    form.referenceOwnerOperationType = ownerClaim.operationType;
+    form.referenceOwnerFailedJobId = ownerClaim.failedJobId;
+    form.referenceOwnerFailedArtifactSha256 = ownerClaim.failedArtifactSha256;
+  }
 
   saveGlwReferenceStateSelection({
     campaignId,
@@ -816,7 +870,87 @@ export async function POST(request: NextRequest, context: Context) {
     selectedAt: new Date().toISOString(),
   });
 
-  let generationBody: Record<string, unknown> = { form };
+  let pageRunId: string | null = null;
+
+  if (
+    !failedDispatchRecovery
+    && !terminalExecutionRetry
+    && body?.action !== "continue"
+  ) {
+    const exactTarget = listGlwCampaignTargets(campaign.campaignId).find(
+      (candidate) =>
+        candidate.stateCode === target.state.code
+        && (candidate.citySlug ?? null) === (target.citySlug ?? null),
+    ) ?? null;
+
+    if (!exactTarget) {
+      return NextResponse.json(
+        {
+          error: "Exact campaign target was not found for PageRun generation.",
+          code: "PAGE_RUN_TARGET_NOT_FOUND",
+          generationJobCreated: false,
+        },
+        { status: 409 },
+      );
+    }
+
+    const activeRun = await glwPageRunRepository.getActiveByTarget(exactTarget.targetId);
+    if (activeRun) {
+      const activeRunJob = activeRun.generationJobId
+        ? await glwPageExecutionRepository.getById(activeRun.generationJobId)
+        : null;
+      const existingDraftOwnedByRun =
+        activeRunJob?.wordpressStatus === "draft"
+        && Boolean(activeRunJob.wordpressObjectId)
+        && activeRunJob.jobId === activeRun.generationJobId;
+
+      if (existingDraftOwnedByRun) {
+        return NextResponse.json(
+          {
+            error: "This target already has a WordPress draft owned by its PageRun. Continue the existing run instead of generating a replacement.",
+            code: "PAGE_RUN_CONTINUATION_REQUIRED",
+            pageRun: activeRun,
+            job: activeRunJob,
+            generationJobCreated: false,
+          },
+          { status: 409 },
+        );
+      }
+
+      if (!isGlwPageRunTerminal(activeRun.status)) {
+        return NextResponse.json(
+          {
+            error: "This target already has an active PageRun.",
+            code: "PAGE_RUN_ALREADY_ACTIVE",
+            pageRun: activeRun,
+            generationJobCreated: false,
+          },
+          { status: 409 },
+        );
+      }
+    }
+
+    const createdRun = createGlwPageRun({
+      runId: randomUUID(),
+      identity: {
+        targetId: exactTarget.targetId,
+        campaignId: campaign.campaignId,
+        organizationId: campaign.organizationId,
+        siteId: campaign.siteId,
+        productId: campaign.productId,
+        stateCode: target.state.code,
+        citySlug: target.citySlug,
+        cityName: target.cityName,
+        canonicalPath: form.slug,
+      },
+      previousRunId: activeRun?.runId ?? null,
+    });
+
+    await glwPageRunRepository.create(createdRun);
+    pageRunId = createdRun.runId;
+  }
+
+  let generationBody: Record<string, unknown> = { form, pageRunId };
   if (failedDispatchRecovery || terminalExecutionRetry) {
     generationBody = {
       action: body!.action,
@@ -859,22 +993,66 @@ export async function POST(request: NextRequest, context: Context) {
       );
     }
 
-    const targetReady = ensureDraftCampaignContinuationTarget({
-      campaign,
-      targetStateCode: target.state.code,
-      targetCitySlug: target.citySlug,
-      referenceJobId: existing.jobId,
-      referenceJobStatus: existing.status,
-      referenceWordpressObjectId: existing.wordpressObjectId,
-    });
-    if (!targetReady) {
-      return NextResponse.json(
-        { error: "Exact campaign target was not found for continuation." },
-        { status: 409 },
-      );
+    if (existing.wordpressStatus === "draft" && existing.wordpressObjectId) {
+      form.plannedOperation = campaign.pageType === "city_service"
+        ? "UPDATE_CITY"
+        : campaign.pageType === "state_service"
+          ? "UPDATE_STATE"
+          : "UPDATE_GENERAL";
+      form.wordpressObjectId = existing.wordpressObjectId;
     }
 
-    generationBody = { action: "continue", jobId, form };
+    const exactTarget = listGlwCampaignTargets(campaign.campaignId).find(
+      (candidate) =>
+        candidate.stateCode === target.state.code
+        && (candidate.citySlug ?? null) === (target.citySlug ?? null),
+    ) ?? null;
+    const pageRun = exactTarget
+      ? await glwPageRunRepository.getActiveByTarget(exactTarget.targetId)
+      : null;
+
+    if (pageRun) {
+      if (
+        pageRun.generationJobId !== existing.jobId
+        || pageRun.externalExecutionId !== existing.externalExecutionId
+      ) {
+        return NextResponse.json(
+          {
+            error: "Active PageRun does not match the exact continuation job and execution.",
+            code: "PAGE_RUN_CONTINUATION_IDENTITY_MISMATCH",
+            pageRun,
+            job: existing,
+          },
+          { status: 409 },
+        );
+      }
+
+      generationBody = {
+        action: "continue",
+        jobId,
+        targetId: exactTarget!.targetId,
+        executionId: existing.externalExecutionId,
+        pageRunId: pageRun.runId,
+        form,
+      };
+    } else {
+      const targetReady = ensureDraftCampaignContinuationTarget({
+        campaign,
+        targetStateCode: target.state.code,
+        targetCitySlug: target.citySlug,
+        referenceJobId: existing.jobId,
+        referenceJobStatus: existing.status,
+        referenceWordpressObjectId: existing.wordpressObjectId,
+      });
+      if (!targetReady) {
+        return NextResponse.json(
+          { error: "Exact campaign target was not found for continuation." },
+          { status: 409 },
+        );
+      }
+
+      generationBody = { action: "continue", jobId, form };
+    }
   }
 
   const generationResponse = await fetch(
@@ -897,7 +1075,18 @@ export async function POST(request: NextRequest, context: Context) {
   );
 
   const launchJob = (payload as { job?: { jobId?: string; status?: string; errorMessage?: string | null } }).job;
-  if (launchJob?.jobId && launchJob.status) {
+
+  if (pageRunId && !launchJob?.jobId && !generationResponse.ok) {
+    const activeRun = await glwPageRunRepository.getById(pageRunId);
+    if (activeRun && !isGlwPageRunTerminal(activeRun.status)) {
+      await glwPageRunRepository.transition(pageRunId, activeRun.status, {
+        to: "FAILED",
+        code: String((payload as { code?: unknown }).code ?? "PAGE_RUN_GENERATION_REJECTED"),
+        message: String((payload as { error?: unknown }).error ?? "PageRun generation was rejected before a job was created."),
+      });
+    }
+  }
+  if (!pageRunId && launchJob?.jobId && launchJob.status) {
     reconcileReferenceTargetExecutionProjection({
       campaign,
       stateCode: target.state.code,

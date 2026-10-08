@@ -7,6 +7,7 @@ import {
 } from "./projector-enclosure-presentation-authority";
 
 export const SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID = "prod-ssi-fan-cooled-projector-enclosures" as const;
+export const PROJECTOR_ENCLOSURE_RICH_MINIMUM_WORD_COUNT = 750 as const;
 
 export type ProjectorEnclosureVisualIntent =
   | "HERO_PRODUCT"
@@ -31,6 +32,32 @@ export type ProjectorEnclosureVisualPlan = {
   bodyIndoorMaximumCount: 1;
   visuals: readonly ProjectorEnclosureVisualPlanItem[];
 };
+
+export function resolveProjectorEnclosureRichQaMinimumWordCount(input: {
+  productId: string;
+  pageType: "general_service" | "state_service" | "city_service";
+  contentHtml: string;
+}): number | null {
+  if (input.productId !== SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID) return null;
+  if (input.pageType !== "state_service" && input.pageType !== "city_service") return null;
+
+  const html = input.contentHtml;
+  const requiredMarkers = [
+    `data-site-presentation-authority="${PROJECTOR_ENCLOSURE_PRESENTATION_CONTRACT}"`,
+    'data-visual-plan-version="PROJECTOR_ENCLOSURE_VISUAL_PLAN_V1"',
+    'data-reference-section="HERO"',
+    'data-reference-section="PRODUCT_IDENTITY"',
+    'data-reference-section="VISUAL_APPLICATION"',
+    'data-reference-section="CTA"',
+  ];
+
+  if (!requiredMarkers.every((marker) => html.includes(marker))) return null;
+
+  const sectionCount = (html.match(/<section\b/gi) ?? []).length;
+  if (sectionCount < 7) return null;
+
+  return PROJECTOR_ENCLOSURE_RICH_MINIMUM_WORD_COUNT;
+}
 
 type ExtractedContent = {
   intro: string;

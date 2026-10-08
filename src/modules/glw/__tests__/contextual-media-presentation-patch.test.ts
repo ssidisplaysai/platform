@@ -151,6 +151,40 @@ describe("contextual presentation media patch", () => {
     expect(patched("article.glw-sphere-page").attr("data-media-provenance")).toBe("GENESIS_GENERATED_CONTEXTUAL_MEDIA_V1");
   });
 
+  test("maps four ProjectorEnclosure contextual visuals to distinct experience sections without replacing product authority", () => {
+    const projectorHtml = `<main class="saw-page">
+      <section class="saw-hero" data-reference-section="HERO" data-visual-intent="HERO_PRODUCT" style="background-image:linear-gradient(100deg,rgba(14,39,60,.92),rgba(14,39,60,.72)),url('https://example.test/product.jpg');"><h1>Fan Cooled Projector Enclosures in El Paso</h1></section>
+      <section class="saw-product" data-reference-section="PRODUCT_IDENTITY"><img src="https://example.test/product.jpg"><p>Product truth stays.</p></section>
+      <section class="saw-split" data-reference-section="APPLICATIONS" data-visual-intent="OUTDOOR_MAPPING"><img src="https://example.test/product.jpg"><p>Mapping copy stays.</p></section>
+      <section class="saw-application" data-reference-section="VISUAL_APPLICATION" data-visual-intent="OUTDOOR_THEATER_HOSPITALITY" style="background-image:url('https://example.test/product.jpg');"><p>Theater copy stays.</p></section>
+      <section class="saw-split" data-reference-section="APPLICATIONS" data-visual-intent="OUTDOOR_COMMERCIAL_EVENT"><img src="https://example.test/product.jpg"><p>Event copy stays.</p></section>
+      <section data-reference-section="CTA"><p>CTA copy stays.</p></section>
+    </main>`;
+
+    const replacements = [
+      replacement("HERO_EXPERIENCE", "CONTEXTUAL_IN_USE", "CONTEXTUAL_IN_USE", 51),
+      replacement("POST_HERO_CONTEXTUAL", "OUTDOOR_MAPPING_EXPERIENCE", "APPLICATION_EXPERIENCE", 52),
+      replacement("APPLICATION_STAGE", "OUTDOOR_THEATER_HOSPITALITY", "APPLICATION_EXPERIENCE", 53),
+      replacement("CTA_ATMOSPHERE", "OUTDOOR_COMMERCIAL_EVENT", "LOCAL_CONTEXTUAL_ATMOSPHERE", 54),
+    ];
+
+    const resolved = resolveContextualPresentationSlots(projectorHtml, replacements);
+    expect(resolved.map((slot) => slot.actualSection)).toEqual([
+      "HERO",
+      "OUTDOOR_MAPPING",
+      "OUTDOOR_THEATER_HOSPITALITY",
+      "OUTDOOR_COMMERCIAL_EVENT",
+    ]);
+
+    const $ = load(patchContextualPresentationMedia(projectorHtml, replacements), null, false);
+    expect($("[data-reference-section=HERO]").attr("style")).toContain("https://example.test/51.jpg");
+    expect($("[data-visual-intent=OUTDOOR_MAPPING] img").attr("src")).toBe("https://example.test/52.jpg");
+    expect($("[data-visual-intent=OUTDOOR_THEATER_HOSPITALITY]").attr("style")).toContain("https://example.test/53.jpg");
+    expect($("[data-visual-intent=OUTDOOR_COMMERCIAL_EVENT] img").attr("src")).toBe("https://example.test/54.jpg");
+    expect($("[data-reference-section=PRODUCT_IDENTITY] img").attr("src")).toBe("https://example.test/product.jpg");
+    expect($("[data-reference-section=PRODUCT_IDENTITY] p").text()).toBe("Product truth stays.");
+  });
+
   test("fails closed when presentation root is missing", () => {
     expect(() => resolveContextualPresentationSlots("<div>No authoritative article presentation.</div>", [replacement("POST_HERO_CONTEXTUAL", "CONTEXTUAL", "CONTEXTUAL_IN_USE", 10)])).toThrow("CONTEXTUAL_MEDIA_PRESENTATION_ROOT_INVALID");
   });

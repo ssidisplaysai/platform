@@ -87,7 +87,7 @@ export default async function GlwCampaignDetailPage({ params, searchParams }: Ro
         <GlwCampaignOperationsOverview model={model} />
 
         {model.campaign.status === "draft" ? (
-          <GlwCampaignKnowledgePack campaign={model.campaign} organizationId={model.campaign.organizationId} initialReferenceState={referenceStateSelection?.stateCode} />
+          <GlwCampaignKnowledgePack campaign={model.campaign} organizationId={model.campaign.organizationId} initialReferenceState={referenceStateSelection?.stateCode} initialReferenceCitySlug={referenceStateSelection?.citySlug ?? null} />
         ) : null}
 
         {referenceMediaAuthority ? <GlwReferenceGoLiveReadiness record={referenceMediaAuthority} /> : null}

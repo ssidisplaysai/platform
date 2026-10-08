@@ -16,19 +16,23 @@ const sphereHeroSelector = ".glw-sphere-hero[data-genesis-hero=\"true\"][data-me
 const sawCandidates: Record<ContextualVisualSlot, readonly Omit<ResolvedContextualPresentationSlot, "role" | "requestedSlot">[]> = {
   HERO_EXPERIENCE: [
     { actualSection: "HERO", selector: "[data-reference-section=HERO] > img", placement: "IMAGE" },
+    { actualSection: "HERO", selector: "[data-reference-section=HERO]", placement: "BACKGROUND" },
   ],
   POST_HERO_CONTEXTUAL: [
+    { actualSection: "OUTDOOR_MAPPING", selector: "[data-reference-section=APPLICATIONS][data-visual-intent=OUTDOOR_MAPPING] img", placement: "IMAGE" },
     { actualSection: "PRODUCT_IDENTITY", selector: "[data-reference-section=PRODUCT_IDENTITY] img", placement: "IMAGE" },
     { actualSection: "VISUAL_APPLICATION", selector: "[data-reference-section=VISUAL_APPLICATION] img", placement: "IMAGE" },
     { actualSection: "APPLICATIONS", selector: "[data-reference-section=APPLICATIONS] img", placement: "IMAGE" },
   ],
   APPLICATION_STAGE: [
+    { actualSection: "OUTDOOR_THEATER_HOSPITALITY", selector: "[data-reference-section=VISUAL_APPLICATION][data-visual-intent=OUTDOOR_THEATER_HOSPITALITY]", placement: "BACKGROUND" },
     { actualSection: "APPLICATIONS", selector: "[data-reference-section=APPLICATIONS] .saw-application-stage img", placement: "IMAGE" },
     { actualSection: "APPLICATIONS", selector: "[data-reference-section=APPLICATIONS] img", placement: "IMAGE" },
     { actualSection: "VISUAL_APPLICATION", selector: "[data-reference-section=VISUAL_APPLICATION] img", placement: "IMAGE" },
     { actualSection: "APPLICATIONS", selector: "[data-reference-section=APPLICATIONS]", placement: "MOUNT_IMAGE" },
   ],
   CTA_ATMOSPHERE: [
+    { actualSection: "OUTDOOR_COMMERCIAL_EVENT", selector: "[data-reference-section=APPLICATIONS][data-visual-intent=OUTDOOR_COMMERCIAL_EVENT] img", placement: "IMAGE" },
     { actualSection: "CTA", selector: "[data-reference-section=CTA]", placement: "BACKGROUND" },
   ],
 };

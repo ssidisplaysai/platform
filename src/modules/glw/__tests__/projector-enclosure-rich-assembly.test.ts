@@ -6,6 +6,8 @@ import { canonicalizeGlwZeroAuthorityClaims } from "../zero-authority-claim-cano
 import {
   assembleProjectorEnclosureRichReference,
   buildProjectorEnclosureVisualPlan,
+  PROJECTOR_ENCLOSURE_RICH_MINIMUM_WORD_COUNT,
+  resolveProjectorEnclosureRichQaMinimumWordCount,
   SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID,
 } from "../projector-enclosure-rich-assembly";
 import { evaluateProjectorEnclosurePresentation } from "../projector-enclosure-presentation-authority";
@@ -77,6 +79,34 @@ describe("projector enclosure quality pass v1", () => {
     expect(assembled.contentHtml).toContain('data-reference-section="PRODUCT_IDENTITY"');
     expect(assembled.contentHtml).toContain('data-reference-section="VISUAL_APPLICATION"');
     expect((assembled.contentHtml.match(/<section\b/gi) ?? []).length).toBeGreaterThanOrEqual(7);
+  });
+
+  test("Rich ProjectorEnclosure composition uses a composition-aware QA floor", () => {
+    const plan = buildProjectorEnclosureVisualPlan({ productId: SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID, pageType: "city_service" })!;
+    const assembled = assembleProjectorEnclosureRichReference({
+      artifact: { ...artifact },
+      productTopic: "Fan Cooled Projector Enclosures",
+      stateName: "Texas",
+      cityName: "Arlington",
+      visualPlan: plan,
+      productImageUrl: "https://projectorenclosure.com/wp-content/uploads/2024/03/Integrator-scaled-1.webp",
+      outdoorVisualUrl: "https://projectorenclosure.com/wp-content/uploads/2026/09/generated-outdoor-visual.jpg",
+      canonicalProductHref: "https://projectorenclosure.com/fan-cooled-projector-enclosures/",
+    });
+
+    expect(resolveProjectorEnclosureRichQaMinimumWordCount({
+      productId: SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID,
+      pageType: "city_service",
+      contentHtml: assembled.contentHtml,
+    })).toBe(PROJECTOR_ENCLOSURE_RICH_MINIMUM_WORD_COUNT);
+  });
+
+  test("Plain or incomplete content does not receive the rich composition QA floor", () => {
+    expect(resolveProjectorEnclosureRichQaMinimumWordCount({
+      productId: SSI_FAN_COOLED_PROJECTOR_PRODUCT_ID,
+      pageType: "city_service",
+      contentHtml: artifact.contentHtml,
+    })).toBeNull();
   });
 
   test("ProjectorEnclosure presentation authority remains controlling", () => {
