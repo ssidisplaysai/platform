@@ -191,9 +191,12 @@ describe("partial refund policy v1", () => {
 
   test("legacy lines without a rule snapshot use the reference rule with the same id", () => {
     send("order.updated", "d-1", order(813));
-    const spy = jest.spyOn(repository, "listProcessedCommerceLines").mockReturnValue(
-      repository.listProcessedCommerceLines().map(({ ruleSnapshot: _ignored, ...line }) => line),
-    );
+    const stripped = repository.listProcessedCommerceLines().map((line) => {
+      const copy = { ...line };
+      delete copy.ruleSnapshot;
+      return copy;
+    });
+    const spy = jest.spyOn(repository, "listProcessedCommerceLines").mockReturnValue(stripped);
     send("refund.created", "d-2", refundBody(813, 1, "20.00"));
     spy.mockRestore();
     expect(net()).toEqual({ stoner: 850n, jessica: 595n, daniel: 255n });
