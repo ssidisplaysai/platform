@@ -1,4 +1,5 @@
 import {
+  listCommerceAdjustments,
   listEconomicRuleVersions,
   listPersistedLedgerEntries,
   listPersistedPayoutEntitlements,
@@ -6,6 +7,7 @@ import {
   listSourceEventReceipts,
 } from "./share-to-grow-repository";
 import type {
+  CommerceAdjustmentRecord,
   PersistedLedgerEntry,
   PersistedPayoutEntitlement,
   ProcessedCommerceLineRecord,
@@ -22,7 +24,36 @@ type AuditInput = {
   readonly ledgerEntries: readonly PersistedLedgerEntry[];
   readonly entitlements: readonly PersistedPayoutEntitlement[];
   readonly rules: ReturnType<typeof listEconomicRuleVersions>;
+  readonly adjustments?: readonly CommerceAdjustmentRecord[];
 };
+
+type BeneficiaryNet = { beneficiary: string; grossEarning: bigint; reversedAmount: bigint; netEarning: bigint };
+
+function netEconomics(entries: readonly PersistedLedgerEntry[], currency: string) {
+  const byBeneficiary = new Map<string, BeneficiaryNet>();
+  for (const entry of entries) {
+    const row = byBeneficiary.get(entry.beneficiaryId)
+      ?? { beneficiary: entry.beneficiaryId, grossEarning: 0n, reversedAmount: 0n, netEarning: 0n };
+    const amount = BigInt(entry.amountMinor);
+    if (entry.entryType === "earning") row.grossEarning += amount;
+    if (entry.entryType === "reversal") row.reversedAmount += -amount;
+    row.netEarning = row.grossEarning - row.reversedAmount;
+    byBeneficiary.set(entry.beneficiaryId, row);
+  }
+  const rows = [...byBeneficiary.values()].sort((a, b) => a.beneficiary.localeCompare(b.beneficiary));
+  const sum = (pick: (row: BeneficiaryNet) => bigint) => rows.reduce((total, row) => total + pick(row), 0n);
+  return {
+    originalDmp: moneyFromMinor(sum((row) => row.grossEarning), currency),
+    reversedDmp: moneyFromMinor(sum((row) => row.reversedAmount), currency),
+    netDmp: moneyFromMinor(sum((row) => row.netEarning), currency),
+    beneficiaries: rows.map((row) => ({
+      beneficiary: row.beneficiary,
+      grossEarning: moneyFromMinor(row.grossEarning, currency),
+      reversedAmount: moneyFromMinor(row.reversedAmount, currency),
+      netEarning: moneyFromMinor(row.netEarning, currency),
+    })),
+  };
+}
 
 export class WooCommerceAuditReceiptNotFoundError extends Error {
   constructor() {
@@ -185,9 +216,27 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
         allocationCount: allocationLedger.length,
         ledgerEntryCount: lineLedger.length,
         sourceEventIds: [line.sourceEventId],
+        reversalEntryCount: lineLedger.filter((entry) => entry.entryType === "reversal").length,
       },
+      economics: netEconomics(lineLedger, allocationLedger[0]?.currency ?? "USD"),
     };
   });
+
+  const orderLineKeys = new Set(processedLines.map((line) => line.lineKey));
+  const orderAdjustments = (input.adjustments ?? [])
+    .filter((adjustment) => String(adjustment.orderId) === String(input.orderId)
+      || adjustment.lineRefunds.some((refund) => orderLineKeys.has(refund.lineKey)))
+    .sort((a, b) => a.adjustmentId.localeCompare(b.adjustmentId))
+    .map((adjustment) => ({
+      adjustmentId: adjustment.adjustmentId,
+      kind: adjustment.kind,
+      sourceEventId: adjustment.sourceEventId,
+      refundId: adjustment.refundId ?? null,
+      disposition: adjustment.disposition,
+      reason: adjustment.reason ?? null,
+      reversalLedgerEntryIds: [...adjustment.reversalLedgerEntryIds].sort(),
+      recordedAt: adjustment.recordedAt,
+    }));
 
   const hasEconomics = processedLineResults.some((line) =>
     line.allocations.length > 0 || line.ledger.length > 0 || line.entitlements.length > 0
@@ -222,6 +271,11 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
     allocations: processedLineResults.flatMap((line) => line.allocations),
     ledger: processedLineResults.flatMap((line) => line.ledger),
     entitlements: processedLineResults.flatMap((line) => line.entitlements),
+    adjustments: orderAdjustments,
+    economics: netEconomics(
+      matchingLedger,
+      matchingLedger[0]?.currency ?? "USD",
+    ),
     idempotency: {
       economicEffectsPerCanonicalLine: processedLineResults.map((line) => ({
         canonicalLineIdentity: line.canonicalLineIdentity,
@@ -263,5 +317,6 @@ export function auditWooCommerceOrder(orderId: number, receiptId?: string) {
     ledgerEntries: listPersistedLedgerEntries(),
     entitlements: listPersistedPayoutEntitlements(),
     rules: listEconomicRuleVersions(),
+    adjustments: listCommerceAdjustments(),
   });
 }

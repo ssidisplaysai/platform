@@ -20,6 +20,7 @@ const provisionScript = readFileSync(
 jest.mock("@/modules/share-to-grow/share-to-grow-repository", () => ({
   listSourceEventReceipts: (...args: unknown[]) => mockListSourceEventReceipts(...args),
   listProcessedCommerceLines: (...args: unknown[]) => mockListProcessedCommerceLines(...args),
+  listCommerceAdjustments: () => [],
   listPersistedLedgerEntries: (...args: unknown[]) => mockListPersistedLedgerEntries(...args),
   listPersistedPayoutEntitlements: (...args: unknown[]) => mockListPersistedPayoutEntitlements(...args),
   listEconomicRuleVersions: (...args: unknown[]) => mockListEconomicRuleVersions(...args),

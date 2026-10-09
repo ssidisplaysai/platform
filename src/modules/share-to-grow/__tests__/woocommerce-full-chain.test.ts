@@ -15,6 +15,7 @@ function rawCreatorOrder() {
     id: 78142,
     status: "processing",
     currency: "USD",
+    total: "60.00",
     date_paid_gmt: "2026-10-06T12:00:00Z",
     meta_data: [
       { key: "_genesis_touch_id", value: "touch-jessica" },

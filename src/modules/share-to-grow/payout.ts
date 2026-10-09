@@ -1,6 +1,6 @@
 import type { LedgerEntry } from "./ledger";
 
-export type PayoutState = "pending" | "cleared" | "payable" | "paid";
+export type PayoutState = "pending" | "cleared" | "payable" | "paid" | "reversed";
 
 export interface PayoutEligibilityPolicy {
   readonly id: string;
@@ -135,4 +135,14 @@ export function markStatementPaid(input: {
   });
 
   return { statement, entitlements: Object.freeze(updated) };
+}
+
+/**
+ * Narrowest safe lifecycle transition for an entitlement whose earning was
+ * fully reversed. Entitlements already on a statement (payable) or paid are
+ * never mutated: clawback policy is not defined, so callers must fail closed.
+ */
+export function reversedEntitlementState(state: PayoutState): "reversed" {
+  if (state === "pending" || state === "cleared" || state === "reversed") return "reversed";
+  throw new Error("ENTITLEMENT_NOT_REVERSIBLE");
 }

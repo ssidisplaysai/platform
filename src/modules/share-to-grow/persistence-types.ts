@@ -66,6 +66,25 @@ export interface ProcessedCommerceLineRecord {
   readonly ruleVersionId: string;
   readonly ledgerEntryIds: readonly string[];
   readonly processedAt: string;
+  /** Sale amount (gross - discount) in minor units; absent on records written before refund support. */
+  readonly saleMerchandiseMinor?: string;
+}
+
+/**
+ * Append-only record of a cancellation or refund applied to a Woo order.
+ * Original processed-line and earning records are never mutated.
+ */
+export interface CommerceAdjustmentRecord {
+  readonly adjustmentId: string;
+  readonly kind: "cancellation" | "refund";
+  readonly orderId: string;
+  readonly sourceEventId: string;
+  readonly refundId?: string;
+  readonly lineRefunds: ReadonlyArray<{ readonly lineKey: string; readonly refundMinor: string }>;
+  readonly disposition: "reversed" | "manual_review_required";
+  readonly reason?: string;
+  readonly reversalLedgerEntryIds: readonly string[];
+  readonly recordedAt: string;
 }
 
 export interface PersistedPayoutEntitlement {
@@ -89,6 +108,7 @@ export interface ShareToGrowRepositoryState {
   readonly sourceEventReceipts: SourceEventReceiptRecord[];
   readonly processedCommerceLines: ProcessedCommerceLineRecord[];
   readonly payoutEntitlements: PersistedPayoutEntitlement[];
+  readonly commerceAdjustments: CommerceAdjustmentRecord[];
 }
 
 export function serializeRuleVersion(

@@ -11,7 +11,9 @@ const secret = "receiver-test-secret";
 function rawOrder(): string {
   return JSON.stringify({
     id: 650,
-    status: "on-hold",
+    status: "processing",
+    total: "60.00",
+    date_paid_gmt: "2026-10-07T01:37:55Z",
     currency: "USD",
     date_created_gmt: "2026-10-07T01:37:51Z",
     meta_data: [

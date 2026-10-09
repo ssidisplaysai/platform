@@ -1,6 +1,7 @@
 import { AppendOnlyLedger } from "../ledger";
 import type { WooCommerceEventType } from "./woocommerce-events";
 import { processRawWooCommerceOrder } from "./woocommerce-raw-processor";
+import { processWooCommerceCancellation, processWooCommerceRefund } from "./woocommerce-adjustments";
 
 export interface WooCommerceWebhookHttpInput {
   readonly rawBody: string;
@@ -14,6 +15,21 @@ export interface WooCommerceWebhookHttpInput {
 export interface WooCommerceWebhookHttpResult {
   readonly sourceEventId: string;
   readonly replay: boolean;
+  readonly economicDisposition:
+    | "processed"
+    | "replay"
+    | "ignored_ineligible"
+    | "ignored_no_economics"
+    | "reversed"
+    | "manual_review_required";
+  readonly reason?: string;
+  readonly reversals?: readonly {
+    readonly ledgerEntryId: string;
+    readonly sourceEntryId: string;
+    readonly beneficiaryId: string;
+    readonly amountMinor: string;
+    readonly currency: string;
+  }[];
   readonly selectedPartnerId?: string;
   readonly lines: readonly {
     readonly lineKey: string;
@@ -62,8 +78,21 @@ export function processWooCommerceWebhookHttp(
   if (!sourceEventId) throw new Error("MISSING_WOOCOMMERCE_WEBHOOK_DELIVERY_ID");
 
   const eventType = normalizeWooEventType(topic);
-  if (eventType !== "order.created" && eventType !== "order.updated") {
-    throw new Error("WOOCOMMERCE_EVENT_HANDLER_NOT_IMPLEMENTED");
+  const webhookEnvelope = { sourceEventId, eventType, rawBody: input.rawBody, signature, receivedAt: input.receivedAt };
+
+  if (eventType === "order.cancelled" || eventType === "refund.created") {
+    const adjustment = eventType === "order.cancelled"
+      ? processWooCommerceCancellation({ webhook: webhookEnvelope, webhookSecret: input.secret })
+      : processWooCommerceRefund({ webhook: webhookEnvelope, webhookSecret: input.secret });
+    return Object.freeze({
+      sourceEventId,
+      replay: adjustment.replay,
+      economicDisposition: adjustment.economicDisposition,
+      ...(adjustment.reason ? { reason: adjustment.reason } : {}),
+      reversals: adjustment.reversals,
+      lines: Object.freeze([]),
+      pendingEntitlements: Object.freeze([]),
+    });
   }
 
   const result = processRawWooCommerceOrder({
@@ -83,7 +112,9 @@ export function processWooCommerceWebhookHttp(
   return Object.freeze({
     sourceEventId,
     replay: result.replay,
-    selectedPartnerId: result.attribution.selectedPartnerId,
+    economicDisposition: result.economicDisposition,
+    ...(result.reason ? { reason: result.reason } : {}),
+    selectedPartnerId: result.attribution?.selectedPartnerId,
     lines: Object.freeze(result.processedLines.map((line) => Object.freeze({
       lineKey: line.lineKey,
       ruleVersionId: line.ruleVersionId,

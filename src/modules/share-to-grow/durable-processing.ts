@@ -21,6 +21,7 @@ function persistEntitlement(entitlement: PayoutEntitlement): PersistedPayoutEnti
 
 export function persistProcessedCommerceLine(input: {
   readonly sourceEventId: string;
+  readonly saleMerchandiseMinor?: string;
   readonly organizationId: string;
   readonly processedAt: string;
   readonly processedLine: ProcessedCommerceLine;
@@ -36,6 +37,9 @@ export function persistProcessedCommerceLine(input: {
     ruleVersionId: input.processedLine.ruleVersionId,
     ledgerEntryIds: Object.freeze(ledgerEntryIds),
     processedAt: input.processedAt,
+    ...(input.saleMerchandiseMinor !== undefined
+      ? { saleMerchandiseMinor: input.saleMerchandiseMinor }
+      : {}),
   };
 
   return commitProcessedCommerceLine({

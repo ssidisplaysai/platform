@@ -4,6 +4,8 @@ import {
   type WooCommerceOrderSnapshot,
 } from "./woocommerce";
 
+import type { WooCommerceOrderEligibilityFacts } from "./woocommerce-eligibility";
+
 type JsonObject = Readonly<Record<string, unknown>>;
 
 function object(value: unknown, error: string): JsonObject {
@@ -146,12 +148,59 @@ export function parseWooCommerceRefundPayload(rawBody: string): ParsedWooCommerc
     createdAt,
     lineRefunds: Object.freeze(lines.map((rawLine) => {
       const line = object(rawLine, "INVALID_WOOCOMMERCE_REFUND_LINE");
+      // Woo refund line items carry their own id; the original order line is
+      // referenced by the `_refunded_item_id` meta when present.
+      const refundedItemId = lineMeta(line)._refunded_item_id;
       return Object.freeze({
-        lineItemId: idValue(line.id, "MISSING_WOOCOMMERCE_REFUND_LINE_ID"),
+        lineItemId: refundedItemId && refundedItemId.length > 0
+          ? refundedItemId
+          : idValue(line.id, "MISSING_WOOCOMMERCE_REFUND_LINE_ID"),
         refundGrossMinor: -wooDecimalToMinor(line.total),
       });
     })),
   });
+}
+
+export function parseWooCommerceOrderEligibilityFacts(rawBody: string): WooCommerceOrderEligibilityFacts {
+  let raw: unknown;
+  try { raw = JSON.parse(rawBody); } catch { throw new Error("INVALID_WOOCOMMERCE_JSON"); }
+  const payload = object(raw, "INVALID_WOOCOMMERCE_ORDER_PAYLOAD");
+  const money = (value: unknown): bigint | null => {
+    try { return wooDecimalToMinor(value); } catch { return null; }
+  };
+
+  let refundedMinor: bigint | null = 0n;
+  if (payload.refunds !== undefined && payload.refunds !== null) {
+    if (!Array.isArray(payload.refunds)) {
+      refundedMinor = null;
+    } else {
+      for (const refund of payload.refunds) {
+        const amount = refund && typeof refund === "object" ? money((refund as JsonObject).total) : null;
+        if (amount === null || refundedMinor === null) { refundedMinor = null; break; }
+        refundedMinor += amount;
+      }
+    }
+  }
+
+  return Object.freeze({
+    orderId: idValue(payload.id, "MISSING_WOOCOMMERCE_ORDER_ID"),
+    status: typeof payload.status === "string" ? payload.status : null,
+    datePaidGmt: typeof payload.date_paid_gmt === "string" ? payload.date_paid_gmt : null,
+    totalMinor: money(payload.total),
+    refundedMinor,
+  });
+}
+
+export interface ParsedWooCommerceCancellationPayload {
+  readonly orderId: string;
+}
+
+export function parseWooCommerceCancellationPayload(rawBody: string): ParsedWooCommerceCancellationPayload {
+  let raw: unknown;
+  try { raw = JSON.parse(rawBody); } catch { throw new Error("INVALID_WOOCOMMERCE_JSON"); }
+  const payload = object(raw, "INVALID_WOOCOMMERCE_ORDER_PAYLOAD");
+  if (payload.status !== "cancelled") throw new Error("INVALID_WOOCOMMERCE_CANCELLATION_STATUS");
+  return Object.freeze({ orderId: idValue(payload.id, "MISSING_WOOCOMMERCE_ORDER_ID") });
 }
 
 export function extractGenesisOrderMeta(payload: ParsedWooCommerceOrderPayload) {

@@ -6,14 +6,14 @@ import {
 } from "../foundation/foundation-persistence";
 import { validateRuleVersion, type EconomicRuleVersion } from "./economic-rule";
 import type { LedgerEntry } from "./ledger";
+import { reversedEntitlementState } from "./payout";
 import {
   deserializeRuleVersion,
   serializeLedgerEntry,
   serializeRuleVersion,
   type CollaborationParticipantRecord,
   type PersistedLedgerEntry,
-  type PersistedPayoutEntitlement,
-  type ProcessedCommerceLineRecord,
+  type CommerceAdjustmentRecord,
   type PersistedPayoutEntitlement,
   type ProcessedCommerceLineRecord,
   type ShareToGrowRepositoryState,
@@ -32,8 +32,7 @@ function createSeedState(): ShareToGrowRepositoryState {
     sourceEventReceipts: [],
     processedCommerceLines: [],
     payoutEntitlements: [],
-    processedCommerceLines: [],
-    payoutEntitlements: [],
+    commerceAdjustments: [],
   };
 }
 
@@ -45,7 +44,8 @@ function loadStateFromPersistence(): void {
     namespace: PERSISTENCE_NAMESPACE,
     seedFactory: createSeedState,
   });
-  state = deepClone(loaded.state);
+  // State persisted before adjustment support has no commerceAdjustments collection.
+  state = { ...createSeedState(), ...deepClone(loaded.state) };
   stateRevision = loaded.revision;
 }
 
@@ -318,5 +318,56 @@ export function commitProcessedCommerceLine(input: {
     payoutEntitlements: nextEntitlements,
   };
   persistCurrentState(nextState);
+  return { record: deepClone(input.record), replay: false };
+}
+
+export function listCommerceAdjustments(): readonly CommerceAdjustmentRecord[] {
+  return state.commerceAdjustments.map((record) => deepClone(record));
+}
+
+/**
+ * Atomically appends an adjustment record, its reversal ledger entries and the
+ * matching entitlement lifecycle transitions. Existing earnings are never
+ * modified; entitlements already payable/paid cause the whole commit to fail.
+ */
+export function commitCommerceAdjustment(input: {
+  readonly record: CommerceAdjustmentRecord;
+  readonly ledgerEntries: readonly LedgerEntry[];
+  readonly reversedEntitlementIds: readonly string[];
+}): { record: CommerceAdjustmentRecord; replay: boolean } {
+  const existing = state.commerceAdjustments.find(
+    (candidate) => candidate.adjustmentId === input.record.adjustmentId,
+  );
+  if (existing) return { record: deepClone(existing), replay: true };
+
+  const nextLedgerEntries = [...state.ledgerEntries];
+  for (const entry of input.ledgerEntries) {
+    if (nextLedgerEntries.some((candidate) => candidate.idempotencyKey === entry.idempotencyKey)) continue;
+    if (nextLedgerEntries.some((candidate) => candidate.id === entry.id)) {
+      throw new Error("LEDGER_ENTRY_ID_EXISTS");
+    }
+    if (
+      entry.entryType === "reversal" &&
+      (!entry.sourceEntryId ||
+        !nextLedgerEntries.some((candidate) => candidate.id === entry.sourceEntryId))
+    ) {
+      throw new Error("REVERSAL_SOURCE_REQUIRED");
+    }
+    nextLedgerEntries.push(serializeLedgerEntry(entry));
+  }
+
+  const reversedIds = new Set(input.reversedEntitlementIds);
+  const nextEntitlements = state.payoutEntitlements.map((entitlement) =>
+    reversedIds.has(entitlement.entitlementId)
+      ? { ...deepClone(entitlement), state: reversedEntitlementState(entitlement.state) }
+      : deepClone(entitlement)
+  );
+
+  persistCurrentState({
+    ...state,
+    ledgerEntries: nextLedgerEntries,
+    payoutEntitlements: nextEntitlements,
+    commerceAdjustments: [...state.commerceAdjustments, deepClone(input.record)],
+  });
   return { record: deepClone(input.record), replay: false };
 }

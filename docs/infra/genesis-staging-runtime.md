@@ -64,9 +64,39 @@ marked as caller-supplied. If unlinked WooCommerce receipts exist without a sele
 `RECEIPT_ASSOCIATION_UNKNOWN`, not a clean-baseline claim. Repeated delivery attempts themselves are not persisted;
 the audit can verify that the canonical line still has one economic effect after a caller observes a replay response.
 
-`WOOCOMMERCE_ORDER_ELIGIBILITY_GATE=NOT_IMPLEMENTED`: the existing receiver does not enforce a paid/eligible order
-status before posting economics. This remains a production-certification blocker; the staging end-to-end proof must use
-a fresh paid staging order. No payout is initiated by the audit route.
+`WOOCOMMERCE_ORDER_ELIGIBILITY_GATE=IMPLEMENTED`. No payout is initiated by the audit route or by any webhook path.
+**NO AUTOMATED EXTERNAL PAYOUTS.**
+
+### Order eligibility
+Economics post only for orders with status `processing` or `completed`, a valid `date_paid_gmt`, a total greater than
+zero, and no refunds. Any other `order.created`/`order.updated` (pending, on-hold, failed, cancelled, refunded, draft,
+unpaid) is acknowledged with HTTP 200, `economicDisposition=ignored_ineligible` and a reason
+(`ORDER_STATUS_INELIGIBLE`, `ORDER_NOT_PAID`, `ORDER_TOTAL_INVALID`, `ORDER_HAS_REFUNDS`). Only the signed receipt is
+persisted; no processed line, ledger entry or entitlement is written. The signature is verified first and eligibility is
+evaluated before cost metadata is required, so unpaid orders without cost meta do not fail. A later paid update of the
+same order is processed normally; a repeat delivery for an already-processed line is a `replay` with no new economics.
+
+### Cancellation and refund reversals (append-only)
+- `order.cancelled` (payload must carry `status: "cancelled"`) and `refund.created` webhooks are handled.
+- A full reversal appends one `reversal` ledger entry per original earning (id/idempotency key `reversal:<earningId>`,
+  negated amount, `sourceEntryId` = original earning). Original entries are never edited or deleted. Net = original +
+  reversal = 0. At most one reversal exists per earning regardless of how many cancel/refund deliveries arrive, and a
+  cancelled order cannot be resurrected by later order updates.
+- Refunds are idempotent by `refund:<orderId>:<refundId>` and tracked cumulatively per line against the persisted
+  `saleMerchandiseMinor`. Cumulative full coverage reverses everything; over-refunds fail closed.
+- Entitlements move to the new `reversed` state (from pending/cleared) and can never become payable. If an entitlement
+  is already payable or paid the result is `manual_review_required` and nothing is written (no clawback).
+- Commerce adjustments are stored in the new `commerceAdjustments` collection; state persisted before this change
+  loads with an empty collection. Lines processed before this change lack `saleMerchandiseMinor`, so refunds on them go
+  to manual review.
+- The audit now reports adjustments plus `originalDmp`, `reversedDmp`, `netDmp` and per-beneficiary gross, reversed and
+  net earnings per line and per order.
+
+### Unresolved policy (not automated)
+`PARTIAL_REFUND_COST_POLICY=REQUIRES_BUSINESS_RULE`: partial refunds are recorded as `manual_review_required` with no
+ledger effect. Also deferred: freight/fee/tax/shipping refunds, clawback after payable/paid, chargebacks/disputes, and
+cancellation delivered as `order.updated` with status `cancelled` (this is ignored as ineligible, it does not reverse;
+only the `order.cancelled` topic reverses).
 
 **Open item:** the Cognito app client must list `https://staging.glwplatform.com/oauth2/idpresponse` as a callback URL
 for browser login on staging to complete. This changes Cognito configuration and is deliberately not automated here.
