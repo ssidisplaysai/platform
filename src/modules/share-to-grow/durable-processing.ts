@@ -2,7 +2,12 @@ import type { AttributionDecision } from "./attribution";
 import type { ProcessedCommerceLine } from "./allocation-pipeline";
 import type { PayoutEntitlement } from "./payout";
 import { commitProcessedCommerceLine } from "./share-to-grow-repository";
-import type { PersistedPayoutEntitlement, ProcessedCommerceLineRecord } from "./persistence-types";
+import type { EconomicRuleVersion } from "./economic-rule";
+import {
+  serializeRuleVersion,
+  type PersistedPayoutEntitlement,
+  type ProcessedCommerceLineRecord,
+} from "./persistence-types";
 
 function persistEntitlement(entitlement: PayoutEntitlement): PersistedPayoutEntitlement {
   return {
@@ -22,6 +27,7 @@ function persistEntitlement(entitlement: PayoutEntitlement): PersistedPayoutEnti
 export function persistProcessedCommerceLine(input: {
   readonly sourceEventId: string;
   readonly saleMerchandiseMinor?: string;
+  readonly ruleSnapshot?: EconomicRuleVersion;
   readonly organizationId: string;
   readonly processedAt: string;
   readonly processedLine: ProcessedCommerceLine;
@@ -37,6 +43,7 @@ export function persistProcessedCommerceLine(input: {
     ruleVersionId: input.processedLine.ruleVersionId,
     ledgerEntryIds: Object.freeze(ledgerEntryIds),
     processedAt: input.processedAt,
+    ...(input.ruleSnapshot ? { ruleSnapshot: serializeRuleVersion(input.ruleSnapshot) } : {}),
     ...(input.saleMerchandiseMinor !== undefined
       ? { saleMerchandiseMinor: input.saleMerchandiseMinor }
       : {}),

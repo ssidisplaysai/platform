@@ -201,23 +201,6 @@ describe("WooCommerce refund reversal", () => {
     expect(listPersistedLedgerEntries()).toHaveLength(6);
   });
 
-  test("partial refund requires manual review and writes no ledger effect", () => {
-    send("order.updated", "d-1", order(721));
-    const result = send("refund.created", "d-2", refundBody(721, 5002, "10.00"));
-    expect(result.economicDisposition).toBe("manual_review_required");
-    expect(result.reason).toBe("PARTIAL_REFUND_COST_POLICY_REQUIRES_BUSINESS_RULE");
-    expect(listPersistedLedgerEntries()).toHaveLength(3);
-    expect(listCommerceAdjustments()).toHaveLength(1);
-  });
-
-  test("remainder refund after partial completes full coverage", () => {
-    send("order.updated", "d-1", order(722));
-    send("refund.created", "d-2", refundBody(722, 5003, "10.00"));
-    const result = send("refund.created", "d-3", refundBody(722, 5004, "50.00"));
-    expect(result.economicDisposition).toBe("reversed");
-    expect(sumMinor()).toBe(0n);
-  });
-
   test("over-refund fails closed", () => {
     send("order.updated", "d-1", order(723));
     const result = send("refund.created", "d-2", refundBody(723, 5005, "70.00"));

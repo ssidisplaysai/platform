@@ -92,11 +92,33 @@ same order is processed normally; a repeat delivery for an already-processed lin
 - The audit now reports adjustments plus `originalDmp`, `reversedDmp`, `netDmp` and per-beneficiary gross, reversed and
   net earnings per line and per order.
 
-### Unresolved policy (not automated)
-`PARTIAL_REFUND_COST_POLICY=REQUIRES_BUSINESS_RULE`: partial refunds are recorded as `manual_review_required` with no
-ledger effect. Also deferred: freight/fee/tax/shipping refunds, clawback after payable/paid, chargebacks/disputes, and
-cancellation delivered as `order.updated` with status `cancelled` (this is ignored as ineligible, it does not reverse;
-only the `order.cancelled` topic reverses).
+### Partial refund policy v1 (`PARTIAL_REFUND_COST_POLICY=APPROVED_V1`)
+- Customer refunds reduce revenue first. Incurred costs (COGS, inbound freight/duty, fulfillment/packaging, payment
+  processing) remain incurred; `PARTIAL_REFUND_COST_RECOVERY=AFFECTS_NONE` until an explicit cost-credit event exists.
+- Cumulative participant reversal per line = min(cumulative customer refund, original DMP). A full cumulative refund
+  reverses only the remaining unreversed earnings (never another full amount).
+- Reversals use the sale's original locked rule (persisted `ruleSnapshot`; legacy lines fall back to the reference rule
+  with the same id) and integer minor units with the original residual-beneficiary strategy. Each beneficiary is capped
+  at its remaining earning, so participant net earnings never go below zero and no negative entitlement is created.
+- Refund beyond original DMP is brand loss, absorbed by STONER outside the participant ledger (no collaborator debt).
+- Dispositions: `partially_reversed`, `reversed` (net DMP 0), `reversed_with_brand_loss` (refund exceeded remaining DMP
+  without being a full refund), `already_reversed` (no new reversal), `replay`, `manual_review_required`.
+- Result fields: `customerRefundAmount`, `economicReversalAmount`, `remainingNetDmp`, `brandLossAmount` (this refund)
+  plus cumulative equivalents. Adjustments persist per-line original DMP, cumulative refund/reversal, remaining DMP,
+  brand loss and rule version id. Refund identity is `refund:<orderId>:<refundId>`; a different delivery of the same refund
+  is a no-op. Refunds above the line sale amount fail closed (`REFUND_EXCEEDS_LINE_SALE`).
+- Pending/cleared entitlements are reduced by partial reversals (state `reversed` at zero). Payable/paid entitlements
+  return `manual_review_required` with `REFUND_AFTER_PAYOUT_THRESHOLD`: no clawback, no debit, no payout mutation.
+- Audit adds per-line and per-order `originalDmp`, `customerRefunded`, `economicReversed`, `netDmp`, `brandLoss`, and
+  per-beneficiary `grossEarning`, `reversedAmount`, `netEarning`.
+- Only merchandise line items participate. `TAX_REFUND_POLICY=OUT_OF_SCOPE_V1`,
+  `CUSTOMER_SHIPPING_REFUND_POLICY=OUT_OF_SCOPE_V1`, `CHARGEBACK_POLICY=OUT_OF_SCOPE_V1`. A refund with no merchandise
+  lines is `ignored_no_economics`.
+- **NO AUTOMATED EXTERNAL PAYOUTS.**
+
+### Still deferred
+Explicit cost recovery events, post-payment clawback, chargebacks/disputes, and cancellation delivered as `order.updated`
+with status `cancelled` (ignored as ineligible; only the `order.cancelled` topic reverses).
 
 **Open item:** the Cognito app client must list `https://staging.glwplatform.com/oauth2/idpresponse` as a callback URL
 for browser login on staging to complete. This changes Cognito configuration and is deliberately not automated here.

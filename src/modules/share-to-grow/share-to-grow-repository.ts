@@ -334,6 +334,7 @@ export function commitCommerceAdjustment(input: {
   readonly record: CommerceAdjustmentRecord;
   readonly ledgerEntries: readonly LedgerEntry[];
   readonly reversedEntitlementIds: readonly string[];
+  readonly entitlementReductions?: ReadonlyArray<{ readonly entitlementId: string; readonly reduceMinor: string }>;
 }): { record: CommerceAdjustmentRecord; replay: boolean } {
   const existing = state.commerceAdjustments.find(
     (candidate) => candidate.adjustmentId === input.record.adjustmentId,
@@ -357,11 +358,24 @@ export function commitCommerceAdjustment(input: {
   }
 
   const reversedIds = new Set(input.reversedEntitlementIds);
-  const nextEntitlements = state.payoutEntitlements.map((entitlement) =>
-    reversedIds.has(entitlement.entitlementId)
-      ? { ...deepClone(entitlement), state: reversedEntitlementState(entitlement.state) }
-      : deepClone(entitlement)
+  const reductions = new Map(
+    (input.entitlementReductions ?? []).map((item) => [item.entitlementId, BigInt(item.reduceMinor)]),
   );
+  const nextEntitlements = state.payoutEntitlements.map((entitlement) => {
+    if (reversedIds.has(entitlement.entitlementId)) {
+      return { ...deepClone(entitlement), state: reversedEntitlementState(entitlement.state) };
+    }
+    const reduce = reductions.get(entitlement.entitlementId);
+    if (reduce !== undefined) {
+      if (entitlement.state === "payable" || entitlement.state === "paid") {
+        throw new Error("ENTITLEMENT_NOT_REVERSIBLE");
+      }
+      const next = BigInt(entitlement.amountMinor) - reduce;
+      if (next <= 0n) throw new Error("ENTITLEMENT_REDUCTION_INVALID");
+      return { ...deepClone(entitlement), amountMinor: next.toString() };
+    }
+    return deepClone(entitlement);
+  });
 
   persistCurrentState({
     ...state,

@@ -68,6 +68,8 @@ export interface ProcessedCommerceLineRecord {
   readonly processedAt: string;
   /** Sale amount (gross - discount) in minor units; absent on records written before refund support. */
   readonly saleMerchandiseMinor?: string;
+  /** Locked economic rule used for this sale; absent on records written before reversal support. */
+  readonly ruleSnapshot?: PersistedEconomicRuleVersion;
 }
 
 /**
@@ -81,8 +83,29 @@ export interface CommerceAdjustmentRecord {
   readonly sourceEventId: string;
   readonly refundId?: string;
   readonly lineRefunds: ReadonlyArray<{ readonly lineKey: string; readonly refundMinor: string }>;
-  readonly disposition: "reversed" | "manual_review_required";
+  readonly disposition:
+    | "reversed"
+    | "partially_reversed"
+    | "reversed_with_brand_loss"
+    | "no_economic_effect"
+    | "manual_review_required";
   readonly reason?: string;
+  readonly customerRefundMinor?: string;
+  readonly economicReversalMinor?: string;
+  readonly brandLossMinor?: string;
+  readonly remainingNetDmpMinor?: string;
+  readonly currency?: string;
+  readonly lineAdjustments?: ReadonlyArray<{
+    readonly lineKey: string;
+    readonly ruleVersionId: string;
+    readonly originalDmpMinor: string;
+    readonly refundMinor: string;
+    readonly cumulativeRefundMinor: string;
+    readonly reversalMinor: string;
+    readonly cumulativeReversalMinor: string;
+    readonly remainingDmpMinor: string;
+    readonly cumulativeBrandLossMinor: string;
+  }>;
   readonly reversalLedgerEntryIds: readonly string[];
   readonly recordedAt: string;
 }

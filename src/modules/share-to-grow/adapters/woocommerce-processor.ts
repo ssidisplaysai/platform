@@ -121,6 +121,7 @@ export function processWooCommerceOrder(
       saleMerchandiseMinor: (
         lines[index].grossMerchandise.minor - lines[index].discount.minor
       ).toString(),
+      ruleSnapshot: ruleResolver.resolve({ line: lines[index], attribution }),
       sourceEventId: input.webhook.sourceEventId,
       organizationId: input.order.organizationId,
       processedAt: input.order.convertedAt,

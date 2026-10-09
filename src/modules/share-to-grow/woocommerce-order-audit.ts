@@ -29,7 +29,12 @@ type AuditInput = {
 
 type BeneficiaryNet = { beneficiary: string; grossEarning: bigint; reversedAmount: bigint; netEarning: bigint };
 
-function netEconomics(entries: readonly PersistedLedgerEntry[], currency: string) {
+function netEconomics(
+  entries: readonly PersistedLedgerEntry[],
+  currency: string,
+  refundedMinor: bigint,
+  perLineBrandLossMinor?: bigint,
+) {
   const byBeneficiary = new Map<string, BeneficiaryNet>();
   for (const entry of entries) {
     const row = byBeneficiary.get(entry.beneficiaryId)
@@ -42,8 +47,14 @@ function netEconomics(entries: readonly PersistedLedgerEntry[], currency: string
   }
   const rows = [...byBeneficiary.values()].sort((a, b) => a.beneficiary.localeCompare(b.beneficiary));
   const sum = (pick: (row: BeneficiaryNet) => bigint) => rows.reduce((total, row) => total + pick(row), 0n);
+  const originalMinor = sum((row) => row.grossEarning);
+  const brandLossMinor = perLineBrandLossMinor
+    ?? (refundedMinor > originalMinor ? refundedMinor - originalMinor : 0n);
   return {
-    originalDmp: moneyFromMinor(sum((row) => row.grossEarning), currency),
+    originalDmp: moneyFromMinor(originalMinor, currency),
+    customerRefunded: moneyFromMinor(refundedMinor, currency),
+    economicReversed: moneyFromMinor(sum((row) => row.reversedAmount), currency),
+    brandLoss: moneyFromMinor(brandLossMinor, currency),
     reversedDmp: moneyFromMinor(sum((row) => row.reversedAmount), currency),
     netDmp: moneyFromMinor(sum((row) => row.netEarning), currency),
     beneficiaries: rows.map((row) => ({
@@ -133,6 +144,12 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
         : "caller-supplied-order-and-receipt",
     }));
 
+  const refundedForLine = (lineKey: string): bigint => (input.adjustments ?? [])
+    .filter((adjustment) => adjustment.kind === "refund")
+    .flatMap((adjustment) => adjustment.lineRefunds)
+    .filter((refund) => refund.lineKey === lineKey)
+    .reduce((sum, refund) => sum + BigInt(refund.refundMinor), 0n);
+
   const processedLineResults = processedLines.map((line) => {
     const ledgerIds = lineLedgerIds.get(line.lineKey) ?? new Set<string>();
     const lineLedger = matchingLedger.filter((entry) =>
@@ -218,7 +235,11 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
         sourceEventIds: [line.sourceEventId],
         reversalEntryCount: lineLedger.filter((entry) => entry.entryType === "reversal").length,
       },
-      economics: netEconomics(lineLedger, allocationLedger[0]?.currency ?? "USD"),
+      economics: netEconomics(
+        lineLedger,
+        allocationLedger[0]?.currency ?? "USD",
+        refundedForLine(line.lineKey),
+      ),
     };
   });
 
@@ -275,6 +296,14 @@ export function buildWooCommerceOrderAudit(input: AuditInput) {
     economics: netEconomics(
       matchingLedger,
       matchingLedger[0]?.currency ?? "USD",
+      processedLines.reduce((sum, line) => sum + refundedForLine(line.lineKey), 0n),
+      processedLines.reduce((sum, line) => {
+        const refunded = refundedForLine(line.lineKey);
+        const original = matchingLedger
+          .filter((entry) => entry.entryType === "earning" && line.ledgerEntryIds.includes(entry.id))
+          .reduce((total, entry) => total + BigInt(entry.amountMinor), 0n);
+        return sum + (refunded > original ? refunded - original : 0n);
+      }, 0n),
     ),
     idempotency: {
       economicEffectsPerCanonicalLine: processedLineResults.map((line) => ({

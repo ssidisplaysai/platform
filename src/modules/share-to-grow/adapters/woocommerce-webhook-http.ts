@@ -21,7 +21,11 @@ export interface WooCommerceWebhookHttpResult {
     | "ignored_ineligible"
     | "ignored_no_economics"
     | "reversed"
+    | "partially_reversed"
+    | "reversed_with_brand_loss"
+    | "already_reversed"
     | "manual_review_required";
+  readonly refund?: unknown;
   readonly reason?: string;
   readonly reversals?: readonly {
     readonly ledgerEntryId: string;
@@ -89,6 +93,7 @@ export function processWooCommerceWebhookHttp(
       replay: adjustment.replay,
       economicDisposition: adjustment.economicDisposition,
       ...(adjustment.reason ? { reason: adjustment.reason } : {}),
+      ...(adjustment.refund ? { refund: adjustment.refund } : {}),
       reversals: adjustment.reversals,
       lines: Object.freeze([]),
       pendingEntitlements: Object.freeze([]),
