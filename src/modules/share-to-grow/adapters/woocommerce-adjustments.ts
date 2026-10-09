@@ -361,7 +361,11 @@ export function processWooCommerceCancellation(input: {
   const lines = linesForOrder(orderId);
   if (lines.length === 0) return result(webhook, orderId, "ignored_no_economics");
 
-  const adjustmentId = `cancellation:${orderId}:${webhook.sourceEventId}`;
+  // Order-scoped identity: different deliveries of the same cancellation never re-reverse.
+  const adjustmentId = `cancellation:${orderId}`;
+  if (listCommerceAdjustments().some((record) => record.adjustmentId === adjustmentId)) {
+    return result(webhook, orderId, "replay");
+  }
   return reverseLines({
     envelope: webhook,
     orderId,

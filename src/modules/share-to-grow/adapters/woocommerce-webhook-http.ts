@@ -69,6 +69,16 @@ function normalizeWooEventType(topic: string | undefined): WooCommerceEventType 
   }
 }
 
+/** Routing hint only; the signature is verified by the domain operation the event is routed to. */
+function isCancelledOrderUpdate(rawBody: string): boolean {
+  try {
+    const payload: unknown = JSON.parse(rawBody);
+    return typeof payload === "object" && payload !== null && (payload as { status?: unknown }).status === "cancelled";
+  } catch {
+    return false;
+  }
+}
+
 export function processWooCommerceWebhookHttp(
   input: WooCommerceWebhookHttpInput,
 ): WooCommerceWebhookHttpResult {
@@ -84,8 +94,10 @@ export function processWooCommerceWebhookHttp(
   const eventType = normalizeWooEventType(topic);
   const webhookEnvelope = { sourceEventId, eventType, rawBody: input.rawBody, signature, receivedAt: input.receivedAt };
 
-  if (eventType === "order.cancelled" || eventType === "refund.created") {
-    const adjustment = eventType === "order.cancelled"
+  // A normal order.updated whose status is cancelled is the authoritative cancellation signal.
+  const cancelledUpdate = eventType === "order.updated" && isCancelledOrderUpdate(input.rawBody);
+  if (eventType === "order.cancelled" || eventType === "refund.created" || cancelledUpdate) {
+    const adjustment = eventType !== "refund.created"
       ? processWooCommerceCancellation({ webhook: webhookEnvelope, webhookSecret: input.secret })
       : processWooCommerceRefund({ webhook: webhookEnvelope, webhookSecret: input.secret });
     return Object.freeze({

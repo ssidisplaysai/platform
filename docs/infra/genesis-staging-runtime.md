@@ -77,7 +77,7 @@ evaluated before cost metadata is required, so unpaid orders without cost meta d
 same order is processed normally; a repeat delivery for an already-processed line is a `replay` with no new economics.
 
 ### Cancellation and refund reversals (append-only)
-- `order.cancelled` (payload must carry `status: "cancelled"`) and `refund.created` webhooks are handled.
+- `order.cancelled`, `order.updated` with `status: "cancelled"` (see below) and `refund.created` webhooks are handled.
 - A full reversal appends one `reversal` ledger entry per original earning (id/idempotency key `reversal:<earningId>`,
   negated amount, `sourceEntryId` = original earning). Original entries are never edited or deleted. Net = original +
   reversal = 0. At most one reversal exists per earning regardless of how many cancel/refund deliveries arrive, and a
@@ -116,9 +116,28 @@ same order is processed normally; a repeat delivery for an already-processed lin
   lines is `ignored_no_economics`.
 - **NO AUTOMATED EXTERNAL PAYOUTS.**
 
+### Cancellation via `order.updated` and the Woo refund bridge
+- `ORDER_UPDATED_CANCELLED_REVERSAL=IMPLEMENTED`: a signed `order.updated` whose payload `status` is `cancelled` is routed to
+  the same cancellation operation as the explicit `order.cancelled` topic (which is retained). It is never processed as a
+  normal order and no longer reported as `ignored_ineligible`. Other `order.created`/`order.updated` ineligibility is unchanged.
+- Cancellation identity is order-scoped (`cancellation:<orderId>`), not delivery-scoped: any later cancelled delivery,
+  from either path, is a `replay`. Reversal ids stay `reversal:<earningId>:<adjustmentId>`, so no earning is reversed twice,
+  and a cancellation after a full refund reverses nothing further.
+- `order.updated.refunds[]` lists refund ids and aggregate totals but not the original order line for each refund line, so
+  Genesis never derives line-level refund economics from it (no guessed or proportional allocation).
+- Refunds arrive as `refund.created`, sent by `integrations/wordpress/genesis-share-to-grow/` (WordPress plugin; hook
+  `woocommerce_refund_created`; HMAC with the existing "Genesis Share-to-Grow Staging" webhook secret read through
+  WooCommerce; delivery id `woo-refund-<orderId>-<refundId>`; bounded Action Scheduler retries). See its README. The
+  bridge is not deployed by any workflow here; no extra Woo webhooks are needed (keep the single `order.updated` webhook).
+- Refund line-item amounts must be entered per order line in WooCommerce; an amount-only refund has no merchandise lines
+  and is `ignored_no_economics`.
+
 ### Still deferred
-Explicit cost recovery events, post-payment clawback, chargebacks/disputes, and cancellation delivered as `order.updated`
-with status `cancelled` (ignored as ineligible; only the `order.cancelled` topic reverses).
+Explicit cost recovery events, post-payment clawback, chargebacks/disputes.
+
+`PRODUCTION_IMAGE_PROVENANCE_REVIEW=OPEN`: during the 2026-10-09 staging deploy window production kept task definition
+`genesis-production-web:54`, but image `runtime-65088e3-campaign-map-20261009152726` was pushed to the production
+repository at about 22:28Z (not by this work; provenance reported `REPOSITORY_NOT_FOUND`). Review before production readiness.
 
 **Open item:** the Cognito app client must list `https://staging.glwplatform.com/oauth2/idpresponse` as a callback URL
 for browser login on staging to complete. This changes Cognito configuration and is deliberately not automated here.
