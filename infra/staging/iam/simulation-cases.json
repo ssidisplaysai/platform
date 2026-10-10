@@ -477,6 +477,48 @@
     },
     {
         "expect":  "allow",
+        "action":  "kms:DescribeKey",
+        "resource":  "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "kms:DescribeKey",
+        "resource":  "arn:aws:kms:us-west-2:452630323448:key/72fb6bfd-b36b-413a-9936-0030a4d95728",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "kms:DescribeKey",
+        "resource":  "arn:aws:kms:us-west-2:452630323448:key/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "kms:Decrypt",
+        "resource":  "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "kms:Encrypt",
+        "resource":  "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "kms:GenerateDataKey",
+        "resource":  "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a",
+        "context":  {}
+    },
+    {
+        "expect":  "deny",
+        "action":  "kms:CreateGrant",
+        "resource":  "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a",
+        "context":  {}
+    },
+    {
+        "expect":  "allow",
         "action":  "iam:AttachRolePolicy",
         "resource":  "arn:aws:iam::452630323448:role/genesis-staging-execution-role",
         "context":  {

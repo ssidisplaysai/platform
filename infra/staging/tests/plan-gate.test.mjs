@@ -388,7 +388,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=95 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=102 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
@@ -414,7 +414,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
   const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
-  assert.equal(customSimulationCalls.length, 94);
+  assert.equal(customSimulationCalls.length, 101);
   assert.equal(principalSimulationCalls.length, cases.filter((item) =>
     item.expect === "allow" && item.verificationMode !== "aws-dependent-action-static"
   ).length);
@@ -507,7 +507,7 @@ test("all conditioned policy statements matched by simulation cases have complet
     "04-production-guardrails-deny.json",
     "05-staging-postgres-provisioning.json",
   ];
-  assert.equal(cases.length, 95);
+  assert.equal(cases.length, 102);
   const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
@@ -734,7 +734,7 @@ test("staging and production CreateSecret cases use complete, distinct request-t
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=95 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=102 mismatches=0/);
 });
 
 test("missing production CreateSecret context remains visible and fails closed", async () => {
@@ -892,7 +892,7 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=95 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=102 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   const createRuleCall = result.calls.find(({ service, operation, args }) =>
     service === "iam" &&

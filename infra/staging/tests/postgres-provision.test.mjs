@@ -34,6 +34,7 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
     "ec2:DescribeSecurityGroups",
     "ec2:DescribeSubnets",
     "iam:CreateServiceLinkedRole",
+    "kms:DescribeKey",
     "rds:AddTagsToResource",
     "rds:CreateDBInstance",
     "rds:CreateDBSubnetGroup",
@@ -57,6 +58,7 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
     "TagStagingPostgresSecret",
     "DescribeStagingPostgresSecret",
     "CreateRdsServiceLinkedRole",
+    "DescribeSecretsManagerDefaultKeyForRdsManagedMasterPassword",
   ];
   const targetDb = "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres";
   const targetSubnetGroup = "arn:aws:rds:us-west-2:452630323448:subgrp:genesis-staging-postgres";
@@ -87,6 +89,23 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
   assert.deepEqual(findStatement(policy, "CreateRdsServiceLinkedRole").Condition, {
     StringEquals: { "iam:AWSServiceName": "rds.amazonaws.com" },
   });
+  const secretsManagerKeyArn = "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a";
+  const keyDescribe = findStatement(policy, "DescribeSecretsManagerDefaultKeyForRdsManagedMasterPassword");
+  assert.equal(keyDescribe.Effect, "Allow");
+  assert.equal(keyDescribe.Action, "kms:DescribeKey");
+  assert.equal(keyDescribe.Resource, secretsManagerKeyArn);
+  assert.ok(actions.filter((action) => action.startsWith("kms:")).every((action) =>
+    action === "kms:DescribeKey",
+  ));
+  assert.equal(
+    policy.Statement.filter((statement) => statement.Action === "kms:DescribeKey").length,
+    1,
+  );
+  assert.equal(
+    policy.Statement.some((statement) =>
+      statement.Action === "kms:DescribeKey" && statement.Resource === "*"),
+    false,
+  );
 
   for (const sid of [
     "RdsCreateStagingPostgres",
@@ -163,7 +182,23 @@ test("PostgreSQL policy simulation covers scoped staging allows and production d
     item.expect === "deny" &&
     item.context["rds:DatabaseEngine"] === "mysql",
   ));
-  assert.equal(cases.length, 95);
+  assert.equal(cases.length, 102);
+  const keyCases = cases.filter((item) => item.action.startsWith("kms:"));
+  assert.equal(keyCases.length, 7);
+  assert.ok(keyCases.some((item) =>
+    item.action === "kms:DescribeKey" &&
+    item.resource === "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a" &&
+    item.expect === "allow",
+  ));
+  assert.ok(keyCases.every((item) =>
+    item.resource !== "*" &&
+    !item.resource.startsWith("arn:aws:kms:*:"),
+  ));
+  assert.ok(keyCases.filter((item) => item.action !== "kms:DescribeKey" ||
+    item.resource !== "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a"
+  ).every((item) => item.expect === "deny"));
+  const productionGuardrails = parseJson(await readRepoFile("infra/staging/iam/04-production-guardrails-deny.json"));
+  assert.ok(actionsOf(productionGuardrails).every((action) => !action.startsWith("kms:")));
   const createDbCase = (resource, expect, environment, extraContext = {}) => cases.find((item) =>
     item.action === "rds:CreateDBInstance" &&
     item.resource === resource &&

@@ -120,6 +120,12 @@
           "iam:AWSServiceName": "rds.amazonaws.com"
         }
       }
+    },
+    {
+      "Sid": "DescribeSecretsManagerDefaultKeyForRdsManagedMasterPassword",
+      "Effect": "Allow",
+      "Action": "kms:DescribeKey",
+      "Resource": "arn:aws:kms:us-west-2:452630323448:key/1dc17669-f1bc-418f-b266-ee8f3612d30a"
     }
   ]
 }
