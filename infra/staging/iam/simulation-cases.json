@@ -575,8 +575,17 @@
         "context":  {
                         "aws:RequestTag/Environment":  "staging",
                         "rds:DatabaseClass":  "db.t4g.micro",
-                        "rds:DatabaseEngine":  "postgres",
-                        "rds:DatabaseName":  "genesis_staging"
+                        "rds:DatabaseEngine":  "postgres"
+                    }
+    },
+    {
+        "expect":  "deny",
+        "action":  "rds:CreateDBInstance",
+        "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres",
+        "context":  {
+                       "aws:RequestTag/Environment":  "production",
+                       "rds:DatabaseClass":  "db.t4g.micro",
+                       "rds:DatabaseEngine":  "postgres"
                     }
     },
     {
@@ -584,10 +593,9 @@
         "action":  "rds:CreateDBInstance",
         "resource":  "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres",
         "context":  {
-                        "aws:RequestTag/Environment":  "production",
-                        "rds:DatabaseClass":  "db.t4g.micro",
-                        "rds:DatabaseEngine":  "postgres",
-                        "rds:DatabaseName":  "genesis_staging"
+                       "aws:RequestTag/Environment":  "production",
+                       "rds:DatabaseClass":  "db.t4g.micro",
+                       "rds:DatabaseEngine":  "postgres"
                     }
     },
     {
@@ -597,8 +605,7 @@
         "context":  {
                         "aws:RequestTag/Environment":  "staging",
                         "rds:DatabaseClass":  "db.t4g.small",
-                        "rds:DatabaseEngine":  "postgres",
-                        "rds:DatabaseName":  "genesis_staging"
+                        "rds:DatabaseEngine":  "postgres"
                     }
     },
     {
@@ -608,8 +615,7 @@
         "context":  {
                         "aws:RequestTag/Environment":  "staging",
                         "rds:DatabaseClass":  "db.t4g.micro",
-                        "rds:DatabaseEngine":  "mysql",
-                        "rds:DatabaseName":  "genesis_staging"
+                        "rds:DatabaseEngine":  "mysql"
                     }
     },
     {

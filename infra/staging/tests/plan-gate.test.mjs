@@ -388,7 +388,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   assert.match(result.output, /PRODUCTION_IMAGE_PUSHED_AT=/);
   assert.match(result.output, /PRODUCTION_COMMIT_PROVENANCE=(REPOSITORY_CONFIRMED|REPOSITORY_NOT_FOUND|ABSENT)/);
   assert.match(result.output, /PRODUCTION_TASK_DEFINITION_STABLE_DURING_PLAN=PASS/);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=94 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=95 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   assert.match(result.output, /PRINCIPAL_POLICY_SIMULATION=PASS/);
   assert.match(result.output, /ROLE_USAGE_CLEARANCE=PLATFORM_ONLY/);
@@ -414,7 +414,7 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
   const customSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-custom-policy");
   const principalSimulationCalls = simulationCalls.filter(({ operation }) => operation === "simulate-principal-policy");
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
-  assert.equal(customSimulationCalls.length, 93);
+  assert.equal(customSimulationCalls.length, 94);
   assert.equal(principalSimulationCalls.length, cases.filter((item) =>
     item.expect === "allow" && item.verificationMode !== "aws-dependent-action-static"
   ).length);
@@ -462,7 +462,6 @@ test("all required reads and zero simulation mismatches pass the plan gate", asy
     "iam:PolicyARN",
     "rds:DatabaseClass",
     "rds:DatabaseEngine",
-    "rds:DatabaseName",
   ].sort());
   assert.equal(productionContext["aws:RequestTag/Environment"], "production");
   assert.equal(productionContext["aws:ResourceTag/Environment"], "nonstaging");
@@ -508,7 +507,7 @@ test("all conditioned policy statements matched by simulation cases have complet
     "04-production-guardrails-deny.json",
     "05-staging-postgres-provisioning.json",
   ];
-  assert.equal(cases.length, 94);
+  assert.equal(cases.length, 95);
   const policies = [];
   for (const file of policyFiles) {
     const policy = parseJson(await readFile(join(repoRoot, "infra/staging/iam", file), "utf8"));
@@ -543,7 +542,6 @@ test("all conditioned policy statements matched by simulation cases have complet
       "iam:PolicyARN": "string",
       "rds:DatabaseClass": "string",
       "rds:DatabaseEngine": "string",
-      "rds:DatabaseName": "string",
     },
   );
   assert.deepEqual([...SIMULATION_CONTEXT_TYPES].sort(), [
@@ -592,7 +590,6 @@ test("neutral IAM context defaults are conservative, typed, and case overrides t
   assert.equal(DEFAULT_SIMULATION_CONTEXT["elasticloadbalancing:CreateAction"].value, "None");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["rds:DatabaseClass"].value, "invalid");
   assert.equal(DEFAULT_SIMULATION_CONTEXT["rds:DatabaseEngine"].value, "invalid");
-  assert.equal(DEFAULT_SIMULATION_CONTEXT["rds:DatabaseName"].value, "invalid");
 
   const cases = parseJson(await readFile(join(repoRoot, "infra/staging/iam/simulation-cases.json"), "utf8"));
   const policies = await Promise.all([
@@ -737,7 +734,7 @@ test("staging and production CreateSecret cases use complete, distinct request-t
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=94 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=95 mismatches=0/);
 });
 
 test("missing production CreateSecret context remains visible and fails closed", async () => {
@@ -895,7 +892,7 @@ test("EFS and ELB tag-on-create policies use AWS resource and CreateAction seman
 
   const result = await executeGate();
   assert.ifError(result.error);
-  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=94 mismatches=0/);
+  assert.match(result.output, /CUSTOM_POLICY_SIMULATION=PASS cases=95 mismatches=0/);
   assert.match(result.output, /ELB_CREATE_RULE_TAG_AUTHORIZATION=PASS/);
   const createRuleCall = result.calls.find(({ service, operation, args }) =>
     service === "iam" &&

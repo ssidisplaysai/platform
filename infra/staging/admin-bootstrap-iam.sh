@@ -523,7 +523,6 @@ required = {
             "aws:RequestTag/Environment": "staging",
             "rds:DatabaseClass": "db.t4g.micro",
             "rds:DatabaseEngine": "postgres",
-            "rds:DatabaseName": "genesis_staging",
         }},
     },
     "RdsUseStagingPostgresSubnetGroup": {

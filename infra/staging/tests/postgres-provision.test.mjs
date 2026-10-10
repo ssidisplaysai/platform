@@ -103,9 +103,19 @@ test("staging PostgreSQL IAM grants are exact, tagged, and do not expose secret 
   assert.deepEqual(findStatement(policy, "RdsCreateStagingPostgres").Condition.StringEquals, {
     "rds:DatabaseClass": "db.t4g.micro",
     "rds:DatabaseEngine": "postgres",
-    "rds:DatabaseName": "genesis_staging",
     "aws:RequestTag/Environment": "staging",
   });
+  const createDbStatements = policy.Statement
+    .filter((statement) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action])
+      .includes("rds:CreateDBInstance"));
+  assert.deepEqual(createDbStatements
+    .flatMap((statement) => Array.isArray(statement.Resource) ? statement.Resource : [statement.Resource])
+    .sort(), [
+    targetDb,
+    targetSubnetGroup,
+    "arn:aws:rds:us-west-2:452630323448:pg:default.postgres16",
+    "arn:aws:rds:us-west-2:452630323448:og:default:postgres-16",
+  ].sort());
 
   const rdsActions = actions.filter((action) => action.startsWith("rds:"));
   assert.ok(rdsActions.every((action) =>
@@ -153,7 +163,36 @@ test("PostgreSQL policy simulation covers scoped staging allows and production d
     item.expect === "deny" &&
     item.context["rds:DatabaseEngine"] === "mysql",
   ));
-  assert.equal(cases.length, 94);
+  assert.equal(cases.length, 95);
+  const createDbCase = (resource, expect, environment, extraContext = {}) => cases.find((item) =>
+    item.action === "rds:CreateDBInstance" &&
+    item.resource === resource &&
+    item.expect === expect &&
+    item.context["aws:RequestTag/Environment"] === environment &&
+    Object.entries(extraContext).every(([key, value]) => item.context[key] === value)
+  );
+  const stagingDb = "arn:aws:rds:us-west-2:452630323448:db:genesis-staging-postgres";
+  const productionDb = "arn:aws:rds:us-west-2:452630323448:db:genesis-production-postgres";
+  const approvedCreate = createDbCase(stagingDb, "allow", "staging", {
+    "rds:DatabaseClass": "db.t4g.micro",
+    "rds:DatabaseEngine": "postgres",
+  });
+  assert.ok(approvedCreate, "approved staging DB create must be allowed");
+  assert.equal(Object.hasOwn(approvedCreate.context, "rds:DatabaseName"), false);
+  assert.ok(createDbCase(productionDb, "deny", "production"), "production DB create must be denied");
+  assert.ok(createDbCase(stagingDb, "deny", "production"), "wrong Environment tag must be denied");
+  assert.ok(cases.some((item) =>
+    item.action === "rds:CreateDBInstance" &&
+    item.resource === stagingDb &&
+    item.expect === "deny" &&
+    item.context["rds:DatabaseClass"] === "db.t4g.small",
+  ), "wrong DB class must be denied");
+  assert.ok(cases.some((item) =>
+    item.action === "rds:CreateDBInstance" &&
+    item.resource === stagingDb &&
+    item.expect === "deny" &&
+    item.context["rds:DatabaseEngine"] === "mysql",
+  ), "wrong DB engine must be denied");
   for (const action of ["ec2:CreateSecurityGroup", "ec2:AuthorizeSecurityGroupIngress"]) {
     assert.ok(cases.some((item) =>
       item.action === action &&
@@ -240,6 +279,8 @@ test("database-only provisioning is isolated and gated from the broad staging pr
   assert.match(script, /Refusing non-read-only AWS operation in postgres plan mode/);
   assert.match(script, /genesis-staging-postgres/);
   assert.match(script, /--engine-version 16\.13/);
+  assert.match(script, /readonly DATABASE_NAME="genesis_staging"/);
+  assert.match(script, /--db-name "\$DATABASE_NAME"/);
   assert.match(script, /--db-instance-class db\.t4g\.micro/);
   assert.match(script, /--allocated-storage 20/);
   assert.match(script, /--storage-type gp3/);
