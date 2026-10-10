@@ -4,7 +4,10 @@ set -euo pipefail
 readonly EXPECTED_ACCOUNT="452630323448"
 readonly ROLE_NAME="GenesisGitHubDeployRole"
 readonly POLICY_PREFIX="GenesisStagingDeploy"
-POLICY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/iam"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+source "$SCRIPT_DIR/aws-cli-file-path.sh"
+POLICY_DIR="$SCRIPT_DIR/iam"
 readonly POLICY_DIR
 WORK_DIR="$(mktemp -d)"
 readonly WORK_DIR
@@ -231,7 +234,7 @@ PY
     local new_version
     new_version="$(aws iam create-policy-version \
       --policy-arn "$arn" \
-      --policy-document "file://$policy_file" \
+      --policy-document "$(aws_cli_file_uri "$policy_file")" \
       --set-as-default \
       --query PolicyVersion.VersionId \
       --output text)" ||
@@ -340,7 +343,7 @@ for index in "${!POLICY_NAMES[@]}"; do
     fi
     created_arn="$(aws iam create-policy \
       --policy-name "$POLICY_PREFIX-$name" \
-      --policy-document "file://$policy_file" \
+      --policy-document "$(aws_cli_file_uri "$policy_file")" \
       --query Policy.Arn \
       --output text)" ||
       fail "unable to create $arn"
