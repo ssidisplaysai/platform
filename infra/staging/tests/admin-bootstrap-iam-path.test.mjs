@@ -102,7 +102,12 @@ test("admin IAM helper adds policy 05 without detaching the existing guardrail",
   assert.match(helper, /--refresh-production-guardrails-policy/);
   assert.match(helper, /refresh-production-guardrails-policy\.mjs/);
   assert.match(helper, /STAGING_POSTGRES_POLICY=PASS/);
-  assert.match(helper, /iam:AWSServiceName.*rds\.amazonaws\.com/);
+  const postgresValidator = await readFile(
+    new URL("../iam/validate-staging-postgres-policy.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(postgresValidator, /iam:AWSServiceName.*rds\.amazonaws\.com/);
+  assert.match(postgresValidator, /kms:DescribeKey/);
 });
 
 function runScopedStateValidator(policyNames, name = "attached.json") {
