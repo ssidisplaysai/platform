@@ -2,9 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const helperPath = fileURLToPath(new URL("../aws-cli-file-path.sh", import.meta.url));
+const bootstrapPath = fileURLToPath(new URL("../admin-bootstrap-iam.sh", import.meta.url));
+const scopedStateValidatorPath = fileURLToPath(
+  new URL("../iam/validate-scoped-role-policies.sh", import.meta.url),
+);
 const windowsGitBash = `${process.env.ProgramFiles ?? "C:\\Program Files"}\\Git\\bin\\bash.exe`;
 const bash = process.env.BASH ?? (
   process.platform === "win32" && existsSync(windowsGitBash) ? windowsGitBash : "bash"
@@ -82,15 +88,103 @@ test("admin IAM helper exposes a separately validated staging data policy refres
   assert.match(helper, /already has five versions; refusing to delete a version/);
 });
 
-test("admin IAM helper includes policy 05 before the final guardrail and caps attachments", async () => {
+test("admin IAM helper adds policy 05 without detaching the existing guardrail", async () => {
   const { readFile } = await import("node:fs/promises");
   const helper = await readFile(new URL("../admin-bootstrap-iam.sh", import.meta.url), "utf8");
-  assert.match(helper, /"05-staging-postgres-provisioning"\s*\n\s*"04-production-guardrails-deny"/);
-  assert.match(helper, /POLICY_NAMES\[@\]:0:4/);
-  assert.match(helper, /ATTACHED_MANAGED_POLICY_COUNT=10/);
-  assert.match(helper, /length\) == 10/);
-  assert.match(helper, /policy04_arn="\$\(policy_arn "04-production-guardrails-deny"\)"/);
+  assert.match(helper, /"03-staging-data-iam"\s*\n\s*"04-production-guardrails-deny"\s*\n\s*"05-staging-postgres-provisioning"/);
+  assert.match(helper, /validate-scoped-role-policies\.sh/);
+  assert.match(helper, /ATTACHED_MANAGED_POLICY_COUNT=5/);
+  assert.match(helper, /unable to attach policy 05 under the existing policy 04 guardrail/);
+  assert.match(helper, /printf 'POLICY_ALREADY_ATTACHED=%s\\n' "\$arn"/);
+  assert.equal((helper.match(/aws iam attach-role-policy/g) ?? []).length, 1);
+  assert.doesNotMatch(helper, /aws iam detach-role-policy/);
   assert.match(helper, /--refresh-staging-postgres-policy/);
   assert.match(helper, /STAGING_POSTGRES_POLICY=PASS/);
   assert.match(helper, /iam:AWSServiceName.*rds\.amazonaws\.com/);
+});
+
+function runScopedStateValidator(policyNames, name = "attached.json") {
+  const directory = mkdtemp(`${tmpdir()}\\genesis-scoped-iam-`);
+  return directory.then(async (path) => {
+    const attachedPath = `${path}\\${name}`;
+    await writeFile(attachedPath, JSON.stringify({
+      AttachedPolicies: policyNames.map((PolicyArn) => ({ PolicyArn })),
+    }));
+    const result = spawnSync(bash, [scopedStateValidatorPath, attachedPath], {
+      encoding: "utf8",
+      env: process.env,
+    });
+    await rm(path, { recursive: true, force: true });
+    return result;
+  });
+}
+
+const scopedPolicies = [
+  "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-01-read-only-production-inspection",
+  "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-02-staging-compute-network-auth",
+  "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-03-staging-data-iam",
+  "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-04-production-guardrails-deny",
+  "arn:aws:iam::452630323448:policy/GenesisStagingDeploy-05-staging-postgres-provisioning",
+];
+const legacyBroadPolicies = [
+  "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess",
+  "arn:aws:iam::aws:policy/AmazonRDSFullAccess",
+  "arn:aws:iam::aws:policy/AmazonECS_FullAccess",
+  "arn:aws:iam::aws:policy/AmazonS3FullAccess",
+  "arn:aws:iam::aws:policy/CloudWatchFullAccessV2",
+];
+
+test("scoped bootstrap accepts canonical 01-04 and final 01-05 states", async () => {
+  const starting = await runScopedStateValidator(scopedPolicies.slice(0, 4));
+  assert.equal(starting.status, 0, starting.stderr);
+  assert.match(starting.stdout, /SCOPED_POLICY_START_STATE=01-04/);
+
+  const final = await runScopedStateValidator(scopedPolicies);
+  assert.equal(final.status, 0, final.stderr);
+  assert.match(final.stdout, /SCOPED_POLICY_START_STATE=01-05/);
+});
+
+test("scoped bootstrap rejects each legacy broad policy with an explicit error", async (t) => {
+  for (const policy of legacyBroadPolicies) {
+    await t.test(policy.split("/").at(-1), async () => {
+      const result = await runScopedStateValidator([...scopedPolicies.slice(0, 4), policy]);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /FORBIDDEN_BROAD_POLICIES_ATTACHED/);
+      assert.match(result.stderr, new RegExp(policy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    });
+  }
+});
+
+test("scoped bootstrap rejects unexpected policies and every missing required policy", async (t) => {
+  const unexpected = await runScopedStateValidator([
+    ...scopedPolicies.slice(0, 4),
+    "arn:aws:iam::452630323448:policy/UnexpectedManagedPolicy",
+  ]);
+  assert.notEqual(unexpected.status, 0);
+  assert.match(unexpected.stderr, /SCOPED_POLICY_STATE_FAILED/);
+
+  for (const index of [0, 1, 2]) {
+    await t.test(`missing policy 0${index + 1}`, async () => {
+      const result = await runScopedStateValidator(scopedPolicies.slice(0, 4).filter((_, i) => i !== index));
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /SCOPED_POLICY_STATE_FAILED/);
+    });
+  }
+
+  const missingGuardrail = await runScopedStateValidator(scopedPolicies.slice(0, 3));
+  assert.notEqual(missingGuardrail.status, 0);
+  assert.match(missingGuardrail.stderr, /PRODUCTION_GUARDRAIL_MISSING/);
+});
+
+test("normal bootstrap preserves policy 04 and attaches only policy 05", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const helper = await readFile(bootstrapPath, "utf8");
+  const policyFourValidation = helper.indexOf('bash "$POLICY_DIR/validate-scoped-role-policies.sh" "$WORK_DIR/attached-before.json"');
+  const policyFiveAttachment = helper.indexOf('arn="$(policy_arn "05-staging-postgres-provisioning")"', policyFourValidation);
+  const finalValidation = helper.indexOf('bash "$POLICY_DIR/validate-scoped-role-policies.sh" "$WORK_DIR/attached-after.json"');
+  assert.ok(policyFourValidation >= 0 && policyFiveAttachment > policyFourValidation);
+  assert.ok(finalValidation > policyFiveAttachment);
+  assert.equal((helper.match(/aws iam attach-role-policy/g) ?? []).length, 1);
+  assert.match(helper, /ATTACHED_MANAGED_POLICY_COUNT=5/);
+  assert.match(helper, /POLICY_ALREADY_ATTACHED=/);
 });

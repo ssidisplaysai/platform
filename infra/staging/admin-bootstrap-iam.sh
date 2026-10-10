@@ -13,19 +13,12 @@ WORK_DIR="$(mktemp -d)"
 readonly WORK_DIR
 trap 'rm -rf "$WORK_DIR"' EXIT
 
-readonly BROAD_POLICY_ARNS=(
-  "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryFullAccess"
-  "arn:aws:iam::aws:policy/AmazonRDSFullAccess"
-  "arn:aws:iam::aws:policy/AmazonECS_FullAccess"
-  "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-  "arn:aws:iam::aws:policy/CloudWatchFullAccessV2"
-)
 readonly POLICY_NAMES=(
   "01-read-only-production-inspection"
   "02-staging-compute-network-auth"
   "03-staging-data-iam"
-  "05-staging-postgres-provisioning"
   "04-production-guardrails-deny"
+  "05-staging-postgres-provisioning"
 )
 
 fail() {
@@ -675,29 +668,8 @@ aws iam list-attached-role-policies \
   --output json > "$WORK_DIR/attached-before.json" ||
   fail "unable to list attached managed policies on $ROLE_NAME"
 
-jq -e --argjson broad "$(printf '%s\n' "${BROAD_POLICY_ARNS[@]}" | jq -R . | jq -s .)" \
-  --argjson staging "$(printf '%s\n' "${POLICY_NAMES[@]}" | while IFS= read -r name; do policy_arn "$name"; done | jq -R . | jq -s .)" '
-  [.AttachedPolicies[].PolicyArn] as $attached
-  | ($broad - $attached) as $missing_broad
-  | ($staging - $attached) as $missing_staging
-  | ($attached - ($broad + $staging)) as $unexpected
-  | if ($missing_broad | length) == 0 and ($unexpected | length) == 0 and ($attached | length) <= 10
-    then true
-    else error("unexpected role policy state; missing broad policies: \($missing_broad|join(", ")); unexpected policies: \($unexpected|join(", ")); attached count: \($attached|length), maximum: 10")
-    end
-' "$WORK_DIR/attached-before.json" >/dev/null ||
-  fail "role policy state differs from the approved broad-plus-staging policy set"
-
-policy04_arn="$(policy_arn "04-production-guardrails-deny")"
-policy04_attached="$(jq -r --arg arn "$policy04_arn" '[.AttachedPolicies[].PolicyArn | select(. == $arn)] | length' "$WORK_DIR/attached-before.json")"
-if [[ "$policy04_attached" == "1" ]]; then
-  for name in "${POLICY_NAMES[@]:0:3}"; do
-    arn="$(policy_arn "$name")"
-    jq -e --arg arn "$arn" '.AttachedPolicies | any(.PolicyArn == $arn)' \
-      "$WORK_DIR/attached-before.json" >/dev/null ||
-      fail "policy 04 is already attached while $name is missing; refusing all further changes"
-  done
-fi
+bash "$POLICY_DIR/validate-scoped-role-policies.sh" "$WORK_DIR/attached-before.json" ||
+  fail "role policy state is not the approved scoped-only 01-04 or 01-05 set"
 
 for index in "${!POLICY_NAMES[@]}"; do
   name="${POLICY_NAMES[$index]}"
@@ -767,51 +739,29 @@ for name in "${POLICY_NAMES[@]}"; do
     fail "policy document verification failed for $arn"
 done
 
-for name in "${POLICY_NAMES[@]:0:4}"; do
-  arn="$(policy_arn "$name")"
-  if ! jq -e --arg arn "$arn" '.AttachedPolicies | any(.PolicyArn == $arn)' \
-    "$WORK_DIR/attached-before.json" >/dev/null; then
-    aws iam attach-role-policy --role-name "$ROLE_NAME" --policy-arn "$arn" ||
-      fail "unable to attach $arn"
-    printf 'POLICY_ATTACHED=%s\n' "$arn"
-  else
-    printf 'POLICY_ALREADY_ATTACHED=%s\n' "$arn"
-  fi
-done
-
-if [[ "$policy04_attached" != "1" ]]; then
-  arn="$policy04_arn"
+arn="$(policy_arn "05-staging-postgres-provisioning")"
+if ! jq -e --arg arn "$arn" '.AttachedPolicies | any(.PolicyArn == $arn)' \
+  "$WORK_DIR/attached-before.json" >/dev/null; then
   aws iam attach-role-policy --role-name "$ROLE_NAME" --policy-arn "$arn" ||
-    fail "unable to attach final guardrail policy $arn"
-  printf 'POLICY_ATTACHED_LAST=%s\n' "$arn"
+    fail "unable to attach policy 05 under the existing policy 04 guardrail: $arn"
+  printf 'POLICY_ATTACHED=%s\n' "$arn"
 else
-  printf 'POLICY_ALREADY_ATTACHED_LAST=%s\n' "$policy04_arn"
+  printf 'POLICY_ALREADY_ATTACHED=%s\n' "$arn"
 fi
 
-# When absent, policy 04 is attached after all scoped policies. If already attached,
-# it remains in place during an incremental policy addition; only reads follow below.
 aws iam list-attached-role-policies \
   --role-name "$ROLE_NAME" \
   --output json > "$WORK_DIR/attached-after.json" ||
   fail "unable to verify attached managed policies after bootstrap"
 
-expected_arns=("${BROAD_POLICY_ARNS[@]}")
-for name in "${POLICY_NAMES[@]}"; do
-  expected_arns+=("$(policy_arn "$name")")
-done
-expected_json="$(printf '%s\n' "${expected_arns[@]}" | jq -R . | jq -s .)"
-jq -e --argjson expected "$expected_json" '
-  [.AttachedPolicies[].PolicyArn] as $attached
-  | (($attached | sort) == ($expected | sort))
-    and (($attached | length) == 10)
-' "$WORK_DIR/attached-after.json" >/dev/null ||
-  fail "final attached-policy set is not exactly the five broad plus five staging policies"
+bash "$POLICY_DIR/validate-scoped-role-policies.sh" "$WORK_DIR/attached-after.json" ||
+  fail "final role state must contain exactly scoped Genesis policies 01-05 and no broad policies"
 
 aws iam list-role-policies --role-name "$ROLE_NAME" --output json > "$WORK_DIR/inline-after.json" ||
   fail "unable to verify inline policies after bootstrap"
 jq -e '.PolicyNames | length == 0' "$WORK_DIR/inline-after.json" >/dev/null ||
   fail "inline policies were found after bootstrap"
 
-printf 'ATTACHED_MANAGED_POLICY_COUNT=10\n'
+printf 'ATTACHED_MANAGED_POLICY_COUNT=5\n'
 printf 'IAM_INLINE_POLICY_COUNT=0\n'
 printf 'ADMIN_BOOTSTRAP=PASS\n'

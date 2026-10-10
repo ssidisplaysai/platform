@@ -2,16 +2,17 @@
 
 ## Administrator-owned IAM changes
 
-`GenesisGitHubDeployRole` must not administer its own authorization. The role's current broad managed policies do not grant the complete permissions required to create customer-managed policies and attach them to the role. In addition, `04-production-guardrails-deny` explicitly denies role-policy mutation against `GenesisGitHubDeployRole`. GitHub Actions therefore verifies IAM state but never creates, updates, attaches, or detaches policies.
+`GenesisGitHubDeployRole` must not administer its own authorization. `04-production-guardrails-deny` explicitly denies role-policy mutation against the role. GitHub Actions therefore verifies IAM state but never creates, updates, attaches, or detaches policies.
 
 An AWS administrator must run `infra/staging/admin-bootstrap-iam.sh` manually from an authorized environment containing this repository. The helper is not invoked by GitHub Actions. It:
 
-1. Verifies AWS account `452630323448`, reads `GenesisGitHubDeployRole`, requires zero inline policies, confirms all five expected broad policies are attached, and limits the temporary role to AWS's 10 attached-managed-policy maximum.
-2. Creates or reuses only the five `GenesisStagingDeploy-*` policies. Existing default policy versions must semantically match the corresponding repository documents; mismatches or unreadable state fail without overwrite.
-3. Attaches policies `01`, `02`, `03`, and `05`, then attaches `04-production-guardrails-deny` last when it is not already attached. During an incremental upgrade, an already-attached guardrail is preserved while missing policy `05` is added; it is never detached or weakened.
-4. After policy `04` is attached, performs only read-only verification of the temporary transition state: exactly the five broad plus five staging policies and zero inline policies.
+1. Verifies AWS account `452630323448`, reads `GenesisGitHubDeployRole`, and requires zero inline policies.
+2. Accepts only the canonical scoped-only starting set (`01`–`04`) or the already-complete scoped-only set (`01`–`05`). It explicitly rejects any legacy broad AWS-managed policy, missing policy `04`, missing policy `01`/`02`/`03`, or unexpected attachment.
+3. Creates or reuses only the five `GenesisStagingDeploy-*` policies. Existing default policy versions must semantically match the corresponding repository documents; mismatches or unreadable state fail without overwrite.
+4. If missing, attaches only policy `05`. Policy `04` remains continuously attached while policy `05` is added; it is never detached or reattached.
+5. Performs read-only final verification of exactly policies `01`–`05`, zero broad AWS-managed policies, and zero inline policies. The scoped role has five attached managed policies.
 
-The helper never detaches policies, changes an existing policy or version, applies infrastructure, deploys, or modifies Cognito, DNS, load balancers/listeners, or production resources.
+The normal bootstrap never detaches policies or changes an existing policy version; it may create and attach policy `05` only. Refresh modes separately update a default policy version as explicitly named. The helper does not apply infrastructure, deploy, or modify Cognito, DNS, load balancers/listeners, or production resources.
 
 For an explicitly approved change to the already-attached production inspection policy only, an AWS administrator can run:
 
@@ -19,7 +20,7 @@ For an explicitly approved change to the already-attached production inspection 
 bash infra/staging/admin-bootstrap-iam.sh --refresh-production-inspection-policy
 ```
 
-This restricted mode verifies the AWS account, the existing role and attached policy, zero inline role policies, and the proposed read-only document, including the 6,144 non-whitespace-character managed-policy size limit. It creates a new default version only for `GenesisStagingDeploy-01-read-only-production-inspection`; it never attaches/detaches policies or modifies another role or policy. It refuses to delete old policy versions if IAM's five-version limit has been reached. The GitHub OIDC role must not run this mode; policy 04 explicitly blocks self-administration. The no-argument bootstrap behavior remains unchanged.
+This restricted mode verifies the AWS account, the existing role and attached policy, zero inline role policies, and the proposed read-only document, including the 6,144 non-whitespace-character managed-policy size limit. It creates a new default version only for `GenesisStagingDeploy-01-read-only-production-inspection`; it never attaches/detaches policies or modifies another role or policy. It refuses to delete old policy versions if IAM's five-version limit has been reached. The GitHub OIDC role must not run this mode; policy 04 explicitly blocks self-administration.
 
 The production inspection policy grants only approved read actions. CloudFormation stack reads are scoped to the `GenesisRuntimeStack` stack ARN; `secretsmanager:DescribeSecret` is limited to the referenced production database, OpenAI, and WordPress secrets and never includes `GetSecretValue`. IAM managed-policy metadata reads are limited to the five Genesis staging inspection policies and `GenesisRuntimeStack-*` customer-managed policies; the inspector skips IAM policy-document reads for AWS-managed and unrelated policies rather than requesting out-of-scope access.
 
@@ -38,7 +39,9 @@ Other resource scopes are limited to the production ECR repository and productio
 
 Policy `05-staging-postgres-provisioning` owns the isolated PostgreSQL provisioning grants removed from policy `03`. RDS describe APIs use `Resource: "*"` because AWS does not support resource-level authorization for those calls; creation, tagging, subnet-group use, and secret metadata remain scoped to staging resource names and request tags. The RDS service-linked role grant is constrained to `rds.amazonaws.com`.
 
-The ten-policy state is temporary. The final role state contains only the five scoped `GenesisStagingDeploy-*` policies; all five broad AWS-managed policies must be absent.
+## Canonical scoped-only role state
+
+The broad-policy transition is complete. The canonical role state contains only Genesis policies `01`–`05`; the five legacy broad AWS-managed policies are forbidden. The normal bootstrap accepts the current four-policy state (`01`–`04`) to add `05`, or the complete five-policy state for an idempotent rerun. Any broad or unrelated policy causes a clear fail-closed error. Policy `04` stays attached throughout the incremental addition of policy `05`; no broad-policy transition or guardrail reordering is performed.
 
 ## GitHub verification and read-only plan
 
@@ -52,8 +55,4 @@ The reusable `.github/workflows/genesis-staging-bootstrap.yml` is named **Genesi
 
 Missing policy state reports `ADMIN_BOOTSTRAP_REQUIRED`; document differences or unreadable state fail. The workflow contains no IAM mutation calls.
 
-## Broad-policy transition
-
-The five broad policies are retained only during the temporary transition state. Their removal is a separate, administrator-only action; the verify-and-plan workflow does not mutate IAM. After removal, the final verify-and-plan must pass under the five-policy scoped role before any apply. Policy `04` blocks self-modification, so GitHub Actions must never be used to remove those policies.
-
-This division of responsibility is safer than GitHub self-modifying its role: workflow code cannot escalate its permissions, lock itself out mid-run, or rewrite the authorization constraints governing later steps. No change to the existing GitHub OIDC trust policy is part of this design.
+The scoped role and administrator-owned bootstrap prevent GitHub Actions from escalating its permissions, locking itself out mid-run, or rewriting the authorization constraints governing later steps. No change to the existing GitHub OIDC trust policy is part of this design.
