@@ -3,6 +3,11 @@ import { spawnSync } from "node:child_process";
 const ACCOUNT_ID = "452630323448";
 const REGION = "us-west-2";
 const ECR_REPOSITORY = "genesis-production-runtime";
+const TASK_FAMILY = "genesis-production-web";
+const TASK_CLUSTER = "genesis-production";
+const TASK_SERVICE = "genesis-production-web";
+const CLOUDFORMATION_STACK = "GenesisRuntimeStack";
+const WEB_LOG_GROUP = "/genesis/production/web";
 const DIGESTS = [
   "sha256:f0955c71791a7293969e1e49163e900073dcce06d01fc065e62c4bac7979d5ee",
   "sha256:fa8edfa7fd779a43d28e74ff6e479de2a3b4eb95cb964217f484ab47e0d8ce73",
@@ -17,7 +22,7 @@ const PROVENANCE_EVENTS = [
   "CompleteLayerUpload", "PutImage",
 ];
 
-const ALLOWED = new Set([
+export const READ_ONLY_AWS_CALLS = new Set([
   "sts:GetCallerIdentity",
   "ecs:DescribeServices", "ecs:DescribeTaskDefinition", "ecs:ListTaskDefinitions",
   "ecs:DescribeTasks", "ecs:ListTasks",
@@ -152,8 +157,27 @@ export function sanitizeSecretMetadata(secret) {
 }
 
 export function filterTaskDefinition(task, revision) {
-  if (!task || task.family !== "genesis-production-web" || task.revision !== revision) return false;
+  if (!task || task.family !== TASK_FAMILY || task.revision !== revision) return false;
   return true;
+}
+
+export function taskDefinitionArnsToInspect(taskDefinitionArns, currentTaskDefinitionArn) {
+  return [...new Set([
+    ...asArray(taskDefinitionArns),
+    ...[55, 56, 57].map((revision) =>
+      `arn:aws:ecs:${REGION}:${ACCOUNT_ID}:task-definition/${TASK_FAMILY}:${revision}`),
+    currentTaskDefinitionArn,
+  ].filter(Boolean))];
+}
+
+export function productionImageReference(image) {
+  const match = image?.match(new RegExp(`/${ECR_REPOSITORY}(?:[:@])([^\\s]+)$`));
+  if (!match) return null;
+  const reference = match[1];
+  return {
+    imageId: reference.startsWith("sha256:") ? `imageDigest=${reference}` : `imageTag=${reference}`,
+    tag: reference.startsWith("sha256:") ? null : reference,
+  };
 }
 
 export function isTrackedImageDigest(digest) {
@@ -185,16 +209,38 @@ export function summarizeRdsResource(item) {
 export function summarizeAlarm(alarm) {
   return {
     name: alarm.AlarmName,
+    type: alarm.AlarmRule ? "CompositeAlarm" : "MetricAlarm",
     state: alarm.StateValue,
+    actionsEnabled: alarm.ActionsEnabled,
+    alarmRule: alarm.AlarmRule,
     namespace: alarm.Namespace,
     metric: alarm.MetricName,
+    metrics: asArray(alarm.Metrics).map(({ Id, Label, MetricStat }) => ({
+      id: Id,
+      label: Label,
+      namespace: MetricStat?.Metric?.Namespace,
+      metric: MetricStat?.Metric?.MetricName,
+      dimensions: MetricStat?.Metric?.Dimensions,
+      period: MetricStat?.Period,
+      statistic: MetricStat?.Stat,
+    })),
     dimensions: alarm.Dimensions,
+    threshold: alarm.Threshold,
+    evaluationPeriods: alarm.EvaluationPeriods,
+    comparisonOperator: alarm.ComparisonOperator,
   };
+}
+
+export function summarizeAlarmInventory(response) {
+  return [
+    ...asArray(response.MetricAlarms),
+    ...asArray(response.CompositeAlarms),
+  ].map(summarizeAlarm);
 }
 
 function aws(service, operation, args = [], region = REGION, gaps = new Set()) {
   const permission = `${service}:${operationPermission(operation)}`;
-  if (!ALLOWED.has(permission)) throw new Error(`Refusing non-allowlisted AWS call: ${permission}`);
+  if (!READ_ONLY_AWS_CALLS.has(permission)) throw new Error(`Refusing non-allowlisted AWS call: ${permission}`);
   const result = spawnSync("aws", [service, operation, ...args, "--region", region, "--output", "json"], {
     encoding: "utf8",
     maxBuffer: 32 * 1024 * 1024,
@@ -220,8 +266,9 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function cloudTrailWindow(label, start, end, gaps) {
+function cloudTrailWindow(label, start, end, gaps, taskDefinitionArns = [], imageTags = []) {
   const events = [];
+  const taskArnSet = new Set(taskDefinitionArns);
   for (const eventName of PROVENANCE_EVENTS) {
     const response = aws("cloudtrail", "lookup-events", [
       "--lookup-attributes", `AttributeKey=EventName,AttributeValue=${eventName}`,
@@ -235,11 +282,13 @@ function cloudTrailWindow(label, start, end, gaps) {
         const raw = event.requestParameters ?? {};
         const responseTask = event.responseElements?.taskDefinition;
         const taskArn = sanitized.taskDefinitionArn ?? sanitized.responseTaskDefinitionArn;
-        const relevantTask = /genesis-production-web:(55|56)$/.test(taskArn ?? "")
-          || raw.family === "genesis-production-web"
-          || raw.service === "genesis-production-web";
-        const relevantImage = raw.repositoryName === ECR_REPOSITORY;
-        const relevantStack = /genesis|runtime/i.test(String(raw.stackName ?? raw.stackId ?? ""));
+        const relevantTask = taskArnSet.has(taskArn)
+          || /genesis-production-web:(55|56|57)$/.test(taskArn ?? "")
+          || raw.family === TASK_FAMILY
+          || raw.service === TASK_SERVICE;
+        const relevantImage = raw.repositoryName === ECR_REPOSITORY
+          && (imageTags.length === 0 || imageTags.includes(raw.imageTag));
+        const relevantStack = String(raw.stackName ?? raw.stackId ?? "").includes(CLOUDFORMATION_STACK);
         if (relevantTask || relevantImage || relevantStack) {
           events.push(sanitized);
         }
@@ -260,7 +309,7 @@ function inspect(gaps) {
   emit("INSPECTION_AWS_IDENTITY", identity.__accessDenied ? "ACCESS_DENIED" : { account: identity.Account, arn: identity.Arn });
 
   const services = aws("ecs", "describe-services", [
-    "--cluster", "genesis-production", "--services", "genesis-production-web",
+    "--cluster", TASK_CLUSTER, "--services", TASK_SERVICE,
   ], REGION, gaps);
   const service = asArray(services.services)[0];
   if (service) {
@@ -276,9 +325,9 @@ function inspect(gaps) {
   }
 
   const defs = aws("ecs", "list-task-definitions", [
-    "--family-prefix", "genesis-production-web", "--sort", "DESC", "--max-items", "10",
+    "--family-prefix", TASK_FAMILY, "--sort", "DESC", "--max-items", "10",
   ], REGION, gaps);
-  const taskArns = asArray(defs.taskDefinitionArns);
+  const taskArns = taskDefinitionArnsToInspect(defs.taskDefinitionArns, service?.taskDefinition);
   const taskDefinitions = [];
   for (const arn of taskArns) {
     const response = aws("ecs", "describe-task-definition", ["--task-definition", arn, "--include", "TAGS"], REGION, gaps);
@@ -301,7 +350,10 @@ function inspect(gaps) {
       cpu: task.cpu, memory: task.memory, networkMode: task.networkMode, volumes: task.volumes,
       containers,
     });
-    if ([55, 56].includes(task.revision)) emit(`PRODUCTION_TASK_DEFINITION_${task.revision}`, taskDefinitions.at(-1));
+    if ([55, 56, 57].includes(task.revision)) emit(`PRODUCTION_TASK_DEFINITION_${task.revision}`, taskDefinitions.at(-1));
+    if (task.taskDefinitionArn === service?.taskDefinition) {
+      emit("PRODUCTION_CURRENT_TASK_DEFINITION", taskDefinitions.at(-1));
+    }
     for (const roleArn of [task.taskRoleArn, task.executionRoleArn].filter(Boolean)) {
       const roleName = roleArn.split("/").at(-1);
       const role = aws("iam", "get-role", ["--role-name", roleName], REGION, gaps);
@@ -335,8 +387,8 @@ function inspect(gaps) {
     }
   }
 
-  const tasks = aws("ecs", "list-tasks", ["--cluster", "genesis-production", "--service-name", "genesis-production-web"], REGION, gaps);
-  const taskDetails = aws("ecs", "describe-tasks", ["--cluster", "genesis-production", "--tasks", ...asArray(tasks.taskArns)], REGION, gaps);
+  const tasks = aws("ecs", "list-tasks", ["--cluster", TASK_CLUSTER, "--service-name", TASK_SERVICE], REGION, gaps);
+  const taskDetails = aws("ecs", "describe-tasks", ["--cluster", TASK_CLUSTER, "--tasks", ...asArray(tasks.taskArns)], REGION, gaps);
   emit("PRODUCTION_RUNNING_TASKS", asArray(taskDetails.tasks).map((task) => ({
     taskArn: task.taskArn, taskDefinitionArn: task.taskDefinitionArn, lastStatus: task.lastStatus,
     desiredStatus: task.desiredStatus, healthStatus: task.healthStatus, launchType: task.launchType,
@@ -346,30 +398,68 @@ function inspect(gaps) {
     })),
   })));
 
-  for (const digest of DIGESTS) {
-    const image = aws("ecr", "describe-images", ["--repository-name", ECR_REPOSITORY, "--image-ids", `imageDigest=${digest}`], REGION, gaps);
+  const imageReferences = new Map(DIGESTS.map((digest) => [
+    `imageDigest=${digest}`,
+    { imageId: `imageDigest=${digest}`, taskDefinitions: [] },
+  ]));
+  const imageTaskDefinitions = taskDefinitions.filter((task) =>
+    [55, 56, 57].includes(task.revision) || task.taskDefinitionArn === service?.taskDefinition);
+  for (const task of imageTaskDefinitions) {
+    for (const container of task.containers) {
+      const parsed = productionImageReference(container.image);
+      if (!parsed) continue;
+      const entry = imageReferences.get(parsed.imageId) ?? { ...parsed, taskDefinitions: [] };
+      if (!entry.taskDefinitions.includes(task.taskDefinitionArn)) {
+        entry.taskDefinitions.push(task.taskDefinitionArn);
+      }
+      imageReferences.set(parsed.imageId, entry);
+    }
+  }
+  const imagePushWindows = [];
+  for (const reference of imageReferences.values()) {
+    const imageId = reference.imageId;
+    const image = aws("ecr", "describe-images", ["--repository-name", ECR_REPOSITORY, "--image-ids", imageId], REGION, gaps);
     emit("ECR_IMAGE", asArray(image.imageDetails).map(({ repositoryName, imageDigest, imageTags, imagePushedAt, imageSizeInBytes, imageScanStatus, imageManifestMediaType }) =>
       ({ repositoryName, imageDigest, imageTags, imagePushedAt, imageSizeInBytes, imageScanStatus, imageManifestMediaType })));
-    const manifest = aws("ecr", "batch-get-image", [
-      "--repository-name", ECR_REPOSITORY,
-      "--image-ids", `imageDigest=${digest}`,
-      "--accepted-media-types", "application/vnd.docker.distribution.manifest.v2+json",
-    ], REGION, gaps);
-    emit("ECR_IMAGE_MANIFEST", asArray(manifest.images).map((item) => {
-      let details = {};
-      try {
-        const parsed = JSON.parse(item.imageManifest ?? "{}");
-        details = {
-          schemaVersion: parsed.schemaVersion,
-          mediaType: parsed.mediaType,
-          layerCount: asArray(parsed.layers).length,
-          configDigest: parsed.config?.digest,
-        };
-      } catch {
-        details = { parse: "FAILED" };
+    const imageDetails = asArray(image.imageDetails);
+    for (const item of imageDetails) {
+      emit("PRODUCTION_TASK_IMAGE_REFERENCE", {
+        taskDefinitionArns: reference.taskDefinitions,
+        imageDigest: item.imageDigest,
+        imageTags: item.imageTags ?? [],
+      });
+      const manifest = aws("ecr", "batch-get-image", [
+        "--repository-name", ECR_REPOSITORY,
+        "--image-ids", `imageDigest=${item.imageDigest}`,
+        "--accepted-media-types", "application/vnd.docker.distribution.manifest.v2+json",
+      ], REGION, gaps);
+      emit("ECR_IMAGE_MANIFEST", asArray(manifest.images).map((manifestItem) => {
+        let details = {};
+        try {
+          const parsed = JSON.parse(manifestItem.imageManifest ?? "{}");
+          details = {
+            schemaVersion: parsed.schemaVersion,
+            mediaType: parsed.mediaType,
+            layerCount: asArray(parsed.layers).length,
+            configDigest: parsed.config?.digest,
+          };
+        } catch {
+          details = { parse: "FAILED" };
+        }
+        return { imageId: manifestItem.imageId, ...details };
+      }));
+      if (item.imagePushedAt) {
+        const pushedAt = Date.parse(item.imagePushedAt);
+        if (Number.isFinite(pushedAt)) {
+          imagePushWindows.push({
+            label: `IMAGE_PUSH_${item.imageDigest.slice(-12)}`,
+            start: new Date(pushedAt - 10 * 60_000).toISOString(),
+            end: new Date(pushedAt + 10 * 60_000).toISOString(),
+            tags: item.imageTags ?? [],
+          });
+        }
       }
-      return { imageId: item.imageId, ...details };
-    }));
+    }
   }
   const images = aws("ecr", "list-images", ["--repository-name", ECR_REPOSITORY, "--filter", "tagStatus=TAGGED", "--max-items", "100"], REGION, gaps);
   emit("ECR_TAGGED_IMAGE_COUNT", asArray(images.imageIds).length);
@@ -377,9 +467,29 @@ function inspect(gaps) {
   for (const window of WINDOWS) cloudTrailWindow(window.label, window.start, window.end, gaps);
   cloudTrailWindow("REV55_PUSH", "2026-10-09T22:45:00Z", "2026-10-09T23:05:00Z", gaps);
   cloudTrailWindow("REV56_PUSH", "2026-10-09T23:15:00Z", "2026-10-09T23:35:00Z", gaps);
+  const revisionsToInspect = new Set([
+    57,
+    Number(service?.taskDefinition?.split(":").at(-1)),
+  ].filter(Number.isInteger));
+  for (const revision of revisionsToInspect) {
+    const task = taskDefinitions.find((item) => item.revision === revision);
+    if (!task?.registeredAt) continue;
+    const registeredAt = Date.parse(task.registeredAt);
+    if (!Number.isFinite(registeredAt)) continue;
+    cloudTrailWindow(
+      revision === 57 ? "REV57" : `CURRENT_REVISION_${revision}`,
+      new Date(registeredAt - 30 * 60_000).toISOString(),
+      new Date(registeredAt + 30 * 60_000).toISOString(),
+      gaps,
+      [task.taskDefinitionArn],
+    );
+  }
+  for (const window of imagePushWindows) {
+    cloudTrailWindow(window.label, window.start, window.end, gaps, [], window.tags);
+  }
 
-  const stacks = aws("cloudformation", "describe-stacks", [], REGION, gaps);
-  const relevantStacks = asArray(stacks.Stacks).filter((stack) => /genesis|runtime/i.test(stack.StackName));
+  const stacks = aws("cloudformation", "describe-stacks", ["--stack-name", CLOUDFORMATION_STACK], REGION, gaps);
+  const relevantStacks = asArray(stacks.Stacks).filter((stack) => stack.StackName === CLOUDFORMATION_STACK);
   for (const stack of relevantStacks) {
     emit("CLOUDFORMATION_STACK", {
       name: stack.StackName, status: stack.StackStatus, creationTime: stack.CreationTime,
@@ -493,13 +603,17 @@ function inspect(gaps) {
   });
   emit("PRODUCTION_ECS_TO_RDS_NETWORK", connectivity);
 
-  const alarms = aws("cloudwatch", "describe-alarms", ["--max-records", "100"], REGION, gaps);
-  emit("PRODUCTION_CLOUDWATCH_ALARMS", asArray(alarms.MetricAlarms).map(summarizeAlarm));
+  const alarms = aws("cloudwatch", "describe-alarms", [
+    "--alarm-types", "MetricAlarm", "CompositeAlarm", "--max-records", "100",
+  ], REGION, gaps);
+  emit("PRODUCTION_CLOUDWATCH_ALARMS", [
+    ...summarizeAlarmInventory(alarms),
+  ]);
   const logGroups = aws("logs", "describe-log-groups", ["--log-group-name-prefix", "/genesis/production"], REGION, gaps);
   emit("PRODUCTION_LOG_GROUPS", asArray(logGroups.logGroups).map(({ logGroupName, retentionInDays, storedBytes, kmsKeyId }) =>
     ({ logGroupName, retentionInDays, storedBytes, kmsKeyId })));
   for (const group of asArray(logGroups.logGroups)) {
-    if (!group.logGroupName) continue;
+    if (group.logGroupName !== WEB_LOG_GROUP) continue;
     const streams = aws("logs", "describe-log-streams", [
       "--log-group-name", group.logGroupName, "--order-by", "LastEventTime", "--descending", "--limit", "5",
     ], REGION, gaps);

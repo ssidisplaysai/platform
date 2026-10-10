@@ -1118,7 +1118,22 @@ test("Policy 01 grants managed-policy reads only for the four Genesis policies",
   }
 
   const preservedStatements = policy.Statement
-    .filter((item) => item.Sid !== "IamManagedPolicyReadOnlyInspection")
+    .filter((item) => ![
+      "ProductionCloudFormationStackReadOnly",
+      "ProductionEcrImageReadOnly",
+      "ProductionEcsTaskReadOnly",
+      "ProductionEcsTaskListReadOnly",
+      "ProductionEcsTaskDefinitionListReadOnly",
+      "ProductionLogStreamReadOnly",
+      "ProductionRdsClusterSnapshotReadOnly",
+      "ProductionRdsClusterReadOnly",
+      "ProductionRdsInstanceReadOnly",
+      "ProductionRdsSnapshotReadOnly",
+      "ProductionRdsSubnetGroupReadOnly",
+      "ProductionAlarmInventoryReadOnly",
+      "ProductionRouteTableInventoryReadOnly",
+      "IamManagedPolicyReadOnlyInspection",
+    ].includes(item.Sid))
     .map(({ Sid, Effect, Action, Resource, NotResource, Condition }) => ({
       Sid, Effect, Action, Resource, NotResource, Condition,
     }));

@@ -5,12 +5,44 @@ import {
   filterTaskDefinition,
   isAccessDenied,
   isTrackedImageDigest,
+  productionImageReference,
+  READ_ONLY_AWS_CALLS,
   sanitizeCloudTrailEvent,
   sanitizeRequestParameters,
   sanitizeSecretMetadata,
+  summarizeAlarmInventory,
   summarizeAlarm,
   summarizeRdsResource,
+  taskDefinitionArnsToInspect,
 } from "../production-inspection.mjs";
+
+test("production inspection calls only the read-only API allowlist", () => {
+  for (const action of [
+    "cloudformation:DescribeStacks",
+    "cloudwatch:DescribeAlarms",
+    "ec2:DescribeRouteTables",
+    "ecr:BatchGetImage",
+    "ecr:ListImages",
+    "ecs:DescribeTasks",
+    "ecs:ListTaskDefinitions",
+    "ecs:ListTasks",
+    "logs:DescribeLogStreams",
+    "rds:DescribeDBClusterSnapshots",
+    "rds:DescribeDBClusters",
+    "rds:DescribeDBInstances",
+    "rds:DescribeDBSnapshots",
+    "rds:DescribeDBSubnetGroups",
+  ]) {
+    assert.ok(READ_ONLY_AWS_CALLS.has(action), `${action} must be allowlisted`);
+  }
+  for (const action of READ_ONLY_AWS_CALLS) {
+    assert.doesNotMatch(
+      action,
+      /:(?:Create|Update|Delete|Put|Modify|Register|Deregister|Authorize|Revoke|Attach|Detach|Pass|Set|Run|Execute|Start|Stop|Terminate|Send|Publish|Invoke|Write|Add|Remove)/i,
+      `${action} must remain read-only`,
+    );
+  }
+});
 
 test("CloudTrail sanitization handles taskDefinition as ARN string and omits unsafe request fields", () => {
   const output = sanitizeCloudTrailEvent({
@@ -56,6 +88,25 @@ test("task-definition revision filtering excludes unrelated families and revisio
   assert.equal(filterTaskDefinition({ family: "genesis-production-web", revision: 56 }, 56), true);
   assert.equal(filterTaskDefinition({ family: "genesis-production-web", revision: 55 }, 56), false);
   assert.equal(filterTaskDefinition({ family: "other", revision: 56 }, 56), false);
+});
+
+test("task-definition lookup always includes revisions 55, 56, 57 and the active revision", () => {
+  const active = "arn:aws:ecs:us-west-2:452630323448:task-definition/genesis-production-web:61";
+  const arns = taskDefinitionArnsToInspect([], active);
+  for (const revision of [55, 56, 57, 61]) {
+    assert.ok(arns.some((arn) => arn.endsWith(`:${revision}`)));
+  }
+  assert.equal(arns.length, new Set(arns).size);
+});
+
+test("production image references are resolved only for the tracked ECR repository", () => {
+  assert.deepEqual(productionImageReference(
+    "452630323448.dkr.ecr.us-west-2.amazonaws.com/genesis-production-runtime:runtime-tag",
+  ), { imageId: "imageTag=runtime-tag", tag: "runtime-tag" });
+  assert.deepEqual(productionImageReference(
+    "452630323448.dkr.ecr.us-west-2.amazonaws.com/genesis-production-runtime@sha256:abc",
+  ), { imageId: "imageDigest=sha256:abc", tag: null });
+  assert.equal(productionImageReference("public.ecr.aws/example/runtime:latest"), null);
 });
 
 test("image digest filtering accepts only the two audited production digests", () => {
@@ -116,9 +167,36 @@ test("alarm inventory summary captures identifying metadata", () => {
     MetricName: "HTTPCode_Target_5XX_Count",
     Dimensions: [{ Name: "LoadBalancer", Value: "lb/production" }],
   }), {
-    name: "production-target-5xx", state: "OK", namespace: "AWS/ApplicationELB",
-    metric: "HTTPCode_Target_5XX_Count", dimensions: [{ Name: "LoadBalancer", Value: "lb/production" }],
+    name: "production-target-5xx", type: "MetricAlarm", state: "OK",
+    actionsEnabled: undefined, alarmRule: undefined, namespace: "AWS/ApplicationELB",
+    metric: "HTTPCode_Target_5XX_Count", metrics: [],
+    dimensions: [{ Name: "LoadBalancer", Value: "lb/production" }],
+    threshold: undefined, evaluationPeriods: undefined, comparisonOperator: undefined,
   });
+});
+
+test("alarm inventory summary includes metric and composite alarms", () => {
+  assert.deepEqual(summarizeAlarmInventory({
+    MetricAlarms: [{ AlarmName: "service-5xx", StateValue: "OK" }],
+    CompositeAlarms: [{
+      AlarmName: "production-health",
+      StateValue: "ALARM",
+      AlarmRule: "ALARM(service-5xx)",
+    }],
+  }), [
+    {
+      name: "service-5xx", type: "MetricAlarm", state: "OK",
+      actionsEnabled: undefined, alarmRule: undefined, namespace: undefined, metric: undefined,
+      metrics: [], dimensions: undefined, threshold: undefined,
+      evaluationPeriods: undefined, comparisonOperator: undefined,
+    },
+    {
+      name: "production-health", type: "CompositeAlarm", state: "ALARM",
+      actionsEnabled: undefined, alarmRule: "ALARM(service-5xx)", namespace: undefined, metric: undefined,
+      metrics: [], dimensions: undefined, threshold: undefined,
+      evaluationPeriods: undefined, comparisonOperator: undefined,
+    },
+  ]);
 });
 
 test("AccessDenied responses are identified for narrow permission-gap reporting", () => {

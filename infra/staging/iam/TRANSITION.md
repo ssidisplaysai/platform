@@ -13,6 +13,16 @@ An AWS administrator must run `infra/staging/admin-bootstrap-iam.sh` manually fr
 
 The helper never detaches policies, changes an existing policy or version, applies infrastructure, deploys, or modifies Cognito, DNS, load balancers/listeners, or production resources.
 
+For an explicitly approved change to the already-attached production inspection policy only, an AWS administrator can run:
+
+```sh
+bash infra/staging/admin-bootstrap-iam.sh --refresh-production-inspection-policy
+```
+
+This restricted mode verifies the AWS account, the existing role and attached policy, zero inline role policies, and the proposed read-only document. It creates a new default version only for `GenesisStagingDeploy-01-read-only-production-inspection`; it never attaches/detaches policies or modifies another role or policy. It refuses to delete old policy versions if IAM's five-version limit has been reached. The GitHub OIDC role must not run this mode; policy 04 explicitly blocks self-administration. The no-argument bootstrap behavior remains unchanged.
+
+The production inspection policy adds only these approved reads: `cloudformation:DescribeStacks`, `cloudwatch:DescribeAlarms`, `ec2:DescribeRouteTables`, `ecr:BatchGetImage`, `ecr:ListImages`, `ecs:DescribeTasks`, `ecs:ListTaskDefinitions`, `ecs:ListTasks`, `logs:DescribeLogStreams`, `rds:DescribeDBClusterSnapshots`, `rds:DescribeDBClusters`, `rds:DescribeDBInstances`, `rds:DescribeDBSnapshots`, and `rds:DescribeDBSubnetGroups`. Resource scopes are limited to `GenesisRuntimeStack`, the production ECR repository, ECS cluster/tasks, and the production web log streams. AWS requires `Resource: "*"` for each of the five RDS Describe APIs because they do not support resource-level permissions. `Resource: "*"` is also used for `ecs:ListTaskDefinitions` (no resource-level support), `ec2:DescribeRouteTables` (no resource-level support), and `cloudwatch:DescribeAlarms` (the inspection enumerates metric and composite alarms; composite alarm discovery requires wildcard scope). The inspection query specifies `GenesisRuntimeStack` by name and describes log streams only for `/genesis/production/web` so those requests conform to the policy scopes.
+
 The nine-policy state is temporary. The final role state contains only the four scoped `GenesisStagingDeploy-*` policies; all five broad AWS-managed policies must be absent.
 
 ## GitHub verification and read-only plan
